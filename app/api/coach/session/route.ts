@@ -72,7 +72,7 @@ ${commitmentsRes.data?.map((c: any) => `- ${c.commitment_text}`).join('\n') || '
 
     // 5. Call Claude
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20240620',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 500,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: context }],

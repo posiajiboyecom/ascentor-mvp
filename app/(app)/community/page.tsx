@@ -1,127 +1,214 @@
 'use client';
 
-import { useState } from 'react';
-
-const MEMBERS = ['AO', 'CE', 'DM', 'FK', 'JN', 'LM', 'NO', 'PK', 'SM', 'TW'];
-const MEMBER_COLORS = ['var(--accent)', 'var(--blue)', 'var(--purple)', 'var(--teal)', 'var(--success)'];
-
-const INITIAL_POSTS = [
-  { id: 1, author: 'Chioma E.', avatar: 'CE', time: '2h ago', content: "Had my 1:1 with my manager today. Used the framework from Tuesday's session — asked for the stretch project directly instead of hinting. She said YES! 🎉", likes: 7, comments: 3 },
-  { id: 2, author: 'David M.', avatar: 'DM', time: '5h ago', content: "Struggling with the accountability piece this week. Too many fires at work. Any tips for protecting your development time when everything feels urgent?", likes: 4, comments: 5 },
-  { id: 3, author: 'System', avatar: '📅', time: '1d ago', content: "Weekly Check-In\n\nHey team! Let's start the week strong.\n\n1️⃣ One win from last week\n2️⃣ One challenge you're facing\n3️⃣ One commitment for this week\n\nDrop your update below 👇", likes: 2, comments: 8 },
-];
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // 1. Import useRouter
 
 export default function CommunityPage() {
-  const [posts, setPosts] = useState(INITIAL_POSTS);
-  const [newPost, setNewPost] = useState('');
+  const router = useRouter(); // 2. Initialize router
+  const [cohorts, setCohorts] = useState<any[]>([]);
+  const [myCohortIds, setMyCohortIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState<string | null>(null);
+  const [filter, setFilter] = useState('All');
+  const supabase = createClient();
 
-  const addPost = () => {
-    if (!newPost.trim()) return;
-    setPosts([{
-      id: Date.now(),
-      author: 'You',
-      avatar: 'YO',
-      time: 'Just now',
-      content: newPost,
-      likes: 0,
-      comments: 0,
-    }, ...posts]);
-    setNewPost('');
-  };
+  const categories = ['All', 'Technology', 'Finance', 'Leadership', 'Diversity', 'Entrepreneurship', 'Consulting', 'Career Growth', 'Executive'];
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const [cohortsRes, membershipRes] = await Promise.all([
+      supabase.from('cohorts').select('*').eq('is_active', true).order('member_count', { ascending: false }),
+      supabase.from('cohort_members').select('cohort_id').eq('user_id', user.id),
+    ]);
+
+    setCohorts(cohortsRes.data || []);
+    setMyCohortIds(new Set(membershipRes.data?.map((m: any) => m.cohort_id) || []));
+    setLoading(false);
+  }
+
+  async function joinCohort(cohortId: string) {
+    if (myCohortIds.size >= 3) {
+      alert('You can join up to 3 cohorts. Leave one to join another.');
+      return;
+    }
+
+    setJoining(cohortId);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase.from('cohort_members').insert({
+      cohort_id: cohortId,
+      user_id: user.id,
+    });
+
+    if (!error) {
+      setMyCohortIds((prev) => new Set([...prev, cohortId]));
+      setCohorts((prev) => prev.map((c) =>
+        c.id === cohortId ? { ...c, member_count: (c.member_count || 0) + 1 } : c
+      ));
+      // 3. Redirect to the cohort chat page immediately
+      router.push(`/community/${cohortId}`);
+    }
+    setJoining(null);
+  }
+
+  async function leaveCohort(cohortId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase.from('cohort_members')
+      .delete()
+      .eq('cohort_id', cohortId)
+      .eq('user_id', user.id);
+
+    if (!error) {
+      setMyCohortIds((prev) => {
+        const next = new Set(prev);
+        next.delete(cohortId);
+        return next;
+      });
+      setCohorts((prev) => prev.map((c) =>
+        c.id === cohortId ? { ...c, member_count: Math.max(0, (c.member_count || 0) - 1) } : c
+      ));
+    }
+  }
+
+  const myCohorts = cohorts.filter((c) => myCohortIds.has(c.id));
+  const filteredCohorts = filter === 'All'
+    ? cohorts.filter((c) => !myCohortIds.has(c.id))
+    : cohorts.filter((c) => !myCohortIds.has(c.id) && c.category === filter);
+
+  if (loading) {
+    return (
+      <div className="py-20 text-center">
+        <div className="text-2xl mb-2">⏳</div>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading cohorts...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-up py-6">
-      <div className="flex justify-between items-center mb-5">
-        <div>
-          <h2 className="text-2xl font-semibold mb-0.5"
-            style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
-            Your Cohort
-          </h2>
-          <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-            Emerging Leaders · Cohort #7 · 10 members
-          </p>
-        </div>
-        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
-          style={{ background: 'rgba(16,185,129,0.09)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.19)' }}>
-          Active
-        </span>
-      </div>
+      <h2 className="text-2xl font-semibold mb-1"
+        style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
+        Cohorts
+      </h2>
+      <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+        Join up to 3 communities of peers on similar journeys
+      </p>
 
-      {/* Members */}
-      <div className="rounded-xl p-3.5 mb-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-        <p className="text-xs font-semibold mb-2.5 uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>Members</p>
-        <div className="flex gap-2 flex-wrap">
-          {MEMBERS.map((init, i) => (
-            <div key={i} className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold"
+      {/* My Cohorts */}
+      {myCohorts.length > 0 && (
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+              Your Cohorts ({myCohorts.length}/3)
+            </h3>
+          </div>
+          <div className="flex flex-col gap-3">
+            {myCohorts.map((cohort) => (
+              <Link key={cohort.id} href={`/community/${cohort.id}`}>
+                <div className="rounded-xl p-4 transition-all hover:border-gray-600"
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--accent)', cursor: 'pointer' }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                      style={{ background: 'rgba(245,158,11,0.06)' }}>
+                      {cohort.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{cohort.name}</h4>
+                      <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
+                        {cohort.member_count} members · {cohort.category}
+                      </p>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded-full"
+                      style={{ background: 'rgba(245,158,11,0.09)', color: 'var(--accent)', border: '1px solid rgba(245,158,11,0.19)' }}>
+                      Joined ✓
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Browse Cohorts */}
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>
+          {myCohorts.length > 0 ? 'Browse More Cohorts' : 'Choose Your Cohorts'}
+        </h3>
+
+        {/* Filter pills */}
+        <div className="flex gap-1.5 overflow-x-auto mb-4 pb-1" style={{ scrollbarWidth: 'none' }}>
+          {categories.map((c) => (
+            <button key={c} onClick={() => setFilter(c)}
+              className="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all"
               style={{
-                background: `linear-gradient(135deg, ${MEMBER_COLORS[i % 5]}22, ${MEMBER_COLORS[i % 5]}44)`,
-                border: `1.5px solid ${MEMBER_COLORS[i % 5]}55`,
-                color: MEMBER_COLORS[i % 5],
+                background: filter === c ? 'var(--accent)' : 'var(--bg-card)',
+                color: filter === c ? '#000' : 'var(--text-muted)',
+                border: `1px solid ${filter === c ? 'var(--accent)' : 'var(--border)'}`,
               }}>
-              {init}
-            </div>
+              {c}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* New Post */}
-      <div className="rounded-xl p-3.5 mb-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-        <textarea
-          value={newPost}
-          onChange={(e) => setNewPost(e.target.value)}
-          placeholder="Share a win, ask a question, or update your cohort..."
-          rows={3}
-          className="w-full px-3.5 py-2.5 text-sm rounded-lg resize-none mb-2.5"
-          style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-        />
-        <div className="flex justify-end">
-          <button
-            onClick={addPost}
-            disabled={!newPost.trim()}
-            className="px-4 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40"
-            style={{ background: 'var(--accent)', color: '#000' }}>
-            Post
-          </button>
-        </div>
-      </div>
-
-      {/* Feed */}
-      {posts.map((post) => (
-        <div key={post.id} className="rounded-xl p-5 mb-3"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div className="flex gap-2.5 items-start">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
-              style={{
-                background: post.author === 'System'
-                  ? 'linear-gradient(135deg, rgba(59,130,246,0.13), rgba(59,130,246,0.27))'
-                  : 'linear-gradient(135deg, rgba(245,158,11,0.13), rgba(245,158,11,0.27))',
-                border: post.author === 'System'
-                  ? '1.5px solid rgba(59,130,246,0.33)'
-                  : '1.5px solid rgba(245,158,11,0.33)',
-                color: post.author === 'System' ? 'var(--blue)' : 'var(--accent)',
-              }}>
-              {post.avatar}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{post.author}</span>
-                <span className="text-xs" style={{ color: 'var(--text-dim)' }}>{post.time}</span>
-              </div>
-              <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--text-muted)' }}>
-                {post.content}
-              </p>
-              <div className="flex gap-4 mt-2.5">
-                <button className="text-xs flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
-                  ♡ {post.likes}
-                </button>
-                <button className="text-xs flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
-                  💬 {post.comments}
-                </button>
-              </div>
-            </div>
+      {/* Cohort list */}
+      <div className="flex flex-col gap-3">
+        {filteredCohorts.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
+              {myCohortIds.size >= 3 ? "You've joined 3 cohorts — leave one to explore others" : 'No cohorts in this category'}
+            </p>
           </div>
-        </div>
-      ))}
+        ) : (
+          filteredCohorts.map((cohort, i) => (
+            <div key={cohort.id}
+              className="rounded-xl p-4 animate-fade-up"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', animationDelay: `${i * 0.05}s` }}>
+              <div className="flex gap-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
+                  style={{ background: 'rgba(245,158,11,0.06)' }}>
+                  {cohort.icon}
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold mb-0.5" style={{ color: 'var(--text)' }}>{cohort.name}</h4>
+                  <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>{cohort.description}</p>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-dim)' }}>
+                      <span>👥 {cohort.member_count}/{cohort.max_members}</span>
+                      <span>·</span>
+                      <span>{cohort.category}</span>
+                    </div>
+                    <button
+                      onClick={(e) => { e.preventDefault(); joinCohort(cohort.id); }}
+                      disabled={joining === cohort.id || myCohortIds.size >= 3}
+                      className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-40"
+                      style={{ background: 'var(--accent)', color: '#000' }}>
+                      {joining === cohort.id ? 'Joining...' : 'Join'}
+                    </button>
+                  </div>
+                  {/* Capacity bar */}
+                  <div className="w-full h-0.5 rounded-full mt-2 overflow-hidden" style={{ background: 'var(--bg-input)' }}>
+                    <div className="h-full rounded-full"
+                      style={{ width: `${(cohort.member_count / cohort.max_members) * 100}%`, background: 'var(--teal)' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

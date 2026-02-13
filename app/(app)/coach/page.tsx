@@ -1,222 +1,126 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 
-const SESSION_TYPES = [
-  { id: 'challenge_navigation', label: 'Navigate a Challenge', icon: '🧭' },
-  { id: 'difficult_conversation', label: 'Prep a Conversation', icon: '🗣️' },
-  { id: 'weekly_reflection', label: 'Weekly Reflection', icon: '📝' },
-  { id: 'accountability_check', label: 'Accountability Check', icon: '✅' },
-];
-
-type Message = {
-  role: 'user' | 'assistant';
-  content?: string;
-  reflection?: string;
-  question?: string;
-  action?: string;
-};
+interface Message {
+  role: 'user' | 'ai';
+  content: string;
+}
 
 export default function CoachPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sessionType, setSessionType] = useState('challenge_navigation');
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+  // Auto-scroll to bottom
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  useEffect(() => { scrollToBottom() }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg = input.trim();
+    if (!input.trim()) return;
+
+    // 1. Show User Message immediately
+    const userMessage = input;
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setInput('');
-    setMessages((m) => [...m, { role: 'user', content: userMsg }]);
-    setLoading(true);
+    setIsLoading(true);
 
     try {
-      const res = await fetch('/api/coach/session', {
+      // 2. Call the API
+      const response = await fetch('/api/coach/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userInput: userMsg, sessionType }),
+        body: JSON.stringify({ message: userMessage }),
       });
-      const data = await res.json();
 
-      if (data.response) {
-        setMessages((m) => [...m, {
-          role: 'assistant',
-          reflection: data.response.reflection,
-          question: data.response.question,
-          action: data.response.action,
-        }]);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to contact coach");
       }
-    } catch {
-      setMessages((m) => [...m, {
-        role: 'assistant',
-        reflection: "I'm here and ready to help you navigate your leadership journey.",
-        question: "What's the most pressing challenge you're facing at work right now?",
-      }]);
-    }
 
-    setLoading(false);
+      // 3. SECURELY Read the AI Response
+      // We check multiple fields to ensure we never show an empty bubble
+      const aiText = data.response || data.message || "I heard you, but I'm thinking...";
+
+      setMessages(prev => [...prev, { role: 'ai', content: aiText }]);
+
+    } catch (error: any) {
+      console.error("Chat Error:", error);
+      setMessages(prev => [...prev, { 
+        role: 'ai', 
+        content: "⚠️ Connection Error. Please try again." 
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="animate-fade-up flex flex-col" style={{ height: 'calc(100vh - 120px)', paddingTop: 16 }}>
-      {/* Session Type Selector */}
-      {messages.length === 0 && (
-        <div className="mb-5">
-          <h2 className="text-2xl font-semibold mb-1"
-            style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
-            AI Leadership Coach
-          </h2>
-          <p className="text-[13px] mb-4" style={{ color: 'var(--text-muted)' }}>
-            Choose a session type to begin
-          </p>
-          <div className="grid grid-cols-2 gap-2.5">
-            {SESSION_TYPES.map((t) => (
-              <button key={t.id} onClick={() => setSessionType(t.id)}
-                className="rounded-xl p-3.5 text-left transition-all"
-                style={{
-                  background: 'var(--bg-card)',
-                  border: sessionType === t.id
-                    ? '1.5px solid var(--accent)'
-                    : '1px solid var(--border)',
-                }}>
-                <span className="text-xl">{t.icon}</span>
-                <div className="text-[13px] font-medium mt-1"
-                  style={{ color: sessionType === t.id ? 'var(--accent)' : 'var(--text)' }}>
-                  {t.label}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="flex flex-col h-screen bg-gray-950 text-white">
+      {/* Header */}
+      <header className="p-4 border-b border-gray-800 flex items-center justify-between">
+        <Link href="/dashboard" className="text-gray-400 hover:text-white">← Back</Link>
+        <h1 className="font-bold text-lg text-amber-500">AI Career Coach</h1>
+        <div className="w-10" /> {/* Spacer */}
+      </header>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto mb-3">
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="text-center py-10">
-            <div className="text-5xl mb-4">⬆</div>
-            <p className="text-[15px] max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>
-              Share what's on your mind — a challenge, a question, or a reflection on your week.
-            </p>
+          <div className="text-center text-gray-500 mt-20">
+            <p>I am your AI Coach.</p>
+            <p className="text-sm">Tell me about your career goals or current challenges.</p>
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          <div key={i} className="mb-4 animate-slide-in" style={{ animationDelay: `${i * 0.05}s` }}>
-            {msg.role === 'user' ? (
-              <div className="flex justify-end">
-                <div className="max-w-[80%] px-4 py-3 rounded-2xl rounded-br-sm text-sm leading-relaxed"
-                  style={{
-                    background: 'rgba(245, 158, 11, 0.09)',
-                    border: '1px solid rgba(245, 158, 11, 0.19)',
-                    color: 'var(--text)',
-                  }}>
-                  {msg.content}
-                </div>
-              </div>
-            ) : (
-              <div className="flex gap-2.5 items-start">
-                {/* Coach avatar */}
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(245,158,11,0.13), rgba(245,158,11,0.27))',
-                    border: '1.5px solid rgba(245,158,11,0.33)',
-                    color: 'var(--accent)',
-                  }}>
-                  ⬆
-                </div>
-                <div className="max-w-[85%] flex flex-col gap-2">
-                  {msg.reflection && (
-                    <div className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed"
-                      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                      {msg.reflection}
-                    </div>
-                  )}
-                  {msg.question && (
-                    <div className="px-4 py-3 rounded-xl text-[15px] font-medium leading-relaxed"
-                      style={{ background: 'var(--bg-card)', border: '1px solid rgba(245,158,11,0.25)', color: 'var(--text)' }}>
-                      {msg.question}
-                    </div>
-                  )}
-                  {msg.action && (
-                    <div className="px-3.5 py-2.5 rounded-lg text-[13px] flex items-start gap-2"
-                      style={{
-                        background: 'rgba(245, 158, 11, 0.06)',
-                        border: '1px solid rgba(245, 158, 11, 0.15)',
-                        color: 'var(--accent)',
-                      }}>
-                      <span>📌</span>
-                      <span>{msg.action}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div 
+              className={`max-w-[80%] p-4 rounded-xl ${
+                msg.role === 'user' 
+                  ? 'bg-amber-600 text-white rounded-tr-none' 
+                  : 'bg-gray-800 text-gray-100 rounded-tl-none border border-gray-700'
+              }`}
+            >
+              {msg.content}
+            </div>
           </div>
         ))}
-
-        {/* Loading indicator */}
-        {loading && (
-          <div className="flex gap-2.5 items-start mb-4">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm"
-              style={{
-                background: 'linear-gradient(135deg, rgba(245,158,11,0.13), rgba(245,158,11,0.27))',
-                border: '1.5px solid rgba(245,158,11,0.33)',
-                color: 'var(--accent)',
-              }}>
-              ⬆
-            </div>
-            <div className="px-4 py-3.5 rounded-2xl rounded-tl-sm"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              <div className="flex gap-1">
-                {[0, 1, 2].map((d) => (
-                  <div key={d} className="w-1.5 h-1.5 rounded-full"
-                    style={{
-                      background: 'var(--text-dim)',
-                      animation: `pulse-dot 1.2s infinite ${d * 0.2}s`,
-                    }} />
-                ))}
-              </div>
+        
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-800 p-4 rounded-xl rounded-tl-none border border-gray-700 animate-pulse">
+              Thinking...
             </div>
           </div>
         )}
-
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="flex gap-2 items-end">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          placeholder="Share what's on your mind..."
-          rows={2}
-          className="flex-1 px-4 py-3 text-sm rounded-xl resize-none leading-relaxed"
-          style={{
-            background: 'var(--bg-input)',
-            color: 'var(--text)',
-            border: '1px solid var(--border)',
-            outline: 'none',
-          }}
-        />
-        <button
-          onClick={handleSend}
-          disabled={!input.trim() || loading}
-          className="w-12 h-12 rounded-xl flex items-center justify-center text-black font-bold text-lg transition-all disabled:opacity-40"
-          style={{ background: 'var(--accent)' }}>
-          ↑
-        </button>
+      {/* Input Area */}
+      <div className="p-4 border-t border-gray-800 bg-gray-900">
+        <div className="flex gap-2 max-w-3xl mx-auto">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="Type your message..."
+            className="flex-1 bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-500 transition"
+            disabled={isLoading}
+          />
+          <button 
+            onClick={handleSend}
+            disabled={isLoading}
+            className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-medium transition disabled:opacity-50"
+          >
+            Send
+          </button>
+        </div>
       </div>
     </div>
   );
