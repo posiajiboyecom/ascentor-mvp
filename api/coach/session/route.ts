@@ -109,7 +109,7 @@ ${commitmentsRes.data?.map(c => `- ${c.commitment_text}`).join('\n') || 'None'}
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-20250514', // Using your requested model
       max_tokens: 500,
       system: COACHING_PROMPT,
       messages: [{ role: 'user', content: context }],
@@ -123,12 +123,14 @@ ${commitmentsRes.data?.map(c => `- ${c.commitment_text}`).join('\n') || 'None'}
       action: aiText.match(/<action>([\s\S]*?)<\/action>/)?.[1]?.trim() || null,
     };
 
-    tokenUsage = {
-      input_tokens: response.usage.input_tokens,
-      output_tokens: response.usage.output_tokens,
-      cost: (response.usage.input_tokens / 1_000_000) * 3 +
-            (response.usage.output_tokens / 1_000_000) * 15,
-    };
+    if (response.usage) {
+      tokenUsage = {
+        input_tokens: response.usage.input_tokens,
+        output_tokens: response.usage.output_tokens,
+        cost: (response.usage.input_tokens / 1_000_000) * 3 +
+              (response.usage.output_tokens / 1_000_000) * 15,
+      };
+    }
   } catch (e) {
     console.error('Coaching API error:', e);
     parsed = {
@@ -184,4 +186,56 @@ The coach reflected:
 Evaluate: has the user made any progress on their goal or milestones based on what they said?`;
 
       const progressResponse = await anthropic.messages.create({
-        model
+        model: 'claude-sonnet-4-20250514', // Using your requested model
+        max_tokens: 300,
+        system: PROGRESS_PROMPT,
+        messages: [{ role: 'user', content: progressContext }],
+      });
+
+      const progressText = progressResponse.content[0].type === 'text'
+        ? progressResponse.content[0].text : '';
+
+      // Parse the JSON response
+      const cleaned = progressText.replace(/```json|```/g, '').trim();
+      progressUpdate = JSON.parse(cleaned);
+
+      // Only update if progress increased
+      const newProgress = Math.max(goal.progress || 0, progressUpdate.overall_progress || 0);
+
+      const updateData: any = { progress: newProgress };
+
+      // Update milestone completion status
+      if (progressUpdate.milestone_1_complete && !goal.milestone_1_complete) {
+        updateData.milestone_1_complete = true;
+      }
+      if (progressUpdate.milestone_2_complete && !goal.milestone_2_complete) {
+        updateData.milestone_2_complete = true;
+      }
+      if (progressUpdate.milestone_3_complete && !goal.milestone_3_complete) {
+        updateData.milestone_3_complete = true;
+      }
+
+      // Only update DB if something changed
+      if (newProgress > (goal.progress || 0) ||
+          updateData.milestone_1_complete ||
+          updateData.milestone_2_complete ||
+          updateData.milestone_3_complete) {
+        await supabase
+          .from('user_goals')
+          .update(updateData)
+          .eq('id', goal.id);
+      }
+    } catch (e) {
+      console.error('Progress evaluation error:', e);
+      // Non-critical — coaching still works without progress tracking
+    }
+  }
+
+  // 7. Return response
+  return NextResponse.json({
+    sessionId: session?.id,
+    response: parsed,
+    usage: { cost: tokenUsage.cost.toFixed(4) },
+    progressUpdate,
+  });
+}
