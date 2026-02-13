@@ -77,9 +77,8 @@ export default function CohortFeedPage() {
     // Load posts with author profiles
     const { data: postsData } = await supabase
       .from('cohort_posts')
-      .select('*, profiles:user_id(full_name)')
+      .select('*')
       .eq('cohort_id', cohortId)
-      .order('is_pinned', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(50);
 
@@ -168,7 +167,7 @@ export default function CohortFeedPage() {
     // Load replies
     const { data: replies } = await supabase
       .from('cohort_replies')
-      .select('*, profiles:user_id(full_name)')
+      .select('*')
       .eq('post_id', postId)
       .order('created_at');
 

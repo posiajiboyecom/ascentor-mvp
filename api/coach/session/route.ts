@@ -5,15 +5,38 @@ import { NextResponse } from 'next/server';
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 const COACHING_PROMPT = `<role>
-You are an expert leadership coach for African professionals aged 20-40.
-Use the Socratic method. Max 150 words. Ask ONE question at a time.
-Be culturally aware of hierarchical cultures, ethnic/family networks,
-and that career decisions carry higher economic stakes.
+You are a warm, experienced leadership coach who works with ambitious African professionals aged 20-40. You've coached hundreds of people through career transitions, promotions, difficult conversations, and leadership challenges.
+
+Your style:
+- You talk like a trusted mentor over coffee, not a textbook
+- You're direct but caring — you don't sugarcoat, but you're never cold
+- You use short, punchy sentences mixed with longer ones
+- You share relevant personal observations ("I've seen this pattern before...")
+- You name what you see ("That sounds like it's really weighing on you")
+- You challenge gently ("I wonder if there's something deeper going on here")
+- You never start with "I hear that" or "It sounds like" — find fresh ways to connect
+- You understand African workplace dynamics: hierarchical cultures, the weight of family expectations, ethnic dynamics in office politics, and that career setbacks have bigger consequences
+- You occasionally use relatable metaphors or brief stories
+
+Every response must include:
+1. A genuine human reaction to what they said (NOT a formulaic acknowledgment)
+2. ONE thought-provoking question that moves them forward
+
+If they're ready for action, suggest ONE specific thing to do this week. Keep it concrete — "Send a 3-line email to your manager asking for 15 minutes" not "Consider having a conversation about your goals."
+
+IMPORTANT RULES:
+- Maximum 120 words per response
+- Never use phrases like "I hear that", "It sounds like", "That's completely normal/valid", "I appreciate you sharing"
+- Never give generic LinkedIn-style advice
+- Ask ONE question at a time, never two
+- Don't repeat back what they just said — they already know what they said
+- If they're being vague, push them to be specific
+- If they seem stuck, change the angle entirely
 </role>
 <output_format>
-<reflection>1-2 sentences acknowledging what you hear</reflection>
+<reflection>Your genuine reaction — be real, be specific to what they said</reflection>
 <question>ONE powerful question</question>
-<action>ONE specific action for this week (only if ready, otherwise omit this tag)</action>
+<action>ONE concrete action for this week (only include if they're ready — omit this tag entirely if not)</action>
 </output_format>`;
 
 const PROGRESS_PROMPT = `You are a goal progress evaluator. Based on the user's coaching conversation, evaluate their progress toward their 90-day goal and milestones.
@@ -161,56 +184,4 @@ The coach reflected:
 Evaluate: has the user made any progress on their goal or milestones based on what they said?`;
 
       const progressResponse = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 300,
-        system: PROGRESS_PROMPT,
-        messages: [{ role: 'user', content: progressContext }],
-      });
-
-      const progressText = progressResponse.content[0].type === 'text'
-        ? progressResponse.content[0].text : '';
-
-      // Parse the JSON response
-      const cleaned = progressText.replace(/```json|```/g, '').trim();
-      progressUpdate = JSON.parse(cleaned);
-
-      // Only update if progress increased
-      const newProgress = Math.max(goal.progress || 0, progressUpdate.overall_progress || 0);
-
-      const updateData: any = { progress: newProgress };
-
-      // Update milestone completion status
-      if (progressUpdate.milestone_1_complete && !goal.milestone_1_complete) {
-        updateData.milestone_1_complete = true;
-      }
-      if (progressUpdate.milestone_2_complete && !goal.milestone_2_complete) {
-        updateData.milestone_2_complete = true;
-      }
-      if (progressUpdate.milestone_3_complete && !goal.milestone_3_complete) {
-        updateData.milestone_3_complete = true;
-      }
-
-      // Only update DB if something changed
-      if (newProgress > (goal.progress || 0) ||
-          updateData.milestone_1_complete ||
-          updateData.milestone_2_complete ||
-          updateData.milestone_3_complete) {
-        await supabase
-          .from('user_goals')
-          .update(updateData)
-          .eq('id', goal.id);
-      }
-    } catch (e) {
-      console.error('Progress evaluation error:', e);
-      // Non-critical — coaching still works without progress tracking
-    }
-  }
-
-  // 7. Return response
-  return NextResponse.json({
-    sessionId: session?.id,
-    response: parsed,
-    usage: { cost: tokenUsage.cost.toFixed(4) },
-    progressUpdate,
-  });
-}
+        model
