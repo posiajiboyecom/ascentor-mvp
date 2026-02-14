@@ -10,7 +10,6 @@ type Reply = {
   upvotes: number;
   created_at: string;
   user_id: string;
-  profiles: { full_name: string } | null;
   voted?: boolean;
 };
 
@@ -19,10 +18,8 @@ type Post = {
   content: string;
   upvotes: number;
   reply_count: number;
-  is_pinned: boolean;
   created_at: string;
   user_id: string;
-  profiles: { full_name: string } | null;
   voted?: boolean;
   replies?: Reply[];
   showReplies?: boolean;
@@ -42,10 +39,16 @@ export default function CohortFeedPage() {
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
+  const [names, setNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadAll();
   }, [cohortId]);
+
+  function getInitials(name: string) {
+    if (!name || name === 'Anonymous') return '??';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  }
 
   async function loadAll() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -74,7 +77,7 @@ export default function CohortFeedPage() {
     setCohort(cohortData);
     setMemberCount(cohortData?.member_count || 0);
 
-    // Load posts with author profiles
+    // Load posts
     const { data: postsData } = await supabase
       .from('cohort_posts')
       .select('*')
@@ -98,6 +101,29 @@ export default function CohortFeedPage() {
     }));
 
     setPosts(postsWithVotes);
+
+    // Load member names
+    const { data: members } = await supabase
+      .from('cohort_members')
+      .select('user_id')
+      .eq('cohort_id', cohortId);
+
+    if (members) {
+      const userIds = members.map((m: any) => m.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+
+      if (profiles) {
+        const nameMap: Record<string, string> = {};
+        for (const p of profiles) {
+          nameMap[p.id] = p.full_name || 'Anonymous';
+        }
+        setNames(nameMap);
+      }
+    }
+
     setLoading(false);
   }
 
@@ -112,7 +138,7 @@ export default function CohortFeedPage() {
         user_id: userId,
         content: newPost.trim(),
       })
-      .select('*, profiles:user_id(full_name)')
+      .select('*')
       .single();
 
     if (data && !error) {
@@ -125,9 +151,6 @@ export default function CohortFeedPage() {
   async function createReply(postId: string) {
     if (!replyText.trim() || !userId) return;
 
-    // Add console.log to debug
-    console.log("Attempting to reply...");
-
     const { data, error } = await supabase
       .from('cohort_replies')
       .insert({
@@ -135,14 +158,8 @@ export default function CohortFeedPage() {
         user_id: userId,
         content: replyText.trim(),
       })
-      .select('*, profiles:user_id(full_name)') // This line REQUIRES the profiles table
+      .select('*')
       .single();
-
-    // Log the result
-    if (error) {
-      console.error("Reply Error:", error.message, error.details);
-      alert(`Error: ${error.message}`); // Show alert to user
-    }
 
     if (data && !error) {
       setPosts((prev) => prev.map((p) =>
@@ -153,7 +170,7 @@ export default function CohortFeedPage() {
       setReplyText('');
       setReplyingTo(null);
     }
-}
+  }
 
   async function toggleReplies(postId: string) {
     const post = posts.find(p => p.id === postId);
@@ -164,14 +181,12 @@ export default function CohortFeedPage() {
       return;
     }
 
-    // Load replies
     const { data: replies } = await supabase
       .from('cohort_replies')
       .select('*')
       .eq('post_id', postId)
       .order('created_at');
 
-    // Check user votes on replies
     const { data: votes } = await supabase
       .from('cohort_votes')
       .select('reply_id')
@@ -184,6 +199,26 @@ export default function CohortFeedPage() {
       voted: votedReplyIds.has(r.id),
     }));
 
+    // Load names for reply authors that we don't have yet
+    const unknownIds = repliesWithVotes
+      .map((r: any) => r.user_id)
+      .filter((id: string) => !names[id]);
+
+    if (unknownIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', unknownIds);
+
+      if (profiles) {
+        const newNames = { ...names };
+        for (const p of profiles) {
+          newNames[p.id] = p.full_name || 'Anonymous';
+        }
+        setNames(newNames);
+      }
+    }
+
     setPosts((prev) => prev.map((p) =>
       p.id === postId ? { ...p, showReplies: true, replies: repliesWithVotes } : p
     ));
@@ -194,13 +229,10 @@ export default function CohortFeedPage() {
     if (!post || !userId) return;
 
     if (post.voted) {
-      // Remove vote
-      await supabase.from('cohort_votes').delete()
-        .eq('user_id', userId).eq('post_id', postId);
+      await supabase.from('cohort_votes').delete().eq('user_id', userId).eq('post_id', postId);
       await supabase.from('cohort_posts').update({ upvotes: Math.max(0, post.upvotes - 1) }).eq('id', postId);
       setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, upvotes: p.upvotes - 1, voted: false } : p));
     } else {
-      // Add vote
       await supabase.from('cohort_votes').insert({ user_id: userId, post_id: postId });
       await supabase.from('cohort_posts').update({ upvotes: post.upvotes + 1 }).eq('id', postId);
       setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, upvotes: p.upvotes + 1, voted: true } : p));
@@ -214,8 +246,7 @@ export default function CohortFeedPage() {
     if (!reply) return;
 
     if (reply.voted) {
-      await supabase.from('cohort_votes').delete()
-        .eq('user_id', userId).eq('reply_id', replyId);
+      await supabase.from('cohort_votes').delete().eq('user_id', userId).eq('reply_id', replyId);
       await supabase.from('cohort_replies').update({ upvotes: Math.max(0, reply.upvotes - 1) }).eq('id', replyId);
     } else {
       await supabase.from('cohort_votes').insert({ user_id: userId, reply_id: replyId });
@@ -237,15 +268,10 @@ export default function CohortFeedPage() {
   }
 
   async function leaveCohort() {
-    if (!userId || !confirm('Leave this cohort? You can rejoin anytime.')) return;
+    if (!userId || !confirm('Leave this cohort permanently? You can always rejoin later.')) return;
     await supabase.from('cohort_members').delete()
       .eq('cohort_id', cohortId).eq('user_id', userId);
     router.push('/community');
-  }
-
-  function getInitials(name: string | null) {
-    if (!name) return '??';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   }
 
   function timeAgo(dateStr: string) {
@@ -284,15 +310,22 @@ export default function CohortFeedPage() {
               {cohort?.name}
             </h2>
             <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-              {memberCount} members · {cohort?.category}
+              {memberCount} members · {cohort?.category || 'General'}
             </p>
           </div>
         </div>
-        <button onClick={leaveCohort}
-          className="text-xs px-3 py-1.5 rounded-lg"
-          style={{ color: 'var(--error)', border: '1px solid rgba(239,68,68,0.2)' }}>
-          Leave
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => router.push('/community')}
+            className="text-xs px-3 py-1.5 rounded-lg"
+            style={{ color: 'var(--accent)', border: '1px solid rgba(245,158,11,0.2)' }}>
+            ← Step Out
+          </button>
+          <button onClick={leaveCohort}
+            className="text-xs px-3 py-1.5 rounded-lg"
+            style={{ color: 'var(--error)', border: '1px solid rgba(239,68,68,0.2)' }}>
+            Leave
+          </button>
+        </div>
       </div>
 
       {/* New Post */}
@@ -326,15 +359,9 @@ export default function CohortFeedPage() {
         <div className="flex flex-col gap-3">
           {posts.map((post) => (
             <div key={post.id} className="rounded-xl"
-              style={{ background: 'var(--bg-card)', border: `1px solid ${post.is_pinned ? 'var(--accent)' : 'var(--border)'}` }}>
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
               {/* Post */}
               <div className="p-4">
-                {post.is_pinned && (
-                  <span className="text-[10px] font-semibold mb-2 inline-block px-2 py-0.5 rounded"
-                    style={{ background: 'rgba(245,158,11,0.09)', color: 'var(--accent)' }}>
-                    📌 PINNED
-                  </span>
-                )}
                 <div className="flex gap-2.5 items-start">
                   {/* Upvote */}
                   <div className="flex flex-col items-center gap-0.5 pt-1">
@@ -361,10 +388,10 @@ export default function CohortFeedPage() {
                           border: '1px solid rgba(245,158,11,0.33)',
                           color: 'var(--accent)',
                         }}>
-                        {getInitials(post.profiles?.full_name || null)}
+                        {getInitials(names[post.user_id] || 'Anonymous')}
                       </div>
                       <span className="text-xs font-semibold" style={{ color: 'var(--text)' }}>
-                        {post.profiles?.full_name || 'Anonymous'}
+                        {names[post.user_id] || 'Anonymous'}
                       </span>
                       <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
                         {timeAgo(post.created_at)}
@@ -420,7 +447,6 @@ export default function CohortFeedPage() {
                   {post.replies.map((reply) => (
                     <div key={reply.id} className="flex gap-2 py-2.5"
                       style={{ borderBottom: '1px solid var(--border)' }}>
-                      {/* Reply upvote */}
                       <button onClick={() => upvoteReply(post.id, reply.id)}
                         className="flex flex-col items-center gap-0 shrink-0"
                         style={{ color: reply.voted ? 'var(--accent)' : 'var(--text-dim)' }}>
@@ -429,8 +455,16 @@ export default function CohortFeedPage() {
                       </button>
                       <div className="flex-1">
                         <div className="flex items-center gap-1.5 mb-1">
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-semibold"
+                            style={{
+                              background: 'linear-gradient(135deg, rgba(139,92,246,0.13), rgba(139,92,246,0.27))',
+                              border: '1px solid rgba(139,92,246,0.33)',
+                              color: 'var(--purple)',
+                            }}>
+                            {getInitials(names[reply.user_id] || 'Anonymous')}
+                          </div>
                           <span className="text-xs font-semibold" style={{ color: 'var(--text)' }}>
-                            {reply.profiles?.full_name || 'Anonymous'}
+                            {names[reply.user_id] || 'Anonymous'}
                           </span>
                           <span className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
                             {timeAgo(reply.created_at)}

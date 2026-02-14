@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
 
 const SESSION_TYPES = [
   { id: 'challenge_navigation', label: 'Navigate a Challenge', icon: '🧭' },
@@ -25,9 +24,7 @@ export default function CoachPage() {
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [sessionType, setSessionType] = useState('challenge_navigation');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const supabase = createClient();
 
-  // Load previous chat history on mount
   useEffect(() => {
     loadHistory();
   }, []);
@@ -37,31 +34,26 @@ export default function CoachPage() {
   }, [messages, loading]);
 
   async function loadHistory() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoadingHistory(false); return; }
+    try {
+      const res = await fetch('/api/coach/history');
+      const { sessions } = await res.json();
 
-    const { data: sessions } = await supabase
-      .from('coaching_sessions')
-      .select('user_input, ai_response, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: true })
-      .limit(50);
-
-    if (sessions && sessions.length > 0) {
-      const history: Message[] = [];
-      for (const s of sessions) {
-        // User message
-        history.push({ role: 'user', content: s.user_input });
-        // AI response
-        const ai = s.ai_response || {};
-        history.push({
-          role: 'assistant',
-          reflection: ai.reflection || null,
-          question: ai.question || null,
-          action: ai.action || null,
-        });
+      if (sessions && sessions.length > 0) {
+        const history: Message[] = [];
+        for (const s of sessions) {
+          history.push({ role: 'user', content: s.user_input });
+          const ai = s.ai_response || {};
+          history.push({
+            role: 'assistant',
+            reflection: ai.reflection || null,
+            question: ai.question || null,
+            action: ai.action || null,
+          });
+        }
+        setMessages(history);
       }
-      setMessages(history);
+    } catch (e) {
+      console.error('Failed to load history:', e);
     }
     setLoadingHistory(false);
   }
@@ -81,6 +73,10 @@ export default function CoachPage() {
       });
       const data = await res.json();
 
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to contact coach');
+      }
+
       if (data.full_response) {
         setMessages((m) => [...m, {
           role: 'assistant',
@@ -89,7 +85,6 @@ export default function CoachPage() {
           action: data.full_response.action,
         }]);
       } else if (data.response) {
-        // Handle both response formats
         const resp = typeof data.response === 'string'
           ? { reflection: null, question: data.response, action: null }
           : data.response;

@@ -21,10 +21,10 @@ export default function CommunityPage() {
 
   async function loadData() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
 
     const [cohortsRes, membershipRes] = await Promise.all([
-      supabase.from('cohorts').select('*').eq('is_active', true).order('member_count', { ascending: false }),
+      supabase.from('cohorts').select('*').order('member_count', { ascending: false }),
       supabase.from('cohort_members').select('cohort_id').eq('user_id', user.id),
     ]);
 
@@ -49,12 +49,10 @@ export default function CommunityPage() {
     });
 
     if (!error) {
-      // Immediately update UI
       setMyCohortIds((prev) => new Set([...prev, cohortId]));
       setCohorts((prev) => prev.map((c) =>
         c.id === cohortId ? { ...c, member_count: (c.member_count || 0) + 1 } : c
       ));
-      // Show "Just joined" feedback
       setJustJoined(cohortId);
       setTimeout(() => setJustJoined(null), 3000);
     }
@@ -65,7 +63,7 @@ export default function CommunityPage() {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!confirm('Leave this cohort?')) return;
+    if (!confirm('Leave this cohort? You can rejoin anytime.')) return;
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -142,12 +140,12 @@ export default function CommunityPage() {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
                       style={{ background: 'rgba(245,158,11,0.06)' }}>
-                      {cohort.icon}
+                      {cohort.icon || '👥'}
                     </div>
                     <div className="flex-1">
                       <h4 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{cohort.name}</h4>
                       <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-                        {cohort.member_count} members · {cohort.category}
+                        {cohort.member_count || 0} members · {cohort.category || 'General'}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -208,16 +206,16 @@ export default function CommunityPage() {
               <div className="flex gap-3">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
                   style={{ background: 'rgba(245,158,11,0.06)' }}>
-                  {cohort.icon}
+                  {cohort.icon || '👥'}
                 </div>
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold mb-0.5" style={{ color: 'var(--text)' }}>{cohort.name}</h4>
                   <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>{cohort.description}</p>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-dim)' }}>
-                      <span>👥 {cohort.member_count}/{cohort.max_members}</span>
+                      <span>👥 {cohort.member_count || 0}/{cohort.max_members || 1000}</span>
                       <span>·</span>
-                      <span>{cohort.category}</span>
+                      <span>{cohort.category || 'General'}</span>
                     </div>
                     <button
                       onClick={() => joinCohort(cohort.id)}
@@ -229,7 +227,7 @@ export default function CommunityPage() {
                   </div>
                   <div className="w-full h-0.5 rounded-full mt-2 overflow-hidden" style={{ background: 'var(--bg-input)' }}>
                     <div className="h-full rounded-full"
-                      style={{ width: `${(cohort.member_count / cohort.max_members) * 100}%`, background: 'var(--teal)' }} />
+                      style={{ width: `${((cohort.member_count || 0) / (cohort.max_members || 1000)) * 100}%`, background: 'var(--teal)' }} />
                   </div>
                 </div>
               </div>
