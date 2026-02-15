@@ -1,27 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Use service role key for server-side ops (never expose to client)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ----------------------------------------------------------
-// POST /api/checkout/validate-promo
-// Body: { code: string }
-// ----------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
-    const { code, action } = await req.json();
+    const body = await req.json();
+    const { action } = body;
 
-    // ── Validate promo code ──
+    /* ── Validate promo code ── */
     if (action === 'validate-promo') {
+      const { code } = body;
       if (!code || typeof code !== 'string') {
-        return NextResponse.json(
-          { valid: false, error: 'Please enter a promo code' },
-          { status: 400 }
-        );
+        return NextResponse.json({ valid: false, error: 'Please enter a promo code' }, { status: 400 });
       }
 
       const { data, error } = await supabase
@@ -29,10 +23,7 @@ export async function POST(req: NextRequest) {
 
       if (error) {
         console.error('Promo validation error:', error);
-        return NextResponse.json(
-          { valid: false, error: 'Something went wrong. Try again.' },
-          { status: 500 }
-        );
+        return NextResponse.json({ valid: false, error: 'Something went wrong. Try again.' }, { status: 500 });
       }
 
       const result = data?.[0];
@@ -52,38 +43,36 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ── Create subscription (after successful payment or free access) ──
+    /* ── Create subscription ── */
     if (action === 'create-subscription') {
-      const { userId, promoId, promoCode, provider, providerReference, amountCents } = await req.json();
+      const { userId, promoCode, provider, providerReference, amountCents } = body;
 
       if (!userId) {
         return NextResponse.json({ error: 'User ID required' }, { status: 400 });
       }
 
-      // Determine plan type
-      let plan = 'standard';
-      let status = 'trialing'; // Everyone starts with 7-day trial
       const now = new Date();
       const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const periodEnd = new Date(now.getTime() + 37 * 24 * 60 * 60 * 1000); // trial + 30 days
+      const periodEnd = new Date(now.getTime() + 37 * 24 * 60 * 60 * 1000);
       const refundUntil = new Date(trialEnd.getTime() + 30 * 24 * 60 * 60 * 1000);
 
+      let plan = 'standard';
+      let status = 'trialing';
+      let promoId = null;
+
+      // Validate promo if provided
       if (promoCode) {
         const promoData = await supabase
           .rpc('validate_promo_code', { input_code: promoCode.toUpperCase() });
-
         const promo = promoData.data?.[0];
         if (promo?.is_valid) {
-          if (promo.promo_type === 'tester') {
-            plan = 'tester';
-            status = 'active'; // Testers skip trial, go straight to active
-          } else if (promo.promo_type === 'founders') {
-            plan = 'founder';
-          }
+          promoId = promo.promo_id;
+          if (promo.promo_type === 'tester') { plan = 'tester'; status = 'active'; }
+          else if (promo.promo_type === 'founders') { plan = 'founder'; }
         }
       }
 
-      // Create subscription
+      // Upsert subscription
       const { data: sub, error: subError } = await supabase
         .from('subscriptions')
         .upsert({
@@ -92,7 +81,7 @@ export async function POST(req: NextRequest) {
           status,
           price_cents: amountCents || 0,
           currency: 'USD',
-          promo_code_id: promoId || null,
+          promo_code_id: promoId,
           payment_provider: provider || 'free',
           provider_reference: providerReference || null,
           trial_starts_at: now.toISOString(),
@@ -106,7 +95,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (subError) {
-        console.error('Subscription creation error:', subError);
+        console.error('Subscription error:', subError);
         return NextResponse.json({ error: 'Failed to create subscription' }, { status: 500 });
       }
 
@@ -143,7 +132,6 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-
   } catch (err) {
     console.error('Checkout API error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
