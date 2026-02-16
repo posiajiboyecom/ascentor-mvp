@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { retrieveContext } from '@/lib/rag';
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 
@@ -9,6 +10,15 @@ You are an expert leadership coach for African professionals aged 20-40.
 Use the Socratic method. Max 150 words. Ask ONE question at a time.
 Be culturally aware of hierarchical cultures, ethnic/family networks,
 and that career decisions carry higher economic stakes.
+
+You have access to a curated knowledge base covering leadership frameworks,
+career strategy, African business context, and professional development.
+When relevant knowledge is provided, weave it naturally into your coaching —
+reference frameworks by name, suggest specific techniques, and give actionable
+advice grounded in the knowledge. Don't just quote it — apply it to the user's
+specific situation.
+
+If no relevant knowledge is provided, coach from your general expertise.
 </role>
 <output_format>
 <reflection>1-2 sentences acknowledging what you hear</reflection>
@@ -27,16 +37,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Not logged in' }, { status: 401 });
     }
 
-    // 2. Parse Input (FIXED: Handling 'message' from frontend)
+    // 2. Parse Input
     const body = await request.json();
-    const userInput = body.userInput || body.message; // <--- The Fix
+    const userInput = body.userInput || body.message;
     const sessionType = body.sessionType || 'challenge_navigation';
 
     if (!userInput) {
       return NextResponse.json({ error: "Message cannot be empty" }, { status: 400 });
     }
 
-    // 3. Load Context
+    // 3. Load User Context
     const [profileRes, goalRes, sessionsRes, commitmentsRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
       supabase.from('user_goals').select('*').eq('user_id', user.id)
@@ -50,11 +60,24 @@ export async function POST(request: Request) {
     const profile = profileRes.data;
     const goal = goalRes.data;
 
-    const recentHistory = sessionsRes.data?.map((s: any) => 
+    const recentHistory = sessionsRes.data?.map((s: any) =>
       `User: ${s.user_input}\nCoach: ${s.ai_response?.question || ''}`
     ).join('\n---\n') || 'None';
 
-    // 4. Build Prompt
+    // 4. RAG Retrieval — search knowledge base
+    let knowledgeBlock = '';
+    try {
+      const { contextBlock } = await retrieveContext(userInput, {
+        topK: 10,
+        topN: 3,
+      });
+      knowledgeBlock = contextBlock;
+    } catch (ragError) {
+      console.error('RAG retrieval failed (continuing without):', ragError);
+      // Coach still works without RAG — just less informed
+    }
+
+    // 5. Build Prompt with RAG context
     const context = `
 <user_profile>
 Name: ${profile?.full_name || 'Unknown'}
@@ -68,9 +91,10 @@ Challenge: ${profile?.biggest_challenge || 'Not specified'}
 ${commitmentsRes.data?.map((c: any) => `- ${c.commitment_text}`).join('\n') || 'None'}
 </pending_commitments>
 <recent_history>${recentHistory}</recent_history>
+${knowledgeBlock ? `<relevant_knowledge>\n${knowledgeBlock}\n</relevant_knowledge>` : ''}
 <user_message>${userInput}</user_message>`;
 
-    // 5. Call Claude
+    // 6. Call Claude
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 500,
@@ -81,24 +105,28 @@ ${commitmentsRes.data?.map((c: any) => `- ${c.commitment_text}`).join('\n') || '
     // @ts-ignore
     const aiText = response.content[0].type === 'text' ? response.content[0].text : '';
 
-    // 6. Parse Response
+    // 7. Parse Response
     const parsed = {
       reflection: aiText.match(/<reflection>([\s\S]*?)<\/reflection>/)?.[1]?.trim() || "I hear you.",
-      question: aiText.match(/<question>([\s\S]*?)<\/question>/)?.[1]?.trim() || aiText, 
+      question: aiText.match(/<question>([\s\S]*?)<\/question>/)?.[1]?.trim() || aiText,
       action: aiText.match(/<action>([\s\S]*?)<\/action>/)?.[1]?.trim() || null,
     };
 
     const cost = (response.usage.input_tokens / 1_000_000) * 3 + (response.usage.output_tokens / 1_000_000) * 15;
 
-    // 7. Save to Database
+    // 8. Save to Database
     const { data: session, error: dbError } = await supabase
       .from('coaching_sessions')
       .insert({
         user_id: user.id,
         session_type: sessionType,
-        user_input: userInput, // Now this is definitely not null
+        user_input: userInput,
         ai_response: parsed,
-        token_usage: { cost },
+        token_usage: {
+          cost,
+          rag_used: !!knowledgeBlock,
+          rag_chunks: knowledgeBlock ? 3 : 0,
+        },
       })
       .select()
       .single();
@@ -107,7 +135,7 @@ ${commitmentsRes.data?.map((c: any) => `- ${c.commitment_text}`).join('\n') || '
       console.error("DB Save Error:", dbError);
     }
 
-    // 8. Handle Commitments
+    // 9. Handle Commitments
     if (parsed.action && session) {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 7);
@@ -126,7 +154,7 @@ ${commitmentsRes.data?.map((c: any) => `- ${c.commitment_text}`).join('\n') || '
     });
 
   } catch (error: any) {
-    console.error("API Crash Log:", error); // Check your VS Code terminal for this if it fails again
+    console.error("API Crash Log:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
