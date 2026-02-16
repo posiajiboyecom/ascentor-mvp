@@ -173,7 +173,9 @@ export async function addChunks(
         ...chunk.metadata,
       },
     }));
-    await target.upsert(batch);
+    await target.upsert({
+  records: batch
+});
   }
 
   console.log(`✓ Upserted ${chunks.length} chunks to namespace "${namespace}"`);
