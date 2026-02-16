@@ -39,16 +39,10 @@ export default function CohortFeedPage() {
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
-  const [names, setNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadAll();
   }, [cohortId]);
-
-  function getInitials(name: string) {
-    if (!name || name === 'Anonymous') return '??';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  }
 
   async function loadAll() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -101,29 +95,6 @@ export default function CohortFeedPage() {
     }));
 
     setPosts(postsWithVotes);
-
-    // Load member names
-    const { data: members } = await supabase
-      .from('cohort_members')
-      .select('user_id')
-      .eq('cohort_id', cohortId);
-
-    if (members) {
-      const userIds = members.map((m: any) => m.user_id);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', userIds);
-
-      if (profiles) {
-        const nameMap: Record<string, string> = {};
-        for (const p of profiles) {
-          nameMap[p.id] = p.full_name || 'Anonymous';
-        }
-        setNames(nameMap);
-      }
-    }
-
     setLoading(false);
   }
 
@@ -198,26 +169,6 @@ export default function CohortFeedPage() {
       ...r,
       voted: votedReplyIds.has(r.id),
     }));
-
-    // Load names for reply authors that we don't have yet
-    const unknownIds = repliesWithVotes
-      .map((r: any) => r.user_id)
-      .filter((id: string) => !names[id]);
-
-    if (unknownIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', unknownIds);
-
-      if (profiles) {
-        const newNames = { ...names };
-        for (const p of profiles) {
-          newNames[p.id] = p.full_name || 'Anonymous';
-        }
-        setNames(newNames);
-      }
-    }
 
     setPosts((prev) => prev.map((p) =>
       p.id === postId ? { ...p, showReplies: true, replies: repliesWithVotes } : p
@@ -310,16 +261,18 @@ export default function CohortFeedPage() {
               {cohort?.name}
             </h2>
             <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-              {memberCount} members · {cohort?.category || 'General'}
+              {memberCount} members · {cohort?.category}
             </p>
           </div>
         </div>
         <div className="flex gap-2">
+          {/* Step Out — go back without leaving */}
           <button onClick={() => router.push('/community')}
             className="text-xs px-3 py-1.5 rounded-lg"
             style={{ color: 'var(--accent)', border: '1px solid rgba(245,158,11,0.2)' }}>
             ← Step Out
           </button>
+          {/* Leave — actually leave the cohort */}
           <button onClick={leaveCohort}
             className="text-xs px-3 py-1.5 rounded-lg"
             style={{ color: 'var(--error)', border: '1px solid rgba(239,68,68,0.2)' }}>
@@ -388,10 +341,10 @@ export default function CohortFeedPage() {
                           border: '1px solid rgba(245,158,11,0.33)',
                           color: 'var(--accent)',
                         }}>
-                        {getInitials(names[post.user_id] || 'Anonymous')}
+                        👤
                       </div>
                       <span className="text-xs font-semibold" style={{ color: 'var(--text)' }}>
-                        {names[post.user_id] || 'Anonymous'}
+                        Member
                       </span>
                       <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
                         {timeAgo(post.created_at)}
@@ -455,16 +408,8 @@ export default function CohortFeedPage() {
                       </button>
                       <div className="flex-1">
                         <div className="flex items-center gap-1.5 mb-1">
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-semibold"
-                            style={{
-                              background: 'linear-gradient(135deg, rgba(139,92,246,0.13), rgba(139,92,246,0.27))',
-                              border: '1px solid rgba(139,92,246,0.33)',
-                              color: 'var(--purple)',
-                            }}>
-                            {getInitials(names[reply.user_id] || 'Anonymous')}
-                          </div>
                           <span className="text-xs font-semibold" style={{ color: 'var(--text)' }}>
-                            {names[reply.user_id] || 'Anonymous'}
+                            Member
                           </span>
                           <span className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
                             {timeAgo(reply.created_at)}
