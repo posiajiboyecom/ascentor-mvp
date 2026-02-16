@@ -31,7 +31,7 @@ export default function SignUpPage() {
     if (error) {
       setError(error.message);
     } else {
-      router.push('/dashboard'); // Or wherever you send users after signup
+      router.push('/checkout'); // Or wherever you send users after signup
     }
     setLoading(false);
   }
