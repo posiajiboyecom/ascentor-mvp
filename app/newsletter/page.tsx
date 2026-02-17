@@ -88,7 +88,7 @@ export default function NewsletterPage() {
             <button type="submit" disabled={status === 'loading' || !email.trim()}
               className="w-full py-3.5 rounded-xl text-sm font-semibold disabled:opacity-50 transition-transform hover:scale-[1.02]"
               style={{ background: '#F59E0B', color: '#000' }}>
-              {status === 'loading' ? 'Subscribing...' : 'Subscribe — it's free'}
+              {status === 'loading' ? 'Subscribing...' : "Subscribe — it's free"}
             </button>
             {status === 'error' && (
               <p className="text-xs mt-3 text-center" style={{ color: '#EF4444' }}>Something went wrong. Try again.</p>
