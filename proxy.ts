@@ -29,7 +29,7 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // If trying to access a protected page without being logged in → redirect to login
-  const protectedPaths = ['/dashboard', '/coach', '/experts', '/community', '/learn'];
+  const protectedPaths = ['/dashboard', '/coach', '/experts', '/community', '/learn', '/admin'];
   const isProtected = protectedPaths.some(p => request.nextUrl.pathname.startsWith(p));
 
   if (isProtected && !user) {
