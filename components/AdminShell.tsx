@@ -12,6 +12,7 @@ const NAV = [
   { href: '/admin/experts', label: 'Expert Events', icon: '🎓' },
   { href: '/admin/courses', label: 'Courses', icon: '📚' },
   { href: '/admin/coaching', label: 'Chat Data', icon: '💬' },
+  { href: '/admin/blog', label: 'Blog', icon: '📝' },
 ];
 
 export default function AdminShell({
