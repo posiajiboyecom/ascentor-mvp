@@ -3,45 +3,6 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-const FALLBACK_EXPERTS = [
-  {
-    id: '1',
-    title: 'Breaking Through the Glass Ceiling in African Tech',
-    expert_name: 'Amara Obi',
-    expert_bio: '15+ years scaling engineering teams across West Africa',
-    scheduled_at: new Date(Date.now() + 6 * 86400000).toISOString(),
-    max_participants: 50,
-    status: 'scheduled',
-    zoom_join_url: '',
-    zoom_registration_url: '',
-    recording_url: '',
-  },
-  {
-    id: '2',
-    title: 'From IC to C-Suite: The Untold Playbook',
-    expert_name: 'Kwame Asante',
-    expert_bio: 'Built 3 companies from zero. Forbes Africa 30 Under 30.',
-    scheduled_at: new Date(Date.now() + 13 * 86400000).toISOString(),
-    max_participants: 50,
-    status: 'scheduled',
-    zoom_join_url: '',
-    zoom_registration_url: '',
-    recording_url: '',
-  },
-  {
-    id: '3',
-    title: 'Navigating Office Politics Without Losing Yourself',
-    expert_name: 'Fatima Hassan',
-    expert_bio: 'Led M-Pesa expansion across 7 countries',
-    scheduled_at: new Date(Date.now() + 20 * 86400000).toISOString(),
-    max_participants: 50,
-    status: 'scheduled',
-    zoom_join_url: '',
-    zoom_registration_url: '',
-    recording_url: '',
-  },
-];
-
 export default function ExpertsPage() {
   const [experts, setExperts] = useState<any[]>([]);
   const [registered, setRegistered] = useState<Set<string>>(new Set());
@@ -59,11 +20,11 @@ export default function ExpertsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Load upcoming sessions
+    // Load upcoming sessions from database
     const { data: sessions } = await supabase
       .from('expert_sessions')
       .select('*')
-      .gte('scheduled_at', new Date().toISOString())
+      .in('status', ['scheduled', 'live'])
       .order('scheduled_at');
 
     // Load user registrations
@@ -77,10 +38,9 @@ export default function ExpertsPage() {
       .from('expert_sessions')
       .select('*')
       .eq('status', 'completed')
-      .not('recording_url', 'is', null)
       .order('scheduled_at', { ascending: false });
 
-    setExperts(sessions?.length ? sessions : FALLBACK_EXPERTS);
+    setExperts(sessions || []);
     setRegistered(new Set(regs?.map((r: any) => r.session_id) || []));
     setRecordings(pastSessions || []);
     setLoading(false);
@@ -91,7 +51,6 @@ export default function ExpertsPage() {
     if (!user) return;
 
     if (registered.has(sessionId)) {
-      // Unregister
       await supabase.from('session_registrations')
         .delete()
         .eq('session_id', sessionId)
@@ -102,14 +61,11 @@ export default function ExpertsPage() {
         return next;
       });
     } else {
-      // Register
       await supabase.from('session_registrations').insert({
         session_id: sessionId,
         user_id: user.id,
       });
       setRegistered((prev) => new Set([...prev, sessionId]));
-
-      // Open Zoom registration if URL exists
       if (zoomRegUrl) {
         window.open(zoomRegUrl, '_blank');
       }
@@ -119,7 +75,6 @@ export default function ExpertsPage() {
   function isLive(scheduledAt: string) {
     const start = new Date(scheduledAt).getTime();
     const now = Date.now();
-    // Session is "live" from 5 min before start to 2 hours after
     return now >= start - 5 * 60000 && now <= start + 2 * 3600000;
   }
 
@@ -127,6 +82,18 @@ export default function ExpertsPage() {
     const d = new Date(scheduledAt);
     const now = new Date();
     return d.toDateString() === now.toDateString();
+  }
+
+  function extractYoutubeEmbed(url: string): string {
+    if (!url) return '';
+    // Already an embed URL
+    if (url.includes('youtube.com/embed/')) return url;
+    // Extract ID from various YouTube URL formats
+    const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (match) return `https://www.youtube.com/embed/${match[1]}`;
+    // Assume it's a raw ID
+    if (url.length === 11 && !url.includes('/')) return `https://www.youtube.com/embed/${url}`;
+    return url;
   }
 
   if (loading) {
@@ -198,9 +165,15 @@ export default function ExpertsPage() {
       {/* Upcoming Sessions */}
       {tab === 'upcoming' && (
         <div className="flex flex-col gap-4">
+          {experts.length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-3xl mb-3">🎓</div>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No upcoming sessions. Check back soon!</p>
+            </div>
+          )}
           {experts.map((expert, i) => {
             const date = new Date(expert.scheduled_at);
-            const initials = expert.expert_name.split(' ').map((n: string) => n[0]).join('');
+            const initials = expert.expert_name?.split(' ').map((n: string) => n[0]).join('') || '?';
             const isReg = registered.has(expert.id);
             const live = isLive(expert.scheduled_at);
             const today = isToday(expert.scheduled_at);
@@ -213,15 +186,12 @@ export default function ExpertsPage() {
                   border: `1px solid ${live ? 'var(--error)' : 'var(--border)'}`,
                   animationDelay: `${i * 0.1}s`,
                 }}>
-
-                {/* Live badge */}
                 {live && (
                   <div className="flex items-center gap-2 mb-3">
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                     <span className="text-xs font-bold" style={{ color: 'var(--error)' }}>LIVE NOW</span>
                   </div>
                 )}
-
                 <div className="flex gap-4">
                   <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold"
                     style={{
@@ -246,13 +216,12 @@ export default function ExpertsPage() {
                         {live ? '🔴 Live' : today ? 'Today' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
                     </div>
-                    <p className="text-[13px] mt-2" style={{ color: 'var(--text-muted)' }}>{expert.expert_bio}</p>
-
+                    {expert.expert_bio && (
+                      <p className="text-[13px] mt-2" style={{ color: 'var(--text-muted)' }}>{expert.expert_bio}</p>
+                    )}
                     <div className="text-xs mt-3 mb-3" style={{ color: 'var(--text-dim)' }}>
                       📅 {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · ⏰ {date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                     </div>
-
-                    {/* Action buttons */}
                     <div className="flex gap-2">
                       {live && isReg && expert.zoom_join_url ? (
                         <button onClick={() => window.open(expert.zoom_join_url, '_blank')}
@@ -290,14 +259,13 @@ export default function ExpertsPage() {
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No recordings yet. Check back after upcoming sessions.</p>
             </div>
           ) : (
-            recordings.map((rec, i) => (
+            recordings.map((rec) => (
               <div key={rec.id} className="rounded-xl overflow-hidden"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                {/* Video embed */}
                 {rec.recording_url && (
                   <div className="relative" style={{ paddingBottom: '56.25%' }}>
                     <iframe
-                      src={rec.recording_url}
+                      src={extractYoutubeEmbed(rec.recording_url)}
                       className="absolute inset-0 w-full h-full"
                       allow="fullscreen"
                       style={{ border: 'none' }}
