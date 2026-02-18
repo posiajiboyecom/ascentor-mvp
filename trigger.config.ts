@@ -1,7 +1,8 @@
-import type { TriggerConfig } from "@trigger.dev/sdk/v3";
+import { defineConfig } from "@trigger.dev/sdk/v3";
 
-export const config: TriggerConfig = {
-  project: process.env.TRIGGER_PROJECT_ID!,
+export default defineConfig({
+  project: "proj_zwrdqutfrrdneuwbjvxi", // Use your Project ID string directly or via env
+  directories: ["./ascentor/trigger"],
   retries: {
     enabledInDev: true,
     default: {
@@ -11,5 +12,4 @@ export const config: TriggerConfig = {
       factor: 2,
     },
   },
-  dirs: ["./src/trigger"],
-};
+});
