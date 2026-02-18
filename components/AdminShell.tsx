@@ -16,6 +16,25 @@ const NAV = [
   { href: '/admin/newsletter', label: 'Newsletter', icon: '📨' },
 ];
 
+const MOBILE_STYLES = `
+  /* Scrollable tables on mobile */
+  @media (max-width: 768px) {
+    .admin-content .grid-cols-12 {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+    .admin-content .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 -16px;
+      padding: 0 16px;
+    }
+    .admin-content .table-scroll > div {
+      min-width: 640px;
+    }
+  }
+`;
+
 export default function AdminShell({
   children,
   name,
@@ -39,6 +58,7 @@ export default function AdminShell({
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+      <style>{MOBILE_STYLES}</style>
 
       {/* Mobile header */}
       <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b"
@@ -162,8 +182,8 @@ export default function AdminShell({
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-5xl mx-auto px-4 lg:px-6 py-4 lg:py-6">
+        <main className="flex-1 overflow-x-hidden">
+          <div className="admin-content max-w-5xl mx-auto px-4 lg:px-6 py-4 lg:py-6">
             {children}
           </div>
         </main>
