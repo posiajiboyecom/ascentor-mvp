@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     description: 'AI coaching + expert sessions + peer cohorts. Leadership development built for Africa.',
   },
   robots: { index: true, follow: true },
-  alternates: { canonical: 'https://ascentor.co' },
+  alternates: { canonical: 'https://ascentorbi.com' },
 };
 
 export default function LandingPage() {
