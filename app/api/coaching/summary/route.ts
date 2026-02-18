@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { tasks } from "@trigger.dev/sdk/v3";
-import type { processCoachingSummary } from "@/trigger/coaching-summary";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { tasks } from "@trigger.dev/sdk/v3";
 
 export async function POST(req: NextRequest) {
   try {
