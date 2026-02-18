@@ -1,35 +1,15 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 
 const STATUSES = ['scheduled', 'live', 'completed', 'cancelled'] as const;
 
-/**
- * 1. Main Entry Point
- * Wraps the logic in Suspense to handle useSearchParams()
- */
-export default function AdminExpertsPage() {
-  return (
-    <Suspense fallback={
-      <div className="py-20 text-center">
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading...</p>
-      </div>
-    }>
-      <AdminExpertsPageInner />
-    </Suspense>
-  );
-}
-
-/**
- * 2. The Logic Component
- */
-function AdminExpertsPageInner() {
+export default function AdminExpertsPageInner() {
   const supabase = createClient();
   const searchParams = useSearchParams();
 
-  // State
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(searchParams.get('action') === 'create');
@@ -38,46 +18,29 @@ function AdminExpertsPageInner() {
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
 
   const emptyForm = {
-    title: '', 
-    description: '', 
-    expert_name: '', 
-    expert_bio: '',
-    scheduled_at: '', 
-    duration_minutes: 60, 
-    max_participants: 50,
-    status: 'scheduled' as string, 
-    zoom_join_url: '', 
-    zoom_registration_url: '',
+    title: '', description: '', expert_name: '', expert_bio: '',
+    scheduled_at: '', duration_minutes: 60, max_participants: 50,
+    status: 'scheduled' as string, zoom_join_url: '', zoom_registration_url: '',
   };
-  
   const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => { 
-    loadEvents(); 
-  }, []);
+  useEffect(() => { loadEvents(); }, []);
 
   async function loadEvents() {
-    const { data } = await supabase
-      .from('expert_sessions')
-      .select('*')
-      .order('scheduled_at', { ascending: false });
-    
+    const { data } = await supabase.from('expert_sessions').select('*').order('scheduled_at', { ascending: false });
     setEvents(data || []);
     setLoading(false);
   }
 
   function openEdit(event: any) {
     setForm({
-      title: event.title || '', 
-      description: event.description || '',
-      expert_name: event.expert_name || '', 
-      expert_bio: event.expert_bio || '',
+      title: event.title || '', description: event.description || '',
+      expert_name: event.expert_name || '', expert_bio: event.expert_bio || '',
       scheduled_at: event.scheduled_at ? new Date(event.scheduled_at).toISOString().slice(0, 16) : '',
       duration_minutes: event.duration_minutes || 60,
       max_participants: event.max_participants || 50,
       status: event.status || 'scheduled',
-      zoom_join_url: event.zoom_join_url || '', 
-      zoom_registration_url: event.zoom_registration_url || '',
+      zoom_join_url: event.zoom_join_url || '', zoom_registration_url: event.zoom_registration_url || '',
     });
     setEditing(event);
     setShowForm(true);
@@ -118,9 +81,10 @@ function AdminExpertsPageInner() {
     } else {
       setShowForm(false);
       setEditing(null);
-      loadEvents(); 
     }
+
     setSaving(false);
+    loadEvents();
   }
 
   async function handleDelete(id: string, title: string) {
@@ -142,11 +106,10 @@ function AdminExpertsPageInner() {
   }
 
   return (
-    <div className="animate-fade-up p-4">
-      {/* Header */}
+    <div className="animate-fade-up">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-semibold"
+          <h1 className="text-xl md:text-2xl font-semibold"
             style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
             Expert Events
           </h1>
@@ -155,15 +118,14 @@ function AdminExpertsPageInner() {
           </p>
         </div>
         <button onClick={openCreate}
-          className="px-4 py-2 rounded-lg text-sm font-semibold"
+          className="px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap"
           style={{ background: 'var(--accent)', color: '#000' }}>
           + New Event
         </button>
       </div>
 
-      {/* Form Section */}
       {showForm && (
-        <div className="rounded-xl p-5 mb-6"
+        <div className="rounded-xl p-4 md:p-5 mb-6"
           style={{ background: 'var(--bg-card)', border: '1px solid var(--accent)' }}>
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>
             {editing ? 'Edit Event' : 'New Expert Event'}
@@ -173,13 +135,11 @@ function AdminExpertsPageInner() {
               style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
               value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
               placeholder="Event title" />
-            
             <textarea className="w-full px-3.5 py-2.5 text-sm rounded-xl resize-none"
               style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
               value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Event description" rows={2} />
-            
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input className="px-3.5 py-2.5 text-sm rounded-xl"
                 style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
                 value={form.expert_name} onChange={(e) => setForm({ ...form, expert_name: e.target.value })}
@@ -189,8 +149,7 @@ function AdminExpertsPageInner() {
                 value={form.expert_bio} onChange={(e) => setForm({ ...form, expert_bio: e.target.value })}
                 placeholder="Expert bio (short)" />
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-[11px] font-bold mb-1 block" style={{ color: 'var(--text-dim)' }}>Date & Time</label>
                 <input type="datetime-local" className="w-full px-3 py-2.5 text-sm rounded-xl"
@@ -206,8 +165,7 @@ function AdminExpertsPageInner() {
                 </select>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input className="px-3.5 py-2.5 text-sm rounded-xl"
                 style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
                 value={form.zoom_registration_url}
@@ -219,7 +177,6 @@ function AdminExpertsPageInner() {
                 onChange={(e) => setForm({ ...form, zoom_join_url: e.target.value })}
                 placeholder="Zoom join URL (for live day)" />
             </div>
-
             <div className="flex gap-2 mt-2">
               <button onClick={handleSave}
                 disabled={saving || !form.title.trim() || !form.expert_name.trim() || !form.scheduled_at}
@@ -237,7 +194,6 @@ function AdminExpertsPageInner() {
         </div>
       )}
 
-      {/* Tabs */}
       <div className="flex gap-1 mb-5 p-1 rounded-lg" style={{ background: 'var(--bg-input)' }}>
         {(['upcoming', 'past'] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
@@ -251,21 +207,20 @@ function AdminExpertsPageInner() {
         ))}
       </div>
 
-      {/* List Section */}
       <div className="flex flex-col gap-3">
         {(tab === 'upcoming' ? upcoming : past).map((e) => (
           <div key={e.id} className="rounded-xl p-4"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <div className="flex justify-between items-start mb-2">
-              <div>
-                <h4 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{e.title}</h4>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{e.title}</h4>
                 <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
                   {e.expert_name} · {new Date(e.scheduled_at).toLocaleDateString('en-US', {
                     weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
                   })}
                 </p>
               </div>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ml-2"
                 style={{
                   background: e.status === 'scheduled' ? 'rgba(59,130,246,0.09)' : e.status === 'live' ? 'rgba(239,68,68,0.09)' : e.status === 'completed' ? 'rgba(16,185,129,0.09)' : 'rgba(107,114,128,0.09)',
                   color: e.status === 'scheduled' ? 'var(--blue)' : e.status === 'live' ? 'var(--error)' : e.status === 'completed' ? 'var(--success)' : 'var(--text-dim)',
@@ -274,8 +229,8 @@ function AdminExpertsPageInner() {
               </span>
             </div>
             <div className="flex gap-3 items-center text-[11px] mb-3" style={{ color: 'var(--text-dim)' }}>
-              {e.zoom_registration_url && <span>📋 Reg link set</span>}
-              {e.zoom_join_url && <span>🎥 Join link set</span>}
+              {e.zoom_registration_url && <span>📋 Reg link</span>}
+              {e.zoom_join_url && <span>🎥 Join link</span>}
             </div>
             <div className="flex gap-2">
               <button onClick={() => openEdit(e)}
