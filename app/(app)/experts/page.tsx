@@ -25,7 +25,7 @@ export default function ExpertsPage() {
     setLoading(false);
   }
 
-  async function handleRegister(sessionId: string, zoomRegUrl: string) {
+  async function handleRegister(sessionId: string, regUrl: string | null) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -35,7 +35,7 @@ export default function ExpertsPage() {
     } else {
       await supabase.from('session_registrations').insert({ session_id: sessionId, user_id: user.id });
       setRegistered((prev) => new Set([...prev, sessionId]));
-      if (zoomRegUrl) window.open(zoomRegUrl, '_blank');
+      if (regUrl) window.open(regUrl, '_blank');
     }
   }
 
@@ -81,14 +81,20 @@ export default function ExpertsPage() {
                     }}>{live ? '🔴 Live' : today ? 'Today' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   </div>
                   {expert.expert_bio && <p className="text-[13px] mt-2" style={{ color: 'var(--text-muted)' }}>{expert.expert_bio}</p>}
+                  {expert.description && <p className="text-xs mt-2" style={{ color: 'var(--text-dim)' }}>{expert.description}</p>}
                   <div className="text-xs mt-3 mb-3" style={{ color: 'var(--text-dim)' }}>
                     📅 {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · ⏰ {date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                   </div>
-                  <div className="flex gap-2">
-                    {live && isReg && expert.zoom_join_url ? (
-                      <button onClick={() => window.open(expert.zoom_join_url, '_blank')} className="px-5 py-2 rounded-lg text-xs font-semibold" style={{ background: 'var(--error)', color: '#fff' }}>🎥 Join Live Session</button>
+                  <div className="flex gap-2 flex-wrap">
+                    {live && isReg && expert.join_url ? (
+                      <button onClick={() => window.open(expert.join_url, '_blank')} className="px-5 py-2 rounded-lg text-xs font-semibold" style={{ background: 'var(--error)', color: '#fff' }}>🎥 Join Live Session</button>
+                    ) : isReg ? (
+                      <>
+                        <button onClick={() => handleRegister(expert.id, null)} className="px-5 py-2 rounded-lg text-xs font-semibold transition-all" style={{ background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' }}>✓ Registered</button>
+                        {expert.join_url && <button onClick={() => window.open(expert.join_url, '_blank')} className="px-4 py-2 rounded-lg text-xs font-semibold" style={{ background: 'rgba(59,130,246,0.09)', color: 'var(--blue)', border: '1px solid rgba(59,130,246,0.19)' }}>🔗 Meeting Link</button>}
+                      </>
                     ) : (
-                      <button onClick={() => handleRegister(expert.id, expert.zoom_registration_url)} className="px-5 py-2 rounded-lg text-xs font-semibold transition-all" style={{ background: isReg ? 'transparent' : 'var(--accent)', color: isReg ? 'var(--text)' : '#000', border: isReg ? '1px solid var(--border)' : 'none' }}>{isReg ? '✓ Registered' : 'Register'}</button>
+                      <button onClick={() => handleRegister(expert.id, expert.registration_url)} className="px-5 py-2 rounded-lg text-xs font-semibold transition-all" style={{ background: 'var(--accent)', color: '#000' }}>Register</button>
                     )}
                   </div>
                 </div>
