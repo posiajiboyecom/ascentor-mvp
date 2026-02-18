@@ -58,21 +58,37 @@ export default function AdminExpertsPage() {
     if (!form.title.trim() || !form.expert_name.trim() || !form.scheduled_at) return;
     setSaving(true);
 
-    const payload = {
-      ...form,
+    const payload: any = {
+      title: form.title,
+      description: form.description || null,
+      expert_name: form.expert_name,
+      expert_bio: form.expert_bio || null,
       scheduled_at: new Date(form.scheduled_at).toISOString(),
-      updated_at: new Date().toISOString(),
+      duration_minutes: Number(form.duration_minutes) || 60,
+      max_participants: Number(form.max_participants) || 50,
+      status: form.status,
+      zoom_join_url: form.zoom_join_url || null,
+      zoom_registration_url: form.zoom_registration_url || null,
+      recording_url: form.recording_url || null,
+      category: form.category || null,
     };
 
+    let error;
     if (editing) {
-      await supabase.from('expert_sessions').update(payload).eq('id', editing.id);
+      ({ error } = await supabase.from('expert_sessions').update(payload).eq('id', editing.id));
     } else {
-      await supabase.from('expert_sessions').insert(payload);
+      ({ error } = await supabase.from('expert_sessions').insert(payload));
+    }
+
+    if (error) {
+      alert('Save failed: ' + error.message);
+      console.error('Save error:', error);
+    } else {
+      setShowForm(false);
+      setEditing(null);
     }
 
     setSaving(false);
-    setShowForm(false);
-    setEditing(null);
     loadEvents();
   }
 
