@@ -22,7 +22,7 @@ export default function AdminBlogPage() {
 
   const emptyForm = {
     title: '', slug: '', excerpt: '', content: '', category: 'General',
-    author_name: 'Posi Ajiboye', read_time_min: 5, is_published: false,
+    author_name: 'Posi Ajiboye', read_time_minutes: 5, is_published: false,
     cover_image_url: '',
   };
   const [form, setForm] = useState(emptyForm);
@@ -39,7 +39,7 @@ export default function AdminBlogPage() {
     setForm({
       title: post.title, slug: post.slug, excerpt: post.excerpt || '',
       content: post.content, category: post.category || 'General',
-      author_name: post.author_name || '', read_time_min: post.read_time_min || 5,
+      author_name: post.author_name || '', read_time_minutes: post.read_time_minutes || 5,
       is_published: post.is_published, cover_image_url: post.cover_image_url || '',
     });
     setEditing(post);
@@ -127,7 +127,7 @@ export default function AdminBlogPage() {
               <input className="px-3.5 py-2.5 text-sm rounded-xl" style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
                 value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })} placeholder="Author name" />
               <input type="number" className="px-3.5 py-2.5 text-sm rounded-xl" style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                value={form.read_time_min} onChange={(e) => setForm({ ...form, read_time_min: Number(e.target.value) })} placeholder="Read time (min)" />
+                value={form.read_time_minutes} onChange={(e) => setForm({ ...form, read_time_minutes: Number(e.target.value) })} placeholder="Read time (min)" />
               <input className="px-3.5 py-2.5 text-sm rounded-xl" style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
                 value={form.cover_image_url} onChange={(e) => setForm({ ...form, cover_image_url: e.target.value })} placeholder="Cover image URL (optional)" />
             </div>
@@ -159,7 +159,7 @@ export default function AdminBlogPage() {
                 {!p.is_published && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(107,114,128,0.15)', color: 'var(--text-dim)' }}>DRAFT</span>}
               </h4>
               <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-                /{p.slug} · {p.category} · {p.read_time_min} min · by {p.author_name}
+                /{p.slug} · {p.category} · {p.read_time_minutes} min · by {p.author_name}
               </p>
             </div>
             <div className="flex gap-2 shrink-0">
