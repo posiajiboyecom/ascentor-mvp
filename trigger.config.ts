@@ -1,8 +1,8 @@
 import { defineConfig } from "@trigger.dev/sdk/v3";
 
 export default defineConfig({
-  project: "proj_zwrdqutfrrdneuwbjvxi", // Use your Project ID string directly or via env
-  directories: ["./trigger"],
+  project: process.env.TRIGGER_PROJECT_ID!,
+  dirs: ["./src/trigger"],
   retries: {
     enabledInDev: true,
     default: {
