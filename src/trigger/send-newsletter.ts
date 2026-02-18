@@ -45,7 +45,7 @@ export const sendNewsletter = task({
         batch.map(async (sub) => {
           const template = newsletterEmail(subject, content, sub.first_name || undefined);
           return resend.emails.send({
-            from: "Ascentor <hello@ascentor.co>",
+            from: "Ascentor <onboarding@resend.dev>",
             to: sub.email,
             subject: template.subject,
             html: template.html,

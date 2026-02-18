@@ -107,7 +107,7 @@ Respond in this exact JSON format:
     );
 
     await resend.emails.send({
-      from: "Ascentor Coach <coach@ascentor.co>",
+      from: "Ascentor <onboarding@resend.dev>",
       to: profile.email,
       subject: template.subject,
       html: template.html,

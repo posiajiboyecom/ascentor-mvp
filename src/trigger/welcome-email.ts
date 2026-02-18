@@ -11,7 +11,7 @@ export const sendWelcomeEmail = task({
     const template = welcomeEmail(name);
 
     const { data, error } = await resend.emails.send({
-      from: "Ascentor <hello@ascentor.co>",
+      from: "Ascentor <onboarding@resend.dev>",
       to: email,
       subject: template.subject,
       html: template.html,

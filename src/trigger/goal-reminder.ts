@@ -71,7 +71,7 @@ export const dailyGoalReminder = schedules.task({
 
       try {
         await resend.emails.send({
-          from: "Ascentor <hello@ascentor.co>",
+          from: "Ascentor <onboarding@resend.dev>",
           to: profile.email,
           subject: template.subject,
           html: template.html,
