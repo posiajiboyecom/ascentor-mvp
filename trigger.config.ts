@@ -2,7 +2,7 @@ import { defineConfig } from "@trigger.dev/sdk/v3";
 
 export default defineConfig({
   project: "proj_zwrdqutfrrdneuwbjvxi", // Use your Project ID string directly or via env
-  directories: ["./ascentor/trigger"],
+  directories: ["./trigger"],
   retries: {
     enabledInDev: true,
     default: {
