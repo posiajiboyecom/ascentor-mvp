@@ -216,7 +216,7 @@ function AdminExpertsPageInner() {
               <input className="px-3.5 py-2.5 text-sm rounded-xl"
                 style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
                 value={form.join_url}
-                onChange={(e) => setForm({ ...form, zoom_join_url: e.target.value })}
+                onChange={(e) => setForm({ ...form, join_url: e.target.value })}
                 placeholder="Meeting/webinar join link" />
             </div>
 
