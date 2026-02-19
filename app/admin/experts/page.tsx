@@ -46,8 +46,8 @@ function AdminExpertsPageInner() {
     duration_minutes: 60, 
     max_participants: 50,
     status: 'scheduled' as string, 
-    zoom_join_url: '', 
-    zoom_registration_url: '',
+    join_url: '', 
+    registration_url: '',
   };
   
   const [form, setForm] = useState(emptyForm);
@@ -76,8 +76,8 @@ function AdminExpertsPageInner() {
       duration_minutes: event.duration_minutes || 60,
       max_participants: event.max_participants || 50,
       status: event.status || 'scheduled',
-      zoom_join_url: event.zoom_join_url || '', 
-      zoom_registration_url: event.zoom_registration_url || '',
+      join_url: event.join_url || '', 
+      registration_url: event.registration_url || '',
     });
     setEditing(event);
     setShowForm(true);
@@ -102,8 +102,8 @@ function AdminExpertsPageInner() {
       duration_minutes: Number(form.duration_minutes) || 60,
       max_participants: Number(form.max_participants) || 50,
       status: form.status,
-      zoom_join_url: form.zoom_join_url || null,
-      zoom_registration_url: form.zoom_registration_url || null,
+      join_url: form.join_url || null,
+      registration_url: form.registration_url || null,
     };
 
     let error;
@@ -210,14 +210,14 @@ function AdminExpertsPageInner() {
             <div className="grid grid-cols-2 gap-3">
               <input className="px-3.5 py-2.5 text-sm rounded-xl"
                 style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                value={form.zoom_registration_url}
-                onChange={(e) => setForm({ ...form, zoom_registration_url: e.target.value })}
-                placeholder="Zoom registration URL" />
+                value={form.registration_url}
+                onChange={(e) => setForm({ ...form, registration_url: e.target.value })}
+                placeholder="Registration link (Zoom, Meet, Teams, etc.)" />
               <input className="px-3.5 py-2.5 text-sm rounded-xl"
                 style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                value={form.zoom_join_url}
+                value={form.join_url}
                 onChange={(e) => setForm({ ...form, zoom_join_url: e.target.value })}
-                placeholder="Zoom join URL (for live day)" />
+                placeholder="Meeting/webinar join link" />
             </div>
 
             <div className="flex gap-2 mt-2">
@@ -274,8 +274,8 @@ function AdminExpertsPageInner() {
               </span>
             </div>
             <div className="flex gap-3 items-center text-[11px] mb-3" style={{ color: 'var(--text-dim)' }}>
-              {e.zoom_registration_url && <span>📋 Reg link set</span>}
-              {e.zoom_join_url && <span>🎥 Join link set</span>}
+              {e.registration_url && <span>📋 Reg link set</span>}
+              {e.join_url && <span>🎥 Join link set</span>}
             </div>
             <div className="flex gap-2">
               <button onClick={() => openEdit(e)}
