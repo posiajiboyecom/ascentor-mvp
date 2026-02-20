@@ -68,7 +68,25 @@ export default function AdminNewsletterPage() {
   const exec = useCallback((cmd: string, value?: string) => {
     editorRef.current?.focus();
     document.execCommand(cmd, false, value);
-    // Small delay to let browser update state
+    setTimeout(() => checkActiveFormats(), 10);
+  }, [checkActiveFormats]);
+
+  const setBlock = useCallback((tag: string) => {
+    editorRef.current?.focus();
+    document.execCommand('formatBlock', false, tag);
+    setTimeout(() => checkActiveFormats(), 10);
+  }, [checkActiveFormats]);
+
+  const toggleList = useCallback((cmd: string) => {
+    editorRef.current?.focus();
+    document.execCommand(cmd, false, undefined);
+    setTimeout(() => checkActiveFormats(), 10);
+  }, [checkActiveFormats]);
+
+  const clearFormatting = useCallback(() => {
+    editorRef.current?.focus();
+    document.execCommand('removeFormat', false, undefined);
+    document.execCommand('formatBlock', false, 'p');
     setTimeout(() => checkActiveFormats(), 10);
   }, [checkActiveFormats]);
 
@@ -307,22 +325,15 @@ export default function AdminNewsletterPage() {
 
             {/* ═══ TOOLBAR ═══ */}
             <div className="flex flex-wrap items-center gap-1 p-2 rounded-t-xl relative" style={{ background: 'var(--bg-input)', borderBottom: '1px solid var(--border)' }}>
-              {/* Text formatting */}
               <ToolBtn onClick={() => exec('bold')} title="Bold (Ctrl+B)" active={activeFormats.has('bold')}><b>B</b></ToolBtn>
               <ToolBtn onClick={() => exec('italic')} title="Italic (Ctrl+I)" active={activeFormats.has('italic')}><i>I</i></ToolBtn>
               <ToolBtn onClick={() => exec('underline')} title="Underline (Ctrl+U)" active={activeFormats.has('underline')}><u>U</u></ToolBtn>
               <ToolBtn onClick={() => exec('strikethrough')} title="Strikethrough" active={activeFormats.has('strikethrough')}><s>S</s></ToolBtn>
-
               <ToolSep />
-
-              {/* Block formatting */}
-              <ToolBtn onClick={() => exec('formatBlock', 'h2')} title="Large Heading" active={activeFormats.has('h2')}>H2</ToolBtn>
-              <ToolBtn onClick={() => exec('formatBlock', 'h3')} title="Small Heading" active={activeFormats.has('h3')}>H3</ToolBtn>
-              <ToolBtn onClick={() => exec('formatBlock', 'p')} title="Normal Text" active={activeFormats.has('p')}>P</ToolBtn>
-
+              <ToolBtn onClick={() => setBlock('h2')} title="Large Heading" active={activeFormats.has('h2')}>H2</ToolBtn>
+              <ToolBtn onClick={() => setBlock('h3')} title="Small Heading" active={activeFormats.has('h3')}>H3</ToolBtn>
+              <ToolBtn onClick={() => setBlock('p')} title="Normal Text" active={activeFormats.has('p')}>P</ToolBtn>
               <ToolSep />
-
-              {/* Insert actions */}
               <ToolBtn onClick={insertLink} title="Add Link (select text first)">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
               </ToolBtn>
@@ -335,23 +346,17 @@ export default function AdminNewsletterPage() {
               <ToolBtn onClick={insertDivider} title="Gold Divider Line">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/></svg>
               </ToolBtn>
-
               <ToolSep />
-
-              {/* Lists */}
-              <ToolBtn onClick={() => exec('insertUnorderedList')} title="Bullet List" active={activeFormats.has('bullets')}>
+              <ToolBtn onClick={() => toggleList('insertUnorderedList')} title="Bullet List" active={activeFormats.has('bullets')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg>
               </ToolBtn>
-              <ToolBtn onClick={() => exec('insertOrderedList')} title="Numbered List" active={activeFormats.has('numbers')}>
+              <ToolBtn onClick={() => toggleList('insertOrderedList')} title="Numbered List" active={activeFormats.has('numbers')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="10" y1="6" x2="20" y2="6"/><line x1="10" y1="12" x2="20" y2="12"/><line x1="10" y1="18" x2="20" y2="18"/><text x="3" y="8" fontSize="7" fill="currentColor" stroke="none">1</text><text x="3" y="14" fontSize="7" fill="currentColor" stroke="none">2</text><text x="3" y="20" fontSize="7" fill="currentColor" stroke="none">3</text></svg>
               </ToolBtn>
               <ToolBtn onClick={insertNumberedSection} title="Numbered Section (01. TITLE)">
                 <span style={{ fontSize: '11px', fontWeight: 700 }}>#</span>
               </ToolBtn>
-
               <ToolSep />
-
-              {/* Emoji picker */}
               <div className="relative">
                 <ToolBtn onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="Insert Emoji" active={showEmojiPicker}>
                   <span style={{ fontSize: '14px' }}>😊</span>
@@ -381,10 +386,7 @@ export default function AdminNewsletterPage() {
                   </div>
                 )}
               </div>
-
               <ToolSep />
-
-              {/* Alignment */}
               <ToolBtn onClick={() => exec('justifyLeft')} title="Align Left" active={activeFormats.has('alignLeft')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
               </ToolBtn>
@@ -394,11 +396,8 @@ export default function AdminNewsletterPage() {
               <ToolBtn onClick={() => exec('justifyRight')} title="Align Right" active={activeFormats.has('alignRight')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>
               </ToolBtn>
-
               <ToolSep />
-
-              {/* Clear formatting */}
-              <ToolBtn onClick={() => exec('removeFormat')} title="Clear All Formatting">
+              <ToolBtn onClick={clearFormatting} title="Clear All Formatting">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </ToolBtn>
             </div>
