@@ -37,8 +37,8 @@ function layout(content: string, preheader: string = '') {
             © ${new Date().getFullYear()} Ascentor · Built for Africa's next generation of leaders
           </p>
           <p style="margin:8px 0 0;font-size:11px;color:${BRAND.muted}">
-            <a href="https://ascentor.co/terms" style="color:${BRAND.muted}">Terms</a> ·
-            <a href="https://ascentor.co/newsletter?unsubscribe=true" style="color:${BRAND.muted}">Unsubscribe</a>
+            <a href="https://ascentorbi.com/terms" style="color:${BRAND.muted}">Terms</a> ·
+            <a href="https://ascentorbi.com/newsletter?unsubscribe=true" style="color:${BRAND.muted}">Unsubscribe</a>
           </p>
         </td></tr>
       </table>
@@ -73,7 +73,7 @@ export function welcomeEmail(name: string) {
         </td></tr>
       </table>
       <div style="text-align:center;margin:24px 0 8px">
-        <a href="https://ascentor.co/dashboard" style="display:inline-block;padding:14px 32px;background:${BRAND.accent};color:#000;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px">
+        <a href="https://ascentorbi.com/dashboard" style="display:inline-block;padding:14px 32px;background:${BRAND.accent};color:#000;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px">
           Go to Dashboard →
         </a>
       </div>
@@ -95,7 +95,7 @@ export function newsletterEmail(subject: string, content: string, firstName?: st
         ${content}
       </div>
       <div style="text-align:center;margin:28px 0 8px">
-        <a href="https://ascentor.co/blog" style="display:inline-block;padding:12px 28px;background:${BRAND.accent};color:#000;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px">
+        <a href="https://ascentorbi.com/blog" style="display:inline-block;padding:12px 28px;background:${BRAND.accent};color:#000;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px">
           Read More on the Blog →
         </a>
       </div>
@@ -127,7 +127,7 @@ export function coachingSummaryEmail(name: string, summary: string, keyTakeaways
         <ol style="margin:0 0 20px;padding-left:20px">${stepsHtml}</ol>
       ` : ''}
       <div style="text-align:center;margin:24px 0 8px">
-        <a href="https://ascentor.co/coach" style="display:inline-block;padding:12px 28px;background:${BRAND.accent};color:#000;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px">
+        <a href="https://ascentorbi.com/coach" style="display:inline-block;padding:12px 28px;background:${BRAND.accent};color:#000;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px">
           Continue Coaching →
         </a>
       </div>
@@ -159,7 +159,7 @@ export function goalReminderEmail(name: string, goals: string[], daysSinceActive
         A quick 5-minute coaching session can get you back on track. Your AI coach remembers where you left off.
       </p>
       <div style="text-align:center;margin:24px 0 8px">
-        <a href="https://ascentor.co/coach" style="display:inline-block;padding:14px 32px;background:${BRAND.accent};color:#000;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px">
+        <a href="https://ascentorbi.com/coach" style="display:inline-block;padding:14px 32px;background:${BRAND.accent};color:#000;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px">
           Resume Coaching →
         </a>
       </div>
