@@ -176,13 +176,13 @@ export default function AdminNewsletterPage() {
         <h1 className="text-xl md:text-2xl font-semibold" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>Newsletter</h1>
         <span className="text-xs px-3 py-1 rounded-full" style={{ background: 'rgba(245,158,11,0.09)', color: 'var(--accent)', border: '1px solid rgba(245,158,11,0.2)' }}>{subCount} active</span>
       </div>
-      <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>{history.length} sent \u00B7 {subscribers.length} subscribers</p>
+      <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>{history.length} sent · {subscribers.length} subscribers</p>
 
       <div className="flex gap-1 mb-5 p-1 rounded-lg overflow-x-auto" style={{ background: 'var(--bg-input)' }}>
         {(['compose', 'subscribers', 'history'] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className="flex-1 py-2 rounded-md text-xs font-semibold whitespace-nowrap px-2"
             style={{ background: tab === t ? 'var(--bg-card)' : 'transparent', color: tab === t ? 'var(--accent)' : 'var(--text-dim)' }}>
-            {t === 'compose' ? '\u270F\uFE0F Compose' : t === 'subscribers' ? `\uD83D\uDC65 Subs (${subscribers.length})` : `\uD83D\uDCCB History (${history.length})`}
+            {t === 'compose' ? '✏️ Compose' : t === 'subscribers' ? `👥 Subs (${subscribers.length})` : `📋 History (${history.length})`}
           </button>
         ))}
       </div>
@@ -211,29 +211,29 @@ export default function AdminNewsletterPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-1 p-2 rounded-t-xl" style={{ background: 'var(--bg-input)', borderBottom: '1px solid var(--border)' }}>
-              <ToolBtn onClick={() => exec('bold')} title="Bold"><b>B</b></ToolBtn>
-              <ToolBtn onClick={() => exec('italic')} title="Italic"><i>I</i></ToolBtn>
-              <ToolBtn onClick={() => exec('underline')} title="Underline"><u>U</u></ToolBtn>
-              <ToolBtn onClick={() => exec('strikethrough')} title="Strikethrough"><s>S</s></ToolBtn>
-              <ToolSep />
-              <ToolBtn onClick={() => exec('formatBlock', '<h2>')} title="Heading">H2</ToolBtn>
-              <ToolBtn onClick={() => exec('formatBlock', '<h3>')} title="Subheading">H3</ToolBtn>
-              <ToolBtn onClick={() => exec('formatBlock', '<p>')} title="Paragraph">P</ToolBtn>
-              <ToolSep />
-              <ToolBtn onClick={insertLink} title="Link">\uD83D\uDD17</ToolBtn>
-              <ToolBtn onClick={insertImage} title="Image">\uD83D\uDDBC\uFE0F</ToolBtn>
-              <ToolBtn onClick={insertQuote} title="Quote">\u275D</ToolBtn>
-              <ToolBtn onClick={insertDivider} title="Divider">\u2014</ToolBtn>
-              <ToolSep />
-              <ToolBtn onClick={() => exec('insertUnorderedList')} title="Bullets">\u2022</ToolBtn>
-              <ToolBtn onClick={() => exec('insertOrderedList')} title="Numbers">1.</ToolBtn>
-              <ToolBtn onClick={insertNumberedSection} title="Section">\u00A7</ToolBtn>
-              <ToolBtn onClick={insertEmoji} title="Emoji">\uD83D\uDE0A</ToolBtn>
-              <ToolSep />
-              <ToolBtn onClick={() => exec('justifyLeft')} title="Left">\u25E7</ToolBtn>
-              <ToolBtn onClick={() => exec('justifyCenter')} title="Center">\u25EB</ToolBtn>
-              <ToolBtn onClick={() => exec('removeFormat')} title="Clear">\u2715</ToolBtn>
-            </div>
+                <ToolBtn onClick={() => exec('bold')} title="Bold"><b>B</b></ToolBtn>
+                <ToolBtn onClick={() => exec('italic')} title="Italic"><i>I</i></ToolBtn>
+                <ToolBtn onClick={() => exec('underline')} title="Underline"><u>U</u></ToolBtn>
+                <ToolBtn onClick={() => exec('strikethrough')} title="Strikethrough"><s>S</s></ToolBtn>
+                <ToolSep />
+                <ToolBtn onClick={() => exec('formatBlock', '<h2>')} title="Heading">H2</ToolBtn>
+                <ToolBtn onClick={() => exec('formatBlock', '<h3>')} title="Subheading">H3</ToolBtn>
+                <ToolBtn onClick={() => exec('formatBlock', '<p>')} title="Paragraph">P</ToolBtn>
+                <ToolSep />
+                <ToolBtn onClick={insertLink} title="Link">🔗</ToolBtn>
+                <ToolBtn onClick={insertImage} title="Image">🖼️</ToolBtn>
+                <ToolBtn onClick={insertQuote} title="Quote">❝</ToolBtn>
+                <ToolBtn onClick={insertDivider} title="Divider">—</ToolBtn>
+                <ToolSep />
+                <ToolBtn onClick={() => exec('insertUnorderedList')} title="Bullets">•</ToolBtn>
+                <ToolBtn onClick={() => exec('insertOrderedList')} title="Numbers">1.</ToolBtn>
+                <ToolBtn onClick={insertNumberedSection} title="Section">§</ToolBtn>
+                <ToolBtn onClick={insertEmoji} title="Emoji">😊</ToolBtn>
+                <ToolSep />
+                <ToolBtn onClick={() => exec('justifyLeft')} title="Left">⬅</ToolBtn>
+                <ToolBtn onClick={() => exec('justifyCenter')} title="Center">⬛</ToolBtn>
+                <ToolBtn onClick={() => exec('removeFormat')} title="Clear">✕</ToolBtn>
+          </div>
 
             <div ref={editorRef} contentEditable className="min-h-[400px] px-5 py-4 text-sm rounded-b-xl focus:outline-none"
               style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', borderTop: 'none', lineHeight: '1.8', fontFamily: 'Georgia, serif' }}
@@ -242,10 +242,10 @@ export default function AdminNewsletterPage() {
 
             <div className="flex flex-wrap gap-3 mt-4">
               <button onClick={handleSend} disabled={sending || !subject.trim()} className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40" style={{ background: 'var(--accent)', color: '#000' }}>
-                {sending ? 'Sending...' : `\uD83D\uDCE8 Send to ${subCount} Subscribers`}
+                {sending ? 'Sending...' : `📨 Send to ${subCount} Subscribers`}
               </button>
               <button onClick={() => setShowPreview(!showPreview)} className="px-4 py-2.5 rounded-lg text-sm font-semibold" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-                {showPreview ? '\u2715 Close Preview' : '\uD83D\uDC41\uFE0F Preview Email'}
+                {showPreview ? '✕ Close Preview' : '👁️ Preview Email'}
               </button>
             </div>
 
