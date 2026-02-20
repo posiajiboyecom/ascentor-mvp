@@ -41,7 +41,7 @@ export const sendNewsletter = task({
             );
 
             await resend.emails.send({
-              from: "Ascentor <onboarding@resend.dev>",
+              from: "Ascentor <hello@ascentorbi.com>",
               to: sub.email,
               subject: payload.subject,
               html: personalizedHTML,
