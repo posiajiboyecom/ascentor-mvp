@@ -59,7 +59,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
-          { icon: '🔥', value: '7', label: 'DAY STREAK', color: 'var(--accent)' },
+          { icon: '🔥', value: String(sessionsThisWeek > 0 ? Math.min(sessionsThisWeek, 7) : 0), label: 'THIS WEEK', color: 'var(--accent)' },
           { icon: '💬', value: String(sessionsThisWeek), label: 'SESSIONS / WEEK', color: 'var(--blue)' },
           { icon: '🎯', value: `${goalProgress}%`, label: '90-DAY GOAL', color: 'var(--teal)' },
         ].map((s) => (

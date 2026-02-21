@@ -55,10 +55,10 @@ export default function AppShell({
           {showMenu && (
             <div className="absolute right-0 mt-2 w-40 rounded-lg py-1 z-50"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              <Link href="/settings" onClick={() => setShowMenu(false)}
+              <Link href="/account" onClick={() => setShowMenu(false)}
                 className="block px-4 py-2.5 text-sm hover:opacity-80"
                 style={{ color: 'var(--text-muted)' }}>
-                ⚙️ Settings
+                Settings
               </Link>
               <button onClick={handleSignOut}
                 className="w-full text-left px-4 py-2.5 text-sm hover:opacity-80"
