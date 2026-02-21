@@ -59,13 +59,15 @@ export async function POST(req: NextRequest) {
           }).eq('id', userId);
 
           // Log it
-          await supabase.from('audit_logs').insert({
-            user_id: userId,
-            action: 'promo_activation',
-            entity_type: 'payment',
-            entity_id: promoCode.toUpperCase(),
-            details: { promo: promo.label, discount: '100%' },
-          }).catch(() => {});
+          try {
+            await supabase.from('audit_logs').insert({
+              user_id: userId,
+              action: 'promo_activation',
+              entity_type: 'payment',
+              entity_id: promoCode.toUpperCase(),
+              details: { promo: promo.label, discount: '100%' },
+            });
+          } catch {} // Non-critical
 
           return NextResponse.json({
             success: true,
