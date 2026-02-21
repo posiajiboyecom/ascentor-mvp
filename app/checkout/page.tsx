@@ -573,7 +573,6 @@ export default function CheckoutPage() {
                   7-day free trial · Cancel anytime
                 </p>
               )}
-              </button>
             </div>
           );
         })}
