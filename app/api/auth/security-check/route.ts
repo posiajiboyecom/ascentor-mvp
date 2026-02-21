@@ -99,21 +99,23 @@ export async function POST(req: NextRequest) {
 
     // If blocked, also log to audit_logs (Feature #1)
     if (!result.allowed) {
-      await supabase.from('audit_logs').insert({
-        user_id: userId,
-        action: 'login_blocked',
-        entity_type: 'security',
-        entity_id: userId,
-        details: {
-          reason: result.reason,
-          description: result.details,
-          ip,
-          location: `${geo.city}, ${geo.country}`,
-        },
-      }).catch(() => {}); // Non-critical
+      try {
+        await supabase.from('audit_logs').insert({
+          user_id: userId,
+          action: 'login_blocked',
+          entity_type: 'security',
+          entity_id: userId,
+          details: {
+            reason: result.reason,
+            description: result.details,
+            ip,
+            location: `${geo.city}, ${geo.country}`,
+          },
+        });
+      } catch {} // Non-critical // Non-critical
 
       // Sign out all sessions for this user (security measure)
-      await supabase.auth.admin.signOut(userId, 'global').catch(() => {});
+      try { await supabase.auth.admin.signOut(userId, 'global'); } catch {}
     }
 
     return NextResponse.json({
@@ -135,15 +137,19 @@ async function recordSession(
   userId: string, ip: string, country: string, city: string,
   lat: number, lon: number, userAgent: string, riskLevel: string, blocked: boolean
 ) {
-  await supabase.from('session_locations').insert({
-    user_id: userId,
-    ip_address: ip,
-    country,
-    city,
-    latitude: lat,
-    longitude: lon,
-    user_agent: userAgent,
-    risk_level: riskLevel,
-    blocked,
-  }).catch(err => console.error('Failed to record session location:', err));
+  try {
+    await supabase.from('session_locations').insert({
+      user_id: userId,
+      ip_address: ip,
+      country,
+      city,
+      latitude: lat,
+      longitude: lon,
+      user_agent: userAgent,
+      risk_level: riskLevel,
+      blocked,
+    });
+  } catch (err) {
+    console.error('Failed to record session location:', err);
+  }
 }
