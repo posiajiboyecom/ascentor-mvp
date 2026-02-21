@@ -63,18 +63,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Log to audit trail
-    await supabase.from('audit_logs').insert({
-      action: `payment_${eventType}`,
-      entity_type: 'payment',
-      entity_id: data?.reference || data?.id || 'unknown',
-      details: {
-        event: eventType,
-        amount: data?.amount,
-        currency: data?.currency,
-        customer_email: data?.customer?.email,
-        reference: data?.reference,
-      },
-    }).catch(() => {});
+    try {
+      await supabase.from('audit_logs').insert({
+        action: `payment_${eventType}`,
+        entity_type: 'payment',
+        entity_id: data?.reference || data?.id || 'unknown',
+        details: {
+          event: eventType,
+          amount: data?.amount,
+          currency: data?.currency,
+          customer_email: data?.customer?.email,
+          reference: data?.reference,
+        },
+      });
+    } catch {} // Non-critical
 
     return NextResponse.json({ received: true });
   } catch (err: any) {
@@ -134,15 +136,17 @@ async function handleChargeSuccess(data: any) {
     .eq('id', profileId);
 
   // Record payment
-  await supabase.from('payments').insert({
-    user_id: profileId,
-    amount,
-    currency: data.currency || 'NGN',
-    reference,
-    provider: 'paystack',
-    status: 'success',
-    paystack_data: data,
-  }).catch(() => {});
+  try {
+    await supabase.from('payments').insert({
+      user_id: profileId,
+      amount,
+      currency: data.currency || 'NGN',
+      reference,
+      provider: 'paystack',
+      status: 'success',
+      paystack_data: data,
+    });
+  } catch {} // Non-critical
 
   // Process referral reward if applicable
   await processReferralReward(profileId);
