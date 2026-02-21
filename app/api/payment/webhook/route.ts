@@ -1,282 +1,94 @@
 // ============================================================
-// FEATURE #4: Paystack Payment System — Backend Logic
-// Complete webhook handler + subscription management
-// Works with test keys; swap to live when ready.
+// PAYMENT INITIALIZE — /api/payment/initialize
+// Handles promo code activation (100% off = instant activation)
+// For paid plans, the popup is handled client-side
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
+const PROMO_CODES: Record<string, { discount: number; label: string }> = {
+  'FOUNDER50':  { discount: 0.50, label: 'Founders 50% Off' },
+  'ASCENTOR50': { discount: 0.50, label: 'Ascentor 50% Off' },
+  'EARLYBIRD':  { discount: 0.50, label: 'Early Bird 50% Off' },
+  'TESTER100':  { discount: 1.00, label: 'Tester Free Access' },
+  'BETATESTER': { discount: 1.00, label: 'Beta Tester Free Access' },
+  'FREEACCESS': { discount: 1.00, label: 'Free Access' },
+};
 
-// --- Paystack Webhook Handler: /api/payments/webhook ---
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.text();
+    const { email, userId, promoCode } = await req.json();
 
-    // Verify Paystack signature
-    if (PAYSTACK_SECRET) {
-      const hash = crypto
-        .createHmac('sha512', PAYSTACK_SECRET)
-        .update(body)
-        .digest('hex');
-      const signature = req.headers.get('x-paystack-signature');
+    if (!email || !userId) {
+      return NextResponse.json({ error: 'Email and userId are required' }, { status: 400 });
+    }
 
-      if (hash !== signature) {
-        console.error('Paystack webhook: Invalid signature');
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    if (promoCode) {
+      const promo = PROMO_CODES[promoCode.toUpperCase()];
+      if (!promo) {
+        return NextResponse.json({ error: 'Invalid promo code' }, { status: 400 });
+      }
+
+      // 100% discount — activate immediately without payment
+      if (promo.discount >= 1.0) {
+        const subscriptionEnd = new Date();
+        subscriptionEnd.setDate(subscriptionEnd.getDate() + 30);
+
+        const { error: updateError } = await supabase.from('profiles').update({
+          subscription_plan: 'pro',
+          subscription_status: 'active',
+          subscription_end: subscriptionEnd.toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq('id', userId);
+
+        if (updateError) {
+          return NextResponse.json({ error: 'Failed to activate account' }, { status: 500 });
+        }
+
+        // Audit log
+        try {
+          await supabase.from('audit_logs').insert({
+            user_id: userId,
+            action: 'promo_activation',
+            entity_type: 'payment',
+            entity_id: promoCode.toUpperCase(),
+            details: { promo: promo.label, discount: '100%' },
+          });
+        } catch {} // Non-critical
+
+        // Notification
+        try {
+          await supabase.from('notifications').insert({
+            user_id: userId,
+            type: 'payment',
+            title: 'Account Activated!',
+            message: `Your Pro plan is active with ${promo.label}. Enjoy unlimited coaching.`,
+            link: '/dashboard',
+          });
+        } catch {} // Non-critical
+
+        return NextResponse.json({
+          success: true,
+          free: true,
+          message: 'Your account has been activated with free access!',
+        });
       }
     }
 
-    const event = JSON.parse(body);
-    const eventType = event.event;
-    const data = event.data;
-
-    console.log(`Paystack webhook: ${eventType}`, data?.reference);
-
-    switch (eventType) {
-      case 'charge.success':
-        await handleChargeSuccess(data);
-        break;
-
-      case 'subscription.create':
-        await handleSubscriptionCreate(data);
-        break;
-
-      case 'subscription.not_renew':
-      case 'subscription.disable':
-        await handleSubscriptionCancel(data);
-        break;
-
-      case 'invoice.payment_failed':
-        await handlePaymentFailed(data);
-        break;
-
-      default:
-        console.log(`Paystack webhook: Unhandled event type ${eventType}`);
-    }
-
-    // Log to audit trail
-    try {
-      await supabase.from('audit_logs').insert({
-        action: `payment_${eventType}`,
-        entity_type: 'payment',
-        entity_id: data?.reference || data?.id || 'unknown',
-        details: {
-          event: eventType,
-          amount: data?.amount,
-          currency: data?.currency,
-          customer_email: data?.customer?.email,
-          reference: data?.reference,
-        },
-      });
-    } catch {} // Non-critical
-
-    return NextResponse.json({ received: true });
-  } catch (err: any) {
-    console.error('Paystack webhook error:', err);
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
-  }
-}
-
-// --- Event Handlers ---
-
-async function handleChargeSuccess(data: any) {
-  const email = data.customer?.email;
-  const reference = data.reference;
-  const amount = data.amount / 100; // Paystack amounts are in kobo/cents
-  const metadata = data.metadata || {};
-  const userId = metadata.user_id;
-
-  if (!userId && !email) {
-    console.error('Paystack charge.success: No user_id or email found');
-    return;
-  }
-
-  // Find user by ID or email
-  let profileId = userId;
-  if (!profileId && email) {
-    const { data: users } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', (
-        await supabase.auth.admin.listUsers()
-          .then(r => r.data.users.find(u => u.email === email)?.id)
-      ))
-      .single();
-    profileId = users?.id;
-  }
-
-  if (!profileId) {
-    console.error('Paystack charge.success: User not found for', email);
-    return;
-  }
-
-  // Calculate subscription end date (30 days from now)
-  const subscriptionEnd = new Date();
-  subscriptionEnd.setDate(subscriptionEnd.getDate() + 30);
-
-  // Update user profile
-  await supabase
-    .from('profiles')
-    .update({
-      subscription_plan: 'standard',
-      subscription_status: 'active',
-      subscription_tier: 'standard',
-      subscription_end: subscriptionEnd.toISOString(),
-      payment_method: 'paystack',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', profileId);
-
-  // Record payment
-  try {
-    await supabase.from('payments').insert({
-      user_id: profileId,
-      amount,
-      currency: data.currency || 'NGN',
-      reference,
-      provider: 'paystack',
-      status: 'success',
-      paystack_data: data,
+    // For paid plans, the Paystack popup handles payment client-side
+    // This endpoint is primarily for promo code processing
+    return NextResponse.json({
+      success: true,
+      message: 'Use Paystack popup for payment',
     });
-  } catch {} // Non-critical
-
-  // Process referral reward if applicable
-  await processReferralReward(profileId);
-
-  console.log(`Payment successful: User ${profileId}, Amount ${amount}, Ref ${reference}`);
-}
-
-async function handleSubscriptionCreate(data: any) {
-  const email = data.customer?.email;
-  const subscriptionCode = data.subscription_code;
-
-  // Find user and update with subscription code for future management
-  if (email) {
-    const { data: user } = await supabase.auth.admin.listUsers()
-      .then(r => ({ data: r.data.users.find(u => u.email === email) }));
-
-    if (user) {
-      await supabase.from('profiles').update({
-        subscription_status: 'active',
-        payment_method: 'paystack',
-        updated_at: new Date().toISOString(),
-      }).eq('id', user.id);
-    }
+  } catch (err: any) {
+    console.error('Payment initialization error:', err);
+    return NextResponse.json({ error: 'Payment initialization failed' }, { status: 500 });
   }
 }
-
-async function handleSubscriptionCancel(data: any) {
-  const email = data.customer?.email;
-
-  if (email) {
-    const { data: user } = await supabase.auth.admin.listUsers()
-      .then(r => ({ data: r.data.users.find(u => u.email === email) }));
-
-    if (user) {
-      await supabase.from('profiles').update({
-        subscription_status: 'cancelled',
-        updated_at: new Date().toISOString(),
-      }).eq('id', user.id);
-    }
-  }
-}
-
-async function handlePaymentFailed(data: any) {
-  const email = data.customer?.email;
-
-  if (email) {
-    const { data: user } = await supabase.auth.admin.listUsers()
-      .then(r => ({ data: r.data.users.find(u => u.email === email) }));
-
-    if (user) {
-      await supabase.from('profiles').update({
-        subscription_status: 'past_due',
-        updated_at: new Date().toISOString(),
-      }).eq('id', user.id);
-    }
-  }
-}
-
-async function processReferralReward(userId: string) {
-  try {
-    const { data: referral } = await supabase
-      .from('referrals')
-      .select('*')
-      .eq('referred_id', userId)
-      .eq('status', 'onboarded')
-      .single();
-
-    if (!referral) return;
-
-    // Update referral status
-    await supabase.from('referrals').update({
-      status: 'subscribed',
-    }).eq('id', referral.id);
-
-    // Extend both users' subscriptions by 7 days
-    for (const uid of [referral.referrer_id, referral.referred_id]) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_end')
-        .eq('id', uid)
-        .single();
-
-      if (profile) {
-        const currentEnd = profile.subscription_end
-          ? new Date(profile.subscription_end)
-          : new Date();
-        currentEnd.setDate(currentEnd.getDate() + 7);
-
-        await supabase.from('profiles').update({
-          subscription_end: currentEnd.toISOString(),
-        }).eq('id', uid);
-      }
-    }
-
-    // Mark as rewarded
-    await supabase.from('referrals').update({
-      status: 'rewarded',
-      referrer_reward: '7_days_free',
-      referred_reward: '7_days_free',
-      rewarded_at: new Date().toISOString(),
-    }).eq('id', referral.id);
-  } catch (err) {
-    console.error('Referral reward processing error:', err);
-  }
-}
-
-// --- SQL: payments table ---
-export const PAYMENTS_TABLE_SQL = `
-CREATE TABLE IF NOT EXISTS payments (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-  amount decimal(10,2) NOT NULL,
-  currency text DEFAULT 'NGN',
-  reference text UNIQUE,
-  provider text DEFAULT 'paystack',
-  status text DEFAULT 'pending',
-  paystack_data jsonb,
-  created_at timestamptz DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id);
-CREATE INDEX IF NOT EXISTS idx_payments_reference ON payments(reference);
-
-ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own payments" ON payments
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Admins can view all payments" ON payments
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
-`;

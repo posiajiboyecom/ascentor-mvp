@@ -1,11 +1,12 @@
 // ============================================================
-// FEATURE #4: Paystack Initialize Payment — /api/payments/initialize
-// Called from checkout page to create a Paystack transaction.
-// POST body: { email, amount, plan, promoCode, userId, referralCode? }
+// PAYSTACK WEBHOOK — /api/payment/webhook
+// Receives events from Paystack and updates subscriptions
+// Add this URL in Paystack Dashboard → Settings → Webhooks
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,139 +14,199 @@ const supabase = createClient(
 );
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
-const PAYSTACK_BASE_URL = 'https://api.paystack.co';
-
-// Promo codes and their discounts
-const PROMO_CODES: Record<string, { discount: number; label: string }> = {
-  'FOUNDER50':   { discount: 0.50, label: 'Founders 50% Off' },
-  'ASCENTOR50':  { discount: 0.50, label: 'Ascentor 50% Off' },
-  'EARLYBIRD':   { discount: 0.50, label: 'Early Bird 50% Off' },
-  'TESTER100':   { discount: 1.00, label: 'Tester Free Access' },
-  'BETATESTER':  { discount: 1.00, label: 'Beta Tester Free Access' },
-  'FREEACCESS':  { discount: 1.00, label: 'Free Access' },
-};
-
-const STANDARD_PRICE_USD = 15; // $15/month
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, promoCode, userId } = await req.json();
+    const body = await req.text();
 
-    if (!email || !userId) {
-      return NextResponse.json({ error: 'Email and userId are required' }, { status: 400 });
-    }
+    // Verify Paystack signature
+    if (PAYSTACK_SECRET) {
+      const hash = crypto
+        .createHmac('sha512', PAYSTACK_SECRET)
+        .update(body)
+        .digest('hex');
+      const signature = req.headers.get('x-paystack-signature');
 
-    // Calculate amount after promo
-    let amount = STANDARD_PRICE_USD;
-    let appliedPromo: string | null = null;
-
-    if (promoCode) {
-      const promo = PROMO_CODES[promoCode.toUpperCase()];
-      if (promo) {
-        amount = STANDARD_PRICE_USD * (1 - promo.discount);
-        appliedPromo = promo.label;
-
-        // 100% discount — activate immediately without payment
-        if (promo.discount >= 1.0) {
-          const subscriptionEnd = new Date();
-          subscriptionEnd.setDate(subscriptionEnd.getDate() + 30);
-
-          await supabase.from('profiles').update({
-            subscription_plan: 'standard',
-            subscription_status: 'active',
-            subscription_tier: 'tester',
-            subscription_end: subscriptionEnd.toISOString(),
-            updated_at: new Date().toISOString(),
-          }).eq('id', userId);
-
-          // Log it
-          try {
-            await supabase.from('audit_logs').insert({
-              user_id: userId,
-              action: 'promo_activation',
-              entity_type: 'payment',
-              entity_id: promoCode.toUpperCase(),
-              details: { promo: promo.label, discount: '100%' },
-            });
-          } catch {} // Non-critical
-
-          return NextResponse.json({
-            success: true,
-            free: true,
-            message: 'Your account has been activated with free access!',
-          });
-        }
-      } else {
-        return NextResponse.json({ error: 'Invalid promo code' }, { status: 400 });
+      if (hash !== signature) {
+        console.error('Paystack webhook: Invalid signature');
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
       }
     }
 
-    // Convert to kobo (NGN) — using approximate rate, adjust as needed
-    // For production: use a real exchange rate API
-    const NGN_RATE = 1600; // Approximate NGN per USD
-    const amountKobo = Math.round(amount * NGN_RATE * 100);
+    const event = JSON.parse(body);
+    const eventType = event.event;
+    const data = event.data;
 
-    const reference = `asc_${userId.slice(0, 8)}_${Date.now()}`;
+    console.log(`Paystack webhook: ${eventType}`, data?.reference);
 
-    // Initialize Paystack transaction
-    if (!PAYSTACK_SECRET) {
-      // No Paystack keys — return mock response for development
-      return NextResponse.json({
-        success: true,
-        mock: true,
-        data: {
-          authorization_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout/mock?ref=${reference}`,
-          access_code: 'mock_access_code',
-          reference,
+    switch (eventType) {
+      case 'charge.success':
+        await handleChargeSuccess(data);
+        break;
+
+      case 'subscription.create':
+        await handleSubscriptionCreate(data);
+        break;
+
+      case 'subscription.not_renew':
+      case 'subscription.disable':
+        await handleSubscriptionCancel(data);
+        break;
+
+      case 'invoice.payment_failed':
+        await handlePaymentFailed(data);
+        break;
+
+      default:
+        console.log(`Paystack webhook: Unhandled event ${eventType}`);
+    }
+
+    // Audit log
+    try {
+      await supabase.from('audit_logs').insert({
+        action: `webhook_${eventType}`,
+        entity_type: 'payment',
+        entity_id: data?.reference || data?.id || 'unknown',
+        details: {
+          event: eventType,
+          amount: data?.amount,
+          currency: data?.currency,
+          customer_email: data?.customer?.email,
+          reference: data?.reference,
         },
-        amount: amount,
-        currency: 'USD',
-        applied_promo: appliedPromo,
-        message: 'Development mode: Paystack keys not configured. Using mock checkout.',
       });
-    }
+    } catch {} // Non-critical
 
-    const paystackRes = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${PAYSTACK_SECRET}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email,
-        amount: amountKobo,
-        reference,
-        currency: 'NGN',
-        callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/verify?reference=${reference}`,
-        metadata: {
-          user_id: userId,
-          plan: 'standard',
-          promo_code: promoCode || null,
-          custom_fields: [
-            { display_name: 'Plan', variable_name: 'plan', value: 'Ascentor Standard' },
-            ...(appliedPromo ? [{ display_name: 'Promo', variable_name: 'promo', value: appliedPromo }] : []),
-          ],
-        },
-      }),
-    });
-
-    const paystackData = await paystackRes.json();
-
-    if (!paystackData.status) {
-      return NextResponse.json({
-        error: paystackData.message || 'Failed to initialize payment',
-      }, { status: 400 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: paystackData.data,
-      amount,
-      currency: 'USD',
-      applied_promo: appliedPromo,
-    });
+    return NextResponse.json({ received: true });
   } catch (err: any) {
-    console.error('Payment initialization error:', err);
-    return NextResponse.json({ error: 'Payment initialization failed' }, { status: 500 });
+    console.error('Paystack webhook error:', err);
+    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
+}
+
+// --- Event Handlers ---
+
+async function handleChargeSuccess(data: any) {
+  const email = data.customer?.email;
+  const reference = data.reference;
+  const amount = data.amount / 100; // kobo → NGN
+  const metadata = data.metadata || {};
+  const userId = metadata.user_id;
+  const plan = metadata.plan || 'pro';
+  const billingCycle = metadata.billing_cycle || 'monthly';
+
+  // Find user
+  let profileId = userId;
+  if (!profileId && email) {
+    const { data: authData } = await supabase.auth.admin.listUsers();
+    const authUser = authData?.users?.find(u => u.email === email);
+    profileId = authUser?.id;
+  }
+
+  if (!profileId) {
+    console.error('Webhook charge.success: User not found for', email);
+    return;
+  }
+
+  // Calculate subscription end
+  const subscriptionEnd = new Date();
+  if (billingCycle === 'yearly') {
+    subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
+  } else {
+    subscriptionEnd.setDate(subscriptionEnd.getDate() + 30);
+  }
+
+  // Update profile
+  await supabase.from('profiles').update({
+    subscription_plan: plan,
+    subscription_status: 'active',
+    subscription_end: subscriptionEnd.toISOString(),
+    payment_method: 'paystack',
+    updated_at: new Date().toISOString(),
+  }).eq('id', profileId);
+
+  // Record payment
+  try {
+    await supabase.from('payments').insert({
+      user_id: profileId,
+      amount,
+      currency: data.currency || 'NGN',
+      reference,
+      provider: 'paystack',
+      status: 'success',
+      paystack_data: data,
+    });
+  } catch {} // Non-critical — might already exist from verify
+
+  // Process referral
+  try {
+    await supabase.rpc('process_referral_reward', { referred_user_id: profileId });
+  } catch {} // Non-critical
+
+  console.log(`Webhook: Payment success — User ${profileId}, Amount ${amount}, Ref ${reference}`);
+}
+
+async function handleSubscriptionCreate(data: any) {
+  const email = data.customer?.email;
+  if (!email) return;
+
+  const { data: authData } = await supabase.auth.admin.listUsers();
+  const user = authData?.users?.find(u => u.email === email);
+  if (!user) return;
+
+  await supabase.from('profiles').update({
+    subscription_status: 'active',
+    payment_method: 'paystack',
+    updated_at: new Date().toISOString(),
+  }).eq('id', user.id);
+}
+
+async function handleSubscriptionCancel(data: any) {
+  const email = data.customer?.email;
+  if (!email) return;
+
+  const { data: authData } = await supabase.auth.admin.listUsers();
+  const user = authData?.users?.find(u => u.email === email);
+  if (!user) return;
+
+  await supabase.from('profiles').update({
+    subscription_status: 'cancelled',
+    updated_at: new Date().toISOString(),
+  }).eq('id', user.id);
+
+  // Notify user
+  try {
+    await supabase.from('notifications').insert({
+      user_id: user.id,
+      type: 'warning',
+      title: 'Subscription Cancelled',
+      message: 'Your subscription has been cancelled. You can still access Pro features until your billing period ends.',
+      link: '/checkout',
+    });
+  } catch {} // Non-critical
+}
+
+async function handlePaymentFailed(data: any) {
+  const email = data.customer?.email;
+  if (!email) return;
+
+  const { data: authData } = await supabase.auth.admin.listUsers();
+  const user = authData?.users?.find(u => u.email === email);
+  if (!user) return;
+
+  await supabase.from('profiles').update({
+    subscription_status: 'past_due',
+    updated_at: new Date().toISOString(),
+  }).eq('id', user.id);
+
+  // Notify user
+  try {
+    await supabase.from('notifications').insert({
+      user_id: user.id,
+      type: 'error',
+      title: 'Payment Failed',
+      message: 'Your latest payment failed. Please update your payment method to keep your Pro access.',
+      link: '/checkout',
+    });
+  } catch {} // Non-critical
 }
