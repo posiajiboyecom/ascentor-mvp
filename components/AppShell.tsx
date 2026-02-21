@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { NotificationBell } from '@/components/Notifications';
+
 
 export default function AppShell({
   children,
@@ -40,42 +42,47 @@ export default function AppShell({
           </span>
         </Link>
 
-        {/* Avatar with dropdown */}
-        <div className="relative">
-          <button onClick={() => setShowMenu(!showMenu)}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
-            style={{
-              background: 'linear-gradient(135deg, rgba(245,158,11,0.13), rgba(245,158,11,0.27))',
-              border: '1.5px solid rgba(245,158,11,0.33)',
-              color: 'var(--accent)',
-            }}>
-            {initials}
-          </button>
+        {/* Right side: Notification bell + Avatar */}
+        <div className="flex items-center gap-3">
+          <NotificationBell />
 
-          {showMenu && (
-            <div className="absolute right-0 mt-2 w-40 rounded-lg py-1 z-50"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              
-              {/* New Invite & Earn Link */}
-              <Link href="/referral" onClick={() => setShowMenu(false)}
-                className="block px-4 py-2.5 text-sm hover:opacity-80"
-                style={{ color: 'var(--accent)' }}>
-                🔗 Invite & Earn
-              </Link>
+          {/* Avatar with dropdown */}
+          <div className="relative">
+            <button onClick={() => setShowMenu(!showMenu)}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
+              style={{
+                background: 'linear-gradient(135deg, rgba(245,158,11,0.13), rgba(245,158,11,0.27))',
+                border: '1.5px solid rgba(245,158,11,0.33)',
+                color: 'var(--accent)',
+              }}>
+              {initials}
+            </button>
 
-              <Link href="/account" onClick={() => setShowMenu(false)}
-                className="block px-4 py-2.5 text-sm hover:opacity-80"
-                style={{ color: 'var(--text-muted)' }}>
-                Settings
-              </Link>
-              
-              <button onClick={handleSignOut}
-                className="w-full text-left px-4 py-2.5 text-sm hover:opacity-80"
-                style={{ color: 'var(--error)' }}>
-                🚪 Sign Out
-              </button>
-            </div>
-          )}
+            {showMenu && (
+              <div className="absolute right-0 mt-2 w-40 rounded-lg py-1 z-50"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                
+                {/* New Invite & Earn Link */}
+                <Link href="/referral" onClick={() => setShowMenu(false)}
+                  className="block px-4 py-2.5 text-sm hover:opacity-80"
+                  style={{ color: 'var(--accent)' }}>
+                  🔗 Invite & Earn
+                </Link>
+
+                <Link href="/account" onClick={() => setShowMenu(false)}
+                  className="block px-4 py-2.5 text-sm hover:opacity-80"
+                  style={{ color: 'var(--text-muted)' }}>
+                  Settings
+                </Link>
+                
+                <button onClick={handleSignOut}
+                  className="w-full text-left px-4 py-2.5 text-sm hover:opacity-80"
+                  style={{ color: 'var(--error)' }}>
+                  🚪 Sign Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

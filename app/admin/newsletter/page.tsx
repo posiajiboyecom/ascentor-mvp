@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useModal } from '@/components/Modal';
 
 export default function AdminNewsletterPage() {
   const supabase = createClient();
+  const { alert, confirm, prompt } = useModal();
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [subject, setSubject] = useState('');
@@ -92,26 +94,26 @@ export default function AdminNewsletterPage() {
 
   // ═══ TOOLBAR ACTIONS ═══
 
-  const insertLink = () => {
+  const insertLink = async () => {
     const sel = window.getSelection();
     const selectedText = sel?.toString();
     if (!selectedText) {
-      alert('Select some text first, then click the link button to add a URL to it.');
+      await alert('Select some text first, then click the link button to add a URL to it.', 'Add Link');
       return;
     }
-    const url = prompt('Enter URL (e.g. https://example.com):');
+    const url = await prompt('Enter the URL you want to link to:', { title: 'Add Link', placeholder: 'https://example.com' });
     if (url) exec('createLink', url);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file.');
+      await alert('Please select an image file.', 'Invalid File');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be under 5MB.');
+      await alert('Image must be under 5MB.', 'File Too Large');
       return;
     }
     const reader = new FileReader();
@@ -143,10 +145,11 @@ export default function AdminNewsletterPage() {
     );
   };
 
-  const insertNumberedSection = () => {
-    const num = prompt('Section number (e.g. 01, 02):');
-    const title = prompt('Section title:');
-    if (num && title) {
+  const insertNumberedSection = async () => {
+    const num = await prompt('Enter the section number:', { title: 'Numbered Section', placeholder: 'e.g. 01, 02' });
+    if (!num) return;
+    const title = await prompt('Enter the section title:', { title: 'Numbered Section', placeholder: 'e.g. THE MINDSET SHIFT' });
+    if (title) {
       editorRef.current?.focus();
       document.execCommand('insertHTML', false,
         `<h2 style="font-size:22px;font-weight:800;color:#111827;margin:32px 0 12px;font-family:Georgia,serif;">${num}. ${title.toUpperCase()}</h2><p><br></p>`
@@ -221,7 +224,8 @@ export default function AdminNewsletterPage() {
 
   async function handleSend() {
     if (!subject.trim() || !editorRef.current?.innerHTML.trim()) return;
-    if (!confirm(`Send this newsletter to ${subCount} active subscribers?`)) return;
+    const confirmed = await confirm(`Send this newsletter to ${subCount} active subscribers?`, 'Send Newsletter');
+    if (!confirmed) return;
     setSending(true);
     setResult(null);
     const emailHTML = buildEmailHTML();
@@ -253,7 +257,8 @@ export default function AdminNewsletterPage() {
   }
 
   async function deleteSubscriber(id: string, email: string) {
-    if (!confirm(`Remove ${email}?`)) return;
+    const confirmed = await confirm(`Remove ${email} from subscribers?`, 'Remove Subscriber');
+    if (!confirmed) return;
     await supabase.from('newsletter_subscribers').delete().eq('id', id);
     loadData();
   }

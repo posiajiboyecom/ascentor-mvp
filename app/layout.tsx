@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import { ModalProvider } from '@/components/Modal';
+import { NotificationProvider } from '@/components/Notifications';
 
 export const metadata: Metadata = {
   title: 'Ascentor — AI Leadership Coach for African Professionals',
@@ -33,8 +35,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96.png" />
       </head>
       <body>
-        {children}
-        <PWAInstallPrompt />
+        <ModalProvider>
+          <NotificationProvider>
+            {children}
+            <PWAInstallPrompt />
+          </NotificationProvider>
+        </ModalProvider>
       </body>
     </html>
   );

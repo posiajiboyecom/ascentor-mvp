@@ -14,6 +14,8 @@ const NAV = [
   { href: '/admin/coaching', label: 'Chat Data', icon: '💬' },
   { href: '/admin/blog', label: 'Blog', icon: '📝' },
   { href: '/admin/newsletter', label: 'Newsletter', icon: '📨' },
+  { href: '/admin/logs', label: 'Audit Logs', icon: '🔍' },
+  { href: '/admin/reports', label: 'Reports', icon: '📈' },
 ];
 
 const MOBILE_STYLES = `
