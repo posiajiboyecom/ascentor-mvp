@@ -1,9 +1,20 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 
 export const metadata: Metadata = {
   title: 'Ascentor — AI Leadership Coach for African Professionals',
   description: 'Your AI-powered leadership coach, built for ambitious African professionals ready to lead.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Ascentor',
+    startupImage: '/icons/icon-512.png',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport: Viewport = {
@@ -17,7 +28,14 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <head>
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96.png" />
+      </head>
+      <body>
+        {children}
+        <PWAInstallPrompt />
+      </body>
     </html>
   );
 }

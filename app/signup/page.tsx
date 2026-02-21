@@ -1,18 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
+// Wrap the main component in Suspense because useSearchParams requires it
 export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0B0D17' }}>
+        <div className="text-gray-400 text-sm">Loading...</div>
+      </div>
+    }>
+      <SignUpForm />
+    </Suspense>
+  );
+}
+
+function SignUpForm() {
   const router = useRouter();
   const supabase = createClient();
-  
+  const searchParams = useSearchParams();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // ═══ REFERRAL: Capture ?ref= from URL and store it ═══
+  const refCode = searchParams.get('ref');
+  const [referralBanner, setReferralBanner] = useState('');
+
+  useEffect(() => {
+    if (refCode) {
+      localStorage.setItem('ascentor_referral', refCode.toUpperCase());
+      setReferralBanner(refCode.toUpperCase());
+    } else {
+      // Check if there's already a stored referral (from a previous visit)
+      const stored = localStorage.getItem('ascentor_referral');
+      if (stored) setReferralBanner(stored);
+    }
+  }, [refCode]);
 
   // --- Email & Password Sign Up ---
   async function handleEmailSignUp(e: React.FormEvent) {
@@ -31,7 +60,7 @@ export default function SignUpPage() {
     if (error) {
       setError(error.message);
     } else {
-      router.push('/checkout'); // Or wherever you send users after signup
+      router.push('/checkout');
     }
     setLoading(false);
   }
@@ -54,7 +83,23 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4" style={{ backgroundColor: '#0B0D17' }}>
       <div className="w-full max-w-md space-y-8">
-        
+
+        {/* ═══ REFERRAL BANNER — shows when someone arrives via referral link ═══ */}
+        {referralBanner && (
+          <div className="rounded-lg px-4 py-3 text-center"
+            style={{
+              background: 'rgba(16,185,129,0.08)',
+              border: '1px solid rgba(16,185,129,0.2)',
+            }}>
+            <p className="text-sm font-semibold" style={{ color: '#10B981' }}>
+              🎁 You've been referred!
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: '#6EE7B7' }}>
+              Sign up and you both get 7 extra days free.
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <div>
           <h2 className="text-3xl font-bold text-white mb-2">Join Ascentor</h2>
@@ -63,7 +108,7 @@ export default function SignUpPage() {
 
         {/* OAuth Buttons */}
         <div className="space-y-3">
-          <button 
+          <button
             onClick={() => handleOAuth('google')}
             type="button"
             className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-700 rounded-lg text-white hover:bg-gray-800 transition-colors"
@@ -77,7 +122,7 @@ export default function SignUpPage() {
             Continue with Google
           </button>
 
-          <button 
+          <button
             onClick={() => handleOAuth('linkedin_oidc')}
             type="button"
             className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-700 rounded-lg text-white hover:bg-gray-800 transition-colors"

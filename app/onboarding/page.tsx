@@ -60,7 +60,7 @@ export default function OnboardingFixPage() {
       });
 
     if (dbError) {
-      console.error("Database Error Detail:", dbError); // Check console for full details
+      console.error("Database Error Detail:", dbError);
       alert("Database Error: " + dbError.message + " (Check console for details)");
       return;
     }
@@ -70,7 +70,7 @@ export default function OnboardingFixPage() {
   };
 
   // ---------------------------------------------------------
-  // 2. GOAL SAVE (Standard Insert)
+  // 2. GOAL SAVE + REFERRAL APPLICATION
   // ---------------------------------------------------------
   const handleGoalSave = async () => {
     setSaving(true);
@@ -94,9 +94,38 @@ export default function OnboardingFixPage() {
     if (error) {
         alert(`Error saving goal: ${error.message}`);
         setSaving(false);
-    } else {
-        router.push('/dashboard');
+        return;
     }
+
+    // ═══════════════════════════════════════════════════
+    // ═══ REFERRAL: Apply stored referral code ═══
+    // ═══════════════════════════════════════════════════
+    // This runs AFTER the goal is saved successfully.
+    // It checks localStorage for a referral code that was
+    // stored when the user arrived at /signup?ref=CODE.
+    // If found, it calls the /api/referral endpoint to
+    // link the referral in the database.
+    // It's wrapped in try/catch so it NEVER blocks the
+    // user from getting to the dashboard — referral is
+    // a bonus, not a gate.
+    // ═══════════════════════════════════════════════════
+    try {
+      const storedRef = localStorage.getItem('ascentor_referral');
+      if (storedRef) {
+        await fetch('/api/referral', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referralCode: storedRef }),
+        });
+        // Clear it regardless of success/failure — don't retry
+        localStorage.removeItem('ascentor_referral');
+      }
+    } catch (refErr) {
+      // Silently fail — referral is a bonus, not critical path
+      console.warn('Referral application failed (non-blocking):', refErr);
+    }
+
+    router.push('/dashboard');
   };
 
   // ── RENDER STEP 1: Profile ──
