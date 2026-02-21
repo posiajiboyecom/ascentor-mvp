@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(1);
 
-    let result = { allowed: true, risk_level: 'low' as const, reason: undefined as string | undefined, details: undefined as string | undefined };
+    let result: { allowed: boolean; risk_level: 'low' | 'medium' | 'high' | 'critical'; reason?: string; details?: string } = { allowed: true, risk_level: 'low' };
 
     if (lastSessions && lastSessions.length > 0) {
       const last = lastSessions[0];
