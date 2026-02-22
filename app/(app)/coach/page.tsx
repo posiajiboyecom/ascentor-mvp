@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import UpgradePrompt from '@/components/UpgradePrompt';
+import { analytics } from '@/lib/analytics';
 
 const SESSION_TYPES = [
   { id: 'challenge_navigation', label: 'Navigate a Challenge', icon: '🧭' },
@@ -23,15 +25,32 @@ export default function CoachPage() {
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [sessionType, setSessionType] = useState('challenge_navigation');
+  const [limitReached, setLimitReached] = useState(false);
+  const [usageInfo, setUsageInfo] = useState<{ used: number; limit: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadHistory();
+    checkUsageLimit();
   }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  async function checkUsageLimit() {
+    try {
+      const res = await fetch('/api/usage/check?feature=coachingSessions');
+      if (res.ok) {
+        const data = await res.json();
+        setUsageInfo({ used: data.used, limit: data.limit });
+        if (!data.allowed) {
+          setLimitReached(true);
+          analytics.coachingLimitReached();
+        }
+      }
+    } catch {}
+  }
 
   async function loadHistory() {
     try {
@@ -59,7 +78,7 @@ export default function CoachPage() {
   }
 
   const handleSend = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || limitReached) return;
     const userMsg = input.trim();
     setInput('');
     setMessages((m) => [...m, { role: 'user', content: userMsg }]);
@@ -73,9 +92,25 @@ export default function CoachPage() {
       });
       const data = await res.json();
 
+      // Check if limit was hit on this request
+      if (res.status === 429 || data.upgradeRequired) {
+        setLimitReached(true);
+        analytics.coachingLimitReached();
+        setMessages((m) => [...m, {
+          role: 'assistant',
+          reflection: data.error || "You've reached your daily coaching session limit.",
+          question: "Upgrade your plan to continue your coaching journey today.",
+        }]);
+        setLoading(false);
+        return;
+      }
+
       if (!res.ok) {
         throw new Error(data.error || 'Failed to contact coach');
       }
+
+      // Track successful session
+      analytics.coachingSessionStarted(sessionType);
 
       if (data.full_response) {
         setMessages((m) => [...m, {
@@ -94,6 +129,15 @@ export default function CoachPage() {
           question: resp.question,
           action: resp.action,
         }]);
+      }
+
+      // Update usage count locally
+      if (usageInfo) {
+        const newUsed = usageInfo.used + 1;
+        setUsageInfo({ ...usageInfo, used: newUsed });
+        if (newUsed >= usageInfo.limit && usageInfo.limit !== -1) {
+          setLimitReached(true);
+        }
       }
     } catch {
       setMessages((m) => [...m, {
@@ -147,6 +191,27 @@ export default function CoachPage() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Usage counter */}
+      {usageInfo && usageInfo.limit !== -1 && (
+        <div className="mb-3 flex justify-end">
+          <span className="text-[11px] px-2.5 py-1 rounded-full"
+            style={{
+              background: limitReached ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.06)',
+              color: limitReached ? 'var(--error, #EF4444)' : 'var(--text-dim)',
+              border: `1px solid ${limitReached ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.12)'}`,
+            }}>
+            {usageInfo.used}/{usageInfo.limit} sessions today
+          </span>
+        </div>
+      )}
+
+      {/* Limit reached banner */}
+      {limitReached && (
+        <div className="mb-4">
+          <UpgradePrompt feature="coaching" compact />
         </div>
       )}
 
@@ -253,9 +318,10 @@ export default function CoachPage() {
               handleSend();
             }
           }}
-          placeholder="Share what's on your mind..."
+          placeholder={limitReached ? "Daily session limit reached — upgrade for more" : "Share what's on your mind..."}
           rows={2}
-          className="flex-1 px-4 py-3 text-sm rounded-xl resize-none leading-relaxed"
+          disabled={limitReached}
+          className="flex-1 px-4 py-3 text-sm rounded-xl resize-none leading-relaxed disabled:opacity-50"
           style={{
             background: 'var(--bg-input)',
             color: 'var(--text)',
@@ -265,7 +331,7 @@ export default function CoachPage() {
         />
         <button
           onClick={handleSend}
-          disabled={!input.trim() || loading}
+          disabled={!input.trim() || loading || limitReached}
           className="w-12 h-12 rounded-xl flex items-center justify-center text-black font-bold text-lg transition-all disabled:opacity-40"
           style={{ background: 'var(--accent)' }}>
           ↑

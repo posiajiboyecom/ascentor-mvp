@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import UpgradePrompt from '@/components/UpgradePrompt';
+import { analytics } from '@/lib/analytics';
 
 type VideoProgress = {
   [courseId: string]: {
@@ -18,13 +20,40 @@ export default function LearnPage() {
   const [activeCourse, setActiveCourse] = useState<string | null>(null);
   const [videoProgress, setVideoProgress] = useState<VideoProgress>({});
   const [loading, setLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const supabase = createClient();
 
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
+    if (!user) { setLoading(false); setHasAccess(false); return; }
+
+    // Check subscription — Learn page requires paid plan
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_plan, subscription_status, subscription_end')
+      .eq('id', user.id)
+      .single();
+
+    const isActive = profile &&
+      ['active', 'trialing'].includes(profile.subscription_status) &&
+      (!profile.subscription_end || new Date(profile.subscription_end) > new Date());
+
+    // Also allow cancelled users who are still within billing period
+    const isCancelledButActive = profile &&
+      profile.subscription_status === 'cancelled' &&
+      profile.subscription_end &&
+      new Date(profile.subscription_end) > new Date();
+
+    if (!isActive && !isCancelledButActive) {
+      setHasAccess(false);
+      setLoading(false);
+      analytics.upgradePromptShown('learn');
+      return;
+    }
+
+    setHasAccess(true);
 
     const [coursesRes, progressRes] = await Promise.all([
       supabase.from('courses').select('*').eq('is_published', true).order('sort_order'),
@@ -51,6 +80,11 @@ export default function LearnPage() {
     setLoading(false);
   }
 
+  function openCourse(courseId: string) {
+    setActiveCourse(courseId);
+    analytics.courseViewed(courseId);
+  }
+
   function getYouTubeEmbedUrl(youtubeId: string, startTime: number = 0) {
     if (!youtubeId) return '';
     return `https://www.youtube.com/embed/${youtubeId}?start=${Math.floor(startTime)}&modestbranding=1&controls=0&rel=0&showinfo=0&disablekb=1&iv_load_policy=3&playsinline=1&autoplay=1`;
@@ -72,6 +106,11 @@ export default function LearnPage() {
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading courses...</p>
       </div>
     );
+  }
+
+  // Block free users with UpgradePrompt
+  if (hasAccess === false) {
+    return <UpgradePrompt feature="learn" />;
   }
 
   if (activeCourse) {
@@ -131,7 +170,7 @@ export default function LearnPage() {
       )}
       <div className="flex flex-col gap-3">
         {filtered.map((course, i) => (
-          <div key={course.id} onClick={() => setActiveCourse(course.id)}
+          <div key={course.id} onClick={() => openCourse(course.id)}
             className="rounded-xl p-4 cursor-pointer transition-all hover:border-gray-600 animate-fade-up"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', animationDelay: `${i * 0.05}s` }}>
             <div className="flex gap-3.5 items-start">

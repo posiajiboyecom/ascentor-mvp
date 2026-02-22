@@ -14,6 +14,7 @@ const NAV = [
   { href: '/admin/coaching', label: 'Chat Data', icon: '💬' },
   { href: '/admin/blog', label: 'Blog', icon: '📝' },
   { href: '/admin/newsletter', label: 'Newsletter', icon: '📨' },
+  { href: '/admin/promo-codes', label: 'Promo Codes', icon: '🎟️' },
   { href: '/admin/logs', label: 'Audit Logs', icon: '🔍' },
   { href: '/admin/reports', label: 'Reports', icon: '📈' },
 ];
@@ -100,7 +101,7 @@ export default function AdminShell({
               {NAV.map((item) => {
                 const active = pathname === item.href || (item.href !== '/admin' && pathname?.startsWith(item.href));
                 return (
-                  <Link key={item.href} href={item.href} onClick={handleNav}
+                  <Link key={item.href + item.label} href={item.href} onClick={handleNav}
                     className="flex items-center gap-3 px-3 py-3 rounded-lg mb-0.5 text-sm transition-all"
                     style={{
                       background: active ? 'rgba(245,158,11,0.09)' : 'transparent',
@@ -153,7 +154,7 @@ export default function AdminShell({
             {NAV.map((item) => {
               const active = pathname === item.href || (item.href !== '/admin' && pathname?.startsWith(item.href));
               return (
-                <Link key={item.href} href={item.href}
+                <Link key={item.href + item.label} href={item.href}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-sm transition-all"
                   style={{
                     background: active ? 'rgba(245,158,11,0.09)' : 'transparent',
