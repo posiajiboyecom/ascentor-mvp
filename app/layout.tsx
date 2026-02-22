@@ -3,6 +3,7 @@ import './globals.css';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { ModalProvider } from '@/components/Modal';
 import { NotificationProvider } from '@/components/Notifications';
+import Script from 'next/script'; // <-- 1. Import the Script component
 
 export const metadata: Metadata = {
   title: 'Ascentor — AI Leadership Coach for African Professionals',
@@ -33,6 +34,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96.png" />
+        
+        {/* 2. Add Plausible Analytics Script */}
+        <Script
+          defer
+          data-domain="ascentor-mvp.vercel.app"
+          src="https://plausible.io/js/script.js"
+          strategy="afterInteractive"
+        />
       </head>
       <body>
         <ModalProvider>
