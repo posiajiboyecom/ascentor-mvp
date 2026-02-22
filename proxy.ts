@@ -1,6 +1,6 @@
 // ============================================================
 // NEXT.JS MIDDLEWARE — Subscription Gating
-// Place this at the ROOT of your project: middleware.ts
+// Place this at the ROOT of your project: proxy.ts
 //
 // This intercepts requests to protected routes and redirects
 // free users to /checkout with a reason parameter.
@@ -25,7 +25,8 @@ const PUBLIC_ROUTES = [
   '/', '/about', '/blog', '/privacy', '/terms',
 ];
 
-export async function middleware(request: NextRequest) {
+// Changed from "export async function middleware" to "export default async function proxy"
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip public routes, static files, and API routes
