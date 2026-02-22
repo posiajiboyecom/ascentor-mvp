@@ -107,13 +107,17 @@ export async function PATCH(req: NextRequest) {
         }
         await supabase.from('profiles').update({ role: value, updated_at: new Date().toISOString() }).eq('id', targetUserId);
 
-        await supabase.from('audit_logs').insert({
-          user_id: user.id,
-          action: 'user_role_changed',
-          entity_type: 'user',
-          entity_id: targetUserId,
-          details: { new_role: value },
-        }).catch(() => {});
+        try {
+          await supabase.from('audit_logs').insert({
+            user_id: user.id,
+            action: 'user_role_changed',
+            entity_type: 'user',
+            entity_id: targetUserId,
+            details: { new_role: value },
+          });
+        } catch (e) {
+          // Silently ignore audit log failures
+        }
 
         return NextResponse.json({ success: true, message: `Role updated to ${value}` });
       }
@@ -123,16 +127,25 @@ export async function PATCH(req: NextRequest) {
         const banUntil = new Date();
         banUntil.setFullYear(banUntil.getFullYear() + 100);
         await supabase.auth.admin.updateUserById(targetUserId, { ban_duration: '876000h' });
+        
         // Sign them out
-        await supabase.auth.admin.signOut(targetUserId, 'global').catch(() => {});
+        try {
+          await supabase.auth.admin.signOut(targetUserId, 'global');
+        } catch (e) {
+           // Silently ignore sign out failures
+        }
 
-        await supabase.from('audit_logs').insert({
-          user_id: user.id,
-          action: 'user_banned',
-          entity_type: 'user',
-          entity_id: targetUserId,
-          details: { reason: value || 'Admin action' },
-        }).catch(() => {});
+        try {
+          await supabase.from('audit_logs').insert({
+            user_id: user.id,
+            action: 'user_banned',
+            entity_type: 'user',
+            entity_id: targetUserId,
+            details: { reason: value || 'Admin action' },
+          });
+        } catch (e) {
+          // Silently ignore audit log failures
+        }
 
         return NextResponse.json({ success: true, message: 'User banned' });
       }
@@ -140,12 +153,16 @@ export async function PATCH(req: NextRequest) {
       case 'unban': {
         await supabase.auth.admin.updateUserById(targetUserId, { ban_duration: 'none' });
 
-        await supabase.from('audit_logs').insert({
-          user_id: user.id,
-          action: 'user_unbanned',
-          entity_type: 'user',
-          entity_id: targetUserId,
-        }).catch(() => {});
+        try {
+          await supabase.from('audit_logs').insert({
+            user_id: user.id,
+            action: 'user_unbanned',
+            entity_type: 'user',
+            entity_id: targetUserId,
+          });
+        } catch (e) {
+          // Silently ignore audit log failures
+        }
 
         return NextResponse.json({ success: true, message: 'User unbanned' });
       }
