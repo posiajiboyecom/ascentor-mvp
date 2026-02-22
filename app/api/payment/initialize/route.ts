@@ -1,212 +1,125 @@
 // ============================================================
-// PAYSTACK WEBHOOK — /api/payment/webhook
-// Receives events from Paystack and updates subscriptions
-// Add this URL in Paystack Dashboard → Settings → Webhooks
+// PAYMENT INITIALIZE — /api/payment/initialize (UPDATED)
+// Validates promo codes from DB (promo_codes table) with
+// fallback to hardcoded codes for backwards compatibility.
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
+// Fallback hardcoded codes (used if promo_codes table doesn't exist yet)
+const FALLBACK_CODES: Record<string, { discount: number; label: string }> = {
+  'FOUNDER50':  { discount: 0.50, label: 'Founders 50% Off' },
+  'ASCENTOR50': { discount: 0.50, label: 'Ascentor 50% Off' },
+  'EARLYBIRD':  { discount: 0.50, label: 'Early Bird 50% Off' },
+  'TESTER100':  { discount: 1.00, label: 'Tester Free Access' },
+  'BETATESTER': { discount: 1.00, label: 'Beta Tester Free Access' },
+  'FREEACCESS': { discount: 1.00, label: 'Free Access' },
+};
+
+async function validatePromoCode(
+  code: string,
+  planId: string = 'standard'
+): Promise<{ valid: boolean; discount: number; label: string; isFree: boolean }> {
+  const upperCode = code.toUpperCase().trim();
+
+  // Try database first
+  try {
+    const { data: dbCode } = await supabase
+      .from('promo_codes')
+      .select('discount, label, max_uses, current_uses, expires_at, active, applies_to')
+      .eq('code', upperCode)
+      .single();
+
+    if (dbCode) {
+      if (!dbCode.active) return { valid: false, discount: 0, label: '', isFree: false };
+      if (dbCode.max_uses && dbCode.current_uses >= dbCode.max_uses) return { valid: false, discount: 0, label: '', isFree: false };
+      if (dbCode.expires_at && new Date(dbCode.expires_at) < new Date()) return { valid: false, discount: 0, label: '', isFree: false };
+      if (dbCode.applies_to && !dbCode.applies_to.includes(planId)) return { valid: false, discount: 0, label: '', isFree: false };
+
+      return {
+        valid: true,
+        discount: parseFloat(dbCode.discount),
+        label: dbCode.label,
+        isFree: parseFloat(dbCode.discount) >= 1.0,
+      };
+    }
+  } catch {
+    // Table might not exist — fall through to hardcoded
+  }
+
+  // Fallback to hardcoded
+  const fallback = FALLBACK_CODES[upperCode];
+  if (fallback) {
+    return { valid: true, discount: fallback.discount, label: fallback.label, isFree: fallback.discount >= 1.0 };
+  }
+
+  return { valid: false, discount: 0, label: '', isFree: false };
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.text();
+    const { email, userId, promoCode, plan } = await req.json();
 
-    // Verify Paystack signature
-    if (PAYSTACK_SECRET) {
-      const hash = crypto
-        .createHmac('sha512', PAYSTACK_SECRET)
-        .update(body)
-        .digest('hex');
-      const signature = req.headers.get('x-paystack-signature');
+    if (!email || !userId) {
+      return NextResponse.json({ error: 'Email and userId are required' }, { status: 400 });
+    }
 
-      if (hash !== signature) {
-        console.error('Paystack webhook: Invalid signature');
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    if (promoCode) {
+      const promo = await validatePromoCode(promoCode, plan || 'standard');
+
+      if (!promo.valid) {
+        return NextResponse.json({ error: 'Invalid or expired promo code' }, { status: 400 });
       }
+
+      // 100% discount — activate immediately
+      if (promo.isFree) {
+        const subscriptionEnd = new Date();
+        subscriptionEnd.setDate(subscriptionEnd.getDate() + 30);
+
+        const { error: updateError } = await supabase.from('profiles').update({
+          subscription_plan: plan || 'standard',
+          subscription_status: 'active',
+          subscription_end: subscriptionEnd.toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq('id', userId);
+
+        if (updateError) {
+          return NextResponse.json({ error: 'Failed to activate account' }, { status: 500 });
+        }
+
+        // Increment promo usage
+        try { await supabase.rpc('use_promo_code', { input_code: promoCode.toUpperCase() }); } catch {}
+
+        // Audit + notification
+        try {
+          await supabase.from('audit_logs').insert({
+            user_id: userId, action: 'promo_activation', entity_type: 'payment',
+            entity_id: promoCode.toUpperCase(), details: { promo: promo.label, discount: '100%', plan },
+          });
+        } catch {}
+        try {
+          await supabase.from('notifications').insert({
+            user_id: userId, type: 'payment', title: 'Account Activated!',
+            message: `Your ${plan || 'standard'} plan is active with ${promo.label}.`, link: '/dashboard',
+          });
+        } catch {}
+
+        return NextResponse.json({ success: true, free: true, message: 'Account activated with free access!' });
+      }
+
+      // Partial discount — return for client-side Paystack popup
+      return NextResponse.json({ success: true, discount: promo.discount, label: promo.label });
     }
 
-    const event = JSON.parse(body);
-    const eventType = event.event;
-    const data = event.data;
-
-    console.log(`Paystack webhook: ${eventType}`, data?.reference);
-
-    switch (eventType) {
-      case 'charge.success':
-        await handleChargeSuccess(data);
-        break;
-
-      case 'subscription.create':
-        await handleSubscriptionCreate(data);
-        break;
-
-      case 'subscription.not_renew':
-      case 'subscription.disable':
-        await handleSubscriptionCancel(data);
-        break;
-
-      case 'invoice.payment_failed':
-        await handlePaymentFailed(data);
-        break;
-
-      default:
-        console.log(`Paystack webhook: Unhandled event ${eventType}`);
-    }
-
-    // Audit log
-    try {
-      await supabase.from('audit_logs').insert({
-        action: `webhook_${eventType}`,
-        entity_type: 'payment',
-        entity_id: data?.reference || data?.id || 'unknown',
-        details: {
-          event: eventType,
-          amount: data?.amount,
-          currency: data?.currency,
-          customer_email: data?.customer?.email,
-          reference: data?.reference,
-        },
-      });
-    } catch {} // Non-critical
-
-    return NextResponse.json({ received: true });
+    return NextResponse.json({ success: true, message: 'Use Paystack popup for payment' });
   } catch (err: any) {
-    console.error('Paystack webhook error:', err);
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
+    console.error('Payment initialization error:', err);
+    return NextResponse.json({ error: 'Payment initialization failed' }, { status: 500 });
   }
-}
-
-// --- Event Handlers ---
-
-async function handleChargeSuccess(data: any) {
-  const email = data.customer?.email;
-  const reference = data.reference;
-  const amount = data.amount / 100; // kobo → NGN
-  const metadata = data.metadata || {};
-  const userId = metadata.user_id;
-  const plan = metadata.plan || 'pro';
-  const billingCycle = metadata.billing_cycle || 'monthly';
-
-  // Find user
-  let profileId = userId;
-  if (!profileId && email) {
-    const { data: authData } = await supabase.auth.admin.listUsers();
-    const authUser = authData?.users?.find(u => u.email === email);
-    profileId = authUser?.id;
-  }
-
-  if (!profileId) {
-    console.error('Webhook charge.success: User not found for', email);
-    return;
-  }
-
-  // Calculate subscription end
-  const subscriptionEnd = new Date();
-  if (billingCycle === 'yearly') {
-    subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
-  } else {
-    subscriptionEnd.setDate(subscriptionEnd.getDate() + 30);
-  }
-
-  // Update profile
-  await supabase.from('profiles').update({
-    subscription_plan: plan,
-    subscription_status: 'active',
-    subscription_end: subscriptionEnd.toISOString(),
-    payment_method: 'paystack',
-    updated_at: new Date().toISOString(),
-  }).eq('id', profileId);
-
-  // Record payment
-  try {
-    await supabase.from('payments').insert({
-      user_id: profileId,
-      amount,
-      currency: data.currency || 'NGN',
-      reference,
-      provider: 'paystack',
-      status: 'success',
-      paystack_data: data,
-    });
-  } catch {} // Non-critical — might already exist from verify
-
-  // Process referral
-  try {
-    await supabase.rpc('process_referral_reward', { referred_user_id: profileId });
-  } catch {} // Non-critical
-
-  console.log(`Webhook: Payment success — User ${profileId}, Amount ${amount}, Ref ${reference}`);
-}
-
-async function handleSubscriptionCreate(data: any) {
-  const email = data.customer?.email;
-  if (!email) return;
-
-  const { data: authData } = await supabase.auth.admin.listUsers();
-  const user = authData?.users?.find(u => u.email === email);
-  if (!user) return;
-
-  await supabase.from('profiles').update({
-    subscription_status: 'active',
-    payment_method: 'paystack',
-    updated_at: new Date().toISOString(),
-  }).eq('id', user.id);
-}
-
-async function handleSubscriptionCancel(data: any) {
-  const email = data.customer?.email;
-  if (!email) return;
-
-  const { data: authData } = await supabase.auth.admin.listUsers();
-  const user = authData?.users?.find(u => u.email === email);
-  if (!user) return;
-
-  await supabase.from('profiles').update({
-    subscription_status: 'cancelled',
-    updated_at: new Date().toISOString(),
-  }).eq('id', user.id);
-
-  // Notify user
-  try {
-    await supabase.from('notifications').insert({
-      user_id: user.id,
-      type: 'warning',
-      title: 'Subscription Cancelled',
-      message: 'Your subscription has been cancelled. You can still access Pro features until your billing period ends.',
-      link: '/checkout',
-    });
-  } catch {} // Non-critical
-}
-
-async function handlePaymentFailed(data: any) {
-  const email = data.customer?.email;
-  if (!email) return;
-
-  const { data: authData } = await supabase.auth.admin.listUsers();
-  const user = authData?.users?.find(u => u.email === email);
-  if (!user) return;
-
-  await supabase.from('profiles').update({
-    subscription_status: 'past_due',
-    updated_at: new Date().toISOString(),
-  }).eq('id', user.id);
-
-  // Notify user
-  try {
-    await supabase.from('notifications').insert({
-      user_id: user.id,
-      type: 'error',
-      title: 'Payment Failed',
-      message: 'Your latest payment failed. Please update your payment method to keep your Pro access.',
-      link: '/checkout',
-    });
-  } catch {} // Non-critical
 }
