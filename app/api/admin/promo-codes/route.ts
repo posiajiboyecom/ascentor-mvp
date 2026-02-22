@@ -67,10 +67,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  await supabase.from('audit_logs').insert({
-    user_id: adminId, action: 'promo_code_created', entity_type: 'promo_code',
-    entity_id: code.toUpperCase(), details: { discount, label },
-  }).catch(() => {});
+  // FIXED: Replaced .catch() with a try...catch block
+  try {
+    await supabase.from('audit_logs').insert({
+      user_id: adminId, action: 'promo_code_created', entity_type: 'promo_code',
+      entity_id: code.toUpperCase(), details: { discount, label },
+    });
+  } catch (auditError) {
+    // Silently ignore audit log failures so it doesn't break the response
+  }
 
   return NextResponse.json({ success: true, code: data });
 }
