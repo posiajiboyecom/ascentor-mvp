@@ -28,7 +28,7 @@ export default function MentorApplyPage() {
     email: '',
     phone: '',
     country: '',
-    current_role: '',
+    role_title: '',
     company: '',
     years_experience: '',
     industry: '',
@@ -56,7 +56,7 @@ export default function MentorApplyPage() {
 
   const validateStep = () => {
     if (step === 1) {
-      if (!form.full_name.trim() || !form.email.trim() || !form.country || !form.current_role.trim() || !form.company.trim() || !form.years_experience || !form.industry)
+      if (!form.full_name.trim() || !form.email.trim() || !form.country || !form.role_title.trim() || !form.company.trim() || !form.years_experience || !form.industry)
         return 'Please fill in all required fields.';
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return 'Please enter a valid email.';
     }
@@ -231,7 +231,7 @@ export default function MentorApplyPage() {
                   <div className="ma-field">
                     <Label required>Current Role / Title</Label>
                     <input className={inputClass} style={inputStyle} placeholder="VP Engineering"
-                      value={form.current_role} onChange={e => set('current_role', e.target.value)} />
+                      value={form.role_title} onChange={e => set('role_title', e.target.value)} />
                   </div>
                   <div className="ma-field">
                     <Label required>Company / Organisation</Label>
@@ -355,7 +355,7 @@ export default function MentorApplyPage() {
                   <div className="ma-review-grid">
                     <span>Name</span><strong>{form.full_name || '—'}</strong>
                     <span>Email</span><strong>{form.email || '—'}</strong>
-                    <span>Role</span><strong>{form.current_role}{form.company ? ` · ${form.company}` : ''}</strong>
+                    <span>Role</span><strong>{form.role_title}{form.company ? ` · ${form.company}` : ''}</strong>
                     <span>Industry</span><strong>{form.industry || '—'}</strong>
                     <span>Experience</span><strong>{form.years_experience || '—'}</strong>
                     <span>Country</span><strong>{form.country || '—'}</strong>

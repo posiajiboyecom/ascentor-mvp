@@ -10,7 +10,7 @@ type Application = {
   email: string;
   phone?: string;
   country: string;
-  current_role: string;
+  role_title: string;
   company: string;
   years_experience: string;
   industry: string;
@@ -186,7 +186,7 @@ export default function AdminMentorsPage() {
                       <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{app.email}</p>
                     </div>
                     <div>
-                      <p className="text-xs truncate" style={{ color: 'var(--text)' }}>{app.current_role}</p>
+                      <p className="text-xs truncate" style={{ color: 'var(--text)' }}>{app.role_title}</p>
                       <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{app.company}</p>
                     </div>
                     <div><span className="text-[10px] px-2 py-0.5 rounded-full truncate block w-fit" style={{ background: 'rgba(59,130,246,0.09)', color: 'var(--blue)' }}>{app.industry.split(' ')[0]}</span></div>
@@ -209,7 +209,7 @@ export default function AdminMentorsPage() {
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{app.full_name}</p>
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{app.current_role} · {app.company}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{app.role_title} · {app.company}</p>
                       </div>
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 ml-2" style={{ background: STATUS_COLORS[app.status]?.bg, color: STATUS_COLORS[app.status]?.color }}>
                         {STATUS_COLORS[app.status]?.label}
@@ -270,7 +270,7 @@ export default function AdminMentorsPage() {
                 <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text-dim)' }}>Profile</p>
                 <div className="flex flex-col gap-2">
                   {[
-                    ['Role', `${selected.current_role} · ${selected.company}`],
+                    ['Role', `${selected.role_title} · ${selected.company}`],
                     ['Industry', selected.industry],
                     ['Experience', selected.years_experience],
                     ['Country', selected.country],
