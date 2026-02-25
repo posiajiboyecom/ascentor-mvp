@@ -62,7 +62,7 @@ const PERSONAS = [
     outcomes: [
       'Get promoted or land your next role faster',
       'Build real leadership skills — not just theory',
-      '1-on-1 sessions with mentors who've done it',
+      "1-on-1 sessions with mentors who've done it",
       'A personal board of advisors in your peer circle',
     ],
     price:    19,
