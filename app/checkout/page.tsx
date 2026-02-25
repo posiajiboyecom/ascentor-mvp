@@ -195,8 +195,8 @@ export default function CheckoutPage() {
         });
         const data = await res.json();
         if (data.free) {
-          setSuccess('Your account has been activated with free access!');
-          setTimeout(() => router.push('/dashboard'), 2000);
+          setSuccess('Your account has been activated! Setting up your profile...');
+          setTimeout(() => router.push('/onboarding'), 2000);
         } else {
           setError(data.error || 'Failed to activate promo');
         }
@@ -247,8 +247,8 @@ export default function CheckoutPage() {
             });
             const data = await res.json();
             if (data.success) {
-              setSuccess('Your 7-day free trial has started! Welcome to Ascentor.');
-              setTimeout(() => router.push('/dashboard'), 2000);
+              setSuccess('Payment confirmed! Let\'s set up your profile.');
+              setTimeout(() => router.push('/onboarding'), 2000);
             } else {
               setError('Payment received but verification failed. Contact support.');
             }
