@@ -351,8 +351,8 @@ export default function LandingPage() {
         <nav className="lp-nav">
           <Link href="/" className="lp-nav-logo">↑ <span>Ascentor</span></Link>
           <ul className="lp-nav-links">
-            <li><a href="#for-section">Who It's For</a></li>
-            <li><a href="#pillars">How It Works</a></li>
+            <li><Link href="/who-its-for">Who It&apos;s For</Link></li>
+            <li><Link href="/how-it-works">How It Works</Link></li>
             <li><Link href="/pricing">Pricing</Link></li>
             <li><Link href="/blog" style={{ color: 'var(--text)' }}>Blog</Link></li>
             <li><Link href="/login" style={{ color: 'var(--text)' }}>Log In</Link></li>
@@ -378,7 +378,7 @@ export default function LandingPage() {
           </p>
           <div className="lp-hero-actions">
             <Link href="/signup" className="lp-btn-primary">Start Free — 7 Days →</Link>
-            <a href="#for-section" className="lp-btn-secondary">See if it's for you</a>
+            <Link href="/who-its-for" className="lp-btn-secondary">See if it&apos;s for you</Link>
           </div>
           <p className="lp-hero-trust">No credit card required · Cancel anytime · 30-day money-back guarantee</p>
         </section>
@@ -418,7 +418,9 @@ export default function LandingPage() {
 
         {/* WHO IT'S FOR */}
         <section className="lp-for-section" id="for-section">
-          <div className="lp-section-label">Who Ascentor Is For</div>
+          <div className="lp-section-label">
+            <Link href="/who-its-for" style={{ color: 'inherit', textDecoration: 'none' }}>Who Ascentor Is For →</Link>
+          </div>
           <h2 className="lp-section-headline">One platform. Every stage of your journey.</h2>
           <div className="lp-for-grid">
             <div className="lp-for-card explorer">
@@ -462,7 +464,9 @@ export default function LandingPage() {
 
         {/* THREE PILLARS */}
         <section className="lp-pillars-section" id="pillars">
-          <div className="lp-section-label" style={{ color: 'rgba(232,160,32,0.7)' }}>How It Works</div>
+          <div className="lp-section-label" style={{ color: 'rgba(232,160,32,0.7)' }}>
+            <Link href="/how-it-works" style={{ color: 'inherit', textDecoration: 'none' }}>How It Works →</Link>
+          </div>
           <h2 className="lp-section-headline">Three pillars. One powerful platform.</h2>
           <p className="lp-section-sub">Everything you need to grow — AI, human mentors, and a community that holds you accountable.</p>
           <div className="lp-pillars-grid">
@@ -689,6 +693,8 @@ export default function LandingPage() {
             <div>
               <div className="lp-footer-col-title">Platform</div>
               <ul className="lp-footer-links">
+                <li><Link href="/who-its-for">Who It&apos;s For</Link></li>
+                <li><Link href="/how-it-works">How It Works</Link></li>
                 <li><Link href="/pricing">Pricing</Link></li>
                 <li><Link href="/blog">Blog</Link></li>
                 <li><Link href="/teams">For Teams</Link></li>
