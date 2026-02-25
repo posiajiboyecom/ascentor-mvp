@@ -2,14 +2,38 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
 export default function LandingPage() {
+  const supabase = createClient();
+
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [subLoading, setSubLoading] = useState(false);
+  const [subError, setSubError] = useState('');
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) setSubscribed(true);
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed) return;
+    setSubLoading(true);
+    setSubError('');
+    const { error } = await supabase.from('newsletter_subscribers').insert({
+      email: trimmed,
+      is_active: true,
+      source: 'landing_page',
+      subscribed_at: new Date().toISOString(),
+    });
+    setSubLoading(false);
+    if (error) {
+      if (error.message.includes('duplicate') || error.code === '23505') {
+        setSubError("You're already subscribed!");
+      } else {
+        setSubError('Something went wrong. Please try again.');
+      }
+    } else {
+      setSubscribed(true);
+    }
   };
 
   return (
@@ -72,13 +96,23 @@ export default function LandingPage() {
         .lp-hero {
           min-height: 100vh; display: flex; flex-direction: column;
           align-items: center; justify-content: center;
-          padding: 120px 24px 80px; position: relative; overflow: hidden; background: var(--white);
+          padding: 120px 24px 80px; position: relative; overflow: hidden;
+          background: var(--white);
+        }
+        .lp-hero-img {
+          position: absolute; inset: 0;
+          background-image: url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=1600&auto=format&fit=crop&q=80');
+          background-size: cover;
+          background-position: center 30%;
+          opacity: 0.18;
+          z-index: 0;
         }
         .lp-hero-bg {
-          position: absolute; inset: 0; pointer-events: none;
+          position: absolute; inset: 0; pointer-events: none; z-index: 1;
           background:
-            radial-gradient(ellipse 60% 50% at 15% 80%, rgba(232,160,32,0.08) 0%, transparent 70%),
-            radial-gradient(ellipse 40% 40% at 85% 20%, rgba(232,160,32,0.06) 0%, transparent 60%);
+            linear-gradient(to bottom, rgba(253,252,249,0.55) 0%, rgba(253,252,249,0.1) 40%, rgba(253,252,249,0.7) 100%),
+            radial-gradient(ellipse 60% 50% at 15% 80%, rgba(232,160,32,0.12) 0%, transparent 70%),
+            radial-gradient(ellipse 40% 40% at 85% 20%, rgba(232,160,32,0.08) 0%, transparent 60%);
         }
         .lp-badge {
           display: inline-flex; align-items: center; gap: 8px;
@@ -319,7 +353,7 @@ export default function LandingPage() {
           <ul className="lp-nav-links">
             <li><a href="#for-section">Who It's For</a></li>
             <li><a href="#pillars">How It Works</a></li>
-            <li><a href="#pricing">Pricing</a></li>
+            <li><Link href="/pricing">Pricing</Link></li>
             <li><Link href="/blog" style={{ color: 'var(--text)' }}>Blog</Link></li>
             <li><Link href="/login" style={{ color: 'var(--text)' }}>Log In</Link></li>
             <li><Link href="/signup" className="lp-nav-cta">Start Free →</Link></li>
@@ -328,6 +362,7 @@ export default function LandingPage() {
 
         {/* HERO */}
         <section className="lp-hero">
+          <div className="lp-hero-img" />
           <div className="lp-hero-bg" />
           <div className="lp-badge">
             <div className="lp-badge-dot" />
@@ -564,7 +599,7 @@ export default function LandingPage() {
                 <li>Basic learning library</li>
                 <li>Monthly group mentor session</li>
               </ul>
-              <Link href="/signup?plan=explorer" className="lp-pricing-btn outline">Start Free Trial</Link>
+              <Link href="/pricing" className="lp-pricing-btn outline">Start Free Trial</Link>
             </div>
             <div className="lp-pricing-card popular">
               <div className="lp-popular-tag">Most Popular</div>
@@ -579,7 +614,7 @@ export default function LandingPage() {
                 <li>Full course library</li>
                 <li>Session summaries & goal tracking</li>
               </ul>
-              <Link href="/signup?plan=builder" className="lp-pricing-btn filled">Start Free Trial</Link>
+              <Link href="/pricing" className="lp-pricing-btn filled">Start Free Trial</Link>
             </div>
             <div className="lp-pricing-card">
               <div className="lp-pricing-plan">Climber</div>
@@ -593,7 +628,7 @@ export default function LandingPage() {
                 <li>Live Q&A priority access</li>
                 <li>1-on-1 onboarding call</li>
               </ul>
-              <Link href="/signup?plan=climber" className="lp-pricing-btn outline">Start Free Trial</Link>
+              <Link href="/pricing" className="lp-pricing-btn outline">Start Free Trial</Link>
             </div>
           </div>
           <p style={{ marginTop: '32px', fontSize: '14px', color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>
@@ -616,24 +651,29 @@ export default function LandingPage() {
               <Link href="/signup" className="lp-btn-primary" style={{ fontSize: '17px', padding: '18px 36px' }}>
                 Start Free — 7 Days →
               </Link>
-              <a href="https://wa.me/234XXXXXXXXXX" className="lp-btn-whatsapp" target="_blank" rel="noreferrer">
-                💬 Join WhatsApp Community
+              <a href="https://chat.whatsapp.com/HGWexQqTh5XE2VT8DhbDnx" className="lp-btn-whatsapp" target="_blank" rel="noreferrer">
+                💬 Join our Founders WhatsApp Community
               </a>
             </div>
             <p style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '8px' }}>Or get weekly mentorship insights — free</p>
             {subscribed ? (
               <p style={{ fontSize: '14px', color: 'var(--gold)', fontWeight: 600 }}>✓ You're in! Check your inbox.</p>
             ) : (
-              <form className="lp-email-form" onSubmit={handleSubscribe}>
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-                <button type="submit">Subscribe</button>
-              </form>
+              <>
+                <form className="lp-email-form" onSubmit={handleSubscribe}>
+                  <input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setSubError(''); }}
+                    required
+                  />
+                  <button type="submit" disabled={subLoading}>
+                    {subLoading ? 'Joining...' : 'Subscribe'}
+                  </button>
+                </form>
+                {subError && <p style={{ fontSize: '12px', color: '#E85020', marginTop: '6px' }}>{subError}</p>}
+              </>
             )}
             <p className="lp-cta-note">No credit card · Cancel anytime · 30-day money-back guarantee</p>
           </div>
