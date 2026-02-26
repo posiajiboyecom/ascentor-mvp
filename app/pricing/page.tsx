@@ -173,12 +173,12 @@ export default function PricingPage() {
             Develop your entire leadership pipeline. Custom cohorts, branded experience, manager dashboards, and dedicated support for organizations with 10+ seats.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="mailto:hello@ascentor.co"
+            <a href="mailto:asamuel@ascentorbi.com"
               className="px-8 py-3.5 rounded-xl text-sm font-semibold"
               style={{ background: '#F59E0B', color: '#000' }}>
               Contact Sales
             </a>
-            <a href="https://calendly.com/ascentor/demo"
+            <a href="https://zbooking.us/kA4x3"
               className="px-8 py-3.5 rounded-xl text-sm font-semibold"
               style={{ border: '1px solid #374151', color: '#F3F4F6' }}>
               Schedule a Demo

@@ -639,7 +639,7 @@ export default function LandingPage() {
           </div>
           <p style={{ marginTop: '32px', fontSize: '14px', color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>
             Looking for team or corporate plans?{' '}
-            <Link href="/contact" style={{ color: 'var(--gold)', textDecoration: 'none' }}>Talk to us →</Link>
+            <Link href="https://zbooking.us/kA4x3" style={{ color: 'var(--gold)', textDecoration: 'none' }}>Talk to us →</Link>
           </p>
         </section>
 

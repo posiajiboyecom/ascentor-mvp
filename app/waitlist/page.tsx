@@ -278,8 +278,8 @@ export default function WaitlistPage() {
   /* ── Success state ── */
   if (success) {
     const txt = encodeURIComponent("I just joined the Ascentor waitlist — Africa's mentorship platform. Early members get 3 months free. Join me 👇");
-    const url = encodeURIComponent(`${typeof window!=='undefined'?window.location.origin:'https://ascentor.co'}/waitlist?ref=${success.referral_code}`);
-    const rawUrl = `${typeof window!=='undefined'?window.location.origin:'https://ascentor.co'}/waitlist?ref=${success.referral_code}`;
+    const url = encodeURIComponent(`${typeof window!=='undefined'?window.location.origin:'https://ascentorbi.com'}/waitlist?ref=${success.referral_code}`);
+    const rawUrl = `${typeof window!=='undefined'?window.location.origin:'https://ascentorbi.com'}/waitlist?ref=${success.referral_code}`;
 
     return (
       <>
