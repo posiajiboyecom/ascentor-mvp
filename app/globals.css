@@ -1,38 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
 @theme {
-  /* ── Backgrounds ── */
-  --color-bg:           #0F0F14;
-  --color-bg-card:      #16161F;
-  --color-bg-card-hover:#1C1C28;
-  --color-bg-input:     #13131B;
-
-  /* ── Brand Accent — Ascentor Blue ── */
-  --color-accent:       #6662FF;
-  --color-accent-dim:   #4D4ACC;
-  --color-accent-light: #A6A2FF;
-
-  /* ── Text ── */
-  --color-text:         #F0EFF8;
-  --color-text-muted:   #9896B8;
-  --color-text-dim:     #5E5C7A;
-
-  /* ── Borders ── */
-  --color-border:       #1E1E2E;
-  --color-border-light: #2A2A3E;
-
-  /* ── Semantic ── */
-  --color-success:      #10B981;
-  --color-error:        #EF4444;
-  --color-blue:         #6662FF;
-  --color-purple:       #A6A2FF;
-
-  /* ── Secondary Brand Accents ── */
-  --color-lime:         #CFFF5E;
-  --color-fuchsia:      #FD81FD;
-  --color-teal:         #14B8A6;
+  --color-bg: #0A0E17;
+  --color-bg-card: #111827;
+  --color-bg-card-hover: #1A2332;
+  --color-bg-input: #0D1321;
+  --color-accent: #F59E0B;
+  --color-accent-dim: #D97706;
+  --color-text: #F3F4F6;
+  --color-text-muted: #9CA3AF;
+  --color-text-dim: #6B7280;
+  --color-border: #1F2937;
+  --color-border-light: #374151;
+  --color-success: #10B981;
+  --color-error: #EF4444;
+  --color-blue: #3B82F6;
+  --color-purple: #8B5CF6;
+  --color-teal: #14B8A6;
 }
 
 @layer base {
@@ -41,150 +27,68 @@
     padding: 0;
     box-sizing: border-box;
   }
-
   body {
-    font-family: 'Inter', sans-serif;
-    background-color: #0F0F14;
-    color: #F0EFF8;
+    font-family: 'DM Sans', sans-serif !important;
+    background-color: #0A0E17 !important;
+    color: #F3F4F6 !important;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  /* Headings use Plus Jakarta Sans */
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 700;
-    line-height: 1.15;
   }
 }
 
 :root {
-  /* ── Backgrounds ── */
-  --bg:             #0F0F14;
-  --bg-card:        #16161F;
-  --bg-card-hover:  #1C1C28;
-  --bg-input:       #13131B;
-
-  /* ── Brand Accent — Ascentor Blue ── */
-  --accent:         #6662FF;
-  --accent-dim:     #4D4ACC;
-  --accent-light:   #A6A2FF;
-  --accent-glow:    rgba(102, 98, 255, 0.15);
-
-  /* ── Text ── */
-  --text:           #F0EFF8;
-  --text-muted:     #9896B8;
-  --text-dim:       #5E5C7A;
-
-  /* ── Borders ── */
-  --border:         #1E1E2E;
-  --border-light:   #2A2A3E;
-
-  /* ── Semantic ── */
-  --success:        #10B981;
-  --error:          #EF4444;
-  --blue:           #6662FF;
-  --purple:         #A6A2FF;
-
-  /* ── Secondary Brand Accents ── */
-  --lime:           #CFFF5E;
-  --fuchsia:        #FD81FD;
-  --teal:           #14B8A6;
-
-  /* ── Typography ── */
-  --font-heading:   'Plus Jakarta Sans', sans-serif;
-  --font-body:      'Inter', sans-serif;
+  --bg: #0A0E17;
+  --bg-card: #111827;
+  --bg-card-hover: #1A2332;
+  --bg-input: #0D1321;
+  --accent: #F59E0B;
+  --accent-dim: #D97706;
+  --accent-glow: rgba(245, 158, 11, 0.15);
+  --text: #F3F4F6;
+  --text-muted: #9CA3AF;
+  --text-dim: #6B7280;
+  --border: #1F2937;
+  --border-light: #374151;
+  --success: #10B981;
+  --error: #EF4444;
+  --blue: #3B82F6;
+  --purple: #8B5CF6;
+  --teal: #14B8A6;
 }
 
-/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-/* ── Animations ── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0);    }
+  to { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeIn {
   from { opacity: 0; }
-  to   { opacity: 1; }
+  to { opacity: 1; }
 }
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(-12px); }
-  to   { opacity: 1; transform: translateX(0);     }
+  to { opacity: 1; transform: translateX(0); }
 }
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1;   }
-  50%       { opacity: 0.4; }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(102, 98, 255, 0.1);  }
-  50%       { box-shadow: 0 0 36px rgba(102, 98, 255, 0.28); }
-}
-@keyframes shimmer {
-  from { background-position: -200% center; }
-  to   { background-position:  200% center; }
+  0%, 100% { box-shadow: 0 0 20px rgba(245,158,11,0.1); }
+  50% { box-shadow: 0 0 30px rgba(245,158,11,0.25); }
 }
 
-.animate-fade-up  { animation: fadeUp  0.5s ease-out both; }
-.animate-fade-in  { animation: fadeIn  0.4s ease-out both; }
+.animate-fade-up { animation: fadeUp 0.5s ease-out both; }
+.animate-fade-in { animation: fadeIn 0.4s ease-out both; }
 .animate-slide-in { animation: slideIn 0.3s ease-out both; }
-.animate-glow     { animation: glow    3s infinite;        }
+.animate-glow { animation: glow 3s infinite; }
 
-/* ── Focus states — brand blue ── */
-input:focus, textarea:focus, select:focus {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px var(--accent-glow) !important;
-  outline: none;
-}
-
-/* ── Safe area ── */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
-/* ── Utility: heading font override ── */
-.font-heading { font-family: var(--font-heading) !important; }
-.font-body    { font-family: var(--font-body)    !important; }
-
-/* ── Brand gradient text ── */
-.text-gradient {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* ── Accent glow card effect ── */
-.card-glow {
-  border: 1px solid var(--border);
-  transition: border-color 0.25s, box-shadow 0.25s;
-}
-.card-glow:hover {
-  border-color: rgba(102, 98, 255, 0.35);
-  box-shadow: 0 4px 32px rgba(102, 98, 255, 0.1);
-}
-
-/* ── Brand pill badge ── */
-.badge-accent {
-  background: rgba(102, 98, 255, 0.1);
-  color: var(--accent-light);
-  border: 1px solid rgba(102, 98, 255, 0.25);
-  border-radius: 100px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 3px 10px;
-}
-
-/* ── Lime accent for special highlights ── */
-.badge-lime {
-  background: rgba(207, 255, 94, 0.1);
-  color: var(--lime);
-  border: 1px solid rgba(207, 255, 94, 0.2);
-  border-radius: 100px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 10px;
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent) !important;
+  outline: none;
 }

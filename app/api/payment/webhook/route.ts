@@ -1,53 +1,94 @@
-import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+// ============================================================
+// PAYMENT INITIALIZE — /api/payment/initialize
+// Handles promo code activation (100% off = instant activation)
+// For paid plans, the popup is handled client-side
+// ============================================================
 
-export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get('code');
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
-  if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-    if (!error) {
-      const { data: { user } } = await supabase.auth.getUser();
+const PROMO_CODES: Record<string, { discount: number; label: string }> = {
+  'FOUNDER50':  { discount: 0.50, label: 'Founders 50% Off' },
+  'ASCENTOR50': { discount: 0.50, label: 'Ascentor 50% Off' },
+  'EARLYBIRD':  { discount: 0.50, label: 'Early Bird 50% Off' },
+  'TESTER100':  { discount: 1.00, label: 'Tester Free Access' },
+  'BETATESTER': { discount: 1.00, label: 'Beta Tester Free Access' },
+  'FREEACCESS': { discount: 1.00, label: 'Free Access' },
+};
 
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('onboarding_completed')
-          .eq('id', user.id)
-          .single();
+export async function POST(req: NextRequest) {
+  try {
+    const { email, userId, promoCode } = await req.json();
 
-        // Returning user who finished everything — go to dashboard
-        if (profile?.onboarding_completed) {
-          return NextResponse.redirect(`${origin}/dashboard`);
-        }
+    if (!email || !userId) {
+      return NextResponse.json({ error: 'Email and userId are required' }, { status: 400 });
+    }
 
-        // Has a profile but not fully onboarded — check if they already paid
-        if (profile) {
-          const { data: fullProfile } = await supabase
-            .from('profiles')
-            .select('subscription_status, subscription_plan')
-            .eq('id', user.id)
-            .single();
-
-          const hasPaid =
-            fullProfile?.subscription_status === 'active' ||
-            fullProfile?.subscription_status === 'trialing' ||
-            !!fullProfile?.subscription_plan;
-
-          // Paid but skipped onboarding — send them there directly
-          if (hasPaid) {
-            return NextResponse.redirect(`${origin}/onboarding`);
-          }
-        }
+    if (promoCode) {
+      const promo = PROMO_CODES[promoCode.toUpperCase()];
+      if (!promo) {
+        return NextResponse.json({ error: 'Invalid promo code' }, { status: 400 });
       }
 
-      // New user — needs to pay first
-      return NextResponse.redirect(`${origin}/checkout`);
-    }
-  }
+      // 100% discount — activate immediately without payment
+      if (promo.discount >= 1.0) {
+        const subscriptionEnd = new Date();
+        subscriptionEnd.setDate(subscriptionEnd.getDate() + 30);
 
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+        const { error: updateError } = await supabase.from('profiles').update({
+          subscription_plan: 'pro',
+          subscription_status: 'active',
+          subscription_end: subscriptionEnd.toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq('id', userId);
+
+        if (updateError) {
+          return NextResponse.json({ error: 'Failed to activate account' }, { status: 500 });
+        }
+
+        // Audit log
+        try {
+          await supabase.from('audit_logs').insert({
+            user_id: userId,
+            action: 'promo_activation',
+            entity_type: 'payment',
+            entity_id: promoCode.toUpperCase(),
+            details: { promo: promo.label, discount: '100%' },
+          });
+        } catch {} // Non-critical
+
+        // Notification
+        try {
+          await supabase.from('notifications').insert({
+            user_id: userId,
+            type: 'payment',
+            title: 'Account Activated!',
+            message: `Your Pro plan is active with ${promo.label}. Enjoy unlimited coaching.`,
+            link: '/dashboard',
+          });
+        } catch {} // Non-critical
+
+        return NextResponse.json({
+          success: true,
+          free: true,
+          message: 'Your account has been activated with free access!',
+        });
+      }
+    }
+
+    // For paid plans, the Paystack popup handles payment client-side
+    // This endpoint is primarily for promo code processing
+    return NextResponse.json({
+      success: true,
+      message: 'Use Paystack popup for payment',
+    });
+  } catch (err: any) {
+    console.error('Payment initialization error:', err);
+    return NextResponse.json({ error: 'Payment initialization failed' }, { status: 500 });
+  }
 }

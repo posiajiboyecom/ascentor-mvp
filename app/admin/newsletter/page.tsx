@@ -20,11 +20,6 @@ export default function AdminNewsletterPage() {
   const [tab, setTab] = useState<'compose' | 'subscribers' | 'history'>('compose');
   const [showPreview, setShowPreview] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showAddSub, setShowAddSub] = useState(false);
-  const [newSubEmail, setNewSubEmail] = useState('');
-  const [newSubName, setNewSubName] = useState('');
-  const [addingSubError, setAddingSubError] = useState('');
-  const [addingSubLoading, setAddingSubLoading] = useState(false);
 
   // Track active formatting states
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
@@ -268,30 +263,6 @@ export default function AdminNewsletterPage() {
     loadData();
   }
 
-  async function addSubscriber() {
-    const email = newSubEmail.trim().toLowerCase();
-    if (!email) { setAddingSubError('Email is required.'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setAddingSubError('Enter a valid email address.'); return; }
-    setAddingSubLoading(true);
-    setAddingSubError('');
-    const { error } = await supabase.from('newsletter_subscribers').insert({
-      email,
-      first_name: newSubName.trim() || null,
-      is_active: true,
-      source: 'admin',
-      subscribed_at: new Date().toISOString(),
-    });
-    setAddingSubLoading(false);
-    if (error) {
-      setAddingSubError(error.message.includes('duplicate') ? 'That email is already subscribed.' : error.message);
-    } else {
-      setNewSubEmail('');
-      setNewSubName('');
-      setShowAddSub(false);
-      loadData();
-    }
-  }
-
   // ═══ TOOLBAR BUTTON COMPONENT ═══
   const ToolBtn = ({ onClick, title, active, children }: { onClick: () => void; title: string; active?: boolean; children: React.ReactNode }) => (
     <button
@@ -493,61 +464,6 @@ export default function AdminNewsletterPage() {
       {/* ═══ SUBSCRIBERS TAB ═══ */}
       {tab === 'subscribers' && (
         <>
-          {/* ═══ ADD SUBSCRIBER ═══ */}
-          <div className="mb-4">
-            {!showAddSub ? (
-              <button
-                onClick={() => { setShowAddSub(true); setAddingSubError(''); }}
-                className="px-4 py-2 rounded-lg text-sm font-semibold"
-                style={{ background: 'var(--accent)', color: '#000' }}
-              >
-                + Add Subscriber
-              </button>
-            ) : (
-              <div className="rounded-xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--text-dim)' }}>Add Subscriber Manually</p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="email"
-                    placeholder="Email address *"
-                    value={newSubEmail}
-                    onChange={(e) => { setNewSubEmail(e.target.value); setAddingSubError(''); }}
-                    onKeyDown={(e) => e.key === 'Enter' && addSubscriber()}
-                    className="flex-1 px-3 py-2 text-sm rounded-lg"
-                    style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="First name (optional)"
-                    value={newSubName}
-                    onChange={(e) => setNewSubName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addSubscriber()}
-                    className="flex-1 px-3 py-2 text-sm rounded-lg"
-                    style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                  />
-                  <button
-                    onClick={addSubscriber}
-                    disabled={addingSubLoading}
-                    className="px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
-                    style={{ background: 'var(--accent)', color: '#000' }}
-                  >
-                    {addingSubLoading ? 'Adding…' : 'Add'}
-                  </button>
-                  <button
-                    onClick={() => { setShowAddSub(false); setNewSubEmail(''); setNewSubName(''); setAddingSubError(''); }}
-                    className="px-4 py-2 rounded-lg text-sm"
-                    style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-                {addingSubError && (
-                  <p className="text-xs mt-2" style={{ color: 'var(--error)' }}>{addingSubError}</p>
-                )}
-              </div>
-            )}
-          </div>
-
           <div className="hidden md:block rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <div className="grid grid-cols-12 gap-2 px-4 py-3 text-[11px] font-bold uppercase tracking-wider" style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-dim)' }}>
               <div className="col-span-4">Email</div><div className="col-span-2">Name</div><div className="col-span-2">Source</div><div className="col-span-2">Subscribed</div><div className="col-span-2 text-center">Actions</div>

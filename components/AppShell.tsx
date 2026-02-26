@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { NotificationBell } from '@/components/Notifications';
 
+
 export default function AppShell({
   children,
   initials = 'U',
@@ -27,65 +28,56 @@ export default function AppShell({
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
       {/* Header */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '12px 20px',
-        borderBottom: '1px solid var(--border)',
-        background: 'rgba(15, 15, 20, 0.92)',
-        backdropFilter: 'blur(14px)',
-        WebkitBackdropFilter: 'blur(14px)',
-      }}>
-        {/* Logo */}
-        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-            <path d="M12 3L22 20H2L12 3Z" fill="#6662FF" fillOpacity="0.12" stroke="#6662FF" strokeWidth="1.5" strokeLinejoin="round"/>
-            <path d="M12 8L18 20H6L12 8Z" fill="#6662FF" fillOpacity="0.35"/>
-            <path d="M9 20H15" stroke="#A6A2FF" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-          <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: '17px', color: 'var(--text)', letterSpacing: '-0.01em' }}>
+      <header className="sticky top-0 z-50 flex justify-between items-center px-5 py-3"
+        style={{
+          borderBottom: '1px solid var(--border)',
+          background: 'rgba(10, 14, 23, 0.92)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}>
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <span className="text-xl" style={{ color: 'var(--accent)' }}>⬆</span>
+          <span className="text-lg font-semibold" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
             Ascentor
           </span>
         </Link>
 
-        {/* Right: bell + avatar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Right side: Notification bell + Avatar */}
+        <div className="flex items-center gap-3">
           <NotificationBell />
 
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowMenu(!showMenu)}
+          {/* Avatar with dropdown */}
+          <div className="relative">
+            <button onClick={() => setShowMenu(!showMenu)}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
               style={{
-                width: 34, height: 34, borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                background: 'rgba(102,98,255,0.14)',
-                border: '1.5px solid rgba(102,98,255,0.32)',
+                background: 'linear-gradient(135deg, rgba(245,158,11,0.13), rgba(245,158,11,0.27))',
+                border: '1.5px solid rgba(245,158,11,0.33)',
                 color: 'var(--accent)',
-                fontFamily: 'Plus Jakarta Sans, sans-serif',
-                transition: 'all 0.18s',
               }}>
               {initials}
             </button>
 
             {showMenu && (
-              <div style={{
-                position: 'absolute', right: 0, top: 'calc(100% + 8px)',
-                width: 168, borderRadius: 10, overflow: 'hidden', zIndex: 50,
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
-              }}>
+              <div className="absolute right-0 mt-2 w-40 rounded-lg py-1 z-50"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                
+                {/* New Invite & Earn Link */}
                 <Link href="/referral" onClick={() => setShowMenu(false)}
-                  style={{ display: 'block', padding: '10px 16px', fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontFamily: 'Inter, sans-serif' }}>
+                  className="block px-4 py-2.5 text-sm hover:opacity-80"
+                  style={{ color: 'var(--accent)' }}>
                   🔗 Invite & Earn
                 </Link>
+
                 <Link href="/account" onClick={() => setShowMenu(false)}
-                  style={{ display: 'block', padding: '10px 16px', fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none', fontFamily: 'Inter, sans-serif', borderTop: '1px solid var(--border)' }}>
-                  ⚙️ Settings
+                  className="block px-4 py-2.5 text-sm hover:opacity-80"
+                  style={{ color: 'var(--text-muted)' }}>
+                  Settings
                 </Link>
+                
                 <button onClick={handleSignOut}
-                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 16px', fontSize: 13, color: 'var(--error)', background: 'transparent', border: 'none', borderTop: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                  className="w-full text-left px-4 py-2.5 text-sm hover:opacity-80"
+                  style={{ color: 'var(--error)' }}>
                   🚪 Sign Out
                 </button>
               </div>
@@ -94,10 +86,13 @@ export default function AppShell({
         </div>
       </header>
 
-      {showMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setShowMenu(false)} />}
+      {/* Close menu when clicking outside */}
+      {showMenu && (
+        <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+      )}
 
-      {/* Content */}
-      <main style={{ flex: 1, width: '100%', maxWidth: 672, margin: '0 auto', padding: '0 20px 96px', overflowY: 'auto' }}>
+      {/* Page Content */}
+      <main className="flex-1 w-full max-w-2xl mx-auto px-5 pb-24 overflow-y-auto">
         {children}
       </main>
 

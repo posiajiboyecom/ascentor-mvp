@@ -8,52 +8,55 @@ export const metadata: Metadata = {
 
 const TIERS = [
   {
-    name: 'Explorer',
-    price: 5,
-    desc: 'For students & graduates (15–22)',
+    name: 'Starter',
+    price: 15,
+    desc: 'For individual contributors ready to grow into leadership.',
     color: '#14B8A6',
     features: [
-      'AI mentor — career discovery mode',
-      'Opportunity & scholarship board',
-      'Peer community access',
-      'Basic learning library',
-      'Monthly group mentor session',
+      'AI coaching — 20 sessions/month',
+      '1 peer cohort (15 members)',
+      'Access to expert session recordings',
+      'Leadership framework library',
+      'Email support',
     ],
-    missing: ['Live expert masterclasses', '1-on-1 mentor booking', 'Session summaries & goal tracking'],
+    missing: ['Live expert sessions', 'Priority matching', 'Custom development plan'],
     cta: 'Start Free Trial',
     href: '/signup',
     popular: false,
   },
   {
-    name: 'Builder',
-    price: 19,
-    desc: 'For early-career professionals (22–32)',
+    name: 'Pro',
+    price: 29,
+    desc: 'For mid-level professionals and first-time managers.',
     color: '#F59E0B',
     features: [
-      'Unlimited AI mentor sessions',
-      'Live expert masterclasses',
-      'All mentorship circles',
-      '1-on-1 mentor booking (2/month)',
-      'Full course library',
-      'Session summaries & goal tracking',
+      'AI coaching — unlimited sessions',
+      '2 peer cohorts',
+      'Live expert sessions (monthly)',
+      'Priority cohort matching',
+      'Personal development plan',
+      'Career strategy templates',
+      'Priority support',
     ],
-    missing: ['Unlimited 1-on-1 mentor sessions', 'Private executive cohort'],
+    missing: ['1-on-1 expert sessions'],
     cta: 'Start Free Trial',
     href: '/signup',
     popular: true,
   },
   {
-    name: 'Climber',
-    price: 39,
-    desc: 'For mid-career leaders (32–50)',
+    name: 'Premium',
+    price: 49,
+    desc: 'For senior leaders and executives scaling their impact.',
     color: '#8B5CF6',
     features: [
-      'Everything in Builder',
-      'Priority AI mentor responses',
-      'Unlimited 1-on-1 mentor sessions',
-      'Private executive cohort',
-      'Live Q&A priority access',
-      '1-on-1 onboarding call',
+      'Everything in Pro',
+      'AI coaching — unlimited + priority',
+      'Unlimited cohort access',
+      '1-on-1 expert session (quarterly)',
+      'Executive peer circle',
+      'Advanced analytics dashboard',
+      'White-glove onboarding',
+      'Dedicated account manager',
     ],
     missing: [],
     cta: 'Start Free Trial',
@@ -89,7 +92,7 @@ export default function PricingPage() {
           Invest in your growth
         </h1>
         <p className="text-base max-w-xl mx-auto" style={{ color: '#6B7280' }}>
-          What used to cost $200/hr in traditional coaching, now starts at $5/month. All plans include a 7-day free trial.
+          What used to cost $5,000–$10,000 in executive coaching, now starts at $15/month. All plans include a 7-day free trial.
         </p>
       </section>
 
