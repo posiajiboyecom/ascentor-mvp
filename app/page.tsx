@@ -349,7 +349,13 @@ export default function LandingPage() {
 
         {/* NAV */}
         <nav className="lp-nav">
-          <Link href="/" className="lp-nav-logo">↑ <span>Ascentor</span></Link>
+          <Link href="/" className="lp-nav-logo">
+            <img
+              src="/ascentor-color-on-dark.svg"
+              alt="Ascentor"
+              style={{ height: '32px', width: 'auto' }}
+            />
+            </Link>
           <ul className="lp-nav-links">
             <li><a href="#for-section">Who It's For</a></li>
             <li><a href="#pillars">How It Works</a></li>
@@ -683,7 +689,11 @@ export default function LandingPage() {
         <footer className="lp-footer">
           <div className="lp-footer-top">
             <div>
-              <div className="lp-footer-brand">↑ <span>Ascentor</span></div>
+              <img
+                  src="/ascentor-light-landscape.svg"
+                  alt="Ascentor"
+                  style={{ height: '28px', width: 'auto', marginBottom: '12px' }}
+                />
               <p className="lp-footer-tagline">Africa's mentorship platform — from figuring it out to making it happen.</p>
             </div>
             <div>
