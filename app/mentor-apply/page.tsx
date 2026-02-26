@@ -123,9 +123,13 @@ export default function MentorApplyPage() {
     return (
       <div className="ma-page">
         <style>{maStyles}</style>
-        <nav className="ma-nav">
-          <Link href="/" className="ma-nav-logo">↑ <span>Ascentor</span></Link>
-        </nav>
+        <Link href="/" className="lp-nav-logo">
+            <img
+              src="/ascentor-color-on-dark.svg"
+              alt="Ascentor"
+              style={{ height: '32px', width: 'auto' }}
+            />
+            </Link>
         <div className="ma-success-wrap">
           <div className="ma-success-card">
             <div className="ma-success-icon">✦</div>

@@ -12,10 +12,13 @@ export default function TermsPage() {
 
       <nav className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(250,250,249,0.88)', borderBottom: '1px solid #E5E5E4' }}>
         <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl" style={{ color: '#F59E0B' }}>⬆</span>
-            <span className="text-lg font-semibold" style={{ fontFamily: "'Playfair Display', serif" }}>Ascentor</span>
-          </Link>
+          <Link href="/" className="lp-nav-logo">
+            <img
+              src="/ascentor-color-on-dark.svg"
+              alt="Ascentor"
+              style={{ height: '32px', width: 'auto' }}
+            />
+            </Link>
           <Link href="/" className="text-sm" style={{ color: '#6B7280' }}>← Home</Link>
         </div>
       </nav>
