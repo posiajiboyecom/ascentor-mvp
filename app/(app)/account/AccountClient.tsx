@@ -245,9 +245,9 @@ export default function AccountClient({ profile, email, authProvider, userId, no
             ) : (
               <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold"
                 style={{
-                  background: 'rgba(102,98,255,0.12)',
-                  color: '#6662FF',
-                  border: '2px solid rgba(102,98,255,0.3)',
+                  background: 'linear-gradient(135deg, #6662FF 0%, #A6A2FF 60%, #FD81FD 100%)',
+                  color: '#fff',
+                  border: '2px solid rgba(166,162,255,0.4)',
                   fontFamily: "'Plus Jakarta Sans', sans-serif",
                   fontWeight: 800,
                 }}>
@@ -293,7 +293,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               style={{
                 background: section === t.key ? 'var(--bg-card)' : 'transparent',
                 color: section === t.key ? '#6662FF' : 'var(--text-dim)',
-                boxShadow: section === t.key ? '0 1px 4px rgba(102,98,255,0.15)' : 'none',
+                boxShadow: section === t.key ? '0 1px 4px rgba(102,98,255,0.15), inset 0 -2px 0 rgba(253,129,253,0.3)' : 'none',
                 fontFamily: "'DM Sans', sans-serif",
                 fontWeight: 600,
               }}>
@@ -363,8 +363,10 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               <div className="rounded-lg p-3" style={{ background: 'rgba(102,98,255,0.05)', border: '1px solid rgba(102,98,255,0.15)' }}>
                 <p className="text-xs" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>
                   Your journey: <span style={{ color: 'var(--text-muted)' }}>{form.current_role || '...'}</span>
-                  {' '}&rarr;{' '}
-                  <span style={{ color: '#6662FF', fontWeight: 600 }}>{form.goal_role || '...'}</span>
+                  {' '}<span style={{ color: '#A6A2FF', fontWeight: 700 }}>&rarr;</span>{' '}
+                  <span style={{ color: '#6662FF', fontWeight: 700, background: 'rgba(207,255,94,0.15)', padding: '1px 6px', borderRadius: 4, border: '1px solid rgba(207,255,94,0.3)' }}>
+                    {form.goal_role || '...'}
+                  </span>
                 </p>
               </div>
 
@@ -639,7 +641,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               </p>
               <button onClick={handleExportData} disabled={exporting}
                 className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
-                style={{ color: '#A6A2FF', border: '1px solid rgba(166,162,255,0.35)', background: 'rgba(102,98,255,0.06)', fontFamily: "'DM Sans', sans-serif" }}>
+                style={{ color: '#fff', border: 'none', background: 'linear-gradient(135deg, #A6A2FF, #6662FF)', boxShadow: '0 2px 12px rgba(166,162,255,0.35)', fontFamily: "'DM Sans', sans-serif" }}>
                 {exporting ? 'Preparing download...' : 'Download My Data'}
               </button>
             </div>
@@ -711,9 +713,9 @@ function Toggle({ label, sub, checked, onChange }: {
       <button onClick={() => onChange(!checked)}
         className="w-10 h-5 rounded-full transition-all shrink-0 relative"
         style={{
-          background: checked ? '#6662FF' : 'var(--bg-input)',
+          background: checked ? 'linear-gradient(135deg, #6662FF, #A6A2FF)' : 'var(--bg-input)',
           border: `1px solid ${checked ? '#6662FF' : 'var(--border)'}`,
-          boxShadow: checked ? '0 0 0 3px rgba(102,98,255,0.15)' : 'none',
+          boxShadow: checked ? '0 0 0 3px rgba(253,129,253,0.2)' : 'none',
         }}>
         <div className="w-3.5 h-3.5 rounded-full transition-all absolute top-0.5"
           style={{ background: checked ? '#fff' : 'var(--text-dim)', left: checked ? '20px' : '3px' }} />

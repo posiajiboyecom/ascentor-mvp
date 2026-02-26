@@ -192,24 +192,29 @@ export default function CoachPage() {
               Choose a session type to begin
             </p>
             <div className="grid grid-cols-2 gap-2.5">
-              {SESSION_TYPES.map((t) => (
-                <button key={t.id} onClick={() => setSessionType(t.id)}
-                  className="rounded-xl p-3.5 text-left transition-all"
-                  style={{
-                    background: sessionType === t.id ? 'rgba(102,98,255,0.07)' : 'var(--bg-card)',
-                    border: sessionType === t.id ? '1.5px solid #6662FF' : '1px solid var(--border)',
-                    boxShadow: sessionType === t.id ? '0 0 0 3px rgba(102,98,255,0.1)' : 'none',
-                  }}>
-                  <span className="text-xl">{t.icon}</span>
-                  <div className="text-[13px] font-semibold mt-1"
+              {SESSION_TYPES.map((t, idx) => {
+                const accentColors = ['#6662FF', '#A6A2FF', '#CFFF5E', '#FD81FD'];
+                const accentColor = accentColors[idx % accentColors.length];
+                const isGreenYellow = accentColor === '#CFFF5E';
+                return (
+                  <button key={t.id} onClick={() => setSessionType(t.id)}
+                    className="rounded-xl p-3.5 text-left transition-all"
                     style={{
-                      color: sessionType === t.id ? '#6662FF' : 'var(--text)',
-                      fontFamily: "'DM Sans', sans-serif",
+                      background: sessionType === t.id ? `${accentColor}12` : 'var(--bg-card)',
+                      border: sessionType === t.id ? `1.5px solid ${accentColor}` : '1px solid var(--border)',
+                      boxShadow: sessionType === t.id ? `0 0 0 3px ${accentColor}22` : 'none',
                     }}>
-                    {t.label}
-                  </div>
-                </button>
-              ))}
+                    <span className="text-xl">{t.icon}</span>
+                    <div className="text-[13px] font-semibold mt-1"
+                      style={{
+                        color: sessionType === t.id ? (isGreenYellow ? '#5A7A00' : accentColor) : 'var(--text)',
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}>
+                      {t.label}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -277,9 +282,9 @@ export default function CoachPage() {
                   {/* AI avatar */}
                   <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(102,98,255,0.2), rgba(166,162,255,0.35))',
-                      border: '1.5px solid rgba(102,98,255,0.35)',
-                      color: '#6662FF',
+                      background: 'linear-gradient(135deg, #6662FF 0%, #A6A2FF 50%, #FD81FD 100%)',
+                      border: '1.5px solid rgba(166,162,255,0.5)',
+                      color: '#fff',
                       fontFamily: "'Plus Jakarta Sans', sans-serif",
                       fontWeight: 800,
                     }}>
@@ -311,9 +316,9 @@ export default function CoachPage() {
                     {msg.action && (
                       <div className="px-3.5 py-2.5 rounded-lg text-[13px] flex items-start gap-2"
                         style={{
-                          background: 'rgba(102,98,255,0.07)',
-                          border: '1px solid rgba(102,98,255,0.18)',
-                          color: '#6662FF',
+                          background: 'rgba(207,255,94,0.08)',
+                          border: '1px solid rgba(207,255,94,0.25)',
+                          color: '#5A7A00',
                           fontFamily: "'DM Sans', sans-serif",
                         }}>
                         <span>📌</span>
@@ -342,11 +347,15 @@ export default function CoachPage() {
               <div className="px-4 py-3.5 rounded-2xl rounded-tl-sm"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                 <div className="flex gap-1">
-                  {[0, 1, 2].map((d) => (
-                    <div key={d} className="w-1.5 h-1.5 rounded-full"
+                  {[
+                    { color: '#A6A2FF', delay: '0s' },
+                    { color: '#FD81FD', delay: '0.2s' },
+                    { color: '#CFFF5E', delay: '0.4s' },
+                  ].map((d, i) => (
+                    <div key={i} className="w-1.5 h-1.5 rounded-full"
                       style={{
-                        background: '#A6A2FF',
-                        animation: `pulse-dot 1.2s infinite ${d * 0.2}s`,
+                        background: d.color,
+                        animation: `pulse-dot 1.2s infinite ${d.delay}`,
                       }} />
                   ))}
                 </div>
