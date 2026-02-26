@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
 
 type BillingCycle = 'monthly' | 'yearly';
 
@@ -10,31 +11,28 @@ interface Plan {
   id: string;
   name: string;
   description: string;
-  icon: string;
+  stage: string;
+  stageColor: string;
   monthlyPrice: number;
   yearlyPrice: number;
-  paystackPlanCode?: string;
   features: string[];
   highlighted?: boolean;
   cta: string;
-  accentColor: string;
-  accentGlow: string;
 }
 
 const PLANS: Plan[] = [
   {
     id: 'basic',
-    name: 'Basic',
-    description: 'Essential coaching for emerging leaders',
-    icon: '🌱',
+    name: 'Explorer',
+    description: 'Start your journey with guided AI mentorship.',
+    stage: 'EXPLORER',
+    stageColor: '#14B8A6',
     monthlyPrice: 15,
     yearlyPrice: 120,
-    accentColor: '#A6A2FF',
-    accentGlow: 'rgba(166,162,255,0.12)',
     features: [
       '10 AI coaching sessions/month',
-      'Access to community cohorts',
-      'Course library access',
+      'Community cohort access',
+      'Course library',
       'Goal tracking (3 active goals)',
       'Weekly reflection prompts',
       'Coaching session summaries',
@@ -43,16 +41,15 @@ const PLANS: Plan[] = [
   },
   {
     id: 'standard',
-    name: 'Standard',
-    description: 'Unlimited coaching for serious leaders',
-    icon: '🚀',
+    name: 'Builder',
+    description: 'Unlimited coaching for the serious professional.',
+    stage: 'BUILDER',
+    stageColor: '#E8A020',
     monthlyPrice: 25,
     yearlyPrice: 200,
-    accentColor: '#6662FF',
-    accentGlow: 'rgba(102,98,255,0.18)',
     features: [
       'Unlimited AI coaching sessions',
-      'Full course library access',
+      'Full course library',
       'Expert session recordings',
       'Unlimited goal tracking',
       'Advanced coaching summaries',
@@ -65,16 +62,15 @@ const PLANS: Plan[] = [
   },
   {
     id: 'premium',
-    name: 'Premium',
-    description: 'For teams building leaders at scale',
-    icon: '🏛️',
+    name: 'Climber',
+    description: 'For leaders building teams and legacies.',
+    stage: 'CLIMBER',
+    stageColor: '#8B5CF6',
     monthlyPrice: 49,
     yearlyPrice: 396,
-    accentColor: '#CFFF5E',
-    accentGlow: 'rgba(207,255,94,0.10)',
     features: [
-      'Everything in Standard',
-      'Team dashboard (up to 25 seats)',
+      'Everything in Builder',
+      'Team dashboard (25 seats)',
       'Custom coaching frameworks',
       'Dedicated account manager',
       'SSO integration',
@@ -172,13 +168,12 @@ export default function CheckoutPage() {
       // @ts-ignore
       const paystack = new window.PaystackPop();
       paystack.newTransaction({
-        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
         email: user.email, amount: amountKobo, currency: 'NGN', ref: reference,
-        metadata: { custom_fields: [
-          { display_name: 'Plan', variable_name: 'plan', value: planId },
-          { display_name: 'Billing', variable_name: 'billing', value: billing },
-          ...(promoApplied ? [{ display_name: 'Promo', variable_name: 'promo', value: promoCode.trim().toUpperCase() }] : []),
-        ], user_id: user.id, plan: planId, billing_cycle: billing, promo_code: promoCode.trim().toUpperCase() || null, is_trial: true },
+        metadata: {
+          user_id: user.id, plan: planId, billing_cycle: billing,
+          promo_code: promoCode.trim().toUpperCase() || null, is_trial: true,
+        },
         onSuccess: async (transaction: any) => {
           try {
             const res = await fetch('/api/payment/verify', {
@@ -188,12 +183,12 @@ export default function CheckoutPage() {
             const data = await res.json();
             if (data.success) { setSuccess("Payment confirmed! Let's set up your profile."); setTimeout(() => router.push('/onboarding'), 2000); }
             else setError('Payment received but verification failed. Contact support.');
-          } catch { setError('Payment may have succeeded. If not reflected, contact support.'); }
+          } catch { setError('Payment may have succeeded. Contact support if not reflected.'); }
           setLoading(false);
         },
         onCancel: () => { setLoading(false); setSelectedPlan(null); },
       });
-    } catch (err) {
+    } catch {
       setError('Payment system unavailable. Please try again later.');
       setLoading(false);
     }
@@ -204,316 +199,388 @@ export default function CheckoutPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
-        *, *::before, *::after { box-sizing: border-box; }
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .checkout-root {
+        .co-root {
           min-height: 100vh;
-          background: #0F0F14;
-          color: #F0EFF8;
-          font-family: 'Inter', sans-serif;
+          background: #0C0B08;
+          font-family: 'Syne', sans-serif;
+          color: #D4CFC3;
+          position: relative;
+          overflow-x: hidden;
         }
 
-        /* Nav bar */
-        .checkout-nav {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 14px 24px; border-bottom: 1px solid #1E1E2E;
-          background: rgba(15,15,20,0.92);
-          backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-          position: sticky; top: 0; z-index: 10;
+        /* Ambient glow */
+        .co-root::before {
+          content: '';
+          position: fixed;
+          top: -200px; left: 50%;
+          transform: translateX(-50%);
+          width: 900px; height: 900px;
+          background: radial-gradient(circle, rgba(232,160,32,0.045) 0%, transparent 60%);
+          pointer-events: none; z-index: 0;
         }
-        .checkout-nav-logo {
+        /* Grid texture */
+        .co-root::after {
+          content: '';
+          position: fixed; inset: 0;
+          background-image:
+            linear-gradient(rgba(232,160,32,0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(232,160,32,0.02) 1px, transparent 1px);
+          background-size: 48px 48px;
+          pointer-events: none; z-index: 0;
+        }
+
+        /* ── NAV ── */
+        .co-nav {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 16px 32px;
+          border-bottom: 1px solid #2E2A22;
+          background: rgba(12,11,8,0.9);
+          backdrop-filter: blur(16px);
+          position: sticky; top: 0; z-index: 20;
+        }
+        .co-nav-logo {
           display: flex; align-items: center; gap: 10px; text-decoration: none;
         }
-        .checkout-nav-logo-text {
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          font-size: 17px; font-weight: 700; color: #F0EFF8; letter-spacing: -0.01em;
+        .co-nav-logo-text {
+          font-family: 'Cormorant Garamond', serif;
+          font-weight: 700; font-size: 20px; color: #fff;
         }
-        .checkout-back {
-          font-size: 13px; color: #5E5C7A; text-decoration: none;
-          padding: 6px 12px; border-radius: 8px; border: 1px solid #1E1E2E;
-          transition: all 0.18s; font-family: 'Inter', sans-serif;
+        .co-nav-back {
+          font-family: 'DM Mono', monospace;
+          font-size: 11px; letter-spacing: 0.08em;
+          color: #4A4438; text-decoration: none;
+          padding: 7px 14px; border-radius: 8px;
+          border: 1px solid #2E2A22;
+          transition: color 0.2s, border-color 0.2s;
         }
-        .checkout-back:hover { color: #F0EFF8; border-color: #2A2A3E; }
+        .co-nav-back:hover { color: #D4CFC3; border-color: #4A4438; }
 
-        /* Hero */
-        .checkout-hero {
-          max-width: 1120px; margin: 0 auto;
-          padding: 56px 24px 0; text-align: center;
+        /* ── HERO ── */
+        .co-hero {
+          max-width: 680px; margin: 0 auto;
+          padding: 64px 24px 0;
+          text-align: center;
+          position: relative; z-index: 1;
         }
-        .checkout-eyebrow {
+        .co-hero-badge {
           display: inline-flex; align-items: center; gap: 8px;
-          padding: 7px 18px; border-radius: 100px; margin-bottom: 24px;
-          font-size: 13px; font-weight: 600;
-          background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25);
-          color: #10B981; font-family: 'Inter', sans-serif;
+          padding: 6px 16px; border-radius: 100px; margin-bottom: 28px;
+          font-family: 'DM Mono', monospace;
+          font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+          background: rgba(20,184,166,0.08);
+          border: 1px solid rgba(20,184,166,0.2);
+          color: #14B8A6;
         }
-        .checkout-title {
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          font-size: clamp(28px, 5vw, 46px); font-weight: 800;
-          line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 14px;
+        .co-hero-badge-dot {
+          width: 5px; height: 5px; border-radius: 50%; background: #14B8A6;
         }
-        .checkout-title-gradient {
-          background: linear-gradient(135deg, #F0EFF8 0%, #A6A2FF 100%);
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        .co-hero-heading {
+          font-family: 'Cormorant Garamond', serif;
+          font-weight: 700; font-size: clamp(36px, 6vw, 54px);
+          line-height: 1.05; letter-spacing: -0.5px;
+          color: #fff; margin-bottom: 16px;
         }
-        .checkout-subtitle {
-          font-size: 17px; color: #9896B8; max-width: 520px; margin: 0 auto 36px;
-          line-height: 1.65; font-family: 'Inter', sans-serif;
+        .co-hero-heading em {
+          font-style: italic; color: #E8A020;
+        }
+        .co-hero-sub {
+          font-size: 15px; color: #7A7260; line-height: 1.65;
+          max-width: 460px; margin: 0 auto 40px;
         }
 
-        /* Billing toggle */
-        .billing-toggle {
+        /* ── BILLING TOGGLE ── */
+        .co-billing {
           display: inline-flex;
-          background: #16161F; border: 1px solid #1E1E2E;
-          border-radius: 12px; padding: 4px; margin-bottom: 48px;
+          background: #1E1C17;
+          border: 1px solid #2E2A22;
+          border-radius: 12px; padding: 4px;
+          margin-bottom: 56px;
         }
-        .billing-btn {
+        .co-billing-btn {
           padding: 10px 24px; border-radius: 9px; border: none; cursor: pointer;
-          font-size: 14px; font-weight: 600; transition: all 0.2s;
-          font-family: 'Inter', sans-serif;
+          font-family: 'Syne', sans-serif;
+          font-size: 13px; font-weight: 600;
+          transition: all 0.2s;
         }
-        .billing-btn.active {
-          background: #6662FF; color: #fff;
-          box-shadow: 0 4px 12px rgba(102,98,255,0.35);
+        .co-billing-btn.active {
+          background: #E8A020; color: #0C0B08;
         }
-        .billing-btn.inactive { background: transparent; color: #5E5C7A; }
-        .billing-save {
-          margin-left: 6px; font-size: 10px; padding: 2px 7px;
-          border-radius: 4px; font-weight: 700; letter-spacing: 0.02em;
+        .co-billing-btn.inactive {
+          background: transparent; color: #4A4438;
         }
-        .billing-btn.active .billing-save { background: rgba(255,255,255,0.15); color: #fff; }
-        .billing-btn.inactive .billing-save { background: rgba(102,98,255,0.12); color: #A6A2FF; }
+        .co-save-pill {
+          display: inline-block;
+          margin-left: 6px; padding: 2px 8px;
+          border-radius: 4px;
+          font-family: 'DM Mono', monospace;
+          font-size: 9px; letter-spacing: 0.08em; font-weight: 500;
+        }
+        .active .co-save-pill { background: rgba(12,11,8,0.25); color: #0C0B08; }
+        .inactive .co-save-pill { background: rgba(232,160,32,0.1); color: #E8A020; }
 
-        /* Plan cards */
-        .plans-grid {
-          max-width: 1120px; margin: 0 auto 40px;
-          padding: 0 24px;
-          display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+        /* ── PLANS GRID ── */
+        .co-plans {
+          max-width: 1080px; margin: 0 auto;
+          padding: 0 24px 48px;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+          position: relative; z-index: 1;
         }
-        @media (max-width: 900px) { .plans-grid { grid-template-columns: 1fr; max-width: 480px; } }
+        @media (max-width: 860px) {
+          .co-plans { grid-template-columns: 1fr; max-width: 460px; }
+        }
 
-        .plan-card {
-          background: #16161F; border-radius: 20px; padding: 32px 28px;
-          display: flex; flex-direction: column; position: relative; overflow: hidden;
+        .co-plan {
+          background: #141310;
+          border-radius: 20px;
+          padding: 32px 28px;
+          display: flex; flex-direction: column;
+          position: relative; overflow: hidden;
           transition: transform 0.22s, box-shadow 0.22s;
         }
-        .plan-card:hover { transform: translateY(-4px); }
-        .plan-card .card-glow-orb {
-          position: absolute; top: -60px; right: -60px;
-          width: 160px; height: 160px; border-radius: 50%;
-          filter: blur(50px); pointer-events: none; opacity: 0.7;
+        .co-plan:hover { transform: translateY(-4px); }
+        .co-plan-highlighted {
+          border: 2px solid rgba(232,160,32,0.35) !important;
+        }
+        .co-plan-glow {
+          position: absolute; top: -80px; right: -80px;
+          width: 200px; height: 200px; border-radius: 50%;
+          filter: blur(60px); pointer-events: none;
         }
 
-        .popular-badge {
-          position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-          padding: 4px 16px; border-radius: 100px;
-          font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
-          background: #6662FF; color: #fff;
-          box-shadow: 0 4px 16px rgba(102,98,255,0.45);
-          font-family: 'Inter', sans-serif; white-space: nowrap;
+        .co-popular {
+          position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+          padding: 4px 16px; border-radius: 100px; white-space: nowrap;
+          font-family: 'DM Mono', monospace;
+          font-size: 9px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+          background: #E8A020; color: #0C0B08;
         }
 
-        .plan-icon-wrap {
-          width: 48px; height: 48px; border-radius: 12px; margin-bottom: 16px;
-          display: flex; align-items: center; justify-content: center; font-size: 22px;
+        /* Stage pill */
+        .co-stage {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 4px 10px; border-radius: 100px; margin-bottom: 20px;
+          width: fit-content;
+          font-family: 'DM Mono', monospace;
+          font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
         }
-        .plan-name {
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          font-size: 22px; font-weight: 800; color: #F0EFF8;
-          margin-bottom: 4px; letter-spacing: -0.01em;
-        }
-        .plan-desc { font-size: 13px; color: #5E5C7A; margin-bottom: 24px; font-family: 'Inter', sans-serif; }
+        .co-stage-dot { width: 5px; height: 5px; border-radius: 50%; }
 
-        .plan-price-big {
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          font-size: 42px; font-weight: 800; color: #F0EFF8;
-          line-height: 1; letter-spacing: -0.02em;
+        .co-plan-name {
+          font-family: 'Cormorant Garamond', serif;
+          font-weight: 700; font-size: 28px; color: #fff;
+          letter-spacing: -0.3px; margin-bottom: 6px;
         }
-        .plan-price-per { font-size: 15px; color: #5E5C7A; margin-left: 4px; font-family: 'Inter', sans-serif; }
-        .plan-price-note { font-size: 12px; color: #5E5C7A; margin-top: 5px; font-family: 'Inter', sans-serif; }
-        .plan-price-strike { color: #2A2A3E; }
-        .plan-price-promo { font-size: 12px; margin-top: 4px; font-family: 'Inter', sans-serif; }
+        .co-plan-desc { font-size: 13px; color: #7A7260; margin-bottom: 24px; line-height: 1.5; }
 
-        .plan-features { list-style: none; padding: 0; margin: 24px 0 28px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
-        .plan-feature {
+        /* Price */
+        .co-price-wrap { margin-bottom: 24px; }
+        .co-price-main {
+          display: flex; align-items: baseline; gap: 3px;
+        }
+        .co-price-dollar {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 20px; font-weight: 600; color: #7A7260;
+          align-self: flex-start; margin-top: 6px;
+        }
+        .co-price-num {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 48px; font-weight: 700; color: #fff;
+          line-height: 1; letter-spacing: -1px;
+        }
+        .co-price-per { font-size: 13px; color: #4A4438; align-self: flex-end; margin-bottom: 4px; }
+        .co-price-note { font-size: 11px; color: #4A4438; margin-top: 5px; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; }
+        .co-price-promo { font-size: 12px; margin-top: 6px; }
+
+        /* Features */
+        .co-features {
+          list-style: none; flex: 1;
+          display: flex; flex-direction: column; gap: 10px;
+          margin-bottom: 28px;
+        }
+        .co-feature {
           display: flex; align-items: flex-start; gap: 10px;
-          font-size: 13.5px; color: #9896B8; line-height: 1.5; font-family: 'Inter', sans-serif;
+          font-size: 13px; color: #7A7260; line-height: 1.5;
         }
-        .plan-feature-check {
-          width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
-          display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800;
-        }
-
-        .plan-btn {
-          padding: 13px 24px; border-radius: 11px; border: none;
-          font-size: 15px; font-weight: 800; cursor: pointer; width: 100%;
-          transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        .plan-btn-note {
-          font-size: 11px; color: #5E5C7A; text-align: center;
-          margin-top: 8px; font-family: 'Inter', sans-serif;
+        .co-feature-check {
+          width: 17px; height: 17px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 9px; font-weight: 700;
         }
 
-        /* Promo section */
-        .promo-section {
-          max-width: 440px; margin: 0 auto 24px; padding: 0 24px;
+        /* CTA */
+        .co-cta {
+          padding: 14px 24px; border-radius: 10px; border: none;
+          font-family: 'Syne', sans-serif;
+          font-size: 14px; font-weight: 700; letter-spacing: 0.02em;
+          cursor: pointer; width: 100%; transition: all 0.2s;
         }
-        .promo-card {
-          background: #16161F; border: 1px solid #1E1E2E;
-          border-radius: 14px; padding: 20px;
+        .co-cta:disabled { opacity: 0.4; cursor: not-allowed; }
+        .co-cta-note {
+          font-family: 'DM Mono', monospace;
+          font-size: 10px; letter-spacing: 0.06em; color: #4A4438;
+          text-align: center; margin-top: 8px;
         }
-        .promo-label {
-          font-size: 13px; font-weight: 600; color: #F0EFF8;
-          margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        .promo-row { display: flex; gap: 8px; }
-        .promo-input {
-          flex: 1; padding: 10px 14px; border-radius: 9px;
-          border: 1px solid #1E1E2E; background: #13131B;
-          color: #F0EFF8; font-size: 14px; outline: none;
-          text-transform: uppercase; font-family: 'Inter', sans-serif;
-          transition: border-color 0.18s, box-shadow 0.18s;
-        }
-        .promo-input:focus { border-color: #6662FF; box-shadow: 0 0 0 3px rgba(102,98,255,0.15); }
-        .promo-apply-btn {
-          padding: 10px 18px; border-radius: 9px; border: none;
-          background: #6662FF; color: #fff;
-          font-weight: 700; font-size: 14px; cursor: pointer;
-          font-family: 'Inter', sans-serif; transition: opacity 0.18s;
-        }
-        .promo-apply-btn:hover { opacity: 0.85; }
-        .promo-success { font-size: 13px; color: #10B981; margin-top: 8px; font-family: 'Inter, sans-serif'; }
-        .promo-error   { font-size: 13px; color: #EF4444; margin-top: 8px; font-family: 'Inter, sans-serif'; }
 
-        /* Alert banners */
-        .alert-wrap { max-width: 480px; margin: 0 auto 20px; padding: 0 24px; }
-        .alert-error   { padding: 13px 16px; border-radius: 10px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #EF4444; font-size: 14px; font-family: 'Inter', sans-serif; }
-        .alert-success { padding: 13px 16px; border-radius: 10px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); color: #10B981; font-size: 14px; font-family: 'Inter', sans-serif; }
+        /* ── PROMO ── */
+        .co-promo-wrap {
+          max-width: 440px; margin: 0 auto 28px; padding: 0 24px;
+          position: relative; z-index: 1;
+        }
+        .co-promo-card {
+          background: #141310; border: 1px solid #2E2A22;
+          border-radius: 14px; padding: 20px 22px;
+        }
+        .co-promo-label {
+          font-family: 'DM Mono', monospace;
+          font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+          color: #4A4438; margin-bottom: 12px;
+        }
+        .co-promo-row { display: flex; gap: 8px; }
+        .co-promo-input {
+          flex: 1; padding: 11px 14px; border-radius: 9px;
+          border: 1px solid #2E2A22; background: #1E1C17;
+          color: #D4CFC3; font-family: 'DM Mono', monospace;
+          font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+          outline: none; transition: border-color 0.2s;
+        }
+        .co-promo-input::placeholder { color: #4A4438; }
+        .co-promo-input:focus { border-color: rgba(232,160,32,0.4); }
+        .co-promo-btn {
+          padding: 11px 18px; border-radius: 9px; border: none;
+          background: #E8A020; color: #0C0B08;
+          font-family: 'Syne', sans-serif;
+          font-size: 13px; font-weight: 700; cursor: pointer;
+          transition: background 0.2s;
+        }
+        .co-promo-btn:hover { background: #F5C55A; }
+        .co-promo-success { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: #14B8A6; margin-top: 8px; }
+        .co-promo-error   { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: #EF4444; margin-top: 8px; }
 
-        /* Trust row */
-        .trust-section {
+        /* ── ALERTS ── */
+        .co-alert-wrap { max-width: 440px; margin: 0 auto 20px; padding: 0 24px; position: relative; z-index: 1; }
+        .co-alert-error   { padding: 13px 16px; border-radius: 10px; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); color: #EF4444; font-size: 13px; }
+        .co-alert-success { padding: 13px 16px; border-radius: 10px; background: rgba(20,184,166,0.06); border: 1px solid rgba(20,184,166,0.2); color: #14B8A6; font-size: 13px; }
+
+        /* ── TRUST ── */
+        .co-trust {
           max-width: 680px; margin: 0 auto;
-          padding: 32px 24px 64px; text-align: center;
+          padding: 28px 24px 72px; text-align: center;
+          position: relative; z-index: 1;
+          border-top: 1px solid #1E1C17;
         }
-        .trust-items { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; margin-bottom: 20px; }
-        .trust-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #5E5C7A; font-family: 'Inter', sans-serif; }
-        .trust-note { font-size: 13px; color: #5E5C7A; line-height: 1.65; font-family: 'Inter', sans-serif; }
-        .trust-link { color: #A6A2FF; text-decoration: none; }
-        .trust-link:hover { color: #6662FF; }
+        .co-trust-items {
+          display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 18px;
+        }
+        .co-trust-item {
+          display: flex; align-items: center; gap: 7px;
+          font-family: 'DM Mono', monospace;
+          font-size: 10px; letter-spacing: 0.06em; color: #4A4438;
+        }
+        .co-trust-note { font-size: 12px; color: #4A4438; line-height: 1.65; }
+        .co-trust-link { color: #E8A020; text-decoration: none; }
+        .co-trust-link:hover { color: #F5C55A; }
       `}</style>
 
-      <div className="checkout-root">
-        {/* Nav */}
-        <nav className="checkout-nav">
-          <a href="/" className="checkout-nav-logo">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 3L22 20H2L12 3Z" fill="#6662FF" fillOpacity="0.12" stroke="#6662FF" strokeWidth="1.5" strokeLinejoin="round"/>
-              <path d="M12 8L18 20H6L12 8Z" fill="#6662FF" fillOpacity="0.35"/>
-              <path d="M9 20H15" stroke="#A6A2FF" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-            <span className="checkout-nav-logo-text">Ascentor</span>
-          </a>
-          <a href="/dashboard" className="checkout-back">← Dashboard</a>
+      <div className="co-root">
+
+        {/* NAV */}
+        <nav className="co-nav">
+          <Link href="/" className="lp-nav-logo">
+  <img
+    src="/ascentor-color-on-dark.svg"
+    alt="Ascentor"
+    style={{ height: '32px', width: 'auto' }}
+  />
+</Link>
+          <a href="/dashboard" className="co-nav-back">← Dashboard</a>
         </nav>
 
-        {/* Hero */}
-        <div className="checkout-hero">
-          <div className="checkout-eyebrow">
-            <span>🎉</span>
-            All plans include a 7-day free trial — no charge until day 8
+        {/* HERO */}
+        <div className="co-hero">
+          <div className="co-hero-badge">
+            <div className="co-hero-badge-dot" />
+            7-day free trial — no charge until day 8
           </div>
-          <h1 className="checkout-title">
-            <span className="checkout-title-gradient">Invest in your leadership</span>
+          <h1 className="co-hero-heading">
+            Everyone who made it<br/>
+            had <em>someone.</em>
           </h1>
-          <p className="checkout-subtitle">
-            AI-powered coaching built for African professionals. Choose the plan that matches your ambition.
+          <p className="co-hero-sub">
+            AI mentorship, expert sessions, and peer accountability — built for the African professional. Choose your stage.
           </p>
 
           {/* Billing toggle */}
-          <div className="billing-toggle">
+          <div className="co-billing">
             {(['monthly', 'yearly'] as BillingCycle[]).map(cycle => (
               <button
                 key={cycle}
                 onClick={() => setBilling(cycle)}
-                className={`billing-btn ${billing === cycle ? 'active' : 'inactive'}`}
+                className={`co-billing-btn ${billing === cycle ? 'active' : 'inactive'}`}
               >
                 {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
-                {cycle === 'yearly' && (
-                  <span className="billing-save">Save 33%</span>
-                )}
+                {cycle === 'yearly' && <span className="co-save-pill">SAVE 33%</span>}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Plans */}
-        <div className="plans-grid">
+        {/* PLANS */}
+        <div className="co-plans">
           {PLANS.map(plan => {
-            const price   = getPrice(plan);
-            const current = isCurrentPlan(plan.id);
-            const isHL    = plan.highlighted;
+            const price    = getPrice(plan);
+            const current  = isCurrentPlan(plan.id);
+            const isHL     = plan.highlighted;
             const promoKey = promoCode.trim().toUpperCase();
             const hasPromo = promoApplied && PROMO_CODES[promoKey]?.appliesTo.includes(plan.id);
+            const monthlyDisplay = billing === 'monthly' ? price : Math.round(price / 12);
 
             return (
               <div
                 key={plan.id}
-                className="plan-card"
-                style={{
-                  border: `${isHL ? '2px' : '1px'} solid ${isHL ? 'rgba(102,98,255,0.45)' : '#1E1E2E'}`,
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = isHL
-                    ? `0 20px 56px ${plan.accentGlow}`
-                    : '0 16px 40px rgba(0,0,0,0.3)';
-                }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
+                className={`co-plan ${isHL ? 'co-plan-highlighted' : ''}`}
+                style={{ border: `1px solid ${isHL ? 'rgba(232,160,32,0.3)' : '#2E2A22'}` }}
               >
-                {/* Glow orb */}
-                <div className="card-glow-orb" style={{ background: `radial-gradient(circle, ${plan.accentGlow.replace('0.18', '0.5').replace('0.12', '0.5').replace('0.10', '0.5')}, transparent 70%)` }} />
+                {/* Glow */}
+                <div className="co-plan-glow" style={{ background: `radial-gradient(circle, ${plan.stageColor}22, transparent 70%)` }} />
 
-                {isHL && <div className="popular-badge">Most Popular</div>}
+                {isHL && <div className="co-popular">Most Popular</div>}
 
-                {/* Icon */}
-                <div className="plan-icon-wrap" style={{ background: `${plan.accentColor}15`, border: `1px solid ${plan.accentColor}25` }}>
-                  {plan.icon}
+                {/* Stage pill */}
+                <div className="co-stage" style={{ background: `${plan.stageColor}12`, border: `1px solid ${plan.stageColor}25` }}>
+                  <div className="co-stage-dot" style={{ background: plan.stageColor }} />
+                  <span style={{ color: plan.stageColor }}>{plan.stage}</span>
                 </div>
 
-                <h3 className="plan-name">{plan.name}</h3>
-                <p className="plan-desc">{plan.description}</p>
+                <h3 className="co-plan-name">{plan.name}</h3>
+                <p className="co-plan-desc">{plan.description}</p>
 
-                {/* Price display */}
-                <div style={{ marginBottom: 24 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                    <span className="plan-price-big">
-                      ${billing === 'monthly' ? price : Math.round(price / 12)}
-                    </span>
-                    <span className="plan-price-per">/month</span>
+                {/* Price */}
+                <div className="co-price-wrap">
+                  <div className="co-price-main">
+                    <span className="co-price-dollar">$</span>
+                    <span className="co-price-num">{monthlyDisplay}</span>
+                    <span className="co-price-per">/mo</span>
                   </div>
                   {billing === 'yearly' && (
-                    <p className="plan-price-note">
-                      ${price} billed annually
-                      {hasPromo && (
-                        <span style={{ color: plan.accentColor, marginLeft: 6 }}>
-                          (was ${plan.yearlyPrice})
-                        </span>
-                      )}
-                    </p>
+                    <p className="co-price-note">${price} BILLED ANNUALLY</p>
                   )}
-                  {billing === 'monthly' && hasPromo && price < plan.monthlyPrice && (
-                    <p className="plan-price-promo" style={{ color: plan.accentColor }}>
-                      <s className="plan-price-strike">${plan.monthlyPrice}</s>
-                      {' '}{promoApplied!.label}
+                  {hasPromo && price < (billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice) && (
+                    <p className="co-price-promo" style={{ color: plan.stageColor, fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: '0.06em' }}>
+                      ✓ {promoApplied!.label}
                     </p>
                   )}
                 </div>
 
                 {/* Features */}
-                <ul className="plan-features">
+                <ul className="co-features">
                   {plan.features.map((f, i) => (
-                    <li key={i} className="plan-feature">
-                      <span className="plan-feature-check" style={{ background: `${plan.accentColor}15`, color: plan.accentColor }}>
+                    <li key={i} className="co-feature">
+                      <span className="co-feature-check" style={{ background: `${plan.stageColor}12`, color: plan.stageColor }}>
                         ✓
                       </span>
                       {f}
@@ -523,35 +590,23 @@ export default function CheckoutPage() {
 
                 {/* CTA */}
                 <button
+                  className="co-cta"
                   onClick={() => handleSelectPlan(plan.id)}
                   disabled={current || (loading && selectedPlan === plan.id)}
-                  className="plan-btn"
-                  style={{
-                    background: current
-                      ? 'transparent'
-                      : isHL
-                        ? '#6662FF'
-                        : `${plan.accentColor}18`,
-                    color: current
-                      ? '#5E5C7A'
-                      : isHL
-                        ? '#fff'
-                        : plan.accentColor,
-                    border: current ? '1px solid #1E1E2E' : 'none',
-                    boxShadow: isHL && !current ? '0 6px 20px rgba(102,98,255,0.35)' : 'none',
-                    cursor: current ? 'default' : 'pointer',
-                    opacity: loading && selectedPlan === plan.id ? 0.7 : 1,
-                  }}
-                  onMouseEnter={e => {
-                    if (!current) {
-                      (e.target as HTMLElement).style.transform = 'translateY(-1px)';
-                      if (isHL) (e.target as HTMLElement).style.boxShadow = '0 8px 28px rgba(102,98,255,0.5)';
+                  style={
+                    current ? {
+                      background: 'transparent',
+                      color: '#4A4438',
+                      border: '1px solid #2E2A22',
+                    } : isHL ? {
+                      background: '#E8A020',
+                      color: '#0C0B08',
+                    } : {
+                      background: `${plan.stageColor}14`,
+                      color: plan.stageColor,
+                      border: `1px solid ${plan.stageColor}25`,
                     }
-                  }}
-                  onMouseLeave={e => {
-                    (e.target as HTMLElement).style.transform = 'translateY(0)';
-                    if (isHL) (e.target as HTMLElement).style.boxShadow = '0 6px 20px rgba(102,98,255,0.35)';
-                  }}
+                  }
                 >
                   {loading && selectedPlan === plan.id
                     ? 'Processing…'
@@ -561,58 +616,58 @@ export default function CheckoutPage() {
                 </button>
 
                 {!current && (
-                  <p className="plan-btn-note">7-day free trial · Cancel anytime</p>
+                  <p className="co-cta-note">7-DAY FREE TRIAL · CANCEL ANYTIME</p>
                 )}
               </div>
             );
           })}
         </div>
 
-        {/* Promo code */}
-        <div className="promo-section">
-          <div className="promo-card">
-            <p className="promo-label">🎟️ Have a promo code?</p>
-            <div className="promo-row">
+        {/* PROMO */}
+        <div className="co-promo-wrap">
+          <div className="co-promo-card">
+            <p className="co-promo-label">Have a promo code?</p>
+            <div className="co-promo-row">
               <input
                 type="text"
                 value={promoCode}
                 onChange={e => { setPromoCode(e.target.value); setPromoError(''); if (!e.target.value) setPromoApplied(null); }}
                 placeholder="ENTER CODE"
-                className="promo-input"
+                className="co-promo-input"
                 onKeyDown={e => e.key === 'Enter' && applyPromo()}
               />
-              <button onClick={applyPromo} className="promo-apply-btn">Apply</button>
+              <button onClick={applyPromo} className="co-promo-btn">Apply</button>
             </div>
-            {promoApplied && <p className="promo-success">✓ {promoApplied.label}</p>}
-            {promoError   && <p className="promo-error">✗ {promoError}</p>}
+            {promoApplied && <p className="co-promo-success">✓ {promoApplied.label}</p>}
+            {promoError   && <p className="co-promo-error">✗ {promoError}</p>}
           </div>
         </div>
 
-        {/* Error / success banners */}
-        {error   && <div className="alert-wrap"><div className="alert-error">{error}</div></div>}
-        {success && <div className="alert-wrap"><div className="alert-success">✓ {success}</div></div>}
+        {/* Alerts */}
+        {error   && <div className="co-alert-wrap"><div className="co-alert-error">{error}</div></div>}
+        {success && <div className="co-alert-wrap"><div className="co-alert-success">✓ {success}</div></div>}
 
-        {/* Trust signals */}
-        <div className="trust-section">
-          <div className="trust-items">
+        {/* Trust */}
+        <div className="co-trust">
+          <div className="co-trust-items">
             {[
-              { icon: '🎁', text: '7-day free trial on all plans' },
-              { icon: '🔒', text: 'Secure payments via Paystack' },
-              { icon: '↩️', text: 'Cancel anytime, no questions' },
-              { icon: '💳', text: 'Cards, bank transfer, USSD' },
+              { icon: '🎁', text: '7-DAY FREE TRIAL' },
+              { icon: '🔒', text: 'PAYSTACK SECURED' },
+              { icon: '↩', text: 'CANCEL ANYTIME' },
+              { icon: '💳', text: 'CARD · BANK · USSD' },
             ].map((t, i) => (
-              <div key={i} className="trust-item">
+              <div key={i} className="co-trust-item">
                 <span>{t.icon}</span>{t.text}
               </div>
             ))}
           </div>
-          <p className="trust-note">
-            Prices shown in USD. You&apos;ll be charged in NGN at the current exchange rate.
-            <br />
-            Questions? Email{' '}
-            <a href="mailto:hello@ascentorbi.com" className="trust-link">hello@ascentorbi.com</a>
+          <p className="co-trust-note">
+            Prices in USD · charged in NGN at current rate.{' '}
+            Questions?{' '}
+            <a href="mailto:asamuel@ascentorbi.com" className="co-trust-link">hello@ascentorbi.com</a>
           </p>
         </div>
+
       </div>
     </>
   );

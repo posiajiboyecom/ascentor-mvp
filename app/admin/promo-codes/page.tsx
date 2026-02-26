@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 // ============================================================
 // ADMIN PROMO CODES — /admin/promo-codes
 // Create, manage, enable/disable promotional codes
+// Ascentor brand: Dark #0C0B08 · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
 // ============================================================
 
 interface PromoCode {
@@ -27,7 +28,6 @@ export default function AdminPromoCodesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Create form
   const [newCode, setNewCode] = useState('');
   const [newDiscount, setNewDiscount] = useState('50');
   const [newLabel, setNewLabel] = useState('');
@@ -73,7 +73,7 @@ export default function AdminPromoCodesPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage('Promo code created!');
+        setMessage('Promo code created.');
         setShowCreate(false);
         setNewCode(''); setNewDiscount('50'); setNewLabel(''); setNewMaxUses(''); setNewExpiry('');
         fetchCodes();
@@ -105,117 +105,371 @@ export default function AdminPromoCodesPage() {
     fetchCodes();
   };
 
-  const card: React.CSSProperties = { background: 'var(--bg-card, #12151F)', border: '1px solid var(--border, #2A2D3A)', borderRadius: '12px', padding: '20px' };
-  const input: React.CSSProperties = { padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border, #2A2D3A)', background: 'var(--bg-input, #1A1D2E)', color: 'var(--text)', fontSize: '14px', outline: 'none', width: '100%' };
-  const btn: React.CSSProperties = { padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: 600, fontSize: '14px', cursor: 'pointer' };
+  // ─── Shared style tokens ──────────────────────────────────────────────────
+  const card: React.CSSProperties = {
+    background: '#141310',
+    border: '1px solid #2E2A22',
+    borderRadius: '12px',
+  };
+
+  const inputBase: React.CSSProperties = {
+    padding: '10px 14px',
+    borderRadius: '8px',
+    border: '1px solid #2E2A22',
+    background: '#1E1C17',
+    color: '#D4CFC3',
+    fontSize: '13px',
+    fontFamily: "'Syne', sans-serif",
+    outline: 'none',
+    width: '100%',
+    transition: 'border-color 0.2s',
+  };
+
+  const monoLabel: React.CSSProperties = {
+    fontFamily: "'DM Mono', monospace",
+    fontSize: '10px',
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase' as const,
+    color: '#4A4438',
+  };
+
+  const fieldLabel: React.CSSProperties = {
+    display: 'block',
+    fontFamily: "'DM Mono', monospace",
+    fontSize: '10px',
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase' as const,
+    color: '#4A4438',
+    marginBottom: '6px',
+  };
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
+        .asc-input:focus       { border-color: #E8A020 !important; }
+        .asc-input:hover       { border-color: #4A4438 !important; }
+        .asc-tr:hover td       { background: #1A1815 !important; }
+        .asc-btn-ghost:hover   { border-color: #E8A020 !important; color: #E8A020 !important; }
+        .asc-btn-danger:hover  { background: rgba(239,68,68,0.08) !important; }
+        .asc-btn-gold:hover    { background: #C87820 !important; }
+        .asc-btn-outline:hover { border-color: #E8A020 !important; color: #E8A020 !important; }
+        .asc-checkbox          { accent-color: #E8A020; width: 14px; height: 14px; cursor: pointer; }
+        @keyframes asc-spin    { to { transform: rotate(360deg); } }
+      `}</style>
+
+      {/* ─── Page Header ─────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>Promo Codes</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: '4px 0 0' }}>Create and manage promotional discount codes</p>
+          <h1 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: '28px',
+            fontWeight: 700,
+            color: '#FEF9EC',
+            margin: 0,
+            lineHeight: 1.1,
+            marginBottom: '6px',
+          }}>
+            Promo Codes
+          </h1>
+          <p style={{ ...monoLabel }}>Create and manage promotional discount codes</p>
         </div>
-        <button onClick={() => setShowCreate(!showCreate)}
-          style={{ ...btn, background: 'var(--accent, #F59E0B)', color: '#000' }}>
-          {showCreate ? 'Cancel' : '+ New Code'}
+        <button
+          onClick={() => setShowCreate(!showCreate)}
+          className="asc-btn-gold"
+          style={{
+            padding: '10px 20px',
+            borderRadius: '8px',
+            border: 'none',
+            background: showCreate ? '#2E2A22' : '#E8A020',
+            color: showCreate ? '#7A7260' : '#0C0B08',
+            fontFamily: "'Syne', sans-serif",
+            fontWeight: 700,
+            fontSize: '13px',
+            cursor: 'pointer',
+            letterSpacing: '0.02em',
+            transition: 'background 0.2s',
+          }}
+        >
+          {showCreate ? 'Cancel' : 'New Code'}
         </button>
       </div>
 
+      {/* ─── Status Message ──────────────────────────────────────────────── */}
       {message && (
-        <div style={{ padding: '12px 16px', borderRadius: '8px', background: message.startsWith('Error') ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', color: message.startsWith('Error') ? '#EF4444' : '#10B981', fontSize: '14px', marginBottom: '16px' }}>
+        <div style={{
+          padding: '12px 16px',
+          borderRadius: '8px',
+          background: message.startsWith('Error') ? 'rgba(239,68,68,0.08)' : 'rgba(20,184,166,0.08)',
+          color: message.startsWith('Error') ? '#EF4444' : '#14B8A6',
+          fontFamily: "'DM Mono', monospace",
+          fontSize: '12px',
+          letterSpacing: '0.04em',
+          border: `1px solid ${message.startsWith('Error') ? 'rgba(239,68,68,0.2)' : 'rgba(20,184,166,0.2)'}`,
+          marginBottom: '16px',
+        }}>
           {message}
         </div>
       )}
 
-      {/* Create Form */}
+      {/* ─── Create Form ─────────────────────────────────────────────────── */}
       {showCreate && (
-        <div style={{ ...card, marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)', marginBottom: '16px' }}>Create Promo Code</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={{ ...card, padding: '24px', marginBottom: '20px' }}>
+          <h3 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: '20px',
+            fontWeight: 700,
+            color: '#FEF9EC',
+            margin: '0 0 20px',
+          }}>
+            Create Promo Code
+          </h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-dim)', marginBottom: '4px', textTransform: 'uppercase' }}>Code</label>
-              <input value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())} placeholder="e.g. LAUNCH50" style={input} />
+              <label style={{ ...fieldLabel }}>Code</label>
+              <input
+                value={newCode}
+                onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+                placeholder="e.g. LAUNCH50"
+                className="asc-input"
+                style={{
+                  ...inputBase,
+                  fontFamily: "'DM Mono', monospace",
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                }}
+              />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-dim)', marginBottom: '4px', textTransform: 'uppercase' }}>Discount %</label>
-              <input type="number" value={newDiscount} onChange={(e) => setNewDiscount(e.target.value)} placeholder="50" min="1" max="100" style={input} />
+              <label style={{ ...fieldLabel }}>Discount %</label>
+              <input
+                type="number"
+                value={newDiscount}
+                onChange={(e) => setNewDiscount(e.target.value)}
+                placeholder="50"
+                min="1"
+                max="100"
+                className="asc-input"
+                style={{ ...inputBase }}
+              />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-dim)', marginBottom: '4px', textTransform: 'uppercase' }}>Label (optional)</label>
-              <input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="e.g. Launch Week Special" style={input} />
+              <label style={{ ...fieldLabel }}>Label (optional)</label>
+              <input
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                placeholder="e.g. Launch Week Special"
+                className="asc-input"
+                style={{ ...inputBase }}
+              />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-dim)', marginBottom: '4px', textTransform: 'uppercase' }}>Max Uses (blank = unlimited)</label>
-              <input type="number" value={newMaxUses} onChange={(e) => setNewMaxUses(e.target.value)} placeholder="100" style={input} />
+              <label style={{ ...fieldLabel }}>Max Uses — blank for unlimited</label>
+              <input
+                type="number"
+                value={newMaxUses}
+                onChange={(e) => setNewMaxUses(e.target.value)}
+                placeholder="100"
+                className="asc-input"
+                style={{ ...inputBase }}
+              />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-dim)', marginBottom: '4px', textTransform: 'uppercase' }}>Expires (optional)</label>
-              <input type="date" value={newExpiry} onChange={(e) => setNewExpiry(e.target.value)} style={input} />
+              <label style={{ ...fieldLabel }}>Expires (optional)</label>
+              <input
+                type="date"
+                value={newExpiry}
+                onChange={(e) => setNewExpiry(e.target.value)}
+                className="asc-input"
+                style={{ ...inputBase, colorScheme: 'dark' }}
+              />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-dim)', marginBottom: '4px', textTransform: 'uppercase' }}>Applies to</label>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+              <label style={{ ...fieldLabel }}>Applies to</label>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '8px' }}>
                 {['basic', 'standard', 'premium'].map(p => (
-                  <label key={p} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={newPlans.includes(p)} onChange={(e) => {
-                      setNewPlans(e.target.checked ? [...newPlans, p] : newPlans.filter(x => x !== p));
-                    }} />
-                    {p}
+                  <label key={p} style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={newPlans.includes(p)}
+                      onChange={(e) => setNewPlans(e.target.checked ? [...newPlans, p] : newPlans.filter(x => x !== p))}
+                      className="asc-checkbox"
+                    />
+                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: '#D4CFC3', textTransform: 'capitalize' }}>{p}</span>
                   </label>
                 ))}
               </div>
             </div>
           </div>
-          <button onClick={createCode} disabled={creating || !newCode}
-            style={{ ...btn, background: 'var(--accent)', color: '#000', marginTop: '16px', opacity: creating || !newCode ? 0.5 : 1 }}>
+
+          <button
+            onClick={createCode}
+            disabled={creating || !newCode}
+            className="asc-btn-gold"
+            style={{
+              marginTop: '20px',
+              padding: '11px 24px',
+              borderRadius: '8px',
+              border: 'none',
+              background: '#E8A020',
+              color: '#0C0B08',
+              fontFamily: "'Syne', sans-serif",
+              fontWeight: 700,
+              fontSize: '13px',
+              cursor: creating || !newCode ? 'not-allowed' : 'pointer',
+              opacity: creating || !newCode ? 0.45 : 1,
+              transition: 'background 0.2s, opacity 0.2s',
+              letterSpacing: '0.02em',
+            }}
+          >
             {creating ? 'Creating...' : 'Create Code'}
           </button>
         </div>
       )}
 
-      {/* Codes Table */}
+      {/* ─── Codes Table ─────────────────────────────────────────────────── */}
       <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>
+          <div style={{ padding: '48px', textAlign: 'center' }}>
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '50%',
+              border: '2px solid #2E2A22', borderTopColor: '#E8A020',
+              animation: 'asc-spin 0.9s linear infinite',
+              margin: '0 auto 12px',
+            }} />
+            <p style={{ ...monoLabel }}>Loading codes...</p>
+          </div>
         ) : codes.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No promo codes yet. Create one above.</div>
+          <div style={{ padding: '48px', textAlign: 'center' }}>
+            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', color: '#4A4438', marginBottom: '4px' }}>No promo codes yet.</p>
+            <p style={{ ...monoLabel }}>Create one above to get started.</p>
+          </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <tr style={{ borderBottom: '1px solid #2E2A22' }}>
                   {['Code', 'Discount', 'Label', 'Plans', 'Uses', 'Expires', 'Status', 'Actions'].map(h => (
-                    <th key={h} style={{ padding: '12px 14px', textAlign: 'left', color: 'var(--text-dim)', fontWeight: 500, fontSize: '11px', textTransform: 'uppercase' }}>{h}</th>
+                    <th key={h} style={{
+                      padding: '12px 16px',
+                      textAlign: 'left',
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: '10px',
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      color: '#4A4438',
+                      fontWeight: 500,
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {codes.map(c => (
-                  <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', opacity: c.active ? 1 : 0.5 }}>
-                    <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--accent)', letterSpacing: '1px' }}>{c.code}</td>
-                    <td style={{ padding: '12px 14px', color: 'var(--text)' }}>{Math.round(c.discount * 100)}%</td>
-                    <td style={{ padding: '12px 14px', color: 'var(--text-muted)' }}>{c.label}</td>
-                    <td style={{ padding: '12px 14px', color: 'var(--text-dim)', fontSize: '11px' }}>{c.applies_to?.join(', ')}</td>
-                    <td style={{ padding: '12px 14px', color: 'var(--text-muted)' }}>{c.current_uses}{c.max_uses ? `/${c.max_uses}` : ''}</td>
-                    <td style={{ padding: '12px 14px', color: 'var(--text-dim)' }}>
-                      {c.expires_at ? new Date(c.expires_at).toLocaleDateString() : '—'}
-                    </td>
-                    <td style={{ padding: '12px 14px' }}>
+                  <tr key={c.id} className="asc-tr" style={{ borderBottom: '1px solid #2E2A22', opacity: c.active ? 1 : 0.45 }}>
+
+                    {/* Code */}
+                    <td style={{ padding: '13px 16px' }}>
                       <span style={{
-                        padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600,
-                        background: c.active ? 'rgba(16,185,129,0.1)' : 'rgba(107,106,101,0.1)',
-                        color: c.active ? '#10B981' : '#6B6A65',
-                      }}>{c.active ? 'Active' : 'Disabled'}</span>
+                        fontFamily: "'DM Mono', monospace",
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        color: '#E8A020',
+                        letterSpacing: '0.12em',
+                      }}>
+                        {c.code}
+                      </span>
                     </td>
-                    <td style={{ padding: '12px 14px' }}>
+
+                    {/* Discount */}
+                    <td style={{ padding: '13px 16px' }}>
+                      <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '17px', fontWeight: 700, color: '#D4CFC3' }}>
+                        {Math.round(c.discount * 100)}%
+                      </span>
+                    </td>
+
+                    {/* Label */}
+                    <td style={{ padding: '13px 16px' }}>
+                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: '#7A7260' }}>{c.label}</span>
+                    </td>
+
+                    {/* Plans */}
+                    <td style={{ padding: '13px 16px' }}>
+                      <span style={{ ...monoLabel, fontSize: '10px' }}>{c.applies_to?.join(', ')}</span>
+                    </td>
+
+                    {/* Uses */}
+                    <td style={{ padding: '13px 16px' }}>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '12px', color: '#7A7260' }}>
+                        {c.current_uses}{c.max_uses ? `/${c.max_uses}` : ''}
+                      </span>
+                    </td>
+
+                    {/* Expires */}
+                    <td style={{ padding: '13px 16px' }}>
+                      <span style={{ ...monoLabel, fontSize: '10px' }}>
+                        {c.expires_at ? new Date(c.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td style={{ padding: '13px 16px' }}>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '100px',
+                        fontFamily: "'DM Mono', monospace",
+                        fontSize: '10px',
+                        fontWeight: 500,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        background: c.active ? 'rgba(20,184,166,0.1)' : 'rgba(74,68,56,0.15)',
+                        color: c.active ? '#14B8A6' : '#4A4438',
+                      }}>
+                        {c.active ? 'Active' : 'Disabled'}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td style={{ padding: '13px 16px' }}>
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        <button onClick={() => toggleCode(c.id, c.active)}
-                          style={{ ...btn, padding: '4px 10px', fontSize: '11px', background: 'var(--bg-input)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                        <button
+                          onClick={() => toggleCode(c.id, c.active)}
+                          className="asc-btn-ghost"
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: '7px',
+                            border: '1px solid #2E2A22',
+                            background: 'transparent',
+                            color: '#7A7260',
+                            fontFamily: "'Syne', sans-serif",
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'border-color 0.15s, color 0.15s',
+                          }}
+                        >
                           {c.active ? 'Disable' : 'Enable'}
                         </button>
-                        <button onClick={() => deleteCode(c.id)}
-                          style={{ ...btn, padding: '4px 10px', fontSize: '11px', background: 'transparent', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)' }}>
+                        <button
+                          onClick={() => deleteCode(c.id)}
+                          className="asc-btn-danger"
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: '7px',
+                            border: '1px solid rgba(239,68,68,0.25)',
+                            background: 'transparent',
+                            color: '#EF4444',
+                            fontFamily: "'Syne', sans-serif",
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'background 0.15s',
+                          }}
+                        >
                           Delete
                         </button>
                       </div>

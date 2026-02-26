@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 // ============================================================
 // ADMIN USER MANAGEMENT — /admin/users
 // View, search, filter, edit roles, ban/unban users
+// Ascentor brand: Dark #0C0B08 · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
 // ============================================================
 
 interface User {
@@ -94,63 +95,162 @@ export default function AdminUsersPage() {
     finally { setActionLoading(false); }
   };
 
-  const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+  const formatDate = (d: string | null) =>
+    d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
   const statusBadge = (status: string | null, banned: boolean) => {
     if (banned) return { color: '#EF4444', bg: 'rgba(239,68,68,0.1)', label: 'Banned' };
     const map: Record<string, { color: string; bg: string; label: string }> = {
-      active: { color: '#10B981', bg: 'rgba(16,185,129,0.1)', label: 'Active' },
-      trialing: { color: '#60A5FA', bg: 'rgba(96,165,250,0.1)', label: 'Trial' },
-      cancelled: { color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', label: 'Cancelled' },
-      past_due: { color: '#EF4444', bg: 'rgba(239,68,68,0.1)', label: 'Past Due' },
+      active:    { color: '#14B8A6', bg: 'rgba(20,184,166,0.1)',  label: 'Active' },
+      trialing:  { color: '#E8A020', bg: 'rgba(232,160,32,0.1)',  label: 'Trial' },
+      cancelled: { color: '#7A7260', bg: 'rgba(122,114,96,0.12)', label: 'Cancelled' },
+      past_due:  { color: '#EF4444', bg: 'rgba(239,68,68,0.1)',   label: 'Past Due' },
     };
-    return map[status || ''] || { color: '#6B6A65', bg: 'rgba(107,106,101,0.1)', label: 'Free' };
+    return map[status || ''] || { color: '#4A4438', bg: 'rgba(74,68,56,0.15)', label: 'Free' };
   };
 
-  const card: React.CSSProperties = { background: 'var(--bg-card, #12151F)', border: '1px solid var(--border, #2A2D3A)', borderRadius: '12px' };
-  const input: React.CSSProperties = { padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border, #2A2D3A)', background: 'var(--bg-input, #1A1D2E)', color: 'var(--text)', fontSize: '14px', outline: 'none' };
+  // ─── Shared style tokens ──────────────────────────────────────────────────
+  const card: React.CSSProperties = {
+    background: '#141310',
+    border: '1px solid #2E2A22',
+    borderRadius: '12px',
+  };
+
+  const inputBase: React.CSSProperties = {
+    padding: '10px 14px',
+    borderRadius: '8px',
+    border: '1px solid #2E2A22',
+    background: '#1E1C17',
+    color: '#D4CFC3',
+    fontSize: '13px',
+    fontFamily: "'Syne', sans-serif",
+    outline: 'none',
+    transition: 'border-color 0.2s',
+  };
+
+  const monoLabel: React.CSSProperties = {
+    fontFamily: "'DM Mono', monospace",
+    fontSize: '10px',
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase' as const,
+    color: '#4A4438',
+  };
+
+  const totalPages = Math.ceil(total / 50) || 1;
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
+        .asc-input:focus          { border-color: #E8A020 !important; }
+        .asc-input:hover          { border-color: #4A4438 !important; }
+        .asc-tr:hover td          { background: #1A1815 !important; }
+        .asc-btn-ghost:hover      { border-color: #E8A020 !important; color: #E8A020 !important; }
+        .asc-btn-danger:hover     { background: rgba(239,68,68,0.08) !important; }
+        .asc-btn-safe:hover       { background: rgba(20,184,166,0.08) !important; }
+        .asc-modal-row:last-child { border-bottom: none !important; }
+      `}</style>
+
+      {/* ─── Page Header ────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>User Management</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: '4px 0 0' }}>{total} total users</p>
+          <h1 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: '28px',
+            fontWeight: 700,
+            color: '#FEF9EC',
+            margin: 0,
+            lineHeight: 1.1,
+            marginBottom: '6px',
+          }}>
+            User Management
+          </h1>
+          <p style={{ ...monoLabel }}>
+            {total.toLocaleString()} total users
+          </p>
         </div>
       </div>
 
+      {/* ─── Status Message ──────────────────────────────────────────────── */}
       {message && (
-        <div style={{ padding: '12px 16px', borderRadius: '8px', background: message.startsWith('Error') ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', color: message.startsWith('Error') ? '#EF4444' : '#10B981', fontSize: '14px', marginBottom: '16px' }}>
+        <div style={{
+          padding: '12px 16px',
+          borderRadius: '8px',
+          background: message.startsWith('Error') ? 'rgba(239,68,68,0.08)' : 'rgba(20,184,166,0.08)',
+          color: message.startsWith('Error') ? '#EF4444' : '#14B8A6',
+          fontFamily: "'DM Mono', monospace",
+          fontSize: '12px',
+          letterSpacing: '0.04em',
+          border: `1px solid ${message.startsWith('Error') ? 'rgba(239,68,68,0.2)' : 'rgba(20,184,166,0.2)'}`,
+          marginBottom: '16px',
+        }}>
           {message}
         </div>
       )}
 
-      {/* Filters */}
+      {/* ─── Filters ────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <input type="text" placeholder="Search name, email, referral code..." value={search}
+        <input
+          type="text"
+          placeholder="Search name, email, referral code..."
+          value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          style={{ ...input, flex: '1', minWidth: '220px' }} />
-        <select value={roleFilter} onChange={(e) => { setRoleFilter(e.target.value); setPage(0); }} style={{ ...input, cursor: 'pointer' }}>
+          className="asc-input"
+          style={{ ...inputBase, flex: '1', minWidth: '220px' }}
+        />
+        <select
+          value={roleFilter}
+          onChange={(e) => { setRoleFilter(e.target.value); setPage(0); }}
+          className="asc-input"
+          style={{ ...inputBase, cursor: 'pointer' }}
+        >
           <option value="">All Roles</option>
           {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
         </select>
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }} style={{ ...input, cursor: 'pointer' }}>
+        <select
+          value={statusFilter}
+          onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+          className="asc-input"
+          style={{ ...inputBase, cursor: 'pointer' }}
+        >
           <option value="">All Statuses</option>
           {STATUSES.filter(Boolean).map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
         </select>
       </div>
 
-      {/* Table */}
-      <div style={{ ...card, overflow: 'hidden' }}>
+      {/* ─── Table ──────────────────────────────────────────────────────── */}
+      <div style={{ ...card, overflow: 'hidden', marginBottom: '16px' }}>
         {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading users...</div>
+          <div style={{ padding: '48px', textAlign: 'center' }}>
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '50%',
+              border: '2px solid #2E2A22', borderTopColor: '#E8A020',
+              animation: 'asc-spin 0.9s linear infinite',
+              margin: '0 auto 12px',
+            }} />
+            <p style={{ ...monoLabel }}>Loading users...</p>
+            <style>{`@keyframes asc-spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <tr style={{ borderBottom: '1px solid #2E2A22' }}>
                   {['User', 'Role', 'Plan', 'Status', 'Joined', 'Actions'].map(h => (
-                    <th key={h} style={{ padding: '12px 14px', textAlign: 'left', color: 'var(--text-dim)', fontWeight: 500, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                    <th key={h} style={{
+                      padding: '12px 16px',
+                      textAlign: 'left',
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: '10px',
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      color: '#4A4438',
+                      fontWeight: 500,
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -158,38 +258,111 @@ export default function AdminUsersPage() {
                 {users.map(u => {
                   const badge = statusBadge(u.subscription_status, u.banned);
                   return (
-                    <tr key={u.id} style={{ borderBottom: '1px solid var(--border)', opacity: u.banned ? 0.6 : 1 }}>
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ fontWeight: 600, color: 'var(--text)' }}>{u.full_name || 'Unnamed'}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-dim)' }}>{u.email}</div>
-                        {u.current_role && <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{u.current_role}{u.industry ? ` · ${u.industry}` : ''}</div>}
+                    <tr key={u.id} className="asc-tr" style={{ borderBottom: '1px solid #2E2A22', opacity: u.banned ? 0.55 : 1 }}>
+
+                      {/* User */}
+                      <td style={{ padding: '13px 16px' }}>
+                        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: '13px', color: '#D4CFC3', marginBottom: '2px' }}>
+                          {u.full_name || 'Unnamed'}
+                        </div>
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: '#4A4438' }}>{u.email}</div>
+                        {u.current_role && (
+                          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: '#4A4438', marginTop: '2px', letterSpacing: '0.04em' }}>
+                            {u.current_role}{u.industry ? ` · ${u.industry}` : ''}
+                          </div>
+                        )}
                       </td>
-                      <td style={{ padding: '12px 14px' }}>
+
+                      {/* Role */}
+                      <td style={{ padding: '13px 16px' }}>
                         <select
                           value={u.role}
                           onChange={(e) => doAction(u.id, 'change_role', e.target.value)}
                           disabled={actionLoading}
-                          style={{ ...input, padding: '4px 8px', fontSize: '12px', cursor: 'pointer' }}
+                          className="asc-input"
+                          style={{ ...inputBase, padding: '5px 10px', fontSize: '11px', cursor: 'pointer' }}
                         >
                           {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                         </select>
                       </td>
-                      <td style={{ padding: '12px 14px', color: 'var(--text-muted)' }}>{u.subscription_plan || 'free'}</td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, background: badge.bg, color: badge.color }}>
+
+                      {/* Plan */}
+                      <td style={{ padding: '13px 16px' }}>
+                        <span style={{ ...monoLabel, fontSize: '11px', color: '#7A7260' }}>
+                          {u.subscription_plan || 'free'}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ padding: '13px 16px' }}>
+                        <span style={{
+                          padding: '3px 10px',
+                          borderRadius: '100px',
+                          fontFamily: "'DM Mono', monospace",
+                          fontSize: '10px',
+                          fontWeight: 500,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                          background: badge.bg,
+                          color: badge.color,
+                        }}>
                           {badge.label}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 14px', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>{formatDate(u.created_at)}</td>
-                      <td style={{ padding: '12px 14px' }}>
+
+                      {/* Joined */}
+                      <td style={{ padding: '13px 16px', whiteSpace: 'nowrap' }}>
+                        <span style={{ ...monoLabel, fontSize: '11px' }}>{formatDate(u.created_at)}</span>
+                      </td>
+
+                      {/* Actions */}
+                      <td style={{ padding: '13px 16px' }}>
                         <div style={{ display: 'flex', gap: '6px' }}>
-                          <button onClick={() => setSelectedUser(u)} style={{ ...input, padding: '4px 10px', fontSize: '11px', cursor: 'pointer' }}>View</button>
+                          <button
+                            onClick={() => setSelectedUser(u)}
+                            className="asc-btn-ghost"
+                            style={{
+                              ...inputBase,
+                              padding: '5px 12px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              color: '#7A7260',
+                            }}
+                          >
+                            View
+                          </button>
                           {u.banned ? (
-                            <button onClick={() => doAction(u.id, 'unban')} disabled={actionLoading}
-                              style={{ ...input, padding: '4px 10px', fontSize: '11px', cursor: 'pointer', color: '#10B981', borderColor: '#10B981' }}>Unban</button>
+                            <button
+                              onClick={() => doAction(u.id, 'unban')}
+                              disabled={actionLoading}
+                              className="asc-btn-safe"
+                              style={{
+                                ...inputBase,
+                                padding: '5px 12px',
+                                fontSize: '11px',
+                                cursor: 'pointer',
+                                color: '#14B8A6',
+                                borderColor: 'rgba(20,184,166,0.3)',
+                              }}
+                            >
+                              Unban
+                            </button>
                           ) : (
-                            <button onClick={() => { if (confirm(`Ban ${u.full_name || u.email}?`)) doAction(u.id, 'ban'); }} disabled={actionLoading}
-                              style={{ ...input, padding: '4px 10px', fontSize: '11px', cursor: 'pointer', color: '#EF4444', borderColor: '#EF4444' }}>Ban</button>
+                            <button
+                              onClick={() => { if (confirm(`Ban ${u.full_name || u.email}?`)) doAction(u.id, 'ban'); }}
+                              disabled={actionLoading}
+                              className="asc-btn-danger"
+                              style={{
+                                ...inputBase,
+                                padding: '5px 12px',
+                                fontSize: '11px',
+                                cursor: 'pointer',
+                                color: '#EF4444',
+                                borderColor: 'rgba(239,68,68,0.3)',
+                              }}
+                            >
+                              Ban
+                            </button>
                           )}
                         </div>
                       </td>
@@ -202,63 +375,168 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      {/* Pagination */}
+      {/* ─── Pagination ──────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
-        <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-          style={{ ...input, cursor: page === 0 ? 'not-allowed' : 'pointer', opacity: page === 0 ? 0.4 : 1 }}>← Previous</button>
-        <span style={{ color: 'var(--text-dim)', fontSize: '13px' }}>Page {page + 1} of {Math.ceil(total / 50) || 1}</span>
-        <button onClick={() => setPage(p => p + 1)} disabled={users.length < 50}
-          style={{ ...input, cursor: users.length < 50 ? 'not-allowed' : 'pointer', opacity: users.length < 50 ? 0.4 : 1 }}>Next →</button>
+        <button
+          onClick={() => setPage(p => Math.max(0, p - 1))}
+          disabled={page === 0}
+          className="asc-btn-ghost"
+          style={{
+            ...inputBase,
+            cursor: page === 0 ? 'not-allowed' : 'pointer',
+            opacity: page === 0 ? 0.35 : 1,
+            color: '#7A7260',
+          }}
+        >
+          Previous
+        </button>
+        <span style={{ ...monoLabel }}>
+          Page {page + 1} of {totalPages}
+        </span>
+        <button
+          onClick={() => setPage(p => p + 1)}
+          disabled={users.length < 50}
+          className="asc-btn-ghost"
+          style={{
+            ...inputBase,
+            cursor: users.length < 50 ? 'not-allowed' : 'pointer',
+            opacity: users.length < 50 ? 0.35 : 1,
+            color: '#7A7260',
+          }}
+        >
+          Next
+        </button>
       </div>
 
-      {/* User Detail Modal */}
+      {/* ─── User Detail Modal ────────────────────────────────────────────── */}
       {selectedUser && (
         <>
-          <div onClick={() => setSelectedUser(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9998 }} />
+          <div
+            onClick={() => setSelectedUser(null)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9998, backdropFilter: 'blur(2px)' }}
+          />
           <div style={{
-            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            ...card, padding: '28px', width: '90%', maxWidth: '520px', zIndex: 9999, maxHeight: '80vh', overflowY: 'auto',
+            position: 'fixed',
+            top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: '#141310',
+            border: '1px solid #2E2A22',
+            borderRadius: '14px',
+            padding: '28px',
+            width: '90%',
+            maxWidth: '520px',
+            zIndex: 9999,
+            maxHeight: '80vh',
+            overflowY: 'auto',
           }}>
+            {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--text)' }}>User Details</h3>
-              <button onClick={() => setSelectedUser(null)} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '20px' }}>×</button>
+              <h3 style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: '22px',
+                fontWeight: 700,
+                color: '#FEF9EC',
+                margin: 0,
+              }}>
+                User Details
+              </h3>
+              <button
+                onClick={() => setSelectedUser(null)}
+                style={{
+                  background: 'none',
+                  border: '1px solid #2E2A22',
+                  borderRadius: '6px',
+                  color: '#4A4438',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  lineHeight: 1,
+                  padding: '2px 8px',
+                  transition: 'border-color 0.15s, color 0.15s',
+                }}
+              >
+                x
+              </button>
             </div>
+
+            {/* Detail Rows */}
             {[
-              ['Name', selectedUser.full_name || '—'],
-              ['Email', selectedUser.email],
-              ['Role', selectedUser.role],
-              ['Job Title', selectedUser.current_role || '—'],
-              ['Industry', selectedUser.industry || '—'],
-              ['Plan', selectedUser.subscription_plan || 'free'],
-              ['Status', selectedUser.subscription_status || 'free'],
-              ['Sub End', formatDate(selectedUser.subscription_end)],
-              ['Referral Code', selectedUser.referral_code || '—'],
-              ['Referrals', String(selectedUser.referral_count || 0)],
-              ['Joined', formatDate(selectedUser.created_at)],
-              ['Last Login', formatDate(selectedUser.last_sign_in)],
-              ['Banned', selectedUser.banned ? 'Yes' : 'No'],
-              ['User ID', selectedUser.id],
+              ['Name',         selectedUser.full_name || '—'],
+              ['Email',        selectedUser.email],
+              ['Role',         selectedUser.role],
+              ['Job Title',    selectedUser.current_role || '—'],
+              ['Industry',     selectedUser.industry || '—'],
+              ['Plan',         selectedUser.subscription_plan || 'free'],
+              ['Status',       selectedUser.subscription_status || 'free'],
+              ['Sub End',      formatDate(selectedUser.subscription_end)],
+              ['Referral Code',selectedUser.referral_code || '—'],
+              ['Referrals',    String(selectedUser.referral_count || 0)],
+              ['Joined',       formatDate(selectedUser.created_at)],
+              ['Last Login',   formatDate(selectedUser.last_sign_in)],
+              ['Banned',       selectedUser.banned ? 'Yes' : 'No'],
+              ['User ID',      selectedUser.id],
             ].map(([label, value]) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: '13px' }}>
-                <span style={{ color: 'var(--text-dim)' }}>{label}</span>
-                <span style={{ color: 'var(--text)', fontWeight: 500, textAlign: 'right', maxWidth: '60%', wordBreak: 'break-all' }}>{value}</span>
+              <div
+                key={label}
+                className="asc-modal-row"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '9px 0',
+                  borderBottom: '1px solid #2E2A22',
+                }}
+              >
+                <span style={{ ...monoLabel }}>{label}</span>
+                <span style={{
+                  fontFamily: "'Syne', sans-serif",
+                  fontSize: '13px',
+                  color: '#D4CFC3',
+                  fontWeight: 500,
+                  textAlign: 'right',
+                  maxWidth: '60%',
+                  wordBreak: 'break-all',
+                }}>
+                  {value}
+                </span>
               </div>
             ))}
+
+            {/* Modal Actions */}
             <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
               <select
                 onChange={(e) => { if (e.target.value) doAction(selectedUser.id, 'change_plan', e.target.value); }}
-                style={{ ...input, flex: 1, cursor: 'pointer' }}
+                className="asc-input"
+                style={{ ...inputBase, flex: 1, cursor: 'pointer' }}
                 defaultValue=""
               >
                 <option value="" disabled>Set plan...</option>
                 {PLANS.filter(Boolean).map(p => <option key={p} value={p}>{p}</option>)}
               </select>
               {selectedUser.banned ? (
-                <button onClick={() => { doAction(selectedUser.id, 'unban'); setSelectedUser(null); }}
-                  style={{ ...input, cursor: 'pointer', color: '#10B981' }}>Unban</button>
+                <button
+                  onClick={() => { doAction(selectedUser.id, 'unban'); setSelectedUser(null); }}
+                  className="asc-btn-safe"
+                  style={{
+                    ...inputBase,
+                    cursor: 'pointer',
+                    color: '#14B8A6',
+                    borderColor: 'rgba(20,184,166,0.3)',
+                  }}
+                >
+                  Unban
+                </button>
               ) : (
-                <button onClick={() => { doAction(selectedUser.id, 'ban'); setSelectedUser(null); }}
-                  style={{ ...input, cursor: 'pointer', color: '#EF4444' }}>Ban</button>
+                <button
+                  onClick={() => { doAction(selectedUser.id, 'ban'); setSelectedUser(null); }}
+                  className="asc-btn-danger"
+                  style={{
+                    ...inputBase,
+                    cursor: 'pointer',
+                    color: '#EF4444',
+                    borderColor: 'rgba(239,68,68,0.3)',
+                  }}
+                >
+                  Ban
+                </button>
               )}
             </div>
           </div>

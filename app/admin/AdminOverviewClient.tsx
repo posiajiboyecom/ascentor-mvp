@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
+// ─── Ascentor Brand Tokens ────────────────────────────────────────────────────
+// Gold:   #E8A020   Dark: #0C0B08   Dark-600: #2E2A22   Dark-700: #1E1C17
+// Text muted: #7A7260   Text dim: #4A4438   Border: #2E2A22
+// Fonts: Cormorant Garamond (display) · Syne (UI) · DM Mono (labels/meta)
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function AdminOverviewClient() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
@@ -44,7 +50,6 @@ export default function AdminOverviewClient() {
       supabase.from('cohort_posts').select('id', { count: 'exact', head: true }).gte('created_at', d7),
       supabase.from('courses').select('id', { count: 'exact', head: true }).eq('is_published', true),
       supabase.from('expert_sessions').select('id', { count: 'exact', head: true }).eq('status', 'scheduled'),
-      // Detailed data
       supabase.from('coaching_sessions').select('user_id, session_type, created_at').gte('created_at', d30).order('created_at'),
       supabase.from('cohorts').select('id, name, member_count, icon').order('member_count', { ascending: false }).limit(5),
       supabase.from('expert_sessions').select('*').eq('status', 'scheduled').order('scheduled_at').limit(3),
@@ -110,87 +115,213 @@ export default function AdminOverviewClient() {
 
   const maxSessions = Math.max(...dailyActivity.map((d) => d.sessions), 1);
 
+  // ─── Loading State ────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="py-20 text-center">
-        <div className="text-2xl mb-2">⏳</div>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading dashboard...</p>
+      <div
+        style={{
+          minHeight: '60vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+        }}
+      >
+        {/* Animated gold ring */}
+        <div style={{
+          width: '36px',
+          height: '36px',
+          borderRadius: '50%',
+          border: '2px solid #2E2A22',
+          borderTopColor: '#E8A020',
+          animation: 'ascentor-spin 0.9s linear infinite',
+        }} />
+        <p style={{
+          fontFamily: "'DM Mono', monospace",
+          fontSize: '11px',
+          letterSpacing: '0.12em',
+          color: '#4A4438',
+          textTransform: 'uppercase',
+        }}>
+          Loading dashboard...
+        </p>
+        <style>{`@keyframes ascentor-spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
-  return (
-    <div className="animate-fade-up">
-      <h1 className="text-xl lg:text-2xl font-semibold mb-1"
-        style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
-        Admin Dashboard
-      </h1>
-      <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
-        Platform overview · Last updated {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-      </p>
+  // ─── Shared style tokens ──────────────────────────────────────────────────
+  const card: React.CSSProperties = {
+    background: '#141310',
+    border: '1px solid #2E2A22',
+    borderRadius: '12px',
+    padding: '20px',
+  };
 
-      {/* ═══ TOP STAT CARDS ═══ */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 mb-6">
-        {[
-          { icon: '👥', value: stats.totalUsers, label: 'Total Users', sub: `+${stats.newUsers7d} this week`, color: 'var(--blue)', href: '/admin/users' },
-          { icon: '💬', value: stats.totalSessions, label: 'AI Sessions', sub: `+${stats.sessions7d} this week`, color: 'var(--accent)', href: '/admin/coaching' },
-          { icon: '📝', value: stats.totalPosts, label: 'Community Posts', sub: `+${stats.posts7d} this week`, color: 'var(--teal)', href: '/admin/coaching' },
-          { icon: '📚', value: stats.publishedCourses, label: 'Courses', sub: 'Published', color: 'var(--purple)', href: '/admin/courses' },
-          { icon: '🎓', value: stats.upcomingEvents, label: 'Upcoming Events', sub: 'Scheduled', color: 'var(--success)', href: '/admin/experts' },
-        ].map((s) => (
-          <Link key={s.label} href={s.href}>
-            <div className="rounded-xl p-3.5 transition-all hover:border-gray-600 cursor-pointer"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              <div className="flex justify-between items-start mb-1.5">
-                <span className="text-xl">{s.icon}</span>
-                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                  style={{ background: `color-mix(in srgb, ${s.color} 12%, transparent)`, color: s.color }}>
+  const monoLabel: React.CSSProperties = {
+    fontFamily: "'DM Mono', monospace",
+    fontSize: '10px',
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase' as const,
+    color: '#4A4438',
+  };
+
+  const sectionTitle: React.CSSProperties = {
+    fontFamily: "'Syne', sans-serif",
+    fontSize: '13px',
+    fontWeight: 600,
+    color: '#D4CFC3',
+    letterSpacing: '0.02em',
+  };
+
+  const goldText: React.CSSProperties = {
+    color: '#E8A020',
+  };
+
+  // ─── Stat card data ───────────────────────────────────────────────────────
+  const statCards = [
+    { value: stats.totalUsers,      label: 'Total Users',      sub: `+${stats.newUsers7d} this week`,  href: '/admin/users',    accent: '#E8A020' },
+    { value: stats.totalSessions,   label: 'AI Sessions',      sub: `+${stats.sessions7d} this week`,  href: '/admin/coaching', accent: '#E8A020' },
+    { value: stats.totalPosts,      label: 'Community Posts',  sub: `+${stats.posts7d} this week`,     href: '/admin/coaching', accent: '#14B8A6' },
+    { value: stats.publishedCourses,label: 'Courses',          sub: 'Published',                       href: '/admin/courses',  accent: '#8B5CF6' },
+    { value: stats.upcomingEvents,  label: 'Upcoming Events',  sub: 'Scheduled',                       href: '/admin/experts',  accent: '#E8A020' },
+  ];
+
+  const quickActions = [
+    { label: 'Create Cohort',    href: '/admin/cohorts?action=create' },
+    { label: 'Add Expert Event', href: '/admin/experts?action=create' },
+    { label: 'Add Course',       href: '/admin/courses?action=create' },
+    { label: 'Manage Roles',     href: '/admin/users' },
+  ];
+
+  return (
+    <div style={{ animation: 'ascentor-fade-up 0.4s ease both' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        @keyframes ascentor-fade-up {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes ascentor-spin { to { transform: rotate(360deg); } }
+        .ascentor-stat-card:hover  { border-color: #4A4438 !important; }
+        .ascentor-action-btn:hover { border-color: #E8A020 !important; background: #1E1C17 !important; }
+        .ascentor-link:hover       { color: #F5C55A !important; }
+      `}</style>
+
+      {/* ─── Page Header ──────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: '28px' }}>
+        <h1 style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: '28px',
+          fontWeight: 700,
+          color: '#FEF9EC',
+          lineHeight: 1.1,
+          marginBottom: '6px',
+        }}>
+          Admin Dashboard
+        </h1>
+        <p style={{ ...monoLabel }}>
+          Platform overview&nbsp;&middot;&nbsp;Last updated {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+        </p>
+      </div>
+
+      {/* ─── Stat Cards ───────────────────────────────────────────────────── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '10px',
+        marginBottom: '24px',
+      }}
+        className="lg:grid-cols-5"
+      >
+        {statCards.map((s) => (
+          <Link key={s.label} href={s.href} style={{ textDecoration: 'none' }}>
+            <div
+              className="ascentor-stat-card"
+              style={{
+                background: '#141310',
+                border: '1px solid #2E2A22',
+                borderRadius: '12px',
+                padding: '16px',
+                cursor: 'pointer',
+                transition: 'border-color 0.2s',
+              }}
+            >
+              {/* Sub-label pill */}
+              <div style={{ marginBottom: '10px' }}>
+                <span style={{
+                  ...monoLabel,
+                  background: `${s.accent}18`,
+                  color: s.accent,
+                  padding: '2px 8px',
+                  borderRadius: '100px',
+                  fontSize: '9px',
+                }}>
                   {s.sub}
                 </span>
               </div>
-              <div className="text-xl lg:text-2xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: s.color }}>
+              {/* Value */}
+              <div style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: '30px',
+                fontWeight: 700,
+                color: s.accent,
+                lineHeight: 1,
+                marginBottom: '4px',
+              }}>
                 {s.value.toLocaleString()}
               </div>
-              <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>{s.label}</div>
+              {/* Label */}
+              <div style={{ ...monoLabel }}>{s.label}</div>
             </div>
           </Link>
         ))}
       </div>
 
-      {/* ═══ ACTIVITY CHART (last 14 days) ═══ */}
-      <div className="rounded-xl p-5 mb-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>📈 Activity — Last 14 Days</span>
-          <div className="flex gap-3 text-[10px]" style={{ color: 'var(--text-dim)' }}>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }} /> Sessions
+      {/* ─── Activity Chart ────────────────────────────────────────────────── */}
+      <div style={{ ...card, marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <span style={{ ...sectionTitle }}>Activity — Last 14 Days</span>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <span style={{ ...monoLabel, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: '#E8A020', opacity: 0.7 }} />
+              Sessions
             </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full" style={{ background: 'var(--blue)' }} /> Active Users
+            <span style={{ ...monoLabel, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#14B8A6' }} />
+              Active Users
             </span>
           </div>
         </div>
-        <div className="flex items-end gap-[3px] h-32">
-          {dailyActivity.map((d, i) => (
-            <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
-              <div className="w-full flex flex-col items-center justify-end h-24 relative">
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '5px', height: '80px' }}>
+          {dailyActivity.map((d) => (
+            <div key={d.day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
+              <div style={{ width: '100%', position: 'relative', display: 'flex', alignItems: 'flex-end', height: '64px' }}>
                 {/* Sessions bar */}
-                <div className="w-full rounded-t-sm transition-all"
-                  style={{
-                    height: `${Math.max((d.sessions / maxSessions) * 100, 2)}%`,
-                    background: 'var(--accent)',
-                    opacity: 0.7,
-                  }} />
+                <div style={{
+                  width: '100%',
+                  height: `${Math.max((d.sessions / maxSessions) * 100, d.sessions > 0 ? 6 : 2)}%`,
+                  background: '#E8A020',
+                  opacity: 0.65,
+                  borderRadius: '3px 3px 0 0',
+                  transition: 'height 0.3s ease',
+                }} />
                 {/* Users dot */}
                 {d.users > 0 && (
-                  <div className="absolute w-1.5 h-1.5 rounded-full"
-                    style={{
-                      background: 'var(--blue)',
-                      bottom: `${Math.max((d.users / Math.max(...dailyActivity.map((x) => x.users), 1)) * 100, 5)}%`,
-                    }} />
+                  <div style={{
+                    position: 'absolute',
+                    width: '5px',
+                    height: '5px',
+                    borderRadius: '50%',
+                    background: '#14B8A6',
+                    bottom: `${Math.max((d.users / Math.max(...dailyActivity.map((x) => x.users), 1)) * 100, 5)}%`,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                  }} />
                 )}
               </div>
-              <span className="text-[8px] leading-none" style={{ color: 'var(--text-dim)' }}>
+              <span style={{ ...monoLabel, fontSize: '8px' }}>
                 {new Date(d.day).toLocaleDateString('en-US', { day: 'numeric' })}
               </span>
             </div>
@@ -198,26 +329,29 @@ export default function AdminOverviewClient() {
         </div>
       </div>
 
-      {/* ═══ TWO COLUMNS ═══ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+      {/* ─── Two Columns ──────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}
+        className="lg:grid-cols-2 grid-cols-1">
 
-        {/* Session Types Breakdown */}
-        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🎯 Session Types (30d)</span>
-          <div className="mt-3">
+        {/* Session Types */}
+        <div style={{ ...card }}>
+          <span style={{ ...sectionTitle }}>Session Types — 30d</span>
+          <div style={{ marginTop: '14px' }}>
             {sessionTypes.length === 0 ? (
-              <p className="text-xs" style={{ color: 'var(--text-dim)' }}>No session data yet</p>
+              <p style={{ ...monoLabel }}>No session data yet</p>
             ) : sessionTypes.map((t) => {
               const total = sessionTypes.reduce((s, x) => s + x.count, 0);
               const pct = Math.round((t.count / total) * 100);
               return (
-                <div key={t.type} className="mb-2.5">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="capitalize" style={{ color: 'var(--text-muted)' }}>{t.type.replace(/_/g, ' ')}</span>
-                    <span style={{ color: 'var(--text-dim)' }}>{t.count} ({pct}%)</span>
+                <div key={t.type} style={{ marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: '#D4CFC3', textTransform: 'capitalize' }}>
+                      {t.type.replace(/_/g, ' ')}
+                    </span>
+                    <span style={{ ...monoLabel }}>{t.count} ({pct}%)</span>
                   </div>
-                  <div className="w-full h-1.5 rounded-full" style={{ background: 'var(--bg-input)' }}>
-                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--accent)' }} />
+                  <div style={{ width: '100%', height: '3px', borderRadius: '2px', background: '#2E2A22' }}>
+                    <div style={{ height: '100%', borderRadius: '2px', width: `${pct}%`, background: '#E8A020', transition: 'width 0.4s ease' }} />
                   </div>
                 </div>
               );
@@ -225,26 +359,35 @@ export default function AdminOverviewClient() {
           </div>
         </div>
 
-        {/* Top Users by Engagement */}
-        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🏆 Top Users (30d)</span>
-            <Link href="/admin/users" className="text-xs" style={{ color: 'var(--accent)' }}>View all →</Link>
+        {/* Top Users */}
+        <div style={{ ...card }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <span style={{ ...sectionTitle }}>Top Users — 30d</span>
+            <Link href="/admin/users" className="ascentor-link" style={{ ...monoLabel, color: '#E8A020', textDecoration: 'none', transition: 'color 0.15s' }}>
+              View all
+            </Link>
           </div>
           {topUsers.length === 0 ? (
-            <p className="text-xs" style={{ color: 'var(--text-dim)' }}>No active users yet</p>
+            <p style={{ ...monoLabel }}>No active users yet</p>
           ) : topUsers.map((u, i) => (
-            <div key={u.id} className="flex items-center gap-3 py-2"
-              style={{ borderBottom: '1px solid var(--border)' }}>
-              <span className="text-xs font-bold w-5 text-center"
-                style={{ color: i === 0 ? 'var(--accent)' : 'var(--text-dim)' }}>
+            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 0', borderBottom: '1px solid #2E2A22' }}>
+              <span style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '11px',
+                fontWeight: 500,
+                width: '18px',
+                textAlign: 'center',
+                color: i === 0 ? '#E8A020' : '#4A4438',
+              }}>
                 {i + 1}
               </span>
-              <div className="flex-1">
-                <p className="text-sm" style={{ color: 'var(--text)' }}>{u.full_name || 'Unknown'}</p>
-                <p className="text-[10px]" style={{ color: 'var(--text-dim)' }}>{u.current_role || ''}</p>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '13px', color: '#D4CFC3', marginBottom: '2px' }}>
+                  {u.full_name || 'Unknown'}
+                </p>
+                <p style={{ ...monoLabel }}>{u.current_role || ''}</p>
               </div>
-              <span className="text-xs font-bold" style={{ color: 'var(--accent)' }}>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', fontWeight: 500, color: '#E8A020' }}>
                 {u.sessions} sessions
               </span>
             </div>
@@ -252,26 +395,33 @@ export default function AdminOverviewClient() {
         </div>
       </div>
 
-      {/* ═══ THREE COLUMNS ═══ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+      {/* ─── Three Columns ────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '16px' }}
+        className="lg:grid-cols-3 grid-cols-1">
 
         {/* Recent Signups */}
-        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🆕 Recent Signups</span>
-          </div>
+        <div style={{ ...card }}>
+          <div style={{ ...sectionTitle, marginBottom: '14px' }}>Recent Signups</div>
           {recentSignups.map((u) => (
-            <div key={u.id} className="flex items-center gap-2 py-1.5"
-              style={{ borderBottom: '1px solid var(--border)' }}>
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                style={{ background: 'rgba(59,130,246,0.09)', color: 'var(--blue)' }}>
+            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid #2E2A22' }}>
+              <div style={{
+                width: '28px', height: '28px', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: "'Syne', sans-serif", fontSize: '12px', fontWeight: 700,
+                background: '#1E1C17', color: '#E8A020', border: '1px solid #2E2A22',
+                flexShrink: 0,
+              }}>
                 {(u.full_name || '?').charAt(0).toUpperCase()}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate" style={{ color: 'var(--text)' }}>{u.full_name || 'No name'}</p>
-                <p className="text-[10px] truncate" style={{ color: 'var(--text-dim)' }}>{u.industry || u.current_role || ''}</p>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: '#D4CFC3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {u.full_name || 'No name'}
+                </p>
+                <p style={{ ...monoLabel, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {u.industry || u.current_role || ''}
+                </p>
               </div>
-              <span className="text-[10px] shrink-0" style={{ color: 'var(--text-dim)' }}>
+              <span style={{ ...monoLabel, flexShrink: 0 }}>
                 {new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
             </div>
@@ -279,19 +429,29 @@ export default function AdminOverviewClient() {
         </div>
 
         {/* Top Cohorts */}
-        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🏘️ Top Cohorts</span>
-            <Link href="/admin/cohorts" className="text-xs" style={{ color: 'var(--accent)' }}>Manage →</Link>
+        <div style={{ ...card }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <span style={{ ...sectionTitle }}>Top Cohorts</span>
+            <Link href="/admin/cohorts" className="ascentor-link" style={{ ...monoLabel, color: '#E8A020', textDecoration: 'none', transition: 'color 0.15s' }}>
+              Manage
+            </Link>
           </div>
           {topCohorts.length === 0 ? (
-            <p className="text-xs" style={{ color: 'var(--text-dim)' }}>No cohorts yet</p>
+            <p style={{ ...monoLabel }}>No cohorts yet</p>
           ) : topCohorts.map((c) => (
-            <div key={c.id} className="flex items-center gap-2 py-2"
-              style={{ borderBottom: '1px solid var(--border)' }}>
-              <span className="text-lg">{c.icon || '👥'}</span>
-              <span className="text-sm flex-1" style={{ color: 'var(--text-muted)' }}>{c.name}</span>
-              <span className="text-xs font-semibold" style={{ color: 'var(--teal)' }}>
+            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0', borderBottom: '1px solid #2E2A22' }}>
+              {/* Replace emoji icon with styled initial badge */}
+              <div style={{
+                width: '28px', height: '28px', borderRadius: '6px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: '#1E1C17', border: '1px solid #2E2A22',
+                fontFamily: "'Syne', sans-serif", fontSize: '11px', fontWeight: 700, color: '#E8A020',
+                flexShrink: 0,
+              }}>
+                {(c.name || 'C').charAt(0).toUpperCase()}
+              </div>
+              <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', flex: 1, color: '#D4CFC3' }}>{c.name}</span>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', fontWeight: 500, color: '#14B8A6' }}>
                 {c.member_count || 0}
               </span>
             </div>
@@ -299,37 +459,49 @@ export default function AdminOverviewClient() {
         </div>
 
         {/* Upcoming Events */}
-        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🎓 Upcoming Events</span>
-            <Link href="/admin/experts" className="text-xs" style={{ color: 'var(--accent)' }}>Manage →</Link>
+        <div style={{ ...card }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <span style={{ ...sectionTitle }}>Upcoming Events</span>
+            <Link href="/admin/experts" className="ascentor-link" style={{ ...monoLabel, color: '#E8A020', textDecoration: 'none', transition: 'color 0.15s' }}>
+              Manage
+            </Link>
           </div>
           {upcomingEvents.length === 0 ? (
-            <p className="text-xs" style={{ color: 'var(--text-dim)' }}>No upcoming events</p>
+            <p style={{ ...monoLabel }}>No upcoming events</p>
           ) : upcomingEvents.map((e) => (
-            <div key={e.id} className="py-2" style={{ borderBottom: '1px solid var(--border)' }}>
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{e.title}</p>
-              <p className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
-                {e.expert_name} · {new Date(e.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            <div key={e.id} style={{ padding: '9px 0', borderBottom: '1px solid #2E2A22' }}>
+              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '13px', color: '#D4CFC3', marginBottom: '3px' }}>{e.title}</p>
+              <p style={{ ...monoLabel }}>
+                {e.expert_name}&nbsp;&middot;&nbsp;
+                {new Date(e.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-        {[
-          { label: 'Create Cohort', href: '/admin/cohorts?action=create', icon: '➕' },
-          { label: 'Add Expert Event', href: '/admin/experts?action=create', icon: '🎤' },
-          { label: 'Add Course', href: '/admin/courses?action=create', icon: '📖' },
-          { label: 'Manage Roles', href: '/admin/users', icon: '🔑' },
-        ].map((a) => (
-          <Link key={a.label} href={a.href}>
-            <div className="rounded-lg p-3 text-center transition-all hover:border-gray-600 cursor-pointer"
-              style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
-              <span className="text-xl">{a.icon}</span>
-              <p className="text-xs font-semibold mt-1" style={{ color: 'var(--text-muted)' }}>{a.label}</p>
+      {/* ─── Quick Actions ────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}
+        className="lg:grid-cols-4 grid-cols-2">
+        {quickActions.map((a) => (
+          <Link key={a.label} href={a.href} style={{ textDecoration: 'none' }}>
+            <div
+              className="ascentor-action-btn"
+              style={{
+                background: '#141310',
+                border: '1px solid #2E2A22',
+                borderRadius: '10px',
+                padding: '14px 12px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'border-color 0.2s, background 0.2s',
+              }}
+            >
+              {/* Gold accent line instead of emoji */}
+              <div style={{ width: '20px', height: '2px', background: '#E8A020', margin: '0 auto 10px' }} />
+              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', fontWeight: 600, color: '#D4CFC3' }}>
+                {a.label}
+              </p>
             </div>
           </Link>
         ))}
