@@ -249,13 +249,13 @@ function SignUpForm() {
           {/* Logo */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '48px' }}>
-              <svg width="32" height="28" viewBox="0 0 32 28" fill="none">
-                <path d="M16 2L30 26H2L16 2Z" stroke={B.gold} strokeWidth="2" fill="none"/>
-                <path d="M16 8L26 24H6L16 8Z" stroke={B.gold} strokeWidth="1" fill="none" opacity="0.5"/>
-              </svg>
-              <span style={{ fontFamily: B.fontUI, fontWeight: 800, fontSize: '20px', color: B.dark50, letterSpacing: '-0.01em' }}>
-                Ascentor
-              </span>
+              <Link href="/" className="lp-nav-logo">
+                <img
+                  src="/ascentor-color-on-dark.svg"
+                  alt="Ascentor"
+                  style={{ height: '32px', width: 'auto' }}
+                />
+              </Link>
             </div>
 
             {/* Brand headline — Cormorant italic */}
@@ -340,13 +340,13 @@ function SignUpForm() {
 
             {/* Mobile logo */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '32px' }} className="lg:hidden">
-              <svg width="28" height="24" viewBox="0 0 32 28" fill="none">
-                <path d="M16 2L30 26H2L16 2Z" stroke={B.gold} strokeWidth="2" fill="none"/>
-                <path d="M16 8L26 24H6L16 8Z" stroke={B.gold} strokeWidth="1" fill="none" opacity="0.5"/>
-              </svg>
-              <span style={{ fontFamily: B.fontUI, fontWeight: 800, fontSize: '18px', color: B.dark50 }}>
-                Ascentor
-              </span>
+              <Link href="/" className="lp-nav-logo">
+                <img
+                  src="/ascentor-color-on-dark.svg"
+                  alt="Ascentor"
+                  style={{ height: '32px', width: 'auto' }}
+                />
+              </Link>
             </div>
 
             {/* Referral banner — using Explorer teal (brand stage color) */}
