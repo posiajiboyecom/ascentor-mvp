@@ -690,7 +690,7 @@ export default function LandingPage() {
           <div className="lp-footer-top">
             <div>
               <img
-                  src="/ascentor-light-landscape.svg"
+                  src="/ascentor-color-portrait-dark"
                   alt="Ascentor"
                   style={{ height: '28px', width: 'auto', marginBottom: '12px' }}
                 />
