@@ -20,10 +20,13 @@ export default async function BlogPage() {
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: '#FFFBF5', color: '#1A1A2E', minHeight: '100vh' }}>
       <nav className="px-4 lg:px-8 py-4" style={{ borderBottom: '1px solid rgba(245,158,11,0.1)' }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl">⬆</span>
-            <span className="text-xl font-semibold" style={{ fontFamily: "'Playfair Display', serif" }}>Ascentor</span>
-          </Link>
+          <Link href="/" className="lp-nav-logo">
+            <img
+              src="/ascentor-color-on-dark.svg"
+              alt="Ascentor"
+              style={{ height: '32px', width: 'auto' }}
+            />
+            </Link>
           <Link href="/signup" className="px-4 py-2 rounded-lg font-semibold text-sm" style={{ background: '#F59E0B', color: '#000' }}>Sign Up</Link>
         </div>
       </nav>

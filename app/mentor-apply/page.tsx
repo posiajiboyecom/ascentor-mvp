@@ -154,7 +154,13 @@ export default function MentorApplyPage() {
 
       {/* NAV */}
       <nav className="ma-nav">
-        <Link href="/" className="ma-nav-logo">↑ <span>Ascentor</span></Link>
+        <Link href="/" className="lp-nav-logo">
+            <img
+              src="/ascentor-color-on-dark.svg"
+              alt="Ascentor"
+              style={{ height: '32px', width: 'auto' }}
+            />
+            </Link>
         <span className="ma-nav-tag">Founding Mentor Application</span>
       </nav>
 
