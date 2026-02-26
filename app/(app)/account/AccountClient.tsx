@@ -228,425 +228,444 @@ export default function AccountClient({ profile, email, authProvider, userId, no
   ];
 
   return (
-    <div className="animate-fade-up py-6 max-w-2xl mx-auto">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+      `}</style>
 
-      {/* ═══ HEADER ═══ */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="relative group">
-          {form.avatar_url ? (
-            <img src={form.avatar_url} alt="Avatar"
-              className="w-14 h-14 rounded-full object-cover"
-              style={{ border: '2px solid rgba(102,98,255,0.35)' }} />
-          ) : (
-            <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold"
-              style={{
-                background: 'rgba(102,98,255,0.12)',
-                color: '#6662FF',
-                border: '2px solid rgba(102,98,255,0.3)',
-                fontFamily: "'Syne', sans-serif",
-              }}>
-              {initials}
-            </div>
-          )}
-          <button onClick={() => avatarInputRef.current?.click()}
-            className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: 'rgba(0,0,0,0.55)' }}>
-            <span className="text-white text-xs font-semibold">{avatarUploading ? '...' : 'Edit'}</span>
-          </button>
-          <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-        </div>
-        <div>
-          <h1 className="text-xl font-semibold" style={{ fontFamily: "'Syne', sans-serif", color: 'var(--text)', letterSpacing: '-0.02em' }}>
-            Settings
-          </h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            {email}
-            {isOAuth && (
-              <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                style={{ background: 'rgba(102,98,255,0.1)', color: '#6662FF', border: '1px solid rgba(102,98,255,0.25)' }}>
-                {authProvider === 'google' ? 'Google' : authProvider === 'linkedin_oidc' ? 'LinkedIn' : authProvider}
-              </span>
-            )}
-          </p>
-        </div>
-      </div>
+      <div className="animate-fade-up py-6 max-w-2xl mx-auto">
 
-      {/* ═══ TABS ═══ */}
-      <div className="flex gap-1 mb-5 p-1 rounded-xl overflow-x-auto" style={{ background: 'var(--bg-input)', scrollbarWidth: 'none' }}>
-        {sections.map((t) => (
-          <button key={t.key} onClick={() => setSection(t.key)}
-            className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap px-2"
-            style={{
-              background: section === t.key ? 'var(--bg-card)' : 'transparent',
-              color: section === t.key ? '#6662FF' : 'var(--text-dim)',
-              boxShadow: section === t.key ? '0 1px 4px rgba(102,98,255,0.15)' : 'none',
-            }}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ═══════════════════════════════════════════ */}
-      {/* ═══ 1. PROFILE SECTION ═══ */}
-      {/* ═══════════════════════════════════════════ */}
-      {section === 'profile' && (
-        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Personal Information</h2>
-
-          <div className="flex flex-col gap-4">
-            <Field label="Full Name" required>
-              <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                placeholder="Your full name" className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
-            </Field>
-
-            <Field label="Email Address">
-              <div className="flex items-center gap-2">
-                <input value={email} disabled className="w-full px-3.5 py-2.5 text-sm rounded-xl opacity-60" style={inputStyle} />
-                <span className="text-[10px] shrink-0 px-2 py-1 rounded-full"
-                  style={{ background: 'rgba(16,185,129,0.09)', color: 'var(--success)' }}>Verified</span>
+        {/* ═══ HEADER ═══ */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="relative group">
+            {form.avatar_url ? (
+              <img src={form.avatar_url} alt="Avatar"
+                className="w-14 h-14 rounded-full object-cover"
+                style={{ border: '2px solid rgba(102,98,255,0.35)' }} />
+            ) : (
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold"
+                style={{
+                  background: 'rgba(102,98,255,0.12)',
+                  color: '#6662FF',
+                  border: '2px solid rgba(102,98,255,0.3)',
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontWeight: 800,
+                }}>
+                {initials}
               </div>
-              <p className="text-[10px] mt-1" style={{ color: 'var(--text-dim)' }}>
-                Contact support to change your email address.
-              </p>
-            </Field>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Current Role" required>
-                <input value={form.current_role} onChange={(e) => setForm({ ...form, current_role: e.target.value })}
-                  placeholder="e.g. Software Engineer" className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
-              </Field>
-              <Field label="Goal Role" required>
-                <input value={form.goal_role} onChange={(e) => setForm({ ...form, goal_role: e.target.value })}
-                  placeholder="e.g. Engineering Manager" className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
-              </Field>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Industry" required>
-                <select value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle}>
-                  <option value="">Select industry</option>
-                  {industries.map((i) => <option key={i} value={i}>{i}</option>)}
-                </select>
-              </Field>
-              <Field label="Daily Commitment">
-                <select value={form.time_commitment} onChange={(e) => setForm({ ...form, time_commitment: e.target.value })}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle}>
-                  {timeOptions.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </Field>
-            </div>
-
-            <Field label="Biggest Challenge">
-              <textarea value={form.biggest_challenge} onChange={(e) => setForm({ ...form, biggest_challenge: e.target.value })}
-                placeholder="What's your biggest professional challenge right now?"
-                rows={3} className="w-full px-3.5 py-2.5 text-sm rounded-xl resize-none" style={inputStyle} />
-            </Field>
-
-            {/* Journey preview — brand purple instead of gold */}
-            <div className="rounded-lg p-3" style={{ background: 'rgba(102,98,255,0.05)', border: '1px solid rgba(102,98,255,0.15)' }}>
-              <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-                Your journey: <span style={{ color: 'var(--text-muted)' }}>{form.current_role || '...'}</span>
-                {' '}&rarr;{' '}
-                <span style={{ color: '#6662FF', fontWeight: 600 }}>{form.goal_role || '...'}</span>
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button onClick={handleProfileSave}
-                disabled={saving || !form.full_name.trim() || !form.current_role.trim()}
-                className="px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
-                style={{ background: '#6662FF', color: '#fff', boxShadow: '0 2px 12px rgba(102,98,255,0.35)' }}>
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-              {saved && <span className="text-xs font-semibold animate-fade-up" style={{ color: 'var(--success)' }}>Changes saved ✓</span>}
-              {error && <span className="text-xs" style={{ color: 'var(--error)' }}>{error}</span>}
-            </div>
+            )}
+            <button onClick={() => avatarInputRef.current?.click()}
+              className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ background: 'rgba(0,0,0,0.55)' }}>
+              <span className="text-white text-xs font-semibold" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                {avatarUploading ? '...' : 'Edit'}
+              </span>
+            </button>
+            <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold"
+              style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                color: 'var(--text)',
+                letterSpacing: '-0.03em',
+                fontWeight: 800,
+              }}>
+              Settings
+            </h1>
+            <p className="text-sm" style={{ color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif" }}>
+              {email}
+              {isOAuth && (
+                <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                  style={{ background: 'rgba(102,98,255,0.1)', color: '#6662FF', border: '1px solid rgba(102,98,255,0.25)', fontFamily: "'DM Sans', sans-serif" }}>
+                  {authProvider === 'google' ? 'Google' : authProvider === 'linkedin_oidc' ? 'LinkedIn' : authProvider}
+                </span>
+              )}
+            </p>
           </div>
         </div>
-      )}
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* ═══ 2. SECURITY SECTION ═══ */}
-      {/* ═══════════════════════════════════════════ */}
-      {section === 'security' && (
-        <div className="flex flex-col gap-4">
-          {/* Change Password */}
+        {/* ═══ TABS ═══ */}
+        <div className="flex gap-1 mb-5 p-1 rounded-xl overflow-x-auto" style={{ background: 'var(--bg-input)', scrollbarWidth: 'none' }}>
+          {sections.map((t) => (
+            <button key={t.key} onClick={() => setSection(t.key)}
+              className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap px-2"
+              style={{
+                background: section === t.key ? 'var(--bg-card)' : 'transparent',
+                color: section === t.key ? '#6662FF' : 'var(--text-dim)',
+                boxShadow: section === t.key ? '0 1px 4px rgba(102,98,255,0.15)' : 'none',
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 600,
+              }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ═══ 1. PROFILE SECTION ═══ */}
+        {section === 'profile' && (
           <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Change Password</h2>
+            <h2 className="text-sm font-semibold mb-4"
+              style={{ color: 'var(--text)', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>
+              Personal Information
+            </h2>
 
-            {isOAuth ? (
-              <div className="rounded-lg p-4 mt-3" style={{ background: 'rgba(102,98,255,0.06)', border: '1px solid rgba(102,98,255,0.18)' }}>
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  You signed in with <strong style={{ color: '#6662FF' }}>
-                    {authProvider === 'google' ? 'Google' : authProvider === 'linkedin_oidc' ? 'LinkedIn' : authProvider}
-                  </strong>. Your password is managed by your provider.
+            <div className="flex flex-col gap-4">
+              <Field label="Full Name" required>
+                <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  placeholder="Your full name" className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
+              </Field>
+
+              <Field label="Email Address">
+                <div className="flex items-center gap-2">
+                  <input value={email} disabled className="w-full px-3.5 py-2.5 text-sm rounded-xl opacity-60" style={inputStyle} />
+                  <span className="text-[10px] shrink-0 px-2 py-1 rounded-full"
+                    style={{ background: 'rgba(16,185,129,0.09)', color: 'var(--success)', fontFamily: "'DM Sans', sans-serif" }}>Verified</span>
+                </div>
+                <p className="text-[10px] mt-1" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>
+                  Contact support to change your email address.
+                </p>
+              </Field>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Current Role" required>
+                  <input value={form.current_role} onChange={(e) => setForm({ ...form, current_role: e.target.value })}
+                    placeholder="e.g. Software Engineer" className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
+                </Field>
+                <Field label="Goal Role" required>
+                  <input value={form.goal_role} onChange={(e) => setForm({ ...form, goal_role: e.target.value })}
+                    placeholder="e.g. Engineering Manager" className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Industry" required>
+                  <select value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle}>
+                    <option value="">Select industry</option>
+                    {industries.map((i) => <option key={i} value={i}>{i}</option>)}
+                  </select>
+                </Field>
+                <Field label="Daily Commitment">
+                  <select value={form.time_commitment} onChange={(e) => setForm({ ...form, time_commitment: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle}>
+                    {timeOptions.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </Field>
+              </div>
+
+              <Field label="Biggest Challenge">
+                <textarea value={form.biggest_challenge} onChange={(e) => setForm({ ...form, biggest_challenge: e.target.value })}
+                  placeholder="What's your biggest professional challenge right now?"
+                  rows={3} className="w-full px-3.5 py-2.5 text-sm rounded-xl resize-none" style={inputStyle} />
+              </Field>
+
+              <div className="rounded-lg p-3" style={{ background: 'rgba(102,98,255,0.05)', border: '1px solid rgba(102,98,255,0.15)' }}>
+                <p className="text-xs" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>
+                  Your journey: <span style={{ color: 'var(--text-muted)' }}>{form.current_role || '...'}</span>
+                  {' '}&rarr;{' '}
+                  <span style={{ color: '#6662FF', fontWeight: 600 }}>{form.goal_role || '...'}</span>
                 </p>
               </div>
-            ) : (
-              <div className="flex flex-col gap-3 mt-3">
-                <Field label="Current Password">
-                  <input type="password" value={passwords.current}
-                    onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                    placeholder="Enter current password"
-                    className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
-                </Field>
-                <Field label="New Password">
-                  <input type="password" value={passwords.newPassword}
-                    onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                    placeholder="Minimum 8 characters"
-                    className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
-                </Field>
-                <Field label="Confirm New Password">
-                  <input type="password" value={passwords.confirm}
-                    onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                    placeholder="Re-enter new password"
-                    className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
-                </Field>
 
-                {passwords.newPassword && (
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-input)' }}>
-                      <div className="h-full rounded-full transition-all" style={{
-                        width: passwords.newPassword.length >= 12 ? '100%' : passwords.newPassword.length >= 10 ? '75%' : passwords.newPassword.length >= 8 ? '50%' : '20%',
-                        background: passwords.newPassword.length >= 12 ? 'var(--success)' : passwords.newPassword.length >= 10 ? '#6662FF' : passwords.newPassword.length >= 8 ? '#A6A2FF' : 'var(--error)',
-                      }} />
-                    </div>
-                    <span className="text-[10px] font-semibold" style={{
-                      color: passwords.newPassword.length >= 12 ? 'var(--success)' : passwords.newPassword.length >= 10 ? '#6662FF' : passwords.newPassword.length >= 8 ? '#A6A2FF' : 'var(--error)',
-                    }}>
-                      {passwords.newPassword.length >= 12 ? 'Strong' : passwords.newPassword.length >= 10 ? 'Good' : passwords.newPassword.length >= 8 ? 'Fair' : 'Too short'}
-                    </span>
-                  </div>
-                )}
-
-                <button onClick={handlePasswordChange}
-                  disabled={pwSaving || !passwords.current || !passwords.newPassword || !passwords.confirm}
-                  className="w-fit px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
-                  style={{ background: '#6662FF', color: '#fff', boxShadow: '0 2px 12px rgba(102,98,255,0.35)' }}>
-                  {pwSaving ? 'Updating...' : 'Update Password'}
+              <div className="flex items-center gap-3">
+                <button onClick={handleProfileSave}
+                  disabled={saving || !form.full_name.trim() || !form.current_role.trim()}
+                  className="px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
+                  style={{ background: '#6662FF', color: '#fff', boxShadow: '0 2px 12px rgba(102,98,255,0.35)', fontFamily: "'DM Sans', sans-serif" }}>
+                  {saving ? 'Saving...' : 'Save Changes'}
                 </button>
-
-                {pwResult && (
-                  <StatusBanner success={pwResult.success} message={pwResult.message} />
-                )}
+                {saved && <span className="text-xs font-semibold animate-fade-up" style={{ color: 'var(--success)', fontFamily: "'DM Sans', sans-serif" }}>Changes saved ✓</span>}
+                {error && <span className="text-xs" style={{ color: 'var(--error)', fontFamily: "'DM Sans', sans-serif" }}>{error}</span>}
               </div>
-            )}
-          </div>
-
-          {/* Two-Factor Authentication */}
-          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-sm font-semibold" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Two-Factor Authentication</h2>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>Add an extra layer of security to your account.</p>
-              </div>
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: 'rgba(102,98,255,0.08)', color: '#A6A2FF', border: '1px solid rgba(102,98,255,0.2)' }}>
-                Coming Soon
-              </span>
             </div>
           </div>
+        )}
 
-          {/* Active Sessions */}
-          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Active Sessions</h2>
-            <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
-                style={{ background: 'rgba(16,185,129,0.09)', color: 'var(--success)' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium" style={{ color: 'var(--text)' }}>Current session</p>
-                <p className="text-[10px]" style={{ color: 'var(--text-dim)' }}>Active now</p>
-              </div>
-              <span className="w-2 h-2 rounded-full" style={{ background: 'var(--success)' }} />
-            </div>
-            <button onClick={handleSignOut} disabled={signingOut}
-              className="mt-3 px-4 py-2 rounded-lg text-xs font-semibold disabled:opacity-40"
-              style={{ color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.04)' }}>
-              {signingOut ? 'Signing out...' : 'Sign Out All Devices'}
-            </button>
-          </div>
-        </div>
-      )}
+        {/* ═══ 2. SECURITY SECTION ═══ */}
+        {section === 'security' && (
+          <div className="flex flex-col gap-4">
+            <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <h2 className="text-sm font-semibold mb-1"
+                style={{ color: 'var(--text)', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>
+                Change Password
+              </h2>
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* ═══ 3. PLAN / SUBSCRIPTION ═══ */}
-      {/* ═══════════════════════════════════════════ */}
-      {section === 'plan' && (
-        <div className="flex flex-col gap-4">
-          {/* Current Plan — brand purple border instead of gold */}
-          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #6662FF' }}>
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>Current Plan</span>
-                <h2 className="text-lg font-bold mt-0.5" style={{ fontFamily: "'Syne', sans-serif", color: '#6662FF', letterSpacing: '-0.02em' }}>
-                  {profile?.subscription_plan || 'Free'}
-                </h2>
-              </div>
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
-                style={{
-                  background: profile?.subscription_status === 'active' ? 'rgba(16,185,129,0.09)' : 'rgba(102,98,255,0.1)',
-                  color: profile?.subscription_status === 'active' ? 'var(--success)' : '#6662FF',
-                  border: `1px solid ${profile?.subscription_status === 'active' ? 'rgba(16,185,129,0.19)' : 'rgba(102,98,255,0.25)'}`,
-                }}>
-                {profile?.subscription_status === 'active' ? 'Active' : 'Free Tier'}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-1.5 mb-4">
-              {[
-                { feature: 'AI Coaching Sessions', included: true },
-                { feature: 'Community Cohorts (3 max)', included: true },
-                { feature: 'Expert Sessions', included: profile?.subscription_status === 'active' },
-                { feature: 'Courses & Learning', included: profile?.subscription_status === 'active' },
-                { feature: 'Priority Support', included: profile?.subscription_status === 'active' },
-              ].map((f) => (
-                <div key={f.feature} className="flex items-center gap-2 text-xs" style={{ color: f.included ? 'var(--text-muted)' : 'var(--text-dim)' }}>
-                  <span style={{ color: f.included ? 'var(--success)' : 'var(--text-dim)' }}>
-                    {f.included ? '✓' : '–'}
-                  </span>
-                  <span style={{ opacity: f.included ? 1 : 0.5 }}>{f.feature}</span>
+              {isOAuth ? (
+                <div className="rounded-lg p-4 mt-3" style={{ background: 'rgba(102,98,255,0.06)', border: '1px solid rgba(102,98,255,0.18)' }}>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif" }}>
+                    You signed in with <strong style={{ color: '#6662FF' }}>
+                      {authProvider === 'google' ? 'Google' : authProvider === 'linkedin_oidc' ? 'LinkedIn' : authProvider}
+                    </strong>. Your password is managed by your provider.
+                  </p>
                 </div>
-              ))}
+              ) : (
+                <div className="flex flex-col gap-3 mt-3">
+                  <Field label="Current Password">
+                    <input type="password" value={passwords.current}
+                      onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                      placeholder="Enter current password"
+                      className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
+                  </Field>
+                  <Field label="New Password">
+                    <input type="password" value={passwords.newPassword}
+                      onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                      placeholder="Minimum 8 characters"
+                      className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
+                  </Field>
+                  <Field label="Confirm New Password">
+                    <input type="password" value={passwords.confirm}
+                      onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                      placeholder="Re-enter new password"
+                      className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
+                  </Field>
+
+                  {passwords.newPassword && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-input)' }}>
+                        <div className="h-full rounded-full transition-all" style={{
+                          width: passwords.newPassword.length >= 12 ? '100%' : passwords.newPassword.length >= 10 ? '75%' : passwords.newPassword.length >= 8 ? '50%' : '20%',
+                          background: passwords.newPassword.length >= 12 ? 'var(--success)' : passwords.newPassword.length >= 10 ? '#6662FF' : passwords.newPassword.length >= 8 ? '#A6A2FF' : 'var(--error)',
+                        }} />
+                      </div>
+                      <span className="text-[10px] font-semibold" style={{
+                        color: passwords.newPassword.length >= 12 ? 'var(--success)' : passwords.newPassword.length >= 10 ? '#6662FF' : passwords.newPassword.length >= 8 ? '#A6A2FF' : 'var(--error)',
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}>
+                        {passwords.newPassword.length >= 12 ? 'Strong' : passwords.newPassword.length >= 10 ? 'Good' : passwords.newPassword.length >= 8 ? 'Fair' : 'Too short'}
+                      </span>
+                    </div>
+                  )}
+
+                  <button onClick={handlePasswordChange}
+                    disabled={pwSaving || !passwords.current || !passwords.newPassword || !passwords.confirm}
+                    className="w-fit px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
+                    style={{ background: '#6662FF', color: '#fff', boxShadow: '0 2px 12px rgba(102,98,255,0.35)', fontFamily: "'DM Sans', sans-serif" }}>
+                    {pwSaving ? 'Updating...' : 'Update Password'}
+                  </button>
+
+                  {pwResult && <StatusBanner success={pwResult.success} message={pwResult.message} />}
+                </div>
+              )}
             </div>
 
-            {profile?.subscription_status !== 'active' && (
-              <a href="/checkout"
-                className="block w-full py-2.5 rounded-lg text-sm font-semibold text-center transition-all"
-                style={{ background: '#6662FF', color: '#fff', boxShadow: '0 2px 16px rgba(102,98,255,0.4)' }}>
-                Upgrade to Pro
-              </a>
-            )}
-          </div>
-
-          {/* Billing Info */}
-          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Billing</h2>
-            <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>
-              {profile?.subscription_status === 'active'
-                ? 'Your subscription renews automatically.'
-                : 'No active subscription. Upgrade to access all features.'}
-            </p>
-            {profile?.subscription_status === 'active' && (
-              <div className="flex flex-col gap-2">
-                <InfoRow label="Next billing date" value={
-                  profile?.subscription_end
-                    ? new Date(profile.subscription_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                    : 'N/A'
-                } />
-                <InfoRow label="Payment method" value={profile?.payment_method || 'Card ending in ****'} />
+            {/* Two-Factor Authentication */}
+            <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-sm font-semibold" style={{ color: 'var(--text)', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>
+                    Two-Factor Authentication
+                  </h2>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>
+                    Add an extra layer of security to your account.
+                  </p>
+                </div>
+                <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+                  style={{ background: 'rgba(102,98,255,0.08)', color: '#A6A2FF', border: '1px solid rgba(102,98,255,0.2)', fontFamily: "'DM Sans', sans-serif" }}>
+                  Coming Soon
+                </span>
               </div>
-            )}
-          </div>
-        </div>
-      )}
+            </div>
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* ═══ 4. NOTIFICATIONS ═══ */}
-      {/* ═══════════════════════════════════════════ */}
-      {section === 'notifications' && (
-        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Email Notifications</h2>
-          <p className="text-xs mb-4" style={{ color: 'var(--text-dim)' }}>Choose what emails you receive from Ascentor.</p>
-
-          <div className="flex flex-col gap-1">
-            <Toggle label="Coaching session summaries" sub="Get a recap after each AI coaching session"
-              checked={notifs.email_coaching_summary}
-              onChange={(v) => setNotifs({ ...notifs, email_coaching_summary: v })} />
-            <Toggle label="Weekly progress digest" sub="A summary of your goals, streaks, and activity"
-              checked={notifs.email_weekly_digest}
-              onChange={(v) => setNotifs({ ...notifs, email_weekly_digest: v })} />
-            <Toggle label="Expert session reminders" sub="Get notified before upcoming live sessions"
-              checked={notifs.email_expert_reminders}
-              onChange={(v) => setNotifs({ ...notifs, email_expert_reminders: v })} />
-            <Toggle label="Goal reminders" sub="Nudges to keep you on track with your 90-day goal"
-              checked={notifs.email_goal_reminders}
-              onChange={(v) => setNotifs({ ...notifs, email_goal_reminders: v })} />
-            <Toggle label="Community activity" sub="Posts and replies in your cohorts"
-              checked={notifs.email_community_activity}
-              onChange={(v) => setNotifs({ ...notifs, email_community_activity: v })} />
-            <Toggle label="Product updates & tips" sub="New features, tips, and announcements"
-              checked={notifs.email_product_updates}
-              onChange={(v) => setNotifs({ ...notifs, email_product_updates: v })} />
-          </div>
-
-          <div className="flex items-center gap-3 mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-            <button onClick={handleNotifSave} disabled={notifSaving}
-              className="px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
-              style={{ background: '#6662FF', color: '#fff', boxShadow: '0 2px 12px rgba(102,98,255,0.35)' }}>
-              {notifSaving ? 'Saving...' : 'Save Preferences'}
-            </button>
-            {notifSaved && <span className="text-xs font-semibold animate-fade-up" style={{ color: 'var(--success)' }}>Saved ✓</span>}
-          </div>
-        </div>
-      )}
-
-      {/* ═══════════════════════════════════════════ */}
-      {/* ═══ 5. DANGER ZONE / ACCOUNT ═══ */}
-      {/* ═══════════════════════════════════════════ */}
-      {section === 'danger' && (
-        <div className="flex flex-col gap-4">
-          {/* Account Info */}
-          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Account Details</h2>
-            <InfoRow label="Email" value={email} />
-            <InfoRow label="Auth method" value={isOAuth ? (authProvider === 'google' ? 'Google' : 'LinkedIn') : 'Email & Password'} />
-            <InfoRow label="Member since" value={
-              profile?.created_at
-                ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                : 'Unknown'
-            } />
-            <InfoRow label="Account role" value={profile?.role || 'member'} />
-          </div>
-
-          {/* Sign Out */}
-          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Sign Out</h2>
-            <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>Sign out on this device.</p>
-            <button onClick={handleSignOut} disabled={signingOut}
-              className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
-              style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-              {signingOut ? 'Signing out...' : 'Sign Out'}
-            </button>
-          </div>
-
-          {/* Export Data */}
-          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Export Your Data</h2>
-            <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>
-              Download all your data including profile, coaching sessions, goals, and community posts as a JSON file. GDPR compliant.
-            </p>
-            <button onClick={handleExportData} disabled={exporting}
-              className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
-              style={{ color: '#A6A2FF', border: '1px solid rgba(166,162,255,0.35)', background: 'rgba(102,98,255,0.06)' }}>
-              {exporting ? 'Preparing download...' : 'Download My Data'}
-            </button>
-          </div>
-
-          {/* Delete Account */}
-          <div className="rounded-xl p-5" style={{ background: 'rgba(239,68,68,0.02)', border: '1px solid rgba(239,68,68,0.15)' }}>
-            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--error)', fontFamily: "'Syne', sans-serif" }}>Delete Account</h2>
-            <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>
-              Permanently delete your account and all associated data. This action cannot be undone.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)}
-                placeholder='Type "DELETE" to confirm'
-                className="px-3.5 py-2.5 text-sm rounded-xl flex-1"
-                style={{ ...inputStyle, borderColor: deleteConfirm === 'DELETE' ? 'rgba(239,68,68,0.5)' : 'var(--border)' }} />
-              <button onClick={handleDeleteAccount}
-                disabled={deleteConfirm !== 'DELETE' || deleting}
-                className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-30 shrink-0"
-                style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)' }}>
-                {deleting ? 'Processing...' : 'Delete My Account'}
+            {/* Active Sessions */}
+            <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>
+                Active Sessions
+              </h2>
+              <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+                  style={{ background: 'rgba(16,185,129,0.09)', color: 'var(--success)' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-medium" style={{ color: 'var(--text)', fontFamily: "'DM Sans', sans-serif" }}>Current session</p>
+                  <p className="text-[10px]" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>Active now</p>
+                </div>
+                <span className="w-2 h-2 rounded-full" style={{ background: 'var(--success)' }} />
+              </div>
+              <button onClick={handleSignOut} disabled={signingOut}
+                className="mt-3 px-4 py-2 rounded-lg text-xs font-semibold disabled:opacity-40"
+                style={{ color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.04)', fontFamily: "'DM Sans', sans-serif" }}>
+                {signingOut ? 'Signing out...' : 'Sign Out All Devices'}
               </button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {/* ═══ 3. PLAN / SUBSCRIPTION ═══ */}
+        {section === 'plan' && (
+          <div className="flex flex-col gap-4">
+            <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #6662FF' }}>
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>Current Plan</span>
+                  <h2 className="text-lg font-bold mt-0.5"
+                    style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#6662FF', letterSpacing: '-0.03em' }}>
+                    {profile?.subscription_plan || 'Free'}
+                  </h2>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
+                  style={{
+                    background: profile?.subscription_status === 'active' ? 'rgba(16,185,129,0.09)' : 'rgba(102,98,255,0.1)',
+                    color: profile?.subscription_status === 'active' ? 'var(--success)' : '#6662FF',
+                    border: `1px solid ${profile?.subscription_status === 'active' ? 'rgba(16,185,129,0.19)' : 'rgba(102,98,255,0.25)'}`,
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}>
+                  {profile?.subscription_status === 'active' ? 'Active' : 'Free Tier'}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1.5 mb-4">
+                {[
+                  { feature: 'AI Coaching Sessions', included: true },
+                  { feature: 'Community Cohorts (3 max)', included: true },
+                  { feature: 'Expert Sessions', included: profile?.subscription_status === 'active' },
+                  { feature: 'Courses & Learning', included: profile?.subscription_status === 'active' },
+                  { feature: 'Priority Support', included: profile?.subscription_status === 'active' },
+                ].map((f) => (
+                  <div key={f.feature} className="flex items-center gap-2 text-xs"
+                    style={{ color: f.included ? 'var(--text-muted)' : 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>
+                    <span style={{ color: f.included ? 'var(--success)' : 'var(--text-dim)' }}>
+                      {f.included ? '✓' : '–'}
+                    </span>
+                    <span style={{ opacity: f.included ? 1 : 0.5 }}>{f.feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              {profile?.subscription_status !== 'active' && (
+                <a href="/checkout"
+                  className="block w-full py-2.5 rounded-lg text-sm font-semibold text-center transition-all"
+                  style={{ background: '#6662FF', color: '#fff', boxShadow: '0 2px 16px rgba(102,98,255,0.4)', fontFamily: "'DM Sans', sans-serif" }}>
+                  Upgrade to Pro
+                </a>
+              )}
+            </div>
+
+            <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>Billing</h2>
+              <p className="text-xs mb-3" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>
+                {profile?.subscription_status === 'active'
+                  ? 'Your subscription renews automatically.'
+                  : 'No active subscription. Upgrade to access all features.'}
+              </p>
+              {profile?.subscription_status === 'active' && (
+                <div className="flex flex-col gap-2">
+                  <InfoRow label="Next billing date" value={
+                    profile?.subscription_end
+                      ? new Date(profile.subscription_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                      : 'N/A'
+                  } />
+                  <InfoRow label="Payment method" value={profile?.payment_method || 'Card ending in ****'} />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ═══ 4. NOTIFICATIONS ═══ */}
+        {section === 'notifications' && (
+          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>
+              Email Notifications
+            </h2>
+            <p className="text-xs mb-4" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>
+              Choose what emails you receive from Ascentor.
+            </p>
+
+            <div className="flex flex-col gap-1">
+              <Toggle label="Coaching session summaries" sub="Get a recap after each AI coaching session"
+                checked={notifs.email_coaching_summary}
+                onChange={(v) => setNotifs({ ...notifs, email_coaching_summary: v })} />
+              <Toggle label="Weekly progress digest" sub="A summary of your goals, streaks, and activity"
+                checked={notifs.email_weekly_digest}
+                onChange={(v) => setNotifs({ ...notifs, email_weekly_digest: v })} />
+              <Toggle label="Expert session reminders" sub="Get notified before upcoming live sessions"
+                checked={notifs.email_expert_reminders}
+                onChange={(v) => setNotifs({ ...notifs, email_expert_reminders: v })} />
+              <Toggle label="Goal reminders" sub="Nudges to keep you on track with your 90-day goal"
+                checked={notifs.email_goal_reminders}
+                onChange={(v) => setNotifs({ ...notifs, email_goal_reminders: v })} />
+              <Toggle label="Community activity" sub="Posts and replies in your cohorts"
+                checked={notifs.email_community_activity}
+                onChange={(v) => setNotifs({ ...notifs, email_community_activity: v })} />
+              <Toggle label="Product updates & tips" sub="New features, tips, and announcements"
+                checked={notifs.email_product_updates}
+                onChange={(v) => setNotifs({ ...notifs, email_product_updates: v })} />
+            </div>
+
+            <div className="flex items-center gap-3 mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button onClick={handleNotifSave} disabled={notifSaving}
+                className="px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
+                style={{ background: '#6662FF', color: '#fff', boxShadow: '0 2px 12px rgba(102,98,255,0.35)', fontFamily: "'DM Sans', sans-serif" }}>
+                {notifSaving ? 'Saving...' : 'Save Preferences'}
+              </button>
+              {notifSaved && <span className="text-xs font-semibold animate-fade-up" style={{ color: 'var(--success)', fontFamily: "'DM Sans', sans-serif" }}>Saved ✓</span>}
+            </div>
+          </div>
+        )}
+
+        {/* ═══ 5. DANGER ZONE / ACCOUNT ═══ */}
+        {section === 'danger' && (
+          <div className="flex flex-col gap-4">
+            <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>
+                Account Details
+              </h2>
+              <InfoRow label="Email" value={email} />
+              <InfoRow label="Auth method" value={isOAuth ? (authProvider === 'google' ? 'Google' : 'LinkedIn') : 'Email & Password'} />
+              <InfoRow label="Member since" value={
+                profile?.created_at
+                  ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                  : 'Unknown'
+              } />
+              <InfoRow label="Account role" value={profile?.role || 'member'} />
+            </div>
+
+            <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>Sign Out</h2>
+              <p className="text-xs mb-3" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>Sign out on this device.</p>
+              <button onClick={handleSignOut} disabled={signingOut}
+                className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
+                style={{ color: 'var(--text-muted)', border: '1px solid var(--border)', fontFamily: "'DM Sans', sans-serif" }}>
+                {signingOut ? 'Signing out...' : 'Sign Out'}
+              </button>
+            </div>
+
+            <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>Export Your Data</h2>
+              <p className="text-xs mb-3" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>
+                Download all your data including profile, coaching sessions, goals, and community posts as a JSON file. GDPR compliant.
+              </p>
+              <button onClick={handleExportData} disabled={exporting}
+                className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
+                style={{ color: '#A6A2FF', border: '1px solid rgba(166,162,255,0.35)', background: 'rgba(102,98,255,0.06)', fontFamily: "'DM Sans', sans-serif" }}>
+                {exporting ? 'Preparing download...' : 'Download My Data'}
+              </button>
+            </div>
+
+            <div className="rounded-xl p-5" style={{ background: 'rgba(239,68,68,0.02)', border: '1px solid rgba(239,68,68,0.15)' }}>
+              <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--error)', fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700 }}>Delete Account</h2>
+              <p className="text-xs mb-3" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>
+                Permanently delete your account and all associated data. This action cannot be undone.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)}
+                  placeholder='Type "DELETE" to confirm'
+                  className="px-3.5 py-2.5 text-sm rounded-xl flex-1"
+                  style={{ ...inputStyle, borderColor: deleteConfirm === 'DELETE' ? 'rgba(239,68,68,0.5)' : 'var(--border)' }} />
+                <button onClick={handleDeleteAccount}
+                  disabled={deleteConfirm !== 'DELETE' || deleting}
+                  className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-30 shrink-0"
+                  style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', fontFamily: "'DM Sans', sans-serif" }}>
+                  {deleting ? 'Processing...' : 'Delete My Account'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -656,12 +675,14 @@ const inputStyle: React.CSSProperties = {
   background: 'var(--bg-input)', color: 'var(--text)',
   border: '1px solid var(--border)', outline: 'none',
   transition: 'border-color 0.15s',
+  fontFamily: "'DM Sans', sans-serif",
 };
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-[11px] font-bold mb-1.5 block uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>
+      <label className="text-[11px] font-bold mb-1.5 block uppercase tracking-wider"
+        style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>
         {label} {required && <span style={{ color: '#6662FF' }}>*</span>}
       </label>
       {children}
@@ -672,8 +693,8 @@ function Field({ label, required, children }: { label: string; required?: boolea
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-center py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
-      <span className="text-xs" style={{ color: 'var(--text-dim)' }}>{label}</span>
-      <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{value}</span>
+      <span className="text-xs" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>{label}</span>
+      <span className="text-sm font-medium" style={{ color: 'var(--text)', fontFamily: "'DM Sans', sans-serif" }}>{value}</span>
     </div>
   );
 }
@@ -684,8 +705,8 @@ function Toggle({ label, sub, checked, onChange }: {
   return (
     <div className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid var(--border)' }}>
       <div className="flex-1 pr-4">
-        <p className="text-sm" style={{ color: 'var(--text)' }}>{label}</p>
-        <p className="text-[11px]" style={{ color: 'var(--text-dim)' }}>{sub}</p>
+        <p className="text-sm" style={{ color: 'var(--text)', fontFamily: "'DM Sans', sans-serif" }}>{label}</p>
+        <p className="text-[11px]" style={{ color: 'var(--text-dim)', fontFamily: "'DM Sans', sans-serif" }}>{sub}</p>
       </div>
       <button onClick={() => onChange(!checked)}
         className="w-10 h-5 rounded-full transition-all shrink-0 relative"
@@ -707,7 +728,7 @@ function StatusBanner({ success, message }: { success?: boolean; message: string
       background: success ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)',
       border: `1px solid ${success ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
     }}>
-      <p className="text-xs" style={{ color: success ? 'var(--success)' : 'var(--error)' }}>{message}</p>
+      <p className="text-xs" style={{ color: success ? 'var(--success)' : 'var(--error)', fontFamily: "'DM Sans', sans-serif" }}>{message}</p>
     </div>
   );
 }

@@ -39,17 +39,18 @@ export default function LandingPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+        /* ── FONT IMPORT: Plus Jakarta Sans (display/headings) + DM Sans (body) ── */
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
 
         :root {
           /* ── Ascentor Brand Colors ── */
-          --brand:        #6662FF;   /* Very Light Blue (primary) */
-          --brand-light:  #A6A2FF;   /* Maximum Blue Purple (secondary) */
-          --brand-pale:   #EEEEFF;   /* Tint for backgrounds */
-          --green-yellow: #CFFF5E;   /* Maximum Green Yellow (accent pop) */
-          --fuchsia:      #FD81FD;   /* Fuchsia Pink (accent pop) */
+          --brand:        #6662FF;
+          --brand-light:  #A6A2FF;
+          --brand-pale:   #EEEEFF;
+          --green-yellow: #CFFF5E;
+          --fuchsia:      #FD81FD;
 
-          --dark:         #1E1E1E;   /* Eerie Black */
+          --dark:         #1E1E1E;
           --dark-2:       #252525;
           --dark-3:       #2E2E2E;
           --white:        #FFFFFF;
@@ -57,13 +58,17 @@ export default function LandingPage() {
           --text:         #1E1E1E;
           --text-muted:   #5A5A7A;
           --border:       rgba(102,98,255,0.15);
+
+          /* ── Font families ── */
+          --font-display: 'Plus Jakarta Sans', sans-serif;
+          --font-body:    'DM Sans', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
 
         .lp-body {
-          font-family: 'Inter', sans-serif;
+          font-family: var(--font-body);
           background: var(--white);
           color: var(--text);
           overflow-x: hidden;
@@ -80,10 +85,10 @@ export default function LandingPage() {
         }
         .lp-nav-logo {
           display: flex; align-items: center; gap: 10px;
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-display);
           font-size: 22px; font-weight: 800;
           color: var(--dark); text-decoration: none;
-          letter-spacing: -0.02em;
+          letter-spacing: -0.03em;
         }
         .lp-nav-logo-icon {
           width: 32px; height: 32px;
@@ -91,17 +96,18 @@ export default function LandingPage() {
           border-radius: 8px;
           display: flex; align-items: center; justify-content: center;
           font-size: 16px; font-weight: 900; color: white;
-          font-style: italic;
+          font-family: var(--font-display);
         }
         .lp-nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
-        .lp-nav-links a { text-decoration: none; color: var(--text-muted); font-size: 15px; font-weight: 500; transition: color 0.2s; }
+        .lp-nav-links a { text-decoration: none; color: var(--text-muted); font-size: 15px; font-weight: 500; transition: color 0.2s; font-family: var(--font-body); }
         .lp-nav-links a:hover { color: var(--brand); }
         .lp-nav-cta {
           background: var(--brand) !important;
           color: var(--white) !important;
           padding: 10px 22px; border-radius: 8px;
-          font-weight: 600 !important; font-size: 14px !important;
+          font-weight: 700 !important; font-size: 14px !important;
           transition: background 0.2s, transform 0.15s !important;
+          font-family: var(--font-body) !important;
         }
         .lp-nav-cta:hover { background: #5552EE !important; transform: translateY(-1px); color: var(--white) !important; }
 
@@ -127,7 +133,6 @@ export default function LandingPage() {
             radial-gradient(ellipse 50% 50% at 90% 10%, rgba(166,162,255,0.18) 0%, transparent 60%),
             radial-gradient(ellipse 40% 40% at 50% 50%, rgba(207,255,94,0.04) 0%, transparent 70%);
         }
-        /* Geometric lines background element */
         .lp-hero-lines {
           position: absolute; inset: 0; z-index: 1; pointer-events: none;
           background-image:
@@ -147,6 +152,7 @@ export default function LandingPage() {
           font-size: 13px; font-weight: 500; color: var(--brand-light);
           margin-bottom: 32px; animation: lp-fadeDown 0.6s ease both;
           position: relative; z-index: 2;
+          font-family: var(--font-body);
         }
         .lp-badge-dot {
           width: 7px; height: 7px; border-radius: 50%; background: var(--green-yellow);
@@ -166,11 +172,11 @@ export default function LandingPage() {
           to { opacity: 1; transform: translateY(0); }
         }
         .lp-hero-headline {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-display);
           font-size: clamp(40px, 6.5vw, 84px); font-weight: 800; line-height: 1.05;
           text-align: center; max-width: 860px; color: var(--white);
           animation: lp-fadeUp 0.7s 0.15s ease both; position: relative; z-index: 2;
-          letter-spacing: -0.03em;
+          letter-spacing: -0.04em;
         }
         .lp-hero-headline .accent { color: var(--brand-light); }
         .lp-hero-headline .accent-green { color: var(--green-yellow); }
@@ -178,6 +184,7 @@ export default function LandingPage() {
           max-width: 560px; text-align: center; font-size: 18px; line-height: 1.7;
           color: rgba(255,255,255,0.55); margin-top: 24px; font-weight: 400;
           animation: lp-fadeUp 0.7s 0.3s ease both; position: relative; z-index: 2;
+          font-family: var(--font-body);
         }
         .lp-hero-sub strong { color: rgba(255,255,255,0.9); font-weight: 600; }
         .lp-hero-actions {
@@ -187,7 +194,7 @@ export default function LandingPage() {
         }
         .lp-btn-primary {
           background: var(--brand); color: var(--white);
-          font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 700;
+          font-family: var(--font-body); font-size: 16px; font-weight: 700;
           padding: 16px 32px; border-radius: 10px; border: none; cursor: pointer;
           text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
           transition: all 0.2s; box-shadow: 0 4px 24px rgba(102,98,255,0.5);
@@ -195,7 +202,7 @@ export default function LandingPage() {
         .lp-btn-primary:hover { background: #5552EE; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(102,98,255,0.65); }
         .lp-btn-secondary {
           background: transparent; color: rgba(255,255,255,0.75);
-          font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500;
+          font-family: var(--font-body); font-size: 15px; font-weight: 500;
           padding: 15px 28px; border-radius: 10px;
           border: 1.5px solid rgba(255,255,255,0.15); cursor: pointer; text-decoration: none; transition: all 0.2s;
         }
@@ -203,6 +210,7 @@ export default function LandingPage() {
         .lp-hero-trust {
           margin-top: 16px; font-size: 13px; color: rgba(255,255,255,0.3);
           animation: lp-fadeUp 0.7s 0.55s ease both; position: relative; z-index: 2;
+          font-family: var(--font-body);
         }
 
         /* ── STATS BAR ── */
@@ -221,13 +229,13 @@ export default function LandingPage() {
         }
         .lp-stat-item { text-align: center; padding: 0 60px; border-right: 1px solid rgba(255,255,255,0.15); position: relative; z-index: 1; }
         .lp-stat-item:last-child { border-right: none; }
-        .lp-stat-number { font-family: 'Syne', sans-serif; font-size: 44px; font-weight: 800; color: var(--white); line-height: 1; letter-spacing: -0.03em; }
-        .lp-stat-label { font-size: 14px; color: rgba(255,255,255,0.65); margin-top: 8px; }
+        .lp-stat-number { font-family: var(--font-display); font-size: 44px; font-weight: 800; color: var(--white); line-height: 1; letter-spacing: -0.04em; }
+        .lp-stat-label { font-size: 14px; color: rgba(255,255,255,0.65); margin-top: 8px; font-family: var(--font-body); }
 
         /* ── SHARED ── */
-        .lp-section-label { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand); margin-bottom: 16px; }
-        .lp-section-headline { font-family: 'Syne', sans-serif; font-size: clamp(30px, 4vw, 50px); font-weight: 800; text-align: center; color: var(--dark); max-width: 680px; line-height: 1.1; letter-spacing: -0.02em; }
-        .lp-section-sub { text-align: center; font-size: 17px; line-height: 1.6; color: var(--text-muted); max-width: 540px; margin-top: 16px; }
+        .lp-section-label { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand); margin-bottom: 16px; font-family: var(--font-body); }
+        .lp-section-headline { font-family: var(--font-display); font-size: clamp(30px, 4vw, 50px); font-weight: 800; text-align: center; color: var(--dark); max-width: 680px; line-height: 1.1; letter-spacing: -0.03em; }
+        .lp-section-sub { text-align: center; font-size: 17px; line-height: 1.6; color: var(--text-muted); max-width: 540px; margin-top: 16px; font-family: var(--font-body); }
 
         /* ── PROBLEM ── */
         .lp-problem-section { padding: 100px 48px; background: var(--off-white); display: flex; flex-direction: column; align-items: center; }
@@ -239,9 +247,9 @@ export default function LandingPage() {
         }
         .lp-problem-card:hover { transform: translateY(-3px); box-shadow: 0 16px 48px rgba(102,98,255,0.1); }
         .lp-problem-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--brand), var(--brand-light), transparent); }
-        .lp-problem-quote { font-size: 15px; line-height: 1.75; color: var(--text); font-style: italic; margin-bottom: 20px; }
+        .lp-problem-quote { font-size: 15px; line-height: 1.75; color: var(--text); font-style: italic; margin-bottom: 20px; font-family: var(--font-body); }
         .lp-problem-quote strong { color: var(--dark); font-style: normal; font-weight: 600; }
-        .lp-problem-persona { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+        .lp-problem-persona { font-size: 13px; color: var(--text-muted); font-weight: 500; font-family: var(--font-body); }
 
         /* ── FOR SECTION ── */
         .lp-for-section { padding: 100px 48px; background: var(--white); display: flex; flex-direction: column; align-items: center; }
@@ -251,24 +259,24 @@ export default function LandingPage() {
         .lp-for-card.explorer { background: var(--off-white); border: 1.5px solid var(--border); }
         .lp-for-card.builder { background: var(--dark); border: 1.5px solid rgba(102,98,255,0.2); }
         .lp-for-card.climber { background: var(--brand); border: 1.5px solid transparent; }
-        .lp-for-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 12px; border-radius: 100px; margin-bottom: 20px; }
+        .lp-for-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 12px; border-radius: 100px; margin-bottom: 20px; font-family: var(--font-body); }
         .explorer .lp-for-tag { background: rgba(102,98,255,0.12); color: var(--brand); }
         .builder .lp-for-tag { background: rgba(102,98,255,0.2); color: var(--brand-light); }
         .climber .lp-for-tag { background: rgba(255,255,255,0.18); color: var(--white); }
-        .lp-for-age { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; line-height: 1; margin-bottom: 8px; letter-spacing: -0.03em; }
+        .lp-for-age { font-family: var(--font-display); font-size: 36px; font-weight: 800; line-height: 1; margin-bottom: 8px; letter-spacing: -0.04em; }
         .explorer .lp-for-age { color: var(--dark); }
         .builder .lp-for-age { color: var(--white); }
         .climber .lp-for-age { color: var(--white); }
-        .lp-for-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+        .lp-for-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin-bottom: 12px; }
         .explorer .lp-for-title { color: var(--dark); }
         .builder .lp-for-title { color: var(--white); }
         .climber .lp-for-title { color: var(--white); }
-        .lp-for-desc { font-size: 14px; line-height: 1.7; font-weight: 400; }
+        .lp-for-desc { font-size: 14px; line-height: 1.7; font-weight: 400; font-family: var(--font-body); }
         .explorer .lp-for-desc { color: var(--text-muted); }
         .builder .lp-for-desc { color: rgba(255,255,255,0.55); }
         .climber .lp-for-desc { color: rgba(255,255,255,0.75); }
         .lp-for-list { list-style: none; margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
-        .lp-for-list li { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+        .lp-for-list li { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; font-family: var(--font-body); }
         .explorer .lp-for-list li { color: var(--text); }
         .builder .lp-for-list li { color: rgba(255,255,255,0.7); }
         .climber .lp-for-list li { color: rgba(255,255,255,0.9); }
@@ -302,10 +310,10 @@ export default function LandingPage() {
         .lp-pillar-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--brand), var(--brand-light), transparent); opacity: 0; transition: opacity 0.25s; }
         .lp-pillar-card:hover::before { opacity: 1; }
         .lp-pillar-icon { width: 52px; height: 52px; background: rgba(102,98,255,0.15); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 24px; border: 1px solid rgba(102,98,255,0.2); }
-        .lp-pillar-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: var(--white); margin-bottom: 12px; }
-        .lp-pillar-desc { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.45); margin-bottom: 24px; }
+        .lp-pillar-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--white); margin-bottom: 12px; letter-spacing: -0.02em; }
+        .lp-pillar-desc { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.45); margin-bottom: 24px; font-family: var(--font-body); }
         .lp-pillar-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-        .lp-pillar-features li { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.65); display: flex; align-items: flex-start; gap: 10px; }
+        .lp-pillar-features li { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.65); display: flex; align-items: flex-start; gap: 10px; font-family: var(--font-body); }
         .lp-pillar-features li::before { content: '✓'; color: var(--brand-light); font-size: 13px; flex-shrink: 0; margin-top: 1px; }
 
         /* ── HOW IT WORKS ── */
@@ -313,9 +321,9 @@ export default function LandingPage() {
         .lp-steps-container { display: flex; align-items: flex-start; max-width: 900px; margin-top: 60px; width: 100%; position: relative; }
         .lp-steps-container::before { content: ''; position: absolute; top: 32px; left: calc(33.33% / 2); right: calc(33.33% / 2); height: 1.5px; background: linear-gradient(90deg, var(--brand), var(--brand-light), rgba(102,98,255,0.2)); }
         .lp-step { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 24px; }
-        .lp-step-number { width: 64px; height: 64px; background: var(--white); border: 2px solid var(--brand); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--brand); margin-bottom: 24px; position: relative; z-index: 1; box-shadow: 0 0 0 6px var(--off-white), 0 4px 20px rgba(102,98,255,0.2); }
-        .lp-step-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; color: var(--dark); margin-bottom: 10px; }
-        .lp-step-desc { font-size: 14px; line-height: 1.7; color: var(--text-muted); }
+        .lp-step-number { width: 64px; height: 64px; background: var(--white); border: 2px solid var(--brand); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 22px; font-weight: 800; color: var(--brand); margin-bottom: 24px; position: relative; z-index: 1; box-shadow: 0 0 0 6px var(--off-white), 0 4px 20px rgba(102,98,255,0.2); }
+        .lp-step-title { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--dark); margin-bottom: 10px; letter-spacing: -0.02em; }
+        .lp-step-desc { font-size: 14px; line-height: 1.7; color: var(--text-muted); font-family: var(--font-body); }
 
         /* ── TESTIMONIALS ── */
         .lp-testimonials-section { padding: 100px 48px; background: var(--white); display: flex; flex-direction: column; align-items: center; }
@@ -330,14 +338,14 @@ export default function LandingPage() {
         .lp-testimonial-stars { display: flex; gap: 3px; margin-bottom: 20px; }
         .lp-star { color: var(--green-yellow); font-size: 16px; }
         .featured .lp-star { color: rgba(255,255,255,0.9); }
-        .lp-testimonial-quote { font-size: 15px; line-height: 1.75; color: var(--text); flex: 1; margin-bottom: 24px; }
+        .lp-testimonial-quote { font-size: 15px; line-height: 1.75; color: var(--text); flex: 1; margin-bottom: 24px; font-family: var(--font-body); }
         .featured .lp-testimonial-quote { color: rgba(255,255,255,0.9); }
         .lp-testimonial-author { display: flex; align-items: center; gap: 12px; }
-        .lp-author-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--brand), var(--brand-light)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: var(--white); flex-shrink: 0; }
+        .lp-author-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--brand), var(--brand-light)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: var(--white); flex-shrink: 0; font-family: var(--font-display); }
         .featured .lp-author-avatar { background: rgba(255,255,255,0.2); }
-        .lp-author-name { font-size: 14px; font-weight: 700; color: var(--dark); }
+        .lp-author-name { font-size: 14px; font-weight: 700; color: var(--dark); font-family: var(--font-display); }
         .featured .lp-author-name { color: var(--white); }
-        .lp-author-role { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .lp-author-role { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-family: var(--font-body); }
         .featured .lp-author-role { color: rgba(255,255,255,0.55); }
 
         /* ── MENTORS ── */
@@ -345,10 +353,10 @@ export default function LandingPage() {
         .lp-mentors-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 900px; margin-top: 56px; width: 100%; }
         .lp-mentor-card { background: var(--white); border-radius: 20px; padding: 32px; border: 1px solid var(--border); text-align: center; transition: transform 0.25s, box-shadow 0.25s; }
         .lp-mentor-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(102,98,255,0.15); }
-        .lp-mentor-avatar { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, var(--brand), var(--brand-light)); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: var(--white); margin: 0 auto 16px; border: 3px solid rgba(102,98,255,0.15); }
-        .lp-mentor-name { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
-        .lp-mentor-title { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; }
-        .lp-mentor-badge { display: inline-block; background: rgba(102,98,255,0.1); color: var(--brand); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 12px; border-radius: 100px; border: 1px solid rgba(102,98,255,0.2); }
+        .lp-mentor-avatar { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, var(--brand), var(--brand-light)); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--white); margin: 0 auto 16px; border: 3px solid rgba(102,98,255,0.15); }
+        .lp-mentor-name { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 4px; letter-spacing: -0.02em; }
+        .lp-mentor-title { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; font-family: var(--font-body); }
+        .lp-mentor-badge { display: inline-block; background: rgba(102,98,255,0.1); color: var(--brand); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 12px; border-radius: 100px; border: 1px solid rgba(102,98,255,0.2); font-family: var(--font-body); }
 
         /* ── PRICING ── */
         .lp-pricing-section { padding: 100px 48px; background: var(--dark); display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; }
@@ -369,15 +377,15 @@ export default function LandingPage() {
         }
         .lp-pricing-card:hover { border-color: rgba(102,98,255,0.3); transform: translateY(-3px); }
         .lp-pricing-card.popular { border-color: var(--brand); background: rgba(102,98,255,0.12); }
-        .lp-popular-tag { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--brand); color: var(--white); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 14px; border-radius: 100px; white-space: nowrap; }
-        .lp-pricing-plan { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brand-light); margin-bottom: 16px; }
-        .lp-pricing-price { font-family: 'Syne', sans-serif; font-size: 48px; font-weight: 800; color: var(--white); line-height: 1; letter-spacing: -0.03em; }
-        .lp-pricing-price span { font-size: 18px; font-weight: 400; color: rgba(255,255,255,0.35); font-family: 'Inter', sans-serif; }
-        .lp-pricing-for { font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 6px; margin-bottom: 28px; }
+        .lp-popular-tag { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--brand); color: var(--white); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 14px; border-radius: 100px; white-space: nowrap; font-family: var(--font-body); }
+        .lp-pricing-plan { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brand-light); margin-bottom: 16px; font-family: var(--font-body); }
+        .lp-pricing-price { font-family: var(--font-display); font-size: 48px; font-weight: 800; color: var(--white); line-height: 1; letter-spacing: -0.04em; }
+        .lp-pricing-price span { font-size: 18px; font-weight: 400; color: rgba(255,255,255,0.35); font-family: var(--font-body); }
+        .lp-pricing-for { font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 6px; margin-bottom: 28px; font-family: var(--font-body); }
         .lp-pricing-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
-        .lp-pricing-features li { font-size: 13px; color: rgba(255,255,255,0.6); display: flex; align-items: flex-start; gap: 10px; line-height: 1.5; }
+        .lp-pricing-features li { font-size: 13px; color: rgba(255,255,255,0.6); display: flex; align-items: flex-start; gap: 10px; line-height: 1.5; font-family: var(--font-body); }
         .lp-pricing-features li::before { content: '✓'; color: var(--brand-light); font-size: 12px; flex-shrink: 0; margin-top: 2px; }
-        .lp-pricing-btn { display: block; text-align: center; text-decoration: none; padding: 13px; border-radius: 10px; font-size: 14px; font-weight: 700; transition: all 0.2s; }
+        .lp-pricing-btn { display: block; text-align: center; text-decoration: none; padding: 13px; border-radius: 10px; font-size: 14px; font-weight: 700; transition: all 0.2s; font-family: var(--font-body); }
         .lp-pricing-btn.outline { border: 1.5px solid rgba(102,98,255,0.25); color: rgba(255,255,255,0.6); }
         .lp-pricing-btn.outline:hover { border-color: var(--brand); color: var(--brand-light); }
         .lp-pricing-btn.filled { background: var(--brand); color: var(--white); border: none; box-shadow: 0 4px 24px rgba(102,98,255,0.45); }
@@ -386,31 +394,31 @@ export default function LandingPage() {
         /* ── CTA ── */
         .lp-cta-section { padding: 120px 48px; background: var(--white); display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; overflow: hidden; }
         .lp-cta-section::before { content: ''; position: absolute; width: 900px; height: 900px; border-radius: 50%; background: radial-gradient(circle, rgba(102,98,255,0.06) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .lp-cta-headline { font-family: 'Syne', sans-serif; font-size: clamp(36px, 5vw, 62px); font-weight: 800; color: var(--dark); max-width: 680px; line-height: 1.1; position: relative; z-index: 1; letter-spacing: -0.03em; }
+        .lp-cta-headline { font-family: var(--font-display); font-size: clamp(36px, 5vw, 62px); font-weight: 800; color: var(--dark); max-width: 680px; line-height: 1.1; position: relative; z-index: 1; letter-spacing: -0.04em; }
         .lp-cta-headline .accent { color: var(--brand); }
-        .lp-cta-sub { font-size: 17px; line-height: 1.7; color: var(--text-muted); max-width: 480px; margin-top: 20px; position: relative; z-index: 1; }
+        .lp-cta-sub { font-size: 17px; line-height: 1.7; color: var(--text-muted); max-width: 480px; margin-top: 20px; position: relative; z-index: 1; font-family: var(--font-body); }
         .lp-cta-actions { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 40px; position: relative; z-index: 1; }
         .lp-cta-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
-        .lp-btn-whatsapp { background: #25D366; color: white; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700; padding: 14px 28px; border-radius: 10px; border: none; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+        .lp-btn-whatsapp { background: #25D366; color: white; font-family: var(--font-body); font-size: 15px; font-weight: 700; padding: 14px 28px; border-radius: 10px; border: none; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
         .lp-btn-whatsapp:hover { background: #1fba59; transform: translateY(-2px); }
         .lp-email-form { display: flex; max-width: 420px; width: 100%; margin-top: 8px; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border); box-shadow: 0 0 0 4px rgba(102,98,255,0.04); transition: box-shadow 0.2s; }
         .lp-email-form:focus-within { box-shadow: 0 0 0 4px rgba(102,98,255,0.12); border-color: var(--brand); }
-        .lp-email-form input { flex: 1; padding: 14px 18px; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--text); border: none; outline: none; background: var(--white); }
-        .lp-email-form button { background: var(--brand); color: var(--white); border: none; padding: 14px 22px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
+        .lp-email-form input { flex: 1; padding: 14px 18px; font-family: var(--font-body); font-size: 14px; color: var(--text); border: none; outline: none; background: var(--white); }
+        .lp-email-form button { background: var(--brand); color: var(--white); border: none; padding: 14px 22px; font-family: var(--font-body); font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
         .lp-email-form button:hover { background: #5552EE; }
-        .lp-cta-note { font-size: 12px; color: var(--text-muted); margin-top: 12px; position: relative; z-index: 1; }
+        .lp-cta-note { font-size: 12px; color: var(--text-muted); margin-top: 12px; position: relative; z-index: 1; font-family: var(--font-body); }
 
         /* ── FOOTER ── */
         .lp-footer { background: var(--dark); padding: 60px 48px 32px; }
         .lp-footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-        .lp-footer-brand { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--white); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; letter-spacing: -0.02em; }
-        .lp-footer-brand-icon { width: 28px; height: 28px; background: var(--brand); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: white; font-style: italic; }
-        .lp-footer-tagline { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.35); max-width: 260px; }
-        .lp-footer-col-title { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
+        .lp-footer-brand { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--white); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; letter-spacing: -0.03em; }
+        .lp-footer-brand-icon { width: 28px; height: 28px; background: var(--brand); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: white; font-family: var(--font-display); }
+        .lp-footer-tagline { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.35); max-width: 260px; font-family: var(--font-body); }
+        .lp-footer-col-title { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 20px; font-family: var(--font-body); }
         .lp-footer-links { list-style: none; display: flex; flex-direction: column; gap: 12px; }
-        .lp-footer-links a { text-decoration: none; font-size: 14px; color: rgba(255,255,255,0.35); transition: color 0.2s; }
+        .lp-footer-links a { text-decoration: none; font-size: 14px; color: rgba(255,255,255,0.35); transition: color 0.2s; font-family: var(--font-body); }
         .lp-footer-links a:hover { color: var(--brand-light); }
-        .lp-footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 28px; font-size: 13px; color: rgba(255,255,255,0.25); }
+        .lp-footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 28px; font-size: 13px; color: rgba(255,255,255,0.25); font-family: var(--font-body); }
         .lp-footer-bottom span:last-child { color: rgba(255,255,255,0.2); }
 
         /* ── RESPONSIVE ── */
@@ -671,7 +679,7 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-          <p style={{ marginTop: '40px', fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center' }}>
+          <p style={{ marginTop: '40px', fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center', fontFamily: 'var(--font-body)' }}>
             Are you an experienced professional?{' '}
             <Link href="/mentor-apply" style={{ color: 'var(--brand)', textDecoration: 'none', fontWeight: 600 }}>Apply to become a Founding Mentor →</Link>
           </p>
@@ -725,7 +733,7 @@ export default function LandingPage() {
               <Link href="/pricing" className="lp-pricing-btn outline">Start Free Trial</Link>
             </div>
           </div>
-          <p style={{ marginTop: '32px', fontSize: '14px', color: 'rgba(255,255,255,0.3)', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <p style={{ marginTop: '32px', fontSize: '14px', color: 'rgba(255,255,255,0.3)', textAlign: 'center', position: 'relative', zIndex: 1, fontFamily: 'var(--font-body)' }}>
             Looking for team or corporate plans?{' '}
             <Link href="/contact" style={{ color: 'var(--brand-light)', textDecoration: 'none' }}>Talk to us →</Link>
           </p>
@@ -749,9 +757,9 @@ export default function LandingPage() {
                 💬 Join our Founders WhatsApp Community
               </a>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px' }}>Or get weekly mentorship insights — free</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px', fontFamily: 'var(--font-body)' }}>Or get weekly mentorship insights — free</p>
             {subscribed ? (
-              <p style={{ fontSize: '14px', color: 'var(--brand)', fontWeight: 600 }}>✓ You're in! Check your inbox.</p>
+              <p style={{ fontSize: '14px', color: 'var(--brand)', fontWeight: 600, fontFamily: 'var(--font-body)' }}>✓ You're in! Check your inbox.</p>
             ) : (
               <>
                 <form className="lp-email-form" onSubmit={handleSubscribe}>
@@ -766,7 +774,7 @@ export default function LandingPage() {
                     {subLoading ? 'Joining...' : 'Subscribe'}
                   </button>
                 </form>
-                {subError && <p style={{ fontSize: '12px', color: '#E85020', marginTop: '6px' }}>{subError}</p>}
+                {subError && <p style={{ fontSize: '12px', color: '#E85020', marginTop: '6px', fontFamily: 'var(--font-body)' }}>{subError}</p>}
               </>
             )}
             <p className="lp-cta-note">No credit card · Cancel anytime · 30-day money-back guarantee</p>
