@@ -4,89 +4,267 @@ import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 
+// ============================================================
+// ASCENTOR BRAND TOKENS · Brand Book v1.0 · 2026
+// Display : Cormorant Garamond 700 / Italic 600
+// UI      : Syne 400–800
+// Mono    : DM Mono 400/500
+// Gold    : #E8A020   Dark: #0C0B08
+// ============================================================
+
+const B = {
+  fontDisplay: "'Cormorant Garamond', Georgia, serif",
+  fontUI:      "'Syne', system-ui, sans-serif",
+  fontMono:    "'DM Mono', 'Courier New', monospace",
+  dark:        '#0C0B08',
+  dark800:     '#141310',
+  dark700:     '#1E1C17',
+  dark600:     '#2E2A22',
+  dark500:     '#4A4438',
+  dark400:     '#7A7260',
+  dark200:     '#D4CFC3',
+  dark50:      '#F7F6F3',
+  gold:        '#E8A020',
+  gold600:     '#C87820',
+  goldMuted:   'rgba(232,160,32,0.09)',
+  goldBorder:  'rgba(232,160,32,0.25)',
+  border:      'rgba(212,207,195,0.10)',
+  // Stage colours (brand book pg 4) — repurposed as semantic status colours
+  explorer:    '#14B8A6',   // scheduled  → teal (forward-looking, calm)
+  climber:     '#8B5CF6',   // live       → purple (active, elevated)
+  success:     '#10B981',   // completed  → green
+  error:       '#EF4444',   // cancelled
+};
+
+// Status → brand colour mapping (no raw hex outside this map)
+const STATUS_CFG: Record<string, { color: string; label: string }> = {
+  scheduled: { color: B.explorer,  label: 'Scheduled' },
+  live:      { color: B.climber,   label: 'Live'      },
+  completed: { color: B.success,   label: 'Completed' },
+  cancelled: { color: B.error,     label: 'Cancelled' },
+};
+
 const STATUSES = ['scheduled', 'live', 'completed', 'cancelled'] as const;
 
-/**
- * 1. Main Entry Point
- * Wraps the logic in Suspense to handle useSearchParams()
- */
-export default function AdminExpertsPage() {
+// ── Shared primitives ────────────────────────────────────────────
+
+function MonoLabel({ children, color = B.dark500 }: { children: React.ReactNode; color?: string }) {
   return (
-    <Suspense fallback={
-      <div className="py-20 text-center">
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading...</p>
-      </div>
-    }>
-      <AdminExpertsPageInner />
-    </Suspense>
+    <span style={{
+      fontFamily:    B.fontMono,
+      fontSize:      '10px',
+      fontWeight:    500,
+      letterSpacing: '0.07em',
+      textTransform: 'uppercase' as const,
+      color,
+    }}>
+      {children}
+    </span>
   );
 }
 
-/**
- * 2. The Logic Component
- */
+function FieldLabel({ children }: { children: string }) {
+  return (
+    <label style={{
+      display:       'block',
+      fontFamily:    B.fontMono,
+      fontSize:      '10px',
+      fontWeight:    500,
+      letterSpacing: '0.07em',
+      textTransform: 'uppercase' as const,
+      color:         B.dark500,
+      marginBottom:  '6px',
+    }}>
+      {children}
+    </label>
+  );
+}
+
+function StatusPill({ status }: { status: string }) {
+  const cfg = STATUS_CFG[status] ?? { color: B.dark400, label: status };
+  return (
+    <span style={{
+      fontFamily:    B.fontMono,
+      fontSize:      '10px',
+      fontWeight:    500,
+      letterSpacing: '0.05em',
+      textTransform: 'uppercase' as const,
+      padding:       '3px 10px',
+      borderRadius:  '999px',
+      background:    `${cfg.color}12`,
+      border:        `1px solid ${cfg.color}30`,
+      color:         cfg.color,
+      whiteSpace:    'nowrap' as const,
+      flexShrink:    0,
+    }}>
+      {cfg.label}
+    </span>
+  );
+}
+
+// ── CSS strings ──────────────────────────────────────────────────
+const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');`;
+
+const FIELD_CSS = `
+  .asc-field {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid ${B.border};
+    background: ${B.dark700};
+    color: ${B.dark50};
+    font-family: ${B.fontUI};
+    font-size: 13px;
+    font-weight: 400;
+    outline: none;
+    transition: border-color 0.15s ease;
+    box-sizing: border-box;
+  }
+  .asc-field::placeholder { color: ${B.dark500}; }
+  .asc-field:focus        { border-color: ${B.goldBorder}; }
+  textarea.asc-field      { resize: none; }
+  select.asc-field {
+    cursor: pointer;
+    font-family: ${B.fontMono};
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%234A4438' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  input[type="datetime-local"].asc-field::-webkit-calendar-picker-indicator {
+    filter: invert(0.4);
+    cursor: pointer;
+  }
+  .asc-btn-primary {
+    padding: 11px 22px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: ${B.gold};
+    color: ${B.dark};
+    font-family: ${B.fontUI};
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    transition: background 0.15s ease, opacity 0.15s ease;
+    white-space: nowrap;
+  }
+  .asc-btn-primary:hover:not(:disabled) { background: ${B.gold600}; }
+  .asc-btn-primary:disabled             { opacity: 0.45; cursor: not-allowed; }
+  .asc-btn-ghost {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid ${B.border};
+    cursor: pointer;
+    background: transparent;
+    color: ${B.dark400};
+    font-family: ${B.fontUI};
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.12s ease;
+    white-space: nowrap;
+  }
+  .asc-btn-ghost:hover { border-color: ${B.goldBorder}; color: ${B.dark200}; }
+  .asc-event-card { transition: border-color 0.12s ease; }
+  .asc-event-card:hover { border-color: rgba(212,207,195,0.20) !important; }
+  .asc-action-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid ${B.border};
+    cursor: pointer;
+    background: transparent;
+    font-family: ${B.fontUI};
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: all 0.12s ease;
+  }
+`;
+
+// ────────────────────────────────────────────────────────────────
+// MAIN EXPORT — Suspense wrapper
+// ────────────────────────────────────────────────────────────────
+export default function AdminExpertsPage() {
+  return (
+    <>
+      <style>{FONTS + FIELD_CSS}</style>
+      <Suspense fallback={<BrandLoader />}>
+        <AdminExpertsPageInner />
+      </Suspense>
+    </>
+  );
+}
+
+function BrandLoader() {
+  return (
+    <div style={{ padding: '80px 0', textAlign: 'center' }}>
+      <MonoLabel color={B.dark600}>Loading events…</MonoLabel>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────
+// INNER COMPONENT — All logic lives here
+// ────────────────────────────────────────────────────────────────
 function AdminExpertsPageInner() {
-  const supabase = createClient();
+  const supabase     = createClient();
   const searchParams = useSearchParams();
 
-  // State
-  const [events, setEvents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [events,   setEvents]   = useState<any[]>([]);
+  const [loading,  setLoading]  = useState(true);
   const [showForm, setShowForm] = useState(searchParams.get('action') === 'create');
-  const [editing, setEditing] = useState<any>(null);
-  const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [editing,  setEditing]  = useState<any>(null);
+  const [saving,   setSaving]   = useState(false);
+  const [tab,      setTab]      = useState<'upcoming' | 'past'>('upcoming');
 
   const emptyForm = {
-    title: '', 
-    description: '', 
-    expert_name: '', 
-    expert_bio: '',
-    scheduled_at: '', 
-    duration_minutes: 60, 
-    max_participants: 50,
-    status: 'scheduled' as string, 
-    join_url: '', 
-    registration_url: '',
+    title: '', description: '', expert_name: '', expert_bio: '',
+    scheduled_at: '', duration_minutes: 60, max_participants: 50,
+    status: 'scheduled' as string, join_url: '', registration_url: '',
   };
-  
   const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => { 
-    loadEvents(); 
-  }, []);
+  useEffect(() => { loadEvents(); }, []);
 
   async function loadEvents() {
+    setLoading(true);
     const { data } = await supabase
       .from('expert_sessions')
       .select('*')
       .order('scheduled_at', { ascending: false });
-    
     setEvents(data || []);
     setLoading(false);
   }
 
   function openEdit(event: any) {
     setForm({
-      title: event.title || '', 
-      description: event.description || '',
-      expert_name: event.expert_name || '', 
-      expert_bio: event.expert_bio || '',
-      scheduled_at: event.scheduled_at ? new Date(event.scheduled_at).toISOString().slice(0, 16) : '',
-      duration_minutes: event.duration_minutes || 60,
-      max_participants: event.max_participants || 50,
-      status: event.status || 'scheduled',
-      join_url: event.join_url || '', 
-      registration_url: event.registration_url || '',
+      title:            event.title            || '',
+      description:      event.description      || '',
+      expert_name:      event.expert_name      || '',
+      expert_bio:       event.expert_bio        || '',
+      scheduled_at:     event.scheduled_at
+        ? new Date(event.scheduled_at).toISOString().slice(0, 16)
+        : '',
+      duration_minutes: event.duration_minutes  || 60,
+      max_participants: event.max_participants  || 50,
+      status:           event.status            || 'scheduled',
+      join_url:         event.join_url          || '',
+      registration_url: event.registration_url  || '',
     });
     setEditing(event);
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function openCreate() {
     setForm(emptyForm);
     setEditing(null);
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handleSave() {
@@ -94,16 +272,16 @@ function AdminExpertsPageInner() {
     setSaving(true);
 
     const payload: any = {
-      title: form.title,
-      description: form.description || null,
-      expert_name: form.expert_name,
-      expert_bio: form.expert_bio || null,
-      scheduled_at: new Date(form.scheduled_at).toISOString(),
+      title:            form.title,
+      description:      form.description      || null,
+      expert_name:      form.expert_name,
+      expert_bio:       form.expert_bio        || null,
+      scheduled_at:     new Date(form.scheduled_at).toISOString(),
       duration_minutes: Number(form.duration_minutes) || 60,
-      max_participants: Number(form.max_participants) || 50,
-      status: form.status,
-      join_url: form.join_url || null,
-      registration_url: form.registration_url || null,
+      max_participants: Number(form.max_participants)  || 50,
+      status:           form.status,
+      join_url:         form.join_url          || null,
+      registration_url: form.registration_url  || null,
     };
 
     let error;
@@ -114,122 +292,244 @@ function AdminExpertsPageInner() {
     }
 
     if (error) {
-      alert('Save failed: ' + error.message);
+      // TODO: replace with useModal() alert when modal provider is available here
+      console.error('Save failed:', error.message);
     } else {
       setShowForm(false);
       setEditing(null);
-      loadEvents(); 
+      await loadEvents();
     }
     setSaving(false);
   }
 
   async function handleDelete(id: string, title: string) {
-    if (!confirm(`Delete "${title}"?`)) return;
+    // TODO: replace with useModal() confirm when modal provider is available here
+    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
     await supabase.from('expert_sessions').delete().eq('id', id);
     loadEvents();
   }
 
-  const upcoming = events.filter((e) => ['scheduled', 'live'].includes(e.status));
-  const past = events.filter((e) => ['completed', 'cancelled'].includes(e.status));
+  const upcoming = events.filter(e => ['scheduled', 'live'].includes(e.status));
+  const past     = events.filter(e => ['completed', 'cancelled'].includes(e.status));
 
-  if (loading) {
-    return (
-      <div className="py-20 text-center">
-        <div className="text-2xl mb-2">⏳</div>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading events...</p>
-      </div>
-    );
-  }
+  if (loading) return <BrandLoader />;
 
   return (
-    <div className="animate-fade-up p-4">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold"
-            style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
-            Expert Events
-          </h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            {upcoming.length} upcoming · {past.length} past
-          </p>
+    <div className="animate-fade-up" style={{ fontFamily: B.fontUI }}>
+
+      {/* ── HEADER ── */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{
+          display:        'flex',
+          justifyContent: 'space-between',
+          alignItems:     'flex-start',
+          flexWrap:       'wrap',
+          gap:            '12px',
+          marginBottom:   '4px',
+        }}>
+          <div>
+            <h1 style={{
+              fontFamily: B.fontDisplay,
+              fontWeight: 700,
+              fontSize:   'clamp(24px, 3vw, 32px)',
+              color:      B.dark50,
+              margin:     '0 0 4px',
+              lineHeight: 1.15,
+            }}>
+              Expert Events
+            </h1>
+            <p style={{
+              fontFamily:    B.fontMono,
+              fontSize:      '11px',
+              color:         B.dark500,
+              margin:        0,
+              letterSpacing: '0.04em',
+            }}>
+              {upcoming.length} UPCOMING · {past.length} PAST · {events.length} TOTAL
+            </p>
+          </div>
+
+          <button
+            className="asc-btn-primary"
+            onClick={openCreate}
+            style={{ display: showForm && !editing ? 'none' : undefined }}
+          >
+            + New Event
+          </button>
         </div>
-        <button onClick={openCreate}
-          className="px-4 py-2 rounded-lg text-sm font-semibold"
-          style={{ background: 'var(--accent)', color: '#000' }}>
-          + New Event
-        </button>
+
+        {/* Gold rule */}
+        <div style={{
+          height:     '1px',
+          background: `linear-gradient(90deg, ${B.gold} 0%, transparent 60%)`,
+          marginTop:  '16px',
+        }} />
       </div>
 
-      {/* Form Section */}
+      {/* ── FORM PANEL ── */}
       {showForm && (
-        <div className="rounded-xl p-5 mb-6"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--accent)' }}>
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>
-            {editing ? 'Edit Event' : 'New Expert Event'}
-          </h3>
-          <div className="flex flex-col gap-3">
-            <input className="w-full px-3.5 py-2.5 text-sm rounded-xl"
-              style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-              value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Event title" />
-            
-            <textarea className="w-full px-3.5 py-2.5 text-sm rounded-xl resize-none"
-              style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-              value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Event description" rows={2} />
-            
-            <div className="grid grid-cols-2 gap-3">
-              <input className="px-3.5 py-2.5 text-sm rounded-xl"
-                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                value={form.expert_name} onChange={(e) => setForm({ ...form, expert_name: e.target.value })}
-                placeholder="Expert name" />
-              <input className="px-3.5 py-2.5 text-sm rounded-xl"
-                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                value={form.expert_bio} onChange={(e) => setForm({ ...form, expert_bio: e.target.value })}
-                placeholder="Expert bio (short)" />
+        <div style={{
+          borderRadius: '14px',
+          padding:      '22px 24px',
+          marginBottom: '28px',
+          background:   B.dark800,
+          border:       `1px solid ${B.goldBorder}`,
+          borderLeft:   `3px solid ${B.gold}`,
+        }}>
+          {/* Form header */}
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{
+              fontFamily: B.fontDisplay,
+              fontWeight: 700,
+              fontSize:   '20px',
+              color:      B.dark50,
+              margin:     '0 0 2px',
+            }}>
+              {editing ? 'Edit Event' : 'New Expert Event'}
+            </h3>
+            <MonoLabel color={B.dark500}>
+              {editing ? `Editing · ${editing.title}` : 'Fill in the details below'}
+            </MonoLabel>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+            {/* Title */}
+            <div>
+              <FieldLabel>Event Title *</FieldLabel>
+              <input
+                className="asc-field"
+                value={form.title}
+                onChange={e => setForm({ ...form, title: e.target.value })}
+                placeholder="e.g. Navigating Your First VP Role in African Tech"
+              />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            {/* Description */}
+            <div>
+              <FieldLabel>Description</FieldLabel>
+              <textarea
+                className="asc-field"
+                value={form.description}
+                onChange={e => setForm({ ...form, description: e.target.value })}
+                placeholder="What will attendees learn? Who is this for?"
+                rows={3}
+              />
+            </div>
+
+            {/* Expert name + bio */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }} className="asc-form-grid">
               <div>
-                <label className="text-[11px] font-bold mb-1 block" style={{ color: 'var(--text-dim)' }}>Date & Time</label>
-                <input type="datetime-local" className="w-full px-3 py-2.5 text-sm rounded-xl"
-                  style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                  value={form.scheduled_at} onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })} />
+                <FieldLabel>Expert Name *</FieldLabel>
+                <input
+                  className="asc-field"
+                  value={form.expert_name}
+                  onChange={e => setForm({ ...form, expert_name: e.target.value })}
+                  placeholder="Full name"
+                />
               </div>
               <div>
-                <label className="text-[11px] font-bold mb-1 block" style={{ color: 'var(--text-dim)' }}>Status</label>
-                <select className="w-full px-3 py-2.5 text-sm rounded-xl"
-                  style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)' }}
-                  value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                  {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                <FieldLabel>Expert Bio (short)</FieldLabel>
+                <input
+                  className="asc-field"
+                  value={form.expert_bio}
+                  onChange={e => setForm({ ...form, expert_bio: e.target.value })}
+                  placeholder="e.g. COO at Paystack · 12 years in fintech"
+                />
+              </div>
+            </div>
+
+            {/* Date/time + Status */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }} className="asc-form-grid">
+              <div>
+                <FieldLabel>Date & Time *</FieldLabel>
+                <input
+                  type="datetime-local"
+                  className="asc-field"
+                  value={form.scheduled_at}
+                  onChange={e => setForm({ ...form, scheduled_at: e.target.value })}
+                />
+              </div>
+              <div>
+                <FieldLabel>Status</FieldLabel>
+                <select
+                  className="asc-field"
+                  value={form.status}
+                  onChange={e => setForm({ ...form, status: e.target.value })}
+                >
+                  {STATUSES.map(s => (
+                    <option key={s} value={s}>{STATUS_CFG[s]?.label ?? s}</option>
+                  ))}
                 </select>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <input className="px-3.5 py-2.5 text-sm rounded-xl"
-                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                value={form.registration_url}
-                onChange={(e) => setForm({ ...form, registration_url: e.target.value })}
-                placeholder="Registration link (Zoom, Meet, Teams, etc.)" />
-              <input className="px-3.5 py-2.5 text-sm rounded-xl"
-                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                value={form.join_url}
-                onChange={(e) => setForm({ ...form, join_url: e.target.value })}
-                placeholder="Meeting/webinar join link" />
+            {/* Capacity row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }} className="asc-form-grid">
+              <div>
+                <FieldLabel>Duration (minutes)</FieldLabel>
+                <input
+                  type="number"
+                  className="asc-field"
+                  value={form.duration_minutes}
+                  onChange={e => setForm({ ...form, duration_minutes: Number(e.target.value) })}
+                  min={15}
+                  step={15}
+                />
+              </div>
+              <div>
+                <FieldLabel>Max Participants</FieldLabel>
+                <input
+                  type="number"
+                  className="asc-field"
+                  value={form.max_participants}
+                  onChange={e => setForm({ ...form, max_participants: Number(e.target.value) })}
+                  min={1}
+                />
+              </div>
             </div>
 
-            <div className="flex gap-2 mt-2">
-              <button onClick={handleSave}
+            {/* Links */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }} className="asc-form-grid">
+              <div>
+                <FieldLabel>Registration Link</FieldLabel>
+                <input
+                  className="asc-field"
+                  value={form.registration_url}
+                  onChange={e => setForm({ ...form, registration_url: e.target.value })}
+                  placeholder="Zoom / Meet / Luma registration URL"
+                />
+              </div>
+              <div>
+                <FieldLabel>Join Link</FieldLabel>
+                <input
+                  className="asc-field"
+                  value={form.join_url}
+                  onChange={e => setForm({ ...form, join_url: e.target.value })}
+                  placeholder="Webinar / meeting join URL"
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{
+              display:    'flex',
+              gap:        '10px',
+              marginTop:  '8px',
+              paddingTop: '16px',
+              borderTop:  `1px solid ${B.border}`,
+            }}>
+              <button
+                className="asc-btn-primary"
+                onClick={handleSave}
                 disabled={saving || !form.title.trim() || !form.expert_name.trim() || !form.scheduled_at}
-                className="px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-40"
-                style={{ background: 'var(--accent)', color: '#000' }}>
-                {saving ? 'Saving...' : editing ? 'Update' : 'Create Event'}
+              >
+                {saving ? 'Saving…' : editing ? 'Update Event' : 'Create Event'}
               </button>
-              <button onClick={() => { setShowForm(false); setEditing(null); }}
-                className="px-4 py-2 rounded-lg text-sm"
-                style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+              <button
+                className="asc-btn-ghost"
+                onClick={() => { setShowForm(false); setEditing(null); }}
+              >
                 Cancel
               </button>
             </div>
@@ -237,68 +537,211 @@ function AdminExpertsPageInner() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-5 p-1 rounded-lg" style={{ background: 'var(--bg-input)' }}>
-        {(['upcoming', 'past'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className="flex-1 py-2 rounded-md text-xs font-semibold transition-all capitalize"
+      {/* ── TABS ── */}
+      <div style={{
+        display:      'flex',
+        gap:          '2px',
+        padding:      '4px',
+        borderRadius: '10px',
+        background:   B.dark700,
+        marginBottom: '20px',
+      }}>
+        {(['upcoming', 'past'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
             style={{
-              background: tab === t ? 'var(--bg-card)' : 'transparent',
-              color: tab === t ? 'var(--accent)' : 'var(--text-dim)',
-            }}>
+              flex:          1,
+              padding:       '9px 12px',
+              borderRadius:  '7px',
+              border:        'none',
+              cursor:        'pointer',
+              fontFamily:    B.fontUI,
+              fontSize:      '12px',
+              fontWeight:    600,
+              letterSpacing: '0.01em',
+              textTransform: 'capitalize' as const,
+              background:    tab === t ? B.dark600 : 'transparent',
+              color:         tab === t ? B.gold : B.dark400,
+              transition:    'all 0.12s ease',
+            }}
+          >
             {t} ({t === 'upcoming' ? upcoming.length : past.length})
           </button>
         ))}
       </div>
 
-      {/* List Section */}
-      <div className="flex flex-col gap-3">
-        {(tab === 'upcoming' ? upcoming : past).map((e) => (
-          <div key={e.id} className="rounded-xl p-4"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h4 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{e.title}</h4>
-                <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-                  {e.expert_name} · {new Date(e.scheduled_at).toLocaleDateString('en-US', {
-                    weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-                  })}
-                </p>
+      {/* ── EVENT CARDS ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {(tab === 'upcoming' ? upcoming : past).map(e => {
+          const cfg = STATUS_CFG[e.status] ?? { color: B.dark400 };
+          return (
+            <div
+              key={e.id}
+              className="asc-event-card"
+              style={{
+                borderRadius: '12px',
+                padding:      '18px 20px',
+                background:   B.dark800,
+                border:       `1px solid ${B.border}`,
+                borderLeft:   `3px solid ${cfg.color}`,
+              }}
+            >
+              {/* Card header */}
+              <div style={{
+                display:        'flex',
+                justifyContent: 'space-between',
+                alignItems:     'flex-start',
+                gap:            '12px',
+                marginBottom:   '10px',
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h4 style={{
+                    fontFamily:   B.fontDisplay,
+                    fontWeight:   700,
+                    fontSize:     '18px',
+                    color:        B.dark50,
+                    margin:       '0 0 4px',
+                    lineHeight:   1.2,
+                    overflow:     'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace:   'nowrap' as const,
+                  }}>
+                    {e.title}
+                  </h4>
+                  <MonoLabel color={B.dark400}>
+                    {e.expert_name} · {new Date(e.scheduled_at).toLocaleDateString('en-US', {
+                      weekday: 'short', month: 'short', day: 'numeric',
+                      hour: 'numeric', minute: '2-digit',
+                    })}
+                  </MonoLabel>
+                </div>
+                <StatusPill status={e.status} />
               </div>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                style={{
-                  background: e.status === 'scheduled' ? 'rgba(59,130,246,0.09)' : e.status === 'live' ? 'rgba(239,68,68,0.09)' : e.status === 'completed' ? 'rgba(16,185,129,0.09)' : 'rgba(107,114,128,0.09)',
-                  color: e.status === 'scheduled' ? 'var(--blue)' : e.status === 'live' ? 'var(--error)' : e.status === 'completed' ? 'var(--success)' : 'var(--text-dim)',
+
+              {/* Expert bio if present */}
+              {e.expert_bio && (
+                <p style={{
+                  fontFamily:   B.fontUI,
+                  fontSize:     '12px',
+                  color:        B.dark400,
+                  margin:       '0 0 10px',
+                  lineHeight:   1.5,
                 }}>
-                {e.status}
-              </span>
+                  {e.expert_bio}
+                </p>
+              )}
+
+              {/* Meta row */}
+              <div style={{
+                display:      'flex',
+                gap:          '16px',
+                alignItems:   'center',
+                marginBottom: '14px',
+                flexWrap:     'wrap',
+              }}>
+                <MonoLabel color={B.dark500}>
+                  {e.duration_minutes} min · {e.max_participants} seats
+                </MonoLabel>
+                {e.registration_url && (
+                  <span style={{
+                    fontFamily:    B.fontMono,
+                    fontSize:      '10px',
+                    fontWeight:    500,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase' as const,
+                    padding:       '2px 8px',
+                    borderRadius:  '999px',
+                    background:    B.goldMuted,
+                    color:         B.gold,
+                    border:        `1px solid ${B.goldBorder}`,
+                  }}>
+                    Reg link set
+                  </span>
+                )}
+                {e.join_url && (
+                  <span style={{
+                    fontFamily:    B.fontMono,
+                    fontSize:      '10px',
+                    fontWeight:    500,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase' as const,
+                    padding:       '2px 8px',
+                    borderRadius:  '999px',
+                    background:    `${B.explorer}12`,
+                    color:         B.explorer,
+                    border:        `1px solid ${B.explorer}30`,
+                  }}>
+                    Join link set
+                  </span>
+                )}
+              </div>
+
+              {/* Card actions */}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className="asc-action-btn"
+                  onClick={() => openEdit(e)}
+                  style={{ color: B.gold, borderColor: B.goldBorder }}
+                  onMouseEnter={el => ((el.currentTarget as HTMLElement).style.background = B.goldMuted)}
+                  onMouseLeave={el => ((el.currentTarget as HTMLElement).style.background = 'transparent')}
+                >
+                  Edit
+                </button>
+                <button
+                  className="asc-action-btn"
+                  onClick={() => handleDelete(e.id, e.title)}
+                  style={{ color: B.error, borderColor: `${B.error}30` }}
+                  onMouseEnter={el => ((el.currentTarget as HTMLElement).style.background = `${B.error}08`)}
+                  onMouseLeave={el => ((el.currentTarget as HTMLElement).style.background = 'transparent')}
+                >
+                  Delete
+                </button>
+                {e.registration_url && (
+                  <a
+                    href={e.registration_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="asc-action-btn"
+                    style={{
+                      color:          B.explorer,
+                      borderColor:    `${B.explorer}30`,
+                      textDecoration: 'none',
+                      display:        'inline-block',
+                    }}
+                  >
+                    Reg link →
+                  </a>
+                )}
+              </div>
             </div>
-            <div className="flex gap-3 items-center text-[11px] mb-3" style={{ color: 'var(--text-dim)' }}>
-              {e.registration_url && <span>📋 Reg link set</span>}
-              {e.join_url && <span>🎥 Join link set</span>}
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => openEdit(e)}
-                className="text-xs px-3 py-1.5 rounded-lg"
-                style={{ color: 'var(--accent)', border: '1px solid rgba(245,158,11,0.3)' }}>
-                Edit
-              </button>
-              <button onClick={() => handleDelete(e.id, e.title)}
-                className="text-xs px-3 py-1.5 rounded-lg"
-                style={{ color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)' }}>
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
+
+        {/* Empty state */}
         {(tab === 'upcoming' ? upcoming : past).length === 0 && (
-          <div className="text-center py-10">
-            <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
-              No {tab} events. {tab === 'upcoming' && 'Create one above.'}
+          <div style={{ textAlign: 'center', padding: '60px 0' }}>
+            <p style={{
+              fontFamily: B.fontDisplay,
+              fontSize:   '26px',
+              color:      B.dark500,
+              margin:     '0 0 8px',
+            }}>
+              No {tab} events
             </p>
+            <MonoLabel color={B.dark600}>
+              {tab === 'upcoming' ? 'Create your first expert event above.' : 'Past events will appear here.'}
+            </MonoLabel>
           </div>
         )}
       </div>
+
+      {/* ── Responsive form grid ── */}
+      <style>{`
+        @media (max-width: 600px) {
+          .asc-form-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -4,6 +4,14 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useModal } from '@/components/Modal';
 
+// ─────────────────────────────────────────────
+// ASCENTOR BRAND TOKENS (Brand Book v1.0 · 2026)
+// Display : Cormorant Garamond 700 / Italic 600
+// UI      : Syne 400–800
+// Mono    : DM Mono 400/500
+// Gold    : #E8A020  Dark: #0C0B08
+// ─────────────────────────────────────────────
+
 type Application = {
   id: string;
   full_name: string;
@@ -27,11 +35,40 @@ type Application = {
   notes?: string;
 };
 
-const STATUS_COLORS: Record<string, { bg: string; color: string; label: string }> = {
-  pending:  { bg: 'rgba(245,158,11,0.09)',  color: 'var(--accent)',  label: 'Pending'  },
-  approved: { bg: 'rgba(16,185,129,0.09)',  color: 'var(--success)', label: 'Approved' },
-  active:   { bg: 'rgba(59,130,246,0.09)',  color: 'var(--blue)',    label: 'Active'   },
-  rejected: { bg: 'rgba(239,68,68,0.09)',   color: 'var(--error)',   label: 'Rejected' },
+// Brand-aligned status palette
+const STATUS_CONFIG: Record<string, { bg: string; border: string; color: string; label: string }> = {
+  pending:  { bg: 'rgba(232,160,32,0.08)',  border: 'rgba(232,160,32,0.25)', color: '#E8A020', label: 'Pending'  },
+  approved: { bg: 'rgba(20,184,166,0.08)',  border: 'rgba(20,184,166,0.25)', color: '#14B8A6', label: 'Approved' },
+  active:   { bg: 'rgba(139,92,246,0.08)',  border: 'rgba(139,92,246,0.25)', color: '#8B5CF6', label: 'Active'   },
+  rejected: { bg: 'rgba(239,68,68,0.07)',   border: 'rgba(239,68,68,0.18)',  color: '#EF4444', label: 'Rejected' },
+};
+
+// Stage colors from brand book
+const STAGE_COLORS = {
+  explorer: '#14B8A6',
+  builder:  '#E8A020',
+  climber:  '#8B5CF6',
+};
+
+// ─── Inline brand styles (works in any Next.js app without extra CSS imports) ───
+const brand = {
+  fontDisplay: "'Cormorant Garamond', 'Georgia', serif",
+  fontUI:      "'Syne', 'system-ui', sans-serif",
+  fontMono:    "'DM Mono', 'Courier New', monospace",
+  gold:        '#E8A020',
+  goldMuted:   'rgba(232,160,32,0.12)',
+  goldBorder:  'rgba(232,160,32,0.22)',
+  dark:        '#0C0B08',
+  dark700:     '#1E1C17',
+  dark600:     '#2E2A22',
+  dark500:     '#4A4438',
+  dark400:     '#7A7260',
+  dark200:     '#D4CFC3',
+  dark50:      '#F7F6F3',
+  card:        '#141310',
+  cardHover:   '#1E1C17',
+  border:      'rgba(212,207,195,0.1)',
+  borderGold:  'rgba(232,160,32,0.22)',
 };
 
 export default function AdminMentorsPage() {
@@ -87,7 +124,11 @@ export default function AdminMentorsPage() {
   const filtered = applications.filter(a => {
     const matchTab = tab === 'all' || a.status === tab;
     const q = search.toLowerCase();
-    const matchSearch = !q || a.full_name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q) || a.industry.toLowerCase().includes(q) || a.country.toLowerCase().includes(q);
+    const matchSearch = !q ||
+      a.full_name.toLowerCase().includes(q) ||
+      a.email.toLowerCase().includes(q) ||
+      a.industry.toLowerCase().includes(q) ||
+      a.country.toLowerCase().includes(q);
     return matchTab && matchSearch;
   });
 
@@ -99,225 +140,649 @@ export default function AdminMentorsPage() {
     all:      applications.length,
   };
 
-  const fmt = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const fmt = (d: string) =>
+    new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // ─── Mono label helper (brand book: DM Mono · metadata tags) ───
+  const MonoTag = ({ children, color = brand.dark400 }: { children: React.ReactNode; color?: string }) => (
+    <span style={{
+      fontFamily: brand.fontMono,
+      fontSize: '10px',
+      fontWeight: 500,
+      letterSpacing: '0.06em',
+      color,
+      textTransform: 'uppercase' as const,
+    }}>
+      {children}
+    </span>
+  );
+
+  const StatusPill = ({ status }: { status: string }) => {
+    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+    return (
+      <span style={{
+        fontFamily: brand.fontMono,
+        fontSize: '10px',
+        fontWeight: 500,
+        letterSpacing: '0.05em',
+        textTransform: 'uppercase' as const,
+        padding: '3px 10px',
+        borderRadius: '999px',
+        background: cfg.bg,
+        color: cfg.color,
+        border: `1px solid ${cfg.border}`,
+      }}>
+        {cfg.label}
+      </span>
+    );
+  };
 
   return (
-    <div className="animate-fade-up">
+    <>
+      {/* Font imports — brand book spec */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+      `}</style>
 
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-1">
-        <h1 className="text-xl md:text-2xl font-semibold" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
-          Founding Mentors
-        </h1>
-        <span className="text-xs px-3 py-1 rounded-full" style={{ background: 'rgba(245,158,11,0.09)', color: 'var(--accent)', border: '1px solid rgba(245,158,11,0.2)' }}>
-          {counts.active} active · {counts.pending} pending
-        </span>
-      </div>
-      <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
-        {applications.length} total applications
-      </p>
+      <div className="animate-fade-up" style={{ fontFamily: brand.fontUI }}>
 
-      {/* STATS ROW */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        {(['pending', 'approved', 'active', 'rejected'] as const).map(s => (
-          <div key={s} className="rounded-xl p-4 cursor-pointer transition-all hover:scale-[1.01]"
-            style={{
-              background: 'var(--bg-card)', border: `1px solid var(--border)`,
-              borderTop: `3px solid ${STATUS_COLORS[s].color.replace('var(--', '').includes('accent') ? '#F59E0B' : STATUS_COLORS[s].color.includes('success') ? '#10B981' : STATUS_COLORS[s].color.includes('blue') ? '#3B82F6' : '#EF4444'}`,
-            }}
-            onClick={() => setTab(s)}>
-            <p className="text-2xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>{counts[s]}</p>
-            <p className="text-xs mt-1 capitalize" style={{ color: 'var(--text-dim)' }}>{STATUS_COLORS[s].label}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className={`flex gap-4 ${selected ? 'lg:grid lg:grid-cols-[1fr_420px]' : ''}`}>
-
-        {/* LEFT PANEL */}
-        <div className="flex-1 min-w-0">
-
-          {/* SEARCH + TABS */}
-          <div className="flex flex-col sm:flex-row gap-2 mb-3">
-            <input
-              placeholder="Search by name, email, industry, country..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="flex-1 px-3.5 py-2.5 rounded-xl text-sm outline-none"
-              style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)' }}
-            />
-          </div>
-
-          <div className="flex gap-1 mb-4 p-1 rounded-lg overflow-x-auto" style={{ background: 'var(--bg-input)' }}>
-            {(['pending', 'approved', 'active', 'rejected', 'all'] as const).map(t => (
-              <button key={t} onClick={() => setTab(t)}
-                className="flex-1 py-2 rounded-md text-xs font-semibold whitespace-nowrap px-2"
-                style={{ background: tab === t ? 'var(--bg-card)' : 'transparent', color: tab === t ? 'var(--accent)' : 'var(--text-dim)' }}>
-                {t === 'all' ? `All (${counts.all})` : `${STATUS_COLORS[t].label} (${counts[t]})`}
-              </button>
-            ))}
-          </div>
-
-          {/* TABLE (desktop) */}
-          {loading ? (
-            <div className="text-center py-12"><p className="text-sm" style={{ color: 'var(--text-dim)' }}>Loading...</p></div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-3xl mb-2">🎓</p>
-              <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
-                {search ? 'No results match your search.' : `No ${tab === 'all' ? '' : tab} applications yet.`}
+        {/* ── HEADER ── */}
+        <div style={{ marginBottom: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '4px' }}>
+            <div>
+              {/* Cormorant Garamond display headline — brand spec */}
+              <h1 style={{
+                fontFamily: brand.fontDisplay,
+                fontWeight: 700,
+                fontSize: 'clamp(24px, 3vw, 32px)',
+                color: brand.dark50,
+                lineHeight: 1.15,
+                margin: 0,
+              }}>
+                Founding Mentors
+              </h1>
+              {/* DM Mono metadata line — brand spec */}
+              <p style={{
+                fontFamily: brand.fontMono,
+                fontSize: '11px',
+                fontWeight: 400,
+                color: brand.dark400,
+                marginTop: '6px',
+                letterSpacing: '0.04em',
+              }}>
+                {counts.active} ACTIVE · {counts.pending} PENDING · {applications.length} TOTAL
               </p>
             </div>
-          ) : (
-            <>
-              {/* Desktop table */}
-              <div className="hidden md:block rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                <div className="grid gap-2 px-4 py-3 text-[11px] font-bold uppercase tracking-wider"
-                  style={{ gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1.2fr', borderBottom: '1px solid var(--border)', color: 'var(--text-dim)' }}>
-                  <div>Applicant</div><div>Role & Company</div><div>Industry</div><div>Country</div><div>Applied</div><div className="text-center">Actions</div>
-                </div>
-                {filtered.map(app => (
-                  <div key={app.id}
-                    className="grid gap-2 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.02)]"
-                    style={{ gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1.2fr', borderBottom: '1px solid var(--border)', background: selected?.id === app.id ? 'rgba(245,158,11,0.04)' : undefined }}
-                    onClick={() => setSelected(selected?.id === app.id ? null : app)}>
-                    <div>
-                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{app.full_name}</p>
-                      <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{app.email}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs truncate" style={{ color: 'var(--text)' }}>{app.role_title}</p>
-                      <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{app.company}</p>
-                    </div>
-                    <div><span className="text-[10px] px-2 py-0.5 rounded-full truncate block w-fit" style={{ background: 'rgba(59,130,246,0.09)', color: 'var(--blue)' }}>{app.industry.split(' ')[0]}</span></div>
-                    <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>{app.country}</p></div>
-                    <div><p className="text-xs" style={{ color: 'var(--text-dim)' }}>{fmt(app.applied_at)}</p></div>
-                    <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: STATUS_COLORS[app.status]?.bg, color: STATUS_COLORS[app.status]?.color }}>{STATUS_COLORS[app.status]?.label}</span>
-                    </div>
-                  </div>
+
+            {/* Gold accent pill */}
+            <span style={{
+              fontFamily: brand.fontMono,
+              fontSize: '10px',
+              fontWeight: 500,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              padding: '6px 14px',
+              borderRadius: '999px',
+              background: brand.goldMuted,
+              color: brand.gold,
+              border: `1px solid ${brand.goldBorder}`,
+              whiteSpace: 'nowrap' as const,
+            }}>
+              Mentor Review Dashboard
+            </span>
+          </div>
+
+          {/* Gold rule — brand visual motif */}
+          <div style={{ height: '1px', background: `linear-gradient(90deg, ${brand.gold} 0%, transparent 60%)`, marginTop: '16px', marginBottom: '24px' }} />
+        </div>
+
+        {/* ── STATS ROW — Stage colors from brand book ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '28px' }}>
+          {(['pending', 'approved', 'active', 'rejected'] as const).map(s => {
+            const cfg = STATUS_CONFIG[s];
+            return (
+              <div
+                key={s}
+                onClick={() => setTab(s)}
+                style={{
+                  borderRadius: '12px',
+                  padding: '18px 16px',
+                  cursor: 'pointer',
+                  background: brand.card,
+                  border: `1px solid ${tab === s ? cfg.border : brand.border}`,
+                  borderTop: `3px solid ${cfg.color}`,
+                  transition: 'all 0.15s ease',
+                  transform: tab === s ? 'translateY(-1px)' : undefined,
+                }}
+              >
+                <p style={{
+                  fontFamily: brand.fontDisplay,
+                  fontWeight: 700,
+                  fontSize: '32px',
+                  color: tab === s ? cfg.color : brand.dark50,
+                  lineHeight: 1,
+                  margin: 0,
+                }}>
+                  {counts[s]}
+                </p>
+                <MonoTag color={tab === s ? cfg.color : brand.dark400}>
+                  {cfg.label}
+                </MonoTag>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+
+          {/* ── LEFT PANEL ── */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+
+            {/* Search + Tabs */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+              <input
+                placeholder="Search by name, email, industry, country…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{
+                  fontFamily: brand.fontUI,
+                  fontSize: '13px',
+                  fontWeight: 400,
+                  padding: '11px 16px',
+                  borderRadius: '10px',
+                  border: `1px solid ${brand.border}`,
+                  background: brand.dark700,
+                  color: brand.dark50,
+                  outline: 'none',
+                  width: '100%',
+                  boxSizing: 'border-box' as const,
+                }}
+                onFocus={e => (e.target.style.borderColor = brand.goldBorder)}
+                onBlur={e => (e.target.style.borderColor = brand.border)}
+              />
+
+              {/* Tab bar — Syne font, brand active state */}
+              <div style={{
+                display: 'flex',
+                gap: '2px',
+                padding: '4px',
+                borderRadius: '10px',
+                background: brand.dark700,
+                overflowX: 'auto' as const,
+              }}>
+                {(['pending', 'approved', 'active', 'rejected', 'all'] as const).map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 10px',
+                      borderRadius: '7px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontFamily: brand.fontUI,
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      letterSpacing: '0.01em',
+                      whiteSpace: 'nowrap' as const,
+                      background: tab === t ? brand.card : 'transparent',
+                      color: tab === t ? brand.gold : brand.dark400,
+                      transition: 'all 0.12s ease',
+                    }}
+                  >
+                    {t === 'all'
+                      ? `All (${counts.all})`
+                      : `${STATUS_CONFIG[t].label} (${counts[t]})`}
+                  </button>
                 ))}
+              </div>
+            </div>
+
+            {/* ── TABLE ── */}
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                <MonoTag>Loading applications…</MonoTag>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                <p style={{ fontFamily: brand.fontDisplay, fontSize: '28px', color: brand.dark500, marginBottom: '8px' }}>
+                  No applications
+                </p>
+                <MonoTag color={brand.dark500}>
+                  {search ? 'No results match your search.' : `No ${tab === 'all' ? '' : tab} applications yet.`}
+                </MonoTag>
+              </div>
+            ) : (
+              <>
+                {/* Desktop table */}
+                <div style={{
+                  display: 'none',  // overridden below via className
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  background: brand.card,
+                  border: `1px solid ${brand.border}`,
+                }} className="ascentor-table-desktop">
+                  {/* Table header */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1.2fr',
+                    gap: '8px',
+                    padding: '12px 20px',
+                    borderBottom: `1px solid ${brand.border}`,
+                  }}>
+                    {['Applicant', 'Role & Company', 'Industry', 'Country', 'Applied', 'Status'].map((h, i) => (
+                      <div key={h} style={{
+                        fontFamily: brand.fontMono,
+                        fontSize: '10px',
+                        fontWeight: 500,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase' as const,
+                        color: brand.dark500,
+                        textAlign: i === 5 ? 'center' : 'left' as const,
+                      }}>
+                        {h}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Rows */}
+                  {filtered.map((app, idx) => (
+                    <div
+                      key={app.id}
+                      onClick={() => setSelected(selected?.id === app.id ? null : app)}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1.2fr',
+                        gap: '8px',
+                        padding: '14px 20px',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        borderBottom: idx < filtered.length - 1 ? `1px solid ${brand.border}` : 'none',
+                        background: selected?.id === app.id ? brand.goldMuted : 'transparent',
+                        borderLeft: selected?.id === app.id ? `2px solid ${brand.gold}` : '2px solid transparent',
+                        transition: 'all 0.12s ease',
+                      }}
+                      onMouseEnter={e => {
+                        if (selected?.id !== app.id) {
+                          (e.currentTarget as HTMLElement).style.background = brand.dark600;
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (selected?.id !== app.id) {
+                          (e.currentTarget as HTMLElement).style.background = 'transparent';
+                        }
+                      }}
+                    >
+                      {/* Applicant */}
+                      <div>
+                        <p style={{ fontFamily: brand.fontUI, fontWeight: 600, fontSize: '13px', color: brand.dark50, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {app.full_name}
+                        </p>
+                        <MonoTag color={brand.dark400}>{app.email}</MonoTag>
+                      </div>
+
+                      {/* Role */}
+                      <div>
+                        <p style={{ fontFamily: brand.fontUI, fontWeight: 500, fontSize: '12px', color: brand.dark200, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {app.role_title}
+                        </p>
+                        <MonoTag color={brand.dark500}>{app.company}</MonoTag>
+                      </div>
+
+                      {/* Industry */}
+                      <div>
+                        <span style={{
+                          fontFamily: brand.fontMono,
+                          fontSize: '10px',
+                          fontWeight: 500,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase' as const,
+                          padding: '2px 8px',
+                          borderRadius: '999px',
+                          background: 'rgba(139,92,246,0.09)',
+                          color: STAGE_COLORS.climber,
+                          border: '1px solid rgba(139,92,246,0.2)',
+                        }}>
+                          {app.industry.split(' ')[0]}
+                        </span>
+                      </div>
+
+                      {/* Country */}
+                      <MonoTag color={brand.dark400}>{app.country}</MonoTag>
+
+                      {/* Applied */}
+                      <MonoTag color={brand.dark500}>{fmt(app.applied_at)}</MonoTag>
+
+                      {/* Status */}
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <StatusPill status={app.status} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mobile cards */}
+                <div className="ascentor-table-mobile" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {filtered.map(app => (
+                    <div
+                      key={app.id}
+                      onClick={() => setSelected(selected?.id === app.id ? null : app)}
+                      style={{
+                        borderRadius: '12px',
+                        padding: '16px',
+                        cursor: 'pointer',
+                        background: brand.card,
+                        border: `1px solid ${selected?.id === app.id ? brand.goldBorder : brand.border}`,
+                        borderLeft: `3px solid ${STATUS_CONFIG[app.status]?.color || brand.gold}`,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                        <div>
+                          <p style={{ fontFamily: brand.fontUI, fontWeight: 600, fontSize: '14px', color: brand.dark50, margin: 0 }}>
+                            {app.full_name}
+                          </p>
+                          <p style={{ fontFamily: brand.fontUI, fontWeight: 400, fontSize: '12px', color: brand.dark400, margin: '2px 0 0' }}>
+                            {app.role_title} · {app.company}
+                          </p>
+                        </div>
+                        <StatusPill status={app.status} />
+                      </div>
+                      <MonoTag color={brand.dark500}>
+                        {app.industry} · {app.country} · {fmt(app.applied_at)}
+                      </MonoTag>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* ── RIGHT PANEL — DETAIL ── */}
+          {selected && (
+            <div style={{
+              width: '420px',
+              flexShrink: 0,
+              borderRadius: '14px',
+              overflow: 'hidden',
+              background: brand.card,
+              border: `1px solid ${brand.border}`,
+              position: 'sticky',
+              top: '80px',
+              height: 'fit-content',
+            }}>
+
+              {/* Panel header — Cormorant display name */}
+              <div style={{
+                padding: '20px 22px',
+                borderBottom: `1px solid ${brand.border}`,
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                background: brand.dark700,
+              }}>
+                <div>
+                  <p style={{
+                    fontFamily: brand.fontDisplay,
+                    fontWeight: 700,
+                    fontSize: '20px',
+                    color: brand.dark50,
+                    margin: 0,
+                    lineHeight: 1.2,
+                  }}>
+                    {selected.full_name}
+                  </p>
+                  <MonoTag color={brand.dark400}>{selected.email}</MonoTag>
+                </div>
+                <button
+                  onClick={() => setSelected(null)}
+                  style={{
+                    background: 'transparent',
+                    border: `1px solid ${brand.border}`,
+                    borderRadius: '6px',
+                    color: brand.dark400,
+                    fontFamily: brand.fontUI,
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    padding: '2px 8px',
+                    lineHeight: '20px',
+                  }}
+                >
+                  ✕
+                </button>
               </div>
 
-              {/* Mobile cards */}
-              <div className="md:hidden flex flex-col gap-3">
-                {filtered.map(app => (
-                  <div key={app.id}
-                    className="rounded-xl p-4 cursor-pointer"
-                    style={{ background: 'var(--bg-card)', border: `1px solid ${selected?.id === app.id ? 'rgba(245,158,11,0.3)' : 'var(--border)'}` }}
-                    onClick={() => setSelected(selected?.id === app.id ? null : app)}>
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{app.full_name}</p>
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{app.role_title} · {app.company}</p>
+              {/* Scrollable body */}
+              <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}>
+
+                {/* Status + Quick actions */}
+                <div style={{ padding: '18px 22px', borderBottom: `1px solid ${brand.border}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                    <StatusPill status={selected.status} />
+                    <MonoTag color={brand.dark500}>Applied {fmt(selected.applied_at)}</MonoTag>
+                  </div>
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {selected.status !== 'approved' && (
+                      <ActionButton
+                        label="✓ Approve"
+                        bg="rgba(20,184,166,0.08)"
+                        color="#14B8A6"
+                        border="rgba(20,184,166,0.25)"
+                        onClick={() => updateStatus(selected.id, 'approved')}
+                      />
+                    )}
+                    {selected.status !== 'active' && (
+                      <ActionButton
+                        label="▶ Activate"
+                        bg="rgba(139,92,246,0.08)"
+                        color="#8B5CF6"
+                        border="rgba(139,92,246,0.25)"
+                        onClick={() => updateStatus(selected.id, 'active')}
+                      />
+                    )}
+                    {selected.status !== 'rejected' && (
+                      <ActionButton
+                        label="✕ Reject"
+                        bg="rgba(239,68,68,0.06)"
+                        color="#EF4444"
+                        border="rgba(239,68,68,0.18)"
+                        onClick={() => updateStatus(selected.id, 'rejected')}
+                      />
+                    )}
+                    {selected.status !== 'pending' && (
+                      <ActionButton
+                        label="↩ Reset"
+                        bg="transparent"
+                        color={brand.dark400}
+                        border={brand.border}
+                        onClick={() => updateStatus(selected.id, 'pending')}
+                      />
+                    )}
+                    <ActionButton
+                      label="📝 Note"
+                      bg="transparent"
+                      color={brand.dark400}
+                      border={brand.border}
+                      onClick={() => handleAddNote(selected)}
+                    />
+                    <ActionButton
+                      label="🗑 Delete"
+                      bg="rgba(239,68,68,0.04)"
+                      color="#EF4444"
+                      border="rgba(239,68,68,0.15)"
+                      onClick={() => handleDelete(selected)}
+                    />
+                  </div>
+                </div>
+
+                {/* Profile info — DM Mono labels + Syne values */}
+                <div style={{ padding: '18px 22px', borderBottom: `1px solid ${brand.border}` }}>
+                  <MonoTag color={brand.dark500}>Profile</MonoTag>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+                    {[
+                      ['Role', `${selected.role_title} · ${selected.company}`],
+                      ['Industry', selected.industry],
+                      ['Experience', selected.years_experience],
+                      ['Country', selected.country],
+                      ['Phone', selected.phone || '—'],
+                      ['Availability', `${selected.availability_hours} hrs/month`],
+                      ['Mentored Before', selected.has_mentored_before],
+                      ['Age Groups', selected.age_groups],
+                    ].map(([k, v]) => (
+                      <div key={k} style={{ display: 'flex', gap: '12px' }}>
+                        <span style={{
+                          fontFamily: brand.fontMono,
+                          fontSize: '10px',
+                          fontWeight: 500,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase' as const,
+                          color: brand.dark500,
+                          width: '100px',
+                          flexShrink: 0,
+                          paddingTop: '2px',
+                        }}>
+                          {k}
+                        </span>
+                        <span style={{
+                          fontFamily: brand.fontUI,
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          color: brand.dark200,
+                          lineHeight: 1.5,
+                        }}>
+                          {v}
+                        </span>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 ml-2" style={{ background: STATUS_COLORS[app.status]?.bg, color: STATUS_COLORS[app.status]?.color }}>
-                        {STATUS_COLORS[app.status]?.label}
-                      </span>
-                    </div>
-                    <p className="text-xs" style={{ color: 'var(--text-dim)' }}>{app.industry} · {app.country} · {fmt(app.applied_at)}</p>
+                    ))}
+                    {selected.linkedin_url && (
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <span style={{
+                          fontFamily: brand.fontMono,
+                          fontSize: '10px',
+                          fontWeight: 500,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase' as const,
+                          color: brand.dark500,
+                          width: '100px',
+                          flexShrink: 0,
+                          paddingTop: '2px',
+                        }}>
+                          LinkedIn
+                        </span>
+                        <a
+                          href={selected.linkedin_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            fontFamily: brand.fontUI,
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: brand.gold,
+                            textDecoration: 'none',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap' as const,
+                          }}
+                        >
+                          View profile →
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Written responses — Cormorant section labels */}
+                {[
+                  { label: 'Career Summary', value: selected.career_summary },
+                  { label: 'Why They Want to Mentor', value: selected.why_mentor },
+                  { label: 'Mentoring Style', value: selected.mentor_style },
+                  ...(selected.success_story ? [{ label: 'Success Story', value: selected.success_story }] : []),
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ padding: '18px 22px', borderBottom: `1px solid ${brand.border}` }}>
+                    <MonoTag color={brand.dark500}>{label}</MonoTag>
+                    <p style={{
+                      fontFamily: brand.fontUI,
+                      fontSize: '13px',
+                      fontWeight: 400,
+                      color: brand.dark200,
+                      lineHeight: 1.7,
+                      margin: '10px 0 0',
+                    }}>
+                      {value}
+                    </p>
                   </div>
                 ))}
+
+                {/* Internal notes — gold accent treatment */}
+                {selected.notes && (
+                  <div style={{
+                    padding: '18px 22px',
+                    background: brand.goldMuted,
+                    borderLeft: `3px solid ${brand.gold}`,
+                  }}>
+                    <MonoTag color={brand.gold}>Internal Notes</MonoTag>
+                    <p style={{
+                      fontFamily: brand.fontUI,
+                      fontSize: '13px',
+                      fontWeight: 400,
+                      color: brand.dark50,
+                      lineHeight: 1.7,
+                      margin: '10px 0 0',
+                    }}>
+                      {selected.notes}
+                    </p>
+                  </div>
+                )}
               </div>
-            </>
+            </div>
           )}
         </div>
 
-        {/* RIGHT PANEL — DETAIL */}
-        {selected && (
-          <div className="rounded-xl overflow-hidden flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', height: 'fit-content', position: 'sticky', top: '80px' }}>
-
-            {/* Panel header */}
-            <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
-              <div>
-                <p className="text-sm font-bold" style={{ color: 'var(--text)' }}>{selected.full_name}</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{selected.email}</p>
-              </div>
-              <button onClick={() => setSelected(null)} className="text-lg leading-none px-1" style={{ color: 'var(--text-dim)' }}>✕</button>
-            </div>
-
-            {/* Scrollable content */}
-            <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 280px)' }}>
-
-              {/* Status badge + quick actions */}
-              <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold" style={{ background: STATUS_COLORS[selected.status]?.bg, color: STATUS_COLORS[selected.status]?.color }}>
-                    {STATUS_COLORS[selected.status]?.label}
-                  </span>
-                  <span className="text-[11px]" style={{ color: 'var(--text-dim)' }}>Applied {fmt(selected.applied_at)}</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {selected.status !== 'approved' && (
-                    <button onClick={() => updateStatus(selected.id, 'approved')} className="text-[11px] px-3 py-1.5 rounded-lg font-semibold" style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.2)' }}>✓ Approve</button>
-                  )}
-                  {selected.status !== 'active' && (
-                    <button onClick={() => updateStatus(selected.id, 'active')} className="text-[11px] px-3 py-1.5 rounded-lg font-semibold" style={{ background: 'rgba(59,130,246,0.1)', color: 'var(--blue)', border: '1px solid rgba(59,130,246,0.2)' }}>▶ Activate</button>
-                  )}
-                  {selected.status !== 'rejected' && (
-                    <button onClick={() => updateStatus(selected.id, 'rejected')} className="text-[11px] px-3 py-1.5 rounded-lg font-semibold" style={{ background: 'rgba(239,68,68,0.06)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.15)' }}>✕ Reject</button>
-                  )}
-                  {selected.status !== 'pending' && (
-                    <button onClick={() => updateStatus(selected.id, 'pending')} className="text-[11px] px-3 py-1.5 rounded-lg" style={{ color: 'var(--text-dim)', border: '1px solid var(--border)' }}>↩ Reset</button>
-                  )}
-                  <button onClick={() => handleAddNote(selected)} className="text-[11px] px-3 py-1.5 rounded-lg" style={{ color: 'var(--text-dim)', border: '1px solid var(--border)' }}>📝 Note</button>
-                  <button onClick={() => handleDelete(selected)} className="text-[11px] px-3 py-1.5 rounded-lg" style={{ color: 'var(--error)', border: '1px solid rgba(239,68,68,0.2)' }}>🗑 Delete</button>
-                </div>
-              </div>
-
-              {/* Bio info */}
-              <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text-dim)' }}>Profile</p>
-                <div className="flex flex-col gap-2">
-                  {[
-                    ['Role', `${selected.role_title} · ${selected.company}`],
-                    ['Industry', selected.industry],
-                    ['Experience', selected.years_experience],
-                    ['Country', selected.country],
-                    ['Phone', selected.phone || '—'],
-                    ['Availability', selected.availability_hours + '/month'],
-                    ['Mentored before?', selected.has_mentored_before],
-                    ['Age groups', selected.age_groups],
-                  ].map(([k, v]) => (
-                    <div key={k} className="flex gap-2">
-                      <span className="text-[11px] w-24 shrink-0 pt-0.5" style={{ color: 'var(--text-dim)' }}>{k}</span>
-                      <span className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text)' }}>{v}</span>
-                    </div>
-                  ))}
-                  {selected.linkedin_url && (
-                    <div className="flex gap-2">
-                      <span className="text-[11px] w-24 shrink-0 pt-0.5" style={{ color: 'var(--text-dim)' }}>LinkedIn</span>
-                      <a href={selected.linkedin_url} target="_blank" rel="noreferrer" className="text-xs font-medium truncate" style={{ color: 'var(--accent)' }}>View profile →</a>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Written responses */}
-              {[
-                { label: 'Career Summary', value: selected.career_summary },
-                { label: 'Why They Want to Mentor', value: selected.why_mentor },
-                { label: 'Mentoring Style', value: selected.mentor_style },
-                ...(selected.success_story ? [{ label: 'Success Story', value: selected.success_story }] : []),
-              ].map(({ label, value }) => (
-                <div key={label} className="px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
-                  <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-dim)' }}>{label}</p>
-                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text)' }}>{value}</p>
-                </div>
-              ))}
-
-              {/* Internal notes */}
-              {selected.notes && (
-                <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border)', background: 'rgba(245,158,11,0.03)' }}>
-                  <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--accent)' }}>Internal Notes</p>
-                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text)' }}>{selected.notes}</p>
-                </div>
-              )}
-
-            </div>
-          </div>
-        )}
+        {/* ── Responsive overrides ── */}
+        <style>{`
+          @media (min-width: 768px) {
+            .ascentor-table-desktop { display: block !important; }
+            .ascentor-table-mobile  { display: none   !important; }
+          }
+          @media (max-width: 767px) {
+            .ascentor-table-desktop { display: none   !important; }
+            .ascentor-table-mobile  { display: flex   !important; }
+          }
+          input::placeholder { color: #4A4438; }
+          input:focus { border-color: rgba(232,160,32,0.35) !important; }
+          * { box-sizing: border-box; }
+        `}</style>
       </div>
-    </div>
+    </>
+  );
+}
+
+// ─── Reusable action button ───
+function ActionButton({
+  label, bg, color, border, onClick,
+}: {
+  label: string; bg: string; color: string; border: string; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        fontFamily: "'Syne', sans-serif",
+        fontSize: '11px',
+        fontWeight: 600,
+        letterSpacing: '0.01em',
+        padding: '6px 12px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        background: bg,
+        color,
+        border: `1px solid ${border}`,
+        transition: 'opacity 0.12s ease',
+      }}
+      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '0.75')}
+      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
+    >
+      {label}
+    </button>
   );
 }

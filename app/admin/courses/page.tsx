@@ -1,30 +1,282 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 
-const CATEGORIES = ['Frameworks', 'African Context', 'Career Growth', 'Communication', 'Networking', 'Leadership', 'General'];
+// ============================================================
+// ASCENTOR BRAND TOKENS · Brand Book v1.0 · 2026
+// Display : Cormorant Garamond 700 / Italic 600
+// UI      : Syne 400–800
+// Mono    : DM Mono 400/500
+// Gold    : #E8A020   Dark: #0C0B08
+// ============================================================
+const B = {
+  fontDisplay: "'Cormorant Garamond', Georgia, serif",
+  fontUI:      "'Syne', system-ui, sans-serif",
+  fontMono:    "'DM Mono', 'Courier New', monospace",
+  dark:        '#0C0B08',
+  dark800:     '#141310',
+  dark700:     '#1E1C17',
+  dark600:     '#2E2A22',
+  dark500:     '#4A4438',
+  dark400:     '#7A7260',
+  dark200:     '#D4CFC3',
+  dark50:      '#F7F6F3',
+  gold:        '#E8A020',
+  gold300:     '#F9D97A',
+  gold600:     '#C87820',
+  goldMuted:   'rgba(232,160,32,0.09)',
+  goldBorder:  'rgba(232,160,32,0.25)',
+  border:      'rgba(212,207,195,0.10)',
+  explorer:    '#14B8A6',
+  climber:     '#8B5CF6',
+  success:     '#10B981',
+  successMuted:'rgba(16,185,129,0.09)',
+  successBorder:'rgba(16,185,129,0.25)',
+  error:       '#EF4444',
+  errorMuted:  'rgba(239,68,68,0.08)',
+};
+
+// Difficulty → brand colour (stage metaphor: beginner=explorer, mid=builder, advanced=climber)
+const DIFF_CFG: Record<string, { color: string; label: string }> = {
+  beginner:     { color: B.explorer, label: 'Beginner'     },
+  intermediate: { color: B.gold,     label: 'Intermediate' },
+  advanced:     { color: B.climber,  label: 'Advanced'     },
+};
+
+const CATEGORIES  = ['Frameworks', 'African Context', 'Career Growth', 'Communication', 'Networking', 'Leadership', 'General'];
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'] as const;
-const EMOJIS = ['📚', '🌱', '🏛️', '🔭', '💬', '🤝', '🧭', '🎯', '💡', '🔥', '📊', '🚀'];
+const EMOJIS      = ['📚', '🌱', '🏛️', '🔭', '💬', '🤝', '🧭', '🎯', '💡', '🔥', '📊', '🚀'];
 
 function extractYoutubeId(url: string): string {
   if (!url) return '';
-  // Already an ID (no slashes)
   if (!url.includes('/') && !url.includes('.')) return url;
   const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   return match?.[1] || url;
 }
 
+// ── Shared primitives ────────────────────────────────────────────
+function MonoLabel({ children, color = B.dark500 }: { children: React.ReactNode; color?: string }) {
+  return (
+    <span style={{
+      fontFamily:    B.fontMono,
+      fontSize:      '10px',
+      fontWeight:    500,
+      letterSpacing: '0.07em',
+      textTransform: 'uppercase' as const,
+      color,
+    }}>
+      {children}
+    </span>
+  );
+}
+
+function FieldLabel({ children }: { children: string }) {
+  return (
+    <label style={{
+      display:       'block',
+      fontFamily:    B.fontMono,
+      fontSize:      '10px',
+      fontWeight:    500,
+      letterSpacing: '0.07em',
+      textTransform: 'uppercase' as const,
+      color:         B.dark500,
+      marginBottom:  '6px',
+    }}>
+      {children}
+    </label>
+  );
+}
+
+function ActionBtn({
+  children, onClick, color = B.gold, borderColor = B.goldBorder, hoverBg = B.goldMuted,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  color?: string;
+  borderColor?: string;
+  hoverBg?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding:       '7px 14px',
+        borderRadius:  '8px',
+        border:        `1px solid ${borderColor}`,
+        cursor:        'pointer',
+        background:    'transparent',
+        color,
+        fontFamily:    B.fontUI,
+        fontSize:      '12px',
+        fontWeight:    600,
+        letterSpacing: '0.01em',
+        transition:    'all 0.12s ease',
+        whiteSpace:    'nowrap' as const,
+      }}
+      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = hoverBg)}
+      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ── CSS ──────────────────────────────────────────────────────────
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+  *, *::before, *::after { box-sizing: border-box; }
+
+  .asc-field {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid ${B.border};
+    background: ${B.dark700};
+    color: ${B.dark50};
+    font-family: ${B.fontUI};
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  .asc-field::placeholder { color: ${B.dark500}; }
+  .asc-field:focus        { border-color: ${B.goldBorder}; }
+  textarea.asc-field      { resize: none; }
+  select.asc-field {
+    cursor: pointer;
+    font-family: ${B.fontMono};
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%234A4438' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-color: ${B.dark700};
+    padding-right: 32px;
+  }
+  select.asc-field option { background: ${B.dark700}; text-transform: uppercase; }
+
+  .asc-btn-primary {
+    padding: 11px 22px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: ${B.gold};
+    color: ${B.dark};
+    font-family: ${B.fontUI};
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    transition: background 0.15s ease, opacity 0.15s ease;
+    white-space: nowrap;
+  }
+  .asc-btn-primary:hover:not(:disabled) { background: ${B.gold600}; }
+  .asc-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .asc-btn-ghost {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid ${B.border};
+    cursor: pointer;
+    background: transparent;
+    color: ${B.dark400};
+    font-family: ${B.fontUI};
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.12s ease;
+  }
+  .asc-btn-ghost:hover { border-color: ${B.goldBorder}; color: ${B.dark200}; }
+
+  .asc-course-card { transition: border-color 0.12s ease; }
+  .asc-course-card:hover { border-color: rgba(212,207,195,0.20) !important; }
+
+  /* Emoji picker button */
+  .asc-emoji-btn {
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    border: 1px solid ${B.border};
+    background: ${B.dark700};
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease;
+  }
+  .asc-emoji-btn:hover { border-color: ${B.goldBorder}; }
+  .asc-emoji-btn.selected {
+    background: ${B.goldMuted};
+    border: 1.5px solid ${B.gold};
+  }
+
+  /* Published toggle */
+  .asc-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .asc-toggle-track {
+    width: 36px; height: 20px;
+    border-radius: 10px;
+    border: 1px solid ${B.border};
+    background: ${B.dark600};
+    position: relative;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    flex-shrink: 0;
+  }
+  .asc-toggle-track.on {
+    background: ${B.goldMuted};
+    border-color: ${B.goldBorder};
+  }
+  .asc-toggle-thumb {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: ${B.dark400};
+    position: absolute;
+    top: 2px; left: 2px;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .asc-toggle-thumb.on {
+    transform: translateX(16px);
+    background: ${B.gold};
+  }
+
+  @media (max-width: 640px) {
+    .asc-form-grid-3 { grid-template-columns: 1fr !important; }
+    .asc-card-actions { flex-wrap: wrap; }
+  }
+`;
+
+// ── Suspense entry point ─────────────────────────────────────────
 export default function AdminCoursesPage() {
-  const supabase = createClient();
+  return (
+    <>
+      <style>{CSS}</style>
+      <Suspense fallback={
+        <div style={{ padding: '80px 0', textAlign: 'center' }}>
+          <MonoLabel color={B.dark600}>Loading courses…</MonoLabel>
+        </div>
+      }>
+        <AdminCoursesInner />
+      </Suspense>
+    </>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────
+function AdminCoursesInner() {
+  const supabase     = createClient();
   const searchParams = useSearchParams();
 
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [courses,  setCourses]  = useState<any[]>([]);
+  const [loading,  setLoading]  = useState(true);
   const [showForm, setShowForm] = useState(searchParams.get('action') === 'create');
-  const [editing, setEditing] = useState<any>(null);
-  const [saving, setSaving] = useState(false);
+  const [editing,  setEditing]  = useState<any>(null);
+  const [saving,   setSaving]   = useState(false);
 
   const emptyForm = {
     title: '', description: '', category: 'General', difficulty: 'beginner' as string,
@@ -35,6 +287,7 @@ export default function AdminCoursesPage() {
   useEffect(() => { loadCourses(); }, []);
 
   async function loadCourses() {
+    setLoading(true);
     const { data } = await supabase.from('courses').select('*').order('sort_order');
     setCourses(data || []);
     setLoading(false);
@@ -42,20 +295,26 @@ export default function AdminCoursesPage() {
 
   function openEdit(course: any) {
     setForm({
-      title: course.title || '', description: course.description || '',
-      category: course.category || 'General', difficulty: course.difficulty || 'beginner',
-      lessons: course.lessons || 1, duration: course.duration || '',
-      emoji: course.emoji || '📚', youtube_id: course.youtube_id || '',
+      title:        course.title        || '',
+      description:  course.description  || '',
+      category:     course.category     || 'General',
+      difficulty:   course.difficulty   || 'beginner',
+      lessons:      course.lessons      || 1,
+      duration:     course.duration     || '',
+      emoji:        course.emoji        || '📚',
+      youtube_id:   course.youtube_id   || '',
       is_published: course.is_published ?? true,
     });
     setEditing(course);
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function openCreate() {
     setForm(emptyForm);
     setEditing(null);
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handleSave() {
@@ -71,10 +330,7 @@ export default function AdminCoursesPage() {
     if (editing) {
       await supabase.from('courses').update(payload).eq('id', editing.id);
     } else {
-      await supabase.from('courses').insert({
-        ...payload,
-        sort_order: courses.length + 1,
-      });
+      await supabase.from('courses').insert({ ...payload, sort_order: courses.length + 1 });
     }
 
     setSaving(false);
@@ -89,140 +345,259 @@ export default function AdminCoursesPage() {
   }
 
   async function handleDelete(id: string, title: string) {
-    if (!confirm(`Delete course "${title}"?`)) return;
+    // TODO: swap for useModal() confirm when available in this subtree
+    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
     await supabase.from('courses').delete().eq('id', id);
     loadCourses();
   }
 
+  const published = courses.filter(c => c.is_published).length;
+  const drafts    = courses.filter(c => !c.is_published).length;
+  const ytId      = extractYoutubeId(form.youtube_id);
+
   if (loading) {
     return (
-      <div className="py-20 text-center">
-        <div className="text-2xl mb-2">⏳</div>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading courses...</p>
+      <div style={{ padding: '80px 0', textAlign: 'center' }}>
+        <MonoLabel color={B.dark600}>Loading courses…</MonoLabel>
       </div>
     );
   }
 
   return (
-    <div className="animate-fade-up">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold"
-            style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
-            Manage Courses
-          </h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            {courses.filter((c) => c.is_published).length} published · {courses.filter((c) => !c.is_published).length} drafts
-          </p>
+    <div className="animate-fade-up" style={{ fontFamily: B.fontUI }}>
+
+      {/* ── HEADER ── */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{
+          display:        'flex',
+          justifyContent: 'space-between',
+          alignItems:     'flex-start',
+          flexWrap:       'wrap',
+          gap:            '12px',
+          marginBottom:   '4px',
+        }}>
+          <div>
+            <h1 style={{
+              fontFamily: B.fontDisplay,
+              fontWeight: 700,
+              fontSize:   'clamp(24px, 3vw, 32px)',
+              color:      B.dark50,
+              margin:     '0 0 4px',
+              lineHeight: 1.15,
+            }}>
+              Manage Courses
+            </h1>
+            <p style={{
+              fontFamily:    B.fontMono,
+              fontSize:      '11px',
+              color:         B.dark500,
+              margin:        0,
+              letterSpacing: '0.04em',
+            }}>
+              {published} PUBLISHED · {drafts} DRAFTS · {courses.length} TOTAL
+            </p>
+          </div>
+
+          <button
+            className="asc-btn-primary"
+            onClick={openCreate}
+            style={{ display: showForm && !editing ? 'none' : undefined }}
+          >
+            + Add Course
+          </button>
         </div>
-        <button onClick={openCreate}
-          className="px-4 py-2 rounded-lg text-sm font-semibold"
-          style={{ background: 'var(--accent)', color: '#000' }}>
-          + Add Course
-        </button>
+
+        {/* Gold rule */}
+        <div style={{
+          height:     '1px',
+          background: `linear-gradient(90deg, ${B.gold} 0%, transparent 60%)`,
+          marginTop:  '16px',
+        }} />
       </div>
 
-      {/* Create/Edit Form */}
+      {/* ── FORM PANEL ── */}
       {showForm && (
-        <div className="rounded-xl p-5 mb-6"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--accent)' }}>
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>
-            {editing ? 'Edit Course' : 'New Course'}
-          </h3>
-          <div className="flex flex-col gap-3">
-            <input
-              className="w-full px-3.5 py-2.5 text-sm rounded-xl"
-              style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-              value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Course title"
-            />
-            <textarea
-              className="w-full px-3.5 py-2.5 text-sm rounded-xl resize-none"
-              style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-              value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Course description" rows={2}
-            />
-            <div className="grid grid-cols-3 gap-3">
-              <select
-                className="px-3 py-2.5 text-sm rounded-xl"
-                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)' }}
-                value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <select
-                className="px-3 py-2.5 text-sm rounded-xl"
-                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)' }}
-                value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value })}>
-                {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
-              </select>
+        <div style={{
+          borderRadius: '14px',
+          padding:      '22px 24px',
+          marginBottom: '28px',
+          background:   B.dark800,
+          border:       `1px solid ${B.goldBorder}`,
+          borderLeft:   `3px solid ${B.gold}`,
+        }}>
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{
+              fontFamily: B.fontDisplay,
+              fontWeight: 700,
+              fontSize:   '20px',
+              color:      B.dark50,
+              margin:     '0 0 2px',
+            }}>
+              {editing ? 'Edit Course' : 'New Course'}
+            </h3>
+            <MonoLabel color={B.dark500}>
+              {editing ? `Editing · ${editing.title}` : 'Fill in the details below'}
+            </MonoLabel>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            {/* Title */}
+            <div>
+              <FieldLabel>Course Title *</FieldLabel>
               <input
-                className="px-3 py-2.5 text-sm rounded-xl"
-                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                placeholder="e.g. 25 min"
+                className="asc-field"
+                value={form.title}
+                onChange={e => setForm({ ...form, title: e.target.value })}
+                placeholder="e.g. The Unspoken Rules of Nigerian Corporate Culture"
               />
             </div>
 
-            {/* YouTube URL */}
+            {/* Description */}
             <div>
-              <label className="text-[11px] font-bold mb-1 block" style={{ color: 'var(--text-dim)' }}>
-                YouTube URL or Video ID
-              </label>
-              <input
-                className="w-full px-3.5 py-2.5 text-sm rounded-xl"
-                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                value={form.youtube_id}
-                onChange={(e) => setForm({ ...form, youtube_id: e.target.value })}
-                placeholder="https://youtube.com/watch?v=... or just the video ID"
+              <FieldLabel>Description</FieldLabel>
+              <textarea
+                className="asc-field"
+                value={form.description}
+                onChange={e => setForm({ ...form, description: e.target.value })}
+                placeholder="What will members learn? Keep it direct — not motivational."
+                rows={3}
               />
-              {form.youtube_id && (
-                <div className="mt-2 rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+            </div>
+
+            {/* Category / Difficulty / Duration — 3-col grid */}
+            <div
+              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}
+              className="asc-form-grid-3"
+            >
+              <div>
+                <FieldLabel>Category</FieldLabel>
+                <select
+                  className="asc-field"
+                  value={form.category}
+                  onChange={e => setForm({ ...form, category: e.target.value })}
+                >
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <FieldLabel>Difficulty</FieldLabel>
+                <select
+                  className="asc-field"
+                  value={form.difficulty}
+                  onChange={e => setForm({ ...form, difficulty: e.target.value })}
+                >
+                  {DIFFICULTIES.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+              <div>
+                <FieldLabel>Duration</FieldLabel>
+                <input
+                  className="asc-field"
+                  value={form.duration}
+                  onChange={e => setForm({ ...form, duration: e.target.value })}
+                  placeholder="e.g. 25 min"
+                />
+              </div>
+            </div>
+
+            {/* YouTube */}
+            <div>
+              <FieldLabel>YouTube URL or Video ID</FieldLabel>
+              <input
+                className="asc-field"
+                value={form.youtube_id}
+                onChange={e => setForm({ ...form, youtube_id: e.target.value })}
+                placeholder="https://youtube.com/watch?v=… or just the video ID"
+              />
+              {ytId && (
+                <div style={{
+                  marginTop:    '10px',
+                  borderRadius: '10px',
+                  overflow:     'hidden',
+                  border:       `1px solid ${B.border}`,
+                  width:        'fit-content',
+                  position:     'relative',
+                }}>
                   <img
-                    src={`https://img.youtube.com/vi/${extractYoutubeId(form.youtube_id)}/mqdefault.jpg`}
+                    src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
                     alt="Thumbnail preview"
-                    className="w-48 h-auto"
+                    style={{ width: '200px', height: 'auto', display: 'block' }}
                   />
+                  {/* Gold overlay badge */}
+                  <div style={{
+                    position:   'absolute',
+                    bottom:     '6px',
+                    left:       '6px',
+                    padding:    '2px 8px',
+                    borderRadius:'999px',
+                    background: B.dark,
+                    border:     `1px solid ${B.goldBorder}`,
+                  }}>
+                    <MonoLabel color={B.gold}>Preview</MonoLabel>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Emoji picker */}
             <div>
-              <label className="text-[11px] font-bold mb-1.5 block" style={{ color: 'var(--text-dim)' }}>Emoji</label>
-              <div className="flex gap-2 flex-wrap">
-                {EMOJIS.map((e) => (
-                  <button key={e} onClick={() => setForm({ ...form, emoji: e })}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center text-lg"
-                    style={{
-                      background: form.emoji === e ? 'rgba(245,158,11,0.15)' : 'var(--bg-input)',
-                      border: form.emoji === e ? '1.5px solid var(--accent)' : '1px solid var(--border)',
-                    }}>
-                    {e}
+              <FieldLabel>Emoji Icon</FieldLabel>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {EMOJIS.map(emoji => (
+                  <button
+                    key={emoji}
+                    className={`asc-emoji-btn${form.emoji === emoji ? ' selected' : ''}`}
+                    onClick={() => setForm({ ...form, emoji })}
+                    type="button"
+                    title={emoji}
+                  >
+                    {emoji}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Published toggle */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.is_published}
-                onChange={(e) => setForm({ ...form, is_published: e.target.checked })}
-                className="w-4 h-4 rounded"
-              />
-              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Published (visible to users)</span>
-            </label>
+            {/* Published toggle — custom branded, not raw <input type="checkbox"> */}
+            <div>
+              <FieldLabel>Visibility</FieldLabel>
+              <div
+                className="asc-toggle-wrap"
+                onClick={() => setForm({ ...form, is_published: !form.is_published })}
+              >
+                <div className={`asc-toggle-track${form.is_published ? ' on' : ''}`}>
+                  <div className={`asc-toggle-thumb${form.is_published ? ' on' : ''}`} />
+                </div>
+                <span style={{
+                  fontFamily: B.fontUI,
+                  fontSize:   '13px',
+                  fontWeight: 500,
+                  color:      form.is_published ? B.dark200 : B.dark400,
+                }}>
+                  {form.is_published ? 'Published — visible to members' : 'Draft — hidden from members'}
+                </span>
+              </div>
+            </div>
 
-            <div className="flex gap-2 mt-2">
-              <button onClick={handleSave} disabled={saving || !form.title.trim()}
-                className="px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-40"
-                style={{ background: 'var(--accent)', color: '#000' }}>
-                {saving ? 'Saving...' : editing ? 'Update' : 'Create Course'}
+            {/* Form actions */}
+            <div style={{
+              display:    'flex',
+              gap:        '10px',
+              marginTop:  '4px',
+              paddingTop: '16px',
+              borderTop:  `1px solid ${B.border}`,
+            }}>
+              <button
+                className="asc-btn-primary"
+                onClick={handleSave}
+                disabled={saving || !form.title.trim()}
+              >
+                {saving ? 'Saving…' : editing ? 'Update Course' : 'Create Course'}
               </button>
-              <button onClick={() => { setShowForm(false); setEditing(null); }}
-                className="px-4 py-2 rounded-lg text-sm"
-                style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+              <button
+                className="asc-btn-ghost"
+                onClick={() => { setShowForm(false); setEditing(null); }}
+              >
                 Cancel
               </button>
             </div>
@@ -230,67 +605,166 @@ export default function AdminCoursesPage() {
         </div>
       )}
 
-      {/* Courses List */}
-      <div className="flex flex-col gap-3">
-        {courses.map((c) => (
-          <div key={c.id} className="rounded-xl p-4 flex items-center gap-4"
-            style={{
-              background: 'var(--bg-card)',
-              border: `1px solid ${c.is_published ? 'var(--border)' : 'rgba(107,114,128,0.3)'}`,
-              opacity: c.is_published ? 1 : 0.6,
-            }}>
-            {/* Thumbnail */}
-            {c.youtube_id ? (
-              <img
-                src={`https://img.youtube.com/vi/${c.youtube_id}/mqdefault.jpg`}
-                alt={c.title}
-                className="w-20 h-14 rounded-lg object-cover shrink-0"
-              />
-            ) : (
-              <div className="w-20 h-14 rounded-lg flex items-center justify-center text-2xl shrink-0"
-                style={{ background: 'var(--bg-input)' }}>
-                {c.emoji || '📚'}
-              </div>
-            )}
+      {/* ── COURSE LIST ── */}
+      {courses.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '70px 0' }}>
+          <p style={{
+            fontFamily: B.fontDisplay,
+            fontSize:   '28px',
+            color:      B.dark500,
+            margin:     '0 0 8px',
+          }}>
+            No courses yet
+          </p>
+          <MonoLabel color={B.dark600}>Create your first course above.</MonoLabel>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {courses.map(c => {
+            const diffCfg = DIFF_CFG[c.difficulty] ?? { color: B.dark400, label: c.difficulty };
+            const ytThumb = c.youtube_id
+              ? `https://img.youtube.com/vi/${c.youtube_id}/mqdefault.jpg`
+              : null;
 
-            <div className="flex-1">
-              <h4 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
-                {c.title}
-                {!c.is_published && (
-                  <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded"
-                    style={{ background: 'rgba(107,114,128,0.15)', color: 'var(--text-dim)' }}>
-                    DRAFT
-                  </span>
-                )}
-              </h4>
-              <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-                {c.category} · {c.difficulty} · {c.duration || 'No duration set'}
-              </p>
-            </div>
-
-            <div className="flex gap-2 shrink-0">
-              <button onClick={() => togglePublish(c.id, c.is_published)}
-                className="text-xs px-3 py-1.5 rounded-lg"
+            return (
+              <div
+                key={c.id}
+                className="asc-course-card"
                 style={{
-                  color: c.is_published ? 'var(--text-dim)' : 'var(--success)',
-                  border: `1px solid ${c.is_published ? 'var(--border)' : 'rgba(16,185,129,0.3)'}`,
-                }}>
-                {c.is_published ? 'Unpublish' : 'Publish'}
-              </button>
-              <button onClick={() => openEdit(c)}
-                className="text-xs px-3 py-1.5 rounded-lg"
-                style={{ color: 'var(--accent)', border: '1px solid rgba(245,158,11,0.3)' }}>
-                Edit
-              </button>
-              <button onClick={() => handleDelete(c.id, c.title)}
-                className="text-xs px-3 py-1.5 rounded-lg"
-                style={{ color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)' }}>
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+                  borderRadius: '12px',
+                  padding:      '16px 18px',
+                  background:   B.dark800,
+                  border:       `1px solid ${c.is_published ? B.border : B.dark600}`,
+                  borderLeft:   `3px solid ${c.is_published ? B.gold : B.dark500}`,
+                  display:      'flex',
+                  alignItems:   'center',
+                  gap:          '16px',
+                }}
+              >
+                {/* Thumbnail / Emoji */}
+                {ytThumb ? (
+                  <img
+                    src={ytThumb}
+                    alt={c.title}
+                    style={{
+                      width:        '76px',
+                      height:       '52px',
+                      borderRadius: '8px',
+                      objectFit:    'cover',
+                      flexShrink:   0,
+                      opacity:      c.is_published ? 1 : 0.5,
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width:           '76px',
+                    height:          '52px',
+                    borderRadius:    '8px',
+                    background:      B.dark700,
+                    border:          `1px solid ${B.border}`,
+                    display:         'flex',
+                    alignItems:      'center',
+                    justifyContent:  'center',
+                    fontSize:        '24px',
+                    flexShrink:      0,
+                    opacity:         c.is_published ? 1 : 0.5,
+                  }}>
+                    {c.emoji || '📚'}
+                  </div>
+                )}
+
+                {/* Course info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                    <h4 style={{
+                      fontFamily:   B.fontUI,
+                      fontWeight:   600,
+                      fontSize:     '14px',
+                      color:        c.is_published ? B.dark50 : B.dark400,
+                      margin:       0,
+                      overflow:     'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace:   'nowrap' as const,
+                    }}>
+                      {c.title}
+                    </h4>
+                    {/* Draft badge — brand styled */}
+                    {!c.is_published && (
+                      <span style={{
+                        fontFamily:    B.fontMono,
+                        fontSize:      '9px',
+                        fontWeight:    500,
+                        letterSpacing: '0.07em',
+                        textTransform: 'uppercase' as const,
+                        padding:       '2px 7px',
+                        borderRadius:  '999px',
+                        background:    B.dark700,
+                        color:         B.dark400,
+                        border:        `1px solid ${B.dark500}`,
+                        flexShrink:    0,
+                      }}>
+                        Draft
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <MonoLabel color={B.dark500}>{c.category}</MonoLabel>
+                    <span style={{ color: B.dark600, fontFamily: B.fontMono, fontSize: '10px' }}>·</span>
+                    {/* Difficulty pill — stage colour */}
+                    <span style={{
+                      fontFamily:    B.fontMono,
+                      fontSize:      '10px',
+                      fontWeight:    500,
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase' as const,
+                      color:         diffCfg.color,
+                    }}>
+                      {diffCfg.label}
+                    </span>
+                    {c.duration && (
+                      <>
+                        <span style={{ color: B.dark600, fontFamily: B.fontMono, fontSize: '10px' }}>·</span>
+                        <MonoLabel color={B.dark500}>{c.duration}</MonoLabel>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="asc-card-actions" style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                  {/* Publish toggle */}
+                  <ActionBtn
+                    onClick={() => togglePublish(c.id, c.is_published)}
+                    color={c.is_published ? B.dark400 : B.success}
+                    borderColor={c.is_published ? B.border : B.successBorder}
+                    hoverBg={c.is_published ? B.dark700 : B.successMuted}
+                  >
+                    {c.is_published ? 'Unpublish' : 'Publish'}
+                  </ActionBtn>
+
+                  <ActionBtn
+                    onClick={() => openEdit(c)}
+                    color={B.gold}
+                    borderColor={B.goldBorder}
+                    hoverBg={B.goldMuted}
+                  >
+                    Edit
+                  </ActionBtn>
+
+                  <ActionBtn
+                    onClick={() => handleDelete(c.id, c.title)}
+                    color={B.error}
+                    borderColor={`${B.error}30`}
+                    hoverBg={B.errorMuted}
+                  >
+                    Delete
+                  </ActionBtn>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
