@@ -4,11 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-// ============================================================
-// ASCENTOR CHECKOUT — Pricing + Paystack Popup
-// Route: /checkout
-// ============================================================
-
 type BillingCycle = 'monthly' | 'yearly';
 
 interface Plan {
@@ -16,12 +11,14 @@ interface Plan {
   name: string;
   description: string;
   icon: string;
-  monthlyPrice: number;     // USD
-  yearlyPrice: number;      // USD (total per year)
-  paystackPlanCode?: string; // Paystack plan code (set after creating plans)
+  monthlyPrice: number;
+  yearlyPrice: number;
+  paystackPlanCode?: string;
   features: string[];
   highlighted?: boolean;
   cta: string;
+  accentColor: string;
+  accentGlow: string;
 }
 
 const PLANS: Plan[] = [
@@ -31,7 +28,9 @@ const PLANS: Plan[] = [
     description: 'Essential coaching for emerging leaders',
     icon: '🌱',
     monthlyPrice: 15,
-    yearlyPrice: 120, // $10/mo billed yearly
+    yearlyPrice: 120,
+    accentColor: '#A6A2FF',
+    accentGlow: 'rgba(166,162,255,0.12)',
     features: [
       '10 AI coaching sessions/month',
       'Access to community cohorts',
@@ -48,7 +47,9 @@ const PLANS: Plan[] = [
     description: 'Unlimited coaching for serious leaders',
     icon: '🚀',
     monthlyPrice: 25,
-    yearlyPrice: 200, // ~$17/mo billed yearly
+    yearlyPrice: 200,
+    accentColor: '#6662FF',
+    accentGlow: 'rgba(102,98,255,0.18)',
     features: [
       'Unlimited AI coaching sessions',
       'Full course library access',
@@ -68,7 +69,9 @@ const PLANS: Plan[] = [
     description: 'For teams building leaders at scale',
     icon: '🏛️',
     monthlyPrice: 49,
-    yearlyPrice: 396, // $33/mo billed yearly
+    yearlyPrice: 396,
+    accentColor: '#CFFF5E',
+    accentGlow: 'rgba(207,255,94,0.10)',
     features: [
       'Everything in Standard',
       'Team dashboard (up to 25 seats)',
@@ -83,77 +86,60 @@ const PLANS: Plan[] = [
   },
 ];
 
-// Promo codes
 const PROMO_CODES: Record<string, { discount: number; label: string; appliesTo: string[] }> = {
   'FOUNDER50':  { discount: 0.50, label: '50% off — Founders Discount', appliesTo: ['basic', 'standard', 'premium'] },
-  'ASCENTOR50': { discount: 0.50, label: '50% off — Early Access', appliesTo: ['basic', 'standard', 'premium'] },
-  'EARLYBIRD':  { discount: 0.50, label: '50% off — Early Bird', appliesTo: ['basic', 'standard', 'premium'] },
-  'TESTER100':  { discount: 1.00, label: 'Free Access — Beta Tester', appliesTo: ['basic', 'standard'] },
-  'BETATESTER': { discount: 1.00, label: 'Free Access — Beta Tester', appliesTo: ['basic', 'standard'] },
-  'FREEACCESS': { discount: 1.00, label: 'Free Access', appliesTo: ['basic', 'standard'] },
+  'ASCENTOR50': { discount: 0.50, label: '50% off — Early Access',      appliesTo: ['basic', 'standard', 'premium'] },
+  'EARLYBIRD':  { discount: 0.50, label: '50% off — Early Bird',        appliesTo: ['basic', 'standard', 'premium'] },
+  'TESTER100':  { discount: 1.00, label: 'Free Access — Beta Tester',   appliesTo: ['basic', 'standard'] },
+  'BETATESTER': { discount: 1.00, label: 'Free Access — Beta Tester',   appliesTo: ['basic', 'standard'] },
+  'FREEACCESS': { discount: 1.00, label: 'Free Access',                 appliesTo: ['basic', 'standard'] },
 };
 
-// NGN exchange rate (update periodically or fetch from API)
 const NGN_PER_USD = 1600;
 
 export default function CheckoutPage() {
-  const [billing, setBilling] = useState<BillingCycle>('monthly');
-  const [promoCode, setPromoCode] = useState('');
+  const [billing, setBilling]           = useState<BillingCycle>('monthly');
+  const [promoCode, setPromoCode]       = useState('');
   const [promoApplied, setPromoApplied] = useState<{ discount: number; label: string } | null>(null);
-  const [promoError, setPromoError] = useState('');
+  const [promoError, setPromoError]     = useState('');
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [loading, setLoading]           = useState(false);
+  const [user, setUser]                 = useState<any>(null);
+  const [profile, setProfile]           = useState<any>(null);
+  const [error, setError]               = useState('');
+  const [success, setSuccess]           = useState('');
 
-  const router = useRouter();
+  const router   = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
     const loadUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login?redirect=/checkout');
-        return;
-      }
+      if (!user) { router.push('/login?redirect=/checkout'); return; }
       setUser(user);
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       setProfile(profile);
     };
     loadUser();
   }, [supabase, router]);
 
-  // Load Paystack inline script
   useEffect(() => {
     if (typeof window !== 'undefined' && !document.getElementById('paystack-script')) {
-      const script = document.createElement('script');
-      script.id = 'paystack-script';
-      script.src = 'https://js.paystack.co/v2/inline.js';
-      script.async = true;
-      document.head.appendChild(script);
+      const s = document.createElement('script');
+      s.id = 'paystack-script'; s.src = 'https://js.paystack.co/v2/inline.js'; s.async = true;
+      document.head.appendChild(s);
     }
   }, []);
 
   const applyPromo = () => {
-    setPromoError('');
-    setPromoApplied(null);
+    setPromoError(''); setPromoApplied(null);
     const code = promoCode.trim().toUpperCase();
     const promo = PROMO_CODES[code];
-    if (!promo) {
-      setPromoError('Invalid promo code');
-      return;
-    }
+    if (!promo) { setPromoError('Invalid promo code'); return; }
     setPromoApplied({ discount: promo.discount, label: promo.label });
   };
 
-  const getPrice = (plan: Plan): number => {
+  const getPrice = (plan: Plan) => {
     const base = billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
     if (promoApplied && PROMO_CODES[promoCode.trim().toUpperCase()]?.appliesTo.includes(plan.id)) {
       return Math.round(base * (1 - promoApplied.discount) * 100) / 100;
@@ -161,562 +147,473 @@ export default function CheckoutPage() {
     return base;
   };
 
-  const getMonthlyEquivalent = (plan: Plan): string => {
-    if (billing === 'monthly') return '';
-    const total = getPrice(plan);
-    return `$${(total / 12).toFixed(0)}/mo`;
-  };
-
   const handleSelectPlan = async (planId: string) => {
-    if (!user) {
-      router.push('/login?redirect=/checkout');
-      return;
-    }
-
-    setSelectedPlan(planId);
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
+    if (!user) { router.push('/login?redirect=/checkout'); return; }
+    setSelectedPlan(planId); setLoading(true); setError(''); setSuccess('');
     const plan = PLANS.find(p => p.id === planId)!;
     const finalPrice = getPrice(plan);
 
-    // 100% discount — activate immediately
     if (finalPrice === 0 && promoApplied?.discount === 1) {
       try {
         const res = await fetch('/api/payment/initialize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: user.email,
-            userId: user.id,
-            promoCode: promoCode.trim().toUpperCase(),
-          }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email, userId: user.id, promoCode: promoCode.trim().toUpperCase() }),
         });
         const data = await res.json();
-        if (data.free) {
-          setSuccess('Your account has been activated! Setting up your profile...');
-          setTimeout(() => router.push('/onboarding'), 2000);
-        } else {
-          setError(data.error || 'Failed to activate promo');
-        }
-      } catch {
-        setError('Failed to process. Please try again.');
-      }
-      setLoading(false);
-      return;
+        if (data.free) { setSuccess('Account activated! Setting up your profile…'); setTimeout(() => router.push('/onboarding'), 2000); }
+        else setError(data.error || 'Failed to activate promo');
+      } catch { setError('Failed to process. Please try again.'); }
+      setLoading(false); return;
     }
 
-    // Paystack popup checkout
     const amountKobo = Math.round(finalPrice * NGN_PER_USD * 100);
     const reference = `asc_${user.id.slice(0, 8)}_${Date.now()}`;
-
     try {
-      // @ts-ignore — Paystack loaded via script
+      // @ts-ignore
       const paystack = new window.PaystackPop();
       paystack.newTransaction({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-        email: user.email,
-        amount: amountKobo,
-        currency: 'NGN',
-        ref: reference,
-        metadata: {
-          custom_fields: [
-            { display_name: 'Plan', variable_name: 'plan', value: planId },
-            { display_name: 'Billing', variable_name: 'billing', value: billing },
-            ...(promoApplied ? [{ display_name: 'Promo', variable_name: 'promo', value: promoCode.trim().toUpperCase() }] : []),
-          ],
-          user_id: user.id,
-          plan: planId,
-          billing_cycle: billing,
-          promo_code: promoCode.trim().toUpperCase() || null,
-          is_trial: true,
-        },
+        email: user.email, amount: amountKobo, currency: 'NGN', ref: reference,
+        metadata: { custom_fields: [
+          { display_name: 'Plan', variable_name: 'plan', value: planId },
+          { display_name: 'Billing', variable_name: 'billing', value: billing },
+          ...(promoApplied ? [{ display_name: 'Promo', variable_name: 'promo', value: promoCode.trim().toUpperCase() }] : []),
+        ], user_id: user.id, plan: planId, billing_cycle: billing, promo_code: promoCode.trim().toUpperCase() || null, is_trial: true },
         onSuccess: async (transaction: any) => {
-          // Verify payment on server
           try {
             const res = await fetch('/api/payment/verify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                reference: transaction.reference,
-                userId: user.id,
-                plan: planId,
-                billing: billing,
-              }),
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reference: transaction.reference, userId: user.id, plan: planId, billing }),
             });
             const data = await res.json();
-            if (data.success) {
-              setSuccess('Payment confirmed! Let\'s set up your profile.');
-              setTimeout(() => router.push('/onboarding'), 2000);
-            } else {
-              setError('Payment received but verification failed. Contact support.');
-            }
-          } catch {
-            setError('Payment may have succeeded. If not reflected, contact support.');
-          }
+            if (data.success) { setSuccess("Payment confirmed! Let's set up your profile."); setTimeout(() => router.push('/onboarding'), 2000); }
+            else setError('Payment received but verification failed. Contact support.');
+          } catch { setError('Payment may have succeeded. If not reflected, contact support.'); }
           setLoading(false);
         },
-        onCancel: () => {
-          setLoading(false);
-          setSelectedPlan(null);
-        },
+        onCancel: () => { setLoading(false); setSelectedPlan(null); },
       });
     } catch (err) {
-      console.error('Paystack error:', err);
-      setError('Payment system not available. Please try again later.');
+      setError('Payment system unavailable. Please try again later.');
       setLoading(false);
     }
   };
 
-  const isCurrentPlan = (planId: string) => {
-    if (!profile) return false;
-    return profile.subscription_plan === planId;
-  };
+  const isCurrentPlan = (planId: string) => profile?.subscription_plan === planId;
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'var(--bg, #0A0D14)',
-      color: 'var(--text, #F1F0EB)',
-    }}>
-      {/* Header */}
-      <div style={{
-        maxWidth: '1120px',
-        margin: '0 auto',
-        padding: '48px 20px 0',
-        textAlign: 'center',
-      }}>
-        <a
-          href="/dashboard"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            color: 'var(--text-muted, #8B8A85)',
-            fontSize: '14px',
-            textDecoration: 'none',
-            marginBottom: '24px',
-          }}
-        >
-          ← Back to Dashboard
-        </a>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
 
-        <h1 style={{
-          fontSize: 'clamp(28px, 5vw, 42px)',
-          fontWeight: 800,
-          lineHeight: 1.15,
-          marginBottom: '12px',
-          background: 'linear-gradient(135deg, var(--text, #F1F0EB) 0%, var(--accent, #F59E0B) 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        }}>
-          Invest in Your Leadership
-        </h1>
-        <p style={{
-          fontSize: '17px',
-          color: 'var(--text-muted, #8B8A85)',
-          maxWidth: '560px',
-          margin: '0 auto 32px',
-          lineHeight: 1.6,
-        }}>
-          AI-powered coaching built for African professionals. Choose the plan that matches your ambition.
-        </p>
+        .checkout-root {
+          min-height: 100vh;
+          background: #0F0F14;
+          color: #F0EFF8;
+          font-family: 'Inter', sans-serif;
+        }
 
-        {/* Free Trial Badge */}
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '8px 20px',
-          borderRadius: '24px',
-          background: 'rgba(16, 185, 129, 0.1)',
-          border: '1px solid rgba(16, 185, 129, 0.25)',
-          marginBottom: '28px',
-          fontSize: '14px',
-          fontWeight: 600,
-          color: '#10B981',
-        }}>
-          <span style={{ fontSize: '16px' }}>🎉</span>
-          All plans include a 7-day free trial — no charge until day 8
+        /* Nav bar */
+        .checkout-nav {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 14px 24px; border-bottom: 1px solid #1E1E2E;
+          background: rgba(15,15,20,0.92);
+          backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+          position: sticky; top: 0; z-index: 10;
+        }
+        .checkout-nav-logo {
+          display: flex; align-items: center; gap: 10px; text-decoration: none;
+        }
+        .checkout-nav-logo-text {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 17px; font-weight: 700; color: #F0EFF8; letter-spacing: -0.01em;
+        }
+        .checkout-back {
+          font-size: 13px; color: #5E5C7A; text-decoration: none;
+          padding: 6px 12px; border-radius: 8px; border: 1px solid #1E1E2E;
+          transition: all 0.18s; font-family: 'Inter', sans-serif;
+        }
+        .checkout-back:hover { color: #F0EFF8; border-color: #2A2A3E; }
+
+        /* Hero */
+        .checkout-hero {
+          max-width: 1120px; margin: 0 auto;
+          padding: 56px 24px 0; text-align: center;
+        }
+        .checkout-eyebrow {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 7px 18px; border-radius: 100px; margin-bottom: 24px;
+          font-size: 13px; font-weight: 600;
+          background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25);
+          color: #10B981; font-family: 'Inter', sans-serif;
+        }
+        .checkout-title {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: clamp(28px, 5vw, 46px); font-weight: 800;
+          line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 14px;
+        }
+        .checkout-title-gradient {
+          background: linear-gradient(135deg, #F0EFF8 0%, #A6A2FF 100%);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .checkout-subtitle {
+          font-size: 17px; color: #9896B8; max-width: 520px; margin: 0 auto 36px;
+          line-height: 1.65; font-family: 'Inter', sans-serif;
+        }
+
+        /* Billing toggle */
+        .billing-toggle {
+          display: inline-flex;
+          background: #16161F; border: 1px solid #1E1E2E;
+          border-radius: 12px; padding: 4px; margin-bottom: 48px;
+        }
+        .billing-btn {
+          padding: 10px 24px; border-radius: 9px; border: none; cursor: pointer;
+          font-size: 14px; font-weight: 600; transition: all 0.2s;
+          font-family: 'Inter', sans-serif;
+        }
+        .billing-btn.active {
+          background: #6662FF; color: #fff;
+          box-shadow: 0 4px 12px rgba(102,98,255,0.35);
+        }
+        .billing-btn.inactive { background: transparent; color: #5E5C7A; }
+        .billing-save {
+          margin-left: 6px; font-size: 10px; padding: 2px 7px;
+          border-radius: 4px; font-weight: 700; letter-spacing: 0.02em;
+        }
+        .billing-btn.active .billing-save { background: rgba(255,255,255,0.15); color: #fff; }
+        .billing-btn.inactive .billing-save { background: rgba(102,98,255,0.12); color: #A6A2FF; }
+
+        /* Plan cards */
+        .plans-grid {
+          max-width: 1120px; margin: 0 auto 40px;
+          padding: 0 24px;
+          display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+        }
+        @media (max-width: 900px) { .plans-grid { grid-template-columns: 1fr; max-width: 480px; } }
+
+        .plan-card {
+          background: #16161F; border-radius: 20px; padding: 32px 28px;
+          display: flex; flex-direction: column; position: relative; overflow: hidden;
+          transition: transform 0.22s, box-shadow 0.22s;
+        }
+        .plan-card:hover { transform: translateY(-4px); }
+        .plan-card .card-glow-orb {
+          position: absolute; top: -60px; right: -60px;
+          width: 160px; height: 160px; border-radius: 50%;
+          filter: blur(50px); pointer-events: none; opacity: 0.7;
+        }
+
+        .popular-badge {
+          position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+          padding: 4px 16px; border-radius: 100px;
+          font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+          background: #6662FF; color: #fff;
+          box-shadow: 0 4px 16px rgba(102,98,255,0.45);
+          font-family: 'Inter', sans-serif; white-space: nowrap;
+        }
+
+        .plan-icon-wrap {
+          width: 48px; height: 48px; border-radius: 12px; margin-bottom: 16px;
+          display: flex; align-items: center; justify-content: center; font-size: 22px;
+        }
+        .plan-name {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 22px; font-weight: 800; color: #F0EFF8;
+          margin-bottom: 4px; letter-spacing: -0.01em;
+        }
+        .plan-desc { font-size: 13px; color: #5E5C7A; margin-bottom: 24px; font-family: 'Inter', sans-serif; }
+
+        .plan-price-big {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 42px; font-weight: 800; color: #F0EFF8;
+          line-height: 1; letter-spacing: -0.02em;
+        }
+        .plan-price-per { font-size: 15px; color: #5E5C7A; margin-left: 4px; font-family: 'Inter', sans-serif; }
+        .plan-price-note { font-size: 12px; color: #5E5C7A; margin-top: 5px; font-family: 'Inter', sans-serif; }
+        .plan-price-strike { color: #2A2A3E; }
+        .plan-price-promo { font-size: 12px; margin-top: 4px; font-family: 'Inter', sans-serif; }
+
+        .plan-features { list-style: none; padding: 0; margin: 24px 0 28px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .plan-feature {
+          display: flex; align-items: flex-start; gap: 10px;
+          font-size: 13.5px; color: #9896B8; line-height: 1.5; font-family: 'Inter', sans-serif;
+        }
+        .plan-feature-check {
+          width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
+          display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800;
+        }
+
+        .plan-btn {
+          padding: 13px 24px; border-radius: 11px; border: none;
+          font-size: 15px; font-weight: 800; cursor: pointer; width: 100%;
+          transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .plan-btn-note {
+          font-size: 11px; color: #5E5C7A; text-align: center;
+          margin-top: 8px; font-family: 'Inter', sans-serif;
+        }
+
+        /* Promo section */
+        .promo-section {
+          max-width: 440px; margin: 0 auto 24px; padding: 0 24px;
+        }
+        .promo-card {
+          background: #16161F; border: 1px solid #1E1E2E;
+          border-radius: 14px; padding: 20px;
+        }
+        .promo-label {
+          font-size: 13px; font-weight: 600; color: #F0EFF8;
+          margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .promo-row { display: flex; gap: 8px; }
+        .promo-input {
+          flex: 1; padding: 10px 14px; border-radius: 9px;
+          border: 1px solid #1E1E2E; background: #13131B;
+          color: #F0EFF8; font-size: 14px; outline: none;
+          text-transform: uppercase; font-family: 'Inter', sans-serif;
+          transition: border-color 0.18s, box-shadow 0.18s;
+        }
+        .promo-input:focus { border-color: #6662FF; box-shadow: 0 0 0 3px rgba(102,98,255,0.15); }
+        .promo-apply-btn {
+          padding: 10px 18px; border-radius: 9px; border: none;
+          background: #6662FF; color: #fff;
+          font-weight: 700; font-size: 14px; cursor: pointer;
+          font-family: 'Inter', sans-serif; transition: opacity 0.18s;
+        }
+        .promo-apply-btn:hover { opacity: 0.85; }
+        .promo-success { font-size: 13px; color: #10B981; margin-top: 8px; font-family: 'Inter, sans-serif'; }
+        .promo-error   { font-size: 13px; color: #EF4444; margin-top: 8px; font-family: 'Inter, sans-serif'; }
+
+        /* Alert banners */
+        .alert-wrap { max-width: 480px; margin: 0 auto 20px; padding: 0 24px; }
+        .alert-error   { padding: 13px 16px; border-radius: 10px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #EF4444; font-size: 14px; font-family: 'Inter', sans-serif; }
+        .alert-success { padding: 13px 16px; border-radius: 10px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); color: #10B981; font-size: 14px; font-family: 'Inter', sans-serif; }
+
+        /* Trust row */
+        .trust-section {
+          max-width: 680px; margin: 0 auto;
+          padding: 32px 24px 64px; text-align: center;
+        }
+        .trust-items { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; margin-bottom: 20px; }
+        .trust-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #5E5C7A; font-family: 'Inter', sans-serif; }
+        .trust-note { font-size: 13px; color: #5E5C7A; line-height: 1.65; font-family: 'Inter', sans-serif; }
+        .trust-link { color: #A6A2FF; text-decoration: none; }
+        .trust-link:hover { color: #6662FF; }
+      `}</style>
+
+      <div className="checkout-root">
+        {/* Nav */}
+        <nav className="checkout-nav">
+          <a href="/" className="checkout-nav-logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3L22 20H2L12 3Z" fill="#6662FF" fillOpacity="0.12" stroke="#6662FF" strokeWidth="1.5" strokeLinejoin="round"/>
+              <path d="M12 8L18 20H6L12 8Z" fill="#6662FF" fillOpacity="0.35"/>
+              <path d="M9 20H15" stroke="#A6A2FF" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <span className="checkout-nav-logo-text">Ascentor</span>
+          </a>
+          <a href="/dashboard" className="checkout-back">← Dashboard</a>
+        </nav>
+
+        {/* Hero */}
+        <div className="checkout-hero">
+          <div className="checkout-eyebrow">
+            <span>🎉</span>
+            All plans include a 7-day free trial — no charge until day 8
+          </div>
+          <h1 className="checkout-title">
+            <span className="checkout-title-gradient">Invest in your leadership</span>
+          </h1>
+          <p className="checkout-subtitle">
+            AI-powered coaching built for African professionals. Choose the plan that matches your ambition.
+          </p>
+
+          {/* Billing toggle */}
+          <div className="billing-toggle">
+            {(['monthly', 'yearly'] as BillingCycle[]).map(cycle => (
+              <button
+                key={cycle}
+                onClick={() => setBilling(cycle)}
+                className={`billing-btn ${billing === cycle ? 'active' : 'inactive'}`}
+              >
+                {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
+                {cycle === 'yearly' && (
+                  <span className="billing-save">Save 33%</span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Billing Toggle */}
-        <div style={{
-          display: 'inline-flex',
-          background: 'var(--bg-card, #12151F)',
-          border: '1px solid var(--border, #2A2D3A)',
-          borderRadius: '12px',
-          padding: '4px',
-          marginBottom: '40px',
-        }}>
-          {(['monthly', 'yearly'] as BillingCycle[]).map(cycle => (
-            <button
-              key={cycle}
-              onClick={() => setBilling(cycle)}
-              style={{
-                padding: '10px 24px',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 600,
-                transition: 'all 0.2s',
-                background: billing === cycle ? 'var(--accent, #F59E0B)' : 'transparent',
-                color: billing === cycle ? '#000' : 'var(--text-muted, #8B8A85)',
-              }}
-            >
-              {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
-              {cycle === 'yearly' && (
-                <span style={{
-                  marginLeft: '6px',
-                  fontSize: '11px',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  background: billing === 'yearly' ? 'rgba(0,0,0,0.2)' : 'rgba(245,158,11,0.15)',
-                  color: billing === 'yearly' ? '#000' : 'var(--accent, #F59E0B)',
-                }}>
-                  Save 33%
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
+        {/* Plans */}
+        <div className="plans-grid">
+          {PLANS.map(plan => {
+            const price   = getPrice(plan);
+            const current = isCurrentPlan(plan.id);
+            const isHL    = plan.highlighted;
+            const promoKey = promoCode.trim().toUpperCase();
+            const hasPromo = promoApplied && PROMO_CODES[promoKey]?.appliesTo.includes(plan.id);
 
-      {/* Plan Cards */}
-      <div style={{
-        maxWidth: '1120px',
-        margin: '0 auto',
-        padding: '0 20px',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: '20px',
-        marginBottom: '40px',
-      }}>
-        {PLANS.map(plan => {
-          const price = getPrice(plan);
-          const current = isCurrentPlan(plan.id);
-          const isHighlighted = plan.highlighted;
+            return (
+              <div
+                key={plan.id}
+                className="plan-card"
+                style={{
+                  border: `${isHL ? '2px' : '1px'} solid ${isHL ? 'rgba(102,98,255,0.45)' : '#1E1E2E'}`,
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.boxShadow = isHL
+                    ? `0 20px 56px ${plan.accentGlow}`
+                    : '0 16px 40px rgba(0,0,0,0.3)';
+                }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
+              >
+                {/* Glow orb */}
+                <div className="card-glow-orb" style={{ background: `radial-gradient(circle, ${plan.accentGlow.replace('0.18', '0.5').replace('0.12', '0.5').replace('0.10', '0.5')}, transparent 70%)` }} />
 
-          return (
-            <div
-              key={plan.id}
-              style={{
-                background: 'var(--bg-card, #12151F)',
-                border: `${isHighlighted ? '2px' : '1px'} solid ${isHighlighted ? 'var(--accent, #F59E0B)' : 'var(--border, #2A2D3A)'}`,
-                borderRadius: '16px',
-                padding: '32px 28px',
-                display: 'flex',
-                flexDirection: 'column',
-                position: 'relative',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = isHighlighted
-                  ? '0 16px 48px rgba(245, 158, 11, 0.15)'
-                  : '0 16px 48px rgba(0,0,0,0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              {/* Popular badge */}
-              {isHighlighted && (
-                <div style={{
-                  position: 'absolute',
-                  top: '-12px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  background: 'var(--accent, #F59E0B)',
-                  color: '#000',
-                  padding: '4px 16px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  letterSpacing: '0.5px',
-                  textTransform: 'uppercase',
-                }}>
-                  Most Popular
+                {isHL && <div className="popular-badge">Most Popular</div>}
+
+                {/* Icon */}
+                <div className="plan-icon-wrap" style={{ background: `${plan.accentColor}15`, border: `1px solid ${plan.accentColor}25` }}>
+                  {plan.icon}
                 </div>
-              )}
 
-              {/* Plan header */}
-              <div style={{ marginBottom: '24px' }}>
-                <span style={{ fontSize: '28px' }}>{plan.icon}</span>
-                <h3 style={{
-                  fontSize: '22px',
-                  fontWeight: 700,
-                  margin: '8px 0 4px',
-                  color: 'var(--text)',
-                }}>
-                  {plan.name}
-                </h3>
-                <p style={{
-                  fontSize: '14px',
-                  color: 'var(--text-muted)',
-                  margin: 0,
-                }}>
-                  {plan.description}
-                </p>
-              </div>
+                <h3 className="plan-name">{plan.name}</h3>
+                <p className="plan-desc">{plan.description}</p>
 
-              {/* Price */}
-              <div style={{ marginBottom: '24px' }}>
-                {plan.monthlyPrice === 0 ? (
-                  <div style={{ fontSize: '36px', fontWeight: 800 }}>Free</div>
-                ) : (
-                  <>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                      <span style={{ fontSize: '36px', fontWeight: 800 }}>
-                        ${billing === 'monthly' ? price : Math.round(price / 12)}
+                {/* Price display */}
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                    <span className="plan-price-big">
+                      ${billing === 'monthly' ? price : Math.round(price / 12)}
+                    </span>
+                    <span className="plan-price-per">/month</span>
+                  </div>
+                  {billing === 'yearly' && (
+                    <p className="plan-price-note">
+                      ${price} billed annually
+                      {hasPromo && (
+                        <span style={{ color: plan.accentColor, marginLeft: 6 }}>
+                          (was ${plan.yearlyPrice})
+                        </span>
+                      )}
+                    </p>
+                  )}
+                  {billing === 'monthly' && hasPromo && price < plan.monthlyPrice && (
+                    <p className="plan-price-promo" style={{ color: plan.accentColor }}>
+                      <s className="plan-price-strike">${plan.monthlyPrice}</s>
+                      {' '}{promoApplied!.label}
+                    </p>
+                  )}
+                </div>
+
+                {/* Features */}
+                <ul className="plan-features">
+                  {plan.features.map((f, i) => (
+                    <li key={i} className="plan-feature">
+                      <span className="plan-feature-check" style={{ background: `${plan.accentColor}15`, color: plan.accentColor }}>
+                        ✓
                       </span>
-                      <span style={{ color: 'var(--text-muted)', fontSize: '15px' }}>/month</span>
-                    </div>
-                    {billing === 'yearly' && (
-                      <p style={{
-                        fontSize: '13px',
-                        color: 'var(--text-dim, #6B6A65)',
-                        margin: '4px 0 0',
-                      }}>
-                        ${price} billed annually
-                        {promoApplied && PROMO_CODES[promoCode.trim().toUpperCase()]?.appliesTo.includes(plan.id) && (
-                          <span style={{ color: 'var(--accent)', marginLeft: '4px' }}>
-                            (was ${billing === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice})
-                          </span>
-                        )}
-                      </p>
-                    )}
-                    {billing === 'monthly' && promoApplied && PROMO_CODES[promoCode.trim().toUpperCase()]?.appliesTo.includes(plan.id) && price < plan.monthlyPrice && (
-                      <p style={{
-                        fontSize: '13px',
-                        color: 'var(--accent)',
-                        margin: '4px 0 0',
-                      }}>
-                        <s style={{ color: 'var(--text-dim)' }}>${plan.monthlyPrice}</s> {promoApplied.label}
-                      </p>
-                    )}
-                  </>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA */}
+                <button
+                  onClick={() => handleSelectPlan(plan.id)}
+                  disabled={current || (loading && selectedPlan === plan.id)}
+                  className="plan-btn"
+                  style={{
+                    background: current
+                      ? 'transparent'
+                      : isHL
+                        ? '#6662FF'
+                        : `${plan.accentColor}18`,
+                    color: current
+                      ? '#5E5C7A'
+                      : isHL
+                        ? '#fff'
+                        : plan.accentColor,
+                    border: current ? '1px solid #1E1E2E' : 'none',
+                    boxShadow: isHL && !current ? '0 6px 20px rgba(102,98,255,0.35)' : 'none',
+                    cursor: current ? 'default' : 'pointer',
+                    opacity: loading && selectedPlan === plan.id ? 0.7 : 1,
+                  }}
+                  onMouseEnter={e => {
+                    if (!current) {
+                      (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                      if (isHL) (e.target as HTMLElement).style.boxShadow = '0 8px 28px rgba(102,98,255,0.5)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    (e.target as HTMLElement).style.transform = 'translateY(0)';
+                    if (isHL) (e.target as HTMLElement).style.boxShadow = '0 6px 20px rgba(102,98,255,0.35)';
+                  }}
+                >
+                  {loading && selectedPlan === plan.id
+                    ? 'Processing…'
+                    : current
+                      ? '✓ Current Plan'
+                      : plan.cta}
+                </button>
+
+                {!current && (
+                  <p className="plan-btn-note">7-day free trial · Cancel anytime</p>
                 )}
               </div>
+            );
+          })}
+        </div>
 
-              {/* Features */}
-              <ul style={{
-                listStyle: 'none',
-                padding: 0,
-                margin: '0 0 28px',
-                flex: 1,
-              }}>
-                {plan.features.map((feature, i) => (
-                  <li key={i} style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '10px',
-                    marginBottom: '10px',
-                    fontSize: '14px',
-                    color: 'var(--text-muted)',
-                    lineHeight: 1.4,
-                  }}>
-                    <span style={{
-                      color: isHighlighted ? 'var(--accent, #F59E0B)' : 'var(--success, #10B981)',
-                      fontSize: '15px',
-                      lineHeight: 1.4,
-                      flexShrink: 0,
-                    }}>✓</span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              {/* CTA Button */}
-              <button
-                onClick={() => handleSelectPlan(plan.id)}
-                disabled={current || (loading && selectedPlan === plan.id)}
-                style={{
-                  padding: '14px 24px',
-                  borderRadius: '10px',
-                  border: current ? '1px solid var(--border)' : 'none',
-                  cursor: current ? 'default' : 'pointer',
-                  fontSize: '15px',
-                  fontWeight: 700,
-                  transition: 'all 0.2s',
-                  background: current
-                    ? 'transparent'
-                    : isHighlighted
-                      ? 'var(--accent, #F59E0B)'
-                      : 'var(--bg-input, #1A1D2E)',
-                  color: current
-                    ? 'var(--text-dim)'
-                    : isHighlighted
-                      ? '#000'
-                      : 'var(--text)',
-                  opacity: loading && selectedPlan === plan.id ? 0.7 : 1,
-                  width: '100%',
-                }}
-              >
-                {loading && selectedPlan === plan.id
-                  ? 'Processing...'
-                  : current
-                    ? '✓ Current Plan'
-                    : plan.cta}
-              </button>
-              {!current && (
-                <p style={{
-                  fontSize: '12px',
-                  color: 'var(--text-dim, #6B6A65)',
-                  textAlign: 'center',
-                  marginTop: '8px',
-                  marginBottom: 0,
-                }}>
-                  7-day free trial · Cancel anytime
-                </p>
-              )}
+        {/* Promo code */}
+        <div className="promo-section">
+          <div className="promo-card">
+            <p className="promo-label">🎟️ Have a promo code?</p>
+            <div className="promo-row">
+              <input
+                type="text"
+                value={promoCode}
+                onChange={e => { setPromoCode(e.target.value); setPromoError(''); if (!e.target.value) setPromoApplied(null); }}
+                placeholder="ENTER CODE"
+                className="promo-input"
+                onKeyDown={e => e.key === 'Enter' && applyPromo()}
+              />
+              <button onClick={applyPromo} className="promo-apply-btn">Apply</button>
             </div>
-          );
-        })}
-      </div>
+            {promoApplied && <p className="promo-success">✓ {promoApplied.label}</p>}
+            {promoError   && <p className="promo-error">✗ {promoError}</p>}
+          </div>
+        </div>
 
-      {/* Promo Code Section */}
-      <div style={{
-        maxWidth: '480px',
-        margin: '0 auto',
-        padding: '0 20px 20px',
-      }}>
-        <div style={{
-          background: 'var(--bg-card, #12151F)',
-          border: '1px solid var(--border, #2A2D3A)',
-          borderRadius: '12px',
-          padding: '20px',
-        }}>
-          <p style={{
-            fontSize: '14px',
-            fontWeight: 600,
-            color: 'var(--text)',
-            marginBottom: '12px',
-          }}>
-            Have a promo code?
+        {/* Error / success banners */}
+        {error   && <div className="alert-wrap"><div className="alert-error">{error}</div></div>}
+        {success && <div className="alert-wrap"><div className="alert-success">✓ {success}</div></div>}
+
+        {/* Trust signals */}
+        <div className="trust-section">
+          <div className="trust-items">
+            {[
+              { icon: '🎁', text: '7-day free trial on all plans' },
+              { icon: '🔒', text: 'Secure payments via Paystack' },
+              { icon: '↩️', text: 'Cancel anytime, no questions' },
+              { icon: '💳', text: 'Cards, bank transfer, USSD' },
+            ].map((t, i) => (
+              <div key={i} className="trust-item">
+                <span>{t.icon}</span>{t.text}
+              </div>
+            ))}
+          </div>
+          <p className="trust-note">
+            Prices shown in USD. You&apos;ll be charged in NGN at the current exchange rate.
+            <br />
+            Questions? Email{' '}
+            <a href="mailto:hello@ascentorbi.com" className="trust-link">hello@ascentorbi.com</a>
           </p>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              type="text"
-              value={promoCode}
-              onChange={(e) => {
-                setPromoCode(e.target.value);
-                setPromoError('');
-                if (!e.target.value) setPromoApplied(null);
-              }}
-              placeholder="Enter code"
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: '1px solid var(--border, #2A2D3A)',
-                background: 'var(--bg-input, #1A1D2E)',
-                color: 'var(--text)',
-                fontSize: '14px',
-                outline: 'none',
-                textTransform: 'uppercase',
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && applyPromo()}
-            />
-            <button
-              onClick={applyPromo}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '8px',
-                border: 'none',
-                background: 'var(--accent, #F59E0B)',
-                color: '#000',
-                fontWeight: 600,
-                fontSize: '14px',
-                cursor: 'pointer',
-              }}
-            >
-              Apply
-            </button>
-          </div>
-          {promoApplied && (
-            <p style={{ fontSize: '13px', color: 'var(--success, #10B981)', marginTop: '8px' }}>
-              ✓ {promoApplied.label}
-            </p>
-          )}
-          {promoError && (
-            <p style={{ fontSize: '13px', color: 'var(--error, #EF4444)', marginTop: '8px' }}>
-              {promoError}
-            </p>
-          )}
         </div>
       </div>
-
-      {/* Messages */}
-      {error && (
-        <div style={{
-          maxWidth: '480px', margin: '0 auto 20px', padding: '0 20px',
-        }}>
-          <div style={{
-            padding: '14px 16px', borderRadius: '10px',
-            background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: '#EF4444', fontSize: '14px',
-          }}>
-            {error}
-          </div>
-        </div>
-      )}
-      {success && (
-        <div style={{
-          maxWidth: '480px', margin: '0 auto 20px', padding: '0 20px',
-        }}>
-          <div style={{
-            padding: '14px 16px', borderRadius: '10px',
-            background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)',
-            color: '#10B981', fontSize: '14px',
-          }}>
-            {success}
-          </div>
-        </div>
-      )}
-
-      {/* Trust Section */}
-      <div style={{
-        maxWidth: '680px',
-        margin: '0 auto',
-        padding: '40px 20px 60px',
-        textAlign: 'center',
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '32px',
-          flexWrap: 'wrap',
-          marginBottom: '24px',
-        }}>
-          {[
-            { icon: '🎁', text: '7-day free trial on all plans' },
-            { icon: '🔒', text: 'Secure payments via Paystack' },
-            { icon: '↩️', text: 'Cancel anytime, no questions' },
-            { icon: '💳', text: 'Cards, bank transfer, USSD' },
-          ].map((item, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              fontSize: '13px', color: 'var(--text-dim, #6B6A65)',
-            }}>
-              <span>{item.icon}</span>
-              {item.text}
-            </div>
-          ))}
-        </div>
-        <p style={{
-          fontSize: '13px',
-          color: 'var(--text-dim, #6B6A65)',
-          lineHeight: 1.6,
-        }}>
-          Prices shown in USD. You&apos;ll be charged in NGN at the current exchange rate.
-          <br />
-          Questions? Email <a href="mailto:hello@ascentorbi.com" style={{ color: 'var(--accent, #F59E0B)' }}>hello@ascentorbi.com</a>
-        </p>
-      </div>
-    </div>
+    </>
   );
 }
