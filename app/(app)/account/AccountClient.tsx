@@ -229,35 +229,41 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 
   return (
     <div className="animate-fade-up py-6 max-w-2xl mx-auto">
+
       {/* ═══ HEADER ═══ */}
       <div className="flex items-center gap-4 mb-6">
         <div className="relative group">
           {form.avatar_url ? (
             <img src={form.avatar_url} alt="Avatar"
               className="w-14 h-14 rounded-full object-cover"
-              style={{ border: '2px solid rgba(245,158,11,0.3)' }} />
+              style={{ border: '2px solid rgba(102,98,255,0.35)' }} />
           ) : (
             <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold"
-              style={{ background: 'rgba(245,158,11,0.12)', color: 'var(--accent)', border: '2px solid rgba(245,158,11,0.3)' }}>
+              style={{
+                background: 'rgba(102,98,255,0.12)',
+                color: '#6662FF',
+                border: '2px solid rgba(102,98,255,0.3)',
+                fontFamily: "'Syne', sans-serif",
+              }}>
               {initials}
             </div>
           )}
           <button onClick={() => avatarInputRef.current?.click()}
             className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: 'rgba(0,0,0,0.5)' }}>
-            <span className="text-white text-xs">{avatarUploading ? '...' : 'Edit'}</span>
+            style={{ background: 'rgba(0,0,0,0.55)' }}>
+            <span className="text-white text-xs font-semibold">{avatarUploading ? '...' : 'Edit'}</span>
           </button>
           <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
         </div>
         <div>
-          <h1 className="text-xl font-semibold" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
+          <h1 className="text-xl font-semibold" style={{ fontFamily: "'Syne', sans-serif", color: 'var(--text)', letterSpacing: '-0.02em' }}>
             Settings
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             {email}
             {isOAuth && (
               <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                style={{ background: 'rgba(59,130,246,0.09)', color: 'var(--blue)', border: '1px solid rgba(59,130,246,0.19)' }}>
+                style={{ background: 'rgba(102,98,255,0.1)', color: '#6662FF', border: '1px solid rgba(102,98,255,0.25)' }}>
                 {authProvider === 'google' ? 'Google' : authProvider === 'linkedin_oidc' ? 'LinkedIn' : authProvider}
               </span>
             )}
@@ -266,13 +272,14 @@ export default function AccountClient({ profile, email, authProvider, userId, no
       </div>
 
       {/* ═══ TABS ═══ */}
-      <div className="flex gap-1 mb-5 p-1 rounded-lg overflow-x-auto" style={{ background: 'var(--bg-input)', scrollbarWidth: 'none' }}>
+      <div className="flex gap-1 mb-5 p-1 rounded-xl overflow-x-auto" style={{ background: 'var(--bg-input)', scrollbarWidth: 'none' }}>
         {sections.map((t) => (
           <button key={t.key} onClick={() => setSection(t.key)}
-            className="flex-1 py-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap px-2"
+            className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap px-2"
             style={{
               background: section === t.key ? 'var(--bg-card)' : 'transparent',
-              color: section === t.key ? 'var(--accent)' : 'var(--text-dim)',
+              color: section === t.key ? '#6662FF' : 'var(--text-dim)',
+              boxShadow: section === t.key ? '0 1px 4px rgba(102,98,255,0.15)' : 'none',
             }}>
             {t.label}
           </button>
@@ -284,7 +291,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
       {/* ═══════════════════════════════════════════ */}
       {section === 'profile' && (
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>Personal Information</h2>
+          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Personal Information</h2>
 
           <div className="flex flex-col gap-4">
             <Field label="Full Name" required>
@@ -336,22 +343,23 @@ export default function AccountClient({ profile, email, authProvider, userId, no
                 rows={3} className="w-full px-3.5 py-2.5 text-sm rounded-xl resize-none" style={inputStyle} />
             </Field>
 
-            <div className="rounded-lg p-3" style={{ background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.12)' }}>
+            {/* Journey preview — brand purple instead of gold */}
+            <div className="rounded-lg p-3" style={{ background: 'rgba(102,98,255,0.05)', border: '1px solid rgba(102,98,255,0.15)' }}>
               <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
                 Your journey: <span style={{ color: 'var(--text-muted)' }}>{form.current_role || '...'}</span>
                 {' '}&rarr;{' '}
-                <span style={{ color: 'var(--accent)' }}>{form.goal_role || '...'}</span>
+                <span style={{ color: '#6662FF', fontWeight: 600 }}>{form.goal_role || '...'}</span>
               </p>
             </div>
 
             <div className="flex items-center gap-3">
               <button onClick={handleProfileSave}
                 disabled={saving || !form.full_name.trim() || !form.current_role.trim()}
-                className="px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
-                style={{ background: 'var(--accent)', color: '#000' }}>
+                className="px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
+                style={{ background: '#6662FF', color: '#fff', boxShadow: '0 2px 12px rgba(102,98,255,0.35)' }}>
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
-              {saved && <span className="text-xs font-semibold animate-fade-up" style={{ color: 'var(--success)' }}>Changes saved</span>}
+              {saved && <span className="text-xs font-semibold animate-fade-up" style={{ color: 'var(--success)' }}>Changes saved ✓</span>}
               {error && <span className="text-xs" style={{ color: 'var(--error)' }}>{error}</span>}
             </div>
           </div>
@@ -365,12 +373,12 @@ export default function AccountClient({ profile, email, authProvider, userId, no
         <div className="flex flex-col gap-4">
           {/* Change Password */}
           <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Change Password</h2>
+            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Change Password</h2>
 
             {isOAuth ? (
-              <div className="rounded-lg p-4 mt-3" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}>
+              <div className="rounded-lg p-4 mt-3" style={{ background: 'rgba(102,98,255,0.06)', border: '1px solid rgba(102,98,255,0.18)' }}>
                 <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  You signed in with <strong style={{ color: 'var(--blue)' }}>
+                  You signed in with <strong style={{ color: '#6662FF' }}>
                     {authProvider === 'google' ? 'Google' : authProvider === 'linkedin_oidc' ? 'LinkedIn' : authProvider}
                   </strong>. Your password is managed by your provider.
                 </p>
@@ -401,11 +409,11 @@ export default function AccountClient({ profile, email, authProvider, userId, no
                     <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-input)' }}>
                       <div className="h-full rounded-full transition-all" style={{
                         width: passwords.newPassword.length >= 12 ? '100%' : passwords.newPassword.length >= 10 ? '75%' : passwords.newPassword.length >= 8 ? '50%' : '20%',
-                        background: passwords.newPassword.length >= 12 ? 'var(--success)' : passwords.newPassword.length >= 10 ? 'var(--accent)' : passwords.newPassword.length >= 8 ? 'var(--blue)' : 'var(--error)',
+                        background: passwords.newPassword.length >= 12 ? 'var(--success)' : passwords.newPassword.length >= 10 ? '#6662FF' : passwords.newPassword.length >= 8 ? '#A6A2FF' : 'var(--error)',
                       }} />
                     </div>
-                    <span className="text-[10px]" style={{
-                      color: passwords.newPassword.length >= 12 ? 'var(--success)' : passwords.newPassword.length >= 10 ? 'var(--accent)' : passwords.newPassword.length >= 8 ? 'var(--blue)' : 'var(--error)',
+                    <span className="text-[10px] font-semibold" style={{
+                      color: passwords.newPassword.length >= 12 ? 'var(--success)' : passwords.newPassword.length >= 10 ? '#6662FF' : passwords.newPassword.length >= 8 ? '#A6A2FF' : 'var(--error)',
                     }}>
                       {passwords.newPassword.length >= 12 ? 'Strong' : passwords.newPassword.length >= 10 ? 'Good' : passwords.newPassword.length >= 8 ? 'Fair' : 'Too short'}
                     </span>
@@ -414,8 +422,8 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 
                 <button onClick={handlePasswordChange}
                   disabled={pwSaving || !passwords.current || !passwords.newPassword || !passwords.confirm}
-                  className="w-fit px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
-                  style={{ background: 'var(--accent)', color: '#000' }}>
+                  className="w-fit px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
+                  style={{ background: '#6662FF', color: '#fff', boxShadow: '0 2px 12px rgba(102,98,255,0.35)' }}>
                   {pwSaving ? 'Updating...' : 'Update Password'}
                 </button>
 
@@ -430,11 +438,11 @@ export default function AccountClient({ profile, email, authProvider, userId, no
           <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Two-Factor Authentication</h2>
+                <h2 className="text-sm font-semibold" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Two-Factor Authentication</h2>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>Add an extra layer of security to your account.</p>
               </div>
               <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: 'rgba(107,114,128,0.09)', color: 'var(--text-dim)', border: '1px solid var(--border)' }}>
+                style={{ background: 'rgba(102,98,255,0.08)', color: '#A6A2FF', border: '1px solid rgba(102,98,255,0.2)' }}>
                 Coming Soon
               </span>
             </div>
@@ -442,7 +450,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 
           {/* Active Sessions */}
           <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>Active Sessions</h2>
+            <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Active Sessions</h2>
             <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
                 style={{ background: 'rgba(16,185,129,0.09)', color: 'var(--success)' }}>
@@ -468,20 +476,20 @@ export default function AccountClient({ profile, email, authProvider, userId, no
       {/* ═══════════════════════════════════════════ */}
       {section === 'plan' && (
         <div className="flex flex-col gap-4">
-          {/* Current Plan */}
-          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--accent)' }}>
+          {/* Current Plan — brand purple border instead of gold */}
+          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid #6662FF' }}>
             <div className="flex justify-between items-start mb-3">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>Current Plan</span>
-                <h2 className="text-lg font-bold mt-0.5" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--accent)' }}>
+                <h2 className="text-lg font-bold mt-0.5" style={{ fontFamily: "'Syne', sans-serif", color: '#6662FF', letterSpacing: '-0.02em' }}>
                   {profile?.subscription_plan || 'Free'}
                 </h2>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
                 style={{
-                  background: profile?.subscription_status === 'active' ? 'rgba(16,185,129,0.09)' : 'rgba(245,158,11,0.09)',
-                  color: profile?.subscription_status === 'active' ? 'var(--success)' : 'var(--accent)',
-                  border: `1px solid ${profile?.subscription_status === 'active' ? 'rgba(16,185,129,0.19)' : 'rgba(245,158,11,0.19)'}`,
+                  background: profile?.subscription_status === 'active' ? 'rgba(16,185,129,0.09)' : 'rgba(102,98,255,0.1)',
+                  color: profile?.subscription_status === 'active' ? 'var(--success)' : '#6662FF',
+                  border: `1px solid ${profile?.subscription_status === 'active' ? 'rgba(16,185,129,0.19)' : 'rgba(102,98,255,0.25)'}`,
                 }}>
                 {profile?.subscription_status === 'active' ? 'Active' : 'Free Tier'}
               </span>
@@ -497,7 +505,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               ].map((f) => (
                 <div key={f.feature} className="flex items-center gap-2 text-xs" style={{ color: f.included ? 'var(--text-muted)' : 'var(--text-dim)' }}>
                   <span style={{ color: f.included ? 'var(--success)' : 'var(--text-dim)' }}>
-                    {f.included ? '&#10003;' : '&#x2013;'}
+                    {f.included ? '✓' : '–'}
                   </span>
                   <span style={{ opacity: f.included ? 1 : 0.5 }}>{f.feature}</span>
                 </div>
@@ -507,7 +515,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
             {profile?.subscription_status !== 'active' && (
               <a href="/checkout"
                 className="block w-full py-2.5 rounded-lg text-sm font-semibold text-center transition-all"
-                style={{ background: 'var(--accent)', color: '#000' }}>
+                style={{ background: '#6662FF', color: '#fff', boxShadow: '0 2px 16px rgba(102,98,255,0.4)' }}>
                 Upgrade to Pro
               </a>
             )}
@@ -515,7 +523,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 
           {/* Billing Info */}
           <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Billing</h2>
+            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Billing</h2>
             <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>
               {profile?.subscription_status === 'active'
                 ? 'Your subscription renews automatically.'
@@ -540,7 +548,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
       {/* ═══════════════════════════════════════════ */}
       {section === 'notifications' && (
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Email Notifications</h2>
+          <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Email Notifications</h2>
           <p className="text-xs mb-4" style={{ color: 'var(--text-dim)' }}>Choose what emails you receive from Ascentor.</p>
 
           <div className="flex flex-col gap-1">
@@ -566,11 +574,11 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 
           <div className="flex items-center gap-3 mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
             <button onClick={handleNotifSave} disabled={notifSaving}
-              className="px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
-              style={{ background: 'var(--accent)', color: '#000' }}>
+              className="px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 transition-all"
+              style={{ background: '#6662FF', color: '#fff', boxShadow: '0 2px 12px rgba(102,98,255,0.35)' }}>
               {notifSaving ? 'Saving...' : 'Save Preferences'}
             </button>
-            {notifSaved && <span className="text-xs font-semibold animate-fade-up" style={{ color: 'var(--success)' }}>Saved</span>}
+            {notifSaved && <span className="text-xs font-semibold animate-fade-up" style={{ color: 'var(--success)' }}>Saved ✓</span>}
           </div>
         </div>
       )}
@@ -582,7 +590,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
         <div className="flex flex-col gap-4">
           {/* Account Info */}
           <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>Account Details</h2>
+            <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Account Details</h2>
             <InfoRow label="Email" value={email} />
             <InfoRow label="Auth method" value={isOAuth ? (authProvider === 'google' ? 'Google' : 'LinkedIn') : 'Email & Password'} />
             <InfoRow label="Member since" value={
@@ -595,7 +603,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 
           {/* Sign Out */}
           <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Sign Out</h2>
+            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Sign Out</h2>
             <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>Sign out on this device.</p>
             <button onClick={handleSignOut} disabled={signingOut}
               className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
@@ -606,20 +614,20 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 
           {/* Export Data */}
           <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Export Your Data</h2>
+            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>Export Your Data</h2>
             <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>
               Download all your data including profile, coaching sessions, goals, and community posts as a JSON file. GDPR compliant.
             </p>
             <button onClick={handleExportData} disabled={exporting}
               className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
-              style={{ color: 'var(--blue)', border: '1px solid rgba(59,130,246,0.3)', background: 'rgba(59,130,246,0.04)' }}>
+              style={{ color: '#A6A2FF', border: '1px solid rgba(166,162,255,0.35)', background: 'rgba(102,98,255,0.06)' }}>
               {exporting ? 'Preparing download...' : 'Download My Data'}
             </button>
           </div>
 
           {/* Delete Account */}
           <div className="rounded-xl p-5" style={{ background: 'rgba(239,68,68,0.02)', border: '1px solid rgba(239,68,68,0.15)' }}>
-            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--error)' }}>Delete Account</h2>
+            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--error)', fontFamily: "'Syne', sans-serif" }}>Delete Account</h2>
             <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>
               Permanently delete your account and all associated data. This action cannot be undone.
             </p>
@@ -647,13 +655,14 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 const inputStyle: React.CSSProperties = {
   background: 'var(--bg-input)', color: 'var(--text)',
   border: '1px solid var(--border)', outline: 'none',
+  transition: 'border-color 0.15s',
 };
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
       <label className="text-[11px] font-bold mb-1.5 block uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>
-        {label} {required && <span style={{ color: 'var(--accent)' }}>*</span>}
+        {label} {required && <span style={{ color: '#6662FF' }}>*</span>}
       </label>
       {children}
     </div>
@@ -680,9 +689,13 @@ function Toggle({ label, sub, checked, onChange }: {
       </div>
       <button onClick={() => onChange(!checked)}
         className="w-10 h-5 rounded-full transition-all shrink-0 relative"
-        style={{ background: checked ? 'var(--accent)' : 'var(--bg-input)', border: `1px solid ${checked ? 'var(--accent)' : 'var(--border)'}` }}>
+        style={{
+          background: checked ? '#6662FF' : 'var(--bg-input)',
+          border: `1px solid ${checked ? '#6662FF' : 'var(--border)'}`,
+          boxShadow: checked ? '0 0 0 3px rgba(102,98,255,0.15)' : 'none',
+        }}>
         <div className="w-3.5 h-3.5 rounded-full transition-all absolute top-0.5"
-          style={{ background: checked ? '#000' : 'var(--text-dim)', left: checked ? '20px' : '3px' }} />
+          style={{ background: checked ? '#fff' : 'var(--text-dim)', left: checked ? '20px' : '3px' }} />
       </button>
     </div>
   );
