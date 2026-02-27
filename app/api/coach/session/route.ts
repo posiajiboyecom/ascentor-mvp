@@ -1,186 +1,241 @@
 import { createClient } from '@/lib/supabase/server';
-import { retrieveContext } from '@/lib/rag';
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
-import { checkUsage, recordUsage } from '@/lib/session-limits';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-const SYSTEM_PROMPT = `<role>
-You are an expert leadership coach for African professionals aged 20-40.
-Use the Socratic method. Max 150 words. Ask ONE question at a time.
-Be culturally aware of hierarchical cultures, ethnic/family networks,
-and that career decisions carry higher economic stakes.
+const COACHING_PROMPT = `<role>
+You are a warm, experienced leadership coach who works with ambitious African professionals aged 20-40. You've coached hundreds of people through career transitions, promotions, difficult conversations, and leadership challenges.
 
-You have access to a curated knowledge base covering leadership frameworks,
-career strategy, African business context, and professional development.
-When relevant knowledge is provided, weave it naturally into your coaching —
-reference frameworks by name, suggest specific techniques, and give actionable
-advice grounded in the knowledge. Don't just quote it — apply it to the user's
-specific situation.
+Your style:
+- You talk like a trusted mentor over coffee, not a textbook
+- You're direct but caring — you don't sugarcoat, but you're never cold
+- You use short, punchy sentences mixed with longer ones
+- You share relevant personal observations ("I've seen this pattern before...")
+- You name what you see ("That sounds like it's really weighing on you")
+- You challenge gently ("I wonder if there's something deeper going on here")
+- You never start with "I hear that" or "It sounds like" — find fresh ways to connect
+- You understand African workplace dynamics: hierarchical cultures, the weight of family expectations, ethnic dynamics in office politics, and that career setbacks have bigger consequences
+- You occasionally use relatable metaphors or brief stories
 
-If no relevant knowledge is provided, coach from your general expertise.
+Every response must include:
+1. A genuine human reaction to what they said (NOT a formulaic acknowledgment)
+2. ONE thought-provoking question that moves them forward
+
+If they're ready for action, suggest ONE specific thing to do this week. Keep it concrete — "Send a 3-line email to your manager asking for 15 minutes" not "Consider having a conversation about your goals."
+
+IMPORTANT RULES:
+- Maximum 120 words per response
+- Never use phrases like "I hear that", "It sounds like", "That's completely normal/valid", "I appreciate you sharing"
+- Never give generic LinkedIn-style advice
+- Ask ONE question at a time, never two
+- Don't repeat back what they just said — they already know what they said
+- If they're being vague, push them to be specific
+- If they seem stuck, change the angle entirely
 </role>
 <output_format>
-<reflection>1-2 sentences acknowledging what you hear</reflection>
+<reflection>Your genuine reaction — be real, be specific to what they said</reflection>
 <question>ONE powerful question</question>
-<action>ONE specific action for this week (only if ready, otherwise omit)</action>
+<action>ONE concrete action for this week (only include if they're ready — omit this tag entirely if not)</action>
 </output_format>`;
 
+const PROGRESS_PROMPT = `You are a goal progress evaluator. Based on the user's coaching conversation, evaluate their progress toward their 90-day goal and milestones.
+
+You must respond ONLY with a JSON object, no other text. No markdown backticks. Just raw JSON.
+
+{
+  "overall_progress": <number 0-100>,
+  "milestone_1_complete": <true/false>,
+  "milestone_2_complete": <true/false>,
+  "milestone_3_complete": <true/false>,
+  "reasoning": "<1 sentence explaining your assessment>"
+}
+
+Rules:
+- Be generous but honest. If the user MENTIONS completing something, believe them.
+- If the user says they did something related to a milestone, mark it complete.
+- Each completed milestone = roughly 33% progress.
+- If user is making progress but hasn't completed milestones, give partial credit (10-30%).
+- If no progress signals at all, return the current progress unchanged.
+- Only increase progress, never decrease it.`;
+
 export async function POST(request: Request) {
-  try {
-    // 1. Check Auth
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-    if (authError || !user) {
-      console.error("Auth Error:", authError);
-      return NextResponse.json({ error: 'Not logged in' }, { status: 401 });
-    }
+  if (!user) {
+    return NextResponse.json({ error: 'Not logged in' }, { status: 401 });
+  }
 
-    // 2. Check Usage Limits
-    const usage = await checkUsage(
-      user.id,
-      'coachingSessions',
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+  const { userInput, sessionType = 'challenge_navigation' } = await request.json();
 
-    if (!usage.allowed) {
-      return NextResponse.json({
-        error: usage.message,
-        upgradeRequired: true,
-        usage: { used: usage.used, limit: usage.limit, remaining: usage.remaining },
-      }, { status: 429 });
-    }
+  // 1. Load user context
+  const [profileRes, goalRes, commitmentsRes] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('user_goals').select('*').eq('user_id', user.id)
+      .order('created_at', { ascending: false }).limit(1).single(),
+    supabase.from('user_commitments').select('commitment_text, due_date')
+      .eq('user_id', user.id).eq('completed', false),
+  ]);
 
-    // 3. Parse Input
-    const body = await request.json();
-    const userInput = body.userInput || body.message;
-    const sessionType = body.sessionType || 'challenge_navigation';
+  const profile = profileRes.data;
+  const goal = goalRes.data;
 
-    if (!userInput) {
-      return NextResponse.json({ error: "Message cannot be empty" }, { status: 400 });
-    }
-
-    // 4. Load User Context
-    const [profileRes, goalRes, sessionsRes, commitmentsRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-      supabase.from('user_goals').select('*').eq('user_id', user.id)
-        .order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      supabase.from('coaching_sessions').select('user_input, ai_response')
-        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
-      supabase.from('user_commitments').select('commitment_text, due_date')
-        .eq('user_id', user.id).eq('completed', false),
-    ]);
-
-    const profile = profileRes.data;
-    const goal = goalRes.data;
-
-    const recentHistory = sessionsRes.data?.map((s: any) =>
-      `User: ${s.user_input}\nCoach: ${s.ai_response?.question || ''}`
-    ).join('\n---\n') || 'None';
-
-    // 5. RAG Retrieval — search knowledge base
-    let knowledgeBlock = '';
-    try {
-      const { contextBlock } = await retrieveContext(userInput, {
-        topK: 10,
-        topN: 3,
-      });
-      knowledgeBlock = contextBlock;
-    } catch (ragError) {
-      console.error('RAG retrieval failed (continuing without):', ragError);
-      // Coach still works without RAG — just less informed
-    }
-
-    // 6. Build Prompt with RAG context
-    const context = `
+  // 2. Build context for coaching
+  const context = `
 <user_profile>
 Name: ${profile?.full_name || 'Unknown'}
 Role: ${profile?.current_role || 'Unknown'}
 Industry: ${profile?.industry || 'Unknown'}
-Goal: ${profile?.goal_role || 'Unknown'}
+Goal Role: ${profile?.goal_role || 'Unknown'}
 Challenge: ${profile?.biggest_challenge || 'Not specified'}
 </user_profile>
-<goal>${goal?.goal_text || 'Not set'}</goal>
+<goal>
+90-Day Goal: ${goal?.goal_text || 'Not set'}
+Milestone 1: ${goal?.milestone_1 || 'Not set'}
+Milestone 2: ${goal?.milestone_2 || 'Not set'}
+Milestone 3: ${goal?.milestone_3 || 'Not set'}
+Current Progress: ${goal?.progress || 0}%
+</goal>
 <pending_commitments>
-${commitmentsRes.data?.map((c: any) => `- ${c.commitment_text}`).join('\n') || 'None'}
+${commitmentsRes.data?.map(c => `- ${c.commitment_text}`).join('\n') || 'None'}
 </pending_commitments>
-<recent_history>${recentHistory}</recent_history>
-${knowledgeBlock ? `<relevant_knowledge>\n${knowledgeBlock}\n</relevant_knowledge>` : ''}
+<session_type>${sessionType}</session_type>
 <user_message>${userInput}</user_message>`;
 
-    // 7. Call Claude
+  // 3. Call Claude for coaching response
+  let parsed = { reflection: null as string | null, question: null as string | null, action: null as string | null };
+  let tokenUsage = { input_tokens: 0, output_tokens: 0, cost: 0 };
+
+  try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-20250514', // Using your requested model
       max_tokens: 500,
-      system: SYSTEM_PROMPT,
+      system: COACHING_PROMPT,
       messages: [{ role: 'user', content: context }],
     });
 
-    // @ts-ignore
     const aiText = response.content[0].type === 'text' ? response.content[0].text : '';
 
-    // 8. Parse Response
-    const parsed = {
-      reflection: aiText.match(/<reflection>([\s\S]*?)<\/reflection>/)?.[1]?.trim() || "I hear you.",
-      question: aiText.match(/<question>([\s\S]*?)<\/question>/)?.[1]?.trim() || aiText,
+    parsed = {
+      reflection: aiText.match(/<reflection>([\s\S]*?)<\/reflection>/)?.[1]?.trim() || null,
+      question: aiText.match(/<question>([\s\S]*?)<\/question>/)?.[1]?.trim() || null,
       action: aiText.match(/<action>([\s\S]*?)<\/action>/)?.[1]?.trim() || null,
     };
 
-    const cost = (response.usage.input_tokens / 1_000_000) * 3 + (response.usage.output_tokens / 1_000_000) * 15;
-
-    // 9. Save to Database
-    const { data: session, error: dbError } = await supabase
-      .from('coaching_sessions')
-      .insert({
-        user_id: user.id,
-        session_type: sessionType,
-        user_input: userInput,
-        ai_response: parsed,
-        token_usage: {
-          cost,
-          rag_used: !!knowledgeBlock,
-          rag_chunks: knowledgeBlock ? 3 : 0,
-        },
-      })
-      .select()
-      .single();
-
-    if (dbError) {
-      console.error("DB Save Error:", dbError);
+    if (response.usage) {
+      tokenUsage = {
+        input_tokens: response.usage.input_tokens,
+        output_tokens: response.usage.output_tokens,
+        cost: (response.usage.input_tokens / 1_000_000) * 3 +
+              (response.usage.output_tokens / 1_000_000) * 15,
+      };
     }
-
-    // 10. Handle Commitments
-    if (parsed.action && session) {
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 7);
-      await supabase.from('user_commitments').insert({
-        user_id: user.id,
-        session_id: session.id,
-        commitment_text: parsed.action,
-        due_date: dueDate.toISOString(),
-      });
-    }
-
-    // 11. Record Usage (after successful response)
-    await recordUsage(
-      user.id,
-      'coachingSessions',
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    return NextResponse.json({
-      sessionId: session?.id,
-      response: parsed.question,
-      full_response: parsed,
-      usage: { used: usage.used + 1, limit: usage.limit, remaining: usage.remaining - 1 },
-    });
-
-  } catch (error: any) {
-    console.error("API Crash Log:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (e) {
+    console.error('Coaching API error:', e);
+    parsed = {
+      reflection: "I'm here and ready to help you navigate your leadership journey.",
+      question: "What's the most pressing challenge you're facing at work right now?",
+      action: null,
+    };
   }
+
+  // 4. Save the coaching session
+  const { data: session } = await supabase
+    .from('coaching_sessions')
+    .insert({
+      user_id: user.id,
+      session_type: sessionType,
+      user_input: userInput,
+      ai_response: parsed,
+      token_usage: tokenUsage,
+    })
+    .select()
+    .single();
+
+  // 5. Auto-create commitment from action
+  if (parsed.action && session) {
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 7);
+
+    await supabase.from('user_commitments').insert({
+      user_id: user.id,
+      session_id: session.id,
+      commitment_text: parsed.action,
+      due_date: dueDate.toISOString().split('T')[0],
+    });
+  }
+
+  // 6. Evaluate goal progress using AI
+  let progressUpdate = null;
+  if (goal) {
+    try {
+      const progressContext = `
+User's 90-day goal: ${goal.goal_text}
+Milestone 1: ${goal.milestone_1 || 'Not set'} (currently ${goal.milestone_1_complete ? 'COMPLETE' : 'incomplete'})
+Milestone 2: ${goal.milestone_2 || 'Not set'} (currently ${goal.milestone_2_complete ? 'COMPLETE' : 'incomplete'})
+Milestone 3: ${goal.milestone_3 || 'Not set'} (currently ${goal.milestone_3_complete ? 'COMPLETE' : 'incomplete'})
+Current overall progress: ${goal.progress || 0}%
+
+The user just said this in their coaching session:
+"${userInput}"
+
+The coach reflected:
+"${parsed.reflection || ''}"
+
+Evaluate: has the user made any progress on their goal or milestones based on what they said?`;
+
+      const progressResponse = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514', // Using your requested model
+        max_tokens: 300,
+        system: PROGRESS_PROMPT,
+        messages: [{ role: 'user', content: progressContext }],
+      });
+
+      const progressText = progressResponse.content[0].type === 'text'
+        ? progressResponse.content[0].text : '';
+
+      // Parse the JSON response
+      const cleaned = progressText.replace(/```json|```/g, '').trim();
+      progressUpdate = JSON.parse(cleaned);
+
+      // Only update if progress increased
+      const newProgress = Math.max(goal.progress || 0, progressUpdate.overall_progress || 0);
+
+      const updateData: any = { progress: newProgress };
+
+      // Update milestone completion status
+      if (progressUpdate.milestone_1_complete && !goal.milestone_1_complete) {
+        updateData.milestone_1_complete = true;
+      }
+      if (progressUpdate.milestone_2_complete && !goal.milestone_2_complete) {
+        updateData.milestone_2_complete = true;
+      }
+      if (progressUpdate.milestone_3_complete && !goal.milestone_3_complete) {
+        updateData.milestone_3_complete = true;
+      }
+
+      // Only update DB if something changed
+      if (newProgress > (goal.progress || 0) ||
+          updateData.milestone_1_complete ||
+          updateData.milestone_2_complete ||
+          updateData.milestone_3_complete) {
+        await supabase
+          .from('user_goals')
+          .update(updateData)
+          .eq('id', goal.id);
+      }
+    } catch (e) {
+      console.error('Progress evaluation error:', e);
+      // Non-critical — coaching still works without progress tracking
+    }
+  }
+
+  // 7. Return response
+  return NextResponse.json({
+    sessionId: session?.id,
+    response: parsed,
+    usage: { cost: tokenUsage.cost.toFixed(4) },
+    progressUpdate,
+  });
 }
