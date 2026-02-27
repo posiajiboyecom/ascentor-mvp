@@ -56,12 +56,12 @@ const AscentorMark = ({ size = 20 }: { size?: number }) => (
     aria-hidden="true"
   >
     <path
-      fill="#E8A020"
+      fill="#fff"
       d="M105.19,71.38H57l-2.73,6.11h53.63ZM83.83,23.62H78.37L58.82,67.39h44.59Zm-2.7,16.32,7.93,18.63H73.19Z"
     />
-    <polygon fill="#E8A020" points="74.64 23.64 55.14 67.39 53.36 71.38 50.62 77.54 44.92 77.54 47.66 71.38 49.44 67.39 68.95 23.64 74.64 23.64"/>
-    <polygon fill="#E8A020" points="65.42 23.64 41.39 77.54 35.69 77.54 59.72 23.64 65.42 23.64"/>
-    <polygon fill="#E8A020" points="56.12 23.64 36.61 67.39 34.83 71.38 32.09 77.54 26.39 77.54 29.14 71.38 30.92 67.39 50.42 23.64 56.12 23.64"/>
+    <polygon fill="#fff" points="74.64 23.64 55.14 67.39 53.36 71.38 50.62 77.54 44.92 77.54 47.66 71.38 49.44 67.39 68.95 23.64 74.64 23.64"/>
+    <polygon fill="#fff" points="65.42 23.64 41.39 77.54 35.69 77.54 59.72 23.64 65.42 23.64"/>
+    <polygon fill="#fff" points="56.12 23.64 36.61 67.39 34.83 71.38 32.09 77.54 26.39 77.54 29.14 71.38 30.92 67.39 50.42 23.64 56.12 23.64"/>
   </svg>
 );
 
@@ -128,8 +128,8 @@ export default function CoachPage() {
     <div style={{
       width: '34px', height: '34px', borderRadius: '50%',
       flexShrink: 0,
-      background: 'linear-gradient(135deg, rgba(232,160,32,0.15), rgba(232,160,32,0.28))',
-      border: '1.5px solid rgba(232,160,32,0.40)',
+      background: 'linear-gradient(135deg, rgba(247,246,243,0.10), rgba(247,246,243,0.20))',
+      border: '1.5px solid rgba(247,246,243,0.25)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <AscentorMark size={18} />
@@ -184,8 +184,8 @@ export default function CoachPage() {
           <div className="flex flex-col items-center justify-center py-12 gap-4">
             <div style={{
               width: '64px', height: '64px', borderRadius: '50%',
-              background: 'linear-gradient(135deg, rgba(232,160,32,0.10), rgba(232,160,32,0.22))',
-              border: '1.5px solid rgba(232,160,32,0.30)',
+              background: 'linear-gradient(135deg, rgba(247,246,243,0.10), rgba(247,246,243,0.20))',
+              border: '1.5px solid rgba(247,246,243,0.25)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <AscentorMark size={32} />
