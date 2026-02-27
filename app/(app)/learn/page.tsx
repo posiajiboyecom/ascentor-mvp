@@ -122,7 +122,7 @@ export default function LearnPage() {
         <button onClick={() => setActiveCourse(null)} className="flex items-center gap-2 mb-4 text-sm" style={{ color: 'var(--text-muted)' }}>
           ← Back to courses
         </button>
-        <h2 className="text-xl font-semibold mb-1" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>{course.title}</h2>
+        <h2 className="text-xl font-semibold mb-1" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>{course.title}</h2>
         <p className="text-xs mb-4" style={{ color: 'var(--text-dim)' }}>{course.category} · {course.lessons} lessons · {course.duration}</p>
         <div className="rounded-xl overflow-hidden mb-4" style={{ border: '1px solid var(--border)' }}>
           <div className="relative" style={{ paddingBottom: '56.25%' }}>
@@ -151,7 +151,7 @@ export default function LearnPage() {
 
   return (
     <div className="animate-fade-up py-6">
-      <h2 className="text-2xl font-semibold mb-1" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>Learn</h2>
+      <h2 className="text-2xl font-semibold mb-1" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>Learn</h2>
       <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>Micro-courses from Africa's top leaders</p>
       <div className="flex gap-1.5 overflow-x-auto mb-5 pb-1" style={{ scrollbarWidth: 'none' }}>
         {categories.map((c) => (

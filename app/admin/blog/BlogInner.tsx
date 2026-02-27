@@ -108,7 +108,7 @@ export default function AdminBlogPageInner() {
     <div className="animate-fade-up">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-semibold" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>Blog Posts</h1>
+          <h1 className="text-xl md:text-2xl font-semibold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>Blog Posts</h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{posts.filter(p => p.is_published).length} published · {posts.filter(p => !p.is_published).length} drafts</p>
         </div>
         <button onClick={openCreate} className="px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap" style={{ background: 'var(--accent)', color: '#000' }}>+ New Post</button>

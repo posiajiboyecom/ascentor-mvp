@@ -28,7 +28,7 @@ const TIERS = [
     name: 'Pro',
     price: 29,
     desc: 'For mid-level professionals and first-time managers.',
-    color: '#F59E0B',
+    color: '#E8A020',
     features: [
       'AI coaching — unlimited sessions',
       '2 peer cohorts',
@@ -67,7 +67,7 @@ const TIERS = [
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen" style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'Syne', system-ui, sans-serif" }}>
 
       {/* Nav */}
       <nav className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(250,250,249,0.88)', borderBottom: '1px solid #E5E5E4' }}>
@@ -81,7 +81,7 @@ export default function PricingPage() {
             </Link>
           <div className="flex items-center gap-4">
             <Link href="/login" className="text-sm hidden md:block" style={{ color: '#6B7280' }}>Log In</Link>
-            <Link href="/signup" className="px-5 py-2 rounded-lg text-sm font-semibold" style={{ background: '#F59E0B', color: '#000' }}>
+            <Link href="/signup" className="px-5 py-2 rounded-lg text-sm font-semibold" style={{ background: '#E8A020', color: '#000' }}>
               Start Free Trial
             </Link>
           </div>
@@ -91,7 +91,7 @@ export default function PricingPage() {
       {/* Header */}
       <section className="pt-16 pb-6 text-center px-5">
         <h1 className="text-4xl md:text-5xl font-semibold mb-3"
-          style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
           Invest in your growth
         </h1>
         <p className="text-base max-w-xl mx-auto" style={{ color: '#6B7280' }}>
@@ -116,12 +116,12 @@ export default function PricingPage() {
                 </div>
               )}
               <div className="mb-5">
-                <h3 className="text-lg font-semibold mb-1" style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+                <h3 className="text-lg font-semibold mb-1" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
                   {t.name}
                 </h3>
                 <p className="text-xs mb-3" style={{ color: '#9CA3AF' }}>{t.desc}</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: t.color }}>
+                  <span className="text-4xl font-bold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: t.color }}>
                     ${t.price}
                   </span>
                   <span className="text-sm" style={{ color: '#9CA3AF' }}>/month</span>
@@ -160,13 +160,13 @@ export default function PricingPage() {
       {/* Enterprise */}
       <section className="py-12 px-5">
         <div className="max-w-3xl mx-auto rounded-2xl p-8 text-center"
-          style={{ background: '#0A0E17' }}>
+          style={{ background: '#0C0B08' }}>
           <div className="inline-block px-3 py-1 rounded-full text-[10px] font-bold mb-4"
-            style={{ background: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.2)' }}>
+            style={{ background: 'rgba(245,158,11,0.1)', color: '#E8A020', border: '1px solid rgba(245,158,11,0.2)' }}>
             FOR ORGANIZATIONS
           </div>
           <h3 className="text-2xl md:text-3xl font-semibold mb-3"
-            style={{ fontFamily: "'Playfair Display', serif", color: '#F3F4F6' }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#F3F4F6' }}>
             Ascentor for Teams
           </h3>
           <p className="text-sm mb-6 max-w-lg mx-auto" style={{ color: '#9CA3AF', lineHeight: 1.7 }}>
@@ -175,7 +175,7 @@ export default function PricingPage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a href="mailto:asamuel@ascentorbi.com"
               className="px-8 py-3.5 rounded-xl text-sm font-semibold"
-              style={{ background: '#F59E0B', color: '#000' }}>
+              style={{ background: '#E8A020', color: '#000' }}>
               Contact Sales
             </a>
             <a href="https://zbooking.us/kA4x3"
@@ -191,7 +191,7 @@ export default function PricingPage() {
       <section className="py-12 px-5">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-semibold text-center mb-8"
-            style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
             Frequently asked questions
           </h2>
           {[
@@ -204,7 +204,7 @@ export default function PricingPage() {
             <details key={f.q} className="group mb-3 rounded-xl overflow-hidden"
               style={{ background: '#fff', border: '1px solid #E5E5E4' }}>
               <summary className="px-5 py-4 cursor-pointer text-sm font-semibold flex justify-between items-center"
-                style={{ color: '#0A0E17' }}>
+                style={{ color: '#0C0B08' }}>
                 {f.q}
                 <span className="text-xs group-open:rotate-180 transition-transform" style={{ color: '#9CA3AF' }}>▼</span>
               </summary>

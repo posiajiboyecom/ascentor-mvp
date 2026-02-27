@@ -257,7 +257,7 @@ export default function CohortFeedPage() {
           </div>
           <div>
             <h2 className="text-xl font-semibold"
-              style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
+              style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
               {cohort?.name}
             </h2>
             <p className="text-xs" style={{ color: 'var(--text-dim)' }}>

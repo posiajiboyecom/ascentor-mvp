@@ -60,7 +60,7 @@ function ModalOverlay({ config }: { config: ModalConfig }) {
     };
     switch (variant) {
       case 'primary':
-        return { ...base, background: 'var(--accent, #F59E0B)', color: '#000' };
+        return { ...base, background: 'var(--accent, #E8A020)', color: '#000' };
       case 'danger':
         return { ...base, background: 'var(--error, #EF4444)', color: '#fff' };
       default:

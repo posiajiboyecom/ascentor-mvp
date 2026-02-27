@@ -34,7 +34,7 @@ export default function CommunityPage() {
       <div className="flex justify-between items-center mb-5">
         <div>
           <h2 className="text-2xl font-semibold mb-0.5"
-            style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
             Your Cohort
           </h2>
           <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>

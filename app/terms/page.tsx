@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#FAFAF9', fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen" style={{ background: '#FAFAF9', fontFamily: "'Syne', system-ui, sans-serif" }}>
 
       <nav className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(250,250,249,0.88)', borderBottom: '1px solid #E5E5E4' }}>
         <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
@@ -25,7 +25,7 @@ export default function TermsPage() {
 
       <div className="max-w-3xl mx-auto px-5 py-12">
         <h1 className="text-3xl md:text-4xl font-semibold mb-2"
-          style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
           Terms & Conditions
         </h1>
         <p className="text-sm mb-8" style={{ color: '#9CA3AF' }}>
@@ -49,7 +49,7 @@ export default function TermsPage() {
           </Section>
 
           <Section title="4. Subscription Plans & Payments">
-            <p>We offer tiered subscription plans (Starter, Pro, Premium) as described on our <Link href="/pricing" style={{ color: '#F59E0B', textDecoration: 'underline' }}>Pricing page</Link>. All prices are in US Dollars.</p>
+            <p>We offer tiered subscription plans (Starter, Pro, Premium) as described on our <Link href="/pricing" style={{ color: '#E8A020', textDecoration: 'underline' }}>Pricing page</Link>. All prices are in US Dollars.</p>
             <p className="mt-2"><strong>Free Trial:</strong> New users receive a 7-day free trial. No payment is required to start the trial. You will not be charged until the trial period ends and you choose to continue.</p>
             <p className="mt-2"><strong>Billing:</strong> Subscriptions are billed monthly through our payment processors (Paystack and Selar). By subscribing, you authorize recurring charges.</p>
             <p className="mt-2"><strong>Refund Policy:</strong> We offer a full refund within 30 days of your first payment. After 30 days, payments are non-refundable. You may cancel at any time, and your access continues until the end of your current billing period.</p>
@@ -77,7 +77,7 @@ export default function TermsPage() {
           <Section title="7. Privacy & Data Protection">
             <p>We are committed to protecting your personal data in compliance with applicable data protection laws, including the <strong>Nigeria Data Protection Regulation (NDPR 2019)</strong>, the <strong>Nigeria Data Protection Act (NDPA 2023)</strong>, and where applicable, the <strong>EU General Data Protection Regulation (GDPR)</strong>.</p>
 
-            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0A0E17' }}>7.1 Data We Collect</h4>
+            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0C0B08' }}>7.1 Data We Collect</h4>
             <ul className="flex flex-col gap-1.5 ml-4">
               <li>• <strong>Account data:</strong> Name, email, professional role, industry, career goals (provided during onboarding)</li>
               <li>• <strong>Coaching data:</strong> Messages sent to the AI coach and AI responses</li>
@@ -86,7 +86,7 @@ export default function TermsPage() {
               <li>• <strong>Payment data:</strong> Processed by Paystack/Selar — we do not store card numbers</li>
             </ul>
 
-            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0A0E17' }}>7.2 How We Use Your Data</h4>
+            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0C0B08' }}>7.2 How We Use Your Data</h4>
             <ul className="flex flex-col gap-1.5 ml-4">
               <li>• To provide personalized AI coaching based on your profile and goals</li>
               <li>• To match you with relevant peer cohorts</li>
@@ -95,7 +95,7 @@ export default function TermsPage() {
               <li>• To comply with legal obligations</li>
             </ul>
 
-            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0A0E17' }}>7.3 Data Storage & Security</h4>
+            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0C0B08' }}>7.3 Data Storage & Security</h4>
             <p>Your data is stored on Supabase infrastructure (hosted on AWS) with the following safeguards:</p>
             <ul className="flex flex-col gap-1.5 ml-4 mt-1.5">
               <li>• Encryption in transit (TLS 1.2+) and at rest (AES-256)</li>
@@ -104,10 +104,10 @@ export default function TermsPage() {
               <li>• Service-role keys are server-side only and never exposed to clients</li>
             </ul>
 
-            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0A0E17' }}>7.4 AI & Your Data</h4>
+            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0C0B08' }}>7.4 AI & Your Data</h4>
             <p>Conversations with our AI coach are processed through Anthropic's Claude API. Your coaching messages are sent to Anthropic for response generation. We do not use your coaching data to train third-party AI models. Anthropic's data retention policies apply to data processed through their API.</p>
 
-            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0A0E17' }}>7.5 Your Rights</h4>
+            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0C0B08' }}>7.5 Your Rights</h4>
             <p>You have the right to:</p>
             <ul className="flex flex-col gap-1.5 ml-4 mt-1.5">
               <li>• <strong>Access</strong> your personal data at any time through your account</li>
@@ -118,10 +118,10 @@ export default function TermsPage() {
               <li>• <strong>Lodge a complaint</strong> with the Nigeria Data Protection Commission (NDPC) or relevant supervisory authority</li>
             </ul>
 
-            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0A0E17' }}>7.6 Data Retention</h4>
+            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0C0B08' }}>7.6 Data Retention</h4>
             <p>We retain your data for as long as your account is active. Upon account deletion, we remove your personal data within 30 days, except where retention is required by law. Anonymized usage statistics may be retained indefinitely.</p>
 
-            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0A0E17' }}>7.7 Third-Party Services</h4>
+            <h4 className="font-semibold mt-4 mb-1" style={{ color: '#0C0B08' }}>7.7 Third-Party Services</h4>
             <p>We use the following third-party services that may process your data:</p>
             <ul className="flex flex-col gap-1.5 ml-4 mt-1.5">
               <li>• <strong>Supabase</strong> (database & authentication)</li>
@@ -169,7 +169,7 @@ export default function TermsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold mb-3" style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+      <h2 className="text-lg font-semibold mb-3" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
         {title}
       </h2>
       <div className="text-sm" style={{ color: '#374151', lineHeight: 1.8 }}>

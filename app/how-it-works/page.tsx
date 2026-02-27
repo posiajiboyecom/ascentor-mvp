@@ -15,7 +15,7 @@ const STEPS = [
     desc:   'Sign up in under 2 minutes. Tell us your life stage, career goal, and biggest challenge. No lengthy forms — just the essentials your AI mentor needs to get started.',
     detail: 'Your 90-day goal becomes the anchor for every session. The AI mentor refers back to it constantly, keeping you accountable even when life gets in the way.',
     icon:   '🎯',
-    color:  '#F59E0B',
+    color:  '#E8A020',
     tags:   ['2-min setup', 'Goal setting', 'Instant access'],
   },
   {
@@ -42,7 +42,7 @@ const STEPS = [
     desc:   'When you need a real conversation, book a 1-on-1 session with a verified mentor who has walked the exact path you\'re on. Not a coach with a certificate — someone who has done it.',
     detail: "Our mentors are vetted African professionals — CTOs, founders, directors, GPs. They've navigated the same systems, the same cultures, and the same barriers you're facing right now.",
     icon:   '🎓',
-    color:  '#F59E0B',
+    color:  '#E8A020',
     tags:   ['Verified mentors', 'African professionals', '1-on-1 sessions'],
   },
   {
@@ -74,7 +74,7 @@ const PILLARS = [
   {
     emoji: '🎓',
     title: 'Human Mentors',
-    color: '#F59E0B',
+    color: '#E8A020',
     bg:    'rgba(245,158,11,0.06)',
     border:'rgba(245,158,11,0.22)',
     points: [
@@ -150,14 +150,14 @@ function Nav() {
           <Link href="/who-its-for" className="text-sm hidden md:block"
             style={{ color: '#6B7280' }}>Who It&apos;s For</Link>
           <Link href="/how-it-works" className="text-sm hidden md:block font-medium"
-            style={{ color: '#F59E0B' }}>How It Works</Link>
+            style={{ color: '#E8A020' }}>How It Works</Link>
           <Link href="/pricing" className="text-sm hidden md:block"
             style={{ color: '#6B7280' }}>Pricing</Link>
           <Link href="/login" className="text-sm hidden md:block"
             style={{ color: '#6B7280' }}>Log In</Link>
           <Link href="/signup"
             className="px-5 py-2 rounded-lg text-sm font-semibold"
-            style={{ background: '#F59E0B', color: '#000' }}>
+            style={{ background: '#E8A020', color: '#000' }}>
             Start Free Trial
           </Link>
         </div>
@@ -170,7 +170,7 @@ function Nav() {
 export default function HowItWorksPage() {
   return (
     <div className="min-h-screen"
-      style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'DM Sans', sans-serif" }}>
+      style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'Syne', system-ui, sans-serif" }}>
       <Nav />
 
       {/* ── Hero ── */}
@@ -180,7 +180,7 @@ export default function HowItWorksPage() {
           THE SYSTEM
         </div>
         <h1 className="text-4xl md:text-5xl font-semibold mb-4"
-          style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17', lineHeight: 1.1 }}>
+          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08', lineHeight: 1.1 }}>
           Three forces working<br className="hidden md:block" /> together for your growth.
         </h1>
         <p className="text-base max-w-2xl mx-auto" style={{ color: '#6B7280', lineHeight: 1.75 }}>
@@ -200,7 +200,7 @@ export default function HowItWorksPage() {
                 {p.emoji}
               </div>
               <h3 className="text-lg font-semibold mb-4"
-                style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+                style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
                 {p.title}
               </h3>
               <div className="flex flex-col gap-2.5 flex-1">
@@ -223,7 +223,7 @@ export default function HowItWorksPage() {
             <p className="text-[10px] font-bold tracking-widest uppercase mb-3"
               style={{ color: '#9CA3AF' }}>YOUR JOURNEY</p>
             <h2 className="text-3xl font-semibold"
-              style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+              style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
               From sign-up to breakthrough
             </h2>
           </div>
@@ -234,7 +234,7 @@ export default function HowItWorksPage() {
                 {/* Step indicator */}
                 <div className="flex flex-col items-center flex-shrink-0">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
-                    style={{ background: `rgba(${s.color === '#F59E0B' ? '245,158,11' : s.color === '#14B8A6' ? '20,184,166' : '139,92,246'},0.1)`, border: `1.5px solid ${s.color}30` }}>
+                    style={{ background: `rgba(${s.color === '#E8A020' ? '245,158,11' : s.color === '#14B8A6' ? '20,184,166' : '139,92,246'},0.1)`, border: `1.5px solid ${s.color}30` }}>
                     {s.icon}
                   </div>
                   {i < STEPS.length - 1 && (
@@ -248,7 +248,7 @@ export default function HowItWorksPage() {
                     <span className="text-[10px] font-bold tracking-widest"
                       style={{ color: s.color }}>{s.number}</span>
                     <h3 className="text-lg font-semibold"
-                      style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+                      style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
                       {s.title}
                     </h3>
                   </div>
@@ -257,7 +257,7 @@ export default function HowItWorksPage() {
                   <div className="flex flex-wrap gap-2">
                     {s.tags.map(tag => (
                       <span key={tag} className="px-3 py-1 rounded-full text-[11px] font-semibold"
-                        style={{ background: `rgba(${s.color === '#F59E0B' ? '245,158,11' : s.color === '#14B8A6' ? '20,184,166' : '139,92,246'},0.08)`,
+                        style={{ background: `rgba(${s.color === '#E8A020' ? '245,158,11' : s.color === '#14B8A6' ? '20,184,166' : '139,92,246'},0.08)`,
                           color: s.color, border: `1px solid ${s.color}25` }}>
                         {tag}
                       </span>
@@ -277,7 +277,7 @@ export default function HowItWorksPage() {
             <p className="text-[10px] font-bold tracking-widest uppercase mb-3"
               style={{ color: '#9CA3AF' }}>THE HONEST COMPARISON</p>
             <h2 className="text-3xl font-semibold"
-              style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+              style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
               Ascentor vs. traditional coaching
             </h2>
           </div>
@@ -286,11 +286,11 @@ export default function HowItWorksPage() {
             style={{ border: '1px solid #E5E5E4', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
             {/* Header */}
             <div className="grid grid-cols-3 px-6 py-3"
-              style={{ background: '#0A0E17' }}>
+              style={{ background: '#0C0B08' }}>
               <span className="text-xs font-bold uppercase tracking-widest"
                 style={{ color: '#6B7280' }}>Feature</span>
               <span className="text-xs font-bold uppercase tracking-widest text-center"
-                style={{ color: '#F59E0B' }}>Ascentor</span>
+                style={{ color: '#E8A020' }}>Ascentor</span>
               <span className="text-xs font-bold uppercase tracking-widest text-center"
                 style={{ color: '#6B7280' }}>Traditional Coach</span>
             </div>
@@ -300,7 +300,7 @@ export default function HowItWorksPage() {
                 className="grid grid-cols-3 px-6 py-4 items-center"
                 style={{ background: i % 2 === 0 ? '#fff' : '#FAFAF9', borderTop: '1px solid #E5E5E4' }}>
                 <span className="text-sm font-medium" style={{ color: '#374151' }}>{row.label}</span>
-                <span className="text-sm font-semibold text-center" style={{ color: '#F59E0B' }}>
+                <span className="text-sm font-semibold text-center" style={{ color: '#E8A020' }}>
                   {row.ascentor}
                 </span>
                 <span className="text-sm text-center" style={{ color: '#9CA3AF' }}>
@@ -316,14 +316,14 @@ export default function HowItWorksPage() {
       <section className="py-12 px-5" style={{ background: '#fff' }}>
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-semibold text-center mb-8"
-            style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
             Frequently asked questions
           </h2>
           {FAQS.map(f => (
             <details key={f.q} className="group mb-3 rounded-xl overflow-hidden"
               style={{ background: '#FAFAF9', border: '1px solid #E5E5E4' }}>
               <summary className="px-5 py-4 cursor-pointer text-sm font-semibold flex justify-between items-center"
-                style={{ color: '#0A0E17' }}>
+                style={{ color: '#0C0B08' }}>
                 {f.q}
                 <span className="text-xs group-open:rotate-180 transition-transform"
                   style={{ color: '#9CA3AF' }}>▼</span>
@@ -339,13 +339,13 @@ export default function HowItWorksPage() {
       {/* ── Bottom CTA ── */}
       <section className="py-16 px-5">
         <div className="max-w-3xl mx-auto rounded-2xl p-10 text-center"
-          style={{ background: '#0A0E17' }}>
+          style={{ background: '#0C0B08' }}>
           <div className="inline-block px-3 py-1 rounded-full text-[10px] font-bold mb-5"
-            style={{ background: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.2)' }}>
+            style={{ background: 'rgba(245,158,11,0.1)', color: '#E8A020', border: '1px solid rgba(245,158,11,0.2)' }}>
             READY TO START?
           </div>
           <h2 className="text-3xl md:text-4xl font-semibold mb-4"
-            style={{ fontFamily: "'Playfair Display', serif", color: '#F3F4F6', lineHeight: 1.2 }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#F3F4F6', lineHeight: 1.2 }}>
             Your first session is free.<br />Your first breakthrough won&apos;t be far behind.
           </h2>
           <p className="text-sm mb-8 max-w-lg mx-auto" style={{ color: '#9CA3AF', lineHeight: 1.75 }}>
@@ -355,7 +355,7 @@ export default function HowItWorksPage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/signup"
               className="px-8 py-3.5 rounded-xl text-sm font-semibold transition-transform hover:scale-105"
-              style={{ background: '#F59E0B', color: '#000' }}>
+              style={{ background: '#E8A020', color: '#000' }}>
               Start Free Trial →
             </Link>
             <Link href="/who-its-for"

@@ -25,7 +25,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#0A0E17',
+  themeColor: '#0C0B08', // Ascentor Dark — Brand Book v1.0
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

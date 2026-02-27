@@ -108,7 +108,7 @@ export default function PWAInstallPrompt() {
           </div>
           <button onClick={handleDismiss}
             className="w-full mt-4 py-2.5 rounded-lg text-sm font-semibold"
-            style={{ background: '#F59E0B', color: '#000' }}>
+            style={{ background: '#E8A020', color: '#000' }}>
             Got it
           </button>
         </div>
@@ -146,7 +146,7 @@ export default function PWAInstallPrompt() {
           </button>
           <button onClick={handleInstall}
             className="px-3.5 py-1.5 rounded-lg text-xs font-semibold"
-            style={{ background: '#F59E0B', color: '#000' }}>
+            style={{ background: '#E8A020', color: '#000' }}>
             Install
           </button>
         </div>
@@ -159,7 +159,7 @@ function Step({ num, text }: { num: number; text: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3">
       <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
-        style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>
+        style={{ background: 'rgba(245,158,11,0.12)', color: '#E8A020' }}>
         {num}
       </div>
       <p className="text-sm pt-0.5" style={{ color: '#C5C4BF' }}>{text}</p>

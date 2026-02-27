@@ -167,7 +167,7 @@ export default function CoachPage() {
       {messages.length === 0 && (
         <div className="mb-5">
           <h2 className="text-2xl font-semibold mb-1"
-            style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
             AI Leadership Coach
           </h2>
           <p className="text-[13px] mb-4" style={{ color: 'var(--text-muted)' }}>

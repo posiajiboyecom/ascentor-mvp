@@ -15,7 +15,7 @@ function ParticleCanvas() {
     let raf: number;
     let w = 0, h = 0;
 
-    const COLORS = ['#F59E0B', '#14B8A6', '#8B5CF6', '#3B82F6', '#EF4444', '#10B981'];
+    const COLORS = ['#E8A020', '#14B8A6', '#8B5CF6', '#3B82F6', '#EF4444', '#10B981'];
 
     interface Particle {
       x: number; y: number; vx: number; vy: number;
@@ -180,14 +180,14 @@ export default function LandingClient() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen" style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'Syne', system-ui, sans-serif" }}>
 
       {/* ═══ NAV ═══ */}
       <nav className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(250,250,249,0.88)', borderBottom: '1px solid #E5E5E4' }}>
         <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl" style={{ color: '#F59E0B' }}>⬆</span>
-            <span className="text-lg font-semibold" style={{ fontFamily: "'Playfair Display', serif" }}>Ascentor</span>
+            <span className="text-xl" style={{ color: '#E8A020' }}>⬆</span>
+            <span className="text-lg font-semibold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Ascentor</span>
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm" style={{ color: '#6B7280' }}>
             <Link href="/pricing" className="hover:text-gray-900 transition-colors">Pricing</Link>
@@ -195,12 +195,12 @@ export default function LandingClient() {
             <Link href="/login" className="hover:text-gray-900 transition-colors">Log In</Link>
             <Link href="/signup"
               className="px-5 py-2 rounded-lg text-sm font-semibold"
-              style={{ background: '#F59E0B', color: '#000' }}>
+              style={{ background: '#E8A020', color: '#000' }}>
               Start Free Trial
             </Link>
           </div>
           <Link href="/signup" className="md:hidden px-4 py-2 rounded-lg text-sm font-semibold"
-            style={{ background: '#F59E0B', color: '#000' }}>
+            style={{ background: '#E8A020', color: '#000' }}>
             Get Started
           </Link>
         </div>
@@ -216,9 +216,9 @@ export default function LandingClient() {
             Now in beta — join 50+ early leaders
           </div>
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-semibold mb-5 leading-tight"
-            style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
             Your AI leadership<br />
-            coach for <span style={{ color: '#F59E0B' }}>Africa</span>
+            coach for <span style={{ color: '#E8A020' }}>Africa</span>
           </h1>
           <p className="text-base md:text-lg max-w-2xl mx-auto mb-8" style={{ color: '#6B7280', lineHeight: 1.7 }}>
             AI coaching, live expert sessions, and peer accountability cohorts — built for ambitious African professionals who refuse to wait for permission to lead.
@@ -226,7 +226,7 @@ export default function LandingClient() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
             <Link href="/signup"
               className="px-8 py-4 rounded-xl text-base font-semibold transition-transform hover:scale-105"
-              style={{ background: '#F59E0B', color: '#000' }}>
+              style={{ background: '#E8A020', color: '#000' }}>
               Start 7-Day Free Trial →
             </Link>
             <Link href="/pricing"
@@ -250,7 +250,7 @@ export default function LandingClient() {
               { value: 15, suffix: '', label: 'Countries represented' },
             ].map((s) => (
               <div key={s.label}>
-                <div className="text-3xl md:text-4xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: '#F59E0B' }}>
+                <div className="text-3xl md:text-4xl font-bold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#E8A020' }}>
                   <AnimatedNumber target={s.value} suffix={s.suffix} />
                 </div>
                 <p className="text-xs mt-1" style={{ color: '#6B7280' }}>{s.label}</p>
@@ -265,7 +265,7 @@ export default function LandingClient() {
         <div className="max-w-6xl mx-auto px-5">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-semibold mb-3"
-              style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+              style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
               Three pillars, one platform
             </h2>
             <p className="text-base max-w-xl mx-auto" style={{ color: '#6B7280' }}>
@@ -276,7 +276,7 @@ export default function LandingClient() {
           <div className="grid md:grid-cols-3 gap-5">
             {[
               {
-                icon: '🤖', title: 'AI Coaching', color: '#F59E0B',
+                icon: '🤖', title: 'AI Coaching', color: '#E8A020',
                 desc: 'A Socratic coach trained on leadership frameworks and African business context. Ask anything at 2am before your big meeting.',
                 features: ['Personalized to your career stage', 'GROW model + African context', 'Action items after every session'],
               },
@@ -297,7 +297,7 @@ export default function LandingClient() {
                   style={{ background: `${p.color}12` }}>
                   {p.icon}
                 </div>
-                <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+                <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
                   {p.title}
                 </h3>
                 <p className="text-sm mb-4" style={{ color: '#6B7280', lineHeight: 1.7 }}>{p.desc}</p>
@@ -318,7 +318,7 @@ export default function LandingClient() {
       <section className="py-16 lg:py-24" style={{ background: '#F5F5F4' }}>
         <div className="max-w-5xl mx-auto px-5">
           <h2 className="text-3xl md:text-4xl font-semibold text-center mb-12"
-            style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
             Start leading in 3 steps
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
@@ -329,10 +329,10 @@ export default function LandingClient() {
             ].map((s) => (
               <div key={s.step} className="text-center">
                 <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-lg font-bold"
-                  style={{ background: 'rgba(245,158,11,0.1)', color: '#F59E0B', fontFamily: "'Playfair Display', serif" }}>
+                  style={{ background: 'rgba(245,158,11,0.1)', color: '#E8A020', fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
                   {s.step}
                 </div>
-                <h3 className="text-base font-semibold mb-2" style={{ color: '#0A0E17' }}>{s.title}</h3>
+                <h3 className="text-base font-semibold mb-2" style={{ color: '#0C0B08' }}>{s.title}</h3>
                 <p className="text-sm" style={{ color: '#6B7280', lineHeight: 1.7 }}>{s.desc}</p>
               </div>
             ))}
@@ -344,7 +344,7 @@ export default function LandingClient() {
       <section className="py-16 lg:py-24">
         <div className="max-w-6xl mx-auto px-5">
           <h2 className="text-3xl md:text-4xl font-semibold text-center mb-12"
-            style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
             What early members say
           </h2>
           <div className="grid md:grid-cols-3 gap-5">
@@ -355,10 +355,10 @@ export default function LandingClient() {
             ].map((t) => (
               <div key={t.name} className="rounded-2xl p-6"
                 style={{ background: '#fff', border: '1px solid #E5E5E4' }}>
-                <div className="text-2xl mb-3" style={{ color: '#F59E0B' }}>"</div>
+                <div className="text-2xl mb-3" style={{ color: '#E8A020' }}>"</div>
                 <p className="text-sm mb-4" style={{ color: '#374151', lineHeight: 1.7 }}>{t.quote}</p>
                 <div>
-                  <p className="text-sm font-semibold" style={{ color: '#0A0E17' }}>{t.name}</p>
+                  <p className="text-sm font-semibold" style={{ color: '#0C0B08' }}>{t.name}</p>
                   <p className="text-xs" style={{ color: '#9CA3AF' }}>{t.role}</p>
                 </div>
               </div>
@@ -368,10 +368,10 @@ export default function LandingClient() {
       </section>
 
       {/* ═══ CTA ═══ */}
-      <section className="py-16 lg:py-24" style={{ background: '#0A0E17' }}>
+      <section className="py-16 lg:py-24" style={{ background: '#0C0B08' }}>
         <div className="max-w-3xl mx-auto px-5 text-center">
           <h2 className="text-3xl md:text-4xl font-semibold mb-4"
-            style={{ fontFamily: "'Playfair Display', serif", color: '#F3F4F6' }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#F3F4F6' }}>
             Ready to lead?
           </h2>
           <p className="text-base mb-8" style={{ color: '#9CA3AF' }}>
@@ -379,7 +379,7 @@ export default function LandingClient() {
           </p>
           <Link href="/signup"
             className="inline-block px-10 py-4 rounded-xl text-base font-semibold transition-transform hover:scale-105"
-            style={{ background: '#F59E0B', color: '#000' }}>
+            style={{ background: '#E8A020', color: '#000' }}>
             Start 7-Day Free Trial →
           </Link>
 
@@ -401,7 +401,7 @@ export default function LandingClient() {
                 />
                 <button type="submit" disabled={subStatus === 'loading'}
                   className="px-5 py-3 rounded-lg text-sm font-semibold disabled:opacity-50"
-                  style={{ background: '#F59E0B', color: '#000' }}>
+                  style={{ background: '#E8A020', color: '#000' }}>
                   {subStatus === 'loading' ? '...' : 'Subscribe'}
                 </button>
               </form>
@@ -411,13 +411,13 @@ export default function LandingClient() {
       </section>
 
       {/* ═══ FOOTER ═══ */}
-      <footer className="py-10" style={{ background: '#0A0E17', borderTop: '1px solid #1F2937' }}>
+      <footer className="py-10" style={{ background: '#0C0B08', borderTop: '1px solid #1F2937' }}>
         <div className="max-w-6xl mx-auto px-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span style={{ color: '#F59E0B' }}>⬆</span>
-                <span className="font-semibold" style={{ fontFamily: "'Playfair Display', serif", color: '#F3F4F6' }}>Ascentor</span>
+                <span style={{ color: '#E8A020' }}>⬆</span>
+                <span className="font-semibold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#F3F4F6' }}>Ascentor</span>
               </div>
               <p className="text-xs" style={{ color: '#6B7280' }}>Leadership development for Africa's next generation.</p>
             </div>

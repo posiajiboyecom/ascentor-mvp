@@ -250,7 +250,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
           <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
         </div>
         <div>
-          <h1 className="text-xl font-semibold" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
+          <h1 className="text-xl font-semibold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
             Settings
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -473,7 +473,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
             <div className="flex justify-between items-start mb-3">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>Current Plan</span>
-                <h2 className="text-lg font-bold mt-0.5" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--accent)' }}>
+                <h2 className="text-lg font-bold mt-0.5" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--accent)' }}>
                   {profile?.subscription_plan || 'Free'}
                 </h2>
               </div>

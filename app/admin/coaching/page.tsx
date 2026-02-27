@@ -180,7 +180,7 @@ export default function AdminCoachingPage() {
   return (
     <div className="animate-fade-up">
       <h1 className="text-2xl font-semibold mb-1"
-        style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
+        style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
         Chat Data & Analytics
       </h1>
       <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
@@ -197,7 +197,7 @@ export default function AdminCoachingPage() {
           <div key={s.label} className="rounded-xl p-4"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <div className="text-2xl mb-1">{s.icon}</div>
-            <div className="text-2xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: s.color }}>
+            <div className="text-2xl font-bold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: s.color }}>
               {s.value}
             </div>
             <div className="text-[11px]" style={{ color: 'var(--text-dim)' }}>{s.label}</div>

@@ -43,7 +43,7 @@ const PERSONAS = [
     stage:    'Builder',
     age:      '22 – 32',
     emoji:    '🚀',
-    color:    '#F59E0B',
+    color:    '#E8A020',
     bg:       'rgba(245,158,11,0.06)',
     border:   'rgba(245,158,11,0.22)',
     tagline:  "You're in the game. Now you want to win.",
@@ -126,7 +126,7 @@ function Nav() {
             </Link>
         <div className="flex items-center gap-5">
           <Link href="/who-its-for" className="text-sm hidden md:block font-medium"
-            style={{ color: '#F59E0B' }}>Who It&apos;s For</Link>
+            style={{ color: '#E8A020' }}>Who It&apos;s For</Link>
           <Link href="/how-it-works" className="text-sm hidden md:block"
             style={{ color: '#6B7280' }}>How It Works</Link>
           <Link href="/pricing" className="text-sm hidden md:block"
@@ -135,7 +135,7 @@ function Nav() {
             style={{ color: '#6B7280' }}>Log In</Link>
           <Link href="/signup"
             className="px-5 py-2 rounded-lg text-sm font-semibold"
-            style={{ background: '#F59E0B', color: '#000' }}>
+            style={{ background: '#E8A020', color: '#000' }}>
             Start Free Trial
           </Link>
         </div>
@@ -148,7 +148,7 @@ function Nav() {
 export default function WhoItsForPage() {
   return (
     <div className="min-h-screen"
-      style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'DM Sans', sans-serif" }}>
+      style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'Syne', system-ui, sans-serif" }}>
       <Nav />
 
       {/* ── Hero ── */}
@@ -158,7 +158,7 @@ export default function WhoItsForPage() {
           BUILT FOR AFRICA
         </div>
         <h1 className="text-4xl md:text-5xl font-semibold mb-4"
-          style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17', lineHeight: 1.1 }}>
+          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08', lineHeight: 1.1 }}>
           Wherever you are on<br className="hidden md:block" /> your journey — we&apos;re built for you.
         </h1>
         <p className="text-base max-w-2xl mx-auto mb-8" style={{ color: '#6B7280', lineHeight: 1.75 }}>
@@ -198,7 +198,7 @@ export default function WhoItsForPage() {
                 <div>
                   <div className="flex items-center gap-3">
                     <h2 className="text-3xl font-semibold"
-                      style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+                      style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
                       {p.stage}
                     </h2>
                     {p.popular && (
@@ -255,7 +255,7 @@ export default function WhoItsForPage() {
                   {p.outcomes.map(o => (
                     <div key={o} className="flex items-start gap-3">
                       <span className="mt-0.5 text-sm flex-shrink-0" style={{ color: p.color }}>✓</span>
-                      <span className="text-sm font-medium" style={{ color: '#0A0E17', lineHeight: 1.6 }}>{o}</span>
+                      <span className="text-sm font-medium" style={{ color: '#0C0B08', lineHeight: 1.6 }}>{o}</span>
                     </div>
                   ))}
                 </div>
@@ -264,7 +264,7 @@ export default function WhoItsForPage() {
 
             {/* CTA strip */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl p-6"
-              style={{ background: '#0A0E17' }}>
+              style={{ background: '#0C0B08' }}>
               <div>
                 <p className="text-sm font-semibold" style={{ color: '#F3F4F6' }}>
                   {p.plan} — starts at <span style={{ color: p.color }}>${p.price}/month</span>
@@ -298,7 +298,7 @@ export default function WhoItsForPage() {
             Where We Operate
           </p>
           <h2 className="text-3xl font-semibold mb-3"
-            style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
             Built in Africa, for Africa.
           </h2>
           <p className="text-sm max-w-xl mx-auto mb-10" style={{ color: '#6B7280', lineHeight: 1.7 }}>
@@ -310,7 +310,7 @@ export default function WhoItsForPage() {
               <div key={c.country} className="rounded-2xl p-5 text-left"
                 style={{ background: '#FAFAF9', border: '1px solid #E5E5E4' }}>
                 <div className="text-2xl mb-2">{c.flag}</div>
-                <p className="text-sm font-semibold mb-1" style={{ color: '#0A0E17' }}>{c.country}</p>
+                <p className="text-sm font-semibold mb-1" style={{ color: '#0C0B08' }}>{c.country}</p>
                 <p className="text-xs" style={{ color: '#6B7280', lineHeight: 1.6 }}>{c.desc}</p>
               </div>
             ))}
@@ -321,23 +321,23 @@ export default function WhoItsForPage() {
       {/* ── Bottom CTA ── */}
       <section className="py-16 px-5">
         <div className="max-w-3xl mx-auto rounded-2xl p-10 text-center"
-          style={{ background: '#0A0E17' }}>
+          style={{ background: '#0C0B08' }}>
           <div className="inline-block px-3 py-1 rounded-full text-[10px] font-bold mb-5"
-            style={{ background: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.2)' }}>
+            style={{ background: 'rgba(245,158,11,0.1)', color: '#E8A020', border: '1px solid rgba(245,158,11,0.2)' }}>
             YOUR MENTOR IS WAITING
           </div>
           <h2 className="text-3xl md:text-4xl font-semibold mb-4"
-            style={{ fontFamily: "'Playfair Display', serif", color: '#F3F4F6', lineHeight: 1.2 }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#F3F4F6', lineHeight: 1.2 }}>
             Everyone who made it<br />had someone who believed in them.
           </h2>
           <p className="text-sm mb-8 max-w-lg mx-auto" style={{ color: '#9CA3AF', lineHeight: 1.75 }}>
             Join 247+ African professionals already on the waitlist.
-            Early members get <strong style={{ color: '#F59E0B' }}>3 months free</strong> on launch.
+            Early members get <strong style={{ color: '#E8A020' }}>3 months free</strong> on launch.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/waitlist"
               className="px-8 py-3.5 rounded-xl text-sm font-semibold"
-              style={{ background: '#F59E0B', color: '#000' }}>
+              style={{ background: '#E8A020', color: '#000' }}>
               Join the Waitlist →
             </Link>
             <Link href="/how-it-works"

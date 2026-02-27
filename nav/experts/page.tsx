@@ -48,7 +48,7 @@ export default function ExpertsPage() {
   return (
     <div className="animate-fade-up py-6">
       <h2 className="text-2xl font-semibold mb-1"
-        style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
+        style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
         Expert Sessions
       </h2>
       <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>

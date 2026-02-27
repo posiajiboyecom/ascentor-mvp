@@ -45,7 +45,7 @@ function Toast({ title, message, type, onClose }: {
   const iconColor = {
     success: 'var(--success, #10B981)',
     error: 'var(--error, #EF4444)',
-    warning: 'var(--accent, #F59E0B)',
+    warning: 'var(--accent, #E8A020)',
     info: 'var(--blue, #60A5FA)',
     coaching: 'var(--purple, #8B5CF6)',
     expert: 'var(--teal, #14B8A6)',

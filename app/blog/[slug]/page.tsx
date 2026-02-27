@@ -43,10 +43,10 @@ export default async function BlogPostPage({ params }: Props) {
       .split('\n\n')
       .map((block, i) => {
         if (block.startsWith('## ')) {
-          return <h2 key={i} className="text-xl font-semibold mt-8 mb-3" style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>{block.replace('## ', '')}</h2>;
+          return <h2 key={i} className="text-xl font-semibold mt-8 mb-3" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>{block.replace('## ', '')}</h2>;
         }
         if (block.startsWith('### ')) {
-          return <h3 key={i} className="text-lg font-semibold mt-6 mb-2" style={{ color: '#0A0E17' }}>{block.replace('### ', '')}</h3>;
+          return <h3 key={i} className="text-lg font-semibold mt-6 mb-2" style={{ color: '#0C0B08' }}>{block.replace('### ', '')}</h3>;
         }
         if (block.startsWith('- ')) {
           const items = block.split('\n').filter((l) => l.startsWith('- '));
@@ -57,7 +57,7 @@ export default async function BlogPostPage({ params }: Props) {
                 const parts = text.split(/\*\*(.*?)\*\*/g);
                 return (
                   <li key={j} className="flex items-start gap-2 text-sm" style={{ color: '#374151', lineHeight: 1.7 }}>
-                    <span style={{ color: '#F59E0B' }}>•</span>
+                    <span style={{ color: '#E8A020' }}>•</span>
                     <span>{parts.map((p, k) => k % 2 === 1 ? <strong key={k}>{p}</strong> : p)}</span>
                   </li>
                 );
@@ -74,7 +74,7 @@ export default async function BlogPostPage({ params }: Props) {
                 const parts = text.split(/\*\*(.*?)\*\*/g);
                 return (
                   <li key={j} className="flex items-start gap-2 text-sm" style={{ color: '#374151', lineHeight: 1.7 }}>
-                    <span className="font-bold shrink-0" style={{ color: '#F59E0B' }}>{j + 1}.</span>
+                    <span className="font-bold shrink-0" style={{ color: '#E8A020' }}>{j + 1}.</span>
                     <span>{parts.map((p, k) => k % 2 === 1 ? <strong key={k}>{p}</strong> : p)}</span>
                   </li>
                 );
@@ -83,7 +83,7 @@ export default async function BlogPostPage({ params }: Props) {
           );
         }
         // Handle links [text](url)
-        const linkified = block.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" style="color:#F59E0B;text-decoration:underline">$1</a>');
+        const linkified = block.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" style="color:#E8A020;text-decoration:underline">$1</a>');
         const parts = block.split(/\*\*(.*?)\*\*/g);
         return (
           <p key={i} className="text-sm my-3" style={{ color: '#374151', lineHeight: 1.8 }}>
@@ -98,7 +98,7 @@ export default async function BlogPostPage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#FAFAF9', fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen" style={{ background: '#FAFAF9', fontFamily: "'Syne', system-ui, sans-serif" }}>
 
       <nav className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(250,250,249,0.88)', borderBottom: '1px solid #E5E5E4' }}>
         <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
@@ -124,17 +124,17 @@ export default async function BlogPostPage({ params }: Props) {
         </div>
 
         <h1 className="text-3xl md:text-4xl font-semibold mb-4 leading-tight"
-          style={{ fontFamily: "'Playfair Display', serif", color: '#0A0E17' }}>
+          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
           {post.title}
         </h1>
 
         <div className="flex items-center gap-3 mb-8 pb-6" style={{ borderBottom: '1px solid #E5E5E4' }}>
           <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold"
-            style={{ background: 'rgba(245,158,11,0.1)', color: '#F59E0B' }}>
+            style={{ background: 'rgba(245,158,11,0.1)', color: '#E8A020' }}>
             {(post.author_name || 'A').charAt(0)}
           </div>
           <div>
-            <p className="text-sm font-semibold" style={{ color: '#0A0E17' }}>{post.author_name}</p>
+            <p className="text-sm font-semibold" style={{ color: '#0C0B08' }}>{post.author_name}</p>
             <p className="text-xs" style={{ color: '#9CA3AF' }}>
               {post.published_at && new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · {post.read_time_min} min read
             </p>
@@ -146,7 +146,7 @@ export default async function BlogPostPage({ params }: Props) {
         <div className="mt-12 pt-8 text-center" style={{ borderTop: '1px solid #E5E5E4' }}>
           <p className="text-sm mb-4" style={{ color: '#6B7280' }}>Ready to invest in your leadership growth?</p>
           <Link href="/signup" className="inline-block px-8 py-3.5 rounded-xl text-sm font-semibold"
-            style={{ background: '#F59E0B', color: '#000' }}>
+            style={{ background: '#E8A020', color: '#000' }}>
             Start Free Trial →
           </Link>
         </div>
