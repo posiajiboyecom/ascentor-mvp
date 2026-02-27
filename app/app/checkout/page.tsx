@@ -492,7 +492,7 @@ export default function CheckoutPage() {
         <nav className="co-nav">
           <Link href="/" className="lp-nav-logo">
   <img
-    src="/ascentor-color-on-light.svg"
+    src="/ascentor-color-on-dark.svg"
     alt="Ascentor"
     style={{ height: '32px', width: 'auto' }}
   />
