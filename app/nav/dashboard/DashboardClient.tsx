@@ -86,7 +86,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
 
   const stats = [
     { icon: <IconFlame />,  value: '7',                  label: 'DAY STREAK',      color: 'var(--accent)' },
-    { icon: <IconChat />,   value: String(sessionsThisWeek), label: 'SESSIONS / WEEK', color: 'var(--blue)' },
+    { icon: <IconChat />,   value: String(sessionsThisWeek), label: 'MENTOR SESSIONS', color: 'var(--blue)' },
     { icon: <IconTarget />, value: `${goalProgress}%`,   label: '90-DAY GOAL',     color: 'var(--teal)' },
   ];
 
@@ -155,14 +155,14 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
         <Link href="/coach">
           <Card className="cursor-pointer hover:border-[rgba(232,160,32,0.3)] transition-colors">
             <div className="flex justify-center mb-2"><IconMentor /></div>
-            <div className="text-sm font-semibold text-center" style={{ color: 'var(--text)' }}>AI Coach</div>
+            <div className="text-sm font-semibold text-center" style={{ color: 'var(--text)' }}>AI Mentor</div>
             <div className="text-xs mt-0.5 text-center" style={{ color: 'var(--text-muted)' }}>Start a session</div>
           </Card>
         </Link>
         <Link href="/experts">
           <Card className="cursor-pointer hover:border-[rgba(139,92,246,0.3)] transition-colors">
             <div className="flex justify-center mb-2"><IconExpert /></div>
-            <div className="text-sm font-semibold text-center" style={{ color: 'var(--text)' }}>Next Expert</div>
+            <div className="text-sm font-semibold text-center" style={{ color: 'var(--text)' }}>Next Session</div>
             <div className="text-xs mt-0.5 text-center" style={{ color: 'var(--text-muted)' }}>
               {nextExpert
                 ? new Date(nextExpert.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -185,7 +185,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
         </div>
         {localCommitments.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
-            No commitments yet. Start a coaching session to get your first action item.
+            No commitments yet. Start a mentor session to get your first action item.
           </p>
         ) : (
           localCommitments.map((c: any) => (
@@ -218,7 +218,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
         )}
       </Card>
 
-      {/* Upcoming Expert */}
+      {/* Upcoming Mentor Session */}
       {nextExpert && (
         <Link href="/experts">
           <Card style={{ borderLeft: '3px solid var(--purple)' }}>

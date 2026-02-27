@@ -21,7 +21,7 @@ const navItems = [
   },
   {
     href: '/coach',
-    label: 'Coach',
+    label: 'Mentor',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -30,7 +30,7 @@ const navItems = [
   },
   {
     href: '/experts',
-    label: 'Experts',
+    label: 'Sessions',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="8" r="4"/>
@@ -40,7 +40,7 @@ const navItems = [
   },
   {
     href: '/community',
-    label: 'Cohort',
+    label: 'Circle',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="9" cy="7" r="3"/>

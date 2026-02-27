@@ -3,11 +3,11 @@
 import { useState } from 'react';
 
 const COURSES = [
-  { id: 1, title: 'The GROW Model for Coaching Conversations', category: 'Frameworks', difficulty: 'beginner', lessons: 5, duration: '25 min', progress: 80, emoji: '🌱' },
+  { id: 1, title: 'The GROW Model for Mentorship Conversations', category: 'Frameworks', difficulty: 'beginner', lessons: 5, duration: '25 min', progress: 80, emoji: '🌱' },
   { id: 2, title: 'Navigating Hierarchical Cultures', category: 'African Context', difficulty: 'intermediate', lessons: 4, duration: '20 min', progress: 45, emoji: '🏛️' },
   { id: 3, title: 'The Art of Strategic Visibility', category: 'Career Growth', difficulty: 'intermediate', lessons: 6, duration: '30 min', progress: 0, emoji: '🔭' },
-  { id: 4, title: 'Difficult Conversations Toolkit', category: 'Communication', difficulty: 'advanced', lessons: 8, duration: '40 min', progress: 20, emoji: '💬' },
-  { id: 5, title: 'Building Your Personal Board of Advisors', category: 'Networking', difficulty: 'beginner', lessons: 3, duration: '15 min', progress: 100, emoji: '🤝' },
+  { id: 4, title: 'The Difficult Conversations Toolkit', category: 'Communication', difficulty: 'advanced', lessons: 8, duration: '40 min', progress: 20, emoji: '💬' },
+  { id: 5, title: 'Building Your Personal Board of Mentors', category: 'Networking', difficulty: 'beginner', lessons: 3, duration: '15 min', progress: 100, emoji: '🤝' },
   { id: 6, title: 'Leading Without Authority', category: 'Leadership', difficulty: 'intermediate', lessons: 5, duration: '25 min', progress: 0, emoji: '🧭' },
 ];
 
@@ -22,10 +22,10 @@ export default function LearnPage() {
     <div className="animate-fade-up py-6">
       <h2 className="text-2xl font-semibold mb-1"
         style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
-        Learn
+        Playbooks & Frameworks
       </h2>
       <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
-        Micro-courses from Africa's top leaders
+        Frameworks and playbooks from Africa's top mentors
       </p>
 
       {/* Filter pills */}
@@ -38,12 +38,12 @@ export default function LearnPage() {
               color: filter === c ? '#000' : 'var(--text-muted)',
               border: `1px solid ${filter === c ? 'var(--accent)' : 'var(--border)'}`,
             }}>
-            {c === 'All' ? 'All Courses' : c}
+            {c === 'All' ? 'All' : c}
           </button>
         ))}
       </div>
 
-      {/* Course list */}
+      {/* Resource list */}
       <div className="flex flex-col gap-3">
         {filtered.map((course, i) => (
           <div key={course.id}
@@ -95,7 +95,7 @@ export default function LearnPage() {
                 {course.progress === 0 && (
                   <button className="px-3.5 py-1.5 rounded-lg text-xs font-semibold"
                     style={{ border: '1px solid var(--border)', color: 'var(--text)' }}>
-                    Start Course
+                    Start Learning
                   </button>
                 )}
               </div>

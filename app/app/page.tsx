@@ -477,9 +477,9 @@ export default function LandingPage() {
         <div className="lp-stats-bar">
           {[
             { number: '24/7', label: 'AI mentor — always available' },
-            { number: '$15', label: 'vs $200/hr traditional coaching' },
+            { number: '$19', label: 'vs $200/hr executive coaching' },
             { number: '90', label: 'Day structured goal system' },
-            { number: '5×', label: 'Weekly expert-led sessions' },
+            { number: '5×', label: 'Weekly mentor-led sessions' },
           ].map((s) => (
             <div key={s.number} className="lp-stat-item">
               <div className="lp-stat-number">{s.number}</div>
@@ -495,7 +495,7 @@ export default function LandingPage() {
           <div className="lp-problem-grid">
             {[
               { quote: '"I have a degree, I have the drive — but I genuinely don\'t know what to do next. Nobody in my family has been where I\'m trying to go."', persona: '— Temi, 24. NYSC graduate, Lagos' },
-              { quote: '"I\'ve been a manager for two years but I\'m still figuring it out alone. Executive coaching costs more than my rent."', persona: '— Kwame, 31. Team Lead, Accra' },
+              { quote: '"I\'ve been a manager for two years but I\'m still figuring it out alone. Executive mentorship costs more than my rent."', persona: '— Kwame, 31. Team Lead, Accra' },
               { quote: '"The people who get ahead in this country aren\'t necessarily the most talented — they\'re the ones with the right connections and the right mentors."', persona: '— Amina, 28. Consultant, Nairobi' },
             ].map((c, i) => (
               <div key={i} className="lp-problem-card">
@@ -532,7 +532,7 @@ export default function LandingPage() {
                 <li>Career strategy & positioning</li>
                 <li>Access to industry mentors</li>
                 <li>Entrepreneur mentorship tracks</li>
-                <li>Live expert masterclasses</li>
+                <li>Live mentor masterclasses</li>
               </ul>
             </div>
             <div className="lp-for-card climber">
@@ -542,8 +542,8 @@ export default function LandingPage() {
               <p className="lp-for-desc">Mid-career leaders, managers, and founders who are serious about reaching the summit.</p>
               <ul className="lp-for-list">
                 <li>Executive-level mentorship</li>
-                <li>Leadership & management coaching</li>
-                <li>Peer cohorts of your equals</li>
+                <li>Leadership & management mentorship</li>
+                <li>Peer mentorship circles</li>
                 <li>Business strategy sessions</li>
               </ul>
             </div>
@@ -570,10 +570,10 @@ export default function LandingPage() {
             </div>
             <div className="lp-pillar-card" style={{ borderColor: 'rgba(232,160,32,0.2)' }}>
               <div className="lp-pillar-icon">🎓</div>
-              <div className="lp-pillar-title">Human Mentors & Expert Sessions</div>
+              <div className="lp-pillar-title">Human Mentors & Live Sessions</div>
               <p className="lp-pillar-desc">Live sessions with Africa's top professionals who've navigated the exact challenges you're facing. Real experience, not theory.</p>
               <ul className="lp-pillar-features">
-                <li>Monthly live masterclasses</li>
+                <li>Monthly live mentor sessions</li>
                 <li>1-on-1 mentor booking</li>
                 <li>Q&A with industry leaders</li>
                 <li>Mentors across every industry</li>
@@ -602,7 +602,7 @@ export default function LandingPage() {
           <div className="lp-steps-container">
             {[
               { n: '01', title: 'Tell us where you are', desc: 'Share your life stage, goals, industry, and biggest challenge. Takes 3 minutes. No fluff.' },
-              { n: '02', title: 'Meet your AI mentor', desc: 'Within 60 seconds, your AI mentor gives you a personalized action plan and matches you to the right human mentors and cohort.' },
+              { n: '02', title: 'Meet your AI mentor', desc: 'Within 60 seconds, your AI mentor gives you a personalized action plan and matches you to the right human mentors and circle.' },
               { n: '03', title: 'Grow with your circle', desc: 'Join peers on the same journey. Share wins, get real feedback, and hold each other accountable every week.' },
             ].map((s) => (
               <div key={s.n} className="lp-step">
@@ -625,7 +625,7 @@ export default function LandingPage() {
             {[
               { icon: '🔒', title: 'Locked-in pricing', desc: 'Your founding rate is yours for life — never increases as the platform grows.' },
               { icon: '🎙️', title: 'Shape the roadmap', desc: 'Direct line to the founding team. Your feedback ships in weeks, not quarters.' },
-              { icon: '🌍', title: 'Founding community', desc: 'The first cohort of African professionals building careers with intention.' },
+              { icon: '🌍', title: 'Founding community', desc: 'The first circle of African professionals building careers with intention.' },
             ].map((card) => (
               <div key={card.title} style={{ background: 'var(--light)', borderRadius: '20px', padding: '32px 28px', border: '1px solid rgba(42,40,32,0.06)' }}>
                 <div style={{ fontSize: '28px', marginBottom: '14px' }}>{card.icon}</div>
@@ -688,10 +688,10 @@ export default function LandingPage() {
               <div className="lp-pricing-for">For early-career professionals (22–32)</div>
               <ul className="lp-pricing-features">
                 <li>Unlimited AI mentor sessions</li>
-                <li>Live expert masterclasses</li>
+                <li>Live mentor masterclasses</li>
                 <li>All mentorship circles</li>
                 <li>1-on-1 mentor booking (2/month)</li>
-                <li>Full course library</li>
+                <li>Full mentorship resource library</li>
                 <li>Session summaries & goal tracking</li>
               </ul>
               <Link href="/pricing" className="lp-pricing-btn filled">Start Free Trial</Link>
@@ -704,7 +704,7 @@ export default function LandingPage() {
                 <li>Everything in Builder</li>
                 <li>Priority AI mentor responses</li>
                 <li>Unlimited 1-on-1 mentor sessions</li>
-                <li>Private executive cohort</li>
+                <li>Private executive circle</li>
                 <li>Live Q&A priority access</li>
                 <li>1-on-1 onboarding call</li>
               </ul>

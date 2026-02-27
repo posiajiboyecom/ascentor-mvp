@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 
 // ─────────────────────────────────────────────────────────────────
-// ASCENTOR · AI Coach Page
+// ASCENTOR · AI Mentor Page
 // All emojis replaced with SVG icons.
 // Coach avatar uses the real Ascentor logomark (LM-gold).
 // ─────────────────────────────────────────────────────────────────
@@ -116,8 +116,8 @@ export default function CoachPage() {
     } catch {
       setMessages((m) => [...m, {
         role:       'assistant',
-        reflection: "I'm here and ready to help you navigate your leadership journey.",
-        question:   "What's the most pressing challenge you're facing at work right now?",
+        reflection: "I'm here — your dedicated mentor for every step of your career journey.",
+        question:   "What's on your mind? Let's work through it together.",
       }]);
     }
     setLoading(false);
@@ -144,7 +144,7 @@ export default function CoachPage() {
         <div className="mb-5">
           <h2 className="text-2xl font-semibold mb-1"
             style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
-            AI Leadership Coach
+            AI Mentor
           </h2>
           <p className="text-[13px] mb-4" style={{ color: 'var(--text-muted)' }}>
             Choose a session type to begin
@@ -191,7 +191,7 @@ export default function CoachPage() {
               <AscentorMark size={32} />
             </div>
             <p className="text-[15px] max-w-xs text-center" style={{ color: 'var(--text-muted)' }}>
-              Share what's on your mind — a challenge, a question, or a reflection on your week.
+              Your mentor is here. Share a challenge, a goal, or anything you're navigating right now.
             </p>
           </div>
         )}
@@ -273,7 +273,7 @@ export default function CoachPage() {
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
           }}
-          placeholder="Share what's on your mind..."
+          placeholder="Talk to your mentor..."
           rows={2}
           className="flex-1 px-4 py-3 text-sm rounded-xl resize-none leading-relaxed"
           style={{
