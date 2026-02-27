@@ -110,10 +110,75 @@ export async function POST(req: NextRequest) {
       });
     } catch {} // Non-critical
 
-    // Process referral reward
+    // Process referral reward — extend subscription by 7 days for both referrer and referred
     try {
-      await supabase.rpc('process_referral_reward', { referred_user_id: userId });
-    } catch {} // Non-critical
+      // 1. Find if this user was referred
+      const { data: referralRecord } = await supabase
+        .from('referrals')
+        .select('id, referrer_id, status')
+        .eq('referred_id', userId)
+        .eq('status', 'signed_up')
+        .single();
+
+      if (referralRecord) {
+        const bonusDays = 7;
+
+        // 2. Extend the referred user's subscription
+        const { data: referredProfile } = await supabase
+          .from('profiles')
+          .select('subscription_end')
+          .eq('id', userId)
+          .single();
+
+        if (referredProfile?.subscription_end) {
+          const newEnd = new Date(referredProfile.subscription_end);
+          newEnd.setDate(newEnd.getDate() + bonusDays);
+          await supabase.from('profiles')
+            .update({ subscription_end: newEnd.toISOString() })
+            .eq('id', userId);
+        }
+
+        // 3. Extend the referrer's subscription (or bank days if not yet subscribed)
+        const { data: referrerProfile } = await supabase
+          .from('profiles')
+          .select('subscription_end, subscription_status')
+          .eq('id', referralRecord.referrer_id)
+          .single();
+
+        if (referrerProfile?.subscription_end && referrerProfile.subscription_status !== 'inactive') {
+          const refEnd = new Date(referrerProfile.subscription_end);
+          refEnd.setDate(refEnd.getDate() + bonusDays);
+          await supabase.from('profiles')
+            .update({ subscription_end: refEnd.toISOString() })
+            .eq('id', referralRecord.referrer_id);
+        } else {
+          // Referrer not yet subscribed — store credit in referral_bonus_days column
+          await supabase.from('profiles')
+            .update({ referral_bonus_days: supabase.rpc('coalesce_add', { col: 'referral_bonus_days', val: bonusDays }) })
+            .eq('id', referralRecord.referrer_id);
+        }
+
+        // 4. Mark referral as rewarded + increment referral_count on referrer
+        await supabase.from('referrals')
+          .update({ status: 'rewarded', rewarded_at: new Date().toISOString() })
+          .eq('id', referralRecord.id);
+
+        await supabase.from('profiles')
+          .update({ referral_count: supabase.rpc('increment', { col: 'referral_count', amount: 1 }) })
+          .eq('id', referralRecord.referrer_id);
+
+        // 5. Send notification to referrer
+        await supabase.from('notifications').insert({
+          user_id: referralRecord.referrer_id,
+          type: 'referral_reward',
+          title: 'Referral reward unlocked! 🎉',
+          message: `Someone you referred just subscribed. You both received ${bonusDays} free days added to your account.`,
+          link: '/referral',
+        });
+      }
+    } catch (refErr) {
+      console.warn('Referral reward non-critical error:', refErr);
+    } // Non-critical — payment already verified
 
     // Send notification
     try {

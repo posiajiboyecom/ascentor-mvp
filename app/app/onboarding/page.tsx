@@ -46,9 +46,22 @@ export default function OnboardingPage() {
       setSaving(false);
       return;
     }
+    // Generate a unique referral_code if the user doesn't have one yet
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('referral_code')
+      .eq('id', user.id)
+      .single();
+
+    const referralCode = existingProfile?.referral_code || (
+      // e.g. "ASC-K3X9" — prefix + 4 random alphanumeric chars
+      'ASC-' + Math.random().toString(36).substring(2, 6).toUpperCase()
+    );
+
     const { error: dbError } = await supabase.from('profiles').upsert({
       id: user.id,
       ...profile,
+      referral_code: referralCode,
       updated_at: new Date().toISOString(),
     });
     if (dbError) {
