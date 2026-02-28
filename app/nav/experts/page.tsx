@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 
 // Fallback data if no expert sessions exist in DB yet
 const FALLBACK_EXPERTS = [
-  { id: '1', title: 'Breaking Through in African Tech — A Mentor's Playbook', expert_name: 'Amara Obi', expert_bio: '15+ years mentoring engineers and scaling teams across West Africa', scheduled_at: new Date(Date.now() + 6 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
+  { id: '1', title: "Breaking Through in African Tech — A Mentor's Playbook", expert_name: 'Amara Obi', expert_bio: '15+ years mentoring engineers and scaling teams across West Africa', scheduled_at: new Date(Date.now() + 6 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
   { id: '2', title: 'From IC to Senior Leader: What No One Tells You', expert_name: 'Kwame Asante', expert_bio: 'Serial founder. 3 exits. Now mentoring the next generation of African builders.', scheduled_at: new Date(Date.now() + 13 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
   { id: '3', title: 'Navigating Workplace Politics — With Your Integrity Intact', expert_name: 'Fatima Hassan', expert_bio: 'Led M-Pesa across 7 countries. Now mentoring leaders navigating complex organisations.', scheduled_at: new Date(Date.now() + 20 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
 ];
