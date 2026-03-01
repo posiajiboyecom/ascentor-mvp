@@ -15,11 +15,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const raw     = atob(base64);
-  const outputArray = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) {
-    outputArray[i] = raw.charCodeAt(i);
-  }
-  return outputArray;
+  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
 }
 
 // ── Hook ─────────────────────────────────────────────────────
@@ -28,17 +24,22 @@ export function usePush() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+    // Guard: Notification API missing in some mobile browsers / WebViews
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
       setState('unsupported'); return;
     }
-    if (Notification.permission === 'granted') setState('granted');
-    else if (Notification.permission === 'denied') setState('denied');
+    try {
+      if ((window as any).Notification.permission === 'granted') setState('granted');
+      else if ((window as any).Notification.permission === 'denied') setState('denied');
+    } catch {
+      setState('unsupported');
+    }
   }, []);
 
   const subscribe = useCallback(async (): Promise<boolean> => {
     try {
       setState('requesting');
-      const permission = await Notification.requestPermission();
+      const permission = await (window as any).Notification.requestPermission();
       if (permission !== 'granted') { setState('denied'); return false; }
 
       const reg = await navigator.serviceWorker.ready;
@@ -50,7 +51,7 @@ export function usePush() {
 
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly:      true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as BufferSource,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
       });
 
       const res = await fetch('/api/push/subscribe', {
@@ -98,7 +99,19 @@ export default function PushPermission() {
     const alreadyDismissed  = localStorage.getItem('push_dismissed');
     if (alreadySubscribed || alreadyDismissed) { setDismissed(true); return; }
     // Show banner only if permission not yet decided
-    if (Notification.permission === 'default') setDismissed(false);
+    // Guard: Notification may not exist on this browser
+    try {
+      if (
+        'Notification' in window &&
+        'serviceWorker' in navigator &&
+        'PushManager' in window &&
+        (window as any).Notification.permission === 'default'
+      ) {
+        setDismissed(false);
+      }
+    } catch {
+      // Notification API not supported — stay dismissed
+    }
   }, []);
 
   const handleEnable = async () => {
