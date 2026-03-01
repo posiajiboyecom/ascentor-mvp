@@ -4,12 +4,6 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
-// ─── Ascentor Brand Tokens ────────────────────────────────────────────────────
-// Gold:   #E8A020   Dark: #0C0B08   Dark-600: #2E2A22   Dark-700: #1E1C17
-// Text muted: #7A7260   Text dim: #4A4438   Border: #2E2A22
-// Fonts: Cormorant Garamond (display) · Syne (UI) · DM Mono (labels/meta)
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function AdminOverviewClient() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
@@ -20,18 +14,18 @@ export default function AdminOverviewClient() {
     totalPosts: 0, posts7d: 0,
     publishedCourses: 0, upcomingEvents: 0,
   });
-  const [dailyActivity, setDailyActivity] = useState<{ day: string; users: number; sessions: number }[]>([]);
-  const [topUsers, setTopUsers] = useState<any[]>([]);
-  const [topCohorts, setTopCohorts] = useState<any[]>([]);
+  const [dailyActivity, setDailyActivity]   = useState<{ day: string; label: string; users: number; sessions: number }[]>([]);
+  const [topUsers, setTopUsers]             = useState<any[]>([]);
+  const [topCohorts, setTopCohorts]         = useState<any[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
-  const [recentSignups, setRecentSignups] = useState<any[]>([]);
-  const [sessionTypes, setSessionTypes] = useState<{ type: string; count: number }[]>([]);
+  const [recentSignups, setRecentSignups]   = useState<any[]>([]);
+  const [sessionTypes, setSessionTypes]     = useState<{ type: string; count: number }[]>([]);
 
   useEffect(() => { loadAll(); }, []);
 
   async function loadAll() {
     const now = new Date();
-    const d7 = new Date(now.getTime() - 7 * 86400000).toISOString();
+    const d7  = new Date(now.getTime() - 7  * 86400000).toISOString();
     const d30 = new Date(now.getTime() - 30 * 86400000).toISOString();
 
     const [
@@ -63,22 +57,22 @@ export default function AdminOverviewClient() {
       publishedCourses: coursesP.count || 0, upcomingEvents: eventsUp.count || 0,
     });
 
-    // Build daily activity chart (last 14 days)
+    // Build daily activity chart — last 14 days
     const dayMap: Record<string, { users: Set<string>; sessions: number }> = {};
     for (let i = 13; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 86400000);
+      const d   = new Date(now.getTime() - i * 86400000);
       const key = d.toISOString().split('T')[0];
       dayMap[key] = { users: new Set(), sessions: 0 };
     }
     allSessions.data?.forEach((s: any) => {
       const key = s.created_at.split('T')[0];
-      if (dayMap[key]) {
-        dayMap[key].users.add(s.user_id);
-        dayMap[key].sessions++;
-      }
+      if (dayMap[key]) { dayMap[key].users.add(s.user_id); dayMap[key].sessions++; }
     });
     setDailyActivity(Object.entries(dayMap).map(([day, v]) => ({
-      day, users: v.users.size, sessions: v.sessions,
+      day,
+      label: new Date(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      users: v.users.size,
+      sessions: v.sessions,
     })));
 
     // Session type breakdown
@@ -91,16 +85,12 @@ export default function AdminOverviewClient() {
 
     // Top users by sessions
     const userSessionMap: Record<string, number> = {};
-    allSessions.data?.forEach((s: any) => {
-      userSessionMap[s.user_id] = (userSessionMap[s.user_id] || 0) + 1;
-    });
+    allSessions.data?.forEach((s: any) => { userSessionMap[s.user_id] = (userSessionMap[s.user_id] || 0) + 1; });
     const userIds = Object.keys(userSessionMap);
     let topUsersData: any[] = [];
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, current_role')
-        .in('id', userIds);
+        .from('profiles').select('id, full_name, current_role').in('id', userIds);
       topUsersData = (profiles || []).map((p: any) => ({
         ...p, sessions: userSessionMap[p.id] || 0,
       })).sort((a: any, b: any) => b.sessions - a.sessions).slice(0, 5);
@@ -113,398 +103,501 @@ export default function AdminOverviewClient() {
     setLoading(false);
   }
 
-  const maxSessions = Math.max(...dailyActivity.map((d) => d.sessions), 1);
-
-  // ─── Loading State ────────────────────────────────────────────────────────
+  // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: '60vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '12px',
-        }}
-      >
-        {/* Animated gold ring */}
-        <div style={{
-          width: '36px',
-          height: '36px',
-          borderRadius: '50%',
-          border: '2px solid #2E2A22',
-          borderTopColor: '#E8A020',
-          animation: 'ascentor-spin 0.9s linear infinite',
-        }} />
-        <p style={{
-          fontFamily: "'DM Mono', monospace",
-          fontSize: '11px',
-          letterSpacing: '0.12em',
-          color: '#4A4438',
-          textTransform: 'uppercase',
-        }}>
-          Loading dashboard...
-        </p>
-        <style>{`@keyframes ascentor-spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+        <div style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid #2E2A22', borderTopColor: '#E8A020', animation: 'ao-spin 0.9s linear infinite' }} />
+        <p style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, letterSpacing: '0.12em', color: '#4A4438', textTransform: 'uppercase' }}>Loading dashboard...</p>
+        <style>{`@keyframes ao-spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
-  // ─── Shared style tokens ──────────────────────────────────────────────────
-  const card: React.CSSProperties = {
-    background: '#141310',
-    border: '1px solid #2E2A22',
-    borderRadius: '12px',
-    padding: '20px',
+  // ── Derived values ───────────────────────────────────────────────────────
+  const maxSessions  = Math.max(...dailyActivity.map(d => d.sessions), 1);
+  const maxUsers     = Math.max(...dailyActivity.map(d => d.users), 1);
+  const totalSessTypes = sessionTypes.reduce((s, x) => s + x.count, 0);
+  const CHART_H      = 120; // px
+
+  const TYPE_LABELS: Record<string, string> = {
+    challenge_navigation:  'Challenge Navigation',
+    difficult_conversation:'Difficult Conversation',
+    weekly_reflection:     'Weekly Reflection',
+    accountability_check:  'Accountability Check',
+    general:               'General',
   };
 
-  const monoLabel: React.CSSProperties = {
-    fontFamily: "'DM Mono', monospace",
-    fontSize: '10px',
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase' as const,
-    color: '#4A4438',
-  };
+  const TYPE_COLORS = ['#E8A020', '#14B8A6', '#8B5CF6', '#3B82F6', '#10B981'];
 
-  const sectionTitle: React.CSSProperties = {
-    fontFamily: "'Syne', sans-serif",
-    fontSize: '13px',
-    fontWeight: 600,
-    color: '#D4CFC3',
-    letterSpacing: '0.02em',
-  };
-
-  const goldText: React.CSSProperties = {
-    color: '#E8A020',
-  };
-
-  // ─── Stat card data ───────────────────────────────────────────────────────
-  const statCards = [
-    { value: stats.totalUsers,      label: 'Total Users',      sub: `+${stats.newUsers7d} this week`,  href: '/admin/users',    accent: '#E8A020' },
-    { value: stats.totalSessions,   label: 'AI Sessions',      sub: `+${stats.sessions7d} this week`,  href: '/admin/coaching', accent: '#E8A020' },
-    { value: stats.totalPosts,      label: 'Community Posts',  sub: `+${stats.posts7d} this week`,     href: '/admin/coaching', accent: '#14B8A6' },
-    { value: stats.publishedCourses,label: 'Courses',          sub: 'Published',                       href: '/admin/courses',  accent: '#8B5CF6' },
-    { value: stats.upcomingEvents,  label: 'Upcoming Events',  sub: 'Scheduled',                       href: '/admin/experts',  accent: '#E8A020' },
-  ];
-
-  const quickActions = [
-    { label: 'Create Cohort',    href: '/admin/cohorts?action=create' },
-    { label: 'Add Expert Event', href: '/admin/experts?action=create' },
-    { label: 'Add Course',       href: '/admin/courses?action=create' },
-    { label: 'Manage Roles',     href: '/admin/users' },
-  ];
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const pct = (n: number, total: number) => total === 0 ? 0 : Math.round((n / total) * 100);
 
   return (
-    <div style={{ animation: 'ascentor-fade-up 0.4s ease both' }}>
+    <div>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-        @keyframes ascentor-fade-up {
-          from { opacity: 0; transform: translateY(12px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes ascentor-spin { to { transform: rotate(360deg); } }
-        .ascentor-stat-card:hover  { border-color: #4A4438 !important; }
-        .ascentor-action-btn:hover { border-color: #E8A020 !important; background: #1E1C17 !important; }
-        .ascentor-link:hover       { color: #F5C55A !important; }
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap');
+        @keyframes ao-fade-up { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes ao-spin     { to { transform:rotate(360deg); } }
+        @keyframes ao-bar-grow { from { height:0; } to { height:var(--bar-h); } }
+        .ao-card         { background:#141310; border:1px solid #2E2A22; border-radius:14px; padding:20px; }
+        .ao-card:hover   { border-color:#3A3630; }
+        .ao-stat:hover   { border-color:#4A4438 !important; transform:translateY(-1px); }
+        .ao-link:hover   { color:#F5C55A !important; }
+        .ao-row:hover    { background:rgba(232,160,32,0.03); border-radius:8px; }
+        .ao-action:hover { border-color:#E8A020 !important; background:#1E1C17 !important; }
+        .ao-bar-col:hover .ao-tooltip { opacity:1; pointer-events:auto; }
+        .ao-tooltip { opacity:0; pointer-events:none; transition:opacity 0.15s; }
       `}</style>
 
-      {/* ─── Page Header ──────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{
-          fontFamily: "'Cormorant Garamond', serif",
-          fontSize: '28px',
-          fontWeight: 700,
-          color: '#FEF9EC',
-          lineHeight: 1.1,
-          marginBottom: '6px',
-        }}>
-          Admin Dashboard
-        </h1>
-        <p style={{ ...monoLabel }}>
-          Platform overview&nbsp;&middot;&nbsp;Last updated {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-        </p>
-      </div>
+      <div style={{ animation: 'ao-fade-up 0.35s ease both' }}>
 
-      {/* ─── Stat Cards ───────────────────────────────────────────────────── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '10px',
-        marginBottom: '24px',
-      }}
-        className="lg:grid-cols-5"
-      >
-        {statCards.map((s) => (
-          <Link key={s.label} href={s.href} style={{ textDecoration: 'none' }}>
-            <div
-              className="ascentor-stat-card"
-              style={{
-                background: '#141310',
-                border: '1px solid #2E2A22',
-                borderRadius: '12px',
-                padding: '16px',
-                cursor: 'pointer',
-                transition: 'border-color 0.2s',
-              }}
-            >
-              {/* Sub-label pill */}
-              <div style={{ marginBottom: '10px' }}>
-                <span style={{
-                  ...monoLabel,
-                  background: `${s.accent}18`,
-                  color: s.accent,
-                  padding: '2px 8px',
-                  borderRadius: '100px',
-                  fontSize: '9px',
-                }}>
-                  {s.sub}
-                </span>
-              </div>
-              {/* Value */}
-              <div style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: '30px',
-                fontWeight: 700,
-                color: s.accent,
-                lineHeight: 1,
-                marginBottom: '4px',
-              }}>
-                {s.value.toLocaleString()}
-              </div>
-              {/* Label */}
-              <div style={{ ...monoLabel }}>{s.label}</div>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* ─── Activity Chart ────────────────────────────────────────────────── */}
-      <div style={{ ...card, marginBottom: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <span style={{ ...sectionTitle }}>Activity — Last 14 Days</span>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <span style={{ ...monoLabel, display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: '#E8A020', opacity: 0.7 }} />
-              Sessions
-            </span>
-            <span style={{ ...monoLabel, display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#14B8A6' }} />
-              Active Users
-            </span>
+        {/* ── Header ────────────────────────────────────────────────────── */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28 }}>
+          <div>
+            <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:28, fontWeight:700, color:'#FEF9EC', lineHeight:1.1, marginBottom:4 }}>
+              Admin Dashboard
+            </h1>
+            <p style={{ fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.1em', textTransform:'uppercase', color:'#4A4438' }}>
+              Last refreshed · {new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' })}
+            </p>
+          </div>
+          <div style={{ display:'flex', gap:8 }}>
+            {[
+              { label:'+ Cohort',  href:'/admin/cohorts?action=create' },
+              { label:'+ Expert',  href:'/admin/experts?action=create' },
+              { label:'+ Course',  href:'/admin/courses?action=create' },
+            ].map(a => (
+              <Link key={a.label} href={a.href} style={{ textDecoration:'none' }}>
+                <div className="ao-action" style={{ padding:'8px 14px', borderRadius:8, border:'1px solid #2E2A22', background:'#141310', fontFamily:"'Syne',sans-serif", fontSize:12, fontWeight:600, color:'#D4CFC3', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
+                  {a.label}
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '5px', height: '80px' }}>
-          {dailyActivity.map((d) => (
-            <div key={d.day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
-              <div style={{ width: '100%', position: 'relative', display: 'flex', alignItems: 'flex-end', height: '64px' }}>
-                {/* Sessions bar */}
-                <div style={{
-                  width: '100%',
-                  height: `${Math.max((d.sessions / maxSessions) * 100, d.sessions > 0 ? 6 : 2)}%`,
-                  background: '#E8A020',
-                  opacity: 0.65,
-                  borderRadius: '3px 3px 0 0',
-                  transition: 'height 0.3s ease',
-                }} />
-                {/* Users dot */}
-                {d.users > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    width: '5px',
-                    height: '5px',
-                    borderRadius: '50%',
-                    background: '#14B8A6',
-                    bottom: `${Math.max((d.users / Math.max(...dailyActivity.map((x) => x.users), 1)) * 100, 5)}%`,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                  }} />
-                )}
+
+        {/* ── KPI Row ───────────────────────────────────────────────────── */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:10, marginBottom:24 }}>
+          {[
+            {
+              value: stats.totalUsers,
+              label: 'Total Users',
+              delta: stats.newUsers7d,
+              deltaLabel: 'new this week',
+              accent: '#E8A020',
+              icon: '👤',
+              href: '/admin/users',
+            },
+            {
+              value: stats.totalSessions,
+              label: 'Sage Sessions',
+              delta: stats.sessions7d,
+              deltaLabel: 'this week',
+              accent: '#8B5CF6',
+              icon: '💬',
+              href: '/admin/coaching',
+            },
+            {
+              value: stats.totalPosts,
+              label: 'Circle Posts',
+              delta: stats.posts7d,
+              deltaLabel: 'this week',
+              accent: '#14B8A6',
+              icon: '🗣️',
+              href: '/admin/coaching',
+            },
+            {
+              value: stats.publishedCourses,
+              label: 'Courses Live',
+              delta: null,
+              deltaLabel: 'published',
+              accent: '#3B82F6',
+              icon: '📚',
+              href: '/admin/courses',
+            },
+            {
+              value: stats.upcomingEvents,
+              label: 'Events Scheduled',
+              delta: null,
+              deltaLabel: 'upcoming',
+              accent: '#10B981',
+              icon: '🎙️',
+              href: '/admin/experts',
+            },
+          ].map(s => (
+            <Link key={s.label} href={s.href} style={{ textDecoration:'none' }}>
+              <div className="ao-stat" style={{
+                background:'#141310', border:'1px solid #2E2A22', borderRadius:14,
+                padding:'18px 16px', cursor:'pointer', transition:'all 0.2s',
+                borderLeft:`3px solid ${s.accent}`,
+              }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
+                  <span style={{ fontSize:18 }}>{s.icon}</span>
+                  {s.delta !== null && s.delta > 0 && (
+                    <span style={{
+                      fontFamily:"'DM Mono',monospace", fontSize:9, letterSpacing:'0.08em',
+                      background:`${s.accent}18`, color:s.accent,
+                      padding:'2px 7px', borderRadius:100,
+                    }}>
+                      +{s.delta} {s.deltaLabel}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:36, fontWeight:700, color:'#FEF9EC', lineHeight:1, marginBottom:4 }}>
+                  {s.value.toLocaleString()}
+                </div>
+                <div style={{ fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.1em', textTransform:'uppercase', color:'#7A7260' }}>
+                  {s.label}
+                </div>
               </div>
-              <span style={{ ...monoLabel, fontSize: '8px' }}>
-                {new Date(d.day).toLocaleDateString('en-US', { day: 'numeric' })}
-              </span>
-            </div>
+            </Link>
           ))}
         </div>
-      </div>
 
-      {/* ─── Two Columns ──────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}
-        className="lg:grid-cols-2 grid-cols-1">
+        {/* ── Activity Chart ─────────────────────────────────────────────── */}
+        <div className="ao-card" style={{ marginBottom:20 }}>
+          {/* Header */}
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+            <div>
+              <p style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:600, color:'#D4CFC3', marginBottom:2 }}>
+                Activity — Last 14 Days
+              </p>
+              <p style={{ fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.08em', textTransform:'uppercase', color:'#4A4438' }}>
+                Sage sessions per day · active users overlay
+              </p>
+            </div>
+            <div style={{ display:'flex', gap:16, alignItems:'center' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <div style={{ width:10, height:10, borderRadius:2, background:'#E8A020', opacity:0.75 }} />
+                <span style={{ fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.08em', color:'#7A7260' }}>Sessions</span>
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <div style={{ width:10, height:10, borderRadius:'50%', background:'#14B8A6' }} />
+                <span style={{ fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.08em', color:'#7A7260' }}>Active Users</span>
+              </div>
+            </div>
+          </div>
 
-        {/* Session Types */}
-        <div style={{ ...card }}>
-          <span style={{ ...sectionTitle }}>Session Types — 30d</span>
-          <div style={{ marginTop: '14px' }}>
+          {/* Y-axis + bars */}
+          <div style={{ display:'flex', gap:0 }}>
+            {/* Y labels */}
+            <div style={{ display:'flex', flexDirection:'column', justifyContent:'space-between', paddingBottom:28, paddingRight:10, minWidth:24 }}>
+              {[maxSessions, Math.ceil(maxSessions/2), 0].map(v => (
+                <span key={v} style={{ fontFamily:"'DM Mono',monospace", fontSize:9, color:'#4A4438', textAlign:'right', display:'block' }}>
+                  {v}
+                </span>
+              ))}
+            </div>
+
+            {/* Chart area */}
+            <div style={{ flex:1, position:'relative' }}>
+              {/* Grid lines */}
+              {[0, 50, 100].map(p => (
+                <div key={p} style={{
+                  position:'absolute', left:0, right:0,
+                  top:`${p}%`, height:1,
+                  background: p === 100 ? '#3A3630' : '#2E2A22',
+                  transform:'translateY(-1px)',
+                }} />
+              ))}
+
+              {/* Bars */}
+              <div style={{ display:'flex', alignItems:'flex-end', gap:4, height:CHART_H, paddingBottom:0 }}>
+                {dailyActivity.map((d, i) => {
+                  const barH   = Math.max(d.sessions > 0 ? (d.sessions / maxSessions) * CHART_H : 2, d.sessions > 0 ? 6 : 2);
+                  const dotBot = d.users > 0 ? (d.users / maxUsers) * CHART_H : 0;
+                  const isToday = i === dailyActivity.length - 1;
+                  return (
+                    <div key={d.day} className="ao-bar-col" style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:0, height:'100%', justifyContent:'flex-end', position:'relative', cursor:'default' }}>
+                      {/* Tooltip */}
+                      <div className="ao-tooltip" style={{
+                        position:'absolute', bottom:'100%', left:'50%', transform:'translateX(-50%)',
+                        marginBottom:6, background:'#1E1C17', border:'1px solid #3A3630',
+                        borderRadius:8, padding:'8px 10px', whiteSpace:'nowrap', zIndex:10,
+                        boxShadow:'0 4px 16px rgba(0,0,0,0.4)',
+                      }}>
+                        <p style={{ fontFamily:"'Syne',sans-serif", fontSize:11, fontWeight:600, color:'#FEF9EC', marginBottom:3 }}>{d.label}</p>
+                        <p style={{ fontFamily:"'DM Mono',monospace", fontSize:10, color:'#E8A020', margin:0 }}>{d.sessions} session{d.sessions !== 1 ? 's' : ''}</p>
+                        <p style={{ fontFamily:"'DM Mono',monospace", fontSize:10, color:'#14B8A6', margin:'2px 0 0' }}>{d.users} active user{d.users !== 1 ? 's' : ''}</p>
+                      </div>
+
+                      {/* Active users dot */}
+                      {d.users > 0 && (
+                        <div style={{
+                          position:'absolute',
+                          bottom: dotBot + 4,
+                          width:6, height:6, borderRadius:'50%',
+                          background:'#14B8A6',
+                          boxShadow:'0 0 5px rgba(20,184,166,0.6)',
+                          zIndex:2,
+                        }} />
+                      )}
+
+                      {/* Sessions bar */}
+                      <div style={{
+                        width:'100%',
+                        height: barH,
+                        background: isToday
+                          ? 'linear-gradient(to top, #E8A020, #F5C55A)'
+                          : 'rgba(232,160,32,0.55)',
+                        borderRadius:'3px 3px 0 0',
+                        transition:'all 0.3s ease',
+                        boxShadow: isToday ? '0 0 10px rgba(232,160,32,0.3)' : 'none',
+                      }} />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* X-axis labels */}
+              <div style={{ display:'flex', gap:4, marginTop:8 }}>
+                {dailyActivity.map((d, i) => {
+                  const showLabel = i === 0 || i === 6 || i === 13 || dailyActivity.length <= 7;
+                  return (
+                    <div key={d.day} style={{ flex:1, textAlign:'center' }}>
+                      <span style={{
+                        fontFamily:"'DM Mono',monospace", fontSize:9,
+                        color: i === dailyActivity.length - 1 ? '#E8A020' : '#4A4438',
+                        letterSpacing:'0.04em',
+                        visibility: showLabel ? 'visible' : 'hidden',
+                      }}>
+                        {new Date(d.day).toLocaleDateString('en-US', { month:'short', day:'numeric' })}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Summary row under chart */}
+          <div style={{ display:'flex', gap:20, marginTop:16, paddingTop:16, borderTop:'1px solid #2E2A22' }}>
+            {[
+              { label:'Total sessions (14d)', value: dailyActivity.reduce((s,d)=>s+d.sessions,0), color:'#E8A020' },
+              { label:'Peak day',             value: `${maxSessions} sessions`, color:'#F5C55A' },
+              { label:'Avg per day',          value: (dailyActivity.reduce((s,d)=>s+d.sessions,0)/14).toFixed(1), color:'#7A7260' },
+            ].map(s => (
+              <div key={s.label}>
+                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:s.color, lineHeight:1, marginBottom:2 }}>{s.value}</p>
+                <p style={{ fontFamily:"'DM Mono',monospace", fontSize:9, letterSpacing:'0.08em', textTransform:'uppercase', color:'#4A4438' }}>{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Two columns: Session Types + Top Users ─────────────────────── */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+
+          {/* Session Types */}
+          <div className="ao-card">
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
+              <p style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:600, color:'#D4CFC3' }}>Session Types</p>
+              <span style={{ fontFamily:"'DM Mono',monospace", fontSize:9, letterSpacing:'0.08em', color:'#4A4438', textTransform:'uppercase' }}>
+                Last 30 days · {totalSessTypes} total
+              </span>
+            </div>
             {sessionTypes.length === 0 ? (
-              <p style={{ ...monoLabel }}>No session data yet</p>
-            ) : sessionTypes.map((t) => {
-              const total = sessionTypes.reduce((s, x) => s + x.count, 0);
-              const pct = Math.round((t.count / total) * 100);
+              <p style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:'#4A4438' }}>No sessions yet</p>
+            ) : sessionTypes.map((t, i) => {
+              const p = pct(t.count, totalSessTypes);
+              const color = TYPE_COLORS[i % TYPE_COLORS.length];
               return (
-                <div key={t.type} style={{ marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: '#D4CFC3', textTransform: 'capitalize' }}>
-                      {t.type.replace(/_/g, ' ')}
+                <div key={t.type} style={{ marginBottom:14 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:6 }}>
+                    <span style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:'#D4CFC3' }}>
+                      {TYPE_LABELS[t.type] || t.type.replace(/_/g,' ')}
                     </span>
-                    <span style={{ ...monoLabel }}>{t.count} ({pct}%)</span>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color, lineHeight:1 }}>{t.count}</span>
+                      <span style={{ fontFamily:"'DM Mono',monospace", fontSize:10, color:'#4A4438', minWidth:32, textAlign:'right' }}>{p}%</span>
+                    </div>
                   </div>
-                  <div style={{ width: '100%', height: '3px', borderRadius: '2px', background: '#2E2A22' }}>
-                    <div style={{ height: '100%', borderRadius: '2px', width: `${pct}%`, background: '#E8A020', transition: 'width 0.4s ease' }} />
+                  {/* Progress bar with percentage marker */}
+                  <div style={{ position:'relative', width:'100%', height:6, borderRadius:4, background:'#2E2A22', overflow:'hidden' }}>
+                    <div style={{
+                      height:'100%', borderRadius:4, width:`${p}%`,
+                      background:`linear-gradient(90deg, ${color}99, ${color})`,
+                      transition:'width 0.5s ease',
+                    }} />
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
 
-        {/* Top Users */}
-        <div style={{ ...card }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <span style={{ ...sectionTitle }}>Top Users — 30d</span>
-            <Link href="/admin/users" className="ascentor-link" style={{ ...monoLabel, color: '#E8A020', textDecoration: 'none', transition: 'color 0.15s' }}>
-              View all
-            </Link>
+          {/* Top Users */}
+          <div className="ao-card">
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
+              <p style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:600, color:'#D4CFC3' }}>Top Users by Sessions</p>
+              <Link href="/admin/users" className="ao-link" style={{ fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.08em', color:'#E8A020', textDecoration:'none', textTransform:'uppercase', transition:'color 0.15s' }}>
+                View all →
+              </Link>
+            </div>
+            {topUsers.length === 0 ? (
+              <p style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:'#4A4438' }}>No active users yet</p>
+            ) : (() => {
+              const maxS = Math.max(...topUsers.map(u => u.sessions), 1);
+              return topUsers.map((u, i) => (
+                <div key={u.id} className="ao-row" style={{ display:'flex', alignItems:'center', gap:12, padding:'9px 6px', borderBottom:'1px solid #2E2A22', transition:'background 0.15s' }}>
+                  {/* Rank */}
+                  <span style={{
+                    fontFamily:"'DM Mono',monospace", fontSize:11, fontWeight:500,
+                    width:18, textAlign:'center', flexShrink:0,
+                    color: i === 0 ? '#E8A020' : '#4A4438',
+                  }}>{i + 1}</span>
+
+                  {/* Avatar */}
+                  <div style={{
+                    width:30, height:30, borderRadius:'50%', flexShrink:0,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    fontFamily:"'Syne',sans-serif", fontSize:12, fontWeight:700,
+                    background: i === 0 ? 'rgba(232,160,32,0.12)' : '#1E1C17',
+                    border: `1px solid ${i === 0 ? 'rgba(232,160,32,0.3)' : '#2E2A22'}`,
+                    color: i === 0 ? '#E8A020' : '#7A7260',
+                  }}>
+                    {(u.full_name || '?').charAt(0).toUpperCase()}
+                  </div>
+
+                  {/* Name + role + bar */}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:4 }}>
+                      <p style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:'#D4CFC3', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {u.full_name || 'Unknown'}
+                      </p>
+                      <span style={{ fontFamily:"'DM Mono',monospace", fontSize:11, fontWeight:500, color:'#E8A020', flexShrink:0, marginLeft:8 }}>
+                        {u.sessions}
+                      </span>
+                    </div>
+                    {/* Mini progress bar showing share of top user */}
+                    <div style={{ width:'100%', height:3, borderRadius:2, background:'#2E2A22' }}>
+                      <div style={{ height:'100%', borderRadius:2, width:`${(u.sessions/maxS)*100}%`, background: i === 0 ? '#E8A020' : '#3A3630', transition:'width 0.4s ease' }} />
+                    </div>
+                    <p style={{ fontFamily:"'DM Mono',monospace", fontSize:9, letterSpacing:'0.06em', textTransform:'uppercase', color:'#4A4438', marginTop:2 }}>
+                      {u.current_role || 'No role set'}
+                    </p>
+                  </div>
+                </div>
+              ));
+            })()}
           </div>
-          {topUsers.length === 0 ? (
-            <p style={{ ...monoLabel }}>No active users yet</p>
-          ) : topUsers.map((u, i) => (
-            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 0', borderBottom: '1px solid #2E2A22' }}>
-              <span style={{
-                fontFamily: "'DM Mono', monospace",
-                fontSize: '11px',
-                fontWeight: 500,
-                width: '18px',
-                textAlign: 'center',
-                color: i === 0 ? '#E8A020' : '#4A4438',
-              }}>
-                {i + 1}
-              </span>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '13px', color: '#D4CFC3', marginBottom: '2px' }}>
-                  {u.full_name || 'Unknown'}
-                </p>
-                <p style={{ ...monoLabel }}>{u.current_role || ''}</p>
-              </div>
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', fontWeight: 500, color: '#E8A020' }}>
-                {u.sessions} sessions
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ─── Three Columns ────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '16px' }}
-        className="lg:grid-cols-3 grid-cols-1">
-
-        {/* Recent Signups */}
-        <div style={{ ...card }}>
-          <div style={{ ...sectionTitle, marginBottom: '14px' }}>Recent Signups</div>
-          {recentSignups.map((u) => (
-            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid #2E2A22' }}>
-              <div style={{
-                width: '28px', height: '28px', borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: "'Syne', sans-serif", fontSize: '12px', fontWeight: 700,
-                background: '#1E1C17', color: '#E8A020', border: '1px solid #2E2A22',
-                flexShrink: 0,
-              }}>
-                {(u.full_name || '?').charAt(0).toUpperCase()}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: '#D4CFC3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {u.full_name || 'No name'}
-                </p>
-                <p style={{ ...monoLabel, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {u.industry || u.current_role || ''}
-                </p>
-              </div>
-              <span style={{ ...monoLabel, flexShrink: 0 }}>
-                {new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </span>
-            </div>
-          ))}
         </div>
 
-        {/* Top Cohorts */}
-        <div style={{ ...card }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <span style={{ ...sectionTitle }}>Top Cohorts</span>
-            <Link href="/admin/cohorts" className="ascentor-link" style={{ ...monoLabel, color: '#E8A020', textDecoration: 'none', transition: 'color 0.15s' }}>
-              Manage
-            </Link>
+        {/* ── Three columns: Signups + Cohorts + Events ─────────────────── */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:16, marginBottom:16 }}>
+
+          {/* Recent Signups */}
+          <div className="ao-card">
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+              <p style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:600, color:'#D4CFC3' }}>Recent Signups</p>
+              <Link href="/admin/users" className="ao-link" style={{ fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.08em', color:'#E8A020', textDecoration:'none', textTransform:'uppercase', transition:'color 0.15s' }}>
+                All →
+              </Link>
+            </div>
+            {recentSignups.length === 0 ? (
+              <p style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:'#4A4438' }}>No signups yet</p>
+            ) : recentSignups.slice(0,6).map(u => (
+              <div key={u.id} className="ao-row" style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 6px', borderBottom:'1px solid #2E2A22', transition:'background 0.15s' }}>
+                <div style={{
+                  width:28, height:28, borderRadius:'50%', flexShrink:0,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontFamily:"'Syne',sans-serif", fontSize:11, fontWeight:700,
+                  background:'#1E1C17', color:'#E8A020', border:'1px solid #2E2A22',
+                }}>
+                  {(u.full_name || '?').charAt(0).toUpperCase()}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontFamily:"'Syne',sans-serif", fontSize:12, color:'#D4CFC3', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    {u.full_name || 'No name'}
+                  </p>
+                  <p style={{ fontFamily:"'DM Mono',monospace", fontSize:9, letterSpacing:'0.06em', textTransform:'uppercase', color:'#4A4438', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    {u.industry || u.current_role || 'No role'}
+                  </p>
+                </div>
+                <span style={{ fontFamily:"'DM Mono',monospace", fontSize:10, color:'#7A7260', flexShrink:0 }}>
+                  {new Date(u.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric' })}
+                </span>
+              </div>
+            ))}
           </div>
-          {topCohorts.length === 0 ? (
-            <p style={{ ...monoLabel }}>No cohorts yet</p>
-          ) : topCohorts.map((c) => (
-            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0', borderBottom: '1px solid #2E2A22' }}>
-              {/* Replace emoji icon with styled initial badge */}
-              <div style={{
-                width: '28px', height: '28px', borderRadius: '6px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: '#1E1C17', border: '1px solid #2E2A22',
-                fontFamily: "'Syne', sans-serif", fontSize: '11px', fontWeight: 700, color: '#E8A020',
-                flexShrink: 0,
-              }}>
-                {(c.name || 'C').charAt(0).toUpperCase()}
-              </div>
-              <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', flex: 1, color: '#D4CFC3' }}>{c.name}</span>
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', fontWeight: 500, color: '#14B8A6' }}>
-                {c.member_count || 0}
-              </span>
-            </div>
-          ))}
-        </div>
 
-        {/* Upcoming Events */}
-        <div style={{ ...card }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <span style={{ ...sectionTitle }}>Upcoming Events</span>
-            <Link href="/admin/experts" className="ascentor-link" style={{ ...monoLabel, color: '#E8A020', textDecoration: 'none', transition: 'color 0.15s' }}>
-              Manage
-            </Link>
+          {/* Top Cohorts */}
+          <div className="ao-card">
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+              <p style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:600, color:'#D4CFC3' }}>Top Circles</p>
+              <Link href="/admin/cohorts" className="ao-link" style={{ fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.08em', color:'#E8A020', textDecoration:'none', textTransform:'uppercase', transition:'color 0.15s' }}>
+                Manage →
+              </Link>
+            </div>
+            {topCohorts.length === 0 ? (
+              <p style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:'#4A4438' }}>No circles yet</p>
+            ) : (() => {
+              const maxM = Math.max(...topCohorts.map(c => c.member_count || 0), 1);
+              return topCohorts.map((c, i) => (
+                <div key={c.id} className="ao-row" style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 6px', borderBottom:'1px solid #2E2A22', transition:'background 0.15s' }}>
+                  <div style={{
+                    width:28, height:28, borderRadius:6, flexShrink:0,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    background:'#1E1C17', border:'1px solid #2E2A22',
+                    fontFamily:"'Syne',sans-serif", fontSize:11, fontWeight:700, color:'#14B8A6',
+                  }}>
+                    {(c.name || 'C').charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontFamily:"'Syne',sans-serif", fontSize:12, color:'#D4CFC3', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:3 }}>
+                      {c.name}
+                    </p>
+                    <div style={{ width:'100%', height:3, borderRadius:2, background:'#2E2A22' }}>
+                      <div style={{ height:'100%', borderRadius:2, width:`${((c.member_count||0)/maxM)*100}%`, background:'#14B8A6', transition:'width 0.4s ease' }} />
+                    </div>
+                  </div>
+                  <span style={{ fontFamily:"'DM Mono',monospace", fontSize:11, fontWeight:500, color:'#14B8A6', flexShrink:0 }}>
+                    {c.member_count || 0}
+                  </span>
+                </div>
+              ));
+            })()}
           </div>
-          {upcomingEvents.length === 0 ? (
-            <p style={{ ...monoLabel }}>No upcoming events</p>
-          ) : upcomingEvents.map((e) => (
-            <div key={e.id} style={{ padding: '9px 0', borderBottom: '1px solid #2E2A22' }}>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '13px', color: '#D4CFC3', marginBottom: '3px' }}>{e.title}</p>
-              <p style={{ ...monoLabel }}>
-                {e.expert_name}&nbsp;&middot;&nbsp;
-                {new Date(e.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* ─── Quick Actions ────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}
-        className="lg:grid-cols-4 grid-cols-2">
-        {quickActions.map((a) => (
-          <Link key={a.label} href={a.href} style={{ textDecoration: 'none' }}>
-            <div
-              className="ascentor-action-btn"
-              style={{
-                background: '#141310',
-                border: '1px solid #2E2A22',
-                borderRadius: '10px',
-                padding: '14px 12px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'border-color 0.2s, background 0.2s',
-              }}
-            >
-              {/* Gold accent line instead of emoji */}
-              <div style={{ width: '20px', height: '2px', background: '#E8A020', margin: '0 auto 10px' }} />
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', fontWeight: 600, color: '#D4CFC3' }}>
-                {a.label}
-              </p>
+          {/* Upcoming Events */}
+          <div className="ao-card">
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+              <p style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:600, color:'#D4CFC3' }}>Upcoming Events</p>
+              <Link href="/admin/experts" className="ao-link" style={{ fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.08em', color:'#E8A020', textDecoration:'none', textTransform:'uppercase', transition:'color 0.15s' }}>
+                Manage →
+              </Link>
             </div>
-          </Link>
-        ))}
+            {upcomingEvents.length === 0 ? (
+              <div style={{ textAlign:'center', padding:'24px 0' }}>
+                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, color:'#2E2A22', marginBottom:6 }}>No events</p>
+                <Link href="/admin/experts?action=create" style={{ textDecoration:'none' }}>
+                  <span style={{ fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.08em', color:'#E8A020', textTransform:'uppercase' }}>
+                    + Schedule one →
+                  </span>
+                </Link>
+              </div>
+            ) : upcomingEvents.map(e => (
+              <div key={e.id} style={{ padding:'10px 6px', borderBottom:'1px solid #2E2A22' }}>
+                {/* Date pill */}
+                <div style={{ marginBottom:5 }}>
+                  <span style={{
+                    fontFamily:"'DM Mono',monospace", fontSize:9, letterSpacing:'0.1em', textTransform:'uppercase',
+                    background:'rgba(16,185,129,0.08)', color:'#10B981',
+                    padding:'2px 8px', borderRadius:100,
+                  }}>
+                    {new Date(e.scheduled_at).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}
+                  </span>
+                </div>
+                <p style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:'#D4CFC3', marginBottom:2 }}>{e.title}</p>
+                <p style={{ fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.06em', color:'#4A4438' }}>
+                  with {e.expert_name} · {new Date(e.scheduled_at).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' })}
+                </p>
+              </div>
+            ))}
+          </div>
+
+        </div>
+
       </div>
     </div>
   );
