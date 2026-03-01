@@ -109,7 +109,16 @@ export default function AdminOverviewClient() {
       <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
         <div style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid #2E2A22', borderTopColor: '#E8A020', animation: 'ao-spin 0.9s linear infinite' }} />
         <p style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, letterSpacing: '0.12em', color: '#4A4438', textTransform: 'uppercase' }}>Loading dashboard...</p>
-        <style>{`@keyframes ao-spin { to { transform: rotate(360deg); } }`}</style>
+        <style>{`
+        /* ── Responsive grid breakpoints ── */
+        @media (min-width: 600px) {
+          .ao-grid-2 { grid-template-columns: 1fr 1fr !important; }
+          .ao-grid-kpi { grid-template-columns: repeat(3, 1fr) !important; }
+        }
+        @media (min-width: 900px) {
+          .ao-grid-3 { grid-template-columns: repeat(3, 1fr) !important; }
+          .ao-grid-kpi { grid-template-columns: repeat(5, 1fr) !important; }
+        }@keyframes ao-spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -178,7 +187,7 @@ export default function AdminOverviewClient() {
         </div>
 
         {/* ── KPI Row ───────────────────────────────────────────────────── */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:10, marginBottom:24 }}>
+        <div className="ao-grid-kpi" style={{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:10, marginBottom:24 }}>
           {[
             {
               value: stats.totalUsers,
@@ -387,7 +396,7 @@ export default function AdminOverviewClient() {
         </div>
 
         {/* ── Two columns: Session Types + Top Users ─────────────────────── */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+        <div className="ao-grid-2" style={{ display:'grid', gridTemplateColumns:'1fr', gap:16, marginBottom:16 }}>
 
           {/* Session Types */}
           <div className="ao-card">
@@ -484,7 +493,7 @@ export default function AdminOverviewClient() {
         </div>
 
         {/* ── Three columns: Signups + Cohorts + Events ─────────────────── */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:16, marginBottom:16 }}>
+        <div className="ao-grid-3 ao-grid-2" style={{ display:'grid', gridTemplateColumns:'1fr', gap:16, marginBottom:16 }}>
 
           {/* Recent Signups */}
           <div className="ao-card">

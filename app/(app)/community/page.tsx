@@ -152,16 +152,7 @@ export default function CommunityPage() {
   }
 
   return (
-    <div className="animate-fade-up py-6">
-      <h2 className="text-2xl font-semibold mb-1"
-        style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
-        Cohorts
-      </h2>
-      <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-        {communityLimit === -1
-          ? 'Join communities of peers on similar journeys'
-          : `Join up to ${communityLimit} communities (upgrade for unlimited)`}
-      </p>
+    <div className="animate-fade-up pt-2 pb-6">
 
       {/* Upgrade prompt when limit hit */}
       {showUpgrade && (
