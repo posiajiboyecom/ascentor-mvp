@@ -33,7 +33,10 @@ export default function CohortFeedPage() {
   const params    = useParams();
   const cohortId  = Array.isArray(params.cohortId) ? params.cohortId[0] : (params.cohortId as string);
   const router    = useRouter();
-  const supabase  = createClient();
+  // CRITICAL: stable ref — never recreate supabase client on re-renders
+  // A new createClient() on each render = broken realtime channels
+  const supabaseRef = useRef(createClient());
+  const supabase    = supabaseRef.current;
 
   const [cohort,       setCohort]       = useState<any>(null);
   const [posts,        setPosts]        = useState<Post[]>([]);
@@ -51,15 +54,30 @@ export default function CohortFeedPage() {
   // Cache of authorId → name so realtime events can resolve names instantly
   const authorCache  = useRef<Record<string, string>>({});
 
+  // Store channel refs so cleanup removes the RIGHT instances
+  const channelRefs = useRef<ReturnType<typeof supabase.channel>[]>([]);
+
+  function cleanupChannels() {
+    channelRefs.current.forEach(ch => {
+      try { ch.unsubscribe(); } catch {}
+    });
+    channelRefs.current = [];
+  }
+
   useEffect(() => {
     if (!cohortId) return;
     loadAll();
+
+    // Reconnect realtime when tab regains focus (handles mobile backgrounding)
+    function handleFocus() {
+      cleanupChannels();
+      subscribeRealtime();
+    }
+    window.addEventListener('focus', handleFocus);
+
     return () => {
-      // Cleanup all realtime channels on unmount
-      supabase.channel(`cohort-${cohortId}-posts`).unsubscribe();
-      supabase.channel(`cohort-${cohortId}-replies`).unsubscribe();
-      supabase.channel(`cohort-${cohortId}-votes`).unsubscribe();
-      supabase.channel(`cohort-${cohortId}-presence`).unsubscribe();
+      window.removeEventListener('focus', handleFocus);
+      cleanupChannels();
     };
   }, [cohortId]);
 
@@ -75,8 +93,8 @@ export default function CohortFeedPage() {
   // ── Supabase Realtime subscriptions ──────────────────────────────────────
   function subscribeRealtime() {
     // ── 1. New / updated / deleted POSTS ──────────────────────────────────
-    supabase
-      .channel(`cohort-${cohortId}-posts`)
+    const postsChannel = supabase
+      .channel(`cohort-${cohortId}-posts-${Date.now()}`)
       .on('postgres_changes', {
         event:  'INSERT',
         schema: 'public',
@@ -118,11 +136,16 @@ export default function CohortFeedPage() {
       }, (payload) => {
         setPosts(prev => prev.filter(p => p.id !== (payload.old as any).id));
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.warn('[realtime] posts channel error, will retry on focus');
+        }
+      });
+    channelRefs.current.push(postsChannel);
 
     // ── 2. New REPLIES ─────────────────────────────────────────────────────
-    supabase
-      .channel(`cohort-${cohortId}-replies`)
+    const repliesChannel = supabase
+      .channel(`cohort-${cohortId}-replies-${Date.now()}`)
       .on('postgres_changes', {
         event:  'INSERT',
         schema: 'public',
@@ -159,10 +182,15 @@ export default function CohortFeedPage() {
           ),
         })));
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.warn('[realtime] replies channel error');
+        }
+      });
+    channelRefs.current.push(repliesChannel);
 
     // ── 3. Presence — who's online in this circle right now ────────────────
-    const presenceChannel = supabase.channel(`cohort-${cohortId}-presence`, {
+    const presenceChannel = supabase.channel(`cohort-${cohortId}-presence-${Date.now()}`, {
       config: { presence: { key: userIdRef.current || 'anon' } },
     });
     presenceChannel
@@ -175,6 +203,7 @@ export default function CohortFeedPage() {
           await presenceChannel.track({ online_at: new Date().toISOString() });
         }
       });
+    channelRefs.current.push(presenceChannel);
   }
 
   // ── Initial data load ─────────────────────────────────────────────────────
@@ -328,49 +357,85 @@ export default function CohortFeedPage() {
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, showReplies: true, replies: mapped } : p));
   }
 
-  // ── Upvote post ────────────────────────────────────────────────────────────
+  // ── Upvote post — atomic increment avoids race conditions ────────────────
   async function upvotePost(postId: string) {
     const post = posts.find(p => p.id === postId);
     if (!post || !userId) return;
-    const current = post.upvotes || 0;
 
-    if (post.voted) {
-      const newVal = Math.max(0, current - 1);
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, upvotes: newVal, voted: false } : p));
-      await supabase.from('cohort_votes').delete().eq('user_id', userId).eq('post_id', postId);
-      await supabase.from('cohort_posts').update({ upvotes: newVal }).eq('id', postId);
-    } else {
-      const newVal = current + 1;
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, upvotes: newVal, voted: true } : p));
-      await supabase.from('cohort_votes').insert({ user_id: userId, post_id: postId });
-      await supabase.from('cohort_posts').update({ upvotes: newVal }).eq('id', postId);
+    // Optimistic UI update immediately
+    const toggled = !post.voted;
+    setPosts(prev => prev.map(p => p.id === postId ? {
+      ...p,
+      upvotes: Math.max(0, (p.upvotes || 0) + (toggled ? 1 : -1)),
+      voted: toggled,
+    } : p));
+
+    try {
+      if (toggled) {
+        // Insert vote + atomically increment
+        await Promise.all([
+          supabase.from('cohort_votes').insert({ user_id: userId, post_id: postId }),
+          supabase.rpc('increment_post_upvotes', { post_id: postId, delta: 1 }),
+        ]);
+      } else {
+        // Delete vote + atomically decrement
+        await Promise.all([
+          supabase.from('cohort_votes').delete().eq('user_id', userId).eq('post_id', postId),
+          supabase.rpc('increment_post_upvotes', { post_id: postId, delta: -1 }),
+        ]);
+      }
+    } catch (err) {
+      // Rollback optimistic update on error
+      console.error('[upvote] post error:', err);
+      setPosts(prev => prev.map(p => p.id === postId ? {
+        ...p,
+        upvotes: Math.max(0, (p.upvotes || 0) + (toggled ? -1 : 1)),
+        voted: !toggled,
+      } : p));
     }
   }
 
-  // ── Upvote reply ───────────────────────────────────────────────────────────
+  // ── Upvote reply — atomic increment ───────────────────────────────────────
   async function upvoteReply(postId: string, replyId: string) {
     if (!userId) return;
     const post  = posts.find(p => p.id === postId);
     const reply = post?.replies?.find(r => r.id === replyId);
     if (!reply) return;
-    const current = reply.upvotes || 0;
 
-    if (reply.voted) {
-      const newVal = Math.max(0, current - 1);
-      setPosts(prev => prev.map(p => p.id === postId
-        ? { ...p, replies: p.replies?.map(r => r.id === replyId ? { ...r, upvotes: newVal, voted: false } : r) }
-        : p
-      ));
-      await supabase.from('cohort_votes').delete().eq('user_id', userId).eq('reply_id', replyId);
-      await supabase.from('cohort_replies').update({ upvotes: newVal }).eq('id', replyId);
-    } else {
-      const newVal = current + 1;
-      setPosts(prev => prev.map(p => p.id === postId
-        ? { ...p, replies: p.replies?.map(r => r.id === replyId ? { ...r, upvotes: newVal, voted: true } : r) }
-        : p
-      ));
-      await supabase.from('cohort_votes').insert({ user_id: userId, reply_id: replyId });
-      await supabase.from('cohort_replies').update({ upvotes: newVal }).eq('id', replyId);
+    const toggled = !reply.voted;
+    // Optimistic update
+    setPosts(prev => prev.map(p => p.id === postId ? {
+      ...p,
+      replies: p.replies?.map(r => r.id === replyId ? {
+        ...r,
+        upvotes: Math.max(0, (r.upvotes || 0) + (toggled ? 1 : -1)),
+        voted: toggled,
+      } : r),
+    } : p));
+
+    try {
+      if (toggled) {
+        await Promise.all([
+          supabase.from('cohort_votes').insert({ user_id: userId, reply_id: replyId }),
+          supabase.rpc('increment_reply_upvotes', { reply_id: replyId, delta: 1 }),
+        ]);
+      } else {
+        await Promise.all([
+          supabase.from('cohort_votes').delete().eq('user_id', userId).eq('reply_id', replyId),
+          supabase.rpc('increment_reply_upvotes', { reply_id: replyId, delta: -1 }),
+        ]);
+      }
+    } catch (err) {
+      // Rollback on error
+      console.error('[upvote] reply error:', err);
+      setPosts(prev => prev.map(p => p.id === postId ? {
+        ...p,
+        replies: p.replies?.map(r => r.id === replyId ? {
+          ...r,
+          upvotes: Math.max(0, (r.upvotes || 0) + (toggled ? -1 : 1)),
+          voted: !toggled,
+        } : r),
+      } : p));
     }
   }
 

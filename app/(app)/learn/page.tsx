@@ -597,7 +597,9 @@ export default function LearnPage() {
   const [loading, setLoading]         = useState(true);
   const [hasAccess, setHasAccess]     = useState<boolean | null>(null);
   const [userId, setUserId]           = useState<string | null>(null);
-  const supabase = createClient();
+  // Stable ref — never recreate on re-renders (same fix as community page)
+  const supabaseRef = useRef(createClient());
+  const supabase    = supabaseRef.current;
 
   useEffect(() => { loadData(); }, []);
 
@@ -683,10 +685,10 @@ export default function LearnPage() {
       course_id:        courseId,
       progress_percent: Math.round(pct),
       last_position:    Math.round(position),
-      completed:        completed !== undefined ? completed : undefined,
+      ...(completed !== undefined ? { completed } : {}),
       updated_at:       new Date().toISOString(),
     }, { onConflict: 'user_id,course_id' });
-  }, [userId, supabase]);
+  }, [userId]); // supabase is a stable ref — no need in deps
 
   function handleProgressUpdate(courseId: string, position: number, pct: number, completed?: boolean) {
     // Optimistic update local state
