@@ -390,7 +390,7 @@ function VideoPlayer({
             // Debounced save every 5 seconds
             if (pos - lastSaved.current > 5) {
               lastSaved.current = pos;
-              clearTimeout(saveTimer.current);
+              if (saveTimer.current) clearTimeout(saveTimer.current);
               saveTimer.current = setTimeout(() => {
                 onProgressUpdate(course.id, pos, pct);
               }, 500);
@@ -403,7 +403,7 @@ function VideoPlayer({
     window.addEventListener('message', handleMessage);
     return () => {
       window.removeEventListener('message', handleMessage);
-      clearTimeout(saveTimer.current);
+      if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [course.id, unlocked, onProgressUpdate]);
 
