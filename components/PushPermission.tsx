@@ -130,31 +130,29 @@ export default function PushPermission() {
     <>
       <style>{`
         @keyframes push-slide-up {
-          from { opacity:0; transform:translateY(20px); }
+          from { opacity:0; transform:translateY(100%); }
           to   { opacity:1; transform:translateY(0); }
         }
       `}</style>
       <div style={{
         position:   'fixed',
-        bottom:     '80px', // above mobile nav bar
-        left:       '50%',
-        transform:  'translateX(-50%)',
-        width:      'calc(100% - 32px)',
-        maxWidth:   '420px',
+        bottom:     0,
+        left:       0,
+        right:      0,
         background: '#1A1814',
-        border:     '1px solid rgba(232,160,32,0.25)',
-        borderRadius: '14px',
-        padding:    '16px',
+        borderTop:  '1px solid rgba(232,160,32,0.2)',
+        padding:    '12px 16px',
+        paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
         zIndex:     9990,
-        boxShadow:  '0 8px 40px rgba(0,0,0,0.5)',
+        boxShadow:  '0 -8px 32px rgba(0,0,0,0.5)',
         animation:  'push-slide-up 0.35s ease both',
         display:    'flex',
         gap:        '12px',
-        alignItems: 'flex-start',
+        alignItems: 'center',
       }}>
         {/* Bell icon */}
         <div style={{
-          width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
           background: 'rgba(232,160,32,0.1)',
           border: '1px solid rgba(232,160,32,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -166,45 +164,47 @@ export default function PushPermission() {
           </svg>
         </div>
 
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{
             fontFamily: "'Syne', sans-serif",
-            fontSize: 14, fontWeight: 600, color: '#FEF9EC', marginBottom: 3,
+            fontSize: 13, fontWeight: 600, color: '#FEF9EC', marginBottom: 1,
           }}>
-            Stay in the loop
+            Enable notifications
           </p>
           <p style={{
             fontFamily: "'DM Mono', monospace",
-            fontSize: 11, color: '#7A7260', lineHeight: 1.5, marginBottom: 12,
+            fontSize: 10, color: '#7A7260', lineHeight: 1.4,
             letterSpacing: '0.02em',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
-            Get notified when someone likes your post, replies to you, or something important happens.
+            Get notified when someone likes or replies to you
           </p>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={handleEnable}
-              disabled={state === 'requesting'}
-              style={{
-                flex: 1, padding: '9px 0',
-                background: '#E8A020', color: '#000',
-                border: 'none', borderRadius: 8,
-                fontFamily: "'Syne', sans-serif",
-                fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              }}>
-              {state === 'requesting' ? 'Enabling…' : 'Enable notifications'}
-            </button>
-            <button
-              onClick={handleDismiss}
-              style={{
-                padding: '9px 14px',
-                background: 'transparent', color: '#4A4438',
-                border: '1px solid #2E2A22', borderRadius: 8,
-                fontFamily: "'DM Mono', monospace",
-                fontSize: 11, cursor: 'pointer',
-              }}>
-              Not now
-            </button>
-          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button
+            onClick={handleEnable}
+            disabled={state === 'requesting'}
+            style={{
+              padding: '8px 14px',
+              background: '#E8A020', color: '#000',
+              border: 'none', borderRadius: 8,
+              fontFamily: "'Syne', sans-serif",
+              fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}>
+            {state === 'requesting' ? '…' : 'Enable'}
+          </button>
+          <button
+            onClick={handleDismiss}
+            style={{
+              padding: '8px 12px',
+              background: 'transparent', color: '#4A4438',
+              border: '1px solid #2E2A22', borderRadius: 8,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 11, cursor: 'pointer',
+            }}>
+            ✕
+          </button>
         </div>
       </div>
     </>
