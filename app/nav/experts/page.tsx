@@ -11,7 +11,7 @@ const FALLBACK_EXPERTS = [
 ];
 
 const PAST_RECORDINGS = [
-  { title: 'Building Executive Presence — A Mentor's Framework', speaker: 'Ngozi Adeola', views: 234 },
+  { title: "Building Executive Presence — A Mentor's Framework", speaker: 'Ngozi Adeola', views: 234 },
   { title: 'Managing Up Without Losing Yourself', speaker: 'Samuel Mensah', views: 187 },
 ];
 
@@ -93,7 +93,7 @@ export default function ExpertsPage() {
                   <p className="text-[13px] mt-2" style={{ color: 'var(--text-muted)' }}>{expert.expert_bio}</p>
                   <div className="flex justify-between items-center mt-3.5">
                     <div className="text-xs" style={{ color: 'var(--text-dim)' }}>
-                      📅 {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · 👥 {expert.max_participants - spotsUsed} spots left
+                      📅 {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · 👥 {expert.max_participants - spotsUsed} spots left
                     </div>
                     <button
                       onClick={() => toggleRegister(expert.id)}
