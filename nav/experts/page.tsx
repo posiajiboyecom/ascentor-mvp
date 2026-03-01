@@ -11,7 +11,7 @@ const FALLBACK_EXPERTS = [
 ];
 
 const PAST_RECORDINGS = [
-  { title: 'Building Executive Presence — A Mentor's Framework', speaker: 'Ngozi Adeola', views: 234 },
+  { title: 'Building Executive Presence — A Mentor\'s Framework', speaker: 'Ngozi Adeola', views: 234},
   { title: 'Managing Up Without Losing Yourself', speaker: 'Samuel Mensah', views: 187 },
 ];
 
