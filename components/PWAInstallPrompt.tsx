@@ -118,40 +118,97 @@ export default function PWAInstallPrompt() {
 
   // Install banner
   return (
-    <div className="fixed bottom-20 left-3 right-3 z-[90] animate-fade-up"
-      style={{ maxWidth: '420px', margin: '0 auto' }}>
-      <div className="rounded-xl p-4 flex items-center gap-3"
-        style={{
-          background: 'linear-gradient(135deg, #1A1D2E 0%, #141724 100%)',
-          border: '1px solid rgba(245,158,11,0.2)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-        }}>
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-lg"
-          style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-          ⬆
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate" style={{ color: '#F1F0EB' }}>
-            Add Ascentor to Home Screen
-          </p>
-          <p className="text-[11px]" style={{ color: '#8B8A85' }}>
-            Quick access, works offline
-          </p>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <button onClick={handleDismiss}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold"
-            style={{ color: '#5A5955' }}>
-            Later
-          </button>
-          <button onClick={handleInstall}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold"
-            style={{ background: '#E8A020', color: '#000' }}>
-            Install
-          </button>
+    <>
+      <style>{`
+        @keyframes pwa-slide-up {
+          from { opacity: 0; transform: translateY(100%); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9989,
+        animation: 'pwa-slide-up 0.4s cubic-bezier(0.16,1,0.3,1) both',
+        background: '#1A1814',
+        borderTop: '1px solid rgba(232,160,32,0.15)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        boxShadow: '0 -12px 48px rgba(0,0,0,0.6)',
+      }}>
+        {/* Gold accent line at top */}
+        <div style={{
+          height: 2,
+          background: 'linear-gradient(90deg, transparent, #E8A020 30%, #E8A020 70%, transparent)',
+          marginBottom: 0,
+        }} />
+
+        <div style={{ padding: '14px 16px 16px', display: 'flex', gap: 14, alignItems: 'center' }}>
+          {/* App icon */}
+          <div style={{
+            width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+            background: 'linear-gradient(135deg, #E8A020, #C47D0E)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(232,160,32,0.35)',
+          }}>
+            <img
+              src="/ascentor-color-for-dark-pages.svg"
+              alt="Ascentor"
+              style={{ width: 30, height: 30, objectFit: 'contain' }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          </div>
+
+          {/* Text */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{
+              fontFamily: "'Syne', system-ui, sans-serif",
+              fontSize: 14, fontWeight: 700,
+              color: '#FEF9EC', margin: 0, marginBottom: 2,
+            }}>
+              Add Ascentor to your home screen
+            </p>
+            <p style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 10, color: '#7A7260',
+              letterSpacing: '0.03em', margin: 0,
+            }}>
+              One tap access · Works offline
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+            <button onClick={handleInstall} style={{
+              padding: '8px 18px',
+              background: '#E8A020',
+              color: '#000',
+              border: 'none',
+              borderRadius: 8,
+              fontFamily: "'Syne', system-ui, sans-serif",
+              fontSize: 12, fontWeight: 700,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 2px 8px rgba(232,160,32,0.3)',
+            }}>
+              Install
+            </button>
+            <button onClick={handleDismiss} style={{
+              padding: '4px 0',
+              background: 'transparent',
+              border: 'none',
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 10, color: '#4A4438',
+              cursor: 'pointer',
+              textAlign: 'center',
+            }}>
+              Not now
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
