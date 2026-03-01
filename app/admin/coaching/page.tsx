@@ -1,5 +1,7 @@
 'use client';
 
+import SageLoader from '@/components/SageLoader';
+
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -171,7 +173,7 @@ export default function AdminCoachingPage() {
   if (loading) {
     return (
       <div className="py-20 text-center">
-        <div className="text-2xl mb-2">⏳</div>
+        <SageLoader size="sm" />
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading chat data...</p>
       </div>
     );

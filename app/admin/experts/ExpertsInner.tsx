@@ -1,5 +1,9 @@
 'use client';
 
+import SageLoader from '@/components/SageLoader';
+
+import SageLoader from '@/components/SageLoader';
+
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
@@ -99,7 +103,7 @@ export default function AdminExpertsPageInner() {
   if (loading) {
     return (
       <div className="py-20 text-center">
-        <div className="text-2xl mb-2">⏳</div>
+        <SageLoader size="sm" />
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading events...</p>
       </div>
     );

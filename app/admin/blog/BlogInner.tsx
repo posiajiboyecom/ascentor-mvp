@@ -1,5 +1,7 @@
 'use client';
 
+import SageLoader from '@/components/SageLoader';
+
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
@@ -102,7 +104,7 @@ export default function AdminBlogPageInner() {
     loadPosts();
   }
 
-  if (loading) return <div className="py-20 text-center"><p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading...</p></div>;
+  if (loading) return <SageLoader message="Loading posts…" />;
 
   return (
     <div className="animate-fade-up">

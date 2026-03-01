@@ -1,5 +1,7 @@
 'use client';
 
+import SageLoader from '@/components/SageLoader';
+
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -89,8 +91,8 @@ export default function ExpertsPage() {
 
   if (loading) {
     return (
-      <div className="py-20 text-center">
-        <div className="text-2xl mb-2 animate-bounce">⏳</div>
+      <SageLoader message="Loading sessions…" />
+      <div style={{display:'none'}}>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading sessions...</p>
       </div>
     );

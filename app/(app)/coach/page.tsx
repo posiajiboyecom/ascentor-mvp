@@ -1,5 +1,7 @@
 'use client';
 
+import SageLoader from '@/components/SageLoader';
+
 import { useState, useRef, useEffect } from 'react';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { analytics } from '@/lib/analytics';
@@ -153,61 +155,7 @@ export default function CoachPage() {
   if (loadingHistory) {
     return (
       <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 120px)' }}>
-        <style>{`
-          @keyframes sage-orb-pulse {
-            0%, 100% { transform: scale(1);    opacity: 1; }
-            50%       { transform: scale(1.18); opacity: 0.7; }
-          }
-          @keyframes sage-orb-ring {
-            0%   { transform: scale(1);    opacity: 0.5; }
-            100% { transform: scale(1.9);  opacity: 0; }
-          }
-        `}</style>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-          {/* Pulsing orb */}
-          <div style={{ position: 'relative', width: 80, height: 80 }}>
-            {/* Expanding ring 1 */}
-            <div style={{
-              position: 'absolute', inset: 0,
-              borderRadius: '50%',
-              border: '1px solid rgba(232,160,32,0.5)',
-              animation: 'sage-orb-ring 2s ease-out infinite',
-            }} />
-            {/* Expanding ring 2 — offset */}
-            <div style={{
-              position: 'absolute', inset: 0,
-              borderRadius: '50%',
-              border: '1px solid rgba(232,160,32,0.3)',
-              animation: 'sage-orb-ring 2s ease-out infinite 0.7s',
-            }} />
-            {/* Core orb */}
-            <div style={{
-              position: 'absolute', inset: 12,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle at 38% 36%, rgba(245,197,90,0.25), rgba(232,160,32,0.10) 60%, transparent)',
-              border: '1.5px solid rgba(232,160,32,0.45)',
-              animation: 'sage-orb-pulse 2s ease-in-out infinite',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <span style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontWeight: 700,
-                fontSize: 24,
-                color: '#E8A020',
-                letterSpacing: '-0.5px',
-                lineHeight: 1,
-                userSelect: 'none',
-              }}>S</span>
-            </div>
-          </div>
-          <p style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: 11,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: 'var(--text-dim)',
-            margin: 0,
-          }}>Sage is waking up…</p>
+        <SageLoader size="lg" message="Sage is waking up…" />
         </div>
       </div>
     );

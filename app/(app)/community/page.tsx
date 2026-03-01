@@ -1,5 +1,7 @@
 'use client';
 
+import SageLoader from '@/components/SageLoader';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -144,8 +146,8 @@ export default function CommunityPage() {
 
   if (loading) {
     return (
-      <div className="py-20 text-center">
-        <div className="text-2xl mb-2">⏳</div>
+      <SageLoader message="Loading circles…" />
+      <div style={{display:'none'}}>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading circles...</p>
       </div>
     );
