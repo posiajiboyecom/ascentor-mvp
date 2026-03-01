@@ -92,8 +92,8 @@ export default function CommunityPage() {
           c.id === cohortId ? { ...c, member_count: (c.member_count || 0) + 1 } : c
         ));
         analytics.communityJoined(cohortId);
-        // Small delay so DB write propagates before membership check in feed page
-        await new Promise(r => setTimeout(r, 400));
+        // Delay so DB write fully propagates before membership check in feed page (matches 3x800ms retry budget)
+        await new Promise(r => setTimeout(r, 1200));
         router.push(`/community/${cohortId}`);
       } else {
         // Handle unique constraint violation gracefully

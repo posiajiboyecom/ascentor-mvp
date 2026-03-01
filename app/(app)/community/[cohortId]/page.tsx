@@ -26,7 +26,8 @@ type Post = {
 };
 
 export default function CohortFeedPage() {
-  const { cohortId } = useParams();
+  const params = useParams();
+  const cohortId = Array.isArray(params.cohortId) ? params.cohortId[0] : (params.cohortId as string);
   const router = useRouter();
   const supabase = createClient();
 
@@ -41,6 +42,7 @@ export default function CohortFeedPage() {
   const [memberCount, setMemberCount] = useState(0);
 
   useEffect(() => {
+    if (!cohortId) return; // wait for params to hydrate
     loadAll();
   }, [cohortId]);
 
@@ -49,21 +51,23 @@ export default function CohortFeedPage() {
     if (!user) { setLoading(false); return; }
     setUserId(user.id);
 
-    // Check membership — retry once to handle post-join race condition
+    // Check membership — retry up to 3x to handle post-join race condition
     let membership = null;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const { data } = await supabase
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data, error } = await supabase
         .from('cohort_members')
         .select('id')
-        .eq('cohort_id', cohortId)
+        .eq('cohort_id', String(cohortId))
         .eq('user_id', user.id)
         .maybeSingle();
+      if (error) console.warn('[CohortFeed] membership check error:', error.message);
       membership = data;
       if (membership) break;
-      if (attempt === 0) await new Promise(r => setTimeout(r, 600)); // wait 600ms then retry
+      if (attempt < 2) await new Promise(r => setTimeout(r, 800)); // wait then retry
     }
 
     if (!membership) {
+      console.warn('[CohortFeed] Not a member of cohort:', cohortId, '— redirecting');
       setLoading(false);
       router.push('/community');
       return;
@@ -73,7 +77,7 @@ export default function CohortFeedPage() {
     const { data: cohortData } = await supabase
       .from('cohorts')
       .select('*')
-      .eq('id', cohortId)
+      .eq('id', String(cohortId))
       .single();
     setCohort(cohortData);
     setMemberCount(cohortData?.member_count || 0);
@@ -82,7 +86,7 @@ export default function CohortFeedPage() {
     const { data: postsData } = await supabase
       .from('cohort_posts')
       .select('*, profiles(full_name)')
-      .eq('cohort_id', cohortId)
+      .eq('cohort_id', String(cohortId))
       .order('created_at', { ascending: false })
       .limit(50);
 
@@ -112,7 +116,7 @@ export default function CohortFeedPage() {
     const { data, error } = await supabase
       .from('cohort_posts')
       .insert({
-        cohort_id: cohortId,
+        cohort_id: String(cohortId),
         user_id: userId,
         content: newPost.trim(),
       })
@@ -228,7 +232,7 @@ export default function CohortFeedPage() {
   async function leaveCohort() {
     if (!userId || !confirm('Leave this cohort permanently? You can always rejoin later.')) return;
     await supabase.from('cohort_members').delete()
-      .eq('cohort_id', cohortId).eq('user_id', userId);
+      .eq('cohort_id', String(cohortId)).eq('user_id', userId);
     router.push('/community');
   }
 
