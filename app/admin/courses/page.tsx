@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 
@@ -45,7 +45,7 @@ const DIFF_CFG: Record<string, { color: string; label: string }> = {
   advanced:     { color: B.climber,  label: 'Advanced'     },
 };
 
-const CATEGORIES  = ['Frameworks', 'African Context', 'Career Growth', 'Communication', 'Networking', 'Leadership', 'General'];
+const DEFAULT_CATEGORIES = ['Leadership', 'Marketing', 'Finance', 'Career Growth', 'Communication', 'Networking', 'Frameworks', 'African Context', 'Entrepreneurship', 'Personal Development', 'General'];
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'] as const;
 const EMOJIS      = ['📚', '🌱', '🏛️', '🔭', '💬', '🤝', '🧭', '🎯', '💡', '🔥', '📊', '🚀'];
 
@@ -277,6 +277,12 @@ function AdminCoursesInner() {
   const [showForm, setShowForm] = useState(searchParams.get('action') === 'create');
   const [editing,  setEditing]  = useState<any>(null);
   const [saving,   setSaving]   = useState(false);
+  const [customCategories, setCustomCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  const [newCatInput, setNewCatInput] = useState('');
+  const [showCatManager, setShowCatManager] = useState(false);
+  const [dragIndex, setDragIndex]   = useState<number | null>(null);
+  const [dragOver, setDragOver]     = useState<number | null>(null);
+  const [reordering, setReordering] = useState(false);
 
   const emptyForm = {
     title: '', description: '', category: 'General', difficulty: 'beginner' as string,
@@ -289,8 +295,52 @@ function AdminCoursesInner() {
   async function loadCourses() {
     setLoading(true);
     const { data } = await supabase.from('courses').select('*').order('sort_order');
-    setCourses(data || []);
+    const coursesData = data || [];
+    setCourses(coursesData);
+    // Derive categories from existing courses + defaults, preserving order
+    const existingCats = [...new Set(coursesData.map((c: any) => c.category).filter(Boolean))] as string[];
+    const merged = [...new Set([...existingCats, ...DEFAULT_CATEGORIES])];
+    setCustomCategories(merged);
     setLoading(false);
+  }
+
+  // ── Drag-to-reorder ──────────────────────────────────────────
+  function handleDragStart(idx: number) { setDragIndex(idx); }
+  function handleDragOver(e: React.DragEvent, idx: number) {
+    e.preventDefault();
+    setDragOver(idx);
+  }
+  function handleDragEnd() { setDragIndex(null); setDragOver(null); }
+
+  async function handleDrop(dropIdx: number) {
+    if (dragIndex === null || dragIndex === dropIdx) {
+      setDragIndex(null); setDragOver(null); return;
+    }
+    const reordered = [...courses];
+    const [moved] = reordered.splice(dragIndex, 1);
+    reordered.splice(dropIdx, 0, moved);
+    const updated = reordered.map((c, i) => ({ ...c, sort_order: i + 1 }));
+    setCourses(updated);
+    setDragIndex(null); setDragOver(null);
+    setReordering(true);
+    await Promise.all(
+      updated.map(c => supabase.from('courses').update({ sort_order: c.sort_order }).eq('id', c.id))
+    );
+    setReordering(false);
+  }
+
+  // ── Category manager ─────────────────────────────────────────
+  function addCategory() {
+    const cat = newCatInput.trim();
+    if (!cat || customCategories.includes(cat)) return;
+    setCustomCategories(prev => [...prev, cat]);
+    setNewCatInput('');
+  }
+  function removeCategory(cat: string) {
+    // Don't remove if courses use it
+    const inUse = courses.some(c => c.category === cat);
+    if (inUse) { alert(`"${cat}" is used by ${courses.filter(c=>c.category===cat).length} course(s). Reassign them first.`); return; }
+    setCustomCategories(prev => prev.filter(c => c !== cat));
   }
 
   function openEdit(course: any) {
@@ -398,13 +448,22 @@ function AdminCoursesInner() {
             </p>
           </div>
 
-          <button
-            className="asc-btn-primary"
-            onClick={openCreate}
-            style={{ display: showForm && !editing ? 'none' : undefined }}
-          >
-            + Add Course
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              className="asc-btn-primary"
+              onClick={openCreate}
+              style={{ display: showForm && !editing ? 'none' : undefined }}
+            >
+              + Add Course
+            </button>
+            <button
+              className="asc-btn-ghost"
+              onClick={() => setShowCatManager(v => !v)}
+              style={{ fontSize: 12 }}
+            >
+              {showCatManager ? 'Hide Categories' : '⚙ Categories'}
+            </button>
+          </div>
         </div>
 
         {/* Gold rule */}
@@ -414,6 +473,56 @@ function AdminCoursesInner() {
           marginTop:  '16px',
         }} />
       </div>
+
+      {/* ── CATEGORY MANAGER ── */}
+      {showCatManager && (
+        <div style={{
+          borderRadius: 14, padding: '18px 20px', marginBottom: 20,
+          background: B.dark800, border: `1px solid ${B.border}`,
+          borderLeft: `3px solid ${B.dark500}`,
+        }}>
+          <p style={{ fontFamily: B.fontDisplay, fontSize: 17, fontWeight: 700, color: B.dark200, margin: '0 0 14px' }}>
+            Manage Categories
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+            {customCategories.map(cat => {
+              const inUse = courses.filter(c => c.category === cat).length;
+              return (
+                <div key={cat} style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '5px 10px 5px 12px', borderRadius: 20,
+                  background: B.dark700, border: `1px solid ${B.border}`,
+                  fontFamily: B.fontUI, fontSize: 12, color: B.dark200,
+                }}>
+                  <span>{cat}</span>
+                  {inUse > 0 && (
+                    <span style={{ fontFamily: B.fontMono, fontSize: 9, color: B.gold, background: B.goldMuted, borderRadius: 10, padding: '1px 5px' }}>
+                      {inUse}
+                    </span>
+                  )}
+                  <button onClick={() => removeCategory(cat)} style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: B.dark500, fontSize: 13, lineHeight: 1, padding: '0 0 0 2px',
+                  }}>×</button>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              className="asc-field"
+              value={newCatInput}
+              onChange={e => setNewCatInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addCategory()}
+              placeholder="New category name…"
+              style={{ flex: 1, fontSize: 12 }}
+            />
+            <button className="asc-btn-primary" onClick={addCategory} style={{ fontSize: 12, padding: '0 16px' }}>
+              Add
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── FORM PANEL ── */}
       {showForm && (
@@ -477,7 +586,7 @@ function AdminCoursesInner() {
                   value={form.category}
                   onChange={e => setForm({ ...form, category: e.target.value })}
                 >
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {customCategories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
@@ -619,8 +728,14 @@ function AdminCoursesInner() {
           <MonoLabel color={B.dark600}>Create your first course above.</MonoLabel>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {courses.map(c => {
+        <>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <p style={{ fontFamily: B.fontMono, fontSize: 10, color: B.dark500, letterSpacing: '0.06em', margin: 0 }}>
+            DRAG ROWS TO REORDER · {reordering ? '⏳ Saving order…' : 'Auto-saved'}
+          </p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {courses.map((c, idx) => {
             const diffCfg = DIFF_CFG[c.difficulty] ?? { color: B.dark400, label: c.difficulty };
             const ytThumb = c.youtube_id
               ? `https://img.youtube.com/vi/${c.youtube_id}/mqdefault.jpg`
@@ -629,18 +744,35 @@ function AdminCoursesInner() {
             return (
               <div
                 key={c.id}
+                draggable
+                onDragStart={() => handleDragStart(idx)}
+                onDragOver={e => handleDragOver(e, idx)}
+                onDrop={() => handleDrop(idx)}
+                onDragEnd={handleDragEnd}
                 className="asc-course-card"
                 style={{
                   borderRadius: '12px',
                   padding:      '16px 18px',
                   background:   B.dark800,
-                  border:       `1px solid ${c.is_published ? B.border : B.dark600}`,
+                  border:       `1px solid ${dragOver === idx ? B.goldBorder : c.is_published ? B.border : B.dark600}`,
                   borderLeft:   `3px solid ${c.is_published ? B.gold : B.dark500}`,
                   display:      'flex',
                   alignItems:   'center',
-                  gap:          '16px',
+                  gap:          '12px',
+                  opacity:      dragIndex === idx ? 0.45 : 1,
+                  transition:   'opacity 0.15s, border-color 0.15s',
+                  cursor:       'grab',
                 }}
               >
+                {/* Drag handle */}
+                <div style={{
+                  display: 'flex', flexDirection: 'column', gap: 3,
+                  cursor: 'grab', flexShrink: 0, padding: '2px 4px',
+                }}>
+                  {[0,1,2].map(i => (
+                    <div key={i} style={{ width: 14, height: 1.5, borderRadius: 1, background: B.dark500 }} />
+                  ))}
+                </div>
                 {/* Thumbnail / Emoji */}
                 {ytThumb ? (
                   <img
@@ -764,6 +896,7 @@ function AdminCoursesInner() {
             );
           })}
         </div>
+        </>
       )}
     </div>
   );
