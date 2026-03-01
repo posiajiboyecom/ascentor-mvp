@@ -722,7 +722,7 @@ export default function LearnPage() {
       courses.find(c => c.id === courseId)?.progress || 100,
       newCompleted
     );
-    if (newCompleted) analytics.courseCompleted?.(courseId);
+    if (newCompleted) analytics.courseViewed?.(courseId);
   }
 
   const openCourse = (id: string) => {
