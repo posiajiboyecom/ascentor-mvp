@@ -241,7 +241,7 @@ export default function AdminShell({
       }}>
         <Link href="/admin" style={{ display: 'block', textDecoration: 'none', marginBottom: '10px' }}>
           <img
-            src="/ascentor-color-on-dark.svg"
+            src="/ascentor-color-for-dark-pages.svg"
             alt="Ascentor"
             style={{ height: '26px', width: 'auto' }}
           />
@@ -346,7 +346,7 @@ export default function AdminShell({
           borderBottom: '1px solid rgba(212,207,195,0.10)',
         }}
       >
-        <img src="/ascentor-color-on-dark.svg" alt="Ascentor" style={{ height: '24px', width: 'auto' }} />
+        <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: '24px', width: 'auto' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{
             fontFamily: "'DM Mono', monospace", fontSize: '9px', fontWeight: 500,

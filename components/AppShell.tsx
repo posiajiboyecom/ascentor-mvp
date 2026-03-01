@@ -53,7 +53,7 @@ export default function AppShell({
         {/* Logo */}
         <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
           <img
-            src="/ascentor-color-on-dark.svg"
+            src="/ascentor-color-for-dark-pages.svg"
             alt="Ascentor"
             style={{ height: '28px', width: 'auto' }}
           />
