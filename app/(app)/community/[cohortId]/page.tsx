@@ -82,10 +82,10 @@ export default function CohortFeedPage() {
     setCohort(cohortData);
     setMemberCount(cohortData?.member_count || 0);
 
-    // Load posts with author names
+    // Load posts
     const { data: postsData } = await supabase
       .from('cohort_posts')
-      .select('*, profiles(full_name)')
+      .select('*')
       .eq('cohort_id', String(cohortId))
       .order('created_at', { ascending: false })
       .limit(50);
@@ -96,10 +96,25 @@ export default function CohortFeedPage() {
       .select('post_id, reply_id')
       .eq('user_id', user.id);
 
-    const votedPostIds = new Set(votes?.filter(v => v.post_id).map(v => v.post_id) || []);
+    const votedPostIds = new Set(votes?.filter((v: any) => v.post_id).map((v: any) => v.post_id) || []);
+
+    // Fetch author names for all post authors
+    const postAuthorIds = [...new Set((postsData || []).map((p: any) => p.user_id))];
+    let authorMap: Record<string, string> = {};
+    if (postAuthorIds.length > 0) {
+      const { data: authorProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', postAuthorIds);
+      (authorProfiles || []).forEach((p: any) => {
+        authorMap[p.id] = p.full_name || 'Member';
+      });
+    }
 
     const postsWithVotes = (postsData || []).map((p: any) => ({
       ...p,
+      upvotes: p.upvotes || 0,
+      authorName: authorMap[p.user_id] || 'Member',
       voted: votedPostIds.has(p.id),
       showReplies: false,
       replies: [],
@@ -124,7 +139,7 @@ export default function CohortFeedPage() {
       .single();
 
     if (data && !error) {
-      setPosts([{ ...data, voted: false, showReplies: false, replies: [] }, ...posts]);
+      setPosts([{ ...data, upvotes: 0, authorName: 'You', voted: false, showReplies: false, replies: [] }, ...posts]);
       setNewPost('');
     }
     setPosting(false);
@@ -146,7 +161,7 @@ export default function CohortFeedPage() {
     if (data && !error) {
       setPosts((prev) => prev.map((p) =>
         p.id === postId
-          ? { ...p, reply_count: p.reply_count + 1, replies: [...(p.replies || []), { ...data, voted: false }] }
+          ? { ...p, reply_count: p.reply_count + 1, replies: [...(p.replies || []), { ...data, upvotes: 0, authorName: 'You', voted: false }] }
           : p
       ));
       setReplyText('');
@@ -165,7 +180,7 @@ export default function CohortFeedPage() {
 
     const { data: replies } = await supabase
       .from('cohort_replies')
-      .select('*, profiles(full_name)')
+      .select('*')
       .eq('post_id', postId)
       .order('created_at');
 
@@ -174,10 +189,25 @@ export default function CohortFeedPage() {
       .select('reply_id')
       .eq('user_id', userId!);
 
-    const votedReplyIds = new Set(votes?.filter(v => v.reply_id).map(v => v.reply_id) || []);
+    const votedReplyIds = new Set(votes?.filter((v: any) => v.reply_id).map((v: any) => v.reply_id) || []);
+
+    // Fetch reply author names
+    const replyAuthorIds = [...new Set((replies || []).map((r: any) => r.user_id))];
+    let replyAuthorMap: Record<string, string> = {};
+    if (replyAuthorIds.length > 0) {
+      const { data: replyProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', replyAuthorIds);
+      (replyProfiles || []).forEach((p: any) => {
+        replyAuthorMap[p.id] = p.full_name || 'Member';
+      });
+    }
 
     const repliesWithVotes = (replies || []).map((r: any) => ({
       ...r,
+      upvotes: r.upvotes || 0,
+      authorName: replyAuthorMap[r.user_id] || 'Member',
       voted: votedReplyIds.has(r.id),
     }));
 
@@ -189,15 +219,18 @@ export default function CohortFeedPage() {
   async function upvotePost(postId: string) {
     const post = posts.find(p => p.id === postId);
     if (!post || !userId) return;
+    const current = post.upvotes || 0;
 
     if (post.voted) {
       await supabase.from('cohort_votes').delete().eq('user_id', userId).eq('post_id', postId);
-      await supabase.from('cohort_posts').update({ upvotes: Math.max(0, post.upvotes - 1) }).eq('id', postId);
-      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, upvotes: p.upvotes - 1, voted: false } : p));
+      const newVal = Math.max(0, current - 1);
+      await supabase.from('cohort_posts').update({ upvotes: newVal }).eq('id', postId);
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, upvotes: newVal, voted: false } : p));
     } else {
       await supabase.from('cohort_votes').insert({ user_id: userId, post_id: postId });
-      await supabase.from('cohort_posts').update({ upvotes: post.upvotes + 1 }).eq('id', postId);
-      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, upvotes: p.upvotes + 1, voted: true } : p));
+      const newVal = current + 1;
+      await supabase.from('cohort_posts').update({ upvotes: newVal }).eq('id', postId);
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, upvotes: newVal, voted: true } : p));
     }
   }
 
@@ -206,27 +239,27 @@ export default function CohortFeedPage() {
     const post = posts.find(p => p.id === postId);
     const reply = post?.replies?.find(r => r.id === replyId);
     if (!reply) return;
+    const current = reply.upvotes || 0;
 
     if (reply.voted) {
+      const newVal = Math.max(0, current - 1);
       await supabase.from('cohort_votes').delete().eq('user_id', userId).eq('reply_id', replyId);
-      await supabase.from('cohort_replies').update({ upvotes: Math.max(0, reply.upvotes - 1) }).eq('id', replyId);
+      await supabase.from('cohort_replies').update({ upvotes: newVal }).eq('id', replyId);
+      setPosts((prev) => prev.map((p) =>
+        p.id === postId
+          ? { ...p, replies: p.replies?.map((r) => r.id === replyId ? { ...r, upvotes: newVal, voted: false } : r) }
+          : p
+      ));
     } else {
+      const newVal = current + 1;
       await supabase.from('cohort_votes').insert({ user_id: userId, reply_id: replyId });
-      await supabase.from('cohort_replies').update({ upvotes: reply.upvotes + 1 }).eq('id', replyId);
+      await supabase.from('cohort_replies').update({ upvotes: newVal }).eq('id', replyId);
+      setPosts((prev) => prev.map((p) =>
+        p.id === postId
+          ? { ...p, replies: p.replies?.map((r) => r.id === replyId ? { ...r, upvotes: newVal, voted: true } : r) }
+          : p
+      ));
     }
-
-    setPosts((prev) => prev.map((p) =>
-      p.id === postId
-        ? {
-            ...p,
-            replies: p.replies?.map((r) =>
-              r.id === replyId
-                ? { ...r, upvotes: reply.voted ? r.upvotes - 1 : r.upvotes + 1, voted: !r.voted }
-                : r
-            ),
-          }
-        : p
-    ));
   }
 
   async function leaveCohort() {
@@ -355,7 +388,7 @@ export default function CohortFeedPage() {
                         👤
                       </div>
                       <span className="text-xs font-semibold" style={{ color: 'var(--text)' }}>
-                        {(post as any).profiles?.full_name || 'Member'}
+                        {(post as any).authorName || 'Member'}
                       </span>
                       <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
                         {timeAgo(post.created_at)}
@@ -420,7 +453,7 @@ export default function CohortFeedPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-1.5 mb-1">
                           <span className="text-xs font-semibold" style={{ color: 'var(--text)' }}>
-                            {(reply as any).profiles?.full_name || 'Member'}
+                            {(reply as any).authorName || 'Member'}
                           </span>
                           <span className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
                             {timeAgo(reply.created_at)}
