@@ -20,12 +20,10 @@ export default function ExpertsPage() {
   const [registered, setRegistered] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  // FIX 1: stable spots map — computed once, never flickers on re-render
   const spotsUsedRef = useRef<Record<string, number>>({});
   const supabase = createClient();
 
   useEffect(() => {
-    // FIX 3: load auth user on mount
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null);
     });
@@ -42,7 +40,6 @@ export default function ExpertsPage() {
 
     const sessions = data?.length ? data : FALLBACK_EXPERTS;
 
-    // Assign stable random spots once per session id
     sessions.forEach((s) => {
       if (spotsUsedRef.current[s.id] === undefined) {
         spotsUsedRef.current[s.id] = Math.floor(Math.random() * 30) + 10;
@@ -51,7 +48,6 @@ export default function ExpertsPage() {
 
     setExperts(sessions);
 
-    // FIX 3: load existing registrations for this user
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data: regs } = await supabase
@@ -64,7 +60,6 @@ export default function ExpertsPage() {
     }
   }
 
-  // FIX 2 + 3: actually write to Supabase and guard with auth
   const toggleRegister = async (sessionId: string) => {
     if (!userId) {
       alert('Please sign in to reserve a spot.');
@@ -109,7 +104,7 @@ export default function ExpertsPage() {
         Mentor Sessions
       </h2>
       <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-        Live sessions with Africa's top mentors
+        Live sessions with Africa&#39;s top mentors
       </p>
 
       <div className="flex flex-col gap-4">
@@ -117,7 +112,7 @@ export default function ExpertsPage() {
           const date = new Date(expert.scheduled_at);
           const initials = expert.expert_name.split(' ').map((n: string) => n[0]).join('');
           const isRegistered = registered.has(expert.id);
-          const spotsUsed = spotsUsedRef.current[expert.id] ?? 10; // FIX 1: stable value
+          const spotsUsed = spotsUsedRef.current[expert.id] ?? 10;
 
           return (
             <div
@@ -158,7 +153,6 @@ export default function ExpertsPage() {
                     <div className="text-xs" style={{ color: 'var(--text-dim)' }}>
                       📅 {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · 👥 {expert.max_participants - spotsUsed} spots left
                     </div>
-                    {/* FIX 2 + 3: loading state, auth guard, real DB write */}
                     <button
                       onClick={() => toggleRegister(expert.id)}
                       disabled={loading === expert.id}
@@ -172,7 +166,6 @@ export default function ExpertsPage() {
                       {loading === expert.id ? 'Saving...' : isRegistered ? '✓ Reserved' : 'Reserve Spot'}
                     </button>
                   </div>
-                  {/* Capacity bar */}
                   <div className="w-full h-0.5 rounded-full mt-2.5 overflow-hidden" style={{ background: 'var(--bg-input)' }}>
                     <div
                       className="h-full rounded-full"
