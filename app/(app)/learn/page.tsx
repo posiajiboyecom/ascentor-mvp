@@ -350,7 +350,7 @@ function VideoPlayer({
   const [isCompleted, setIsCompleted] = useState(course.completed);
   const [playerReady, setPlayerReady] = useState(false);
   const [justUnlocked, setJustUnlocked] = useState(false);
-  const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef(0);
 
   // YouTube IFrame API via postMessage
