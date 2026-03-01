@@ -354,28 +354,62 @@ function VideoPlayer({
   const lastSaved = useRef(0);
 
   // YouTube IFrame API via postMessage
+  // Strategy: listen for onReady → start polling every 1s for currentTime + duration
+  // This is the only reliable cross-origin approach for embedded iframes
+  const pollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const durationRef  = useRef<number>(0);
+
+  function sendCommand(func: string, args: unknown[] = []) {
+    playerRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func, args }), '*'
+    );
+  }
+
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
       try {
         const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (!data || data.event === undefined) return;
+        if (!data) return;
 
+        // Player ready — start polling
         if (data.event === 'onReady') {
           setPlayerReady(true);
-          // Ask player for current time & duration
-          playerRef.current?.contentWindow?.postMessage(
-            JSON.stringify({ event: 'command', func: 'getDuration', args: [] }), '*'
-          );
+          // Start 1-second poll for currentTime + duration
+          if (pollInterval.current) clearInterval(pollInterval.current);
+          pollInterval.current = setInterval(() => {
+            sendCommand('getCurrentTime');
+            sendCommand('getDuration');
+          }, 1000);
         }
 
-        if (data.event === 'infoDelivery' && data.info) {
-          if (data.info.duration && data.info.duration > 0) {
-            setDuration(data.info.duration);
+        // Player state changed (1=playing, 2=paused, 0=ended)
+        if (data.event === 'onStateChange') {
+          if (data.info === 0) {
+            // Video ended — treat as 100%
+            const dur = durationRef.current;
+            if (dur > 0) {
+              setCurrentPos(dur);
+              setCurrentPct(100);
+              setUnlocked(true);
+            }
           }
-          if (data.info.currentTime !== undefined && data.info.duration) {
-            const pos = data.info.currentTime;
-            const dur = data.info.duration;
-            const pct = dur > 0 ? (pos / dur) * 100 : 0;
+        }
+
+        // Response to getCurrentTime / getDuration commands
+        if (data.event === 'infoDelivery' && data.info) {
+          const info = data.info;
+
+          // Duration response
+          if (typeof info.duration === 'number' && info.duration > 0) {
+            durationRef.current = info.duration;
+            setDuration(info.duration);
+          }
+
+          // CurrentTime response
+          if (typeof info.currentTime === 'number' && durationRef.current > 0) {
+            const pos = info.currentTime;
+            const dur = durationRef.current;
+            const pct = (pos / dur) * 100;
 
             setCurrentPos(pos);
             setCurrentPct(pct);
@@ -387,7 +421,7 @@ function VideoPlayer({
               setTimeout(() => setJustUnlocked(false), 3000);
             }
 
-            // Debounced save every 5 seconds
+            // Save to DB every 5 seconds of watched time
             if (pos - lastSaved.current > 5) {
               lastSaved.current = pos;
               if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -403,6 +437,7 @@ function VideoPlayer({
     window.addEventListener('message', handleMessage);
     return () => {
       window.removeEventListener('message', handleMessage);
+      if (pollInterval.current) clearInterval(pollInterval.current);
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [course.id, unlocked, onProgressUpdate]);
@@ -465,10 +500,54 @@ function VideoPlayer({
         <div style={{ position: 'relative', paddingBottom: '56.25%' }}>
           <iframe
             ref={playerRef}
-            src={`https://www.youtube.com/embed/${course.youtube_id}?start=${Math.floor(course.lastPosition)}&enablejsapi=1&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&playsinline=1&autoplay=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+            src={(() => {
+              const origin = typeof window !== 'undefined' ? window.location.origin : '';
+              const params = new URLSearchParams({
+                start:          String(Math.floor(course.lastPosition)),
+                enablejsapi:    '1',
+                origin,
+                rel:            '0',
+                modestbranding: '1',
+                controls:       '0',
+                showinfo:       '0',
+                iv_load_policy: '3',
+                playsinline:    '1',
+                autoplay:       '1',
+                fs:             '0',
+                disablekb:      '0',
+                cc_load_policy: '0',
+                widget_referrer: origin,
+              });
+              return `https://www.youtube.com/embed/${course.youtube_id}?${params.toString()}`;
+            })()}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
+          />
+          {/* Overlay blocks: cover top bar (title/share) and bottom bar (controls/YouTube logo)
+              These transparent divs sit over the YouTube chrome zones so users can't interact
+              with YouTube's own UI — they can still click center to play/pause */}
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0,
+            height: '18%',
+            background: 'transparent',
+            zIndex: 2,
+            pointerEvents: 'none',
+          }} />
+          <div style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0,
+            height: '18%',
+            background: '#000',
+            zIndex: 2,
+          }} />
+          {/* Center click zone — play/pause passthrough */}
+          <div
+            onClick={() => sendCommand('pauseVideo')}
+            style={{
+              position: 'absolute', top: '18%', left: 0, right: 0, bottom: '18%',
+              zIndex: 1, cursor: 'pointer',
+              background: 'transparent',
+            }}
           />
         </div>
       </div>
