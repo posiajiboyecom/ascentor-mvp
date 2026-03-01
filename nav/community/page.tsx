@@ -6,9 +6,9 @@ const MEMBERS = ['AO', 'CE', 'DM', 'FK', 'JN', 'LM', 'NO', 'PK', 'SM', 'TW'];
 const MEMBER_COLORS = ['var(--accent)', 'var(--blue)', 'var(--purple)', 'var(--teal)', 'var(--success)'];
 
 const INITIAL_POSTS = [
-  { id: 1, author: 'Chioma E.', avatar: 'CE', time: '2h ago', content: "Had my 1:1 with my manager today. Used the framework from Tuesday's session — asked for the stretch project directly instead of hinting. She said YES! 🎉", likes: 7, comments: 3 },
-  { id: 2, author: 'David M.', avatar: 'DM', time: '5h ago', content: "Struggling with the accountability piece this week. Too many fires at work. Any tips for protecting your development time when everything feels urgent?", likes: 4, comments: 5 },
-  { id: 3, author: 'System', avatar: '📅', time: '1d ago', content: "Weekly Check-In\n\nHey team! Let's start the week strong.\n\n1️⃣ One win from last week\n2️⃣ One challenge you're facing\n3️⃣ One commitment for this week\n\nDrop your update below 👇", likes: 2, comments: 8 },
+  { id: 1, author: 'Chioma E.', avatar: 'CE', time: '2h ago', content: "Had my 1:1 with my manager today. Used what came out of my mentor session — asked for the stretch project directly instead of hinting. She said YES! 🎉", likes: 7, comments: 3 },
+  { id: 2, author: 'David M.', avatar: 'DM', time: '5h ago', content: "Struggling with the accountability piece this week. Too many fires at work. Any tips for protecting your mentorship and development time when everything feels urgent?", likes: 4, comments: 5 },
+  { id: 3, author: 'System', avatar: '📅', time: '1d ago', content: "Weekly Circle Check-In\n\nHey circle! Let's start the week strong.\n\n1️⃣ One win from last week\n2️⃣ One challenge you're facing\n3️⃣ One commitment for this week\n4️⃣ One thing to discuss with your mentor\n\nDrop your update below 👇", likes: 2, comments: 8 },
 ];
 
 export default function CommunityPage() {
@@ -35,10 +35,10 @@ export default function CommunityPage() {
         <div>
           <h2 className="text-2xl font-semibold mb-0.5"
             style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
-            Your Cohort
+            Your Circle
           </h2>
           <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-            Emerging Leaders · Cohort #7 · 10 members
+            Mentorship Circle · Builders · 10 members
           </p>
         </div>
         <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
@@ -69,7 +69,7 @@ export default function CommunityPage() {
         <textarea
           value={newPost}
           onChange={(e) => setNewPost(e.target.value)}
-          placeholder="Share a win, ask a question, or update your cohort..."
+          placeholder="Share a win, ask a question, or check in with your circle..."
           rows={3}
           className="w-full px-3.5 py-2.5 text-sm rounded-lg resize-none mb-2.5"
           style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}

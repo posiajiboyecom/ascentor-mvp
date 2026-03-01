@@ -8,6 +8,7 @@ export default function LandingPage() {
   const supabase = createClient();
 
   const [email, setEmail] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [subLoading, setSubLoading] = useState(false);
   const [subError, setSubError] = useState('');
@@ -327,10 +328,75 @@ export default function LandingPage() {
         .lp-footer-links a:hover { color: var(--gold); }
         .lp-footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 28px; font-size: 13px; color: rgba(255,255,255,0.3); }
 
+        /* ── HAMBURGER BUTTON ── */
+        .lp-hamburger {
+          display: none;
+          align-items: center; justify-content: center;
+          width: 40px; height: 40px; border-radius: 8px;
+          background: rgba(232,160,32,0.08);
+          border: 1.5px solid rgba(232,160,32,0.35);
+          cursor: pointer; flex-direction: column; gap: 5px; padding: 10px;
+          transition: all 0.2s;
+        }
+        .lp-hamburger:hover,
+        .lp-hamburger.open { background: rgba(232,160,32,0.15); border-color: var(--gold); }
+        .lp-hamburger span {
+          display: block; width: 18px; height: 1.5px;
+          background: var(--gold); border-radius: 2px; transition: all 0.25s;
+        }
+        .lp-hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+        .lp-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+        .lp-hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+        /* ── MOBILE DRAWER ── */
+        .lp-mobile-drawer {
+          display: none; position: fixed; inset: 0; z-index: 300;
+        }
+        .lp-mobile-drawer.open { display: block; }
+        .lp-drawer-overlay {
+          position: absolute; inset: 0; background: rgba(15,14,11,0.55);
+          backdrop-filter: blur(4px);
+        }
+        .lp-drawer-panel {
+          position: absolute; top: 0; right: 0; bottom: 0;
+          width: min(300px, 88vw);
+          background: var(--white); padding: 20px 16px;
+          display: flex; flex-direction: column; gap: 4px;
+          box-shadow: -20px 0 60px rgba(0,0,0,0.25);
+          animation: lp-slideIn 0.22s ease;
+          overflow-y: auto;
+        }
+        @keyframes lp-slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .lp-drawer-close {
+          align-self: flex-end; background: none; border: none;
+          font-size: 20px; cursor: pointer; color: var(--mid);
+          padding: 4px 8px; margin-bottom: 12px;
+        }
+        .lp-drawer-link {
+          display: block; padding: 13px 12px; border-radius: 8px;
+          text-decoration: none; font-family: 'Syne', sans-serif;
+          font-size: 15px; font-weight: 500; color: var(--text);
+          transition: background 0.15s, color 0.15s;
+        }
+        .lp-drawer-link:hover { background: var(--gold-pale); color: var(--dark); }
+        .lp-drawer-divider { height: 1px; background: rgba(42,40,32,0.08); margin: 8px 0; }
+        .lp-drawer-cta {
+          display: block; margin-top: 8px; text-align: center;
+          background: var(--gold); color: var(--dark) !important;
+          padding: 14px; border-radius: 10px;
+          font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+          text-decoration: none; transition: background 0.2s;
+        }
+        .lp-drawer-cta:hover { background: var(--gold-light); }
+
         /* ── RESPONSIVE ── */
         @media (max-width: 900px) {
-          .lp-nav { padding: 16px 24px; }
+          .lp-nav { padding: 14px 20px; }
           .lp-nav-links { display: none; }
+          .lp-hamburger { display: flex; }
           .lp-stats-bar { flex-direction: column; gap: 32px; padding: 48px 24px; }
           .lp-stat-item { border-right: none; padding: 0; }
           .lp-problem-grid, .lp-for-grid, .lp-pillars-grid,
@@ -350,12 +416,10 @@ export default function LandingPage() {
         {/* NAV */}
         <nav className="lp-nav">
           <Link href="/" className="lp-nav-logo">
-            <img
-              src="/ascentor-color-on-dark.svg"
-              alt="Ascentor"
-              style={{ height: '32px', width: 'auto' }}
-            />
-            </Link>
+            <img src="/ascentor-color-on-light.svg" alt="Ascentor" style={{ height: '32px', width: 'auto' }} />
+          </Link>
+
+          {/* Desktop links */}
           <ul className="lp-nav-links">
             <li><Link href="/who-its-for">Who It's For</Link></li>
             <li><Link href="#pillars">How It Works</Link></li>
@@ -364,7 +428,31 @@ export default function LandingPage() {
             <li><Link href="/login" style={{ color: 'var(--text)' }}>Log In</Link></li>
             <li><Link href="/signup" className="lp-nav-cta">Start Free →</Link></li>
           </ul>
+
+          {/* Hamburger (mobile) */}
+          <button
+            className={`lp-hamburger ${mobileMenuOpen ? 'open' : ''}`}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span /><span /><span />
+          </button>
         </nav>
+
+        {/* Mobile Drawer */}
+        <div className={`lp-mobile-drawer ${mobileMenuOpen ? 'open' : ''}`}>
+          <div className="lp-drawer-overlay" onClick={() => setMobileMenuOpen(false)} />
+          <div className="lp-drawer-panel">
+            <button className="lp-drawer-close" onClick={() => setMobileMenuOpen(false)}>✕</button>
+            <Link href="/who-its-for" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Who It's For</Link>
+            <Link href="#pillars" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>How It Works</Link>
+            <Link href="/pricing" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
+            <Link href="/blog" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Blog</Link>
+            <div className="lp-drawer-divider" />
+            <Link href="/login" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
+            <Link href="/signup" className="lp-drawer-cta" onClick={() => setMobileMenuOpen(false)}>Start Free — 7 Days →</Link>
+          </div>
+        </div>
 
         {/* HERO */}
         <section className="lp-hero">
@@ -372,7 +460,7 @@ export default function LandingPage() {
           <div className="lp-hero-bg" />
           <div className="lp-badge">
             <div className="lp-badge-dot" />
-            Now open — join 50+ early members across 15 countries
+            Now accepting founding members — limited spots
           </div>
           <h1 className="lp-hero-headline">
             Everyone who <span className="accent">made it</span><br />
@@ -389,13 +477,13 @@ export default function LandingPage() {
           <p className="lp-hero-trust">No credit card required · Cancel anytime · 30-day money-back guarantee</p>
         </section>
 
-        {/* STATS BAR */}
+        {/* VALUE PROPS BAR */}
         <div className="lp-stats-bar">
           {[
-            { number: '50+', label: 'Early members already growing' },
-            { number: '15', label: 'African countries represented' },
             { number: '24/7', label: 'AI mentor — always available' },
-            { number: '$15', label: 'vs $200/hr traditional coaching' },
+            { number: '$19', label: 'vs $200/hr executive coaching' },
+            { number: '90', label: 'Day structured goal system' },
+            { number: '5×', label: 'Weekly mentor-led sessions' },
           ].map((s) => (
             <div key={s.number} className="lp-stat-item">
               <div className="lp-stat-number">{s.number}</div>
@@ -411,7 +499,7 @@ export default function LandingPage() {
           <div className="lp-problem-grid">
             {[
               { quote: '"I have a degree, I have the drive — but I genuinely don\'t know what to do next. Nobody in my family has been where I\'m trying to go."', persona: '— Temi, 24. NYSC graduate, Lagos' },
-              { quote: '"I\'ve been a manager for two years but I\'m still figuring it out alone. Executive coaching costs more than my rent."', persona: '— Kwame, 31. Team Lead, Accra' },
+              { quote: '"I\'ve been a manager for two years but I\'m still figuring it out alone. Executive mentorship costs more than my rent."', persona: '— Kwame, 31. Team Lead, Accra' },
               { quote: '"The people who get ahead in this country aren\'t necessarily the most talented — they\'re the ones with the right connections and the right mentors."', persona: '— Amina, 28. Consultant, Nairobi' },
             ].map((c, i) => (
               <div key={i} className="lp-problem-card">
@@ -448,7 +536,7 @@ export default function LandingPage() {
                 <li>Career strategy & positioning</li>
                 <li>Access to industry mentors</li>
                 <li>Entrepreneur mentorship tracks</li>
-                <li>Live expert masterclasses</li>
+                <li>Live mentor masterclasses</li>
               </ul>
             </div>
             <div className="lp-for-card climber">
@@ -458,8 +546,8 @@ export default function LandingPage() {
               <p className="lp-for-desc">Mid-career leaders, managers, and founders who are serious about reaching the summit.</p>
               <ul className="lp-for-list">
                 <li>Executive-level mentorship</li>
-                <li>Leadership & management coaching</li>
-                <li>Peer cohorts of your equals</li>
+                <li>Leadership & management mentorship</li>
+                <li>Peer mentorship circles</li>
                 <li>Business strategy sessions</li>
               </ul>
             </div>
@@ -486,10 +574,10 @@ export default function LandingPage() {
             </div>
             <div className="lp-pillar-card" style={{ borderColor: 'rgba(232,160,32,0.2)' }}>
               <div className="lp-pillar-icon">🎓</div>
-              <div className="lp-pillar-title">Human Mentors & Expert Sessions</div>
+              <div className="lp-pillar-title">Human Mentors & Live Sessions</div>
               <p className="lp-pillar-desc">Live sessions with Africa's top professionals who've navigated the exact challenges you're facing. Real experience, not theory.</p>
               <ul className="lp-pillar-features">
-                <li>Monthly live masterclasses</li>
+                <li>Monthly live mentor sessions</li>
                 <li>1-on-1 mentor booking</li>
                 <li>Q&A with industry leaders</li>
                 <li>Mentors across every industry</li>
@@ -518,7 +606,7 @@ export default function LandingPage() {
           <div className="lp-steps-container">
             {[
               { n: '01', title: 'Tell us where you are', desc: 'Share your life stage, goals, industry, and biggest challenge. Takes 3 minutes. No fluff.' },
-              { n: '02', title: 'Meet your AI mentor', desc: 'Within 60 seconds, your AI mentor gives you a personalized action plan and matches you to the right human mentors and cohort.' },
+              { n: '02', title: 'Meet your AI mentor', desc: 'Within 60 seconds, your AI mentor gives you a personalized action plan and matches you to the right human mentors and circle.' },
               { n: '03', title: 'Grow with your circle', desc: 'Join peers on the same journey. Share wins, get real feedback, and hold each other accountable every week.' },
             ].map((s) => (
               <div key={s.n} className="lp-step">
@@ -530,35 +618,25 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* TESTIMONIALS */}
+        {/* SOCIAL PROOF — honest founding member section */}
         <section className="lp-testimonials-section">
-          <div className="lp-section-label">Early Members</div>
-          <h2 className="lp-section-headline">What they're saying</h2>
-          <div className="lp-testimonials-grid">
-            <div className="lp-testimonial-card featured">
-              <div className="lp-testimonial-stars">{'★★★★★'.split('').map((s, i) => <span key={i} className="lp-star">{s}</span>)}</div>
-              <p className="lp-testimonial-quote">"The AI mentor helped me prepare for a promotion conversation I'd been avoiding for months. It knew exactly what to say for my specific situation in a Nigerian corporate environment. I got the promotion."</p>
-              <div className="lp-testimonial-author">
-                <div className="lp-author-avatar">A</div>
-                <div><div className="lp-author-name">Amara O.</div><div className="lp-author-role">Product Manager · Lagos</div></div>
+          <div className="lp-section-label">Be First</div>
+          <h2 className="lp-section-headline">Founding members shape the platform</h2>
+          <p className="lp-section-sub" style={{ marginTop: '16px', color: 'var(--text-light)', textAlign: 'center', maxWidth: '520px' }}>
+            We're building Ascentor with our founding members — not just for them. Early members get locked-in pricing, direct access to the founding team, and the chance to shape what gets built next.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', maxWidth: '900px', width: '100%', marginTop: '48px' }}>
+            {[
+              { icon: '🔒', title: 'Locked-in pricing', desc: 'Your founding rate is yours for life — never increases as the platform grows.' },
+              { icon: '🎙️', title: 'Shape the roadmap', desc: 'Direct line to the founding team. Your feedback ships in weeks, not quarters.' },
+              { icon: '🌍', title: 'Founding community', desc: 'The first circle of African professionals building careers with intention.' },
+            ].map((card) => (
+              <div key={card.title} style={{ background: 'var(--light)', borderRadius: '20px', padding: '32px 28px', border: '1px solid rgba(42,40,32,0.06)' }}>
+                <div style={{ fontSize: '28px', marginBottom: '14px' }}>{card.icon}</div>
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '20px', fontWeight: 700, color: 'var(--dark)', marginBottom: '10px' }}>{card.title}</div>
+                <p style={{ fontSize: '14px', lineHeight: 1.7, color: 'var(--text-light)' }}>{card.desc}</p>
               </div>
-            </div>
-            <div className="lp-testimonial-card">
-              <div className="lp-testimonial-stars">{'★★★★★'.split('').map((s, i) => <span key={i} className="lp-star">{s}</span>)}</div>
-              <p className="lp-testimonial-quote">"Having a cohort of peers in similar roles across Africa gave me perspectives I'd never find in my company alone. These people get it in a way my Western colleagues simply don't."</p>
-              <div className="lp-testimonial-author">
-                <div className="lp-author-avatar">D</div>
-                <div><div className="lp-author-name">David K.</div><div className="lp-author-role">Engineering Lead · Nairobi</div></div>
-              </div>
-            </div>
-            <div className="lp-testimonial-card">
-              <div className="lp-testimonial-stars">{'★★★★★'.split('').map((s, i) => <span key={i} className="lp-star">{s}</span>)}</div>
-              <p className="lp-testimonial-quote">"At $15/month, this replaces the $200/session executive coach I couldn't afford. And honestly? The AI is more available and more nuanced about my actual context."</p>
-              <div className="lp-testimonial-author">
-                <div className="lp-author-avatar">F</div>
-                <div><div className="lp-author-name">Fatima H.</div><div className="lp-author-role">Strategy Consultant · Accra</div></div>
-              </div>
-            </div>
+            ))}
           </div>
         </section>
 
@@ -614,10 +692,10 @@ export default function LandingPage() {
               <div className="lp-pricing-for">For early-career professionals (22–32)</div>
               <ul className="lp-pricing-features">
                 <li>Unlimited AI mentor sessions</li>
-                <li>Live expert masterclasses</li>
+                <li>Live mentor masterclasses</li>
                 <li>All mentorship circles</li>
                 <li>1-on-1 mentor booking (2/month)</li>
-                <li>Full course library</li>
+                <li>Full mentorship resource library</li>
                 <li>Session summaries & goal tracking</li>
               </ul>
               <Link href="/pricing" className="lp-pricing-btn filled">Start Free Trial</Link>
@@ -630,7 +708,7 @@ export default function LandingPage() {
                 <li>Everything in Builder</li>
                 <li>Priority AI mentor responses</li>
                 <li>Unlimited 1-on-1 mentor sessions</li>
-                <li>Private executive cohort</li>
+                <li>Private executive circle</li>
                 <li>Live Q&A priority access</li>
                 <li>1-on-1 onboarding call</li>
               </ul>

@@ -9,7 +9,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name')
+    .select('full_name, role')
     .eq('id', user.id)
     .single();
 
@@ -19,5 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .join('')
     .toUpperCase();
 
-  return <AppShell initials={initials}>{children}</AppShell>;
+  const isAdmin = ['admin', 'moderator'].includes(profile?.role || '');
+
+  return <AppShell initials={initials} isAdmin={isAdmin}>{children}</AppShell>;
 }

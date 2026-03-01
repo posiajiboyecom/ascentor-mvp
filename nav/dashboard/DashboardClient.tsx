@@ -4,10 +4,14 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
+// ─────────────────────────────────────────────────────────────────
+// ASCENTOR · Dashboard · SVG icons — no emojis
+// ─────────────────────────────────────────────────────────────────
+
 function Card({ children, className = '', style = {}, onClick }: any) {
   return (
     <div onClick={onClick}
-      className={`rounded-xl p-5 transition-all ${onClick ? 'cursor-pointer hover:border-gray-600' : ''} ${className}`}
+      className={`rounded-xl p-5 transition-all ${onClick ? 'cursor-pointer' : ''} ${className}`}
       style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', ...style }}>
       {children}
     </div>
@@ -22,6 +26,44 @@ function ProgressBar({ value, color = 'var(--teal)' }: { value: number; color?: 
     </div>
   );
 }
+
+// ── SVG icon components ──────────────────────────────────────────
+const IconFlame = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E8A020" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+  </svg>
+);
+const IconChat = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+const IconTarget = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+  </svg>
+);
+const IconMentor = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8A020" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+const IconExpert = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+  </svg>
+);
+const IconClipboard = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+  </svg>
+);
+const IconGoal = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+  </svg>
+);
 
 export default function DashboardClient({ profile, goal, sessionsThisWeek, commitments, nextExpert }: any) {
   const supabase = createClient();
@@ -42,13 +84,20 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
 
   const doneCount = localCommitments.filter((c: any) => c.completed).length;
 
+  const stats = [
+    { icon: <IconFlame />,  value: '7',                  label: 'DAY STREAK',      color: 'var(--accent)' },
+    { icon: <IconChat />,   value: String(sessionsThisWeek), label: 'MENTOR SESSIONS', color: 'var(--blue)' },
+    { icon: <IconTarget />, value: `${goalProgress}%`,   label: '90-DAY GOAL',     color: 'var(--teal)' },
+  ];
+
   return (
     <div className="animate-fade-up py-6">
+
       {/* Greeting */}
       <div className="mb-7">
         <h1 className="text-2xl font-semibold mb-1"
           style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
-          Welcome, {firstName} 👋
+          Welcome back, {firstName}.
         </h1>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
           {profile?.current_role || 'Your role'} → <span style={{ color: 'var(--accent)' }}>{profile?.goal_role || 'Your goal'}</span>
@@ -57,17 +106,15 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
-        {[
-          { icon: '🔥', value: '7', label: 'DAY STREAK', color: 'var(--accent)' },
-          { icon: '💬', value: String(sessionsThisWeek), label: 'SESSIONS / WEEK', color: 'var(--blue)' },
-          { icon: '🎯', value: `${goalProgress}%`, label: '90-DAY GOAL', color: 'var(--teal)' },
-        ].map((s) => (
+        {stats.map((s) => (
           <Card key={s.label} className="text-center !p-4">
-            <div className="text-xl mb-1">{s.icon}</div>
+            <div className="flex justify-center mb-2">{s.icon}</div>
             <div className="text-2xl font-bold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: s.color }}>
               {s.value}
             </div>
-            <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>{s.label}</div>
+            <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)', fontFamily: "'DM Mono', monospace", letterSpacing: '0.06em' }}>
+              {s.label}
+            </div>
           </Card>
         ))}
       </div>
@@ -76,7 +123,9 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
       {goal && (
         <Card className="mb-5">
           <div className="flex justify-between items-center mb-2.5">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🎯 90-Day Goal</span>
+            <span className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'var(--text)' }}>
+              <IconGoal /> 90-Day Goal
+            </span>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
               style={{ background: 'rgba(20,184,166,0.09)', color: 'var(--teal)', border: '1px solid rgba(20,184,166,0.19)' }}>
               {goalProgress}% complete
@@ -84,7 +133,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
           </div>
           <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>{goal.goal_text}</p>
           <ProgressBar value={goalProgress} />
-          <div className="flex gap-4 mt-3.5">
+          <div className="flex gap-4 mt-3.5 flex-wrap">
             {[goal.milestone_1, goal.milestone_2, goal.milestone_3].map((m: string, i: number) => (
               m && (
                 <div key={i} className="flex items-center gap-1.5 text-[11px]"
@@ -104,18 +153,20 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3 mb-5">
         <Link href="/coach">
-          <Card className="hover:border-gray-600 cursor-pointer">
-            <div className="text-2xl mb-2">💬</div>
-            <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>AI Coach</div>
-            <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Start a session</div>
+          <Card className="cursor-pointer hover:border-[rgba(232,160,32,0.3)] transition-colors">
+            <div className="flex justify-center mb-2"><IconMentor /></div>
+            <div className="text-sm font-semibold text-center" style={{ color: 'var(--text)' }}>AI Mentor</div>
+            <div className="text-xs mt-0.5 text-center" style={{ color: 'var(--text-muted)' }}>Start a session</div>
           </Card>
         </Link>
         <Link href="/experts">
-          <Card className="hover:border-gray-600 cursor-pointer">
-            <div className="text-2xl mb-2">🎓</div>
-            <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Next Expert</div>
-            <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-              {nextExpert ? new Date(nextExpert.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Coming soon'}
+          <Card className="cursor-pointer hover:border-[rgba(139,92,246,0.3)] transition-colors">
+            <div className="flex justify-center mb-2"><IconExpert /></div>
+            <div className="text-sm font-semibold text-center" style={{ color: 'var(--text)' }}>Next Session</div>
+            <div className="text-xs mt-0.5 text-center" style={{ color: 'var(--text-muted)' }}>
+              {nextExpert
+                ? new Date(nextExpert.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'Coming soon'}
             </div>
           </Card>
         </Link>
@@ -124,7 +175,9 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
       {/* Commitments */}
       <Card className="mb-5">
         <div className="flex justify-between items-center mb-3.5">
-          <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>📋 Weekly Commitments</span>
+          <span className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'var(--text)' }}>
+            <IconClipboard /> Weekly Commitments
+          </span>
           <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
             style={{ background: 'rgba(16,185,129,0.09)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.19)' }}>
             {doneCount}/{localCommitments.length}
@@ -132,7 +185,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
         </div>
         {localCommitments.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
-            No commitments yet. Start a coaching session to get your first action item.
+            No commitments yet. Start a mentor session to get your first action item.
           </p>
         ) : (
           localCommitments.map((c: any) => (
@@ -165,7 +218,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
         )}
       </Card>
 
-      {/* Upcoming Expert */}
+      {/* Upcoming Mentor Session */}
       {nextExpert && (
         <Link href="/experts">
           <Card style={{ borderLeft: '3px solid var(--purple)' }}>

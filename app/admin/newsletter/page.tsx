@@ -528,19 +528,41 @@ export default function AdminNewsletterPage() {
 
           {/* ─── Email Preview ────────────────────────────────────────────── */}
           {showPreview && (
-            <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #E8A020' }}>
+            <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(232,160,32,0.35)', boxShadow: '0 0 0 4px rgba(232,160,32,0.06)' }}>
+              {/* Preview header bar */}
               <div style={{
-                padding: '8px 16px',
-                background: 'rgba(232,160,32,0.08)',
-                fontFamily: "'DM Mono', monospace",
-                fontSize: '10px',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: '#E8A020',
+                padding: '10px 16px',
+                background: '#2E2A22',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                borderBottom: '1px solid rgba(232,160,32,0.20)',
               }}>
-                Email Preview — How subscribers will see it
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#EF4444', opacity: 0.8 }} />
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#F59E0B', opacity: 0.8 }} />
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10B981', opacity: 0.8 }} />
+                </div>
+                <span style={{
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: '10px', letterSpacing: '0.12em',
+                  textTransform: 'uppercase' as const, color: '#E8A020', flex: 1, textAlign: 'center',
+                }}>
+                  Email Preview — How subscribers will see it
+                </span>
               </div>
-              <iframe srcDoc={buildEmailHTML()} style={{ width: '100%', border: 'none', minHeight: '700px', background: '#0C0B08' }} title="Preview" />
+              {/* White bg wrapper so dark email renders against neutral bg */}
+              <div style={{ background: '#F5F4F1', padding: '24px 0' }}>
+                <iframe
+                  srcDoc={buildEmailHTML()}
+                  style={{
+                    width: '100%', border: 'none',
+                    minHeight: '700px',
+                    display: 'block',
+                  }}
+                  title="Preview"
+                />
+              </div>
             </div>
           )}
         </div>

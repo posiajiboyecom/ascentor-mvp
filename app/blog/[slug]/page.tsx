@@ -104,7 +104,7 @@ export default async function BlogPostPage({ params }: Props) {
         <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
           <Link href="/" className="lp-nav-logo">
             <img
-              src="/ascentor-color-on-dark.svg"
+              src="/ascentor-color-on-light.svg"
               alt="Ascentor"
               style={{ height: '32px', width: 'auto' }}
             />

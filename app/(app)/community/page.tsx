@@ -60,24 +60,50 @@ export default function CommunityPage() {
     }
 
     setJoining(cohortId);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const { error } = await supabase.from('cohort_members').insert({
-      cohort_id: cohortId,
-      user_id: user.id,
-    });
+      // Check if already a member to avoid duplicate insert error
+      const { data: existing } = await supabase
+        .from('cohort_members')
+        .select('cohort_id')
+        .eq('cohort_id', cohortId)
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-    if (!error) {
-      setMyCohortIds((prev) => new Set([...prev, cohortId]));
-      setCohorts((prev) => prev.map((c) =>
-        c.id === cohortId ? { ...c, member_count: (c.member_count || 0) + 1 } : c
-      ));
-      setJustJoined(cohortId);
-      analytics.communityJoined(cohortId);
-      setTimeout(() => setJustJoined(null), 3000);
+      if (existing) {
+        // Already a member — just update UI state
+        setMyCohortIds((prev) => new Set([...prev, cohortId]));
+        return;
+      }
+
+      const { error } = await supabase.from('cohort_members').insert({
+        cohort_id: cohortId,
+        user_id: user.id,
+      });
+
+      if (!error) {
+        setMyCohortIds((prev) => new Set([...prev, cohortId]));
+        setCohorts((prev) => prev.map((c) =>
+          c.id === cohortId ? { ...c, member_count: (c.member_count || 0) + 1 } : c
+        ));
+        setJustJoined(cohortId);
+        analytics.communityJoined(cohortId);
+        setTimeout(() => setJustJoined(null), 3000);
+      } else {
+        // Handle unique constraint violation gracefully
+        if (error.code === '23505') {
+          setMyCohortIds((prev) => new Set([...prev, cohortId]));
+        } else {
+          console.error('Join failed:', error.message);
+        }
+      }
+    } catch (err) {
+      console.error('Join error:', err);
+    } finally {
+      setJoining(null);
     }
-    setJoining(null);
   }
 
   async function leaveCohort(cohortId: string, e: React.MouseEvent) {

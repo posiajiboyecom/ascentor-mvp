@@ -233,7 +233,7 @@ export default function LoginPage() {
               {/* Brand mark — triangle motif from brand book */}
               <Link href="/" className="lp-nav-logo">
                 <img
-                  src="/ascentor-color-on-light.svg"
+                  src="/ascentor-color-on-dark.svg"
                   alt="Ascentor"
                   style={{ height: '32px', width: 'auto' }}
                 />
@@ -303,7 +303,7 @@ export default function LoginPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '36px' }} className="lg:hidden">
               <Link href="/" className="lp-nav-logo">
                 <img
-                  src="/ascentor-color-on-light.svg"
+                  src="/ascentor-color-on-dark.svg"
                   alt="Ascentor"
                   style={{ height: '32px', width: 'auto' }}
                 />

@@ -46,9 +46,22 @@ export default function OnboardingPage() {
       setSaving(false);
       return;
     }
+    // Generate a unique referral_code if the user doesn't have one yet
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('referral_code')
+      .eq('id', user.id)
+      .single();
+
+    const referralCode = existingProfile?.referral_code || (
+      // e.g. "ASC-K3X9" — prefix + 4 random alphanumeric chars
+      'ASC-' + Math.random().toString(36).substring(2, 6).toUpperCase()
+    );
+
     const { error: dbError } = await supabase.from('profiles').upsert({
       id: user.id,
       ...profile,
+      referral_code: referralCode,
       updated_at: new Date().toISOString(),
     });
     if (dbError) {
@@ -412,9 +425,9 @@ export default function OnboardingPage() {
           {step === 1 && (
             <>
               <p className="ob-eyebrow">Your Profile</p>
-              <h1 className="ob-heading">Let's build<br/>your path.</h1>
+              <h1 className="ob-heading">Let's meet<br/>your mentor.</h1>
               <p className="ob-subheading">
-                No generic advice. Your mentor needs to know who you are before it can tell you what to do next.
+                Your AI mentor is trained on African career context. The more it knows about you, the sharper the guidance.
               </p>
 
               <div className="ob-form">
@@ -474,10 +487,10 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="ob-field">
-                  <label className="ob-label">Biggest Challenge Right Now</label>
+                  <label className="ob-label">Biggest Career Challenge Right Now</label>
                   <textarea
                     className="ob-textarea"
-                    placeholder="Be honest — your mentor can only help with what it knows."
+                    placeholder="Be specific — your mentor can only help as well as you share."
                     rows={3}
                     value={profile.biggest_challenge}
                     onChange={e => setProfile({ ...profile, biggest_challenge: e.target.value })}
@@ -508,9 +521,9 @@ export default function OnboardingPage() {
           {step === 2 && (
             <>
               <p className="ob-eyebrow">Your 90-Day Goal</p>
-              <h1 className="ob-heading">What will you<br/>achieve?</h1>
+              <h1 className="ob-heading">What will your<br/>mentor help you achieve?</h1>
               <p className="ob-subheading">
-                Most members hit a measurable outcome in 90 days. The difference is a plan — not effort.
+                Members who set a 90-day goal with their mentor are 3× more likely to hit a measurable career outcome.
               </p>
 
               <div className="ob-badge">
@@ -556,7 +569,7 @@ export default function OnboardingPage() {
                   onClick={handleGoalSave}
                   disabled={!step2Valid || saving}
                 >
-                  {saving ? 'Setting up your mentor...' : <>Start Coaching <span>→</span></>}
+                  {saving ? 'Preparing your mentor...' : <>Meet Your Mentor <span>→</span></>}
                 </button>
               </div>
             </>

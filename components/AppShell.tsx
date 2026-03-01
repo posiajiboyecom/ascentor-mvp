@@ -16,9 +16,11 @@ import { NotificationBell } from '@/components/Notifications';
 export default function AppShell({
   children,
   initials = 'U',
+  isAdmin = false,
 }: {
   children: React.ReactNode;
   initials?: string;
+  isAdmin?: boolean;
 }) {
   const supabase = createClient();
   const router   = useRouter();
@@ -43,7 +45,7 @@ export default function AppShell({
         alignItems:      'center',
         padding:         '12px 20px',
         borderBottom:    '1px solid rgba(212,207,195,0.10)',
-        background:      'rgba(12,11,8,0.92)',
+        background:      '#1E1C17',
         backdropFilter:  'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
       }}>
@@ -128,6 +130,30 @@ export default function AppShell({
                 >
                   Settings
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setShowMenu(false)}
+                    style={{
+                      display:        'flex',
+                      alignItems:     'center',
+                      gap:            '7px',
+                      padding:        '10px 16px',
+                      fontFamily:     "'Syne', system-ui, sans-serif",
+                      fontSize:       '13px',
+                      fontWeight:     600,
+                      color:          '#E8A020',
+                      textDecoration: 'none',
+                      background:     'rgba(232,160,32,0.06)',
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    Admin Panel
+                  </Link>
+                )}
                 <div style={{ height: '1px', background: 'rgba(212,207,195,0.08)', margin: '4px 0' }} />
                 <button
                   onClick={handleSignOut}
