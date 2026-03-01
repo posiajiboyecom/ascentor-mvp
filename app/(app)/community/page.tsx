@@ -147,9 +147,6 @@ export default function CommunityPage() {
   if (loading) {
     return (
       <SageLoader message="Loading circles…" />
-      <div style={{display:'none'}}>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading circles...</p>
-      </div>
     );
   }
 

@@ -92,9 +92,6 @@ export default function ExpertsPage() {
   if (loading) {
     return (
       <SageLoader message="Loading sessions…" />
-      <div style={{display:'none'}}>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading sessions...</p>
-      </div>
     );
   }
 

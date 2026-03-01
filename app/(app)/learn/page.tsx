@@ -104,9 +104,6 @@ export default function LearnPage() {
   if (loading) {
     return (
       <SageLoader message="Loading courses…" />
-      <div style={{display:'none'}}>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading courses...</p>
-      </div>
     );
   }
 

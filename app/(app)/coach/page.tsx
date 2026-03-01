@@ -156,7 +156,6 @@ export default function CoachPage() {
     return (
       <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 120px)' }}>
         <SageLoader size="lg" message="Sage is waking up…" />
-        </div>
       </div>
     );
   }
