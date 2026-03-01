@@ -416,13 +416,13 @@ export default function LandingPage() {
         {/* NAV */}
         <nav className="lp-nav">
           <Link href="/" className="lp-nav-logo">
-            <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: '32px', width: 'auto' }} />
+            <img src="/ascentor-color-on-light.svg" alt="Ascentor" style={{ height: '32px', width: 'auto' }} />
           </Link>
 
           {/* Desktop links */}
           <ul className="lp-nav-links">
             <li><Link href="/who-its-for">Who It's For</Link></li>
-            <li><Link href="/how-it-works">How It Works</Link></li>
+            <li><Link href="#pillars">How It Works</Link></li>
             <li><Link href="/pricing">Pricing</Link></li>
             <li><Link href="/blog" style={{ color: 'var(--text)' }}>Blog</Link></li>
             <li><Link href="/login" style={{ color: 'var(--text)' }}>Log In</Link></li>
@@ -480,7 +480,7 @@ export default function LandingPage() {
         {/* VALUE PROPS BAR */}
         <div className="lp-stats-bar">
           {[
-            { number: '24/7', label: 'AI mentor — always available' },
+            { number: '24/7', label: 'Sage — always available' },
             { number: '$19', label: 'vs $200/hr executive coaching' },
             { number: '90', label: 'Day structured goal system' },
             { number: '5×', label: 'Weekly mentor-led sessions' },
@@ -562,7 +562,7 @@ export default function LandingPage() {
           <div className="lp-pillars-grid">
             <div className="lp-pillar-card">
               <div className="lp-pillar-icon">🤖</div>
-              <div className="lp-pillar-title">AI Mentor</div>
+              <div className="lp-pillar-title">Sage</div>
               <p className="lp-pillar-desc">Your personal mentor, available at 2am before your big presentation. Trained on African business context, career frameworks, and life navigation.</p>
               <ul className="lp-pillar-features">
                 <li>Personalized to your stage and goals</li>
@@ -606,7 +606,7 @@ export default function LandingPage() {
           <div className="lp-steps-container">
             {[
               { n: '01', title: 'Tell us where you are', desc: 'Share your life stage, goals, industry, and biggest challenge. Takes 3 minutes. No fluff.' },
-              { n: '02', title: 'Meet your AI mentor', desc: 'Within 60 seconds, your AI mentor gives you a personalized action plan and matches you to the right human mentors and circle.' },
+              { n: '02', title: 'Meet Sage', desc: 'Within 60 seconds, Sage gives you a personalized action plan and matches you to human mentors and circle.' },
               { n: '03', title: 'Grow with your circle', desc: 'Join peers on the same journey. Share wins, get real feedback, and hold each other accountable every week.' },
             ].map((s) => (
               <div key={s.n} className="lp-step">
@@ -677,7 +677,7 @@ export default function LandingPage() {
               <div className="lp-pricing-price">$5<span>/mo</span></div>
               <div className="lp-pricing-for">For students & graduates (15–22)</div>
               <ul className="lp-pricing-features">
-                <li>AI mentor — career discovery mode</li>
+                <li>Sage — career discovery mode</li>
                 <li>Opportunity & scholarship board</li>
                 <li>Peer community access</li>
                 <li>Basic learning library</li>
@@ -691,7 +691,7 @@ export default function LandingPage() {
               <div className="lp-pricing-price">$19<span>/mo</span></div>
               <div className="lp-pricing-for">For early-career professionals (22–32)</div>
               <ul className="lp-pricing-features">
-                <li>Unlimited AI mentor sessions</li>
+                <li>Unlimited Sage sessions</li>
                 <li>Live mentor masterclasses</li>
                 <li>All mentorship circles</li>
                 <li>1-on-1 mentor booking (2/month)</li>
@@ -706,7 +706,7 @@ export default function LandingPage() {
               <div className="lp-pricing-for">For mid-career leaders (32–50)</div>
               <ul className="lp-pricing-features">
                 <li>Everything in Builder</li>
-                <li>Priority AI mentor responses</li>
+                <li>Priority Sage responses</li>
                 <li>Unlimited 1-on-1 mentor sessions</li>
                 <li>Private executive circle</li>
                 <li>Live Q&A priority access</li>

@@ -427,7 +427,7 @@ export default function OnboardingPage() {
               <p className="ob-eyebrow">Your Profile</p>
               <h1 className="ob-heading">Let's meet<br/>your mentor.</h1>
               <p className="ob-subheading">
-                Your AI mentor is trained on African career context. The more it knows about you, the sharper the guidance.
+                Sage is trained on African career context. The more it knows about you, the sharper the guidance.
               </p>
 
               <div className="ob-form">
@@ -490,7 +490,7 @@ export default function OnboardingPage() {
                   <label className="ob-label">Biggest Career Challenge Right Now</label>
                   <textarea
                     className="ob-textarea"
-                    placeholder="Be specific — your mentor can only help as well as you share."
+                    placeholder="Be specific — Sage can only help as well as you share."
                     rows={3}
                     value={profile.biggest_challenge}
                     onChange={e => setProfile({ ...profile, biggest_challenge: e.target.value })}
@@ -569,7 +569,7 @@ export default function OnboardingPage() {
                   onClick={handleGoalSave}
                   disabled={!step2Valid || saving}
                 >
-                  {saving ? 'Preparing your mentor...' : <>Meet Your Mentor <span>→</span></>}
+                  {saving ? 'Preparing Sage...' : <>Meet Sage <span>→</span></>}
                 </button>
               </div>
             </>

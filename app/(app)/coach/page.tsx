@@ -98,15 +98,15 @@ export default function CoachPage() {
         analytics.coachingLimitReached();
         setMessages((m) => [...m, {
           role: 'assistant',
-          reflection: data.error || "You've reached your daily coaching session limit.",
-          question: "Upgrade your plan to continue your coaching journey today.",
+          reflection: data.error || "You've reached your daily Sage session limit.",
+          question: "Upgrade your plan to continue your Sage sessions today.",
         }]);
         setLoading(false);
         return;
       }
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to contact coach');
+        throw new Error(data.error || 'Failed to contact Sage');
       }
 
       // Track successful session
@@ -153,9 +153,61 @@ export default function CoachPage() {
   if (loadingHistory) {
     return (
       <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 120px)' }}>
-        <div className="text-center">
-          <div className="text-3xl mb-3">⬆</div>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading your sessions...</p>
+        <style>{`
+          @keyframes sage-orb-pulse {
+            0%, 100% { transform: scale(1);    opacity: 1; }
+            50%       { transform: scale(1.18); opacity: 0.7; }
+          }
+          @keyframes sage-orb-ring {
+            0%   { transform: scale(1);    opacity: 0.5; }
+            100% { transform: scale(1.9);  opacity: 0; }
+          }
+        `}</style>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+          {/* Pulsing orb */}
+          <div style={{ position: 'relative', width: 80, height: 80 }}>
+            {/* Expanding ring 1 */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              borderRadius: '50%',
+              border: '1px solid rgba(232,160,32,0.5)',
+              animation: 'sage-orb-ring 2s ease-out infinite',
+            }} />
+            {/* Expanding ring 2 — offset */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              borderRadius: '50%',
+              border: '1px solid rgba(232,160,32,0.3)',
+              animation: 'sage-orb-ring 2s ease-out infinite 0.7s',
+            }} />
+            {/* Core orb */}
+            <div style={{
+              position: 'absolute', inset: 12,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at 38% 36%, rgba(245,197,90,0.25), rgba(232,160,32,0.10) 60%, transparent)',
+              border: '1.5px solid rgba(232,160,32,0.45)',
+              animation: 'sage-orb-pulse 2s ease-in-out infinite',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontWeight: 700,
+                fontSize: 24,
+                color: '#E8A020',
+                letterSpacing: '-0.5px',
+                lineHeight: 1,
+                userSelect: 'none',
+              }}>S</span>
+            </div>
+          </div>
+          <p style={{
+            fontFamily: "'DM Mono', monospace",
+            fontSize: 11,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'var(--text-dim)',
+            margin: 0,
+          }}>Sage is waking up…</p>
         </div>
       </div>
     );
@@ -168,7 +220,7 @@ export default function CoachPage() {
         <div className="mb-5">
           <h2 className="text-2xl font-semibold mb-1"
             style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
-            AI Leadership Coach
+            Sage
           </h2>
           <p className="text-[13px] mb-4" style={{ color: 'var(--text-muted)' }}>
             Choose a session type to begin
@@ -219,7 +271,30 @@ export default function CoachPage() {
       <div className="flex-1 overflow-y-auto mb-3">
         {messages.length === 0 && (
           <div className="text-center py-10">
-            <div className="text-5xl mb-4">⬆</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+              <div style={{ position: 'relative', width: 56, height: 56 }}>
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  borderRadius: '50%',
+                  border: '1px solid rgba(232,160,32,0.4)',
+                  animation: 'sage-orb-ring 2.4s ease-out infinite',
+                }} />
+                <div style={{
+                  position: 'absolute', inset: 8,
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle at 38% 36%, rgba(245,197,90,0.2), rgba(232,160,32,0.08) 60%, transparent)',
+                  border: '1.5px solid rgba(232,160,32,0.4)',
+                  animation: 'sage-orb-pulse 2.4s ease-in-out infinite',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontWeight: 700, fontSize: 18,
+                    color: '#E8A020', lineHeight: 1,
+                  }}>S</span>
+                </div>
+              </div>
+            </div>
             <p className="text-[15px] max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>
               Share what's on your mind — a challenge, a question, or a reflection on your week.
             </p>
@@ -241,13 +316,17 @@ export default function CoachPage() {
               </div>
             ) : (
               <div className="flex gap-2.5 items-start">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm"
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(245,158,11,0.13), rgba(245,158,11,0.27))',
-                    border: '1.5px solid rgba(245,158,11,0.33)',
-                    color: 'var(--accent)',
+                    background: 'radial-gradient(circle at 38% 36%, rgba(245,197,90,0.18), rgba(232,160,32,0.08) 60%, transparent)',
+                    border: '1.5px solid rgba(232,160,32,0.38)',
                   }}>
-                  ⬆
+                  <span style={{
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontWeight: 700, fontSize: 15,
+                    color: '#E8A020', lineHeight: 1,
+                    userSelect: 'none',
+                  }}>S</span>
                 </div>
                 <div className="max-w-[85%] flex flex-col gap-2">
                   {msg.reflection && (
@@ -281,13 +360,18 @@ export default function CoachPage() {
 
         {loading && (
           <div className="flex gap-2.5 items-start mb-4">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm"
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
               style={{
-                background: 'linear-gradient(135deg, rgba(245,158,11,0.13), rgba(245,158,11,0.27))',
-                border: '1.5px solid rgba(245,158,11,0.33)',
-                color: 'var(--accent)',
+                background: 'radial-gradient(circle at 38% 36%, rgba(245,197,90,0.18), rgba(232,160,32,0.08) 60%, transparent)',
+                border: '1.5px solid rgba(232,160,32,0.38)',
+                animation: 'sage-orb-pulse 1.6s ease-in-out infinite',
               }}>
-              ⬆
+              <span style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontWeight: 700, fontSize: 15,
+                color: '#E8A020', lineHeight: 1,
+                userSelect: 'none',
+              }}>S</span>
             </div>
             <div className="px-4 py-3.5 rounded-2xl rounded-tl-sm"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>

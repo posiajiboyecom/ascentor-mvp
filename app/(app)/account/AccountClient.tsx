@@ -489,7 +489,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 
             <div className="flex flex-col gap-1.5 mb-4">
               {[
-                { feature: 'AI Coaching Sessions', included: true },
+                { feature: 'Sage Sessions', included: true },
                 { feature: 'Community Cohorts (3 max)', included: true },
                 { feature: 'Expert Sessions', included: profile?.subscription_status === 'active' },
                 { feature: 'Courses & Learning', included: profile?.subscription_status === 'active' },
@@ -544,7 +544,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
           <p className="text-xs mb-4" style={{ color: 'var(--text-dim)' }}>Choose what emails you receive from Ascentor.</p>
 
           <div className="flex flex-col gap-1">
-            <Toggle label="Coaching session summaries" sub="Get a recap after each AI coaching session"
+            <Toggle label="Coaching session summaries" sub="Get a recap after each Sage session"
               checked={notifs.email_coaching_summary}
               onChange={(v) => setNotifs({ ...notifs, email_coaching_summary: v })} />
             <Toggle label="Weekly progress digest" sub="A summary of your goals, streaks, and activity"

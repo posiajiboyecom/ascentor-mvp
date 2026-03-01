@@ -350,7 +350,7 @@ export default function WaitlistPage() {
 
             <div className="proofs">
               {[
-                { e:'🤖', t:'24/7 AI Mentor', d:'Personalized guidance trained on African career context — available at 2am before your biggest moment.' },
+                { e:'🤖', t:'Meet Sage', d:'Personalized guidance trained on African career context — available at 2am before your biggest moment.' },
                 { e:'🎓', t:"Human Mentors Who've Been There", d:"Live sessions with Africa's top professionals. Real experience. Not theory." },
                 { e:'👥', t:'Your Mentorship Circle', d:'Matched with peers at your exact life stage. Your personal board of advisors.' },
               ].map(p => (

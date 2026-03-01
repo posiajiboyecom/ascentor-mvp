@@ -81,7 +81,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
         <Link href="/coach">
           <Card className="hover:border-gray-600 cursor-pointer">
             <div className="text-2xl mb-2">💬</div>
-            <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>AI Coach</div>
+            <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Sage</div>
             <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Start a session</div>
           </Card>
         </Link>

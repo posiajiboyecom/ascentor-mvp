@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Pricing — Ascentor',
-  description: 'Affordable mentorship for African professionals. Plans from $5/month with AI mentorship, expert sessions, and peer circles.',
+  description: 'Affordable mentorship for African professionals. Plans from $5/month with Sage, expert sessions, and peer circles.',
 };
 
 const TIERS = [
@@ -13,7 +13,7 @@ const TIERS = [
     desc: 'For those 15–22 just starting to find their path.',
     color: '#14B8A6',
     features: [
-      'AI Mentor — 10 sessions/month',
+      'Sage — 10 sessions/month',
       '1 mentorship circle',
       'Access to mentor session recordings',
       'Playbooks & frameworks library',
@@ -31,7 +31,7 @@ const TIERS = [
     desc: 'For professionals 22–32 building their career edge.',
     color: '#E8A020',
     features: [
-      'AI Mentor — unlimited sessions',
+      'Sage — unlimited sessions',
       'Up to 3 mentorship circles',
       'Live mentor sessions (monthly)',
       'Human mentor matching',
@@ -52,7 +52,7 @@ const TIERS = [
     color: '#8B5CF6',
     features: [
       'Everything in Builder',
-      'AI Mentor — unlimited + priority',
+      'Sage — unlimited + priority',
       'Unlimited mentorship circles',
       '1-on-1 expert session (quarterly)',
       'Executive peer circle',
@@ -76,7 +76,7 @@ export default function PricingPage() {
         <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
           <Link href="/" className="lp-nav-logo">
             <img
-              src="/ascentor-color-for-light-pages.svg"
+              src="/ascentor-color-on-light.svg"
               alt="Ascentor"
               style={{ height: '32px', width: 'auto' }}
             />
@@ -200,7 +200,7 @@ export default function PricingPage() {
             { q: 'Is there a free trial?', a: 'Yes! Every plan includes a 7-day free trial. No credit card required to start.' },
             { q: 'Can I switch plans?', a: 'Absolutely. Upgrade or downgrade anytime from your dashboard. Changes take effect on your next billing cycle.' },
             { q: 'What payment methods do you accept?', a: 'We accept cards via Paystack (including Nigerian cards), Selar, and international cards. Mobile money coming soon.' },
-            { q: 'How is the AI coaching different from ChatGPT?', a: 'Our AI is specifically trained on leadership frameworks, African business context, and career strategy. It uses a Socratic coaching model — asking the right questions rather than just giving answers.' },
+            { q: 'How is Sage different from ChatGPT?', a: 'Sage is specifically trained on leadership frameworks, African business context, and career strategy. It uses a Socratic coaching model — asking the right questions rather than just giving answers.' },
             { q: 'What\'s the refund policy?', a: 'Full refund within 30 days of your first payment, no questions asked. We want you to try risk-free.' },
           ].map((f) => (
             <details key={f.q} className="group mb-3 rounded-xl overflow-hidden"

@@ -7,7 +7,7 @@ import { checkUsage, recordUsage } from '@/lib/session-limits';
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 const SYSTEM_PROMPT = `<role>
-You are an expert leadership coach for African professionals aged 20-40.
+You are Sage, an expert leadership mentor for African professionals aged 20-40.
 Use the Socratic method. Max 150 words. Ask ONE question at a time.
 Be culturally aware of hierarchical cultures, ethnic/family networks,
 and that career decisions carry higher economic stakes.
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     const goal = goalRes.data;
 
     const recentHistory = sessionsRes.data?.map((s: any) =>
-      `User: ${s.user_input}\nCoach: ${s.ai_response?.question || ''}`
+      `User: ${s.user_input}\nSage: ${s.ai_response?.question || ''}`
     ).join('\n---\n') || 'None';
 
     // 5. RAG Retrieval — search knowledge base

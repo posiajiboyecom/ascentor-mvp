@@ -4,7 +4,7 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'How It Works — Ascentor',
   description:
-    "From sign-up to your first breakthrough — here's exactly how Ascentor's AI mentor, human experts, and peer circles work together for your growth.",
+    "From sign-up to your first breakthrough — here's exactly how Sage, human experts, and peer circles work together for your growth.",
 };
 
 /* ── Data ────────────────────────────────────────────────── */
@@ -12,16 +12,16 @@ const STEPS = [
   {
     number: '01',
     title:  'Join & set your goal',
-    desc:   'Sign up in under 2 minutes. Tell us your life stage, career goal, and biggest challenge. No lengthy forms — just the essentials your AI mentor needs to get started.',
-    detail: 'Your 90-day goal becomes the anchor for every session. The AI mentor refers back to it constantly, keeping you accountable even when life gets in the way.',
+    desc:   'Sign up in under 2 minutes. Tell us your life stage, career goal, and biggest challenge. No lengthy forms — just the essentials Sage needs to get started.',
+    detail: 'Your 90-day goal becomes the anchor for every session. Sage refers back to it constantly, keeping you accountable even when life gets in the way.',
     icon:   '🎯',
     color:  '#E8A020',
     tags:   ['2-min setup', 'Goal setting', 'Instant access'],
   },
   {
     number: '02',
-    title:  'Your AI mentor learns you',
-    desc:   'Unlike ChatGPT, your AI mentor is trained on African business culture, career dynamics, and leadership frameworks. It uses a Socratic coaching model — asking you the right questions.',
+    title:  'Sage learns you',
+    desc:   'Unlike ChatGPT, Sage is trained on African business culture, career dynamics, and leadership frameworks. It uses a Socratic coaching model — asking you the right questions.',
     detail: 'Every session is saved. The AI remembers what you discussed last week, tracks your progress, and adapts its coaching style to how you respond. It gets smarter about you over time.',
     icon:   '🤖',
     color:  '#14B8A6',
@@ -48,7 +48,7 @@ const STEPS = [
   {
     number: '05',
     title:  'Track your progress',
-    desc:   'Your dashboard shows your goal progress, session history, milestones hit, and upcoming commitments. Your AI mentor generates a weekly summary of your growth.',
+    desc:   'Your dashboard shows your goal progress, session history, milestones hit, and upcoming commitments. Sage generates a weekly summary of your growth.',
     detail: "At 30, 60, and 90 days you'll receive a progress report that shows exactly how far you've come. Most members report a measurable career outcome within their first 90 days.",
     icon:   '📈',
     color:  '#14B8A6',
@@ -59,7 +59,7 @@ const STEPS = [
 const PILLARS = [
   {
     emoji: '🤖',
-    title: 'AI Mentor',
+    title: 'Sage',
     color: '#14B8A6',
     bg:    'rgba(20,184,166,0.06)',
     border:'rgba(20,184,166,0.18)',
@@ -103,8 +103,8 @@ const PILLARS = [
 
 const FAQS = [
   {
-    q: 'How is the AI mentor different from ChatGPT?',
-    a: "ChatGPT is a general tool. Our AI mentor is specifically calibrated for African career and business context — it understands the dynamics of Lagos, Nairobi, and Accra, not just New York and London. It also remembers your history and tracks your specific 90-day goal across every session.",
+    q: 'How is Sage different from ChatGPT?',
+    a: "ChatGPT is a general tool. Sage is specifically calibrated for African career and business context — it understands the dynamics of Lagos, Nairobi, and Accra, not just New York and London. It also remembers your history and tracks your specific 90-day goal across every session.",
   },
   {
     q: 'How does mentor matching work?',
@@ -116,7 +116,7 @@ const FAQS = [
   },
   {
     q: 'What if I miss a week?',
-    a: "Life happens. The AI mentor notes the gap and picks back up without judgement. Your circle can continue without you and you can catch up asynchronously. We built the system to be resilient to real life.",
+    a: "Life happens. Sage notes the gap and picks back up without judgement. Your circle can continue without you and you can catch up asynchronously. We built the system to be resilient to real life.",
   },
   {
     q: 'How quickly will I see results?',
@@ -141,7 +141,7 @@ function Nav() {
       <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
         <Link href="/" className="lp-nav-logo">
             <img
-              src="/ascentor-color-for-light-pages.svg"
+              src="/ascentor-color-on-light.svg"
               alt="Ascentor"
               style={{ height: '32px', width: 'auto' }}
             />
@@ -184,7 +184,7 @@ export default function HowItWorksPage() {
           Three forces working<br className="hidden md:block" /> together for your growth.
         </h1>
         <p className="text-base max-w-2xl mx-auto" style={{ color: '#6B7280', lineHeight: 1.75 }}>
-          Ascentor combines AI mentorship, human expertise, and peer accountability
+          Ascentor combines Sage,, human expertise, and peer accountability
           into one system designed specifically for African professionals.
         </p>
       </section>

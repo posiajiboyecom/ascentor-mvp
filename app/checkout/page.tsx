@@ -30,7 +30,7 @@ const PLANS: Plan[] = [
     monthlyPrice: 5,
     yearlyPrice: 48,
     features: [
-      'AI Mentor — 10 sessions/month',
+      'Sage — 10 sessions/month',
       '1 mentorship circle',
       'Mentor session recordings',
       'Playbooks & frameworks library',
@@ -48,7 +48,7 @@ const PLANS: Plan[] = [
     monthlyPrice: 19,
     yearlyPrice: 180,
     features: [
-      'AI Mentor — unlimited sessions',
+      'Sage — unlimited sessions',
       'Up to 3 mentorship circles',
       'Live mentor sessions (monthly)',
       'Human mentor matching',
@@ -511,7 +511,7 @@ export default function CheckoutPage() {
             had <em>someone.</em>
           </h1>
           <p className="co-hero-sub">
-            AI mentorship, expert sessions, and peer accountability — built for the African professional. Choose your stage.
+            Sage, expert sessions, and peer accountability — built for the African professional. Choose your stage.
           </p>
 
           {/* Billing toggle */}

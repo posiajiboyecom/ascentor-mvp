@@ -221,7 +221,7 @@ export default function LandingClient() {
             coach for <span style={{ color: '#E8A020' }}>Africa</span>
           </h1>
           <p className="text-base md:text-lg max-w-2xl mx-auto mb-8" style={{ color: '#6B7280', lineHeight: 1.7 }}>
-            AI coaching, live expert sessions, and peer accountability cohorts — built for ambitious African professionals who refuse to wait for permission to lead.
+            Sage, live expert sessions, and peer accountability cohorts — built for ambitious African professionals who refuse to wait for permission to lead.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
             <Link href="/signup"
@@ -246,7 +246,7 @@ export default function LandingClient() {
             {[
               { value: 95, suffix: '%', label: 'Report career clarity' },
               { value: 50, suffix: '+', label: 'Early access members' },
-              { value: 24, suffix: '/7', label: 'AI coaching available' },
+              { value: 24, suffix: '/7', label: 'Sage available 24/7' },
               { value: 15, suffix: '', label: 'Countries represented' },
             ].map((s) => (
               <div key={s.label}>
@@ -276,7 +276,7 @@ export default function LandingClient() {
           <div className="grid md:grid-cols-3 gap-5">
             {[
               {
-                icon: '🤖', title: 'AI Coaching', color: '#E8A020',
+                icon: '🤖', title: 'Sage', color: '#E8A020',
                 desc: 'A Socratic coach trained on leadership frameworks and African business context. Ask anything at 2am before your big meeting.',
                 features: ['Personalized to your career stage', 'GROW model + African context', 'Action items after every session'],
               },
@@ -324,7 +324,7 @@ export default function LandingClient() {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               { step: '01', title: 'Take the assessment', desc: 'Tell us about your role, goals, and biggest challenge. Our AI matches you to the right frameworks and cohort.' },
-              { step: '02', title: 'Get your first insight', desc: 'Within 60 seconds, your AI coach gives you a personalized action plan based on proven leadership models.' },
+              { step: '02', title: 'Get your first insight', desc: 'Within 60 seconds, Sage gives you a personalized action plan based on proven leadership models.' },
               { step: '03', title: 'Grow with your cohort', desc: 'Join 15 peers on the same journey. Share wins, get feedback, and hold each other accountable weekly.' },
             ].map((s) => (
               <div key={s.step} className="text-center">
@@ -349,7 +349,7 @@ export default function LandingClient() {
           </h2>
           <div className="grid md:grid-cols-3 gap-5">
             {[
-              { quote: 'The AI coach helped me prepare for a promotion conversation I\'d been avoiding for months. I got the promotion.', name: 'Amara O.', role: 'Product Manager, Lagos' },
+              { quote: 'Sage helped me prepare for a promotion conversation I\'d been avoiding for months. I got the promotion.', name: 'Amara O.', role: 'Product Manager, Lagos' },
               { quote: 'Having a cohort of peers in similar roles across Africa gave me perspectives I never would have found in my company alone.', name: 'David K.', role: 'Engineering Lead, Nairobi' },
               { quote: 'At $15/month, this replaces the $200/session executive coach I couldn\'t afford to keep. The AI is surprisingly nuanced.', name: 'Fatima H.', role: 'Strategy Consultant, Accra' },
             ].map((t) => (

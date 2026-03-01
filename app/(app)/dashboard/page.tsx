@@ -10,7 +10,7 @@ export default async function DashboardPage() {
   const [profileRes, goalRes, sessionsRes, commitmentsRes, expertRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('user_goals').select('*').eq('user_id', user.id)
-      .order('created_at', { ascending: false }).limit(1).single(),
+      .order('created_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('coaching_sessions').select('id')
       .eq('user_id', user.id)
       .gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
