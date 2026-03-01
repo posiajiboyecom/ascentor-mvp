@@ -2,8 +2,6 @@
 
 import SageLoader from '@/components/SageLoader';
 
-import SageLoader from '@/components/SageLoader';
-
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
