@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import UpgradePrompt from '@/components/UpgradePrompt';
@@ -15,6 +16,7 @@ export default function CommunityPage() {
   const [filter, setFilter] = useState('All');
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [subscription, setSubscription] = useState<{ plan: string; hasAccess: boolean } | null>(null);
+  const router = useRouter();
   const supabase = createClient();
 
   const categories = ['All', 'Technology', 'Finance', 'Leadership', 'Diversity', 'Entrepreneurship', 'Consulting', 'Career Growth', 'Executive'];
@@ -73,8 +75,9 @@ export default function CommunityPage() {
         .maybeSingle();
 
       if (existing) {
-        // Already a member — just update UI state
+        // Already a member — navigate directly into the circle
         setMyCohortIds((prev) => new Set([...prev, cohortId]));
+        router.push(`/community/${cohortId}`);
         return;
       }
 
@@ -88,9 +91,10 @@ export default function CommunityPage() {
         setCohorts((prev) => prev.map((c) =>
           c.id === cohortId ? { ...c, member_count: (c.member_count || 0) + 1 } : c
         ));
-        setJustJoined(cohortId);
         analytics.communityJoined(cohortId);
-        setTimeout(() => setJustJoined(null), 3000);
+        // Small delay so DB write propagates before membership check in feed page
+        await new Promise(r => setTimeout(r, 400));
+        router.push(`/community/${cohortId}`);
       } else {
         // Handle unique constraint violation gracefully
         if (error.code === '23505') {
@@ -142,7 +146,7 @@ export default function CommunityPage() {
     return (
       <div className="py-20 text-center">
         <div className="text-2xl mb-2">⏳</div>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading cohorts...</p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading circles...</p>
       </div>
     );
   }

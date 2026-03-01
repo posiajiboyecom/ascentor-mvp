@@ -46,18 +46,25 @@ export default function CohortFeedPage() {
 
   async function loadAll() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     setUserId(user.id);
 
-    // Check membership
-    const { data: membership } = await supabase
-      .from('cohort_members')
-      .select('id')
-      .eq('cohort_id', cohortId)
-      .eq('user_id', user.id)
-      .maybeSingle();
+    // Check membership — retry once to handle post-join race condition
+    let membership = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const { data } = await supabase
+        .from('cohort_members')
+        .select('id')
+        .eq('cohort_id', cohortId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      membership = data;
+      if (membership) break;
+      if (attempt === 0) await new Promise(r => setTimeout(r, 600)); // wait 600ms then retry
+    }
 
     if (!membership) {
+      setLoading(false);
       router.push('/community');
       return;
     }
@@ -71,10 +78,10 @@ export default function CohortFeedPage() {
     setCohort(cohortData);
     setMemberCount(cohortData?.member_count || 0);
 
-    // Load posts
+    // Load posts with author names
     const { data: postsData } = await supabase
       .from('cohort_posts')
-      .select('*')
+      .select('*, profiles(full_name)')
       .eq('cohort_id', cohortId)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -154,7 +161,7 @@ export default function CohortFeedPage() {
 
     const { data: replies } = await supabase
       .from('cohort_replies')
-      .select('*')
+      .select('*, profiles(full_name)')
       .eq('post_id', postId)
       .order('created_at');
 
@@ -344,7 +351,7 @@ export default function CohortFeedPage() {
                         👤
                       </div>
                       <span className="text-xs font-semibold" style={{ color: 'var(--text)' }}>
-                        Member
+                        {(post as any).profiles?.full_name || 'Member'}
                       </span>
                       <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
                         {timeAgo(post.created_at)}
@@ -409,7 +416,7 @@ export default function CohortFeedPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-1.5 mb-1">
                           <span className="text-xs font-semibold" style={{ color: 'var(--text)' }}>
-                            Member
+                            {(reply as any).profiles?.full_name || 'Member'}
                           </span>
                           <span className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
                             {timeAgo(reply.created_at)}
