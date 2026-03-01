@@ -1,3 +1,5 @@
+'use server';
+
 // ─────────────────────────────────────────────────────────────
 // lib/push.ts  — server-side Web Push helper
 // IMPORTANT: setVapidDetails() is called lazily inside each
