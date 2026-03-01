@@ -422,7 +422,7 @@ export default function LandingPage() {
           {/* Desktop links */}
           <ul className="lp-nav-links">
             <li><Link href="/who-its-for">Who It's For</Link></li>
-            <li><Link href="#pillars">How It Works</Link></li>
+            <li><Link href="/how-it-works">How It Works</Link></li>
             <li><Link href="/pricing">Pricing</Link></li>
             <li><Link href="/blog" style={{ color: 'var(--text)' }}>Blog</Link></li>
             <li><Link href="/login" style={{ color: 'var(--text)' }}>Log In</Link></li>

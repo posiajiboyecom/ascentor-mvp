@@ -3,59 +3,61 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Pricing — Ascentor',
-  description: 'Affordable leadership coaching for African professionals. Plans starting at $15/month with AI coaching, expert sessions, and peer cohorts.',
+  description: 'Affordable mentorship for African professionals. Plans from $5/month with AI mentorship, expert sessions, and peer circles.',
 };
 
 const TIERS = [
   {
-    name: 'Starter',
-    price: 15,
-    desc: 'For individual contributors ready to grow into leadership.',
+    name: 'Explorer',
+    price: 5,
+    desc: 'For those 15–22 just starting to find their path.',
     color: '#14B8A6',
     features: [
-      'AI coaching — 20 sessions/month',
-      '1 peer cohort (15 members)',
-      'Access to expert session recordings',
-      'Leadership framework library',
-      'Email support',
+      'AI Mentor — 10 sessions/month',
+      '1 mentorship circle',
+      'Access to mentor session recordings',
+      'Playbooks & frameworks library',
+      'Goal tracking (3 active goals)',
+      'Weekly reflection prompts',
     ],
-    missing: ['Live expert sessions', 'Priority matching', 'Custom development plan'],
+    missing: ['Live mentor sessions', 'Priority matching', 'Custom development plan'],
     cta: 'Start Free Trial',
     href: '/signup',
     popular: false,
   },
   {
-    name: 'Pro',
-    price: 29,
-    desc: 'For mid-level professionals and first-time managers.',
+    name: 'Builder',
+    price: 19,
+    desc: 'For professionals 22–32 building their career edge.',
     color: '#E8A020',
     features: [
-      'AI coaching — unlimited sessions',
-      '2 peer cohorts',
-      'Live expert sessions (monthly)',
-      'Priority cohort matching',
+      'AI Mentor — unlimited sessions',
+      'Up to 3 mentorship circles',
+      'Live mentor sessions (monthly)',
+      'Human mentor matching',
       'Personal development plan',
       'Career strategy templates',
+      'Export coaching history',
       'Priority support',
     ],
-    missing: ['1-on-1 expert sessions'],
+    missing: ['1-on-1 dedicated mentor'],
     cta: 'Start Free Trial',
     href: '/signup',
     popular: true,
   },
   {
-    name: 'Premium',
-    price: 49,
-    desc: 'For senior leaders and executives scaling their impact.',
+    name: 'Climber',
+    price: 39,
+    desc: 'For leaders 32–50 scaling teams and building legacy.',
     color: '#8B5CF6',
     features: [
-      'Everything in Pro',
-      'AI coaching — unlimited + priority',
-      'Unlimited cohort access',
+      'Everything in Builder',
+      'AI Mentor — unlimited + priority',
+      'Unlimited mentorship circles',
       '1-on-1 expert session (quarterly)',
       'Executive peer circle',
       'Advanced analytics dashboard',
-      'White-glove onboarding',
+      'Team dashboard (up to 10)',
       'Dedicated account manager',
     ],
     missing: [],
@@ -95,7 +97,7 @@ export default function PricingPage() {
           Invest in your growth
         </h1>
         <p className="text-base max-w-xl mx-auto" style={{ color: '#6B7280' }}>
-          What used to cost $5,000–$10,000 in executive coaching, now starts at $15/month. All plans include a 7-day free trial.
+          What used to cost $5,000–$10,000 in executive mentorship, now starts at $5/month. All plans include a 7-day free trial.
         </p>
       </section>
 
