@@ -2,7 +2,7 @@
 
 import SageLoader from '@/components/SageLoader';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef} from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
@@ -16,10 +16,12 @@ export default function CommunityPage() {
   const [joining, setJoining] = useState<string | null>(null);
   const [justJoined, setJustJoined] = useState<string | null>(null);
   const [filter, setFilter] = useState('All');
+  const [search, setSearch] = useState('');
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [subscription, setSubscription] = useState<{ plan: string; hasAccess: boolean } | null>(null);
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   const categories = ['All', 'Technology', 'Finance', 'Leadership', 'Diversity', 'Entrepreneurship', 'Consulting', 'Career Growth', 'Executive'];
 
@@ -143,9 +145,15 @@ export default function CommunityPage() {
   }
 
   const myCohorts = cohorts.filter((c) => myCohortIds.has(c.id));
-  const filteredCohorts = filter === 'All'
-    ? cohorts.filter((c) => !myCohortIds.has(c.id))
-    : cohorts.filter((c) => !myCohortIds.has(c.id) && c.category === filter);
+  const searchLower = search.toLowerCase().trim();
+  const filteredCohorts = cohorts
+    .filter((c) => !myCohortIds.has(c.id))
+    .filter((c) => filter === 'All' || c.category === filter)
+    .filter((c) => !searchLower ||
+      (c.name || '').toLowerCase().includes(searchLower) ||
+      (c.description || '').toLowerCase().includes(searchLower) ||
+      (c.category || '').toLowerCase().includes(searchLower)
+    );
 
   if (loading) {
     return (
@@ -230,6 +238,41 @@ export default function CommunityPage() {
         <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>
           {myCohorts.length > 0 ? 'Browse More Cohorts' : 'Choose Your Cohorts'}
         </h3>
+
+        {/* U4: Search input */}
+        <div className="relative mb-3">
+          <svg
+            width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)', pointerEvents: 'none' }}
+          >
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search circles…"
+            className="w-full pl-9 pr-4 py-2 text-sm rounded-lg"
+            style={{
+              background: 'var(--bg-input)',
+              color: 'var(--text)',
+              border: '1px solid var(--border)',
+              outline: 'none',
+              fontFamily: "'Syne', system-ui, sans-serif",
+            }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              style={{
+                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                color: 'var(--text-dim)', fontSize: 16, lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer',
+              }}
+            >×</button>
+          )}
+        </div>
+
         <div className="flex gap-1.5 overflow-x-auto mb-4 pb-1" style={{ scrollbarWidth: 'none' }}>
           {categories.map((c) => (
             <button key={c} onClick={() => setFilter(c)}
@@ -251,7 +294,9 @@ export default function CommunityPage() {
             <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
               {communityLimit !== -1 && myCohortIds.size >= communityLimit
                 ? "You've reached the free community limit — upgrade or leave one to explore others"
-                : 'No cohorts in this category'}
+                : searchLower
+                  ? `No circles match "${search}"`
+                  : 'No circles in this category'}
             </p>
           </div>
         ) : (

@@ -69,9 +69,18 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
   const [localCommitments, setLocalCommitments] = useState(commitments);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
   const goalProgress = goal?.progress || 0;
+
+  // U5: Onboarding completeness check
+  const profileComplete =
+    !!profile?.goal_role &&
+    !!profile?.industry &&
+    !!profile?.biggest_challenge &&
+    !!profile?.onboarding_completed;
+  const showOnboardingBanner = !profileComplete && !bannerDismissed;
 
   const toggleCommitment = async (id: string, done: boolean) => {
     setLocalCommitments((prev: any[]) =>
@@ -93,6 +102,49 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
 
   return (
     <div className="animate-fade-up py-6">
+
+      {/* U5: Onboarding completion banner */}
+      {showOnboardingBanner && (
+        <div className="rounded-xl p-4 mb-6 flex items-start gap-3"
+          style={{
+            background: 'rgba(232,160,32,0.06)',
+            border: '1px solid rgba(232,160,32,0.2)',
+          }}>
+          {/* Progress ring icon */}
+          <div className="shrink-0 mt-0.5" style={{ width: 28, height: 28 }}>
+            <svg viewBox="0 0 36 36" width="28" height="28">
+              <circle cx="18" cy="18" r="15.9" fill="none"
+                stroke="rgba(232,160,32,0.15)" strokeWidth="3.5" />
+              <circle cx="18" cy="18" r="15.9" fill="none"
+                stroke="#E8A020" strokeWidth="3.5"
+                strokeDasharray="60, 100"
+                strokeLinecap="round"
+                style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }} />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold mb-0.5" style={{ color: 'var(--accent)' }}>
+              Finish setting up your profile
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              Add your goal, industry, and challenge so Sage can give you personalised guidance.
+            </p>
+            <Link
+              href="/onboarding"
+              className="inline-block mt-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={{ background: 'var(--accent)', color: '#0C0B08' }}>
+              Complete profile →
+            </Link>
+          </div>
+          <button
+            onClick={() => setBannerDismissed(true)}
+            className="shrink-0 text-lg leading-none transition-opacity hover:opacity-100"
+            style={{ color: 'var(--text-dim)', opacity: 0.5, background: 'none', border: 'none', cursor: 'pointer' }}
+            aria-label="Dismiss">
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Greeting */}
       <div className="mb-7">

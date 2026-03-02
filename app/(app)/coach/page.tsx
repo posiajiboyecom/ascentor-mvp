@@ -26,10 +26,14 @@ export default function CoachPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [loadingEarlier, setLoadingEarlier] = useState(false);
   const [sessionType, setSessionType] = useState('challenge_navigation');
   const [limitReached, setLimitReached] = useState(false);
   const [usageInfo, setUsageInfo] = useState<{ used: number; limit: number } | null>(null);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyLoaded, setHistoryLoaded] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     loadHistory();
@@ -54,29 +58,55 @@ export default function CoachPage() {
     } catch {}
   }
 
+  function sessionsToMessages(sessions: any[]): Message[] {
+    const msgs: Message[] = [];
+    for (const s of sessions) {
+      msgs.push({ role: 'user', content: s.user_input });
+      const ai = typeof s.ai_response === 'object' ? (s.ai_response || {}) : {};
+      msgs.push({
+        role: 'assistant',
+        reflection: ai.reflection || null,
+        question:   ai.question   || null,
+        action:     ai.action     || null,
+      });
+    }
+    return msgs;
+  }
+
   async function loadHistory() {
     try {
-      const res = await fetch('/api/coach/history');
-      const { sessions } = await res.json();
-
-      if (sessions && sessions.length > 0) {
-        const history: Message[] = [];
-        for (const s of sessions) {
-          history.push({ role: 'user', content: s.user_input });
-          const ai = s.ai_response || {};
-          history.push({
-            role: 'assistant',
-            reflection: ai.reflection || null,
-            question: ai.question || null,
-            action: ai.action || null,
-          });
-        }
-        setMessages(history);
-      }
+      // Load the most recent PAGE_SIZE sessions
+      const res = await fetch(`/api/coach/history?limit=${PAGE_SIZE}&offset=0`);
+      const { sessions, total } = await res.json();
+      setHistoryTotal(total || 0);
+      setHistoryLoaded(sessions?.length || 0);
+      if (sessions?.length > 0) setMessages(sessionsToMessages(sessions));
     } catch (e) {
       console.error('Failed to load history:', e);
     }
     setLoadingHistory(false);
+  }
+
+  async function loadEarlier() {
+    if (loadingEarlier) return;
+    setLoadingEarlier(true);
+    try {
+      // Offset from the end: total - historyLoaded - PAGE_SIZE (fetch the next older page)
+      const offset = Math.max(historyTotal - historyLoaded - PAGE_SIZE, 0);
+      const fetchCount = Math.min(PAGE_SIZE, historyTotal - historyLoaded);
+      if (fetchCount <= 0) { setLoadingEarlier(false); return; }
+
+      const res = await fetch(`/api/coach/history?limit=${fetchCount}&offset=${offset}`);
+      const { sessions } = await res.json();
+      if (sessions?.length > 0) {
+        // Prepend older messages to the top
+        setMessages(prev => [...sessionsToMessages(sessions), ...prev]);
+        setHistoryLoaded(prev => prev + sessions.length);
+      }
+    } catch (e) {
+      console.error('Failed to load earlier history:', e);
+    }
+    setLoadingEarlier(false);
   }
 
   const handleSend = async () => {
@@ -160,38 +190,68 @@ export default function CoachPage() {
     );
   }
 
+  // U1 fix: persistent session type selector
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const activeSession = SESSION_TYPES.find(t => t.id === sessionType) || SESSION_TYPES[0];
+
   return (
     <div className="animate-fade-up flex flex-col" style={{ height: 'calc(100vh - 120px)', paddingTop: 16 }}>
-      {/* Session Type Selector — only show when no messages */}
-      {messages.length === 0 && (
-        <div className="mb-5">
-          <h2 className="text-2xl font-semibold mb-1"
-            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
-            Sage
-          </h2>
-          <p className="text-[13px] mb-4" style={{ color: 'var(--text-muted)' }}>
-            Choose a session type to begin
-          </p>
-          <div className="grid grid-cols-2 gap-2.5">
-            {SESSION_TYPES.map((t) => (
-              <button key={t.id} onClick={() => setSessionType(t.id)}
-                className="rounded-xl p-3.5 text-left transition-all"
-                style={{
-                  background: 'var(--bg-card)',
-                  border: sessionType === t.id
-                    ? '1.5px solid var(--accent)'
-                    : '1px solid var(--border)',
-                }}>
-                <span className="text-xl">{t.icon}</span>
-                <div className="text-[13px] font-medium mt-1"
-                  style={{ color: sessionType === t.id ? 'var(--accent)' : 'var(--text)' }}>
-                  {t.label}
-                </div>
-              </button>
-            ))}
-          </div>
+
+      {/* ── Persistent header: title + always-visible session type picker ── */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold"
+          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
+          Sage
+        </h2>
+        {/* Compact dropdown — always visible regardless of message count */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setSelectorOpen(o => !o)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--accent)',
+              color: 'var(--accent)',
+            }}
+          >
+            <span style={{ fontSize: 14 }}>{activeSession.icon}</span>
+            <span>{activeSession.label}</span>
+            <span style={{ fontSize: 9, marginLeft: 1, opacity: 0.7 }}>{selectorOpen ? '▲' : '▼'}</span>
+          </button>
+
+          {selectorOpen && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 50,
+              minWidth: 210,
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+              overflow: 'hidden',
+            }}>
+              {SESSION_TYPES.map((t, i) => {
+                const active = sessionType === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => { setSessionType(t.id); setSelectorOpen(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-[13px] transition-all"
+                    style={{
+                      background: active ? 'rgba(232,160,32,0.07)' : 'transparent',
+                      color: active ? 'var(--accent)' : 'var(--text)',
+                      borderBottom: i < SESSION_TYPES.length - 1 ? '1px solid var(--border)' : 'none',
+                    }}
+                  >
+                    <span style={{ fontSize: 15 }}>{t.icon}</span>
+                    <span className="flex-1">{t.label}</span>
+                    {active && <span style={{ fontSize: 11, color: 'var(--accent)' }}>✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Usage counter */}
       {usageInfo && usageInfo.limit !== -1 && (
@@ -216,6 +276,31 @@ export default function CoachPage() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto mb-3">
+
+        {/* U2: Load earlier sessions button */}
+        {historyLoaded < historyTotal && messages.length > 0 && (
+          <div className="flex justify-center mb-4">
+            <button
+              onClick={loadEarlier}
+              disabled={loadingEarlier}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all disabled:opacity-40"
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-muted)',
+              }}
+            >
+              {loadingEarlier ? (
+                <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>↻</span>
+              ) : '↑'}
+              {loadingEarlier
+                ? 'Loading…'
+                : `Load ${Math.min(PAGE_SIZE, historyTotal - historyLoaded)} earlier session${Math.min(PAGE_SIZE, historyTotal - historyLoaded) !== 1 ? 's' : ''}`}
+              <span style={{ opacity: 0.5 }}>({historyTotal - historyLoaded} remaining)</span>
+            </button>
+          </div>
+        )}
+
         {messages.length === 0 && (
           <div className="text-center py-10">
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>

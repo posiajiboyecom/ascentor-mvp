@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef} from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
@@ -87,6 +87,11 @@ const PLANS: Plan[] = [
 
 const NGN_PER_USD = 1600;
 
+// U6: compute yearly savings vs paying monthly for 12 months
+function yearlySavings(plan: Plan): number {
+  return Math.round(plan.monthlyPrice * 12 - plan.yearlyPrice);
+}
+
 export default function CheckoutPage() {
   const [billing, setBilling]           = useState<BillingCycle>('monthly');
   const [promoCode, setPromoCode]       = useState('');
@@ -100,7 +105,8 @@ export default function CheckoutPage() {
   const [success, setSuccess]           = useState('');
 
   const router   = useRouter();
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   useEffect(() => {
     const loadUser = async () => {
@@ -530,7 +536,7 @@ export default function CheckoutPage() {
             Sage, expert sessions, and peer accountability — built for the African professional. Choose your stage.
           </p>
 
-          {/* Billing toggle */}
+          {/* Billing toggle — U6: enhanced with savings callout */}
           <div className="co-billing">
             {(['monthly', 'yearly'] as BillingCycle[]).map(cycle => (
               <button
@@ -543,6 +549,15 @@ export default function CheckoutPage() {
               </button>
             ))}
           </div>
+          {/* U6: Nudge text below toggle when user is on monthly */}
+          {billing === 'monthly' && (
+            <p style={{ fontSize: 12, color: '#7A7260', marginTop: 10 }}>
+              💡 Switch to yearly and save up to{' '}
+              <span style={{ color: '#E8A020', fontWeight: 600 }}>
+                ${Math.max(...PLANS.map(yearlySavings))}/year
+              </span>
+            </p>
+          )}
         </div>
 
         {/* PLANS */}
@@ -583,7 +598,20 @@ export default function CheckoutPage() {
                     <span className="co-price-per">/mo</span>
                   </div>
                   {billing === 'yearly' && (
-                    <p className="co-price-note">${price} BILLED ANNUALLY</p>
+                    <>
+                      <p className="co-price-note">${price} BILLED ANNUALLY</p>
+                      {/* U6: per-plan savings badge */}
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                        marginTop: 6, padding: '3px 10px', borderRadius: 20,
+                        background: 'rgba(16,185,129,0.08)',
+                        border: '1px solid rgba(16,185,129,0.2)',
+                      }}>
+                        <span style={{ color: '#10B981', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "'DM Mono', monospace" }}>
+                          ✓ YOU SAVE ${yearlySavings(plan)}/YR
+                        </span>
+                      </div>
+                    </>
                   )}
                   {hasPromo && price < (billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice) && (
                     <p className="co-price-promo" style={{ color: plan.stageColor, fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: '0.06em' }}>
