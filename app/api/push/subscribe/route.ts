@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    console.error('[push]', error);
+    console.error('[push]', err);
     return NextResponse.json({ error: 'Push subscription failed' }, { status: 500 });
   }
 }
