@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useRef} from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // ─────────────────────────────────────────────────────────────────
@@ -66,7 +66,8 @@ const IconGoal = () => (
 );
 
 export default function DashboardClient({ profile, goal, sessionsThisWeek, commitments, nextExpert }: any) {
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
   const [localCommitments, setLocalCommitments] = useState(commitments);
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';

@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('[push]', error);
+    return NextResponse.json({ error: 'Push notification failed' }, { status: 500 });
   }
 }

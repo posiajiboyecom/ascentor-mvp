@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, runId: handle.id });
   } catch (error: any) {
     console.error("Newsletter trigger failed:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[newsletter]', error);
+    return NextResponse.json({ error: 'Newsletter send failed' }, { status: 500 });
   }
 }

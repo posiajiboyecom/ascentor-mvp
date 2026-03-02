@@ -181,6 +181,7 @@ ${knowledgeBlock ? `<relevant_knowledge>\n${knowledgeBlock}\n</relevant_knowledg
 
   } catch (error: any) {
     console.error("API Crash Log:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[coach]', error);
+    return NextResponse.json({ error: 'Coaching session failed' }, { status: 500 });
   }
 }

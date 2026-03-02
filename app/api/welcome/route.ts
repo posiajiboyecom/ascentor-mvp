@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, runId: handle.id });
   } catch (error: any) {
     console.error("Welcome email trigger failed:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[welcome]', error);
+    return NextResponse.json({ error: 'Email dispatch failed' }, { status: 500 });
   }
 }

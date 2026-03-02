@@ -14,7 +14,7 @@ export default function TermsPage() {
         <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
           <Link href="/" className="lp-nav-logo">
             <img
-              src="/ascentor-color-on-light.svg"
+              src="/ascentor-color-for-light-pages.svg"
               alt="Ascentor"
               style={{ height: '32px', width: 'auto' }}
             />

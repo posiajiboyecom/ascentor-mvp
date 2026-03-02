@@ -25,11 +25,13 @@ export async function POST(req: NextRequest) {
       if (error.code === "23505") {
         return NextResponse.json({ success: true, message: "Already subscribed" });
       }
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[newsletter]', error);
+    return NextResponse.json({ error: 'Newsletter request failed' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('[newsletter]', error);
+    return NextResponse.json({ error: 'Newsletter request failed' }, { status: 500 });
   }
 }

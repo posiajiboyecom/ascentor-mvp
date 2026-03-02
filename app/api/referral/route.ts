@@ -72,7 +72,8 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('Referral API error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[referral]', error);
+    return NextResponse.json({ error: 'Referral operation failed' }, { status: 500 });
   }
 }
 
@@ -136,6 +137,7 @@ export async function GET() {
 
   } catch (error: any) {
     console.error('Referral GET error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[referral]', error);
+    return NextResponse.json({ error: 'Referral operation failed' }, { status: 500 });
   }
 }

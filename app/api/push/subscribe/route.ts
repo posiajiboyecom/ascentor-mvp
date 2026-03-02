@@ -24,11 +24,13 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('[push/subscribe]', error.message);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[push]', error);
+    return NextResponse.json({ error: 'Push subscription failed' }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('[push]', error);
+    return NextResponse.json({ error: 'Push subscription failed' }, { status: 500 });
   }
 }

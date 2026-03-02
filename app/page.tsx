@@ -426,7 +426,7 @@ export default function LandingPage() {
         {/* NAV */}
         <nav className="lp-nav">
           <Link href="/" className="lp-nav-logo">
-            <img src="/ascentor-color-on-light.svg" alt="Ascentor" style={{ height: '32px', width: 'auto' }} />
+            <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: '32px', width: 'auto' }} />
           </Link>
 
           {/* Desktop links */}
