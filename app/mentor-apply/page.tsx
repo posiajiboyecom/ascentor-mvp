@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
 const INDUSTRIES = [
   'Finance & Banking', 'Technology & Engineering', 'Consulting & Strategy',
@@ -22,6 +23,8 @@ export default function MentorApplyPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   const [form, setForm] = useState({
     full_name: '',
@@ -88,11 +91,13 @@ export default function MentorApplyPage() {
     setLoading(true);
     setError('');
     try {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
+      // agree_to_terms is a UI-only field — the 'agree_to_terms' column doesn't
+      // exist in mentor_applications. Destructure it out before inserting.
+      const { agree_to_terms: _terms, ...dbFields } = form;
       const { error: dbErr } = await supabase.from('mentor_applications').insert({
-        ...form,
+        ...dbFields,
         age_groups: form.age_groups.join(', '),
+        terms_accepted: true,
         status: 'pending',
         applied_at: new Date().toISOString(),
       });
@@ -125,7 +130,7 @@ export default function MentorApplyPage() {
         <style>{maStyles}</style>
         <Link href="/" className="lp-nav-logo">
             <img
-              src="/ascentor-color-for-light-pages.svg"
+              src="/ascentor-color-on-light.svg"
               alt="Ascentor"
               style={{ height: '32px', width: 'auto' }}
             />
@@ -156,7 +161,7 @@ export default function MentorApplyPage() {
       <nav className="ma-nav">
         <Link href="/" className="lp-nav-logo">
             <img
-              src="/ascentor-color-for-light-pages.svg"
+              src="/ascentor-color-on-light.svg"
               alt="Ascentor"
               style={{ height: '32px', width: 'auto' }}
             />
