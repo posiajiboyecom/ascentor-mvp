@@ -94,7 +94,10 @@ export default function CommunityPage() {
           c.id === cohortId ? { ...c, member_count: (c.member_count || 0) + 1 } : c
         ));
         analytics.communityJoined(cohortId);
-        // Delay so DB write fully propagates before membership check in feed page (matches 3x800ms retry budget)
+        // Show "Just Joined!" toast for 3 seconds, then navigate
+        setJustJoined(cohortId);
+        setTimeout(() => setJustJoined(null), 3000);
+        // Delay so DB write fully propagates before membership check in feed page
         await new Promise(r => setTimeout(r, 1200));
         router.push(`/community/${cohortId}`);
       } else {

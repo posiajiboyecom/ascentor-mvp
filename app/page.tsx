@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
@@ -8,6 +8,16 @@ export default function LandingPage() {
   const supabase = createClient();
 
   const [email, setEmail] = useState('');
+  const [hasBlogPosts, setHasBlogPosts] = useState(false);
+
+  // B7: Check if blog has published posts — hide nav link when empty
+  useEffect(() => {
+    supabase
+      .from('blog_posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_published', true)
+      .then(({ count }) => { if ((count || 0) > 0) setHasBlogPosts(true); });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [subLoading, setSubLoading] = useState(false);
@@ -416,15 +426,15 @@ export default function LandingPage() {
         {/* NAV */}
         <nav className="lp-nav">
           <Link href="/" className="lp-nav-logo">
-            <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: '32px', width: 'auto' }} />
+            <img src="/ascentor-color-on-light.svg" alt="Ascentor" style={{ height: '32px', width: 'auto' }} />
           </Link>
 
           {/* Desktop links */}
           <ul className="lp-nav-links">
             <li><Link href="/who-its-for">Who It's For</Link></li>
-            <li><Link href="/how-it-works">How It Works</Link></li>
+            <li><Link href="#pillars">How It Works</Link></li>
             <li><Link href="/pricing">Pricing</Link></li>
-            <li><Link href="/blog" style={{ color: 'var(--text)' }}>Blog</Link></li>
+            {hasBlogPosts && <li><Link href="/blog" style={{ color: 'var(--text)' }}>Blog</Link></li>}
             <li><Link href="/login" style={{ color: 'var(--text)' }}>Log In</Link></li>
             <li><Link href="/signup" className="lp-nav-cta">Start Free →</Link></li>
           </ul>
@@ -447,7 +457,7 @@ export default function LandingPage() {
             <Link href="/who-its-for" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Who It's For</Link>
             <Link href="#pillars" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>How It Works</Link>
             <Link href="/pricing" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
-            <Link href="/blog" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Blog</Link>
+            {hasBlogPosts && <Link href="/blog" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Blog</Link>}
             <div className="lp-drawer-divider" />
             <Link href="/login" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
             <Link href="/signup" className="lp-drawer-cta" onClick={() => setMobileMenuOpen(false)}>Start Free — 7 Days →</Link>
@@ -778,7 +788,7 @@ export default function LandingPage() {
               <div className="lp-footer-col-title">Platform</div>
               <ul className="lp-footer-links">
                 <li><Link href="/pricing">Pricing</Link></li>
-                <li><Link href="/blog">Blog</Link></li>
+                {hasBlogPosts && <li><Link href="/blog">Blog</Link></li>}
                 <li><Link href="/teams">For Teams</Link></li>
                 <li><Link href="/mentor-apply">Become a Mentor</Link></li>
                 <li><Link href="/signup">Start Free Trial</Link></li>

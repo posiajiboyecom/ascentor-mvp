@@ -191,7 +191,7 @@ export default function LandingClient() {
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm" style={{ color: '#6B7280' }}>
             <Link href="/pricing" className="hover:text-gray-900 transition-colors">Pricing</Link>
-            <Link href="/blog" className="hover:text-gray-900 transition-colors">Blog</Link>
+            {/* Blog link hidden until content published */}
             <Link href="/login" className="hover:text-gray-900 transition-colors">Log In</Link>
             <Link href="/signup"
               className="px-5 py-2 rounded-lg text-sm font-semibold"
@@ -425,7 +425,7 @@ export default function LandingClient() {
               <p className="text-xs font-semibold mb-3" style={{ color: '#9CA3AF' }}>Product</p>
               <div className="flex flex-col gap-2">
                 <Link href="/pricing" className="text-xs" style={{ color: '#6B7280' }}>Pricing</Link>
-                <Link href="/blog" className="text-xs" style={{ color: '#6B7280' }}>Blog</Link>
+                {/* Blog link hidden until content published */}
                 <Link href="/signup" className="text-xs" style={{ color: '#6B7280' }}>Start Free Trial</Link>
               </div>
             </div>

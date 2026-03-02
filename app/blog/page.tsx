@@ -22,7 +22,7 @@ export default async function BlogPage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="lp-nav-logo">
             <img
-              src="/ascentor-color-for-light-pages.svg"
+              src="/ascentor-color-on-light.svg"
               alt="Ascentor"
               style={{ height: '32px', width: 'auto' }}
             />
@@ -38,9 +38,16 @@ export default async function BlogPage() {
           <p className="text-base mb-10" style={{ color: '#6B7280' }}>Actionable strategies for African professionals building their leadership edge.</p>
 
           {!hasPosts && (
-            <div className="text-center py-16 rounded-2xl" style={{ background: '#FFF', border: '1px solid #E5E7EB' }}>
-              <p className="text-3xl mb-3">📝</p>
-              <p className="text-sm" style={{ color: '#9CA3AF' }}>Blog posts coming soon. Stay tuned!</p>
+            <div className="text-center py-20 rounded-2xl" style={{ background: '#FFF', border: '1px solid #E5E7EB' }}>
+              <p className="text-4xl mb-4">✍️</p>
+              <h2 className="text-xl font-bold mb-2" style={{ color: '#1A1A2E' }}>Content coming soon</h2>
+              <p className="text-sm mb-6" style={{ color: '#9CA3AF', maxWidth: 320, margin: '0 auto 24px' }}>
+                We're preparing leadership insights and career strategies tailored for African professionals.
+              </p>
+              <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-semibold"
+                style={{ background: '#E8A020', color: '#000' }}>
+                Back to Home
+              </a>
             </div>
           )}
 

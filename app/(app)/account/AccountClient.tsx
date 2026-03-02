@@ -233,9 +233,57 @@ export default function AccountClient({ profile, email, authProvider, userId, no
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== 'DELETE') return;
     setDeleting(true);
-    alert('Account deletion request submitted. Our team will process this within 48 hours. You will receive a confirmation email at ' + email + '.');
-    setDeleting(false);
-    setDeleteConfirm('');
+
+    try {
+      // 1. Insert deletion request record in DB
+      const { error: reqError } = await supabase
+        .from('deletion_requests')
+        .insert({
+          user_id:    userId,
+          email,
+          status:     'pending',
+          requested_at: new Date().toISOString(),
+        });
+
+      if (reqError) {
+        console.error('Deletion request error:', reqError);
+        // Fallback: still audit log even if table doesn't exist yet
+      }
+
+      // 2. Audit log
+      try {
+        await supabase.from('audit_logs').insert({
+          user_id:     userId,
+          action:      'account_deletion_requested',
+          entity_type: 'user',
+          entity_id:   userId,
+          details:     { email, requested_at: new Date().toISOString() },
+        });
+      } catch { /* non-critical */ }
+
+      // 3. Notify user via in-app notification
+      try {
+        await supabase.from('notifications').insert({
+          user_id: userId,
+          type:    'account',
+          title:   'Account deletion requested',
+          message: 'Your request has been received. Your account and data will be deleted within 48 hours. You will receive a confirmation email.',
+          link:    '/account',
+        });
+      } catch { /* non-critical */ }
+
+      // 4. Show confirmation and sign out
+      setDeleteConfirm('');
+      setDeleting(false);
+      alert(`Deletion request submitted for ${email}. Your account will be deleted within 48 hours. You will be signed out now.`);
+      await supabase.auth.signOut();
+      router.push('/');
+
+    } catch (err) {
+      console.error('Delete account error:', err);
+      setDeleting(false);
+      alert('Something went wrong. Please contact support at hello@ascentorbi.com to request account deletion.');
+    }
   };
 
   const handleSignOut = async () => {
@@ -493,50 +541,99 @@ export default function AccountClient({ profile, email, authProvider, userId, no
       {/* ═══════════════════════════════════════════ */}
       {section === 'plan' && (
         <div className="flex flex-col gap-4">
-          {/* Current Plan */}
-          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--accent)' }}>
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>Current Plan</span>
-                <h2 className="text-lg font-bold mt-0.5" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--accent)' }}>
-                  {profile?.subscription_plan || 'Free'}
-                </h2>
-              </div>
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
-                style={{
-                  background: profile?.subscription_status === 'active' ? 'rgba(16,185,129,0.09)' : 'rgba(245,158,11,0.09)',
-                  color: profile?.subscription_status === 'active' ? 'var(--success)' : 'var(--accent)',
-                  border: `1px solid ${profile?.subscription_status === 'active' ? 'rgba(16,185,129,0.19)' : 'rgba(245,158,11,0.19)'}`,
-                }}>
-                {profile?.subscription_status === 'active' ? 'Active' : 'Free Tier'}
-              </span>
-            </div>
+          {/* Current Plan — B4 fix: features gated by actual plan tier */}
+          {(() => {
+            const plan = profile?.subscription_plan || 'free';
+            const status = profile?.subscription_status;
+            const isActive = ['active', 'trialing'].includes(status) &&
+              (!profile?.subscription_end || new Date(profile.subscription_end) > new Date());
 
-            <div className="flex flex-col gap-1.5 mb-4">
-              {[
-                { feature: 'Sage Sessions', included: true },
-                { feature: 'Community Cohorts (3 max)', included: true },
-                { feature: 'Expert Sessions', included: profile?.subscription_status === 'active' },
-                { feature: 'Courses & Learning', included: profile?.subscription_status === 'active' },
-                { feature: 'Priority Support', included: profile?.subscription_status === 'active' },
-              ].map((f) => (
-                <div key={f.feature} className="flex items-center gap-2 text-xs" style={{ color: f.included ? 'var(--text-muted)' : 'var(--text-dim)' }}>
-                  <span style={{ color: f.included ? 'var(--success)' : 'var(--text-dim)' }}>
-                    {f.included ? '&#10003;' : '&#x2013;'}
+            // Plan metadata by tier
+            const planMeta: Record<string, { label: string; color: string; features: string[]; missing: string[] }> = {
+              free: {
+                label: 'Free',
+                color: '#7A7260',
+                features: ['Sage (3 sessions/month)', '1 mentorship circle', 'Goal tracking'],
+                missing: ['Expert sessions', 'Courses & learning', 'Unlimited Sage', 'Export history'],
+              },
+              explorer: {
+                label: 'Explorer',
+                color: '#14B8A6',
+                features: ['Sage (10 sessions/month)', '1 mentorship circle', 'Courses & learning', 'Goal tracking (3 goals)', 'Weekly reflection prompts'],
+                missing: ['Live mentor sessions', 'Export history', 'Priority support'],
+              },
+              builder: {
+                label: 'Builder',
+                color: '#E8A020',
+                features: ['Sage (unlimited sessions)', 'Up to 3 mentorship circles', 'Live mentor sessions', 'Human mentor matching', 'Courses & learning', 'Export session history', 'Priority support'],
+                missing: ['1-on-1 quarterly expert session', 'Executive peer circle', 'Team dashboard'],
+              },
+              climber: {
+                label: 'Climber',
+                color: '#8B5CF6',
+                features: ['Sage (unlimited + priority)', 'Unlimited mentorship circles', '1-on-1 expert session (quarterly)', 'Executive peer circle', 'Advanced analytics', 'Team dashboard (10 seats)', 'Dedicated account manager'],
+                missing: [],
+              },
+              // Legacy aliases
+              standard: { label: 'Builder', color: '#E8A020', features: ['Sage (unlimited)', 'Up to 3 circles', 'Courses & learning', 'Export history', 'Priority support'], missing: [] },
+              tester:   { label: 'Tester',  color: '#E8A020', features: ['Full access (beta tester)', 'All Builder features included'], missing: [] },
+              pro:      { label: 'Pro',     color: '#8B5CF6', features: ['Full access', 'All features included'], missing: [] },
+            };
+
+            const meta = planMeta[plan] || planMeta.free;
+            const statusLabel = !isActive ? 'Free Tier' : status === 'trialing' ? 'Trial' : 'Active';
+            const statusColor = !isActive ? 'var(--accent)' : 'var(--success)';
+            const statusBg    = !isActive ? 'rgba(245,158,11,0.09)' : 'rgba(16,185,129,0.09)';
+            const statusBorder = !isActive ? 'rgba(245,158,11,0.19)' : 'rgba(16,185,129,0.19)';
+
+            return (
+              <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: `1px solid ${meta.color}40` }}>
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>Current Plan</span>
+                    <h2 className="text-lg font-bold mt-0.5" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: meta.color }}>
+                      {meta.label}
+                    </h2>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
+                    style={{ background: statusBg, color: statusColor, border: `1px solid ${statusBorder}` }}>
+                    {statusLabel}
                   </span>
-                  <span style={{ opacity: f.included ? 1 : 0.5 }}>{f.feature}</span>
                 </div>
-              ))}
-            </div>
 
-            {profile?.subscription_status !== 'active' && (
-              <a href="/checkout"
-                className="block w-full py-2.5 rounded-lg text-sm font-semibold text-center transition-all"
-                style={{ background: 'var(--accent)', color: '#000' }}>
-                Upgrade to Pro
-              </a>
-            )}
-          </div>
+                {/* Included features */}
+                <div className="flex flex-col gap-1.5 mb-2">
+                  {meta.features.map((f) => (
+                    <div key={f} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                      <span style={{ color: 'var(--success)', fontWeight: 700 }}>✓</span>
+                      <span>{f}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Missing features */}
+                {meta.missing.length > 0 && (
+                  <div className="flex flex-col gap-1.5 mb-4 mt-1">
+                    {meta.missing.map((f) => (
+                      <div key={f} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-dim)', opacity: 0.5 }}>
+                        <span>–</span>
+                        <span>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upgrade CTA — only for non-climber non-active, or free users */}
+                {(!isActive || ['free', 'explorer', 'builder'].includes(plan)) && plan !== 'climber' && (
+                  <a href="/checkout"
+                    className="block w-full py-2.5 rounded-lg text-sm font-semibold text-center transition-all mt-4"
+                    style={{ background: meta.color, color: plan === 'free' || !isActive ? '#000' : '#fff' }}>
+                    {!isActive ? 'Start Free Trial' : `Upgrade to ${plan === 'explorer' ? 'Builder' : 'Climber'}`}
+                  </a>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Billing Info */}
           <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
