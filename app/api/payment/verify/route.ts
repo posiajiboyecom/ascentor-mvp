@@ -1,12 +1,18 @@
 // ============================================================
 // PAYMENT VERIFY — /api/payment/verify
 // Called after Paystack popup success to verify and activate
+//
+// SECURITY FIX (S1): userId is now taken from the authenticated
+// session, NOT from the request body. A caller cannot activate
+// a different user's account by passing an arbitrary userId.
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { createClient as createAuthClient } from '@/lib/supabase/server';
 
-const supabase = createClient(
+// Service role client — for writes that need to bypass RLS
+const supabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -15,13 +21,26 @@ const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
 
 export async function POST(req: NextRequest) {
   try {
-    const { reference, userId, plan, billing } = await req.json();
+    // ── 1. AUTHENTICATE SESSION FIRST ──────────────────────────────
+    // Get the real user from the session cookie — never trust body userId
+    const authClient = await createAuthClient();
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
 
-    if (!reference || !userId) {
-      return NextResponse.json({ error: 'Missing reference or userId' }, { status: 400 });
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify with Paystack API
+    // ── 2. PARSE BODY (userId from body is IGNORED — session is source of truth) ──
+    const { reference, plan, billing } = await req.json();
+
+    if (!reference) {
+      return NextResponse.json({ error: 'Missing payment reference' }, { status: 400 });
+    }
+
+    // Use session user id — not anything from the request body
+    const userId = user.id;
+
+    // ── 3. VERIFY WITH PAYSTACK ─────────────────────────────────────
     let verified = false;
     let paystackData: any = null;
 
@@ -41,7 +60,7 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
       }
     } else {
-      // Dev mode — no Paystack keys, auto-verify
+      // Dev mode — no Paystack keys configured
       verified = true;
       paystackData = { reference, status: 'success', amount: 0, currency: 'NGN' };
     }
@@ -50,27 +69,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Payment not verified' }, { status: 400 });
     }
 
-    // Calculate subscription end date (includes 7-day trial)
-    const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + 7);
-
+    // ── 4. CALCULATE SUBSCRIPTION END ──────────────────────────────
     const subscriptionEnd = new Date();
     if (billing === 'yearly') {
       subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
-      subscriptionEnd.setDate(subscriptionEnd.getDate() + 7); // +7 days trial
+      subscriptionEnd.setDate(subscriptionEnd.getDate() + 7); // +7 trial
     } else {
       subscriptionEnd.setDate(subscriptionEnd.getDate() + 37); // 30 days + 7 trial
     }
 
-    // Update user profile — start with trialing status
+    // ── 5. ACTIVATE SUBSCRIPTION ───────────────────────────────────
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
-        subscription_plan: plan || 'standard',
+        subscription_plan:   plan || 'standard',
         subscription_status: 'trialing',
-        subscription_end: subscriptionEnd.toISOString(),
-        payment_method: 'paystack',
-        updated_at: new Date().toISOString(),
+        subscription_end:    subscriptionEnd.toISOString(),
+        payment_method:      'paystack',
+        updated_at:          new Date().toISOString(),
       })
       .eq('id', userId);
 
@@ -81,38 +97,32 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
-    // Record payment
+    // ── 6. RECORD PAYMENT ──────────────────────────────────────────
     try {
       await supabase.from('payments').insert({
-        user_id: userId,
-        amount: paystackData.amount ? paystackData.amount / 100 : 0,
-        currency: paystackData.currency || 'NGN',
-        reference: reference,
-        provider: 'paystack',
-        status: 'success',
+        user_id:      userId,
+        amount:       paystackData.amount ? paystackData.amount / 100 : 0,
+        currency:     paystackData.currency || 'NGN',
+        reference,
+        provider:     'paystack',
+        status:       'success',
         paystack_data: paystackData,
       });
     } catch {} // Non-critical
 
-    // Log to audit trail
+    // ── 7. AUDIT LOG ───────────────────────────────────────────────
     try {
       await supabase.from('audit_logs').insert({
-        user_id: userId,
-        action: 'payment_success',
+        user_id:     userId,
+        action:      'payment_success',
         entity_type: 'payment',
-        entity_id: reference,
-        details: {
-          plan,
-          billing,
-          amount: paystackData.amount,
-          currency: paystackData.currency,
-        },
+        entity_id:   reference,
+        details:     { plan, billing, amount: paystackData.amount, currency: paystackData.currency },
       });
     } catch {} // Non-critical
 
-    // Process referral reward — extend subscription by 7 days for both referrer and referred
+    // ── 8. REFERRAL REWARD ─────────────────────────────────────────
     try {
-      // 1. Find if this user was referred
       const { data: referralRecord } = await supabase
         .from('referrals')
         .select('id, referrer_id, status')
@@ -123,28 +133,20 @@ export async function POST(req: NextRequest) {
       if (referralRecord) {
         const bonusDays = 7;
 
-        // 2. Extend the referred user's subscription
+        // Extend referred user's subscription
         const { data: referredProfile } = await supabase
-          .from('profiles')
-          .select('subscription_end')
-          .eq('id', userId)
-          .single();
-
+          .from('profiles').select('subscription_end').eq('id', userId).single();
         if (referredProfile?.subscription_end) {
           const newEnd = new Date(referredProfile.subscription_end);
           newEnd.setDate(newEnd.getDate() + bonusDays);
           await supabase.from('profiles')
-            .update({ subscription_end: newEnd.toISOString() })
-            .eq('id', userId);
+            .update({ subscription_end: newEnd.toISOString() }).eq('id', userId);
         }
 
-        // 3. Extend the referrer's subscription (or bank days if not yet subscribed)
+        // Extend referrer's subscription
         const { data: referrerProfile } = await supabase
-          .from('profiles')
-          .select('subscription_end, subscription_status')
-          .eq('id', referralRecord.referrer_id)
-          .single();
-
+          .from('profiles').select('subscription_end, subscription_status')
+          .eq('id', referralRecord.referrer_id).single();
         if (referrerProfile?.subscription_end && referrerProfile.subscription_status !== 'inactive') {
           const refEnd = new Date(referrerProfile.subscription_end);
           refEnd.setDate(refEnd.getDate() + bonusDays);
@@ -152,50 +154,56 @@ export async function POST(req: NextRequest) {
             .update({ subscription_end: refEnd.toISOString() })
             .eq('id', referralRecord.referrer_id);
         } else {
-          // Referrer not yet subscribed — store credit in referral_bonus_days column
+          // Referrer not yet subscribed — accumulate bonus days directly
+          const { data: refBonus } = await supabase
+            .from('profiles').select('referral_bonus_days').eq('id', referralRecord.referrer_id).single();
+          const currentBonus = (refBonus?.referral_bonus_days || 0) + bonusDays;
           await supabase.from('profiles')
-            .update({ referral_bonus_days: supabase.rpc('coalesce_add', { col: 'referral_bonus_days', val: bonusDays }) })
+            .update({ referral_bonus_days: currentBonus })
             .eq('id', referralRecord.referrer_id);
         }
 
-        // 4. Mark referral as rewarded + increment referral_count on referrer
+        // Mark referral rewarded + increment referral_count
         await supabase.from('referrals')
           .update({ status: 'rewarded', rewarded_at: new Date().toISOString() })
           .eq('id', referralRecord.id);
 
+        const { data: refCountData } = await supabase
+          .from('profiles').select('referral_count').eq('id', referralRecord.referrer_id).single();
         await supabase.from('profiles')
-          .update({ referral_count: supabase.rpc('increment', { col: 'referral_count', amount: 1 }) })
+          .update({ referral_count: (refCountData?.referral_count || 0) + 1 })
           .eq('id', referralRecord.referrer_id);
 
-        // 5. Send notification to referrer
+        // Notify referrer
         await supabase.from('notifications').insert({
           user_id: referralRecord.referrer_id,
-          type: 'referral_reward',
-          title: 'Referral reward unlocked! 🎉',
-          message: `Someone you referred just subscribed. You both received ${bonusDays} free days added to your account.`,
-          link: '/referral',
+          type:    'referral_reward',
+          title:   'Referral reward unlocked! 🎉',
+          message: `Someone you referred just subscribed. You both received ${bonusDays} free days.`,
+          link:    '/referral',
         });
       }
     } catch (refErr) {
       console.warn('Referral reward non-critical error:', refErr);
-    } // Non-critical — payment already verified
+    }
 
-    // Send notification
+    // ── 9. WELCOME NOTIFICATION ────────────────────────────────────
     try {
       await supabase.from('notifications').insert({
         user_id: userId,
-        type: 'payment',
-        title: 'Welcome to Ascentor! 🎉',
-        message: `Your 7-day free trial has started on the ${plan} plan. You won't be charged until day 8.`,
-        link: '/dashboard',
+        type:    'payment',
+        title:   'Welcome to Ascentor! 🎉',
+        message: `Your 7-day free trial has started. You won't be charged until day 8.`,
+        link:    '/dashboard',
       });
     } catch {} // Non-critical
 
     return NextResponse.json({
-      success: true,
+      success:          true,
       plan,
       subscription_end: subscriptionEnd.toISOString(),
     });
+
   } catch (err: any) {
     console.error('Payment verification error:', err);
     return NextResponse.json({ error: 'Verification failed' }, { status: 500 });
