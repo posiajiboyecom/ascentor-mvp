@@ -1,139 +1,70 @@
-'use client';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import DashboardClient from './DashboardClient';
 
-import { useState, useEffect, useRef} from 'react';
-import { createClient } from '@/lib/supabase/client';
+// ─────────────────────────────────────────────────────────────────────────────
+// P1 FIX: All 5 DB queries now run in parallel via Promise.all.
+// Before: 5 sequential awaits = 400–600ms minimum on a 100ms connection.
+// After:  All fire simultaneously — total time = slowest single query (~100ms).
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Fallback data if no expert sessions exist in DB yet
-const FALLBACK_EXPERTS = [
-  { id: '1', title: "Breaking Through in African Tech — A Mentor's Playbook", expert_name: 'Amara Obi', expert_bio: '15+ years mentoring engineers and scaling teams across West Africa', scheduled_at: new Date(Date.now() + 6 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
-  { id: '2', title: 'From IC to Senior Leader: What No One Tells You', expert_name: 'Kwame Asante', expert_bio: 'Serial founder. 3 exits. Now mentoring the next generation of African builders.', scheduled_at: new Date(Date.now() + 13 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
-  { id: '3', title: 'Navigating Workplace Politics — With Your Integrity Intact', expert_name: 'Fatima Hassan', expert_bio: 'Led M-Pesa across 7 countries. Now mentoring leaders navigating complex organisations.', scheduled_at: new Date(Date.now() + 20 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
-];
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
 
-const PAST_RECORDINGS = [
-  { title: "Building Executive Presence — A Mentor's Framework", speaker: 'Ngozi Adeola', views: 234 },
-  { title: 'Managing Up Without Losing Yourself', speaker: 'Samuel Mensah', views: 187 },
-];
+  // All independent queries fire in parallel — not sequentially
+  const [
+    profileRes,
+    goalRes,
+    sessionsRes,
+    commitmentsRes,
+    expertRes,
+  ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single(),
 
-export default function ExpertsPage() {
-  const [experts, setExperts] = useState<any[]>([]);
-  const [registered, setRegistered] = useState<Set<string>>(new Set());
-  const supabaseRef = useRef(createClient());
-  const supabase = supabaseRef.current;
+    supabase
+      .from('user_goals')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single(),
 
-  useEffect(() => {
-    loadExperts();
-  }, []);
+    supabase
+      .from('coaching_sessions')
+      .select('id')
+      .eq('user_id', user.id)
+      .gte('created_at', new Date(Date.now() - 7 * 86_400_000).toISOString()),
 
-  async function loadExperts() {
-    const { data } = await supabase
+    supabase
+      .from('user_commitments')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('completed', false)
+      .order('due_date')
+      .limit(5),
+
+    supabase
       .from('expert_sessions')
       .select('*')
       .eq('status', 'scheduled')
       .gte('scheduled_at', new Date().toISOString())
-      .order('scheduled_at');
-
-    setExperts(data?.length ? data : FALLBACK_EXPERTS);
-  }
-
-  const toggleRegister = async (sessionId: string) => {
-    const newSet = new Set(registered);
-    if (newSet.has(sessionId)) {
-      newSet.delete(sessionId);
-    } else {
-      newSet.add(sessionId);
-    }
-    setRegistered(newSet);
-  };
+      .order('scheduled_at')
+      .limit(1),
+  ]);
 
   return (
-    <div className="animate-fade-up py-6">
-      <h2 className="text-2xl font-semibold mb-1"
-        style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
-        Mentor Sessions
-      </h2>
-      <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-        Live sessions with Africa's top mentors
-      </p>
-
-      <div className="flex flex-col gap-4">
-        {experts.map((expert, i) => {
-          const date = new Date(expert.scheduled_at);
-          const initials = expert.expert_name.split(' ').map((n: string) => n[0]).join('');
-          const isRegistered = registered.has(expert.id);
-          const spotsUsed = Math.floor(Math.random() * 30) + 10;
-
-          return (
-            <div key={expert.id}
-              className="rounded-xl p-5 animate-fade-up"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', animationDelay: `${i * 0.1}s` }}>
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(139,92,246,0.13), rgba(139,92,246,0.27))',
-                    border: '1.5px solid rgba(139,92,246,0.33)',
-                    color: 'var(--purple)',
-                  }}>
-                  {initials}
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start gap-2 flex-wrap">
-                    <div>
-                      <h3 className="text-base font-semibold" style={{ color: 'var(--text)' }}>{expert.title}</h3>
-                      <p className="text-[13px]" style={{ color: 'var(--accent)' }}>{expert.expert_name}</p>
-                    </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
-                      style={{
-                        background: i === 0 ? 'rgba(16,185,129,0.09)' : 'rgba(59,130,246,0.09)',
-                        color: i === 0 ? 'var(--success)' : 'var(--blue)',
-                        border: `1px solid ${i === 0 ? 'rgba(16,185,129,0.19)' : 'rgba(59,130,246,0.19)'}`,
-                      }}>
-                      {i === 0 ? 'This Week' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                  <p className="text-[13px] mt-2" style={{ color: 'var(--text-muted)' }}>{expert.expert_bio}</p>
-                  <div className="flex justify-between items-center mt-3.5">
-                    <div className="text-xs" style={{ color: 'var(--text-dim)' }}>
-                      📅 {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · 👥 {expert.max_participants - spotsUsed} spots left
-                    </div>
-                    <button
-                      onClick={() => toggleRegister(expert.id)}
-                      className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                      style={{
-                        background: isRegistered ? 'transparent' : 'var(--accent)',
-                        color: isRegistered ? 'var(--text)' : '#000',
-                        border: isRegistered ? '1px solid var(--border)' : 'none',
-                      }}>
-                      {isRegistered ? '✓ Reserved' : 'Reserve Spot'}
-                    </button>
-                  </div>
-                  {/* Capacity bar */}
-                  <div className="w-full h-0.5 rounded-full mt-2.5 overflow-hidden" style={{ background: 'var(--bg-input)' }}>
-                    <div className="h-full rounded-full" style={{ width: `${(spotsUsed / expert.max_participants) * 100}%`, background: 'var(--purple)' }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Past Recordings */}
-      <h3 className="text-base font-semibold mt-8 mb-3.5" style={{ color: 'var(--text)' }}>Past Recordings</h3>
-      {PAST_RECORDINGS.map((r, i) => (
-        <div key={i} className="rounded-xl p-3.5 mb-2.5"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{r.title}</p>
-              <p className="text-xs" style={{ color: 'var(--text-dim)' }}>by {r.speaker} · {r.views} views</p>
-            </div>
-            <button className="text-xs px-3 py-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}>
-              Watch →
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
+    <DashboardClient
+      profile={profileRes.data}
+      goal={goalRes.data}
+      sessionsThisWeek={sessionsRes.data?.length ?? 0}
+      commitments={commitmentsRes.data ?? []}
+      nextExpert={expertRes.data?.[0] ?? null}
+    />
   );
 }
