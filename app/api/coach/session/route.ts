@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   const { data: usageCheck } = await supabase.rpc('check_usage_limit', {
     p_user_id: user.id,
     p_feature: 'coachingSessions',
-  }).maybeSingle() as { limit_reached: boolean } | null;
+  }) as { data: { limit_reached: boolean } | null; error: unknown };
 
   if (usageCheck?.limit_reached) {
     return NextResponse.json(
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Parse the completed JSON response
-        let parsed: { reflection?: string; question?: string; action?: string } = {};
+        let parsed: { reflection?: string | null; question?: string | null; action?: string | null } = {};
         try {
           const clean = fullText
             .replace(/^```json\s*/i, '')
