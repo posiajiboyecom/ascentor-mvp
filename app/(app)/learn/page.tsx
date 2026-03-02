@@ -353,15 +353,31 @@ function VideoPlayer({
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef(0);
 
-  // YouTube IFrame API via postMessage
-  // Strategy: listen for onReady → start polling every 1s for currentTime + duration
-  // This is the only reliable cross-origin approach for embedded iframes
+  // ── YouTube postMessage API ─────────────────────────────────────────
+  // Two root causes of previous failures:
+  // 1. origin computed at SSR time (window undefined) → empty string → postMessage broken
+  // 2. mute=1 URL param + unMute command unreliable on some browsers → no sound
+  //
+  // Fix strategy:
+  // • origin stored in ref, set in useEffect (client-only, always correct)
+  // • NO mute in URL. autoplay=0 in URL. Play triggered via postMessage onReady.
+  //   User clicked course card = user gesture = browser allows sound autoplay.
+  // • Poll every 500ms for currentTime. getDuration requested once on onReady.
+  // • Stop at 98% to kill end-screen suggestions.
+
   const pollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const durationRef  = useRef<number>(0);
+  const originRef    = useRef<string>('');
+
+  // Set origin client-side only (never runs on server)
+  useEffect(() => {
+    originRef.current = window.location.origin;
+  }, []);
 
   function sendCommand(func: string, args: unknown[] = []) {
     playerRef.current?.contentWindow?.postMessage(
-      JSON.stringify({ event: 'command', func, args }), '*'
+      JSON.stringify({ event: 'command', func, args }),
+      originRef.current || '*'
     );
   }
 
@@ -371,25 +387,24 @@ function VideoPlayer({
         const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         if (!data) return;
 
-        // Player ready — autoplay + start polling
+        // ── onReady: start playing + request duration + begin polling ──
         if (data.event === 'onReady') {
           setPlayerReady(true);
-          // Mute first (required by browser autoplay policy), then play, then unmute after 500ms
-          sendCommand('mute');
+          // User clicked course card → there IS a prior user gesture → sound allowed
           sendCommand('playVideo');
-          setTimeout(() => sendCommand('unMute'), 800);
-          // Start 1-second poll for currentTime + duration
+          // Get duration once
+          sendCommand('getDuration');
+          // Poll currentTime every 500ms for smooth progress bar
           if (pollInterval.current) clearInterval(pollInterval.current);
           pollInterval.current = setInterval(() => {
             sendCommand('getCurrentTime');
-            sendCommand('getDuration');
-          }, 1000);
+          }, 500);
         }
 
-        // Player state changed (1=playing, 2=paused, 0=ended)
+        // ── onStateChange: 0=ended, 1=playing, 2=paused ──
         if (data.event === 'onStateChange') {
           if (data.info === 0) {
-            // Video ended — treat as 100%
+            // Ended naturally — treat as complete
             const dur = durationRef.current;
             if (dur > 0) {
               setCurrentPos(dur);
@@ -399,17 +414,17 @@ function VideoPlayer({
           }
         }
 
-        // Response to getCurrentTime / getDuration commands
+        // ── infoDelivery: response to getCurrentTime / getDuration ──
         if (data.event === 'infoDelivery' && data.info) {
           const info = data.info;
 
-          // Duration response
+          // Duration (comes back from getDuration call)
           if (typeof info.duration === 'number' && info.duration > 0) {
             durationRef.current = info.duration;
             setDuration(info.duration);
           }
 
-          // CurrentTime response
+          // currentTime (comes back from getCurrentTime poll)
           if (typeof info.currentTime === 'number' && durationRef.current > 0) {
             const pos = info.currentTime;
             const dur = durationRef.current;
@@ -425,16 +440,16 @@ function VideoPlayer({
               setTimeout(() => setJustUnlocked(false), 3000);
             }
 
-            // STOP at 98% — prevents YouTube end-screen suggestions from appearing
-            // End screens inject inside the iframe and cannot be blocked any other way
-            if (pct >= 98 && durationRef.current > 0) {
+            // Stop at 98% — kills YouTube end-screen suggestions
+            if (pct >= 98) {
               sendCommand('pauseVideo');
               if (pollInterval.current) clearInterval(pollInterval.current);
               setCurrentPct(100);
               setCurrentPos(durationRef.current);
+              return;
             }
 
-            // Save to DB every 5 seconds of watched time
+            // Save progress to DB every 5 seconds
             if (pos - lastSaved.current > 5) {
               lastSaved.current = pos;
               if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -444,7 +459,7 @@ function VideoPlayer({
             }
           }
         }
-      } catch {}
+      } catch { /* ignore parse errors from non-YouTube postMessages */ }
     }
 
     window.addEventListener('message', handleMessage);
@@ -514,22 +529,21 @@ function VideoPlayer({
           <iframe
             ref={playerRef}
             src={(() => {
+              // origin MUST be set for enablejsapi postMessage to work.
+              // This runs client-side only (Next.js hydrates before user sees iframe).
               const origin = typeof window !== 'undefined' ? window.location.origin : '';
               const params = new URLSearchParams({
                 start:          String(Math.floor(course.lastPosition)),
-                enablejsapi:    '1',   // Required: enables postMessage API
-                origin,                // Required: postMessage won't fire without this
-                rel:            '0',   // No related videos end screen
-                modestbranding: '1',   // Minimal branding
-                controls:       '0',   // Hide native controls bar
-                showinfo:       '0',   // Hide top info bar
-                iv_load_policy: '3',   // No annotations
-                playsinline:    '1',   // Inline playback on iOS
-                autoplay:       '1',   // URL-level autoplay (fallback)
-                mute:           '1',   // Required for autoplay to work in browsers
-                fs:             '0',   // No fullscreen button
-                cc_load_policy: '0',   // No auto captions
-                widget_referrer: origin,
+                enablejsapi:    '1',    // Enables postMessage API — required
+                origin,                 // Must match page origin exactly — required
+                rel:            '0',    // No end-screen suggestions
+                modestbranding: '1',    // Minimal YouTube branding
+                controls:       '1',    // Show native controls (users need volume control!)
+                iv_load_policy: '3',    // No annotations
+                playsinline:    '1',    // Inline on iOS
+                autoplay:       '0',    // Do NOT autoplay via URL — we do it via postMessage
+                // NO mute param — we never mute. User gesture (clicking course) allows sound.
+                cc_load_policy: '0',    // No auto captions
               });
               return `https://www.youtube.com/embed/${course.youtube_id}?${params.toString()}`;
             })()}
