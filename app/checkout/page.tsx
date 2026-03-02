@@ -22,7 +22,7 @@ interface Plan {
 
 const PLANS: Plan[] = [
   {
-    id: 'basic',
+    id: 'explorer',
     name: 'Explorer',
     description: 'For those 15–22 just starting to find their path.',
     stage: 'EXPLORER',
@@ -40,7 +40,7 @@ const PLANS: Plan[] = [
     cta: 'Start Free Trial',
   },
   {
-    id: 'standard',
+    id: 'builder',
     name: 'Builder',
     description: 'For professionals 22–32 building their career edge.',
     stage: 'BUILDER',
@@ -61,7 +61,7 @@ const PLANS: Plan[] = [
     cta: 'Start Free Trial',
   },
   {
-    id: 'premium',
+    id: 'climber',
     name: 'Climber',
     description: 'For leaders 32–50 scaling teams and building legacy.',
     stage: 'CLIMBER',
@@ -82,14 +82,8 @@ const PLANS: Plan[] = [
   },
 ];
 
-const PROMO_CODES: Record<string, { discount: number; label: string; appliesTo: string[] }> = {
-  'FOUNDER50':  { discount: 0.50, label: '50% off — Founders Discount', appliesTo: ['basic', 'standard', 'premium'] },
-  'ASCENTOR50': { discount: 0.50, label: '50% off — Early Access',      appliesTo: ['basic', 'standard', 'premium'] },
-  'EARLYBIRD':  { discount: 0.50, label: '50% off — Early Bird',        appliesTo: ['basic', 'standard', 'premium'] },
-  'TESTER100':  { discount: 1.00, label: 'Free Access — Beta Tester',   appliesTo: ['basic', 'standard'] },
-  'BETATESTER': { discount: 1.00, label: 'Free Access — Beta Tester',   appliesTo: ['basic', 'standard'] },
-  'FREEACCESS': { discount: 1.00, label: 'Free Access',                 appliesTo: ['basic', 'standard'] },
-};
+// Promo codes are validated SERVER-SIDE ONLY (see /api/payment/initialize)
+// They are intentionally NOT present in this client file — S4 security fix.
 
 const NGN_PER_USD = 1600;
 
@@ -127,17 +121,37 @@ export default function CheckoutPage() {
     }
   }, []);
 
-  const applyPromo = () => {
-    setPromoError(''); setPromoApplied(null);
+  // S4: Promo codes are validated server-side — no client-side PROMO_CODES object
+  const [promoValidating, setPromoValidating] = useState(false);
+
+  const applyPromo = async () => {
     const code = promoCode.trim().toUpperCase();
-    const promo = PROMO_CODES[code];
-    if (!promo) { setPromoError('Invalid promo code'); return; }
-    setPromoApplied({ discount: promo.discount, label: promo.label });
+    if (!code) return;
+    setPromoError(''); setPromoApplied(null); setPromoValidating(true);
+    try {
+      const res = await fetch('/api/payment/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promoCode: code }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setPromoError(data.error || 'Invalid promo code');
+      } else {
+        // Server returns { success, discount, label, free }
+        setPromoApplied({ discount: data.discount, label: data.label || 'Discount applied' });
+      }
+    } catch {
+      setPromoError('Could not validate code. Please try again.');
+    } finally {
+      setPromoValidating(false);
+    }
   };
 
   const getPrice = (plan: Plan) => {
     const base = billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
-    if (promoApplied && PROMO_CODES[promoCode.trim().toUpperCase()]?.appliesTo.includes(plan.id)) {
+    // promoApplied is set by server validation — apply discount to all plans
+    if (promoApplied) {
       return Math.round(base * (1 - promoApplied.discount) * 100) / 100;
     }
     return base;
@@ -151,9 +165,10 @@ export default function CheckoutPage() {
 
     if (finalPrice === 0 && promoApplied?.discount === 1) {
       try {
+        // userId intentionally omitted — server reads it from session (S2 fix)
         const res = await fetch('/api/payment/initialize', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user.email, userId: user.id, promoCode: promoCode.trim().toUpperCase() }),
+          body: JSON.stringify({ promoCode: promoCode.trim().toUpperCase() }),
         });
         const data = await res.json();
         if (data.free) { setSuccess('Account activated! Setting up your profile…'); setTimeout(() => router.push('/onboarding'), 2000); }
@@ -178,7 +193,8 @@ export default function CheckoutPage() {
           try {
             const res = await fetch('/api/payment/verify', {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ reference: transaction.reference, userId: user.id, plan: planId, billing }),
+              // userId intentionally omitted — server reads from session (S1 fix)
+            body: JSON.stringify({ reference: transaction.reference, plan: planId, billing }),
             });
             const data = await res.json();
             if (data.success) { setSuccess("Payment confirmed! Let's set up your profile."); setTimeout(() => router.push('/onboarding'), 2000); }
@@ -535,8 +551,8 @@ export default function CheckoutPage() {
             const price    = getPrice(plan);
             const current  = isCurrentPlan(plan.id);
             const isHL     = plan.highlighted;
-            const promoKey = promoCode.trim().toUpperCase();
-            const hasPromo = promoApplied && PROMO_CODES[promoKey]?.appliesTo.includes(plan.id);
+            // promoApplied comes from server — applies to all plans
+            const hasPromo = !!promoApplied;
             const monthlyDisplay = billing === 'monthly' ? price : Math.round(price / 12);
 
             return (
@@ -636,7 +652,9 @@ export default function CheckoutPage() {
                 className="co-promo-input"
                 onKeyDown={e => e.key === 'Enter' && applyPromo()}
               />
-              <button onClick={applyPromo} className="co-promo-btn">Apply</button>
+              <button onClick={applyPromo} disabled={promoValidating} className="co-promo-btn">
+                {promoValidating ? '…' : 'Apply'}
+              </button>
             </div>
             {promoApplied && <p className="co-promo-success">✓ {promoApplied.label}</p>}
             {promoError   && <p className="co-promo-error">✗ {promoError}</p>}

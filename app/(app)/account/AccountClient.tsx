@@ -136,19 +136,44 @@ export default function AccountClient({ profile, email, authProvider, userId, no
   const handlePasswordChange = async () => {
     setPwSaving(true); setPwResult(null);
 
+    // ── Client-side validation ────────────────────────────────────
+    if (!passwords.current.trim()) {
+      setPwResult({ success: false, message: 'Please enter your current password.' });
+      setPwSaving(false); return;
+    }
     if (passwords.newPassword.length < 8) {
-      setPwResult({ success: false, message: 'Password must be at least 8 characters.' });
+      setPwResult({ success: false, message: 'New password must be at least 8 characters.' });
       setPwSaving(false); return;
     }
     if (passwords.newPassword !== passwords.confirm) {
       setPwResult({ success: false, message: 'Passwords do not match.' });
       setPwSaving(false); return;
     }
+    if (passwords.current === passwords.newPassword) {
+      setPwResult({ success: false, message: 'New password must be different from your current password.' });
+      setPwSaving(false); return;
+    }
 
-    const { error } = await supabase.auth.updateUser({ password: passwords.newPassword });
+    // ── S6 FIX: Verify current password before allowing update ────
+    // signInWithPassword re-authenticates the user with their current credentials.
+    // If this fails, we block the update — the current password field is real.
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email,
+      password: passwords.current,
+    });
 
-    if (error) {
-      setPwResult({ success: false, message: error.message });
+    if (verifyError) {
+      setPwResult({ success: false, message: 'Current password is incorrect.' });
+      setPwSaving(false); return;
+    }
+
+    // ── Current password verified — now update to new password ────
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: passwords.newPassword,
+    });
+
+    if (updateError) {
+      setPwResult({ success: false, message: updateError.message });
     } else {
       setPwResult({ success: true, message: 'Password updated successfully.' });
       setPasswords({ current: '', newPassword: '', confirm: '' });

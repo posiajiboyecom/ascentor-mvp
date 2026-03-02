@@ -1,45 +1,79 @@
 // ============================================================
-// NEXT.JS MIDDLEWARE — Subscription Gating
-// Place this at the ROOT of your project: proxy.ts
+// NEXT.JS PROXY — Auth + Subscription Gating
+// Place at project ROOT: proxy.ts
 //
-// This intercepts requests to protected routes and redirects
-// free users to /checkout with a reason parameter.
+// SECURITY FIX S3: Added protection for all /api/* routes.
+// Unauthenticated API calls now return 401 instead of passing through.
 // ============================================================
 
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// Routes that require ANY subscription (basic, standard, premium)
+// Routes that require a paid subscription
 const PAID_ROUTES = ['/learn', '/courses'];
 
-// Routes that require authentication (but not necessarily paid)
+// Page routes that require authentication
 const AUTH_ROUTES = [
   '/dashboard', '/coach', '/community', '/account',
-  '/learn', '/courses', '/experts',
+  '/learn', '/courses', '/experts', '/onboarding',
+  '/referral', '/admin',
 ];
 
-// Public routes (no auth needed)
+// API routes that require authentication (S3 fix)
+const PROTECTED_API_PREFIXES = [
+  '/api/coach',
+  '/api/coaching',
+  '/api/payment',
+  '/api/referral',
+  '/api/subscription',
+  '/api/usage',
+  '/api/push',
+  '/api/admin',
+];
+
+// Public routes — no auth needed
 const PUBLIC_ROUTES = [
   '/login', '/signup', '/checkout', '/onboarding',
-  '/auth/callback', '/api',
-  '/', '/about', '/blog', '/privacy', '/terms',
+  '/auth/callback',
+  '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
+  '/how-it-works', '/who-its-for', '/waitlist', '/newsletter',
+  '/mentor-apply', '/offline',
 ];
 
-// Changed from "export async function middleware" to "export default async function proxy"
+// API routes that are intentionally public
+const PUBLIC_API_ROUTES = [
+  '/api/waitlist',
+  '/api/newsletter',
+  '/api/welcome',
+  '/api/auth',
+];
+
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip public routes, static files, and API routes
+  // Always pass through static files
   if (
-    PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/')) ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
+    pathname.startsWith('/icons') ||
+    pathname.startsWith('/manifest') ||
+    pathname === '/sw.js' ||
     pathname.includes('.')
   ) {
     return NextResponse.next();
   }
 
-  // Create Supabase client for middleware
+  // Always pass through public page routes
+  if (PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
+    return NextResponse.next();
+  }
+
+  // Always pass through public API routes
+  if (PUBLIC_API_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
+    return NextResponse.next();
+  }
+
+  // Build Supabase client
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -60,17 +94,25 @@ export default async function proxy(request: NextRequest) {
     }
   );
 
-  // Check auth
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Redirect unauthenticated users from protected routes
+  // ── S3: Protect API routes ────────────────────────────────────────
+  // Return 401 JSON for unauthenticated API calls instead of passing through
+  if (PROTECTED_API_PREFIXES.some(p => pathname.startsWith(p))) {
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return response; // authenticated — let the route handler do the rest
+  }
+
+  // ── Protect page routes ───────────────────────────────────────────
   if (!user && AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Check subscription for paid routes
+  // ── Subscription gate for paid pages ─────────────────────────────
   if (user && PAID_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -78,9 +120,7 @@ export default async function proxy(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    const hasAccess = checkAccess(profile);
-
-    if (!hasAccess) {
+    if (!checkAccess(profile)) {
       const checkoutUrl = new URL('/checkout', request.url);
       checkoutUrl.searchParams.set('reason', 'subscription_required');
       checkoutUrl.searchParams.set('from', pathname);
@@ -96,7 +136,6 @@ function checkAccess(profile: any): boolean {
 
   const { subscription_status, subscription_end } = profile;
 
-  // Active or trialing subscriptions have access
   if (subscription_status === 'active' || subscription_status === 'trialing') {
     if (subscription_end) {
       return new Date(subscription_end) > new Date();
@@ -114,13 +153,6 @@ function checkAccess(profile: any): boolean {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (images, etc.)
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };

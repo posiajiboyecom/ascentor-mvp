@@ -17,29 +17,86 @@ export interface PlanLimits {
 }
 
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
+  // ── Free tier ─────────────────────────────────────────────────────
   free: {
-    coachingSessions: 3,       // 3 coaching sessions per month
-    sessionLength: 10,         // 10 messages per session
-    expertSessions: 1,         // 1 expert session per month
-    communityPosts: 3,         // 3 posts per day
-    courseAccess: false,        // no course access
-    exportData: false,         // no data export
+    coachingSessions: 3,       // 3 sessions/month
+    sessionLength:    10,
+    expertSessions:   1,
+    communityPosts:   3,       // 3 posts/day
+    courseAccess:     false,
+    exportData:       false,
   },
-  standard: {
-    coachingSessions: 50,      // 50 coaching sessions per month
-    sessionLength: 50,         // 50 messages per session
-    expertSessions: 10,        // unlimited expert sessions
-    communityPosts: 20,        // 20 posts per day
-    courseAccess: true,         // full course access
-    exportData: true,          // can export data
+
+  // ── Explorer ($5/mo) — stage: 15–22 ──────────────────────────────
+  explorer: {
+    coachingSessions: 10,      // 10 sessions/month
+    sessionLength:    20,
+    expertSessions:   2,
+    communityPosts:   10,
+    courseAccess:     true,
+    exportData:       false,
   },
-  tester: {
-    coachingSessions: 50,      // Same as standard (tester promo)
-    sessionLength: 50,
-    expertSessions: 10,
-    communityPosts: 20,
-    courseAccess: true,
-    exportData: true,
+
+  // ── Builder ($19/mo) — stage: 22–32 ─────────────────────────────
+  builder: {
+    coachingSessions: 50,      // 50 sessions/month (effectively unlimited)
+    sessionLength:    50,
+    expertSessions:   10,
+    communityPosts:   20,
+    courseAccess:     true,
+    exportData:       true,
+  },
+
+  // ── Climber ($39/mo) — stage: 32–50 ─────────────────────────────
+  climber: {
+    coachingSessions: -1,      // -1 = unlimited
+    sessionLength:    -1,
+    expertSessions:   -1,
+    communityPosts:   -1,
+    courseAccess:     true,
+    exportData:       true,
+  },
+
+  // ── Legacy / alias names (kept for backwards-compat with DB values)
+  standard: {                  // old 'Builder' equivalent
+    coachingSessions: 50,
+    sessionLength:    50,
+    expertSessions:   10,
+    communityPosts:   20,
+    courseAccess:     true,
+    exportData:       true,
+  },
+  tester: {                    // promo code testers
+    coachingSessions: 50,
+    sessionLength:    50,
+    expertSessions:   10,
+    communityPosts:   20,
+    courseAccess:     true,
+    exportData:       true,
+  },
+  pro: {                       // legacy promo-activated accounts
+    coachingSessions: 50,
+    sessionLength:    50,
+    expertSessions:   10,
+    communityPosts:   20,
+    courseAccess:     true,
+    exportData:       true,
+  },
+  basic: {                     // legacy checkout id (now 'explorer')
+    coachingSessions: 10,
+    sessionLength:    20,
+    expertSessions:   2,
+    communityPosts:   10,
+    courseAccess:     true,
+    exportData:       false,
+  },
+  premium: {                   // legacy checkout id (now 'climber')
+    coachingSessions: -1,
+    sessionLength:    -1,
+    expertSessions:   -1,
+    communityPosts:   -1,
+    courseAccess:     true,
+    exportData:       true,
   },
 };
 
@@ -88,6 +145,11 @@ export async function checkUsage(
   }
 
   // Count-based features
+  // -1 means unlimited (Climber plan)
+  if (limit === -1) {
+    return { allowed: true, used: 0, limit: -1, remaining: -1 };
+  }
+
   const used = await getUsageCount(supabase, userId, feature);
   const remaining = Math.max(0, limit - used);
 
@@ -127,18 +189,22 @@ function getEffectivePlan(profile: any): string {
 
   const { subscription_plan, subscription_status, subscription_end } = profile;
 
-  // Check if subscription is still active
-  if (subscription_status === 'active' && subscription_end) {
-    const endDate = new Date(subscription_end);
-    if (endDate > new Date()) {
-      return subscription_plan || 'standard';
-    }
-    // Subscription expired
-    return 'free';
-  }
+  // Active statuses: 'active' and 'trialing' both grant plan access
+  const isActiveStatus = ['active', 'trialing'].includes(subscription_status);
 
-  if (subscription_status === 'active') {
-    return subscription_plan || 'standard';
+  if (isActiveStatus) {
+    if (subscription_end) {
+      const endDate = new Date(subscription_end);
+      if (endDate > new Date()) {
+        // Return the stored plan name — PLAN_LIMITS handles all known values
+        // including legacy names (basic, premium, pro, standard)
+        return subscription_plan || 'builder';
+      }
+      // Expired
+      return 'free';
+    }
+    // Active with no end date (lifetime / manually set)
+    return subscription_plan || 'builder';
   }
 
   return 'free';
