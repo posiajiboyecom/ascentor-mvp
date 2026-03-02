@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   const { data: usageCheck } = await supabase.rpc('check_usage_limit', {
     p_user_id: user.id,
     p_feature: 'coachingSessions',
-  }).maybeSingle();
+  }).maybeSingle() as { limit_reached: boolean } | null;
 
   if (usageCheck?.limit_reached) {
     return NextResponse.json(
