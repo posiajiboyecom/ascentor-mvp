@@ -418,6 +418,7 @@ export default function LandingPage() {
           .lp-testimonials-section, .lp-mentors-section, .lp-pricing-section,
           .lp-cta-section { padding: 72px 24px; }
           .lp-footer { padding: 48px 24px 24px; }
+          .lp-founding-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
 
@@ -635,7 +636,8 @@ export default function LandingPage() {
           <p className="lp-section-sub" style={{ marginTop: '16px', color: 'var(--text-light)', textAlign: 'center', maxWidth: '520px' }}>
             We're building Ascentor with our founding members — not just for them. Early members get locked-in pricing, direct access to the founding team, and the chance to shape what gets built next.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', maxWidth: '900px', width: '100%', marginTop: '48px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', maxWidth: '900px', width: '100%', marginTop: '48px' }}
+  className="lp-founding-grid">
             {[
               { icon: '🔒', title: 'Locked-in pricing', desc: 'Your founding rate is yours for life — never increases as the platform grows.' },
               { icon: '🎙️', title: 'Shape the roadmap', desc: 'Direct line to the founding team. Your feedback ships in weeks, not quarters.' },
@@ -806,10 +808,9 @@ export default function LandingPage() {
             <div>
               <div className="lp-footer-col-title">Connect</div>
               <ul className="lp-footer-links">
-                <li><a href="mailto:hello@ascentor.co">hello@ascentor.co</a></li>
-                <li><a href="https://x.com/ascentor" target="_blank" rel="noreferrer">Twitter / X</a></li>
-                <li><a href="https://linkedin.com/company/ascentor" target="_blank" rel="noreferrer">LinkedIn</a></li>
-                <li><a href="https://wa.me/234XXXXXXXXXX" target="_blank" rel="noreferrer">WhatsApp Community</a></li>
+                <li><a href="mailto:hello@ascentorbi.com">hello@ascentor.co</a></li>
+                <li><a href="https://x.com/ascentorglobal" target="_blank" rel="noreferrer">Twitter / X</a></li>
+                <li><a href="https://linkedin.com/company/ascentorglobal" target="_blank" rel="noreferrer">LinkedIn</a></li>
                 <li><a href="https://instagram.com/ascentor" target="_blank" rel="noreferrer">Instagram</a></li>
               </ul>
             </div>
