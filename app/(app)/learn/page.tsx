@@ -371,9 +371,13 @@ function VideoPlayer({
         const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         if (!data) return;
 
-        // Player ready — start polling
+        // Player ready — autoplay + start polling
         if (data.event === 'onReady') {
           setPlayerReady(true);
+          // Mute first (required by browser autoplay policy), then play, then unmute after 500ms
+          sendCommand('mute');
+          sendCommand('playVideo');
+          setTimeout(() => sendCommand('unMute'), 800);
           // Start 1-second poll for currentTime + duration
           if (pollInterval.current) clearInterval(pollInterval.current);
           pollInterval.current = setInterval(() => {
@@ -419,6 +423,15 @@ function VideoPlayer({
               setUnlocked(true);
               setJustUnlocked(true);
               setTimeout(() => setJustUnlocked(false), 3000);
+            }
+
+            // STOP at 98% — prevents YouTube end-screen suggestions from appearing
+            // End screens inject inside the iframe and cannot be blocked any other way
+            if (pct >= 98 && durationRef.current > 0) {
+              sendCommand('pauseVideo');
+              if (pollInterval.current) clearInterval(pollInterval.current);
+              setCurrentPct(100);
+              setCurrentPos(durationRef.current);
             }
 
             // Save to DB every 5 seconds of watched time
@@ -504,18 +517,18 @@ function VideoPlayer({
               const origin = typeof window !== 'undefined' ? window.location.origin : '';
               const params = new URLSearchParams({
                 start:          String(Math.floor(course.lastPosition)),
-                enablejsapi:    '1',
-                origin,
-                rel:            '0',
-                modestbranding: '1',
-                controls:       '0',
-                showinfo:       '0',
-                iv_load_policy: '3',
-                playsinline:    '1',
-                autoplay:       '1',
-                fs:             '0',
-                disablekb:      '0',
-                cc_load_policy: '0',
+                enablejsapi:    '1',   // Required: enables postMessage API
+                origin,                // Required: postMessage won't fire without this
+                rel:            '0',   // No related videos end screen
+                modestbranding: '1',   // Minimal branding
+                controls:       '0',   // Hide native controls bar
+                showinfo:       '0',   // Hide top info bar
+                iv_load_policy: '3',   // No annotations
+                playsinline:    '1',   // Inline playback on iOS
+                autoplay:       '1',   // URL-level autoplay (fallback)
+                mute:           '1',   // Required for autoplay to work in browsers
+                fs:             '0',   // No fullscreen button
+                cc_load_policy: '0',   // No auto captions
                 widget_referrer: origin,
               });
               return `https://www.youtube.com/embed/${course.youtube_id}?${params.toString()}`;
@@ -524,31 +537,15 @@ function VideoPlayer({
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
-          {/* Overlay blocks: cover top bar (title/share) and bottom bar (controls/YouTube logo)
-              These transparent divs sit over the YouTube chrome zones so users can't interact
-              with YouTube's own UI — they can still click center to play/pause */}
+          {/* Black strip at bottom: hides controls bar when controls=0.
+              End-screen suggestions are prevented by pausing at 98% instead. */}
           <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0,
-            height: '18%',
-            background: 'transparent',
+            position: 'absolute', bottom: 0, left: 0, right: 0,
+            height: '14%',
+            background: '#000',
             zIndex: 2,
             pointerEvents: 'none',
           }} />
-          <div style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0,
-            height: '18%',
-            background: '#000',
-            zIndex: 2,
-          }} />
-          {/* Center click zone — play/pause passthrough */}
-          <div
-            onClick={() => sendCommand('pauseVideo')}
-            style={{
-              position: 'absolute', top: '18%', left: 0, right: 0, bottom: '18%',
-              zIndex: 1, cursor: 'pointer',
-              background: 'transparent',
-            }}
-          />
         </div>
       </div>
 
