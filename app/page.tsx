@@ -811,7 +811,7 @@ export default function LandingPage() {
                 <li><a href="mailto:hello@ascentorbi.com">hello@ascentor.co</a></li>
                 <li><a href="https://x.com/ascentorglobal" target="_blank" rel="noreferrer">Twitter / X</a></li>
                 <li><a href="https://linkedin.com/company/ascentorglobal" target="_blank" rel="noreferrer">LinkedIn</a></li>
-                <li><a href="https://instagram.com/ascentor" target="_blank" rel="noreferrer">Instagram</a></li>
+                <li><a href="https://www.instagram.com/ascentor.ai/" target="_blank" rel="noreferrer">Instagram</a></li>
               </ul>
             </div>
           </div>
