@@ -1,21 +1,15 @@
 'use client';
 
 import SageLoader from '@/components/SageLoader';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { analytics } from '@/lib/analytics';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// P2 FIX: Sage now streams tokens from the API as they arrive.
-// The UI shows each token in real time — first word appears in ~300ms
-// instead of waiting 3–8 seconds for the full response.
-// ─────────────────────────────────────────────────────────────────────────────
-
 const SESSION_TYPES = [
-  { id: 'challenge_navigation',   label: 'Navigate a Challenge', icon: '🧭' },
-  { id: 'difficult_conversation', label: 'Prep a Conversation',  icon: '🗣️' },
-  { id: 'weekly_reflection',      label: 'Weekly Reflection',    icon: '📝' },
-  { id: 'accountability_check',   label: 'Accountability Check', icon: '✅' },
+  { id: 'challenge_navigation',   label: 'Navigate a Challenge', icon: 'Navigate a Challenge' },
+  { id: 'difficult_conversation', label: 'Prep a Conversation',  icon: 'Prep a Conversation'  },
+  { id: 'weekly_reflection',      label: 'Weekly Reflection',    icon: 'Weekly Reflection'    },
+  { id: 'accountability_check',   label: 'Accountability Check', icon: 'Accountability Check' },
 ];
 
 type Message = {
@@ -24,9 +18,7 @@ type Message = {
   reflection?: string | null;
   question?: string | null;
   action?: string | null;
-  // streaming-only: raw accumulated text before JSON is parsed
   streaming?: boolean;
-  streamText?: string;
 };
 
 const PAGE_SIZE = 10;
@@ -43,9 +35,45 @@ export default function CoachPage() {
   const [historyTotal,   setHistoryTotal]   = useState(0);
   const [historyLoaded,  setHistoryLoaded]  = useState(0);
   const [selectorOpen,   setSelectorOpen]   = useState(false);
+
+  // ── FIX 1: Use a ref for streaming index so it's never stale ─────────────
+  // The original bug: streamingIndex was captured as `messages.length + 1`
+  // before the async setMessages calls resolved, so the index was wrong and
+  // the `done` event updated the wrong message slot, leaving raw JSON visible.
+  // Using a ref guarantees we always point at the correct message.
+  const streamingIndexRef = useRef<number>(-1);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const selectorRef    = useRef<HTMLDivElement>(null);
+
+  // ── FIX 2: Anchor the dropdown below the button using a ref ──────────────
+  // The original used `position: fixed` with no `top` value — the dropdown
+  // rendered at y=0 (top of viewport) and got hidden behind the header.
+  const selectorBtnRef = useRef<HTMLButtonElement>(null);
+  const [dropdownTop,   setDropdownTop]   = useState(0);
+  const [dropdownRight, setDropdownRight] = useState(16);
 
   const activeSession = SESSION_TYPES.find(t => t.id === sessionType) || SESSION_TYPES[0];
+
+  // Position the dropdown below the button whenever it opens
+  useEffect(() => {
+    if (!selectorOpen || !selectorBtnRef.current) return;
+    const rect = selectorBtnRef.current.getBoundingClientRect();
+    setDropdownTop(rect.bottom + 6);
+    setDropdownRight(window.innerWidth - rect.right);
+  }, [selectorOpen]);
+
+  // Close selector when clicking outside
+  useEffect(() => {
+    if (!selectorOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (selectorRef.current && !selectorRef.current.contains(e.target as Node)) {
+        setSelectorOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [selectorOpen]);
 
   useEffect(() => {
     loadHistory();
@@ -117,24 +145,24 @@ export default function CoachPage() {
     setLoadingEarlier(false);
   }
 
-  // ── P2 FIX: streaming send handler ───────────────────────────────────────
+  // ── FIXED send handler ────────────────────────────────────────────────────
   const handleSend = async () => {
     if (!input.trim() || loading || limitReached) return;
     const userMsg = input.trim();
     setInput('');
-    setMessages(m => [...m, { role: 'user', content: userMsg }]);
     setLoading(true);
 
-    // Add a placeholder streaming message — will fill token by token
-    const streamingIndex = messages.length + 1; // position after the user message
-    setMessages(m => [...m, {
-      role:      'assistant',
-      streaming: true,
-      streamText: '',
-      reflection: null,
-      question:   null,
-      action:     null,
-    }]);
+    // Build the two new messages synchronously so we know exact positions
+    setMessages(prev => {
+      const next = [
+        ...prev,
+        { role: 'user' as const, content: userMsg },
+        { role: 'assistant' as const, streaming: true, reflection: null, question: null, action: null },
+      ];
+      // Store the index of the streaming placeholder in the ref
+      streamingIndexRef.current = next.length - 1;
+      return next;
+    });
 
     try {
       const res = await fetch('/api/coach/session', {
@@ -148,7 +176,7 @@ export default function CoachPage() {
         setLimitReached(true);
         analytics.coachingLimitReached();
         setMessages(m => m.map((msg, i) =>
-          i === streamingIndex
+          i === streamingIndexRef.current
             ? {
                 role:       'assistant',
                 streaming:  false,
@@ -166,7 +194,6 @@ export default function CoachPage() {
 
       analytics.coachingSessionStarted(sessionType);
 
-      // Read the SSE stream
       const reader  = res.body.getReader();
       const decoder = new TextDecoder();
       let   buffer  = '';
@@ -177,7 +204,7 @@ export default function CoachPage() {
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
-        buffer = lines.pop() ?? ''; // keep incomplete line for next chunk
+        buffer = lines.pop() ?? '';
 
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue;
@@ -185,27 +212,27 @@ export default function CoachPage() {
             const event = JSON.parse(line.slice(6));
 
             if (event.type === 'delta') {
-              // Append token to streaming message
-              setMessages(m => m.map((msg, i) =>
-                i === streamingIndex
-                  ? { ...msg, streamText: (msg.streamText ?? '') + event.text }
-                  : msg
-              ));
+              // During streaming we only show typing dots — we intentionally
+              // do NOT append raw tokens to the UI because the API returns
+              // raw JSON fragments which would show as garbled text.
+              // The streaming flag keeps the dots visible until `done` fires.
+              // (No state update needed here — dots are already showing.)
+
             } else if (event.type === 'done') {
-              // Replace streaming placeholder with final structured message
+              // ── Replace the streaming placeholder with the final structured
+              //    message. This is the ONLY place content becomes visible,
+              //    guaranteeing users never see raw JSON tokens.
               setMessages(m => m.map((msg, i) =>
-                i === streamingIndex
+                i === streamingIndexRef.current
                   ? {
                       role:       'assistant',
                       streaming:  false,
-                      streamText: undefined,
                       reflection: event.reflection ?? null,
                       question:   event.question   ?? null,
                       action:     event.action     ?? null,
                     }
                   : msg
               ));
-              // Update usage
               if (usageInfo) {
                 const newUsed = usageInfo.used + 1;
                 setUsageInfo({ ...usageInfo, used: newUsed });
@@ -223,7 +250,7 @@ export default function CoachPage() {
     } catch (err) {
       console.error('[Sage stream]', err);
       setMessages(m => m.map((msg, i) =>
-        i === streamingIndex
+        i === streamingIndexRef.current
           ? {
               role:       'assistant',
               streaming:  false,
@@ -240,102 +267,135 @@ export default function CoachPage() {
 
   if (loadingHistory) {
     return (
-      <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 120px)' }}>
-        <SageLoader size="lg" message="Sage is waking up…" />
+      <div className="flex items-center justify-center" style={{ height: '100%' }}>
+        <SageLoader size="lg" message="Sage is waking up..." />
       </div>
     );
   }
 
   return (
-    <div className="animate-fade-up flex flex-col" style={{ height: 'calc(100vh - 120px)', paddingTop: 16 }}>
+    <div
+      className="animate-fade-up flex flex-col"
+      style={{ height: '100%', paddingTop: 16, overflow: 'hidden' }}
+    >
 
-      {/* ── Persistent header: title + always-visible session type picker ── */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold"
-          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
-          Sage
-        </h2>
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setSelectorOpen(o => !o)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--accent)', color: 'var(--accent)' }}
+      {/* ── FIX 2: Header is OUTSIDE the scroll container — always visible ── */}
+      <div style={{ flexShrink: 0 }}>
+
+        {/* Title + session type picker */}
+        <div className="flex items-center justify-between mb-3">
+          <h2
+            className="text-xl font-semibold"
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}
           >
-            <span style={{ fontSize: 14 }}>{activeSession.icon}</span>
-            <span>{activeSession.label}</span>
-            <span style={{ fontSize: 9, marginLeft: 1, opacity: 0.7 }}>{selectorOpen ? '▲' : '▼'}</span>
-          </button>
-          {selectorOpen && (
-            <div style={{
-              position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 50,
-              minWidth: 210,
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 12,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-              overflow: 'hidden',
-            }}>
-              {SESSION_TYPES.map((t, i) => {
-                const active = sessionType === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => { setSessionType(t.id); setSelectorOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-[13px] transition-all"
-                    style={{
-                      background: active ? 'rgba(232,160,32,0.07)' : 'transparent',
-                      color: active ? 'var(--accent)' : 'var(--text)',
-                      borderBottom: i < SESSION_TYPES.length - 1 ? '1px solid var(--border)' : 'none',
-                    }}
-                  >
-                    <span style={{ fontSize: 15 }}>{t.icon}</span>
-                    <span className="flex-1">{t.label}</span>
-                    {active && <span style={{ fontSize: 11, color: 'var(--accent)' }}>✓</span>}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+            Sage
+          </h2>
+
+          {/* Session type selector */}
+          <div style={{ position: 'relative' }} ref={selectorRef}>
+            <button
+              ref={selectorBtnRef}
+              onClick={() => setSelectorOpen(o => !o)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--accent)',
+                color: 'var(--accent)',
+                fontFamily: "'DM Mono', monospace",
+                letterSpacing: '0.03em',
+              }}
+            >
+              <span>{activeSession.label}</span>
+              <span style={{ fontSize: 9, opacity: 0.7 }}>{selectorOpen ? '▲' : '▼'}</span>
+            </button>
+
+            {/* Dropdown — anchored via measured position, always on top */}
+            {selectorOpen && (
+              <div style={{
+                position: 'fixed',
+                top: dropdownTop,
+                right: dropdownRight,
+                zIndex: 9999,
+                minWidth: 220,
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
+                overflow: 'hidden',
+              }}>
+                {SESSION_TYPES.map((t, i) => {
+                  const active = sessionType === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => { setSessionType(t.id); setSelectorOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all"
+                      style={{
+                        background:   active ? 'rgba(232,160,32,0.07)' : 'transparent',
+                        color:        active ? 'var(--accent)' : 'var(--text)',
+                        borderBottom: i < SESSION_TYPES.length - 1 ? '1px solid var(--border)' : 'none',
+                        fontFamily:   "'Syne', sans-serif",
+                        fontSize:     13,
+                      }}
+                    >
+                      <span className="flex-1">{t.label}</span>
+                      {active && (
+                        <span style={{ fontSize: 11, color: 'var(--accent)' }}>✓</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Usage counter */}
-      {usageInfo && usageInfo.limit !== -1 && (
-        <div className="mb-3 flex justify-end">
-          <span className="text-[11px] px-2.5 py-1 rounded-full"
-            style={{
-              background: limitReached ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.06)',
-              color: limitReached ? 'var(--error, #EF4444)' : 'var(--text-dim)',
-              border: `1px solid ${limitReached ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.12)'}`,
-            }}>
-            {usageInfo.used}/{usageInfo.limit} sessions today
-          </span>
-        </div>
-      )}
+        {/* Usage counter */}
+        {usageInfo && usageInfo.limit !== -1 && (
+          <div className="mb-3 flex justify-end">
+            <span
+              className="text-[11px] px-2.5 py-1 rounded-full"
+              style={{
+                background: limitReached ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.06)',
+                color:      limitReached ? 'var(--error, #EF4444)' : 'var(--text-dim)',
+                border:     `1px solid ${limitReached ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.12)'}`,
+                fontFamily: "'DM Mono', monospace",
+                fontSize:   10,
+                letterSpacing: '0.06em',
+              }}
+            >
+              {usageInfo.used}/{usageInfo.limit} sessions today
+            </span>
+          </div>
+        )}
 
-      {/* Limit reached banner */}
-      {limitReached && (
-        <div className="mb-4">
-          <UpgradePrompt feature="coaching" compact />
-        </div>
-      )}
+        {/* Limit reached banner */}
+        {limitReached && (
+          <div className="mb-3">
+            <UpgradePrompt feature="coaching" compact />
+          </div>
+        )}
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto mb-3">
+      </div>{/* end fixed header */}
 
-        {/* Load earlier sessions button */}
+      {/* ── Scrollable message area ─────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto mb-3" style={{ minHeight: 0 }}>
+
+        {/* Load earlier */}
         {historyLoaded < historyTotal && messages.length > 0 && (
           <div className="flex justify-center mb-4">
             <button
               onClick={loadEarlier}
               disabled={loadingEarlier}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all disabled:opacity-40"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-muted)',
+                fontFamily: "'DM Mono', monospace",
+              }}
             >
-              {loadingEarlier ? '↻' : '↑'}
-              {loadingEarlier
-                ? 'Loading…'
-                : `Load ${Math.min(PAGE_SIZE, historyTotal - historyLoaded)} earlier sessions`}
+              {loadingEarlier ? 'Loading...' : `Load ${Math.min(PAGE_SIZE, historyTotal - historyLoaded)} earlier sessions`}
               <span style={{ opacity: 0.5 }}>({historyTotal - historyLoaded} remaining)</span>
             </button>
           </div>
@@ -367,35 +427,40 @@ export default function CoachPage() {
                 </div>
               </div>
             </div>
-            <p className="text-[15px] max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-[15px] max-w-sm mx-auto" style={{ color: 'var(--text-muted)', fontFamily: "'Syne', sans-serif" }}>
               Share what's on your mind — a challenge, a question, or a reflection on your week.
             </p>
           </div>
         )}
 
-        {/* Message list */}
+        {/* Messages */}
         {messages.map((msg, i) => (
           <div key={i} className="mb-4 animate-slide-in" style={{ animationDelay: `${Math.min(i * 0.02, 0.5)}s` }}>
             {msg.role === 'user' ? (
               <div className="flex justify-end">
-                <div className="max-w-[80%] px-4 py-3 rounded-2xl rounded-br-sm text-sm leading-relaxed"
+                <div
+                  className="max-w-[80%] px-4 py-3 rounded-2xl rounded-br-sm text-sm leading-relaxed"
                   style={{
                     background: 'rgba(245, 158, 11, 0.09)',
                     border: '1px solid rgba(245, 158, 11, 0.19)',
                     color: 'var(--text)',
-                  }}>
+                    fontFamily: "'Syne', sans-serif",
+                  }}
+                >
                   {msg.content}
                 </div>
               </div>
             ) : (
               <div className="flex gap-2.5 items-start">
                 {/* Sage avatar */}
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
                   style={{
                     background: 'radial-gradient(circle at 38% 36%, rgba(245,197,90,0.18), rgba(232,160,32,0.08) 60%, transparent)',
                     border: msg.streaming ? '1.5px solid rgba(232,160,32,0.6)' : '1.5px solid rgba(232,160,32,0.38)',
                     animation: msg.streaming ? 'sage-orb-pulse 1.6s ease-in-out infinite' : 'none',
-                  }}>
+                  }}
+                >
                   <span style={{
                     fontFamily: "'Cormorant Garamond', Georgia, serif",
                     fontWeight: 700, fontSize: 15, color: '#E8A020', lineHeight: 1,
@@ -405,59 +470,73 @@ export default function CoachPage() {
 
                 <div className="max-w-[85%] flex flex-col gap-2">
 
-                  {/* ── Streaming: show raw token stream before JSON is parsed ── */}
+                  {/* Streaming: typing dots only — raw tokens are NEVER shown */}
                   {msg.streaming && (
-                    <div className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed"
-                      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                      {msg.streamText
-                        ? msg.streamText
-                        : (
-                          /* Typing dots while waiting for first token */
-                          <div className="flex gap-1">
-                            {[0, 1, 2].map(d => (
-                              <div key={d} className="w-1.5 h-1.5 rounded-full"
-                                style={{
-                                  background: 'var(--text-dim)',
-                                  animation: `pulse-dot 1.2s infinite ${d * 0.2}s`,
-                                }} />
-                            ))}
-                          </div>
-                        )}
-                      {/* Blinking cursor while streaming */}
-                      {msg.streamText && (
-                        <span style={{
-                          display: 'inline-block',
-                          width: 2, height: '1em',
-                          background: 'var(--accent)',
-                          marginLeft: 2,
-                          verticalAlign: 'text-bottom',
-                          animation: 'blink-cursor 0.8s step-end infinite',
-                        }} />
-                      )}
+                    <div
+                      className="px-4 py-3 rounded-2xl rounded-tl-sm"
+                      style={{
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border)',
+                      }}
+                    >
+                      <div className="flex gap-1 items-center" style={{ height: 20 }}>
+                        {[0, 1, 2].map(d => (
+                          <div
+                            key={d}
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{
+                              background: 'var(--text-dim)',
+                              animation: `pulse-dot 1.2s infinite ${d * 0.2}s`,
+                            }}
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  {/* ── Final structured message after streaming completes ── */}
+                  {/* Final structured message — only shown after streaming: false */}
                   {!msg.streaming && msg.reflection && (
-                    <div className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed"
-                      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                    <div
+                      className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed"
+                      style={{
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-muted)',
+                        fontFamily: "'Syne', sans-serif",
+                      }}
+                    >
                       {msg.reflection}
                     </div>
                   )}
                   {!msg.streaming && msg.question && (
-                    <div className="px-4 py-3 rounded-xl text-[15px] font-medium leading-relaxed"
-                      style={{ background: 'var(--bg-card)', border: '1px solid rgba(245,158,11,0.25)', color: 'var(--text)' }}>
+                    <div
+                      className="px-4 py-3 rounded-xl text-[15px] font-medium leading-relaxed"
+                      style={{
+                        background: 'var(--bg-card)',
+                        border: '1px solid rgba(245,158,11,0.25)',
+                        color: 'var(--text)',
+                        fontFamily: "'Syne', sans-serif",
+                      }}
+                    >
                       {msg.question}
                     </div>
                   )}
                   {!msg.streaming && msg.action && (
-                    <div className="px-3.5 py-2.5 rounded-lg text-[13px] flex items-start gap-2"
+                    <div
+                      className="px-3.5 py-2.5 rounded-lg text-[13px] flex items-start gap-2"
                       style={{
                         background: 'rgba(245, 158, 11, 0.06)',
                         border: '1px solid rgba(245, 158, 11, 0.15)',
                         color: 'var(--accent)',
-                      }}>
-                      <span>📌</span>
+                        fontFamily: "'Syne', sans-serif",
+                      }}
+                    >
+                      <span style={{ flexShrink: 0, marginTop: 1 }}>
+                        {/* Pin icon — no emoji */}
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        </svg>
+                      </span>
                       <span>{msg.action}</span>
                     </div>
                   )}
@@ -470,8 +549,8 @@ export default function CoachPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input bar */}
-      <div className="flex gap-2 items-end">
+      {/* ── Input bar — always at bottom ────────────────────────────────── */}
+      <div className="flex gap-2 items-end" style={{ flexShrink: 0, paddingBottom: 12 }}>
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -484,25 +563,26 @@ export default function CoachPage() {
           className="flex-1 px-4 py-3 text-sm rounded-xl resize-none leading-relaxed disabled:opacity-50"
           style={{
             background: 'var(--bg-input)',
-            color: 'var(--text)',
-            border: '1px solid var(--border)',
-            outline: 'none',
+            color:      'var(--text)',
+            border:     '1px solid var(--border)',
+            outline:    'none',
+            fontFamily: "'Syne', sans-serif",
           }}
         />
         <button
           onClick={handleSend}
           disabled={!input.trim() || loading || limitReached}
           className="w-12 h-12 rounded-xl flex items-center justify-center text-black font-bold text-lg transition-all disabled:opacity-40"
-          style={{ background: 'var(--accent)' }}>
+          style={{ background: 'var(--accent)', flexShrink: 0 }}
+        >
           ↑
         </button>
       </div>
 
-      {/* CSS for blinking cursor */}
       <style>{`
-        @keyframes blink-cursor {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0; }
+        @keyframes pulse-dot {
+          0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+          40%            { opacity: 1;   transform: scale(1);   }
         }
       `}</style>
     </div>
