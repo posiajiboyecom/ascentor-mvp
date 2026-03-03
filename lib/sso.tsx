@@ -4,8 +4,6 @@ import { createClient } from '@/lib/supabase/client';
 
 // ============================================================
 // FEATURE #3: SSO (Google + LinkedIn OAuth) — Config & Helpers
-// This module provides robust OAuth sign-in with error handling,
-// token refresh, and session validation.
 // ============================================================
 
 const supabase = createClient();
@@ -18,10 +16,6 @@ interface SSOResult {
   url?: string;
 }
 
-/**
- * Initiate OAuth sign-in with proper redirect and error handling.
- * Replaces direct supabase.auth.signInWithOAuth calls throughout the app.
- */
 export async function signInWithSSO(provider: OAuthProvider): Promise<SSOResult> {
   try {
     const redirectTo = `${window.location.origin}/auth/callback`;
@@ -30,9 +24,16 @@ export async function signInWithSSO(provider: OAuthProvider): Promise<SSOResult>
       provider,
       options: {
         redirectTo,
-        queryParams: provider === 'google'
-          ? { access_type: 'offline', prompt: 'consent' }
-          : {},
+        // ── FIX: removed `prompt: 'consent'` ──────────────────────────────
+        // prompt: 'consent' forces Google to show the account picker and
+        // consent screen on EVERY login, making it feel like a new signup
+        // each time. Without it, returning users are signed in silently
+        // when they already have an active Google session.
+        // access_type: 'offline' is also removed — it requests a refresh
+        // token which is only needed if your backend calls Google APIs
+        // directly. Supabase handles token refresh internally.
+        // ──────────────────────────────────────────────────────────────────
+        queryParams: {},
       },
     });
 
@@ -54,29 +55,20 @@ export async function signInWithSSO(provider: OAuthProvider): Promise<SSOResult>
   }
 }
 
-/**
- * Check if current session is valid and refresh if needed.
- */
 export async function validateSession(): Promise<{ valid: boolean; userId?: string }> {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
 
     if (error || !session) {
-      // Try refreshing
       const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError || !refreshed.session) {
-        return { valid: false };
-      }
+      if (refreshError || !refreshed.session) return { valid: false };
       return { valid: true, userId: refreshed.session.user.id };
     }
 
-    // Check if token is about to expire (within 5 minutes)
     const expiresAt = session.expires_at;
     if (expiresAt && expiresAt * 1000 - Date.now() < 5 * 60 * 1000) {
       const { data: refreshed } = await supabase.auth.refreshSession();
-      if (refreshed.session) {
-        return { valid: true, userId: refreshed.session.user.id };
-      }
+      if (refreshed.session) return { valid: true, userId: refreshed.session.user.id };
     }
 
     return { valid: true, userId: session.user.id };
@@ -85,24 +77,16 @@ export async function validateSession(): Promise<{ valid: boolean; userId?: stri
   }
 }
 
-/**
- * Get the OAuth provider the user originally signed up with.
- */
 export async function getAuthProvider(): Promise<string | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
-
-    const provider = user.app_metadata?.provider;
-    return provider || 'email';
+    return user.app_metadata?.provider || 'email';
   } catch {
     return null;
   }
 }
 
-/**
- * Sign out from all devices (revokes all refresh tokens).
- */
 export async function signOutAllDevices(): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase.auth.signOut({ scope: 'global' });
@@ -113,7 +97,6 @@ export async function signOutAllDevices(): Promise<{ success: boolean; error?: s
   }
 }
 
-// --- Helper ---
 function getReadableError(provider: OAuthProvider, raw: string): string {
   if (raw.includes('provider is not enabled')) {
     return `${provider === 'google' ? 'Google' : 'LinkedIn'} sign-in is not configured. Please contact support.`;
@@ -127,7 +110,6 @@ function getReadableError(provider: OAuthProvider, raw: string): string {
   return `Unable to sign in with ${provider === 'google' ? 'Google' : 'LinkedIn'}. Please try again.`;
 }
 
-// --- OAuth Button Components ---
 interface OAuthButtonProps {
   provider: OAuthProvider;
   onError?: (error: string) => void;
@@ -157,14 +139,15 @@ export function OAuthButton({ provider, onError, disabled }: OAuthButtonProps) {
         width: '100%',
         padding: '12px 16px',
         borderRadius: '8px',
-        border: '1px solid var(--border, #2A2D3A)',
-        background: 'var(--bg-input, #1A1D2E)',
-        color: 'var(--text, #F1F0EB)',
+        border: '1px solid rgba(212,207,195,0.10)',
+        background: '#1E1C17',
+        color: '#D4CFC3',
+        fontFamily: "'Syne', sans-serif",
         fontSize: '14px',
         fontWeight: 500,
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
-        transition: 'all 0.2s',
+        transition: 'border-color 0.2s',
       }}
     >
       {isGoogle ? (
