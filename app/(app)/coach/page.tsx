@@ -44,8 +44,21 @@ export default function CoachPage() {
   const [historyLoaded,  setHistoryLoaded]  = useState(0);
   const [selectorOpen,   setSelectorOpen]   = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const selectorRef    = useRef<HTMLDivElement>(null);
 
   const activeSession = SESSION_TYPES.find(t => t.id === sessionType) || SESSION_TYPES[0];
+
+  // Close selector when clicking outside
+  useEffect(() => {
+    if (!selectorOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (selectorRef.current && !selectorRef.current.contains(e.target as Node)) {
+        setSelectorOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [selectorOpen]);
 
   useEffect(() => {
     loadHistory();
@@ -247,7 +260,7 @@ export default function CoachPage() {
   }
 
   return (
-    <div className="animate-fade-up flex flex-col" style={{ height: 'calc(100vh - 120px)', paddingTop: 16 }}>
+    <div className="animate-fade-up flex flex-col" style={{ height: 'calc(100vh - 120px)', paddingTop: 16, overflow: 'hidden' }}>
 
       {/* ── Persistent header: title + always-visible session type picker ── */}
       <div className="flex items-center justify-between mb-4">
@@ -255,7 +268,7 @@ export default function CoachPage() {
           style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
           Sage
         </h2>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative' }} ref={selectorRef}>
           <button
             onClick={() => setSelectorOpen(o => !o)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
@@ -267,12 +280,13 @@ export default function CoachPage() {
           </button>
           {selectorOpen && (
             <div style={{
-              position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 50,
-              minWidth: 210,
+              position: 'fixed', top: 'auto', right: 16, zIndex: 9999,
+              marginTop: 6,
+              minWidth: 220,
               background: 'var(--bg-card)',
               border: '1px solid var(--border)',
               borderRadius: 12,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
               overflow: 'hidden',
             }}>
               {SESSION_TYPES.map((t, i) => {
@@ -405,35 +419,19 @@ export default function CoachPage() {
 
                 <div className="max-w-[85%] flex flex-col gap-2">
 
-                  {/* ── Streaming: show raw token stream before JSON is parsed ── */}
+                  {/* ── Streaming: show ONLY typing dots — never expose raw JSON tokens ── */}
                   {msg.streaming && (
                     <div className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed"
                       style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                      {msg.streamText
-                        ? msg.streamText
-                        : (
-                          /* Typing dots while waiting for first token */
-                          <div className="flex gap-1">
-                            {[0, 1, 2].map(d => (
-                              <div key={d} className="w-1.5 h-1.5 rounded-full"
-                                style={{
-                                  background: 'var(--text-dim)',
-                                  animation: `pulse-dot 1.2s infinite ${d * 0.2}s`,
-                                }} />
-                            ))}
-                          </div>
-                        )}
-                      {/* Blinking cursor while streaming */}
-                      {msg.streamText && (
-                        <span style={{
-                          display: 'inline-block',
-                          width: 2, height: '1em',
-                          background: 'var(--accent)',
-                          marginLeft: 2,
-                          verticalAlign: 'text-bottom',
-                          animation: 'blink-cursor 0.8s step-end infinite',
-                        }} />
-                      )}
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(d => (
+                          <div key={d} className="w-1.5 h-1.5 rounded-full"
+                            style={{
+                              background: 'var(--text-dim)',
+                              animation: `pulse-dot 1.2s infinite ${d * 0.2}s`,
+                            }} />
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -498,11 +496,11 @@ export default function CoachPage() {
         </button>
       </div>
 
-      {/* CSS for blinking cursor */}
+      {/* CSS for pulse-dot animation */}
       <style>{`
-        @keyframes blink-cursor {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0; }
+        @keyframes pulse-dot {
+          0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+          40%            { opacity: 1;   transform: scale(1);   }
         }
       `}</style>
     </div>

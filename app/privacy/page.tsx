@@ -204,7 +204,7 @@ const SECTIONS: Section[] = [
       },
       {
         type: "para",
-        text: "To exercise any of these rights, contact us at privacy@ascentor.co. We will respond within 30 days. We may need to verify your identity before processing your request.",
+        text: "To exercise any of these rights, contact us at hello@ascentorbi.com. We will respond within 30 days. We may need to verify your identity before processing your request.",
       },
     ],
   },
@@ -232,7 +232,7 @@ const SECTIONS: Section[] = [
       },
       {
         type: "para",
-        text: "No system is 100% secure. If you discover a vulnerability, please report it responsibly to security@ascentor.co. We are committed to addressing security issues promptly.",
+        text: "No system is 100% secure. If you discover a vulnerability, please report it responsibly to hello@ascentorbi.com. We are committed to addressing security issues promptly.",
       },
     ],
   },
@@ -272,7 +272,7 @@ const SECTIONS: Section[] = [
         type: "list",
         items: [
           "We recommend that parents or guardians review this Privacy Policy with their child before account creation.",
-          "We do not knowingly collect data from children under 13. If you believe a child under 13 has created an account, contact us at privacy@ascentor.co and we will delete it promptly.",
+          "We do not knowingly collect data from children under 13. If you believe a child under 13 has created an account, contact us at hello@ascentorbi.com and we will delete it promptly.",
           "Users between 13 and 18 use the platform under the assumption that a parent or guardian has reviewed and accepted these terms on their behalf.",
         ],
       },
@@ -328,10 +328,10 @@ const SECTIONS: Section[] = [
       {
         type: "contact",
         items: [
-          { label: "Privacy enquiries", value: "privacy@ascentor.co" },
-          { label: "Security reports",  value: "security@ascentor.co" },
-          { label: "General support",   value: "hello@ascentor.co" },
-          { label: "Platform",          value: "ascentor-mvp.vercel.app" },
+          { label: "Privacy enquiries", value: "hello@ascentorbi.com" },
+          { label: "Security reports",  value: "hello@ascentorbi.com" },
+          { label: "General support",   value: "hello@ascentorbi.com" },
+          { label: "Platform",          value: "ascentorbi.com" },
         ],
       },
       {
@@ -904,14 +904,13 @@ export default function PrivacyPage() {
 
       {/* Nav */}
       <nav className={`nav ${scrolled ? "scrolled" : ""}`}>
-        <Link href="/" className="nav-logo">
-          <svg className="nav-logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <polygon points="16,3 30,28 2,28" fill="#E8A020" />
-            <polygon points="16,9.5 26.5,27 5.5,27" fill="#0C0B08" />
-            <rect x="7.5" y="19" width="17" height="3" fill="#E8A020" />
-          </svg>
-          <span className="nav-logo-text">Ascentor</span>
-        </Link>
+        <Link href="/" className="lp-nav-logo">
+                <img
+                  src="/ascentor-color-for-dark-pages.svg"
+                  alt="Ascentor"
+                  style={{ height: '32px', width: 'auto' }}
+                />
+              </Link>
         <Link href="/nav/dashboard" className="nav-back">← Back to app</Link>
       </nav>
 
@@ -973,7 +972,7 @@ export default function PrivacyPage() {
         <div className="footer-links">
           <Link href="/terms">Terms</Link>
           <Link href="/privacy">Privacy</Link>
-          <a href="mailto:hello@ascentor.co">Contact</a>
+          <a href="mailto:hello@ascentorbi.com">Contact</a>
         </div>
       </footer>
 
