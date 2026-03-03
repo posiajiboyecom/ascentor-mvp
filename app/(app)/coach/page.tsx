@@ -267,7 +267,7 @@ export default function CoachPage() {
 
   if (loadingHistory) {
     return (
-      <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 120px)' }}>
+      <div className="flex items-center justify-center" style={{ height: '100%' }}>
         <SageLoader size="lg" message="Sage is waking up..." />
       </div>
     );
@@ -276,7 +276,7 @@ export default function CoachPage() {
   return (
     <div
       className="animate-fade-up flex flex-col"
-      style={{ height: 'calc(100vh - 120px)', paddingTop: 16, overflow: 'hidden' }}
+      style={{ height: '100%', paddingTop: 16, overflow: 'hidden' }}
     >
 
       {/* ── FIX 2: Header is OUTSIDE the scroll container — always visible ── */}
