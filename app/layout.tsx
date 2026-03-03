@@ -7,8 +7,8 @@ import PushPermission from '@/components/PushPermission';
 import Script from 'next/script'; // <-- 1. Import the Script component
 
 export const metadata: Metadata = {
-  title: 'Ascentor — AI Leadership Coach for African Professionals',
-  description: 'Your AI-powered leadership coach, built for ambitious African professionals ready to lead.',
+  title: 'Ascentor — AI-Powered Mentorship for Ambitious African Professionals',
+  description: 'AI-Powered Mentorship for Ambitious African Professionals. Meet Sage, your AI coach. Join Mentorship Circles. Learn from Expert mentors.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

@@ -1,7 +1,7 @@
 {
-  "name": "Ascentor — AI Leadership Coach",
+  "name": "Ascentor — AI-Powered Mentorship",
   "short_name": "Ascentor",
-  "description": "AI-powered leadership coaching for ambitious African professionals.",
+  "description": "AI-Powered Mentorship for Ambitious African Professionals.",
   "start_url": "/dashboard",
   "display": "standalone",
   "orientation": "portrait",
