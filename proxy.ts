@@ -4,6 +4,14 @@
 //
 // SECURITY FIX S3: Added protection for all /api/* routes.
 // Unauthenticated API calls now return 401 instead of passing through.
+//
+// ONBOARDING FIX: Removed the blanket early-return for /onboarding
+// that was skipping all auth checks. /onboarding now correctly
+// requires authentication (unauthenticated users go to /login).
+// Previously-onboarded users are NOT redirected back to /onboarding
+// by this middleware — that routing decision lives in route.ts
+// (the auth callback), which is the single source of truth for
+// post-login destination.
 // ============================================================
 
 import { createServerClient } from '@supabase/ssr';
@@ -31,10 +39,9 @@ const PROTECTED_API_PREFIXES = [
   '/api/admin',
 ];
 
-
 // Public routes — no auth needed
 const PUBLIC_ROUTES = [
-  '/login', '/signup', '/checkout', '/onboarding',
+  '/login', '/signup', '/checkout',
   '/auth/callback',
   '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
   '/how-it-works', '/who-its-for', '/waitlist', '/newsletter',
@@ -63,10 +70,6 @@ export default async function proxy(request: NextRequest) {
   ) {
     return NextResponse.next();
   }
-
-  // Skip onboarding redirect if already on /onboarding
-  const isOnboarding = pathname.startsWith('/onboarding')
-  if (isOnboarding) return NextResponse.next()
 
   // Always pass through public page routes
   if (PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
@@ -102,15 +105,17 @@ export default async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // ── S3: Protect API routes ────────────────────────────────────────
-  // Return 401 JSON for unauthenticated API calls instead of passing through
   if (PROTECTED_API_PREFIXES.some(p => pathname.startsWith(p))) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    return response; // authenticated — let the route handler do the rest
+    return response;
   }
 
   // ── Protect page routes ───────────────────────────────────────────
+  // This includes /onboarding — unauthenticated users go to /login.
+  // Authenticated users who visit /onboarding directly are allowed
+  // through (edge case: someone bookmarked it, or is mid-flow).
   if (!user && AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
