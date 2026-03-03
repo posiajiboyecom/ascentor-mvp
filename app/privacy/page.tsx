@@ -3,8 +3,27 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+type ContactItem = { label: string; value: string };
+type TableRow    = { purpose: string; detail: string };
+
+type Block =
+  | { type: "para";       text: string }
+  | { type: "highlight";  text: string }
+  | { type: "subheading"; text: string }
+  | { type: "list";       items: string[] }
+  | { type: "table";      rows: TableRow[] }
+  | { type: "contact";    items: ContactItem[] };
+
+type Section = {
+  id: string;
+  num: string;
+  title: string;
+  content: Block[];
+};
+
 // ─── Section data ─────────────────────────────────────────────────────────────
-const SECTIONS = [
+const SECTIONS: Section[] = [
   {
     id: "overview",
     num: "01",
@@ -12,7 +31,7 @@ const SECTIONS = [
     content: [
       {
         type: "para",
-        text: "Ascentor ("we", "our", or "us") is committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, store, and share your information when you use our platform — including our website, mobile Progressive Web App (PWA), and all related services.",
+        text: `Ascentor ("we", "our", or "us") is committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, store, and share your information when you use our platform — including our website, mobile Progressive Web App (PWA), and all related services.`,
       },
       {
         type: "para",
@@ -29,10 +48,7 @@ const SECTIONS = [
     num: "02",
     title: "Information We Collect",
     content: [
-      {
-        type: "subheading",
-        text: "Information You Provide Directly",
-      },
+      { type: "subheading", text: "Information You Provide Directly" },
       {
         type: "list",
         items: [
@@ -46,10 +62,7 @@ const SECTIONS = [
           "Support communications — messages you send to our team",
         ],
       },
-      {
-        type: "subheading",
-        text: "Information Collected Automatically",
-      },
+      { type: "subheading", text: "Information Collected Automatically" },
       {
         type: "list",
         items: [
@@ -62,10 +75,7 @@ const SECTIONS = [
           "Push notification subscription data — device endpoint for delivering notifications (no personally identifiable data in the subscription itself)",
         ],
       },
-      {
-        type: "subheading",
-        text: "Information from Third Parties",
-      },
+      { type: "subheading", text: "Information from Third Parties" },
       {
         type: "list",
         items: [
@@ -106,10 +116,7 @@ const SECTIONS = [
     num: "04",
     title: "Sage AI & Your Conversations",
     content: [
-      {
-        type: "highlight",
-        text: "Conversations with Sage are personal. We treat them with care.",
-      },
+      { type: "highlight", text: "Conversations with Sage are personal. We treat them with care." },
       {
         type: "para",
         text: "When you start a Sage AI mentor session, your input is sent to Anthropic's API (claude-sonnet model) to generate a structured response. The following applies:",
@@ -322,9 +329,9 @@ const SECTIONS = [
         type: "contact",
         items: [
           { label: "Privacy enquiries", value: "privacy@ascentor.co" },
-          { label: "Security reports", value: "security@ascentor.co" },
-          { label: "General support", value: "hello@ascentor.co" },
-          { label: "Platform", value: "ascentor-mvp.vercel.app" },
+          { label: "Security reports",  value: "security@ascentor.co" },
+          { label: "General support",   value: "hello@ascentor.co" },
+          { label: "Platform",          value: "ascentor-mvp.vercel.app" },
         ],
       },
       {
@@ -338,24 +345,29 @@ const SECTIONS = [
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function PrivacyPage() {
   const [activeSection, setActiveSection] = useState("overview");
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled,      setScrolled]      = useState(false);
+  const [menuOpen,      setMenuOpen]      = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
+  // ── Nav scroll shadow ──────────────────────────────────────────────────────
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Intersection observer for active TOC tracking
+  // ── Lock body scroll when mobile drawer is open ────────────────────────────
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [menuOpen]);
+
+  // ── Intersection observer for active TOC tracking ──────────────────────────
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
         });
       },
       { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
@@ -372,6 +384,62 @@ export default function PrivacyPage() {
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
       setMenuOpen(false);
+    }
+  };
+
+  // ── Block renderer ─────────────────────────────────────────────────────────
+  const renderBlock = (block: Block, i: number) => {
+    switch (block.type) {
+      case "para":
+        return <p key={i} className="para">{block.text}</p>;
+
+      case "highlight":
+        return <div key={i} className="highlight-box">{block.text}</div>;
+
+      case "subheading":
+        return <div key={i} className="subheading">{block.text}</div>;
+
+      case "list":
+        return (
+          <ul key={i} className="privacy-list">
+            {block.items.map((item, j) => <li key={j}>{item}</li>)}
+          </ul>
+        );
+
+      case "table":
+        return (
+          <table key={i} className="privacy-table">
+            <thead>
+              <tr>
+                <th>Purpose</th>
+                <th>How we use your information</th>
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows.map((row, j) => (
+                <tr key={j}>
+                  <td>{row.purpose}</td>
+                  <td>{row.detail}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        );
+
+      case "contact":
+        return (
+          <div key={i} className="contact-grid">
+            {block.items.map((item, j) => (
+              <div key={j} className="contact-card">
+                <div className="contact-label">{item.label}</div>
+                <div className="contact-value">{item.value}</div>
+              </div>
+            ))}
+          </div>
+        );
+
+      default:
+        return null;
     }
   };
 
@@ -408,7 +476,6 @@ export default function PrivacyPage() {
           overflow-x: hidden;
         }
 
-        /* ── Noise texture overlay ── */
         body::before {
           content: '';
           position: fixed;
@@ -418,7 +485,6 @@ export default function PrivacyPage() {
           z-index: 0;
         }
 
-        /* ── Nav ── */
         .nav {
           position: fixed;
           top: 0; left: 0; right: 0;
@@ -444,10 +510,7 @@ export default function PrivacyPage() {
           text-decoration: none;
           color: var(--white);
         }
-        .nav-logo-icon {
-          width: 32px;
-          height: 32px;
-        }
+        .nav-logo-icon { width: 32px; height: 32px; }
         .nav-logo-text {
           font-family: 'Cormorant Garamond', serif;
           font-size: 1.3rem;
@@ -465,7 +528,6 @@ export default function PrivacyPage() {
         }
         .nav-back:hover { color: var(--gold); }
 
-        /* ── Hero ── */
         .hero {
           position: relative;
           padding: 140px 2rem 80px;
@@ -500,10 +562,7 @@ export default function PrivacyPage() {
           color: var(--white);
           margin-bottom: 1.5rem;
         }
-        .hero-title span {
-          color: var(--gold);
-          font-style: italic;
-        }
+        .hero-title span { color: var(--gold); font-style: italic; }
         .hero-meta {
           display: flex;
           align-items: center;
@@ -516,10 +575,7 @@ export default function PrivacyPage() {
           color: var(--dim);
           letter-spacing: 0.06em;
         }
-        .hero-meta-item strong {
-          color: var(--muted);
-          font-weight: 500;
-        }
+        .hero-meta-item strong { color: var(--muted); font-weight: 500; }
         .hero-divider {
           width: 60px;
           height: 3px;
@@ -533,7 +589,6 @@ export default function PrivacyPage() {
           line-height: 1.8;
         }
 
-        /* ── Layout ── */
         .layout {
           position: relative;
           z-index: 1;
@@ -546,7 +601,6 @@ export default function PrivacyPage() {
           align-items: start;
         }
 
-        /* ── TOC Sidebar ── */
         .toc {
           position: sticky;
           top: 88px;
@@ -598,10 +652,7 @@ export default function PrivacyPage() {
           line-height: 1.3;
         }
 
-        /* ── Content ── */
-        .content {
-          padding-top: 0.5rem;
-        }
+        .content { padding-top: 0.5rem; }
 
         .section {
           margin-bottom: 5rem;
@@ -660,10 +711,7 @@ export default function PrivacyPage() {
           line-height: 1.7;
         }
 
-        .privacy-list {
-          list-style: none;
-          margin: 0.5rem 0 1.2rem;
-        }
+        .privacy-list { list-style: none; margin: 0.5rem 0 1.2rem; }
         .privacy-list li {
           display: flex;
           gap: 0.9rem;
@@ -683,7 +731,6 @@ export default function PrivacyPage() {
           font-size: 0.8rem;
         }
 
-        /* Table */
         .privacy-table {
           width: 100%;
           border-collapse: collapse;
@@ -720,7 +767,6 @@ export default function PrivacyPage() {
         }
         .privacy-table td:last-child { color: var(--muted); }
 
-        /* Contact items */
         .contact-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -743,13 +789,9 @@ export default function PrivacyPage() {
           color: var(--dim);
           margin-bottom: 0.4rem;
         }
-        .contact-value {
-          font-size: 0.9rem;
-          color: var(--gold);
-          font-weight: 500;
-        }
+        .contact-value { font-size: 0.9rem; color: var(--gold); font-weight: 500; }
 
-        /* ── Mobile TOC toggle ── */
+        /* Mobile TOC — hidden by default, shown via transform only on mobile */
         .mobile-toc-toggle {
           display: none;
           position: fixed;
@@ -768,6 +810,15 @@ export default function PrivacyPage() {
           cursor: pointer;
           box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         }
+        /* Overlay behind the drawer */
+        .mobile-toc-overlay {
+          display: none;
+          position: fixed;
+          inset: 0;
+          z-index: 94;
+          background: rgba(0,0,0,0.5);
+          backdrop-filter: blur(2px);
+        }
         .mobile-toc-drawer {
           display: none;
           position: fixed;
@@ -782,9 +833,7 @@ export default function PrivacyPage() {
           transform: translateY(100%);
           transition: transform 0.3s ease;
         }
-        .mobile-toc-drawer.open {
-          transform: translateY(0);
-        }
+        .mobile-toc-drawer.open { transform: translateY(0); }
         .mobile-toc-handle {
           width: 40px;
           height: 4px;
@@ -793,7 +842,6 @@ export default function PrivacyPage() {
           margin: 0 auto 1.5rem;
         }
 
-        /* ── Footer ── */
         .footer {
           position: relative;
           z-index: 1;
@@ -814,10 +862,7 @@ export default function PrivacyPage() {
           color: var(--muted);
         }
         .footer-brand span { color: var(--gold); }
-        .footer-links {
-          display: flex;
-          gap: 1.5rem;
-        }
+        .footer-links { display: flex; gap: 1.5rem; }
         .footer-links a {
           font-family: 'DM Mono', monospace;
           font-size: 0.7rem;
@@ -829,7 +874,6 @@ export default function PrivacyPage() {
         }
         .footer-links a:hover { color: var(--gold); }
 
-        /* ── Progress bar ── */
         .progress-bar {
           position: fixed;
           top: 0; left: 0;
@@ -839,15 +883,12 @@ export default function PrivacyPage() {
           transition: width 0.1s linear;
         }
 
-        /* ── Responsive ── */
         @media (max-width: 900px) {
-          .layout {
-            grid-template-columns: 1fr;
-            gap: 2rem;
-          }
+          .layout { grid-template-columns: 1fr; gap: 2rem; }
           .toc { display: none; }
           .mobile-toc-toggle { display: block; }
           .mobile-toc-drawer { display: block; }
+          .mobile-toc-overlay { display: block; }
           .contact-grid { grid-template-columns: 1fr; }
           .hero { padding: 120px 1.5rem 60px; }
           .layout { padding: 0 1.5rem 6rem; }
@@ -859,13 +900,11 @@ export default function PrivacyPage() {
         }
       `}</style>
 
-      {/* Progress bar */}
       <ProgressBar />
 
       {/* Nav */}
       <nav className={`nav ${scrolled ? "scrolled" : ""}`}>
         <Link href="/" className="nav-logo">
-          {/* Pyramid SVG mark */}
           <svg className="nav-logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
             <polygon points="16,3 30,28 2,28" fill="#E8A020" />
             <polygon points="16,9.5 26.5,27 5.5,27" fill="#0C0B08" />
@@ -920,60 +959,7 @@ export default function PrivacyPage() {
                 <span className="section-num">{section.num}</span>
                 <h2 className="section-title">{section.title}</h2>
               </div>
-
-              {section.content.map((block, i) => {
-                if (block.type === "para") {
-                  return <p key={i} className="para">{block.text}</p>;
-                }
-                if (block.type === "highlight") {
-                  return <div key={i} className="highlight-box">{block.text}</div>;
-                }
-                if (block.type === "subheading") {
-                  return <div key={i} className="subheading">{block.text}</div>;
-                }
-                if (block.type === "list") {
-                  return (
-                    <ul key={i} className="privacy-list">
-                      {block.items!.map((item, j) => (
-                        <li key={j}>{item}</li>
-                      ))}
-                    </ul>
-                  );
-                }
-                if (block.type === "table") {
-                  return (
-                    <table key={i} className="privacy-table">
-                      <thead>
-                        <tr>
-                          <th>Purpose</th>
-                          <th>How we use your information</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {block.rows!.map((row, j) => (
-                          <tr key={j}>
-                            <td>{row.purpose}</td>
-                            <td>{row.detail}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  );
-                }
-                if (block.type === "contact") {
-                  return (
-                    <div key={i} className="contact-grid">
-                      {block.items!.map((item, j) => (
-                        <div key={j} className="contact-card">
-                          <div className="contact-label">{item.label}</div>
-                          <div className="contact-value">{item.value}</div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                }
-                return null;
-              })}
+              {section.content.map((block, i) => renderBlock(block, i))}
             </section>
           ))}
         </main>
@@ -991,13 +977,18 @@ export default function PrivacyPage() {
         </div>
       </footer>
 
-      {/* Mobile TOC */}
+      {/* Mobile TOC overlay — closes drawer when tapped outside */}
+      {menuOpen && (
+        <div className="mobile-toc-overlay" onClick={() => setMenuOpen(false)} />
+      )}
+
       <button
         className="mobile-toc-toggle"
         onClick={() => setMenuOpen(!menuOpen)}
       >
         {menuOpen ? "✕ Close" : "≡ Contents"}
       </button>
+
       <div className={`mobile-toc-drawer ${menuOpen ? "open" : ""}`}>
         <div className="mobile-toc-handle" />
         {SECTIONS.map((s) => (
