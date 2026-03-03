@@ -130,7 +130,7 @@ export default function MentorApplyPage() {
         <style>{maStyles}</style>
         <Link href="/" className="lp-nav-logo">
             <img
-              src="/ascentor-color-on-light.svg"
+              src="/ascentor-color-for-light-pages.svg"
               alt="Ascentor"
               style={{ height: '32px', width: 'auto' }}
             />
