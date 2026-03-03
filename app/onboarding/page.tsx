@@ -46,7 +46,7 @@ export default function OnboardingPage() {
       setSaving(false);
       return;
     }
-    // Generate a unique referral_code if the user doesn't have one yet
+
     const { data: existingProfile } = await supabase
       .from('profiles')
       .select('referral_code')
@@ -54,7 +54,6 @@ export default function OnboardingPage() {
       .single();
 
     const referralCode = existingProfile?.referral_code || (
-      // e.g. "ASC-K3X9" — prefix + 4 random alphanumeric chars
       'ASC-' + Math.random().toString(36).substring(2, 6).toUpperCase()
     );
 
@@ -64,11 +63,13 @@ export default function OnboardingPage() {
       referral_code: referralCode,
       updated_at: new Date().toISOString(),
     });
+
     if (dbError) {
       alert('Error: ' + dbError.message);
       setSaving(false);
       return;
     }
+
     setSaving(false);
     setStep(2);
   };
@@ -78,7 +79,8 @@ export default function OnboardingPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { alert('User not found'); setSaving(false); return; }
 
-    const { error } = await supabase.from('user_goals').insert({
+    // 1. Save the 90-day goal
+    const { error: goalError } = await supabase.from('user_goals').insert({
       user_id: user.id,
       goal_text: goal.goal_text,
       timeframe: '90 days',
@@ -87,8 +89,28 @@ export default function OnboardingPage() {
       milestone_3: goal.milestone_3,
     });
 
-    if (error) { alert(`Error: ${error.message}`); setSaving(false); return; }
+    if (goalError) { alert(`Error: ${goalError.message}`); setSaving(false); return; }
 
+    // 2. ── THE FIX ──────────────────────────────────────────────────────────
+    // Mark onboarding as complete on the profile. Without this, route.ts sees
+    // onboarding_completed = false/null on every subsequent login and redirects
+    // the user back here indefinitely.
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        onboarding_completed: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id);
+
+    if (profileError) {
+      // Non-fatal — log it but don't block the user. They've completed the
+      // flow; worst case they see onboarding once more on next login.
+      console.error('[onboarding] Failed to set onboarding_completed:', profileError.message);
+    }
+    // ── END FIX ────────────────────────────────────────────────────────────
+
+    // 3. Handle referral (non-blocking)
     try {
       const storedRef = localStorage.getItem('ascentor_referral');
       if (storedRef) {
@@ -128,7 +150,6 @@ export default function OnboardingPage() {
           font-family: 'Syne', sans-serif;
         }
 
-        /* Ambient glow */
         .ob-root::before {
           content: '';
           position: fixed;
@@ -141,7 +162,6 @@ export default function OnboardingPage() {
           pointer-events: none;
         }
 
-        /* Subtle grid */
         .ob-root::after {
           content: '';
           position: fixed;
@@ -166,17 +186,13 @@ export default function OnboardingPage() {
           to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Logo ── */
         .ob-logo {
           display: flex;
           align-items: center;
           gap: 10px;
           margin-bottom: 40px;
         }
-        .ob-logo-mark {
-          width: 28px;
-          height: 28px;
-        }
+        .ob-logo-mark { width: 28px; height: 28px; }
         .ob-logo-text {
           font-family: 'Cormorant Garamond', serif;
           font-weight: 700;
@@ -185,7 +201,6 @@ export default function OnboardingPage() {
           letter-spacing: -0.2px;
         }
 
-        /* ── Step indicator ── */
         .ob-steps {
           display: flex;
           align-items: center;
@@ -200,9 +215,7 @@ export default function OnboardingPage() {
           overflow: hidden;
           transition: background 0.4s;
         }
-        .ob-step-bar.active {
-          background: #E8A020;
-        }
+        .ob-step-bar.active { background: #E8A020; }
         .ob-step-label {
           font-family: 'DM Mono', monospace;
           font-size: 10px;
@@ -211,7 +224,6 @@ export default function OnboardingPage() {
           white-space: nowrap;
         }
 
-        /* ── Heading ── */
         .ob-eyebrow {
           font-family: 'DM Mono', monospace;
           font-size: 10px;
@@ -237,18 +249,9 @@ export default function OnboardingPage() {
           font-weight: 400;
         }
 
-        /* ── Form ── */
-        .ob-form {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-        }
+        .ob-form { display: flex; flex-direction: column; gap: 14px; }
 
-        .ob-field {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
+        .ob-field { display: flex; flex-direction: column; gap: 6px; }
         .ob-label {
           font-family: 'DM Mono', monospace;
           font-size: 10px;
@@ -285,17 +288,9 @@ export default function OnboardingPage() {
         .ob-select { cursor: pointer; color: #D4CFC3; }
         .ob-select option { background: #1E1C17; }
 
-        /* Two-col grid */
-        .ob-grid-2 {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 14px;
-        }
-        @media (max-width: 480px) {
-          .ob-grid-2 { grid-template-columns: 1fr; }
-        }
+        .ob-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 480px) { .ob-grid-2 { grid-template-columns: 1fr; } }
 
-        /* ── Milestones ── */
         .ob-milestones-label {
           font-family: 'DM Mono', monospace;
           font-size: 10px;
@@ -304,11 +299,7 @@ export default function OnboardingPage() {
           text-transform: uppercase;
           margin-bottom: 2px;
         }
-        .ob-milestone-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
+        .ob-milestone-row { display: flex; align-items: center; gap: 12px; }
         .ob-milestone-num {
           width: 24px;
           height: 24px;
@@ -324,7 +315,6 @@ export default function OnboardingPage() {
           flex-shrink: 0;
         }
 
-        /* ── Journey preview ── */
         .ob-journey {
           display: flex;
           align-items: center;
@@ -339,7 +329,6 @@ export default function OnboardingPage() {
         .ob-journey-arrow { color: #4A4438; }
         .ob-journey-to { color: #E8A020; font-weight: 600; }
 
-        /* ── CTA Button ── */
         .ob-btn {
           width: 100%;
           padding: 15px 24px;
@@ -359,19 +348,10 @@ export default function OnboardingPage() {
           justify-content: center;
           gap: 8px;
         }
-        .ob-btn:hover:not(:disabled) {
-          background: #F5C55A;
-          transform: translateY(-1px);
-        }
-        .ob-btn:active:not(:disabled) {
-          transform: translateY(0);
-        }
-        .ob-btn:disabled {
-          opacity: 0.35;
-          cursor: not-allowed;
-        }
+        .ob-btn:hover:not(:disabled) { background: #F5C55A; transform: translateY(-1px); }
+        .ob-btn:active:not(:disabled) { transform: translateY(0); }
+        .ob-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-        /* ── 90-day badge ── */
         .ob-badge {
           display: inline-flex;
           align-items: center;
@@ -393,12 +373,7 @@ export default function OnboardingPage() {
           background: #E8A020;
         }
 
-        /* ── Divider ── */
-        .ob-divider {
-          height: 1px;
-          background: #2E2A22;
-          margin: 4px 0 8px;
-        }
+        .ob-divider { height: 1px; background: #2E2A22; margin: 4px 0 8px; }
       `}</style>
 
       <div className="ob-root">
@@ -497,7 +472,6 @@ export default function OnboardingPage() {
                   />
                 </div>
 
-                {/* Journey preview */}
                 {(profile.current_role || profile.goal_role) && (
                   <div className="ob-journey">
                     <span className="ob-journey-from">{profile.current_role || '...'}</span>
@@ -523,7 +497,7 @@ export default function OnboardingPage() {
               <p className="ob-eyebrow">Your 90-Day Goal</p>
               <h1 className="ob-heading">What will your<br/>mentor help you achieve?</h1>
               <p className="ob-subheading">
-                Members who set a 90-day goal with their mentor are 3× more likely to hit a measurable career outcome.
+                Members who set a 90-day goal with their mentor are 3x more likely to hit a measurable career outcome.
               </p>
 
               <div className="ob-badge">
