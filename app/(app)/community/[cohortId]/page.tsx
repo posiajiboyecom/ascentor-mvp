@@ -33,8 +33,6 @@ export default function CohortFeedPage() {
   const params    = useParams();
   const cohortId  = Array.isArray(params.cohortId) ? params.cohortId[0] : (params.cohortId as string);
   const router    = useRouter();
-  // CRITICAL: stable ref — never recreate supabase client on re-renders
-  // A new createClient() on each render = broken realtime channels
   const supabaseRef = useRef(createClient());
   const supabase    = supabaseRef.current;
 
@@ -49,12 +47,8 @@ export default function CohortFeedPage() {
   const [memberCount,  setMemberCount]  = useState(0);
   const [onlineCount,  setOnlineCount]  = useState(1);
 
-  // Keep a ref to current userId so realtime callbacks can access it without stale closure
   const userIdRef    = useRef<string | null>(null);
-  // Cache of authorId → name so realtime events can resolve names instantly
   const authorCache  = useRef<Record<string, string>>({});
-
-  // Store channel refs so cleanup removes the RIGHT instances
   const channelRefs = useRef<ReturnType<typeof supabase.channel>[]>([]);
 
   function cleanupChannels() {
@@ -68,7 +62,6 @@ export default function CohortFeedPage() {
     if (!cohortId) return;
     loadAll();
 
-    // Reconnect realtime when tab regains focus (handles mobile backgrounding)
     function handleFocus() {
       cleanupChannels();
       subscribeRealtime();
@@ -81,7 +74,6 @@ export default function CohortFeedPage() {
     };
   }, [cohortId]);
 
-  // ── Resolve a user ID to a display name (with caching) ──────────────────
   async function resolveName(uid: string): Promise<string> {
     if (authorCache.current[uid]) return authorCache.current[uid];
     const { data } = await supabase.from('profiles').select('full_name').eq('id', uid).single();
@@ -90,9 +82,7 @@ export default function CohortFeedPage() {
     return name;
   }
 
-  // ── Supabase Realtime subscriptions ──────────────────────────────────────
   function subscribeRealtime() {
-    // ── 1. New / updated / deleted POSTS ──────────────────────────────────
     const postsChannel = supabase
       .channel(`cohort-${cohortId}-posts-${Date.now()}`)
       .on('postgres_changes', {
@@ -102,7 +92,6 @@ export default function CohortFeedPage() {
         filter: `cohort_id=eq.${cohortId}`,
       }, async (payload) => {
         const newRow = payload.new as any;
-        // Ignore our own posts — already in state via optimistic update
         if (newRow.user_id === userIdRef.current) return;
         const name = await resolveName(newRow.user_id);
         setPosts(prev => [{
@@ -123,7 +112,6 @@ export default function CohortFeedPage() {
         const updated = payload.new as any;
         setPosts(prev => prev.map(p =>
           p.id === updated.id
-            // Preserve local voted state + authorName — only sync upvotes & reply_count
             ? { ...p, upvotes: updated.upvotes || 0, reply_count: updated.reply_count || p.reply_count }
             : p
         ));
@@ -143,7 +131,6 @@ export default function CohortFeedPage() {
       });
     channelRefs.current.push(postsChannel);
 
-    // ── 2. New REPLIES ─────────────────────────────────────────────────────
     const repliesChannel = supabase
       .channel(`cohort-${cohortId}-replies-${Date.now()}`)
       .on('postgres_changes', {
@@ -156,7 +143,6 @@ export default function CohortFeedPage() {
         const name = await resolveName(newReply.user_id);
         setPosts(prev => prev.map(p => {
           if (p.id !== newReply.post_id) return p;
-          // Only add to visible replies list if replies panel is open
           const updatedReplies = p.showReplies
             ? [...(p.replies || []), { ...newReply, upvotes: 0, authorName: name, voted: false }]
             : p.replies;
@@ -189,7 +175,6 @@ export default function CohortFeedPage() {
       });
     channelRefs.current.push(repliesChannel);
 
-    // ── 3. Presence — who's online in this circle right now ────────────────
     const presenceChannel = supabase.channel(`cohort-${cohortId}-presence-${Date.now()}`, {
       config: { presence: { key: userIdRef.current || 'anon' } },
     });
@@ -206,14 +191,12 @@ export default function CohortFeedPage() {
     channelRefs.current.push(presenceChannel);
   }
 
-  // ── Initial data load ─────────────────────────────────────────────────────
   async function loadAll() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
     setUserId(user.id);
     userIdRef.current = user.id;
 
-    // Membership check with retry for post-join race
     let membership = null;
     for (let attempt = 0; attempt < 3; attempt++) {
       const { data, error } = await supabase
@@ -233,24 +216,20 @@ export default function CohortFeedPage() {
       return;
     }
 
-    // Cohort info
     const { data: cohortData } = await supabase
       .from('cohorts').select('*').eq('id', String(cohortId)).single();
     setCohort(cohortData);
     setMemberCount(cohortData?.member_count || 0);
 
-    // Posts
     const { data: postsData } = await supabase
       .from('cohort_posts').select('*')
       .eq('cohort_id', String(cohortId))
       .order('created_at', { ascending: false }).limit(50);
 
-    // User votes
     const { data: votes } = await supabase
       .from('cohort_votes').select('post_id, reply_id').eq('user_id', user.id);
     const votedPostIds = new Set(votes?.filter((v: any) => v.post_id).map((v: any) => v.post_id) || []);
 
-    // Author names
     const authorIds = [...new Set((postsData || []).map((p: any) => p.user_id))];
     if (authorIds.length > 0) {
       const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', authorIds);
@@ -269,11 +248,9 @@ export default function CohortFeedPage() {
     setPosts(mapped);
     setLoading(false);
 
-    // Start realtime AFTER initial load
     subscribeRealtime();
   }
 
-  // ── Create post ────────────────────────────────────────────────────────────
   async function createPost() {
     if (!newPost.trim() || !userId || posting) return;
     setPosting(true);
@@ -286,7 +263,6 @@ export default function CohortFeedPage() {
       .select('*').single();
 
     if (data && !error) {
-      // Optimistic — add immediately for the poster
       setPosts(prev => [{
         ...data,
         upvotes: 0,
@@ -299,7 +275,6 @@ export default function CohortFeedPage() {
     setPosting(false);
   }
 
-  // ── Create reply ───────────────────────────────────────────────────────────
   async function createReply(postId: string) {
     if (!replyText.trim() || !userId) return;
     const content = replyText.trim();
@@ -325,7 +300,6 @@ export default function CohortFeedPage() {
     }
   }
 
-  // ── Toggle replies panel ───────────────────────────────────────────────────
   async function toggleReplies(postId: string) {
     const post = posts.find(p => p.id === postId);
     if (!post) return;
@@ -357,12 +331,10 @@ export default function CohortFeedPage() {
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, showReplies: true, replies: mapped } : p));
   }
 
-  // ── Upvote post — atomic increment avoids race conditions ────────────────
   async function upvotePost(postId: string) {
     const post = posts.find(p => p.id === postId);
     if (!post || !userId) return;
 
-    // Optimistic UI update immediately
     const toggled = !post.voted;
     setPosts(prev => prev.map(p => p.id === postId ? {
       ...p,
@@ -372,20 +344,17 @@ export default function CohortFeedPage() {
 
     try {
       if (toggled) {
-        // Insert vote + atomically increment
         await Promise.all([
           supabase.from('cohort_votes').insert({ user_id: userId, post_id: postId }),
           supabase.rpc('increment_post_upvotes', { post_id: postId, delta: 1 }),
         ]);
       } else {
-        // Delete vote + atomically decrement
         await Promise.all([
           supabase.from('cohort_votes').delete().eq('user_id', userId).eq('post_id', postId),
           supabase.rpc('increment_post_upvotes', { post_id: postId, delta: -1 }),
         ]);
       }
     } catch (err) {
-      // Rollback optimistic update on error
       console.error('[upvote] post error:', err);
       setPosts(prev => prev.map(p => p.id === postId ? {
         ...p,
@@ -395,7 +364,6 @@ export default function CohortFeedPage() {
     }
   }
 
-  // ── Upvote reply — atomic increment ───────────────────────────────────────
   async function upvoteReply(postId: string, replyId: string) {
     if (!userId) return;
     const post  = posts.find(p => p.id === postId);
@@ -403,7 +371,6 @@ export default function CohortFeedPage() {
     if (!reply) return;
 
     const toggled = !reply.voted;
-    // Optimistic update
     setPosts(prev => prev.map(p => p.id === postId ? {
       ...p,
       replies: p.replies?.map(r => r.id === replyId ? {
@@ -426,7 +393,6 @@ export default function CohortFeedPage() {
         ]);
       }
     } catch (err) {
-      // Rollback on error
       console.error('[upvote] reply error:', err);
       setPosts(prev => prev.map(p => p.id === postId ? {
         ...p,
@@ -439,7 +405,6 @@ export default function CohortFeedPage() {
     }
   }
 
-  // ── Leave cohort ───────────────────────────────────────────────────────────
   async function leaveCohort() {
     if (!userId || !confirm('Leave this circle? You can always rejoin later.')) return;
     await supabase.from('cohort_members').delete()
@@ -459,14 +424,12 @@ export default function CohortFeedPage() {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
-  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <SageLoader message="Loading feed…" />
     );
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="animate-fade-up py-6">
       <style>{`
@@ -497,7 +460,6 @@ export default function CohortFeedPage() {
               <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
                 {memberCount} members · {cohort?.category}
               </p>
-              {/* Live online indicator */}
               <div className="flex items-center gap-1">
                 <div style={{ position: 'relative', width: 7, height: 7 }}>
                   <div style={{
@@ -628,23 +590,37 @@ export default function CohortFeedPage() {
                 </div>
               </div>
 
-              {/* Reply input */}
+              {/* Reply input — FIXED */}
               {replyingTo === post.id && (
                 <div className="px-4 pb-3 pl-14">
-                  <div className="flex gap-2">
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '8px 12px',
+                    marginTop: '8px',
+                    background: 'rgba(255,255,255,0.04)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(232,160,32,0.2)',
+                  }}>
                     <input
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') createReply(post.id); }}
                       placeholder="Write a reply..."
-                      className="flex-1 px-3 py-2 text-sm rounded-lg"
-                      style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
+                      style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: '#F0EDE8' }}
                       autoFocus
                     />
                     <button onClick={() => createReply(post.id)}
                       disabled={!replyText.trim()}
-                      className="px-3 py-2 rounded-lg text-xs font-semibold disabled:opacity-40"
-                      style={{ background: 'var(--accent)', color: '#000' }}>
+                      style={{
+                        flexShrink: 0, padding: '6px 14px', borderRadius: '6px',
+                        background: '#E8A020', color: '#0C0B08', fontWeight: 700,
+                        border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                        opacity: !replyText.trim() ? 0.4 : 1,
+                      }}>
                       Reply
                     </button>
                   </div>

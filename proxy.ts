@@ -31,6 +31,7 @@ const PROTECTED_API_PREFIXES = [
   '/api/admin',
 ];
 
+
 // Public routes — no auth needed
 const PUBLIC_ROUTES = [
   '/login', '/signup', '/checkout', '/onboarding',
@@ -62,6 +63,10 @@ export default async function proxy(request: NextRequest) {
   ) {
     return NextResponse.next();
   }
+
+  // Skip onboarding redirect if already on /onboarding
+  const isOnboarding = pathname.startsWith('/onboarding')
+  if (isOnboarding) return NextResponse.next()
 
   // Always pass through public page routes
   if (PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
