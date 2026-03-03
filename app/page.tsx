@@ -801,7 +801,7 @@ export default function LandingPage() {
               <ul className="lp-footer-links">
                 <li><Link href="/about">About</Link></li>
                 <li><Link href="/terms">Terms & Conditions</Link></li>
-                <li><Link href="/privacy">Privacy Policy</Link></li>
+                <Link href="/privacy">Privacy Policy</Link>
                 <li><Link href="/newsletter">Newsletter</Link></li>
               </ul>
             </div>
@@ -809,8 +809,8 @@ export default function LandingPage() {
               <div className="lp-footer-col-title">Connect</div>
               <ul className="lp-footer-links">
                 <li><a href="mailto:hello@ascentorbi.com">hello@ascentor.co</a></li>
-                <li><a href="https://x.com/ascentorglobal" target="_blank" rel="noreferrer">Twitter / X</a></li>
-                <li><a href="https://linkedin.com/company/ascentorglobal" target="_blank" rel="noreferrer">LinkedIn</a></li>
+                <li><a href="https://x.com/ascentorhq" target="_blank" rel="noreferrer">Twitter / X</a></li>
+                <li><a href="https://linkedin.com/company/ascentorhq" target="_blank" rel="noreferrer">LinkedIn</a></li>
                 <li><a href="https://www.instagram.com/ascentor.ai/" target="_blank" rel="noreferrer">Instagram</a></li>
               </ul>
             </div>
