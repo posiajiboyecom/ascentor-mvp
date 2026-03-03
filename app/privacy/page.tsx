@@ -3,31 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-// ─── Discriminated union types — fixes Bug #10 ───────────────────────────────
-type ParaBlock      = { type: "para";      text: string };
-type HighlightBlock = { type: "highlight"; text: string };
-type SubheadingBlock= { type: "subheading";text: string };
-type ListBlock      = { type: "list";      items: string[] };
-type TableBlock     = { type: "table";     rows: { purpose: string; detail: string }[] };
-type ContactBlock   = { type: "contact";   items: { label: string; value: string }[] };
-
-type ContentBlock =
-  | ParaBlock
-  | HighlightBlock
-  | SubheadingBlock
-  | ListBlock
-  | TableBlock
-  | ContactBlock;
-
-type Section = {
-  id: string;
-  num: string;
-  title: string;
-  content: ContentBlock[];
-};
-
 // ─── Section data ─────────────────────────────────────────────────────────────
-const SECTIONS: Section[] = [
+const SECTIONS = [
   {
     id: "overview",
     num: "01",
@@ -35,7 +12,7 @@ const SECTIONS: Section[] = [
     content: [
       {
         type: "para",
-        text: "Ascentor (\u201cwe\u201d, \u201cour\u201d, or \u201cus\u201d) is committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, store, and share your information when you use our platform \u2014 including our website, mobile Progressive Web App (PWA), and all related services.",
+        text: "Ascentor ("we", "our", or "us") is committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, store, and share your information when you use our platform — including our website, mobile Progressive Web App (PWA), and all related services.",
       },
       {
         type: "para",
@@ -43,7 +20,7 @@ const SECTIONS: Section[] = [
       },
       {
         type: "highlight",
-        text: "We do not sell your personal data. We do not show you third-party advertisements. Ascentor\u2019s business model is subscription-based \u2014 your data is never our product.",
+        text: "We do not sell your personal data. We do not show you third-party advertisements. Ascentor's business model is subscription-based — your data is never our product.",
       },
     ],
   },
@@ -52,39 +29,48 @@ const SECTIONS: Section[] = [
     num: "02",
     title: "Information We Collect",
     content: [
-      { type: "subheading", text: "Information You Provide Directly" },
+      {
+        type: "subheading",
+        text: "Information You Provide Directly",
+      },
       {
         type: "list",
         items: [
-          "Account registration data \u2014 name, email address, password (hashed, never stored in plain text)",
-          "Profile information \u2014 current role, goal role, industry, career summary, biggest challenge",
-          "Onboarding responses \u2014 experience level, life stage (Explorer / Builder / Climber), mentorship goals",
-          "Mentor application data \u2014 if you apply to become a mentor: LinkedIn URL, professional background, availability",
-          "Community content \u2014 posts, replies, and upvotes you create in Mentorship Circles",
-          "Payment information \u2014 billing cycle and plan selected; card details are processed by Paystack and never stored on Ascentor servers",
-          "Referral codes \u2014 if you share or use a referral link",
-          "Support communications \u2014 messages you send to our team",
+          "Account registration data — name, email address, password (hashed, never stored in plain text)",
+          "Profile information — current role, goal role, industry, career summary, biggest challenge",
+          "Onboarding responses — experience level, life stage (Explorer / Builder / Climber), mentorship goals",
+          "Mentor application data — if you apply to become a mentor: LinkedIn URL, professional background, availability",
+          "Community content — posts, replies, and upvotes you create in Mentorship Circles",
+          "Payment information — billing cycle and plan selected; card details are processed by Paystack and never stored on Ascentor servers",
+          "Referral codes — if you share or use a referral link",
+          "Support communications — messages you send to our team",
         ],
       },
-      { type: "subheading", text: "Information Collected Automatically" },
+      {
+        type: "subheading",
+        text: "Information Collected Automatically",
+      },
       {
         type: "list",
         items: [
-          "Usage data \u2014 pages visited, features used, session duration, button clicks",
-          "Device information \u2014 browser type, operating system, screen size, PWA install status",
-          "Sage AI session data \u2014 your conversation inputs with our AI mentor and the responses generated",
-          "Learning progress \u2014 video completion percentage, last playback position, completed courses",
-          "Goal and commitment activity \u2014 90-day goals created, milestones updated, commitments checked",
-          "Expert session registrations \u2014 which sessions you register for and attend",
-          "Push notification subscription data \u2014 device endpoint for delivering notifications (no personally identifiable data in the subscription itself)",
+          "Usage data — pages visited, features used, session duration, button clicks",
+          "Device information — browser type, operating system, screen size, PWA install status",
+          "Sage AI session data — your conversation inputs with our AI mentor and the responses generated",
+          "Learning progress — video completion percentage, last playback position, completed courses",
+          "Goal and commitment activity — 90-day goals created, milestones updated, commitments checked",
+          "Expert session registrations — which sessions you register for and attend",
+          "Push notification subscription data — device endpoint for delivering notifications (no personally identifiable data in the subscription itself)",
         ],
       },
-      { type: "subheading", text: "Information from Third Parties" },
+      {
+        type: "subheading",
+        text: "Information from Third Parties",
+      },
       {
         type: "list",
         items: [
-          "Google OAuth \u2014 if you sign in with Google, we receive your name and email address from Google. We do not receive your Google password or access to your Google account beyond authentication.",
-          "Paystack \u2014 payment status and transaction reference for verifying subscription payments. We receive confirmation of payment, not your card details.",
+          "Google OAuth — if you sign in with Google, we receive your name and email address from Google. We do not receive your Google password or access to your Google account beyond authentication.",
+          "Paystack — payment status and transaction reference for verifying subscription payments. We receive confirmation of payment, not your card details.",
         ],
       },
     ],
@@ -103,7 +89,7 @@ const SECTIONS: Section[] = [
         rows: [
           { purpose: "Provide & personalise the platform", detail: "Your profile, goals, and career stage directly shape how Sage AI responds to you and which content and experts are surfaced." },
           { purpose: "Process subscriptions & payments", detail: "To activate your plan, verify Paystack transactions, and apply promotional discounts." },
-          { purpose: "Deliver AI mentor sessions (Sage)", detail: "Your session inputs are sent to Anthropic\u2019s Claude API to generate a response. Inputs are stored to power session history and continuity." },
+          { purpose: "Deliver AI mentor sessions (Sage)", detail: "Your session inputs are sent to Anthropic's Claude API to generate a response. Inputs are stored to power session history and continuity." },
           { purpose: "Send notifications", detail: "In-app and push notifications for circle activity, upvotes, expert session reminders, and platform updates." },
           { purpose: "Track learning progress", detail: "To resume video playback, mark courses complete, and show your progress in the Learn library." },
           { purpose: "Community moderation", detail: "To enforce our Community Guidelines and respond to reports of harmful content." },
@@ -120,16 +106,19 @@ const SECTIONS: Section[] = [
     num: "04",
     title: "Sage AI & Your Conversations",
     content: [
-      { type: "highlight", text: "Conversations with Sage are personal. We treat them with care." },
+      {
+        type: "highlight",
+        text: "Conversations with Sage are personal. We treat them with care.",
+      },
       {
         type: "para",
-        text: "When you start a Sage AI mentor session, your input is sent to Anthropic\u2019s API (claude-sonnet model) to generate a structured response. The following applies:",
+        text: "When you start a Sage AI mentor session, your input is sent to Anthropic's API (claude-sonnet model) to generate a structured response. The following applies:",
       },
       {
         type: "list",
         items: [
           "Your Sage session inputs and AI responses are stored in our database (Supabase/PostgreSQL) linked to your user ID, so you can access your history.",
-          "We do not use your Sage conversations to train AI models \u2014 neither our own nor Anthropic\u2019s.",
+          "We do not use your Sage conversations to train AI models — neither our own nor Anthropic's.",
           "Anthropic processes your inputs under their own Privacy Policy and API Data Use terms. They do not use API inputs to train their models by default.",
           "Sage session data is only accessible to you (your history) and to our engineering team for debugging purposes, subject to strict access controls.",
           "You can request deletion of your Sage session history at any time by contacting us.",
@@ -153,12 +142,12 @@ const SECTIONS: Section[] = [
       {
         type: "list",
         items: [
-          "Service providers \u2014 Supabase (database & auth), Anthropic (AI processing), Paystack (payments), Vercel (hosting). Each is bound by data processing agreements.",
-          "Other users \u2014 your display name, profile role, and community posts are visible to other Ascentor members within Mentorship Circles you join.",
-          "Expert mentors \u2014 if you register for a live Expert Session, your name may be shared with the session host for facilitation purposes.",
-          "Legal requirements \u2014 we may disclose information if required to do so by law, regulation, or valid legal process (e.g. court order).",
-          "Business transfers \u2014 if Ascentor is acquired or merges with another entity, your data may be transferred as part of that transaction. We will notify you in advance.",
-          "With your explicit consent \u2014 for any other purpose not listed here, we will ask you first.",
+          "Service providers — Supabase (database & auth), Anthropic (AI processing), Paystack (payments), Vercel (hosting). Each is bound by data processing agreements.",
+          "Other users — your display name, profile role, and community posts are visible to other Ascentor members within Mentorship Circles you join.",
+          "Expert mentors — if you register for a live Expert Session, your name may be shared with the session host for facilitation purposes.",
+          "Legal requirements — we may disclose information if required to do so by law, regulation, or valid legal process (e.g. court order).",
+          "Business transfers — if Ascentor is acquired or merges with another entity, your data may be transferred as part of that transaction. We will notify you in advance.",
+          "With your explicit consent — for any other purpose not listed here, we will ask you first.",
         ],
       },
     ],
@@ -175,12 +164,12 @@ const SECTIONS: Section[] = [
       {
         type: "list",
         items: [
-          "Active account data \u2014 retained for the lifetime of your account.",
-          "Sage session history \u2014 retained indefinitely unless you request deletion.",
-          "Payment records \u2014 retained for 7 years to comply with financial regulations.",
-          "Audit logs \u2014 retained for 12 months for security and compliance purposes.",
-          "Deletion requests \u2014 processed within 30 days. After deletion, anonymised aggregate data (e.g. total sessions count) may be retained for analytics.",
-          "Push notification subscriptions \u2014 deleted automatically when a device endpoint returns an expired or invalid response.",
+          "Active account data — retained for the lifetime of your account.",
+          "Sage session history — retained indefinitely unless you request deletion.",
+          "Payment records — retained for 7 years to comply with financial regulations.",
+          "Audit logs — retained for 12 months for security and compliance purposes.",
+          "Deletion requests — processed within 30 days. After deletion, anonymised aggregate data (e.g. total sessions count) may be retained for analytics.",
+          "Push notification subscriptions — deleted automatically when a device endpoint returns an expired or invalid response.",
         ],
       },
     ],
@@ -197,13 +186,13 @@ const SECTIONS: Section[] = [
       {
         type: "list",
         items: [
-          "Access \u2014 request a copy of the personal data we hold about you.",
-          "Correction \u2014 request that we correct inaccurate or incomplete data.",
-          "Deletion \u2014 request deletion of your account and personal data. You can initiate this from Settings \u2192 Account \u2192 Delete Account, or by emailing us.",
-          "Portability \u2014 request an export of your data in a machine-readable format.",
-          "Restrict processing \u2014 request that we limit how we use your data in certain circumstances.",
-          "Withdraw consent \u2014 where processing is based on consent (e.g. push notifications), you may withdraw it at any time without affecting prior processing.",
-          "Opt out of marketing \u2014 you can unsubscribe from email communications at any time via the unsubscribe link or in your notification preferences.",
+          "Access — request a copy of the personal data we hold about you.",
+          "Correction — request that we correct inaccurate or incomplete data.",
+          "Deletion — request deletion of your account and personal data. You can initiate this from Settings → Account → Delete Account, or by emailing us.",
+          "Portability — request an export of your data in a machine-readable format.",
+          "Restrict processing — request that we limit how we use your data in certain circumstances.",
+          "Withdraw consent — where processing is based on consent (e.g. push notifications), you may withdraw it at any time without affecting prior processing.",
+          "Opt out of marketing — you can unsubscribe from email communications at any time via the unsubscribe link or in your notification preferences.",
         ],
       },
       {
@@ -224,14 +213,14 @@ const SECTIONS: Section[] = [
       {
         type: "list",
         items: [
-          "Row-Level Security (RLS) on all database tables \u2014 users can only access their own data",
+          "Row-Level Security (RLS) on all database tables — users can only access their own data",
           "HTTPS/TLS encryption in transit across all endpoints",
-          "Passwords hashed using Supabase Auth\u2019s bcrypt implementation \u2014 never stored in plain text",
-          "Session-based authentication \u2014 payment and sensitive operations require a verified server-side session",
-          "API route middleware \u2014 all sensitive API endpoints are protected and return 401 for unauthenticated requests",
-          "Password re-authentication required for account changes \u2014 current password must be verified before updates",
-          "Server-side validation \u2014 promotional codes and payment amounts validated server-side only",
-          "Audit logs \u2014 sensitive actions (account deletion requests, plan changes) are logged",
+          "Passwords hashed using Supabase Auth's bcrypt implementation — never stored in plain text",
+          "Session-based authentication — payment and sensitive operations require a verified server-side session",
+          "API route middleware — all sensitive API endpoints are protected and return 401 for unauthenticated requests",
+          "Password re-authentication required for account changes — current password must be verified before updates",
+          "Server-side validation — promotional codes and payment amounts validated server-side only",
+          "Audit logs — sensitive actions (account deletion requests, plan changes) are logged",
         ],
       },
       {
@@ -252,9 +241,9 @@ const SECTIONS: Section[] = [
       {
         type: "list",
         items: [
-          "Authentication cookies \u2014 set by Supabase Auth to maintain your logged-in session. These are strictly necessary and cannot be disabled.",
-          "Preference cookies \u2014 to remember your notification preferences and UI settings.",
-          "Analytics \u2014 we may use anonymised, aggregated analytics to understand platform usage. No advertising-based tracking is used.",
+          "Authentication cookies — set by Supabase Auth to maintain your logged-in session. These are strictly necessary and cannot be disabled.",
+          "Preference cookies — to remember your notification preferences and UI settings.",
+          "Analytics — we may use anonymised, aggregated analytics to understand platform usage. No advertising-based tracking is used.",
         ],
       },
       {
@@ -270,7 +259,7 @@ const SECTIONS: Section[] = [
     content: [
       {
         type: "para",
-        text: "Ascentor is designed to serve professionals from age 15 upward \u2014 our Explorer tier specifically targets students aged 15\u201322. For users under the age of 18:",
+        text: "Ascentor is designed to serve professionals from age 15 upward — our Explorer tier specifically targets students aged 15–22. For users under the age of 18:",
       },
       {
         type: "list",
@@ -309,7 +298,7 @@ const SECTIONS: Section[] = [
       {
         type: "list",
         items: [
-          "Update the \u2018Last updated\u2019 date at the top of this page",
+          "Update the 'Last updated' date at the top of this page",
           "Send an in-app notification to all active users",
           "For significant changes, send an email notification to your registered email address",
         ],
@@ -333,9 +322,9 @@ const SECTIONS: Section[] = [
         type: "contact",
         items: [
           { label: "Privacy enquiries", value: "privacy@ascentor.co" },
-          { label: "Security reports",  value: "security@ascentor.co" },
-          { label: "General support",   value: "hello@ascentor.co" },
-          { label: "Platform",          value: "ascentor-mvp.vercel.app" },
+          { label: "Security reports", value: "security@ascentor.co" },
+          { label: "General support", value: "hello@ascentor.co" },
+          { label: "Platform", value: "ascentor-mvp.vercel.app" },
         ],
       },
       {
@@ -349,8 +338,8 @@ const SECTIONS: Section[] = [
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function PrivacyPage() {
   const [activeSection, setActiveSection] = useState("overview");
-  const [scrolled,      setScrolled]      = useState(false);
-  const [menuOpen,      setMenuOpen]      = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
@@ -359,11 +348,14 @@ export default function PrivacyPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Intersection observer for active TOC tracking
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) setActiveSection(entry.target.id);
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
         });
       },
       { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
@@ -375,8 +367,7 @@ export default function PrivacyPage() {
     return () => observerRef.current?.disconnect();
   }, []);
 
-  // FIX #13 — renamed from scrollTo to avoid shadowing window.scrollTo
-  const scrollToSection = (id: string) => {
+  const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -384,89 +375,25 @@ export default function PrivacyPage() {
     }
   };
 
-  // FIX #10 — type-safe block renderer using discriminated union
-  const renderBlock = (block: ContentBlock, i: number) => {
-    switch (block.type) {
-      case "para":
-        return <p key={i} className="para">{block.text}</p>;
-
-      case "highlight":
-        return <div key={i} className="highlight-box">{block.text}</div>;
-
-      case "subheading":
-        return <div key={i} className="subheading">{block.text}</div>;
-
-      case "list":
-        // FIX #1 — items is now guaranteed string[] by type, no ! needed
-        return (
-          <ul key={i} className="privacy-list">
-            {block.items.map((item, j) => (
-              <li key={j}>{item}</li>
-            ))}
-          </ul>
-        );
-
-      case "table":
-        // FIX #2 — rows is now guaranteed by type, no ! needed
-        return (
-          <table key={i} className="privacy-table">
-            <thead>
-              <tr>
-                <th>Purpose</th>
-                <th>How we use your information</th>
-              </tr>
-            </thead>
-            <tbody>
-              {block.rows.map((row, j) => (
-                <tr key={j}>
-                  <td>{row.purpose}</td>
-                  <td>{row.detail}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        );
-
-      case "contact":
-        // FIX #3/#4 — contact items are {label, value}[], now type-safe
-        return (
-          <div key={i} className="contact-grid">
-            {block.items.map((item, j) => (
-              <div key={j} className="contact-card">
-                <div className="contact-label">{item.label}</div>
-                <div className="contact-value">{item.value}</div>
-              </div>
-            ))}
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
   return (
     <>
-      {/* FIX #11 — Google Fonts loaded via <link> in <head>, not @import inside <style> */}
-      {/* In Next.js App Router, add these tags to your root layout.tsx instead:        */}
-      {/* <link rel="preconnect" href="https://fonts.googleapis.com" />                  */}
-      {/* <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />      */}
-      {/* <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" /> */}
-
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --black:  #0C0B08;
-          --slate:  #181612;
-          --card:   #1E1C18;
-          --border: #2E2A22;
-          --gold:   #E8A020;
-          --goldD:  #B9760A;
-          --goldL:  #F5C842;
-          --white:  #F0EDE8;
-          --muted:  #9A9080;
-          --dim:    #5C5548;
+          --black:   #0C0B08;
+          --slate:   #181612;
+          --card:    #1E1C18;
+          --border:  #2E2A22;
+          --gold:    #E8A020;
+          --goldD:   #B9760A;
+          --goldL:   #F5C842;
+          --white:   #F0EDE8;
+          --muted:   #9A9080;
+          --dim:     #5C5548;
+          --teal:    #14B8A6;
         }
 
         html { scroll-behavior: smooth; }
@@ -481,15 +408,12 @@ export default function PrivacyPage() {
           overflow-x: hidden;
         }
 
-        /* FIX #5 — replaced broken SVG noise (non-functional in most browsers) with
-           a CSS-only subtle radial grain that actually renders */
+        /* ── Noise texture overlay ── */
         body::before {
           content: '';
           position: fixed;
           inset: 0;
-          background:
-            radial-gradient(ellipse at 20% 50%, rgba(232,160,32,0.03) 0%, transparent 60%),
-            radial-gradient(ellipse at 80% 20%, rgba(232,160,32,0.02) 0%, transparent 50%);
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
           pointer-events: none;
           z-index: 0;
         }
@@ -520,7 +444,10 @@ export default function PrivacyPage() {
           text-decoration: none;
           color: var(--white);
         }
-        .nav-logo-icon { width: 32px; height: 32px; }
+        .nav-logo-icon {
+          width: 32px;
+          height: 32px;
+        }
         .nav-logo-text {
           font-family: 'Cormorant Garamond', serif;
           font-size: 1.3rem;
@@ -573,7 +500,10 @@ export default function PrivacyPage() {
           color: var(--white);
           margin-bottom: 1.5rem;
         }
-        .hero-title span { color: var(--gold); font-style: italic; }
+        .hero-title span {
+          color: var(--gold);
+          font-style: italic;
+        }
         .hero-meta {
           display: flex;
           align-items: center;
@@ -586,7 +516,10 @@ export default function PrivacyPage() {
           color: var(--dim);
           letter-spacing: 0.06em;
         }
-        .hero-meta-item strong { color: var(--muted); font-weight: 500; }
+        .hero-meta-item strong {
+          color: var(--muted);
+          font-weight: 500;
+        }
         .hero-divider {
           width: 60px;
           height: 3px;
@@ -666,7 +599,9 @@ export default function PrivacyPage() {
         }
 
         /* ── Content ── */
-        .content { padding-top: 0.5rem; }
+        .content {
+          padding-top: 0.5rem;
+        }
 
         .section {
           margin-bottom: 5rem;
@@ -695,12 +630,14 @@ export default function PrivacyPage() {
           letter-spacing: -0.01em;
           line-height: 1.1;
         }
+
         .para {
           color: var(--muted);
           font-size: 0.95rem;
           line-height: 1.85;
           margin-bottom: 1.2rem;
         }
+
         .subheading {
           font-family: 'Syne', sans-serif;
           font-size: 0.8rem;
@@ -710,6 +647,7 @@ export default function PrivacyPage() {
           color: var(--white);
           margin: 2rem 0 0.8rem;
         }
+
         .highlight-box {
           background: rgba(232, 160, 32, 0.07);
           border: 1px solid rgba(232, 160, 32, 0.25);
@@ -721,6 +659,7 @@ export default function PrivacyPage() {
           color: var(--white);
           line-height: 1.7;
         }
+
         .privacy-list {
           list-style: none;
           margin: 0.5rem 0 1.2rem;
@@ -736,7 +675,7 @@ export default function PrivacyPage() {
         }
         .privacy-list li:last-child { border-bottom: none; }
         .privacy-list li::before {
-          content: '\2014';
+          content: '—';
           color: var(--gold);
           flex-shrink: 0;
           margin-top: 1px;
@@ -781,7 +720,7 @@ export default function PrivacyPage() {
         }
         .privacy-table td:last-child { color: var(--muted); }
 
-        /* Contact */
+        /* Contact items */
         .contact-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -810,9 +749,7 @@ export default function PrivacyPage() {
           font-weight: 500;
         }
 
-        /* FIX #6 — Mobile drawer: was display:none which prevented .open from ever showing.
-           Now uses visibility + opacity + pointer-events instead, with transform for slide.
-           display:block is always set on mobile so the transition can actually play. */
+        /* ── Mobile TOC toggle ── */
         .mobile-toc-toggle {
           display: none;
           position: fixed;
@@ -842,14 +779,11 @@ export default function PrivacyPage() {
           padding: 1.5rem 1.5rem 3rem;
           max-height: 70vh;
           overflow-y: auto;
-          /* FIX: hidden via transform + visibility, NOT display:none */
           transform: translateY(100%);
-          visibility: hidden;
-          transition: transform 0.3s ease, visibility 0.3s ease;
+          transition: transform 0.3s ease;
         }
         .mobile-toc-drawer.open {
           transform: translateY(0);
-          visibility: visible;
         }
         .mobile-toc-handle {
           width: 40px;
@@ -857,12 +791,6 @@ export default function PrivacyPage() {
           background: var(--border);
           border-radius: 2px;
           margin: 0 auto 1.5rem;
-        }
-
-        /* FIX #7 — Mobile toc items: removed inline borderLeft style override
-           (was conflicting with .active CSS border-left rule). Handled in JSX below. */
-        .mobile-toc-drawer .toc-item {
-          border-left: 2px solid transparent;
         }
 
         /* ── Footer ── */
@@ -886,7 +814,10 @@ export default function PrivacyPage() {
           color: var(--muted);
         }
         .footer-brand span { color: var(--gold); }
-        .footer-links { display: flex; gap: 1.5rem; }
+        .footer-links {
+          display: flex;
+          gap: 1.5rem;
+        }
         .footer-links a {
           font-family: 'DM Mono', monospace;
           font-size: 0.7rem;
@@ -910,10 +841,11 @@ export default function PrivacyPage() {
 
         /* ── Responsive ── */
         @media (max-width: 900px) {
-          .layout { grid-template-columns: 1fr; gap: 2rem; }
+          .layout {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+          }
           .toc { display: none; }
-          /* FIX #6 cont. — on mobile, toggle + drawer use display:block so
-             transform transitions work correctly */
           .mobile-toc-toggle { display: block; }
           .mobile-toc-drawer { display: block; }
           .contact-grid { grid-template-columns: 1fr; }
@@ -927,13 +859,15 @@ export default function PrivacyPage() {
         }
       `}</style>
 
+      {/* Progress bar */}
       <ProgressBar />
 
       {/* Nav */}
       <nav className={`nav ${scrolled ? "scrolled" : ""}`}>
         <Link href="/" className="nav-logo">
+          {/* Pyramid SVG mark */}
           <svg className="nav-logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <polygon points="16,3 30,28 2,28"      fill="#E8A020" />
+            <polygon points="16,3 30,28 2,28" fill="#E8A020" />
             <polygon points="16,9.5 26.5,27 5.5,27" fill="#0C0B08" />
             <rect x="7.5" y="19" width="17" height="3" fill="#E8A020" />
           </svg>
@@ -970,7 +904,7 @@ export default function PrivacyPage() {
             <button
               key={s.id}
               className={`toc-item ${activeSection === s.id ? "active" : ""}`}
-              onClick={() => scrollToSection(s.id)}
+              onClick={() => scrollTo(s.id)}
             >
               <span className="toc-item-num">{s.num}</span>
               <span className="toc-item-text">{s.title}</span>
@@ -978,7 +912,7 @@ export default function PrivacyPage() {
           ))}
         </aside>
 
-        {/* Content — FIX #10: renderBlock() uses proper switch with discriminated union */}
+        {/* Content */}
         <main className="content">
           {SECTIONS.map((section) => (
             <section key={section.id} id={section.id} className="section">
@@ -986,7 +920,60 @@ export default function PrivacyPage() {
                 <span className="section-num">{section.num}</span>
                 <h2 className="section-title">{section.title}</h2>
               </div>
-              {section.content.map((block, i) => renderBlock(block, i))}
+
+              {section.content.map((block, i) => {
+                if (block.type === "para") {
+                  return <p key={i} className="para">{block.text}</p>;
+                }
+                if (block.type === "highlight") {
+                  return <div key={i} className="highlight-box">{block.text}</div>;
+                }
+                if (block.type === "subheading") {
+                  return <div key={i} className="subheading">{block.text}</div>;
+                }
+                if (block.type === "list") {
+                  return (
+                    <ul key={i} className="privacy-list">
+                      {block.items!.map((item, j) => (
+                        <li key={j}>{item}</li>
+                      ))}
+                    </ul>
+                  );
+                }
+                if (block.type === "table") {
+                  return (
+                    <table key={i} className="privacy-table">
+                      <thead>
+                        <tr>
+                          <th>Purpose</th>
+                          <th>How we use your information</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {block.rows!.map((row, j) => (
+                          <tr key={j}>
+                            <td>{row.purpose}</td>
+                            <td>{row.detail}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  );
+                }
+                if (block.type === "contact") {
+                  return (
+                    <div key={i} className="contact-grid">
+                      {block.items!.map((item, j) => (
+                        <div key={j} className="contact-card">
+                          <div className="contact-label">{item.label}</div>
+                          <div className="contact-value">{item.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+                return null;
+              })}
             </section>
           ))}
         </main>
@@ -1004,25 +991,21 @@ export default function PrivacyPage() {
         </div>
       </footer>
 
-      {/* Mobile TOC toggle */}
+      {/* Mobile TOC */}
       <button
         className="mobile-toc-toggle"
-        onClick={() => setMenuOpen((v) => !v)}
-        aria-label={menuOpen ? "Close contents" : "Open contents"}
+        onClick={() => setMenuOpen(!menuOpen)}
       >
         {menuOpen ? "✕ Close" : "≡ Contents"}
       </button>
-
-      {/* FIX #6 + #7 — drawer visibility via CSS class, no inline style overrides */}
       <div className={`mobile-toc-drawer ${menuOpen ? "open" : ""}`}>
         <div className="mobile-toc-handle" />
         {SECTIONS.map((s) => (
           <button
             key={s.id}
             className={`toc-item ${activeSection === s.id ? "active" : ""}`}
-            onClick={() => scrollToSection(s.id)}
-            // FIX #7 — removed `style={{ borderLeft: "2px solid transparent" }}`
-            // which was overriding the .active CSS border-left-color rule
+            onClick={() => scrollTo(s.id)}
+            style={{ borderLeft: "2px solid transparent" }}
           >
             <span className="toc-item-num">{s.num}</span>
             <span className="toc-item-text">{s.title}</span>
