@@ -314,7 +314,7 @@ export default function CoachPage() {
               <div style={{
                 position: 'fixed',
                 top: dropdownTop,
-                right: dropdownRight,
+                right: 20,
                 zIndex: 9999,
                 minWidth: 220,
                 background: 'var(--bg-card)',
@@ -379,7 +379,7 @@ export default function CoachPage() {
       </div>{/* end fixed header */}
 
       {/* ── Scrollable message area ─────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto mb-3" style={{ minHeight: 0 }}>
+      <div className="flex-1 overflow-y-auto mb-3 messages-scroll" style={{ minHeight: 0, scrollbarWidth: "none" }}>
 
         {/* Load earlier */}
         {historyLoaded < historyTotal && messages.length > 0 && (
@@ -581,6 +581,10 @@ export default function CoachPage() {
 
       <style>{`
         @keyframes pulse-dot {
+          0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+          40%            { opacity: 1;   transform: scale(1);   }
+        }
+        .messages-scroll::-webkit-scrollbar { display: none; }
           0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
           40%            { opacity: 1;   transform: scale(1);   }
         }
