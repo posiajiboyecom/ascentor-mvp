@@ -46,22 +46,8 @@ export default function CoachPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const selectorRef    = useRef<HTMLDivElement>(null);
 
-  // ── FIX 2: Anchor the dropdown below the button using a ref ──────────────
-  // The original used `position: fixed` with no `top` value — the dropdown
-  // rendered at y=0 (top of viewport) and got hidden behind the header.
-  const selectorBtnRef = useRef<HTMLButtonElement>(null);
-  const [dropdownTop,   setDropdownTop]   = useState(0);
-  const [dropdownRight, setDropdownRight] = useState(16);
-
+  // ── FIX 2: Anchor the dropdown below the button using absolute positioning ─
   const activeSession = SESSION_TYPES.find(t => t.id === sessionType) || SESSION_TYPES[0];
-
-  // Position the dropdown below the button whenever it opens
-  useEffect(() => {
-    if (!selectorOpen || !selectorBtnRef.current) return;
-    const rect = selectorBtnRef.current.getBoundingClientRect();
-    setDropdownTop(rect.bottom + 6);
-    setDropdownRight(window.innerWidth - rect.right);
-  }, [selectorOpen]);
 
   // Close selector when clicking outside
   useEffect(() => {
@@ -294,7 +280,6 @@ export default function CoachPage() {
           {/* Session type selector */}
           <div style={{ position: 'relative' }} ref={selectorRef}>
             <button
-              ref={selectorBtnRef}
               onClick={() => setSelectorOpen(o => !o)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
               style={{
@@ -309,12 +294,12 @@ export default function CoachPage() {
               <span style={{ fontSize: 9, opacity: 0.7 }}>{selectorOpen ? '▲' : '▼'}</span>
             </button>
 
-            {/* Dropdown — anchored via measured position, always on top */}
+            {/* Dropdown — absolutely positioned below button, right-aligned */}
             {selectorOpen && (
               <div style={{
-                position: 'fixed',
-                top: dropdownTop,
-                right: 20,
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                right: 0,
                 zIndex: 9999,
                 minWidth: 220,
                 background: 'var(--bg-card)',
