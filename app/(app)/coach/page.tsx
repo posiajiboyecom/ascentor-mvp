@@ -550,7 +550,7 @@ export default function CoachPage() {
       </div>
 
       {/* ── Input bar — always at bottom ────────────────────────────────── */}
-      <div className="flex gap-2 items-end" style={{ flexShrink: 0, paddingBottom: 12 }}>
+      <div className="flex gap-2 items-end" style={{ flexShrink: 0, paddingBottom: 24 }}>
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
