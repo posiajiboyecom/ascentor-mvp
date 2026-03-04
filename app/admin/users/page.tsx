@@ -150,10 +150,25 @@ export default function AdminUsersPage() {
         .asc-btn-danger:hover     { background: rgba(239,68,68,0.08) !important; }
         .asc-btn-safe:hover       { background: rgba(20,184,166,0.08) !important; }
         .asc-modal-row:last-child { border-bottom: none !important; }
+
+        @media (min-width: 768px) {
+          .asc-table-desktop { display: block !important; }
+          .asc-table-mobile  { display: none !important; }
+          .asc-filters       { flex-direction: row !important; }
+        }
+        @media (max-width: 767px) {
+          .asc-table-desktop { display: none !important; }
+          .asc-table-mobile  { display: flex !important; }
+          .asc-filters       { flex-direction: column !important; }
+          .asc-filters input,
+          .asc-filters select { width: 100% !important; min-width: unset !important; }
+          .asc-page-header   { flex-direction: column !important; align-items: flex-start !important; }
+        }
+        * { box-sizing: border-box; }
       `}</style>
 
       {/* ─── Page Header ────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="asc-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{
             fontFamily: "'Cormorant Garamond', serif",
@@ -190,7 +205,7 @@ export default function AdminUsersPage() {
       )}
 
       {/* ─── Filters ────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <div className="asc-filters" style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <input
           type="text"
           placeholder="Search name, email, referral code..."
@@ -233,145 +248,245 @@ export default function AdminUsersPage() {
             <style>{`@keyframes asc-spin { to { transform: rotate(360deg); } }`}</style>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #2E2A22' }}>
-                  {['User', 'Role', 'Plan', 'Status', 'Joined', 'Actions'].map(h => (
-                    <th key={h} style={{
-                      padding: '12px 16px',
-                      textAlign: 'left',
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: '10px',
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase',
-                      color: '#4A4438',
-                      fontWeight: 500,
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {users.map(u => {
-                  const badge = statusBadge(u.subscription_status, u.banned);
-                  return (
-                    <tr key={u.id} className="asc-tr" style={{ borderBottom: '1px solid #2E2A22', opacity: u.banned ? 0.55 : 1 }}>
+          <>
+            {/* Desktop table */}
+            <div className="asc-table-desktop" style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #2E2A22' }}>
+                    {['User', 'Role', 'Plan', 'Status', 'Joined', 'Actions'].map(h => (
+                      <th key={h} style={{
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontFamily: "'DM Mono', monospace",
+                        fontSize: '10px',
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                        color: '#4A4438',
+                        fontWeight: 500,
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(u => {
+                    const badge = statusBadge(u.subscription_status, u.banned);
+                    return (
+                      <tr key={u.id} className="asc-tr" style={{ borderBottom: '1px solid #2E2A22', opacity: u.banned ? 0.55 : 1 }}>
 
-                      {/* User */}
-                      <td style={{ padding: '13px 16px' }}>
-                        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: '13px', color: '#D4CFC3', marginBottom: '2px' }}>
+                        {/* User */}
+                        <td style={{ padding: '13px 16px' }}>
+                          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: '13px', color: '#D4CFC3', marginBottom: '2px' }}>
+                            {u.full_name || 'Unnamed'}
+                          </div>
+                          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: '#4A4438' }}>{u.email}</div>
+                          {u.current_role && (
+                            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: '#4A4438', marginTop: '2px', letterSpacing: '0.04em' }}>
+                              {u.current_role}{u.industry ? ` · ${u.industry}` : ''}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Role */}
+                        <td style={{ padding: '13px 16px' }}>
+                          <select
+                            value={u.role}
+                            onChange={(e) => doAction(u.id, 'change_role', e.target.value)}
+                            disabled={actionLoading}
+                            className="asc-input"
+                            style={{ ...inputBase, padding: '5px 10px', fontSize: '11px', cursor: 'pointer' }}
+                          >
+                            {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                          </select>
+                        </td>
+
+                        {/* Plan */}
+                        <td style={{ padding: '13px 16px' }}>
+                          <span style={{ ...monoLabel, fontSize: '11px', color: '#7A7260' }}>
+                            {u.subscription_plan || 'free'}
+                          </span>
+                        </td>
+
+                        {/* Status */}
+                        <td style={{ padding: '13px 16px' }}>
+                          <span style={{
+                            padding: '3px 10px',
+                            borderRadius: '100px',
+                            fontFamily: "'DM Mono', monospace",
+                            fontSize: '10px',
+                            fontWeight: 500,
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                            background: badge.bg,
+                            color: badge.color,
+                          }}>
+                            {badge.label}
+                          </span>
+                        </td>
+
+                        {/* Joined */}
+                        <td style={{ padding: '13px 16px', whiteSpace: 'nowrap' }}>
+                          <span style={{ ...monoLabel, fontSize: '11px' }}>{formatDate(u.created_at)}</span>
+                        </td>
+
+                        {/* Actions */}
+                        <td style={{ padding: '13px 16px' }}>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button
+                              onClick={() => setSelectedUser(u)}
+                              className="asc-btn-ghost"
+                              style={{
+                                ...inputBase,
+                                padding: '5px 12px',
+                                fontSize: '11px',
+                                cursor: 'pointer',
+                                color: '#7A7260',
+                              }}
+                            >
+                              View
+                            </button>
+                            {u.banned ? (
+                              <button
+                                onClick={() => doAction(u.id, 'unban')}
+                                disabled={actionLoading}
+                                className="asc-btn-safe"
+                                style={{
+                                  ...inputBase,
+                                  padding: '5px 12px',
+                                  fontSize: '11px',
+                                  cursor: 'pointer',
+                                  color: '#14B8A6',
+                                  borderColor: 'rgba(20,184,166,0.3)',
+                                }}
+                              >
+                                Unban
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => { if (confirm(`Ban ${u.full_name || u.email}?`)) doAction(u.id, 'ban'); }}
+                                disabled={actionLoading}
+                                className="asc-btn-danger"
+                                style={{
+                                  ...inputBase,
+                                  padding: '5px 12px',
+                                  fontSize: '11px',
+                                  cursor: 'pointer',
+                                  color: '#EF4444',
+                                  borderColor: 'rgba(239,68,68,0.3)',
+                                }}
+                              >
+                                Ban
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="asc-table-mobile" style={{ display: 'none', flexDirection: 'column' }}>
+              {users.map(u => {
+                const badge = statusBadge(u.subscription_status, u.banned);
+                return (
+                  <div
+                    key={u.id}
+                    style={{
+                      padding: '16px',
+                      borderBottom: '1px solid #2E2A22',
+                      opacity: u.banned ? 0.6 : 1,
+                    }}
+                  >
+                    {/* Top row: name + status badge */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                      <div>
+                        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: '14px', color: '#D4CFC3' }}>
                           {u.full_name || 'Unnamed'}
                         </div>
-                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: '#4A4438' }}>{u.email}</div>
-                        {u.current_role && (
-                          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: '#4A4438', marginTop: '2px', letterSpacing: '0.04em' }}>
-                            {u.current_role}{u.industry ? ` · ${u.industry}` : ''}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Role */}
-                      <td style={{ padding: '13px 16px' }}>
-                        <select
-                          value={u.role}
-                          onChange={(e) => doAction(u.id, 'change_role', e.target.value)}
-                          disabled={actionLoading}
-                          className="asc-input"
-                          style={{ ...inputBase, padding: '5px 10px', fontSize: '11px', cursor: 'pointer' }}
-                        >
-                          {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                        </select>
-                      </td>
-
-                      {/* Plan */}
-                      <td style={{ padding: '13px 16px' }}>
-                        <span style={{ ...monoLabel, fontSize: '11px', color: '#7A7260' }}>
-                          {u.subscription_plan || 'free'}
-                        </span>
-                      </td>
-
-                      {/* Status */}
-                      <td style={{ padding: '13px 16px' }}>
-                        <span style={{
-                          padding: '3px 10px',
-                          borderRadius: '100px',
-                          fontFamily: "'DM Mono', monospace",
-                          fontSize: '10px',
-                          fontWeight: 500,
-                          letterSpacing: '0.06em',
-                          textTransform: 'uppercase',
-                          background: badge.bg,
-                          color: badge.color,
-                        }}>
-                          {badge.label}
-                        </span>
-                      </td>
-
-                      {/* Joined */}
-                      <td style={{ padding: '13px 16px', whiteSpace: 'nowrap' }}>
-                        <span style={{ ...monoLabel, fontSize: '11px' }}>{formatDate(u.created_at)}</span>
-                      </td>
-
-                      {/* Actions */}
-                      <td style={{ padding: '13px 16px' }}>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button
-                            onClick={() => setSelectedUser(u)}
-                            className="asc-btn-ghost"
-                            style={{
-                              ...inputBase,
-                              padding: '5px 12px',
-                              fontSize: '11px',
-                              cursor: 'pointer',
-                              color: '#7A7260',
-                            }}
-                          >
-                            View
-                          </button>
-                          {u.banned ? (
-                            <button
-                              onClick={() => doAction(u.id, 'unban')}
-                              disabled={actionLoading}
-                              className="asc-btn-safe"
-                              style={{
-                                ...inputBase,
-                                padding: '5px 12px',
-                                fontSize: '11px',
-                                cursor: 'pointer',
-                                color: '#14B8A6',
-                                borderColor: 'rgba(20,184,166,0.3)',
-                              }}
-                            >
-                              Unban
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => { if (confirm(`Ban ${u.full_name || u.email}?`)) doAction(u.id, 'ban'); }}
-                              disabled={actionLoading}
-                              className="asc-btn-danger"
-                              style={{
-                                ...inputBase,
-                                padding: '5px 12px',
-                                fontSize: '11px',
-                                cursor: 'pointer',
-                                color: '#EF4444',
-                                borderColor: 'rgba(239,68,68,0.3)',
-                              }}
-                            >
-                              Ban
-                            </button>
-                          )}
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: '#4A4438', marginTop: '2px' }}>
+                          {u.email}
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '100px',
+                        fontFamily: "'DM Mono', monospace",
+                        fontSize: '10px',
+                        fontWeight: 500,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase' as const,
+                        background: badge.bg,
+                        color: badge.color,
+                        flexShrink: 0,
+                        marginLeft: '8px',
+                      }}>
+                        {badge.label}
+                      </span>
+                    </div>
+
+                    {/* Meta row */}
+                    <div style={{
+                      display: 'flex',
+                      gap: '10px',
+                      flexWrap: 'wrap',
+                      marginBottom: '12px',
+                    }}>
+                      {u.current_role && (
+                        <span style={{ ...monoLabel, fontSize: '10px' }}>{u.current_role}{u.industry ? ` · ${u.industry}` : ''}</span>
+                      )}
+                      <span style={{ ...monoLabel, fontSize: '10px' }}>{u.subscription_plan || 'free'}</span>
+                      <span style={{ ...monoLabel, fontSize: '10px' }}>{formatDate(u.created_at)}</span>
+                    </div>
+
+                    {/* Role select + actions */}
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <select
+                        value={u.role}
+                        onChange={(e) => doAction(u.id, 'change_role', e.target.value)}
+                        disabled={actionLoading}
+                        className="asc-input"
+                        style={{ ...inputBase, padding: '6px 10px', fontSize: '12px', cursor: 'pointer', flex: '1', minWidth: '100px' }}
+                      >
+                        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                      <button
+                        onClick={() => setSelectedUser(u)}
+                        className="asc-btn-ghost"
+                        style={{ ...inputBase, padding: '6px 14px', fontSize: '12px', cursor: 'pointer', color: '#7A7260' }}
+                      >
+                        View
+                      </button>
+                      {u.banned ? (
+                        <button
+                          onClick={() => doAction(u.id, 'unban')}
+                          disabled={actionLoading}
+                          className="asc-btn-safe"
+                          style={{ ...inputBase, padding: '6px 14px', fontSize: '12px', cursor: 'pointer', color: '#14B8A6', borderColor: 'rgba(20,184,166,0.3)' }}
+                        >
+                          Unban
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { if (confirm(`Ban ${u.full_name || u.email}?`)) doAction(u.id, 'ban'); }}
+                          disabled={actionLoading}
+                          className="asc-btn-danger"
+                          style={{ ...inputBase, padding: '6px 14px', fontSize: '12px', cursor: 'pointer', color: '#EF4444', borderColor: 'rgba(239,68,68,0.3)' }}
+                        >
+                          Ban
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 

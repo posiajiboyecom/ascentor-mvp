@@ -188,7 +188,7 @@ export default function AdminMentorsPage() {
 
         {/* ── HEADER ── */}
         <div style={{ marginBottom: '6px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '4px' }}>
+          <div className="ascentor-header-row" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '4px' }}>
             <div>
               {/* Cormorant Garamond display headline — brand spec */}
               <h1 style={{
@@ -237,7 +237,7 @@ export default function AdminMentorsPage() {
         </div>
 
         {/* ── STATS ROW — Stage colors from brand book ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '28px' }}>
+        <div className="ascentor-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '28px' }}>
           {(['pending', 'approved', 'active', 'rejected'] as const).map(s => {
             const cfg = STATUS_CONFIG[s];
             return (
@@ -273,7 +273,7 @@ export default function AdminMentorsPage() {
           })}
         </div>
 
-        <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+        <div className="ascentor-layout" style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
 
           {/* ── LEFT PANEL ── */}
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -497,9 +497,9 @@ export default function AdminMentorsPage() {
             )}
           </div>
 
-          {/* ── RIGHT PANEL — DETAIL ── */}
+          {/* ── RIGHT PANEL — DETAIL (desktop only) ── */}
           {selected && (
-            <div style={{
+            <div className="ascentor-detail-panel" style={{
               width: '420px',
               flexShrink: 0,
               borderRadius: '14px',
@@ -738,19 +738,212 @@ export default function AdminMentorsPage() {
           )}
         </div>
 
+        {/* ── MOBILE BOTTOM SHEET ── */}
+        {selected && (
+          <div className="ascentor-bottom-sheet" style={{ display: 'none' }}>
+            {/* Backdrop */}
+            <div
+              onClick={() => setSelected(null)}
+              style={{
+                position: 'fixed', inset: 0,
+                background: 'rgba(0,0,0,0.65)',
+                backdropFilter: 'blur(3px)',
+                zIndex: 9998,
+              }}
+            />
+            {/* Sheet */}
+            <div
+              className="ascentor-sheet-inner"
+              style={{
+                position: 'fixed',
+                bottom: 0, left: 0, right: 0,
+                background: brand.card,
+                borderTop: `1px solid ${brand.border}`,
+                borderRadius: '18px 18px 0 0',
+                zIndex: 9999,
+                maxHeight: '85vh',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Drag handle */}
+              <div style={{ padding: '12px 0 4px', display: 'flex', justifyContent: 'center' }}>
+                <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: brand.dark600 }} />
+              </div>
+
+              {/* Sheet header */}
+              <div style={{
+                padding: '8px 20px 14px',
+                borderBottom: `1px solid ${brand.border}`,
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                background: brand.dark700,
+              }}>
+                <div>
+                  <p style={{
+                    fontFamily: brand.fontDisplay,
+                    fontWeight: 700,
+                    fontSize: '20px',
+                    color: brand.dark50,
+                    margin: 0,
+                    lineHeight: 1.2,
+                  }}>
+                    {selected.full_name}
+                  </p>
+                  <MonoTag color={brand.dark400}>{selected.email}</MonoTag>
+                </div>
+                <button
+                  onClick={() => setSelected(null)}
+                  style={{
+                    background: 'transparent',
+                    border: `1px solid ${brand.border}`,
+                    borderRadius: '6px',
+                    color: brand.dark400,
+                    fontFamily: brand.fontUI,
+                    fontSize: '16px',
+                    cursor: 'pointer',
+                    padding: '4px 10px',
+                    lineHeight: '20px',
+                    marginTop: '2px',
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Sheet scrollable content */}
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+                {/* Status + actions */}
+                <div style={{ padding: '16px 20px', borderBottom: `1px solid ${brand.border}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                    <StatusPill status={selected.status} />
+                    <MonoTag color={brand.dark500}>Applied {fmt(selected.applied_at)}</MonoTag>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {selected.status !== 'approved' && (
+                      <ActionButton label="✓ Approve" bg="rgba(20,184,166,0.08)" color="#14B8A6" border="rgba(20,184,166,0.25)" onClick={() => updateStatus(selected.id, 'approved')} />
+                    )}
+                    {selected.status !== 'active' && (
+                      <ActionButton label="▶ Activate" bg="rgba(139,92,246,0.08)" color="#8B5CF6" border="rgba(139,92,246,0.25)" onClick={() => updateStatus(selected.id, 'active')} />
+                    )}
+                    {selected.status !== 'rejected' && (
+                      <ActionButton label="✕ Reject" bg="rgba(239,68,68,0.06)" color="#EF4444" border="rgba(239,68,68,0.18)" onClick={() => updateStatus(selected.id, 'rejected')} />
+                    )}
+                    <ActionButton label="📝 Note" bg="transparent" color={brand.dark400} border={brand.border} onClick={() => handleAddNote(selected)} />
+                    <ActionButton label="🗑 Delete" bg="rgba(239,68,68,0.04)" color="#EF4444" border="rgba(239,68,68,0.15)" onClick={() => handleDelete(selected)} />
+                  </div>
+                </div>
+
+                {/* Profile fields */}
+                <div style={{ padding: '16px 20px', borderBottom: `1px solid ${brand.border}` }}>
+                  <MonoTag color={brand.dark500}>Profile</MonoTag>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+                    {[
+                      ['Role', `${selected.role_title} · ${selected.company}`],
+                      ['Industry', selected.industry],
+                      ['Experience', selected.years_experience],
+                      ['Country', selected.country],
+                      ['Phone', selected.phone || '—'],
+                      ['Availability', `${selected.availability_hours} hrs/month`],
+                      ['Mentored Before', selected.has_mentored_before],
+                      ['Age Groups', selected.age_groups],
+                    ].map(([k, v]) => (
+                      <div key={k} style={{ display: 'flex', gap: '12px' }}>
+                        <span style={{
+                          fontFamily: brand.fontMono,
+                          fontSize: '10px',
+                          fontWeight: 500,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase' as const,
+                          color: brand.dark500,
+                          width: '90px',
+                          flexShrink: 0,
+                          paddingTop: '2px',
+                        }}>
+                          {k}
+                        </span>
+                        <span style={{ fontFamily: brand.fontUI, fontSize: '13px', fontWeight: 500, color: brand.dark200, lineHeight: 1.5 }}>
+                          {v}
+                        </span>
+                      </div>
+                    ))}
+                    {selected.linkedin_url && (
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <span style={{
+                          fontFamily: brand.fontMono, fontSize: '10px', fontWeight: 500,
+                          letterSpacing: '0.05em', textTransform: 'uppercase' as const,
+                          color: brand.dark500, width: '90px', flexShrink: 0, paddingTop: '2px',
+                        }}>LinkedIn</span>
+                        <a href={selected.linkedin_url} target="_blank" rel="noreferrer"
+                          style={{ fontFamily: brand.fontUI, fontSize: '13px', fontWeight: 600, color: brand.gold, textDecoration: 'none' }}>
+                          View profile →
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Written responses */}
+                {[
+                  { label: 'Career Summary', value: selected.career_summary },
+                  { label: 'Why They Want to Mentor', value: selected.why_mentor },
+                  { label: 'Mentoring Style', value: selected.mentor_style },
+                  ...(selected.success_story ? [{ label: 'Success Story', value: selected.success_story }] : []),
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ padding: '16px 20px', borderBottom: `1px solid ${brand.border}` }}>
+                    <MonoTag color={brand.dark500}>{label}</MonoTag>
+                    <p style={{ fontFamily: brand.fontUI, fontSize: '13px', fontWeight: 400, color: brand.dark200, lineHeight: 1.7, margin: '10px 0 0' }}>
+                      {value}
+                    </p>
+                  </div>
+                ))}
+
+                {selected.notes && (
+                  <div style={{ padding: '16px 20px', background: brand.goldMuted, borderLeft: `3px solid ${brand.gold}` }}>
+                    <MonoTag color={brand.gold}>Internal Notes</MonoTag>
+                    <p style={{ fontFamily: brand.fontUI, fontSize: '13px', color: brand.dark50, lineHeight: 1.7, margin: '10px 0 0' }}>
+                      {selected.notes}
+                    </p>
+                  </div>
+                )}
+
+                {/* Safe bottom padding for home indicator */}
+                <div style={{ height: '32px' }} />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Responsive overrides ── */}
         <style>{`
           @media (min-width: 768px) {
             .ascentor-table-desktop { display: block !important; }
             .ascentor-table-mobile  { display: none   !important; }
+            .ascentor-detail-panel  { display: block !important; position: sticky !important; }
+            .ascentor-bottom-sheet  { display: none !important; }
           }
           @media (max-width: 767px) {
             .ascentor-table-desktop { display: none   !important; }
             .ascentor-table-mobile  { display: flex   !important; }
+            .ascentor-layout        { flex-direction: column !important; }
+            .ascentor-detail-panel  { display: none !important; }
+            .ascentor-bottom-sheet  { display: block !important; }
+            .ascentor-stats-grid    { grid-template-columns: repeat(2, 1fr) !important; }
+            .ascentor-header-row    { flex-direction: column !important; align-items: flex-start !important; }
           }
           input::placeholder { color: #4A4438; }
           input:focus { border-color: rgba(232,160,32,0.35) !important; }
           * { box-sizing: border-box; }
+
+          /* Bottom sheet animation */
+          @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
+          }
+          .ascentor-sheet-inner {
+            animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+          }
         `}</style>
       </div>
     </>
