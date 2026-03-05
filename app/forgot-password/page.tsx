@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import PasswordInput from '@/components/PasswordInput';
 
 const B = {
   fontDisplay: "'Cormorant Garamond', Georgia, serif",
@@ -19,6 +17,7 @@ const B = {
   dark50:      '#F7F6F3',
   gold:        '#E8A020',
   gold600:     '#C87820',
+  goldMuted:   'rgba(232,160,32,0.10)',
   goldBorder:  'rgba(232,160,32,0.25)',
   border:      'rgba(212,207,195,0.10)',
   error:       '#EF4444',
@@ -27,58 +26,45 @@ const B = {
   successMuted:'rgba(34,197,94,0.08)',
 };
 
-export default function ResetPasswordPage() {
+export default function ForgotPasswordPage() {
   const supabase = createClient();
-  const router   = useRouter();
 
-  const [password,  setPassword]  = useState('');
-  const [confirm,   setConfirm]   = useState('');
-  const [error,     setError]     = useState<string | null>(null);
-  const [success,   setSuccess]   = useState(false);
-  const [loading,   setLoading]   = useState(false);
-  const [validLink, setValidLink] = useState<boolean | null>(null); // null = checking
-
-  // Supabase puts the recovery token in the URL hash.
-  // We need to let the SDK pick it up via onAuthStateChange.
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setValidLink(true);
-      }
-    });
-
-    // Give it a moment to fire — if not, link is invalid/expired
-    const timer = setTimeout(() => {
-      setValidLink(v => v === null ? false : v);
-    }, 2000);
-
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(timer);
-    };
-  }, []);
+  const [email,   setEmail]   = useState('');
+  const [error,   setError]   = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
     setError(null);
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
-      return;
-    }
-    if (password !== confirm) {
-      setError('Passwords do not match.');
-      return;
+    // Step 1 — verify this email exists in our system before sending anything
+    try {
+      const res = await fetch('/api/auth/check-email', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: email.toLowerCase().trim() }),
+      });
+      const { exists } = await res.json();
+      if (!exists) {
+        setError('No account found with that email address. Please check and try again, or sign up.');
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Network error — proceed anyway so we don\'t block legitimate users
     }
 
-    setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    // Step 2 — email is registered, send the reset link
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
 
     if (error) {
       setError(error.message);
     } else {
       setSuccess(true);
-      setTimeout(() => router.push('/dashboard'), 2500);
     }
     setLoading(false);
   }
@@ -154,6 +140,21 @@ export default function ResetPasswordPage() {
           background: linear-gradient(90deg, ${B.gold} 0%, transparent 70%);
           margin: 28px 0;
         }
+        .asc-input {
+          width: 100%;
+          padding: 13px 16px;
+          border-radius: 10px;
+          border: 1px solid ${B.border};
+          background: ${B.dark700};
+          color: ${B.dark50};
+          font-family: ${B.fontUI};
+          font-size: 14px;
+          outline: none;
+          transition: border-color 0.15s ease;
+        }
+        .asc-input::placeholder { color: ${B.dark500}; }
+        .asc-input:focus        { border-color: ${B.goldBorder}; }
+
         .asc-btn-primary {
           width: 100%;
           padding: 14px 24px;
@@ -188,16 +189,6 @@ export default function ResetPasswordPage() {
           background: ${B.successMuted};
           border: 1px solid rgba(34,197,94,0.2);
           color: ${B.success};
-          font-family: ${B.fontUI};
-          font-size: 13px;
-          line-height: 1.6;
-        }
-        .asc-expired {
-          padding: 14px 16px;
-          border-radius: 10px;
-          background: ${B.errorMuted};
-          border: 1px solid rgba(239,68,68,0.2);
-          color: ${B.error};
           font-family: ${B.fontUI};
           font-size: 13px;
           line-height: 1.6;
@@ -244,56 +235,36 @@ export default function ResetPasswordPage() {
             </div>
 
             <h1 style={{ fontFamily: B.fontDisplay, fontWeight: 700, fontSize: 'clamp(28px, 4vw, 36px)', color: B.dark50, margin: '0 0 6px', lineHeight: 1.15 }}>
-              Choose a new password.
+              Reset your password.
             </h1>
             <p style={{ fontFamily: B.fontUI, fontSize: '14px', color: B.dark400, margin: '0 0 28px', lineHeight: 1.6 }}>
-              Make it strong — at least 8 characters.
+              Enter your email and we'll send you a reset link.
             </p>
 
             <div className="asc-rule" />
 
-            {/* Checking link validity */}
-            {validLink === null && (
-              <p style={{ fontFamily: B.fontMono, fontSize: '11px', color: B.dark500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Verifying link…
-              </p>
-            )}
-
-            {/* Link expired or invalid */}
-            {validLink === false && (
-              <div className="asc-expired">
-                This reset link has expired or is invalid.{' '}
-                <Link href="/forgot-password" style={{ color: B.error, fontWeight: 600 }}>
-                  Request a new one →
-                </Link>
-              </div>
-            )}
-
-            {/* Success state */}
-            {success && (
+            {success ? (
               <div className="asc-success">
-                ✓ Password updated. Redirecting you to your dashboard…
+                ✓ Check your inbox — a reset link is on its way to <strong>{email}</strong>.
+                <br /><br />
+                The link expires in 1 hour. Check your spam folder if you don't see it.
               </div>
-            )}
-
-            {/* Form — shown only when link is valid and not yet succeeded */}
-            {validLink === true && !success && (
+            ) : (
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <PasswordInput
-                  value={password}
-                  onChange={setPassword}
-                  placeholder="New password"
-                />
-                <PasswordInput
-                  value={confirm}
-                  onChange={setConfirm}
-                  placeholder="Confirm new password"
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="Email address"
+                  className="asc-input"
+                  autoFocus
                 />
 
                 {error && <div className="asc-error">{error}</div>}
 
                 <button type="submit" disabled={loading} className="asc-btn-primary" style={{ marginTop: '4px' }}>
-                  {loading ? 'Updating…' : 'Update Password'}
+                  {loading ? 'Sending…' : 'Send Reset Link'}
                 </button>
               </form>
             )}
