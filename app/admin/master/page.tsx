@@ -708,9 +708,7 @@ export default function MasterAdminPage() {
                   if (item.type === 'LinkedIn Post') return cd.content || cd.hook || null;
                   if (item.type === 'Twitter Thread') {
                     const tweets = [cd.opener, ...(cd.tweets || []), cd.cta].filter(Boolean);
-                    return tweets.join('
-
-');
+                    return tweets.join('\n\n');
                   }
                   if (item.type === 'Email Newsletter') return cd.body || cd.subject || null;
                   return JSON.stringify(cd, null, 2);
