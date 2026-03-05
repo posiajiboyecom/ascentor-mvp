@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import SageLoader from '@/components/SageLoader';
 
 // ============================================================
 // MASTER ADMIN — /admin/master
@@ -47,7 +48,6 @@ interface ContentItem {
   status: 'draft' | 'scheduled' | 'published';
   platform: string;
   scheduled_for: string | null;
-  content_data?: Record<string, any> | null;
 }
 
 interface LeadMagnet {
@@ -412,13 +412,7 @@ export default function MasterAdminPage() {
         ))}
       </div>
 
-      {isLoading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 0', color: '#4A4438', fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: '0.1em' }}>
-          <div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid #2E2A22', borderTopColor: '#E8A020', animation: 'ma-spin 0.7s linear infinite' }} />
-          <style>{`@keyframes ma-spin { to { transform: rotate(360deg); } }`}</style>
-          LOADING...
-        </div>
-      )}
+      {isLoading && <SageLoader message="Loading…" />}
 
       {/* ══════════════════════════════════════════════════════════════════ */}
       {/* TAB 1 — KPI DASHBOARD                                            */}

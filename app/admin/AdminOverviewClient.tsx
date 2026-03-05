@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import SageLoader from '@/components/SageLoader';
 
 export default function AdminOverviewClient() {
   const supabase = createClient();
@@ -114,12 +115,7 @@ export default function AdminOverviewClient() {
   const maxSessions = Math.max(...dailyActivity.map((d) => d.sessions), 1);
 
   if (loading) {
-    return (
-      <div className="py-20 text-center">
-        <div className="text-2xl mb-2">⏳</div>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading dashboard...</p>
-      </div>
-    );
+    return <SageLoader fullScreen message="Loading dashboard…" />;
   }
 
   return (
