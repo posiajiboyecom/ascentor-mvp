@@ -14,11 +14,12 @@ const AGENT_REGISTRY = [
   {
     id: "1",
     name: "Content Researcher",
-    triggerTaskId: null, // Not yet implemented — uses Perplexity (external)
-    type: "manual",
-    description: "Perplexity AI → trending African leadership topics → saves research brief",
-    schedule: "Monday 06:00 WAT",
-    toolStack: "Perplexity + Notion",
+    triggerTaskId: "content-researcher-agent",
+    type: "scheduled",
+    description: "SerpAPI Google Trends + Perplexity deep research → Claude brief → auto-triggers Content Writer",
+    schedule: "Monday 05:00 UTC (06:00 WAT)",
+    toolStack: "SerpAPI + Perplexity + Claude + Supabase",
+    requiresPayload: false,
   },
   {
     id: "2",

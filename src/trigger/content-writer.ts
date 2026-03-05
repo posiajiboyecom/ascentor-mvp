@@ -33,10 +33,10 @@ export const contentWriterAgent = task({
 
     // Log the handoff from Researcher if present
     if (payload.briefId) {
-      console.log(\`[Content Writer] Received brief from Researcher — briefId: \${payload.briefId}\`);
+      console.log(`[Content Writer] Received brief from Researcher — briefId: ${payload.briefId}`);
     }
 
-    console.log(`[Content Writer] Starting for topic: "${topic}" | pillar: ${pillar}`);
+    console.log(`[Content Writer] Starting — topic: "${topic}" | pillar: ${pillar} | from: ${triggeredBy}`);
 
     // ── 1. Blog Post ──────────────────────────────────────
     const blogRes = await anthropic.messages.create({
@@ -84,6 +84,9 @@ Return ONLY valid JSON:
 
 Topic: "${topic}"
 
+${hooks.length > 0 ? `Use one of these proven hooks as the opening line for your best post:\n${hooks.map((h, i) => `${i+1}. ${h}`).join('\n')}` : ''}
+${dataPoints.length > 0 ? `Weave in these data points where relevant:\n${dataPoints.map(d => `- ${d}`).join('\n')}` : ''}
+
 Write 5 LinkedIn posts following the 4-1-1 rule:
 - 4 pure value posts (no selling)
 - 1 social proof post (community/member success)
@@ -114,6 +117,8 @@ Return ONLY valid JSON:
         content: `You write viral Twitter/X threads for Ascentor — AI leadership coaching for Africa.
 
 Topic: "${topic}"
+
+${hooks.length > 0 ? `Use these as thread opener inspiration:\n${hooks.map((h, i) => `${i+1}. ${h}`).join('\n')}` : ''}
 
 Write 3 Twitter threads, each 5–7 tweets.
 Make thread openers punchy and curiosity-driven.
@@ -150,6 +155,9 @@ Topic: "${topic}"
 Length: 400–600 words
 Style: Personal, warm, like a letter from a mentor. No corporate speak.
 Structure: Hook → Insight → Practical takeaway → Soft CTA to try Ascentor
+
+${dataPoints.length > 0 ? `Anchor the insight with these real data points:\n${dataPoints.map(d => `- ${d}`).join('\n')}` : ''}
+${hooks.length > 2 ? `Subject line inspiration: ${hooks[2]}` : ''}
 
 Return ONLY valid JSON:
 {

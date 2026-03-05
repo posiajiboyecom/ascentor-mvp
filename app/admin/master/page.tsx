@@ -172,7 +172,7 @@ export default function MasterAdminPage() {
   const [content,   setContent]         = useState<ContentItem[]>([]);
   const [magnets,   setMagnets]         = useState<LeadMagnet[]>([]);
   const [social,    setSocial]          = useState<SocialPost[]>([]);
-  const [agents,    setAgents]          = useState<AgentStatus[]>(AGENTS);
+  const [agents,    setAgents]          = useState<AgentStatus[]>([]);
   const [loading,   setLoading]         = useState<Record<string, boolean>>({});
   const [msg,       setMsg]             = useState('');
   const [filterPillar, setFilterPillar] = useState('all');
