@@ -224,10 +224,12 @@ export default function AdminShell({
   children,
   name,
   role,
+  userPermissions,
 }: {
   children: React.ReactNode;
   name: string;
   role: string;
+  userPermissions?: string[] | null;
 }) {
   const pathname  = usePathname();
   const router    = useRouter();

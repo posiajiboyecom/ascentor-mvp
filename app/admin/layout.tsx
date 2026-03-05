@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role')
+    .select('full_name, role, permissions')
     .eq('id', user.id)
     .single();
 
@@ -20,7 +20,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <AdminShell name={profile.full_name || user.email || 'Admin'} role={profile.role}>
+    <AdminShell
+      name={profile.full_name || user.email || 'Admin'}
+      role={profile.role}
+      userPermissions={(profile.permissions as string[] | null) ?? null}
+    >
       <div className="admin-wrapper">
         <style>{`
           .admin-wrapper table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -31,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             .admin-wrapper button { white-space: nowrap; font-size: 0.75rem; }
             .admin-wrapper select { font-size: 0.75rem; }
           }
-        `}</style>
+        \`}</style>
         {children}
       </div>
     </AdminShell>
