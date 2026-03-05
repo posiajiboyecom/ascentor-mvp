@@ -791,7 +791,7 @@ export default function LandingPage() {
               <ul className="lp-footer-links">
                 <li><Link href="/pricing">Pricing</Link></li>
                 {hasBlogPosts && <li><Link href="/blog">Blog</Link></li>}
-                <li><Link href="/teams">For Teams</Link></li>
+                <li><Link href="https://ascentor.zohobookings.com/#/4738058000000052054">For Teams</Link></li>
                 <li><Link href="/mentor-apply">Become a Mentor</Link></li>
                 <li><Link href="/signup">Start Free Trial</Link></li>
               </ul>
@@ -808,7 +808,7 @@ export default function LandingPage() {
             <div>
               <div className="lp-footer-col-title">Connect</div>
               <ul className="lp-footer-links">
-                <li><a href="mailto:hello@ascentorbi.com">hello@ascentor.co</a></li>
+                <li><a href="mailto:asamuel@ascentorbi.com">hello@ascentorbi.com</a></li>
                 <li><a href="https://x.com/ascentorhq" target="_blank" rel="noreferrer">Twitter / X</a></li>
                 <li><a href="https://linkedin.com/company/ascentorhq" target="_blank" rel="noreferrer">LinkedIn</a></li>
                 <li><a href="https://www.instagram.com/ascentor.ai/" target="_blank" rel="noreferrer">Instagram</a></li>
