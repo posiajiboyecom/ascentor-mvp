@@ -560,7 +560,7 @@ export default function AboutPage() {
                 }}>GC</span>
               </div>
               <div style={{ textAlign: 'left' }}>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: '#D4CFC3', margin: 0 }}>Gregory Cudjoe</p>
+                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: '#D4CFC3', margin: 0 }}>'Posi Ajiboye</p>
                 <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#4A4438', margin: 0 }}>Founder & CEO</p>
               </div>
             </div>
