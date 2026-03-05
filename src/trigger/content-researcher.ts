@@ -36,7 +36,6 @@ type Pillar = typeof PILLAR_ROTATION[number];
 // ── Rate-limit-safe Claude caller ────────────────────────────
 // Retries on 429 with exponential backoff. Also enforces a
 // minimum inter-call delay so sequential calls never burst.
-const MIN_DELAY_MS = 8_000; // 8 s between calls (~7 calls/min max)
 
 async function claudeWithRetry(
   fn: () => Promise<Anthropic.Message>,
@@ -89,7 +88,7 @@ async function claudeWebSearch(
     .trim();
 }
 
-// ── Helper: call Claude without tools ────────────────────────
+// ── Helper: call Claude without tools (Haiku — cheap structured tasks) ───────
 async function claudeChat(
   prompt: string,
   maxTokens = 1000,
@@ -98,7 +97,7 @@ async function claudeChat(
   const response = await claudeWithRetry(
     () =>
       anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-haiku-4-5-20251001", // Haiku: ~20× cheaper, great for JSON synthesis
         max_tokens: maxTokens,
         messages: [{ role: "user", content: prompt }],
       }),
@@ -155,8 +154,6 @@ async function discoverTrends(pillar: Pillar): Promise<{
 
 // ── Step 2: Deep research on the chosen topic ─────────────────
 async function deepResearch(topic: string, pillar: Pillar): Promise<string> {
-  // Mandatory pause before second API call
-  await new Promise((r) => setTimeout(r, MIN_DELAY_MS));
 
   const raw = await claudeWebSearch(
     `You are a research assistant for Ascentor, an AI coaching platform for ambitious African professionals.\n\n` +
@@ -198,8 +195,6 @@ async function buildContentBrief(params: {
   estimatedEngagement: string;
   urgencyReason: string;
 }> {
-  // Mandatory pause before third API call
-  await new Promise((r) => setTimeout(r, MIN_DELAY_MS));
 
   // Trim research to avoid bloating input tokens — keep first 1500 chars
   const researchTrimmed = params.research.length > 1500
@@ -268,7 +263,7 @@ async function buildContentBrief(params: {
 export const contentResearcherAgent = schedules.task({
   id: "content-researcher-agent",
   cron: "0 5 * * 1", // Every Monday 05:00 UTC = 06:00 WAT
-  maxDuration: 300,   // Increased to 5 min to accommodate retry delays
+  maxDuration: 120,   // 2 min — no proactive delays, retries only on actual 429s
   retry: { maxAttempts: 2 },
   run: async () => {
     console.log("[Researcher] Starting weekly research...");
@@ -318,8 +313,6 @@ export const contentResearcherAgent = schedules.task({
 
     if (error) console.error("[Researcher] Supabase error:", error);
 
-    // Step 5 — Pause before triggering Content Writer so tokens reset
-    await new Promise((r) => setTimeout(r, MIN_DELAY_MS));
 
     const writerHandle = await tasks.trigger("content-writer-agent", {
       topic:       brief.chosenTopic,

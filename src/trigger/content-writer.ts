@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════
 // Agent 2: Content Writer
 // Triggered manually or after Research Agent completes.
-// Uses Claude Haiku (cost-optimised) to write: 1 blog post, 5 LinkedIn posts,
+// Uses Claude to write: 1 blog post, 5 LinkedIn posts,
 // 3 Twitter threads, 1 newsletter segment.
 // Saves all output to content_calendar in Supabase.
 // ═══════════════════════════════════════════════════════════
@@ -16,8 +16,49 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+
+// ── Rate-limit-safe Claude caller ────────────────────────────
+async function claudeWithRetry(
+  fn: () => Promise<Anthropic.Message>,
+  label: string,
+  maxAttempts = 4
+): Promise<Anthropic.Message> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      const is429 = err?.status === 429 || err?.error?.type === "rate_limit_error";
+      if (is429 && attempt < maxAttempts) {
+        const retryAfter = err?.headers?.["retry-after"];
+        const waitMs = retryAfter
+          ? parseInt(retryAfter, 10) * 1000
+          : Math.min(15_000 * Math.pow(2, attempt - 1), 120_000);
+        console.warn(`[${label}] Rate limited (attempt ${attempt}/${maxAttempts}). Waiting ${waitMs / 1000}s…`);
+        await new Promise((r) => setTimeout(r, waitMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error(`[${label}] Exhausted ${maxAttempts} attempts`);
+}
+
+async function claudeChat(prompt: string, maxTokens: number, label: string): Promise<string> {
+  const res = await claudeWithRetry(
+    () => anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001", // Haiku: ~20× cheaper, great for structured writing
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: prompt }],
+    }),
+    label
+  );
+  const block = res.content[0];
+  return block.type === "text" ? block.text : "";
+}
+
 export const contentWriterAgent = task({
   id: "content-writer-agent",
+  maxDuration: 120,
   retry: { maxAttempts: 2 },
   run: async (payload: {
     topic: string;
@@ -31,178 +72,118 @@ export const contentWriterAgent = task({
   }) => {
     const { topic, pillar, week = 1, triggeredBy = "manual", hooks = [], keyMessages = [], dataPoints = [] } = payload;
 
-    // Log the handoff from Researcher if present
     if (payload.briefId) {
       console.log(`[Content Writer] Received brief from Researcher — briefId: ${payload.briefId}`);
     }
-
     console.log(`[Content Writer] Starting — topic: "${topic}" | pillar: ${pillar} | from: ${triggeredBy}`);
 
+    const keyMsgsBlock = keyMessages.length > 0
+      ? `Key messages to weave in:\n${keyMessages.map((m, i) => `${i+1}. ${m}`).join("\n")}`
+      : "";
+    const dataBlock = dataPoints.length > 0
+      ? `Data points to include:\n${dataPoints.map(d => `- ${d}`).join("\n")}`
+      : "";
+    const hooksBlock = hooks.length > 0
+      ? `Use one of these proven hooks as the opening line for your best post:\n${hooks.map((h, i) => `${i+1}. ${h}`).join("\n")}`
+      : "";
+
     // ── 1. Blog Post ──────────────────────────────────────
-    const blogRes = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 900,
-      messages: [{
-        role: "user",
-        content: `You are a content writer for Ascentor, an AI leadership coaching platform for African professionals.
+    const blogText = await claudeChat(
+      `You are a content writer for Ascentor, an AI leadership coaching platform for African professionals.\n\n` +
+      `Write a compelling blog post on this topic: "${topic}"\n\n` +
+      `${keyMsgsBlock}\n${dataBlock}\n\n` +
+      `The post should:\n` +
+      `- Target ambitious African professionals (students to C-suite)\n` +
+      `- Be 600–800 words\n` +
+      `- Have a strong headline, 3–4 subheadings, and a CTA at the end\n` +
+      `- Feel personal and authoritative, not generic\n` +
+      `- Reference African business context where relevant\n\n` +
+      `Return ONLY valid JSON:\n` +
+      `{\n  "title": "Post headline",\n  "content": "Full blog post in markdown",\n  "meta_description": "160 char SEO description",\n  "cta": "Call-to-action sentence"\n}`,
+      1500,
+      "blog"
+    );
 
-Write a compelling blog post on this topic: "${topic}"
-
-${keyMessages.length > 0 ? `Key messages to weave in:\n${keyMessages.map((m, i) => `${i+1}. ${m}`).join('\n')}` : ''}
-${dataPoints.length > 0 ? `Data points to include:\n${dataPoints.map(d => `- ${d}`).join('\n')}` : ''}
-
-The post should:
-- Target ambitious African professionals (students to C-suite)
-- Be 600–800 words
-- Have a strong headline, 3–4 subheadings, and a CTA at the end
-- Feel personal and authoritative, not generic
-- Reference African business context where relevant
-
-Return ONLY valid JSON:
-{
-  "title": "Post headline",
-  "content": "Full blog post in markdown",
-  "meta_description": "160 char SEO description",
-  "cta": "Call-to-action sentence"
-}`,
-      }],
-    });
-
-    let blog: any = {};
-    try {
-      const blogText = blogRes.content[0].type === "text" ? blogRes.content[0].text : "";
-      blog = JSON.parse(blogText.replace(/```json|```/g, "").trim());
-    } catch { blog = { title: topic, content: "Draft pending review", meta_description: "", cta: "" }; }
+    let blog: any = { title: topic, content: "Draft pending review", meta_description: "", cta: "" };
+    try { blog = JSON.parse(blogText.replace(/```json|```/g, "").trim()); } catch {}
 
     // ── 2. LinkedIn Posts (5) ─────────────────────────────
-    const linkedinRes = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 900,
-      messages: [{
-        role: "user",
-        content: `You write LinkedIn content for Ascentor — an AI coaching platform for African professionals.
 
-Topic: "${topic}"
-
-${hooks.length > 0 ? `Use one of these proven hooks as the opening line for your best post:\n${hooks.map((h, i) => `${i+1}. ${h}`).join('\n')}` : ''}
-${dataPoints.length > 0 ? `Weave in these data points where relevant:\n${dataPoints.map(d => `- ${d}`).join('\n')}` : ''}
-
-Write 5 LinkedIn posts following the 4-1-1 rule:
-- 4 pure value posts (no selling)
-- 1 social proof post (community/member success)
-- Each post: 150–300 words, strong hook first line, line breaks for readability
-
-Return ONLY valid JSON:
-{
-  "posts": [
-    { "type": "value", "hook": "First line hook", "content": "Full post text" },
-    ...
-  ]
-}`,
-      }],
-    });
+    const liText = await claudeChat(
+      `You write LinkedIn content for Ascentor — an AI coaching platform for African professionals.\n\n` +
+      `Topic: "${topic}"\n\n` +
+      `${hooksBlock}\n${dataBlock}\n\n` +
+      `Write 5 LinkedIn posts following the 4-1-1 rule:\n` +
+      `- 4 pure value posts (no selling)\n` +
+      `- 1 social proof post (community/member success)\n` +
+      `- Each post: 150–300 words, strong hook first line, line breaks for readability\n\n` +
+      `Return ONLY valid JSON:\n` +
+      `{\n  "posts": [\n    { "type": "value", "hook": "First line hook", "content": "Full post text" }\n  ]\n}`,
+      1200,
+      "linkedin"
+    );
 
     let linkedin: any = { posts: [] };
-    try {
-      const liText = linkedinRes.content[0].type === "text" ? linkedinRes.content[0].text : "";
-      linkedin = JSON.parse(liText.replace(/```json|```/g, "").trim());
-    } catch { linkedin = { posts: [] }; }
+    try { linkedin = JSON.parse(liText.replace(/```json|```/g, "").trim()); } catch {}
 
     // ── 3. Twitter/X Threads (3) ─────────────────────────
-    const twitterRes = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 700,
-      messages: [{
-        role: "user",
-        content: `You write viral Twitter/X threads for Ascentor — AI leadership coaching for Africa.
 
-Topic: "${topic}"
-
-${hooks.length > 0 ? `Use these as thread opener inspiration:\n${hooks.map((h, i) => `${i+1}. ${h}`).join('\n')}` : ''}
-
-Write 3 Twitter threads, each 5–7 tweets.
-Make thread openers punchy and curiosity-driven.
-End each thread with a soft CTA.
-
-Return ONLY valid JSON:
-{
-  "threads": [
-    {
-      "opener": "First tweet (hook)",
-      "tweets": ["tweet 1", "tweet 2", "tweet 3", "tweet 4", "tweet 5"],
-      "cta": "Last tweet CTA"
-    }
-  ]
-}`,
-      }],
-    });
+    const twText = await claudeChat(
+      `You write viral Twitter/X threads for Ascentor — AI leadership coaching for Africa.\n\n` +
+      `Topic: "${topic}"\n\n` +
+      `${hooksBlock}\n\n` +
+      `Write 3 Twitter threads, each 5–7 tweets.\n` +
+      `Make thread openers punchy and curiosity-driven.\n` +
+      `End each thread with a soft CTA.\n\n` +
+      `Return ONLY valid JSON:\n` +
+      `{\n  "threads": [\n    {\n      "opener": "First tweet (hook)",\n      "tweets": ["tweet 1", "tweet 2", "tweet 3", "tweet 4", "tweet 5"],\n      "cta": "Last tweet CTA"\n    }\n  ]\n}`,
+      1000,
+      "twitter"
+    );
 
     let twitter: any = { threads: [] };
-    try {
-      const twText = twitterRes.content[0].type === "text" ? twitterRes.content[0].text : "";
-      twitter = JSON.parse(twText.replace(/```json|```/g, "").trim());
-    } catch { twitter = { threads: [] }; }
+    try { twitter = JSON.parse(twText.replace(/```json|```/g, "").trim()); } catch {}
 
     // ── 4. Newsletter segment ─────────────────────────────
-    const newsletterRes = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 600,
-      messages: [{
-        role: "user",
-        content: `Write a newsletter segment for "The African Leader" — Ascentor's weekly email.
 
-Topic: "${topic}"
-Length: 400–600 words
-Style: Personal, warm, like a letter from a mentor. No corporate speak.
-Structure: Hook → Insight → Practical takeaway → Soft CTA to try Ascentor
+    const nlText = await claudeChat(
+      `Write a newsletter segment for "The African Leader" — Ascentor's weekly email.\n\n` +
+      `Topic: "${topic}"\n` +
+      `Length: 400–600 words\n` +
+      `Style: Personal, warm, like a letter from a mentor. No corporate speak.\n` +
+      `Structure: Hook → Insight → Practical takeaway → Soft CTA to try Ascentor\n\n` +
+      `${dataBlock}\n` +
+      `${hooks.length > 2 ? `Subject line inspiration: ${hooks[2]}` : ""}\n\n` +
+      `Return ONLY valid JSON:\n` +
+      `{\n  "subject": "Email subject line",\n  "preview_text": "Email preview text (90 chars)",\n  "body": "Full newsletter body in markdown"\n}`,
+      800,
+      "newsletter"
+    );
 
-${dataPoints.length > 0 ? `Anchor the insight with these real data points:\n${dataPoints.map(d => `- ${d}`).join('\n')}` : ''}
-${hooks.length > 2 ? `Subject line inspiration: ${hooks[2]}` : ''}
-
-Return ONLY valid JSON:
-{
-  "subject": "Email subject line",
-  "preview_text": "Email preview text (90 chars)",
-  "body": "Full newsletter body in markdown"
-}`,
-      }],
-    });
-
-    let newsletter: any = {};
-    try {
-      const nlText = newsletterRes.content[0].type === "text" ? newsletterRes.content[0].text : "";
-      newsletter = JSON.parse(nlText.replace(/```json|```/g, "").trim());
-    } catch { newsletter = { subject: topic, preview_text: "", body: "" }; }
+    let newsletter: any = { subject: topic, preview_text: "", body: "" };
+    try { newsletter = JSON.parse(nlText.replace(/```json|```/g, "").trim()); } catch {}
 
     // ── 5. Save all to Supabase content_calendar ──────────
     const now = new Date().toISOString();
     const items = [
-      { pillar, type: "Blog Post",           title: blog.title || topic,                   platform: "Website",   week, status: "draft", content_data: blog },
+      { pillar, type: "Blog Post",       title: blog.title || topic,                                platform: "Website",   week, status: "draft", content_data: blog },
       ...(linkedin.posts || []).map((p: any, i: number) => ({
-        pillar, type: "LinkedIn Post", title: `${p.hook?.substring(0, 60) || `LinkedIn ${i+1}`}...`,
-        platform: "LinkedIn", week, status: "draft", content_data: p,
+        pillar, type: "LinkedIn Post",   title: `${p.hook?.substring(0, 60) || `LinkedIn ${i+1}`}...`, platform: "LinkedIn",  week, status: "draft", content_data: p,
       })),
       ...(twitter.threads || []).map((t: any, i: number) => ({
-        pillar, type: "Twitter Thread", title: `Thread: ${t.opener?.substring(0, 50) || `Thread ${i+1}`}...`,
-        platform: "Twitter/X", week, status: "draft", content_data: t,
+        pillar, type: "Twitter Thread",  title: `Thread: ${t.opener?.substring(0, 50) || `Thread ${i+1}`}...`, platform: "Twitter/X", week, status: "draft", content_data: t,
       })),
-      { pillar, type: "Email Newsletter", title: newsletter.subject || `Newsletter: ${topic}`, platform: "Email", week, status: "draft", content_data: newsletter },
+      { pillar, type: "Email Newsletter", title: newsletter.subject || `Newsletter: ${topic}`,      platform: "Email",     week, status: "draft", content_data: newsletter },
     ];
 
     const { error: insertError } = await supabase
       .from("content_calendar")
-      .insert(items.map(item => ({
-        ...item,
-        created_at: now,
-        triggered_by: triggeredBy,
-      })));
+      .insert(items.map(item => ({ ...item, created_at: now, triggered_by: triggeredBy })));
 
     if (insertError) console.error("[Content Writer] Supabase insert error:", insertError);
 
     const summary = {
-      topic,
-      pillar,
-      week,
+      topic, pillar, week,
       generated: {
         blog: 1,
         linkedin_posts: linkedin.posts?.length || 0,
