@@ -223,7 +223,7 @@ function SignUpForm() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
@@ -232,6 +232,14 @@ function SignUpForm() {
     if (error) {
       setError(error.message);
     } else {
+      // Sync new user to MailerLite (fire-and-forget)
+      const name = (data.user?.user_metadata?.full_name || email.split('@')[0]) as string;
+      fetch('/api/welcome', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email, name, userId: data.user?.id }),
+      }).catch(() => {}); // non-blocking, non-fatal
+
       router.push('/checkout');
     }
     setLoading(false);

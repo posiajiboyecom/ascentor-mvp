@@ -43,15 +43,30 @@ export async function GET(request: Request) {
   // ── Fetch their profile to check onboarding + subscription ───────
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, current_role, industry, subscription_status, subscription_end')
+    .select('full_name, current_role, industry, subscription_status, subscription_end, created_at')
     .eq('id', user.id)
     .single();
 
+  // ── Sync NEW users to MailerLite (non-blocking) ───────────────────
+  // A user is "new" if their profile was created in the last 60 seconds
+  // (i.e. this is their very first OAuth login, not a returning session).
+  const isNewUser = profile?.created_at
+    ? (Date.now() - new Date(profile.created_at).getTime()) < 60_000
+    : !profile; // no profile yet = definitely new
+
+  if (isNewUser) {
+    const name  = profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || '';
+    const email = user.email!;
+    // Fire-and-forget — don't await, don't block the redirect
+    fetch(`${origin}/api/welcome`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email, name, userId: user.id }),
+    }).catch(err => console.error('[auth/callback] welcome ping failed:', err));
+  }
+
   // ── Routing logic ─────────────────────────────────────────────────
 
-  // If a specific deep-link redirect was requested and the user is
-  // fully set up, honour it (skip onboarding / checkout checks).
-  // We only honour redirects to internal, safe paths.
   const safeRedirect =
     redirectTo &&
     redirectTo.startsWith('/') &&
@@ -59,8 +74,7 @@ export async function GET(request: Request) {
       ? redirectTo
       : null;
 
-  // 1. Onboarding incomplete — missing the core profile fields set
-  //    during onboarding (full_name, current_role, industry).
+  // 1. Onboarding incomplete
   const onboardingComplete =
     profile?.full_name &&
     profile?.current_role &&
@@ -74,8 +88,6 @@ export async function GET(request: Request) {
   const hasActiveSub = checkActiveSub(profile);
 
   if (!hasActiveSub) {
-    // Honour deep-link if subscription isn't required for that route.
-    // For now we always send unpaid users to /checkout.
     return NextResponse.redirect(`${origin}/checkout`);
   }
 
