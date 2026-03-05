@@ -426,7 +426,7 @@ export default function CareersPage() {
           <p style={{ fontSize: 14, color: '#7A7260', marginBottom: 32, lineHeight: 1.7 }}>
             We're always interested in exceptional people. Send us a note.
           </p>
-          <a href="mailto:careers@ascentor.co" className="cr-apply-btn">
+          <a href="mailto:asamuel@ascentorbi.com" className="cr-apply-btn">
             Send a speculative application →
           </a>
         </div>

@@ -803,6 +803,7 @@ export default function LandingPage() {
                 <li><Link href="/terms">Terms & Conditions</Link></li>
                 <Link href="/privacy">Privacy Policy</Link>
                 <li><Link href="/newsletter">Newsletter</Link></li>
+                <li><Link href="/careers">Careers</Link></li>
               </ul>
             </div>
             <div>
