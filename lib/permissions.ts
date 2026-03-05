@@ -1,177 +1,203 @@
 // ============================================================
-// FEATURE #2: Role-Based Permissions System
-// Defines roles: admin, moderator, member
-// Controls what each role can access and modify.
+// ASCENTOR · Permissions System · v2.0
+// Roles: admin (root), moderator (mentor), member
+//
+// Key design:
+//  - Admin has root access to everything, including the ability
+//    to grant/revoke individual permissions per moderator.
+//  - Moderators start with a default set, then admin can add/remove.
+//  - Per-user permission overrides are stored in profiles.permissions (jsonb).
+//    If null, the role defaults apply.
 // ============================================================
 
-// --- Role Definitions ---
 export type UserRole = 'admin' | 'moderator' | 'member';
 
 export type Permission =
-  // Admin Dashboard
+  // Admin
   | 'admin.access'
   | 'admin.view_stats'
-  // User Management
+  | 'admin.manage_permissions'   // Only admin: grant/revoke permissions to moderators
+  | 'admin.master_dashboard'     // Marketing KPIs, agents, social queue
+  // Users
   | 'users.view'
   | 'users.edit_role'
   | 'users.delete'
   | 'users.export'
-  // Content Management
+  // Blog
   | 'content.blog.create'
-  | 'content.blog.edit'
+  | 'content.blog.edit_own'      // Can edit posts they authored
+  | 'content.blog.edit_any'      // Can edit any post (admin only)
   | 'content.blog.delete'
   | 'content.blog.publish'
+  // Courses
   | 'content.courses.create'
   | 'content.courses.edit'
   | 'content.courses.delete'
   | 'content.courses.publish'
-  // Expert Sessions
+  // Expert Events
   | 'experts.create'
-  | 'experts.edit'
+  | 'experts.edit_own'
+  | 'experts.edit_any'
   | 'experts.delete'
-  // Community
+  // Cohorts
   | 'community.cohorts.create'
-  | 'community.cohorts.edit'
+  | 'community.cohorts.edit_own'   // Edit cohorts they created
+  | 'community.cohorts.edit_any'   // Edit any cohort
   | 'community.cohorts.delete'
+  | 'community.cohorts.view_members_own'  // View members of own cohort
+  | 'community.cohorts.view_members_any'  // View members of any cohort
   | 'community.posts.moderate'
   | 'community.posts.delete'
   // Newsletter
   | 'newsletter.compose'
   | 'newsletter.send'
   | 'newsletter.manage_subscribers'
-  // Audit & Security
+  // Mentors
+  | 'mentors.view'
+  | 'mentors.approve'
+  // Audit & Reports
   | 'audit.view_logs'
-  | 'security.view_sessions'
-  // Reports
   | 'reports.generate'
   | 'reports.export'
   // Payments
   | 'payments.view'
-  | 'payments.refund';
+  | 'payments.refund'
+  // Promo codes
+  | 'promos.manage';
 
-// --- Permission Map ---
-const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+// ── Default permissions per role ─────────────────────────────
+// These are the DEFAULTS. Admin can override per-user via profiles.permissions.
+export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: [
-    // Admins can do everything
-    'admin.access', 'admin.view_stats',
+    // Root: full access to everything
+    'admin.access', 'admin.view_stats', 'admin.manage_permissions', 'admin.master_dashboard',
     'users.view', 'users.edit_role', 'users.delete', 'users.export',
-    'content.blog.create', 'content.blog.edit', 'content.blog.delete', 'content.blog.publish',
+    'content.blog.create', 'content.blog.edit_own', 'content.blog.edit_any',
+    'content.blog.delete', 'content.blog.publish',
     'content.courses.create', 'content.courses.edit', 'content.courses.delete', 'content.courses.publish',
-    'experts.create', 'experts.edit', 'experts.delete',
-    'community.cohorts.create', 'community.cohorts.edit', 'community.cohorts.delete',
+    'experts.create', 'experts.edit_own', 'experts.edit_any', 'experts.delete',
+    'community.cohorts.create', 'community.cohorts.edit_own', 'community.cohorts.edit_any',
+    'community.cohorts.delete', 'community.cohorts.view_members_own', 'community.cohorts.view_members_any',
     'community.posts.moderate', 'community.posts.delete',
     'newsletter.compose', 'newsletter.send', 'newsletter.manage_subscribers',
-    'audit.view_logs', 'security.view_sessions',
-    'reports.generate', 'reports.export',
+    'mentors.view', 'mentors.approve',
+    'audit.view_logs', 'reports.generate', 'reports.export',
     'payments.view', 'payments.refund',
+    'promos.manage',
   ],
 
   moderator: [
-    // Moderators: content management + community moderation, NO user management or payments
-    'admin.access', 'admin.view_stats',
-    'users.view', // Can view users but NOT edit roles or delete
-    'content.blog.create', 'content.blog.edit', // Can create/edit but NOT delete/publish
-    'content.courses.create', 'content.courses.edit',
-    'experts.create', 'experts.edit', // Can manage sessions but not delete
-    'community.cohorts.edit',
-    'community.posts.moderate', 'community.posts.delete',
-    'newsletter.compose', // Can compose but NOT send
-    'reports.generate', // Can generate but NOT export
+    // Mentor defaults — admin can expand or restrict per person
+    'admin.access',
+    'content.blog.create', 'content.blog.edit_own',   // Write about their expertise
+    'experts.create', 'experts.edit_own',              // Create & manage their own expert events
+    'community.cohorts.create', 'community.cohorts.edit_own', // Create & manage own cohorts
+    'community.cohorts.view_members_own',              // See who's in their cohorts
   ],
 
-  member: [
-    // Regular users — no admin access
-  ],
+  member: [],
 };
 
-// --- Permission Checking ---
+// ── Human-readable labels for each permission ────────────────
+export const PERMISSION_LABELS: Record<Permission, { label: string; description: string; group: string }> = {
+  'admin.access':                      { group: 'Admin',     label: 'Admin Access',               description: 'Access the admin panel at all' },
+  'admin.view_stats':                  { group: 'Admin',     label: 'View Stats',                  description: 'See overview stats on the admin home' },
+  'admin.manage_permissions':          { group: 'Admin',     label: 'Manage Permissions',          description: 'Grant or revoke permissions for other moderators (admin only)' },
+  'admin.master_dashboard':            { group: 'Admin',     label: 'Master Dashboard',            description: 'Access marketing KPIs, AI agents, social queue' },
+  'users.view':                        { group: 'Users',     label: 'View Users',                  description: 'See the users list and profiles' },
+  'users.edit_role':                   { group: 'Users',     label: 'Edit User Roles',             description: 'Promote or demote users' },
+  'users.delete':                      { group: 'Users',     label: 'Delete Users',                description: 'Permanently delete user accounts' },
+  'users.export':                      { group: 'Users',     label: 'Export Users',                description: 'Download the user list as CSV' },
+  'content.blog.create':               { group: 'Blog',      label: 'Create Posts',                description: 'Write and submit new blog posts' },
+  'content.blog.edit_own':             { group: 'Blog',      label: 'Edit Own Posts',              description: 'Edit posts authored by themselves' },
+  'content.blog.edit_any':             { group: 'Blog',      label: 'Edit Any Post',               description: 'Edit any blog post regardless of author' },
+  'content.blog.delete':               { group: 'Blog',      label: 'Delete Posts',                description: 'Permanently delete blog posts' },
+  'content.blog.publish':              { group: 'Blog',      label: 'Publish Posts',               description: 'Set a post to published (live on site)' },
+  'content.courses.create':            { group: 'Courses',   label: 'Create Courses',              description: 'Add new courses to the platform' },
+  'content.courses.edit':              { group: 'Courses',   label: 'Edit Courses',                description: 'Edit any course' },
+  'content.courses.delete':            { group: 'Courses',   label: 'Delete Courses',              description: 'Remove courses from the platform' },
+  'content.courses.publish':           { group: 'Courses',   label: 'Publish Courses',             description: 'Make courses visible to members' },
+  'experts.create':                    { group: 'Experts',   label: 'Create Expert Events',        description: 'Schedule new expert sessions' },
+  'experts.edit_own':                  { group: 'Experts',   label: 'Edit Own Events',             description: 'Edit expert sessions they created' },
+  'experts.edit_any':                  { group: 'Experts',   label: 'Edit Any Event',              description: 'Edit any expert session' },
+  'experts.delete':                    { group: 'Experts',   label: 'Delete Events',               description: 'Remove expert sessions' },
+  'community.cohorts.create':          { group: 'Cohorts',   label: 'Create Cohorts',              description: 'Start new community cohorts' },
+  'community.cohorts.edit_own':        { group: 'Cohorts',   label: 'Edit Own Cohorts',            description: 'Edit cohorts they created' },
+  'community.cohorts.edit_any':        { group: 'Cohorts',   label: 'Edit Any Cohort',             description: 'Edit any cohort on the platform' },
+  'community.cohorts.delete':          { group: 'Cohorts',   label: 'Delete Cohorts',              description: 'Remove cohorts' },
+  'community.cohorts.view_members_own':{ group: 'Cohorts',   label: 'View Own Cohort Members',    description: 'See the member list for cohorts they created' },
+  'community.cohorts.view_members_any':{ group: 'Cohorts',   label: 'View Any Cohort Members',    description: 'See member lists for any cohort' },
+  'community.posts.moderate':          { group: 'Community', label: 'Moderate Posts',              description: 'Hide or flag community posts' },
+  'community.posts.delete':            { group: 'Community', label: 'Delete Posts',                description: 'Permanently delete community posts' },
+  'newsletter.compose':                { group: 'Newsletter',label: 'Compose Newsletters',         description: 'Draft newsletter content' },
+  'newsletter.send':                   { group: 'Newsletter',label: 'Send Newsletters',            description: 'Send newsletters to subscriber list' },
+  'newsletter.manage_subscribers':     { group: 'Newsletter',label: 'Manage Subscribers',          description: 'Add, remove, or tag newsletter subscribers' },
+  'mentors.view':                      { group: 'Mentors',   label: 'View Applications',           description: 'See the mentor application list' },
+  'mentors.approve':                   { group: 'Mentors',   label: 'Approve Mentors',             description: 'Approve, reject, or activate mentor applications' },
+  'audit.view_logs':                   { group: 'Security',  label: 'View Audit Logs',             description: 'Read the admin audit trail' },
+  'reports.generate':                  { group: 'Reports',   label: 'Generate Reports',            description: 'Run platform analytics reports' },
+  'reports.export':                    { group: 'Reports',   label: 'Export Reports',              description: 'Download reports as CSV/PDF' },
+  'payments.view':                     { group: 'Payments',  label: 'View Payments',               description: 'See subscription and payment data' },
+  'payments.refund':                   { group: 'Payments',  label: 'Issue Refunds',               description: 'Process refunds for subscribers' },
+  'promos.manage':                     { group: 'Promos',    label: 'Manage Promo Codes',          description: 'Create and manage discount codes' },
+};
 
-/**
- * Check if a role has a specific permission.
- */
-export function hasPermission(role: UserRole, permission: Permission): boolean {
+// ── Nav access map — which permission gates each nav section ─
+// Used by AdminShell to show/hide nav items per role/user
+export const NAV_PERMISSION: Record<string, Permission> = {
+  '/admin':            'admin.view_stats',
+  '/admin/users':      'users.view',
+  '/admin/cohorts':    'community.cohorts.create',
+  '/admin/experts':    'experts.create',
+  '/admin/courses':    'content.courses.create',
+  '/admin/coaching':   'admin.view_stats',
+  '/admin/blog':       'content.blog.create',
+  '/admin/newsletter': 'newsletter.compose',
+  '/admin/mentors':    'mentors.view',
+  '/admin/promo-codes':'promos.manage',
+  '/admin/logs':       'audit.view_logs',
+  '/admin/reports':    'reports.generate',
+  '/admin/master':     'admin.master_dashboard',
+  '/admin/permissions':'admin.manage_permissions',
+};
+
+// ── Core permission checking ──────────────────────────────────
+
+export function hasPermission(
+  role: UserRole,
+  permission: Permission,
+  overrides?: Permission[] | null
+): boolean {
+  // If the user has explicit per-user overrides stored (admin-granted), use those
+  if (overrides && overrides.length > 0) {
+    return overrides.includes(permission);
+  }
   return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
 }
 
-/**
- * Check if a role has ALL of the specified permissions.
- */
-export function hasAllPermissions(role: UserRole, permissions: Permission[]): boolean {
-  return permissions.every(p => hasPermission(role, p));
+export function hasAllPermissions(role: UserRole, permissions: Permission[], overrides?: Permission[] | null): boolean {
+  return permissions.every(p => hasPermission(role, p, overrides));
 }
 
-/**
- * Check if a role has ANY of the specified permissions.
- */
-export function hasAnyPermission(role: UserRole, permissions: Permission[]): boolean {
-  return permissions.some(p => hasPermission(role, p));
+export function hasAnyPermission(role: UserRole, permissions: Permission[], overrides?: Permission[] | null): boolean {
+  return permissions.some(p => hasPermission(role, p, overrides));
 }
 
-/**
- * Get all permissions for a role.
- */
-export function getPermissions(role: UserRole): Permission[] {
+export function getPermissions(role: UserRole, overrides?: Permission[] | null): Permission[] {
+  if (overrides && overrides.length > 0) return overrides;
   return ROLE_PERMISSIONS[role] || [];
 }
 
-/**
- * Get a human-readable description of what a role can/cannot do.
- */
 export function getRoleDescription(role: UserRole): string {
   switch (role) {
-    case 'admin':
-      return 'Full access to all platform features, user management, payments, and security settings.';
-    case 'moderator':
-      return 'Can manage content (blog, courses, expert sessions), moderate community posts, and compose newsletters. Cannot manage users, send newsletters, access payments, or delete content.';
-    case 'member':
-      return 'Standard platform access. Can use coaching, join community, attend expert sessions, and access courses.';
-    default:
-      return 'Unknown role.';
+    case 'admin':     return 'Root access. Full control over all platform features, users, payments, security, and permissions.';
+    case 'moderator': return 'Mentor access. Can create cohorts, expert events, and blog posts by default. Admin can grant additional permissions.';
+    case 'member':    return 'Standard member. Platform access only — no admin panel.';
+    default:          return 'Unknown role.';
   }
 }
 
-// --- React Hook for Client-Side Permission Checking ---
-export const PERMISSION_HOOK_CODE = `
-'use client';
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { hasPermission, type Permission, type UserRole } from '@/lib/permissions';
-
-export function usePermission(permission: Permission): { allowed: boolean; loading: boolean; role: UserRole | null } {
-  const [role, setRole] = useState<UserRole | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        setRole((profile?.role as UserRole) || 'member');
-      }
-      setLoading(false);
-    });
-  }, []);
-
-  return {
-    allowed: role ? hasPermission(role, permission) : false,
-    loading,
-    role,
-  };
-}
-`;
-
-// --- Middleware Helper ---
-
-/**
- * Server-side permission check for API routes.
- * Usage in API route:
- *   const check = await checkPermissionServer(supabase, userId, 'content.blog.publish');
- *   if (!check.allowed) return NextResponse.json({ error: check.error }, { status: 403 });
- */
+// ── Server-side permission check for API routes ───────────────
 export async function checkPermissionServer(
   supabase: any,
   userId: string,
@@ -180,12 +206,13 @@ export async function checkPermissionServer(
   try {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, permissions')
       .eq('id', userId)
       .single();
 
-    const role = (profile?.role as UserRole) || 'member';
-    const allowed = hasPermission(role, permission);
+    const role      = (profile?.role as UserRole) || 'member';
+    const overrides = profile?.permissions as Permission[] | null;
+    const allowed   = hasPermission(role, permission, overrides);
 
     return {
       allowed,
@@ -197,23 +224,26 @@ export async function checkPermissionServer(
   }
 }
 
-// --- SQL: Update profiles role enum ---
+// ── SQL migration ─────────────────────────────────────────────
 export const PERMISSIONS_SQL = `
--- Add 'moderator' as a valid role (in addition to 'member' and 'admin')
--- If using a check constraint:
+-- Add permissions jsonb column to profiles (stores per-user overrides)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS permissions jsonb DEFAULT NULL;
+
+-- Update role constraint
 ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
-ALTER TABLE profiles ADD CONSTRAINT profiles_role_check 
+ALTER TABLE profiles ADD CONSTRAINT profiles_role_check
   CHECK (role IN ('member', 'moderator', 'admin'));
 
--- Create a permissions audit view for easy querying
-CREATE OR REPLACE VIEW admin_permissions_view AS
+-- Index for permission lookups
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+
+-- View: all staff with their effective permissions
+CREATE OR REPLACE VIEW admin_staff_view AS
 SELECT
-  p.id,
-  p.full_name,
-  p.role,
+  p.id, p.full_name, p.email, p.role,
+  p.permissions as custom_permissions,
   p.created_at,
-  (SELECT COUNT(*) FROM audit_logs al WHERE al.user_id = p.id) as action_count,
-  (SELECT MAX(al.created_at) FROM audit_logs al WHERE al.user_id = p.id) as last_action
+  (SELECT COUNT(*) FROM audit_logs al WHERE al.user_id = p.id) as action_count
 FROM profiles p
 WHERE p.role IN ('admin', 'moderator')
 ORDER BY p.role, p.full_name;

@@ -237,7 +237,7 @@ export default function AdminMentorsPage() {
         </div>
 
         {/* ── STATS ROW — Stage colors from brand book ── */}
-        <div className="ascentor-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '28px' }}>
+        <div className="ascentor-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '28px' }}>
           {(['pending', 'approved', 'active', 'rejected'] as const).map(s => {
             const cfg = STATUS_CONFIG[s];
             return (
@@ -246,7 +246,7 @@ export default function AdminMentorsPage() {
                 onClick={() => setTab(s)}
                 style={{
                   borderRadius: '12px',
-                  padding: '18px 16px',
+                  padding: '14px 12px',
                   cursor: 'pointer',
                   background: brand.card,
                   border: `1px solid ${tab === s ? cfg.border : brand.border}`,
@@ -258,7 +258,7 @@ export default function AdminMentorsPage() {
                 <p style={{
                   fontFamily: brand.fontDisplay,
                   fontWeight: 700,
-                  fontSize: '32px',
+                  fontSize: 'clamp(22px, 4vw, 32px)',
                   color: tab === s ? cfg.color : brand.dark50,
                   lineHeight: 1,
                   margin: 0,
@@ -309,13 +309,16 @@ export default function AdminMentorsPage() {
                 borderRadius: '10px',
                 background: brand.dark700,
                 overflowX: 'auto' as const,
+                WebkitOverflowScrolling: 'touch' as any,
+                scrollbarWidth: 'none' as any,
               }}>
                 {(['pending', 'approved', 'active', 'rejected', 'all'] as const).map(t => (
                   <button
                     key={t}
                     onClick={() => setTab(t)}
                     style={{
-                      flex: 1,
+                      flex: '0 0 auto',
+                      minWidth: 0,
                       padding: '8px 10px',
                       borderRadius: '7px',
                       border: 'none',
@@ -561,7 +564,7 @@ export default function AdminMentorsPage() {
                     <MonoTag color={brand.dark500}>Applied {fmt(selected.applied_at)}</MonoTag>
                   </div>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <div className="ascentor-action-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {selected.status !== 'approved' && (
                       <ActionButton
                         label="✓ Approve"
@@ -761,9 +764,11 @@ export default function AdminMentorsPage() {
                 borderTop: `1px solid ${brand.border}`,
                 borderRadius: '18px 18px 0 0',
                 zIndex: 9999,
-                maxHeight: '85vh',
+                maxHeight: '90vh',
+                height: '90vh',
                 display: 'flex',
                 flexDirection: 'column',
+                paddingBottom: 'env(safe-area-inset-bottom)',
               }}
             >
               {/* Drag handle */}
@@ -820,7 +825,7 @@ export default function AdminMentorsPage() {
                     <StatusPill status={selected.status} />
                     <MonoTag color={brand.dark500}>Applied {fmt(selected.applied_at)}</MonoTag>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <div className="ascentor-action-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {selected.status !== 'approved' && (
                       <ActionButton label="✓ Approve" bg="rgba(20,184,166,0.08)" color="#14B8A6" border="rgba(20,184,166,0.25)" onClick={() => updateStatus(selected.id, 'approved')} />
                     )}
@@ -929,20 +934,30 @@ export default function AdminMentorsPage() {
             .ascentor-layout        { flex-direction: column !important; }
             .ascentor-detail-panel  { display: none !important; }
             .ascentor-bottom-sheet  { display: block !important; }
-            .ascentor-stats-grid    { grid-template-columns: repeat(2, 1fr) !important; }
+            .ascentor-stats-grid    { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
             .ascentor-header-row    { flex-direction: column !important; align-items: flex-start !important; }
+            .ascentor-search-row    { flex-direction: column !important; }
           }
           input::placeholder { color: #4A4438; }
           input:focus { border-color: rgba(232,160,32,0.35) !important; }
           * { box-sizing: border-box; }
 
+          /* Hide scrollbar on tab bar */
+          .ascentor-tab-bar::-webkit-scrollbar { display: none; }
+
           /* Bottom sheet animation */
           @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to   { transform: translateY(0); }
+            from { transform: translateY(100%); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
           }
           .ascentor-sheet-inner {
             animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+          }
+
+          /* Action buttons wrap properly on small screens */
+          @media (max-width: 400px) {
+            .ascentor-action-row { gap: 6px !important; }
+            .ascentor-action-row button { font-size: 10px !important; padding: 5px 8px !important; }
           }
         `}</style>
       </div>
