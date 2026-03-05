@@ -35,11 +35,13 @@ const AGENT_REGISTRY = [
   {
     id: "3",
     name: "Social Scheduler",
-    triggerTaskId: null, // Buffer API integration pending
+    triggerTaskId: "social-scheduler-agent",
     type: "manual",
-    description: "Pushes approved content to Buffer via API for social scheduling",
-    schedule: "Monday 10:00 WAT",
-    toolStack: "Buffer API + Supabase",
+    description: "Takes approved content from Content Calendar → assigns optimal posting times → queues in Social Queue",
+    schedule: "Monday 10:00 WAT (after founder review)",
+    toolStack: "Supabase + Claude",
+    requiresPayload: true,
+    payloadSchema: { week: "week number e.g. 12", pillar: "leadership|career|ai|coaching|community (optional)", autoApprove: "true|false" },
   },
   {
     id: "4",

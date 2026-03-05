@@ -180,7 +180,8 @@ export default function MasterAdminPage() {
   const [agentMsg,     setAgentMsg]     = useState<{ id: string; text: string; ok: boolean } | null>(null);
   const [triggering,   setTriggering]   = useState<string | null>(null);
   const [agentPayload, setAgentPayload] = useState<Record<string, string>>({});
-  const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
+  const [expandedAgent,   setExpandedAgent]   = useState<string | null>(null);
+  const [expandedContent, setExpandedContent] = useState<string | null>(null);
 
   // Content form
   const [showAddContent, setShowAddContent] = useState(false);
@@ -505,14 +506,13 @@ export default function MasterAdminPage() {
             right={<button onClick={() => load('email')} style={{ ...inputStyle, width: 'auto', padding: '7px 14px', cursor: 'pointer', fontSize: 11 }}>↻ Refresh</button>}
           />
 
-          {!mlData || mlData.totalSubscribers === 0 ? (
+          {!mlData ? (
             <div style={{ ...card, padding: 40, textAlign: 'center' }}>
               <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#4A4438', letterSpacing: '0.1em', marginBottom: 12 }}>
                 MAILERLITE NOT CONNECTED
               </p>
               <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: '#7A7260', lineHeight: 1.6 }}>
-                Add <code style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: '#E8A020' }}>MAILERLITE_API_KEY</code> to your <code style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: '#E8A020' }}>.env</code> file
-                and create <code style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: '#E8A020' }}>/api/admin/mailerlite/route.ts</code> to connect.
+                Add <code style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: '#E8A020' }}>MAILERLITE_API_KEY</code> to your Vercel environment variables and redeploy.
               </p>
             </div>
           ) : (
@@ -698,25 +698,121 @@ export default function MasterAdminPage() {
               </div>
               {filteredContent.map((item, i) => {
                 const pillar = PILLARS.find(p => p.id === item.pillar);
+                const isExpanded = expandedContent === item.id;
+                const cd = item.content_data as any;
+
+                // Extract readable text from content_data based on type
+                function getPreviewText() {
+                  if (!cd) return null;
+                  if (item.type === 'Blog Post') return cd.content || cd.title || null;
+                  if (item.type === 'LinkedIn Post') return cd.content || cd.hook || null;
+                  if (item.type === 'Twitter Thread') {
+                    const tweets = [cd.opener, ...(cd.tweets || []), cd.cta].filter(Boolean);
+                    return tweets.join('
+
+');
+                  }
+                  if (item.type === 'Email Newsletter') return cd.body || cd.subject || null;
+                  return JSON.stringify(cd, null, 2);
+                }
+
+                const previewText = getPreviewText();
+
                 return (
-                  <div key={item.id} className="ma-row" style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 100px 100px 120px 80px', padding: '12px 16px', borderBottom: i < filteredContent.length - 1 ? '1px solid #2E2A22' : 'none', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#E8A020' }}>W{item.week}</span>
-                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: '#D4CFC3', fontWeight: 600 }}>{item.title}</span>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#7A7260', letterSpacing: '0.06em' }}>{item.type}</span>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#7A7260' }}>{item.platform}</span>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: pillar?.color || '#4A4438' }}>{pillar?.label.split(' ')[0]}</span>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#4A4438' }}>
-                      {item.scheduled_for ? new Date(item.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
-                    </span>
-                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                      <select value={item.status} onChange={e => updateContentStatus(item.id, e.target.value as any)}
-                        style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, background: 'transparent', border: 'none', color: STATUS_COLORS[item.status]?.color || '#7A7260', cursor: 'pointer', outline: 'none', padding: 0 }}>
-                        <option value="draft">Draft</option>
-                        <option value="scheduled">Scheduled</option>
-                        <option value="published">Published</option>
-                      </select>
-                      <button onClick={() => deleteContent(item.id)} style={{ background: 'none', border: 'none', color: '#4A4438', cursor: 'pointer', fontSize: 14, padding: '0 2px' }}>×</button>
+                  <div key={item.id} style={{ borderBottom: i < filteredContent.length - 1 ? '1px solid #2E2A22' : 'none' }}>
+                    {/* Row */}
+                    <div className="ma-row" style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 100px 100px 120px 100px', padding: '12px 16px', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#E8A020' }}>W{item.week}</span>
+                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: '#D4CFC3', fontWeight: 600 }}>{item.title}</span>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#7A7260', letterSpacing: '0.06em' }}>{item.type}</span>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#7A7260' }}>{item.platform}</span>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: pillar?.color || '#4A4438' }}>{pillar?.label.split(' ')[0]}</span>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#4A4438' }}>
+                        {item.scheduled_for ? new Date(item.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
+                      </span>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <select value={item.status} onChange={e => updateContentStatus(item.id, e.target.value as any)}
+                          style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, background: 'transparent', border: 'none', color: STATUS_COLORS[item.status]?.color || '#7A7260', cursor: 'pointer', outline: 'none', padding: 0 }}>
+                          <option value="draft">Draft</option>
+                          <option value="scheduled">Scheduled</option>
+                          <option value="published">Published</option>
+                        </select>
+                        {previewText && (
+                          <button
+                            onClick={() => setExpandedContent(isExpanded ? null : item.id)}
+                            style={{ background: 'none', border: '1px solid #2E2A22', borderRadius: 4, color: isExpanded ? '#E8A020' : '#4A4438', cursor: 'pointer', fontSize: 10, padding: '2px 6px', fontFamily: "'DM Mono', monospace" }}
+                          >
+                            {isExpanded ? '▲' : '▼'}
+                          </button>
+                        )}
+                        <button onClick={() => deleteContent(item.id)} style={{ background: 'none', border: 'none', color: '#4A4438', cursor: 'pointer', fontSize: 14, padding: '0 2px' }}>×</button>
+                      </div>
                     </div>
+
+                    {/* Expanded content preview */}
+                    {isExpanded && previewText && (
+                      <div style={{ padding: '0 16px 16px', background: '#0F0E0C' }}>
+                        <div style={{ borderRadius: 10, border: '1px solid #2E2A22', overflow: 'hidden' }}>
+                          {/* Header */}
+                          <div style={{ padding: '10px 16px', background: '#1A1815', borderBottom: '1px solid #2E2A22', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E8A020', letterSpacing: '0.1em' }}>
+                              {item.type.toUpperCase()} · {item.platform}
+                            </span>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(previewText); }}
+                              style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#7A7260', background: 'none', border: '1px solid #2E2A22', borderRadius: 4, padding: '3px 8px', cursor: 'pointer' }}
+                            >
+                              Copy
+                            </button>
+                          </div>
+                          {/* Content */}
+                          <div style={{ padding: '16px', maxHeight: 400, overflowY: 'auto' }}>
+                            {/* Blog post meta */}
+                            {item.type === 'Blog Post' && cd?.meta_description && (
+                              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#7A7260', margin: '0 0 12px', padding: '8px 12px', background: '#1E1C17', borderRadius: 6 }}>
+                                SEO: {cd.meta_description}
+                              </p>
+                            )}
+                            {/* Email subject */}
+                            {item.type === 'Email Newsletter' && cd?.subject && (
+                              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', margin: '0 0 4px' }}>
+                                Subject: {cd.subject}
+                              </p>
+                            )}
+                            {item.type === 'Email Newsletter' && cd?.preview_text && (
+                              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#7A7260', margin: '0 0 12px' }}>
+                                Preview: {cd.preview_text}
+                              </p>
+                            )}
+                            {/* LinkedIn hook */}
+                            {item.type === 'LinkedIn Post' && cd?.hook && (
+                              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: '#E8A020', fontWeight: 700, margin: '0 0 8px', lineHeight: 1.4 }}>
+                                Hook: {cd.hook}
+                              </p>
+                            )}
+                            {/* Main content */}
+                            <pre style={{
+                              fontFamily: item.type === 'Blog Post' || item.type === 'Email Newsletter'
+                                ? "'Syne', sans-serif" : "'DM Mono', monospace",
+                              fontSize: item.type === 'Blog Post' || item.type === 'Email Newsletter' ? 13 : 12,
+                              color: '#D4CFC3',
+                              margin: 0,
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word',
+                              lineHeight: 1.7,
+                            }}>
+                              {previewText}
+                            </pre>
+                            {/* Blog CTA */}
+                            {item.type === 'Blog Post' && cd?.cta && (
+                              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', margin: '12px 0 0', padding: '8px 12px', background: 'rgba(232,160,32,0.06)', borderRadius: 6, border: '1px solid rgba(232,160,32,0.15)' }}>
+                                CTA: {cd.cta}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
