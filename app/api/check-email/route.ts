@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // POST /api/auth/check-email
 // Returns { exists: boolean } — used by forgot-password page to
@@ -11,10 +11,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Email required' }, { status: 400 });
   }
 
-  const supabase = createClient();
-
   // Check profiles table — every registered user has a profile row
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('profiles')
     .select('id')
     .eq('email', email.toLowerCase().trim())
