@@ -4,13 +4,35 @@ import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 import { coachingSummaryEmail } from "./emails/email-templates";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend    = new Resend(process.env.RESEND_API_KEY);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+// ── Rate-limit-safe wrapper with exponential backoff ─────────
+async function claudeWithRetry(
+  params: Parameters<typeof anthropic.messages.create>[0],
+  retries = 3
+): Promise<Anthropic.Message> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await anthropic.messages.create(params);
+    } catch (err: any) {
+      const is429 = err?.status === 429 || err?.error?.type === "rate_limit_error";
+      if (is429 && i < retries - 1) {
+        const wait = Math.pow(2, i + 1) * 1500; // 3s → 6s → 12s
+        console.warn(`[Coaching Summary] Rate limited. Retrying in ${wait}ms (attempt ${i + 1}/${retries})...`);
+        await new Promise((r) => setTimeout(r, wait));
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw new Error("claudeWithRetry: exhausted retries");
+}
 
 export const processCoachingSummary = task({
   id: "process-coaching-summary",
@@ -38,20 +60,21 @@ export const processCoachingSummary = task({
       return { success: true, skipped: true };
     }
 
-    // Get conversation messages
     const messages = session.messages || [];
     if (messages.length < 4) {
       console.log("Session too short for summary");
       return { success: true, skipped: true, reason: "too_short" };
     }
 
-    // Build conversation text for Claude
-    const conversationText = messages
+    // ── FIX: truncate conversation to keep input tokens bounded ──
+    // Each message pair is ~200-400 chars. Capping at 10 messages
+    // (~2,000 chars) keeps input well under 1,000 tokens.
+    const recentMessages = messages.slice(-10);
+    const conversationText = recentMessages
       .map((m: any) => `${m.role === "user" ? "User" : "Coach"}: ${m.content}`)
       .join("\n\n");
 
-    // Ask Claude to summarize
-    const response = await anthropic.messages.create({
+    const response = await claudeWithRetry({
       model: "claude-sonnet-4-20250514",
       max_tokens: 800,
       messages: [
@@ -91,10 +114,10 @@ Respond in this exact JSON format:
     await supabase
       .from("coaching_sessions")
       .update({
-        summary: parsed.summary,
+        summary:       parsed.summary,
         key_takeaways: parsed.keyTakeaways,
-        next_steps: parsed.nextSteps,
-        goals: parsed.goals,
+        next_steps:    parsed.nextSteps,
+        goals:         parsed.goals,
       })
       .eq("id", sessionId);
 
@@ -107,19 +130,19 @@ Respond in this exact JSON format:
     );
 
     await resend.emails.send({
-      from: "Ascentor <hello@ascentorbi.com>",
-      to: profile.email,
+      from:    "Ascentor <hello@ascentorbi.com>",
+      to:      profile.email,
       subject: template.subject,
-      html: template.html,
+      html:    template.html,
     });
 
     console.log(`Summary sent to ${profile.email} for session ${sessionId}`);
 
     return {
-      success: true,
-      summary: parsed.summary,
+      success:   true,
+      summary:   parsed.summary,
       takeaways: parsed.keyTakeaways.length,
-      steps: parsed.nextSteps.length,
+      steps:     parsed.nextSteps.length,
     };
   },
 });

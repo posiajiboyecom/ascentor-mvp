@@ -1,8 +1,12 @@
 // ═══════════════════════════════════════════════════════════
 // Agent 7: Analytics Reporter
-// Runs every Monday at 7am UTC.
-// Pulls weekly growth data from Supabase, generates a
-// founder summary email using Claude, sends via Resend.
+// Runs every Monday at 9am UTC (moved from 7am to avoid
+// clashing with Researcher at 05:00 + Writer at ~05:15).
+//
+// RATE LIMIT FIXES:
+//   1. claudeWithRetry() wraps the Claude call with exponential backoff
+//   2. Cron shifted 05:00 → 09:00 UTC to stagger Monday agent pile-up
+//      (Researcher: 05:00, Writer: ~05:15, Reporter: 09:00)
 // ═══════════════════════════════════════════════════════════
 import { schedules } from "@trigger.dev/sdk/v3";
 import { createClient } from "@supabase/supabase-js";
@@ -13,18 +17,42 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend    = new Resend(process.env.RESEND_API_KEY);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+// ── Rate-limit-safe wrapper with exponential backoff ─────────
+async function claudeWithRetry(
+  params: Parameters<typeof anthropic.messages.create>[0],
+  retries = 3
+): Promise<Anthropic.Message> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await anthropic.messages.create(params);
+    } catch (err: any) {
+      const is429 = err?.status === 429 || err?.error?.type === "rate_limit_error";
+      if (is429 && i < retries - 1) {
+        const wait = Math.pow(2, i + 1) * 1500; // 3s → 6s → 12s
+        console.warn(`[Analytics Reporter] Rate limited. Retrying in ${wait}ms (attempt ${i + 1}/${retries})...`);
+        await new Promise((r) => setTimeout(r, wait));
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw new Error("claudeWithRetry: exhausted retries");
+}
 
 export const analyticsReporterAgent = schedules.task({
   id: "analytics-reporter-agent",
-  // Every Monday at 7am UTC
-  cron: "0 7 * * 1",
+  // ── FIX: moved from 07:00 → 09:00 UTC to avoid Monday morning
+  //         token burst (Researcher fires 05:00, Writer fires ~05:15).
+  //         Gap is now ~4 hours instead of ~2.
+  cron: "0 9 * * 1",
   run: async () => {
     console.log("[Analytics Reporter] Generating weekly report...");
 
-    const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
+    const now        = new Date();
+    const weekAgo    = new Date(now.getTime() - 7  * 86400000).toISOString();
     const twoWeeksAgo = new Date(now.getTime() - 14 * 86400000).toISOString();
 
     // ── Pull this week's metrics ──────────────────────────
@@ -46,15 +74,15 @@ export const analyticsReporterAgent = schedules.task({
       supabase.from("newsletter_subscribers").select("id", { count: "exact", head: true }).eq("is_active", true),
     ]);
 
-    const thisWeekSignups = newThisWeek.count || 0;
-    const lastWeekSignups = newLastWeek.count || 0;
-    const signupChange = lastWeekSignups > 0
+    const thisWeekSignups  = newThisWeek.count  || 0;
+    const lastWeekSignups  = newLastWeek.count  || 0;
+    const signupChange     = lastWeekSignups > 0
       ? Math.round(((thisWeekSignups - lastWeekSignups) / lastWeekSignups) * 100)
       : 0;
 
     const thisWeekSessions = sessionsThisWeek.count || 0;
     const lastWeekSessions = sessionsLastWeek.count || 0;
-    const sessionChange = lastWeekSessions > 0
+    const sessionChange    = lastWeekSessions > 0
       ? Math.round(((thisWeekSessions - lastWeekSessions) / lastWeekSessions) * 100)
       : 0;
 
@@ -75,20 +103,21 @@ export const analyticsReporterAgent = schedules.task({
       .limit(5);
 
     const metrics = {
-      total_users:     totalUsers.count || 0,
+      total_users:     totalUsers.count     || 0,
       new_signups:     thisWeekSignups,
       signup_change:   signupChange,
-      paid_users:      paidUsers.count || 0,
-      mrr_estimate:    (paidUsers.count || 0) * 15,
+      paid_users:      paidUsers.count      || 0,
+      mrr_estimate:    (paidUsers.count     || 0) * 15,
       sessions_week:   thisWeekSessions,
       session_change:  sessionChange,
       wacu,
       newsletter_subs: newsletterSubs.count || 0,
-      hot_leads:       hotLeads?.length || 0,
+      hot_leads:       hotLeads?.length     || 0,
     };
 
     // ── Ask Claude to write a compelling founder summary ──
-    const claudeRes = await anthropic.messages.create({
+    // Uses claudeWithRetry so a transient 429 won't fail the whole report
+    const claudeRes = await claudeWithRetry({
       model: "claude-sonnet-4-20250514",
       max_tokens: 600,
       messages: [{
@@ -143,11 +172,11 @@ Return plain text only (no JSON, no markdown headers).`,
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               ${[
-                { label: "Total Users",    value: metrics.total_users.toLocaleString(),      sub: `+${metrics.new_signups} this week ${changeArrow(metrics.signup_change)}` },
-                { label: "Paid / MRR",     value: `${metrics.paid_users} / $${metrics.mrr_estimate}`, sub: "Est. monthly revenue" },
-                { label: "WACU",           value: metrics.wacu.toString(),                  sub: "Active coached users" },
-                { label: "Sessions",       value: metrics.sessions_week.toString(),          sub: `vs last week ${changeArrow(metrics.session_change)}` },
-              ].map(m => `
+                { label: "Total Users",  value: metrics.total_users.toLocaleString(),        sub: `+${metrics.new_signups} this week ${changeArrow(metrics.signup_change)}` },
+                { label: "Paid / MRR",   value: `${metrics.paid_users} / $${metrics.mrr_estimate}`, sub: "Est. monthly revenue" },
+                { label: "WACU",         value: metrics.wacu.toString(),                    sub: "Active coached users" },
+                { label: "Sessions",     value: metrics.sessions_week.toString(),            sub: `vs last week ${changeArrow(metrics.session_change)}` },
+              ].map((m) => `
                 <td style="width:25%;padding:0 6px 14px 0;vertical-align:top;">
                   <div style="background:#1E1C17;border-radius:10px;padding:12px;">
                     <p style="margin:0 0 4px;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#4A4438;font-family:monospace;">${m.label}</p>
@@ -159,9 +188,9 @@ Return plain text only (no JSON, no markdown headers).`,
             </tr>
             <tr>
               ${[
-                { label: "Newsletter",     value: metrics.newsletter_subs.toLocaleString(), sub: "Active subscribers" },
-                { label: "Hot Leads",      value: metrics.hot_leads.toString(),             sub: "Score 70+ not yet paid" },
-              ].map(m => `
+                { label: "Newsletter", value: metrics.newsletter_subs.toLocaleString(), sub: "Active subscribers" },
+                { label: "Hot Leads",  value: metrics.hot_leads.toString(),             sub: "Score 70+ not yet paid" },
+              ].map((m) => `
                 <td style="width:25%;padding:0 6px 14px 0;vertical-align:top;">
                   <div style="background:#1E1C17;border-radius:10px;padding:12px;">
                     <p style="margin:0 0 4px;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#4A4438;font-family:monospace;">${m.label}</p>
@@ -195,11 +224,11 @@ Return plain text only (no JSON, no markdown headers).`,
 </body>
 </html>`;
 
-    const founderEmail = process.env.FOUNDER_EMAIL || process.env.FOUNDER_EMAIL || "hello@ascentorbi.com";
+    const founderEmail = process.env.FOUNDER_EMAIL || "hello@ascentorbi.com";
 
     await resend.emails.send({
-      from: "Ascentor Reports <hello@ascentorbi.com>",
-      to: founderEmail,
+      from:    "Ascentor Reports <hello@ascentorbi.com>",
+      to:      founderEmail,
       subject: `📊 Week of ${now.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} — ${metrics.new_signups} new signups · ${metrics.wacu} WACU · $${metrics.mrr_estimate} MRR`,
       html,
     });

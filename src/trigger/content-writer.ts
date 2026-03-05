@@ -4,6 +4,11 @@
 // Uses Claude to write: 1 blog post, 5 LinkedIn posts,
 // 3 Twitter threads, 1 newsletter segment.
 // Saves all output to content_calendar in Supabase.
+//
+// RATE LIMIT FIXES:
+//   1. claudeWithRetry() wraps every API call with exponential backoff
+//   2. 2s delay between each of the 4 Claude calls to avoid burst
+//   3. Input payloads (hooks, keyMessages, dataPoints) are truncated
 // ═══════════════════════════════════════════════════════════
 import { task } from "@trigger.dev/sdk/v3";
 import Anthropic from "@anthropic-ai/sdk";
@@ -15,6 +20,35 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+// ── Rate-limit-safe wrapper with exponential backoff ─────────
+async function claudeWithRetry(
+  params: Parameters<typeof anthropic.messages.create>[0],
+  retries = 3
+): Promise<Anthropic.Message> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await anthropic.messages.create(params);
+    } catch (err: any) {
+      const is429 = err?.status === 429 || err?.error?.type === "rate_limit_error";
+      if (is429 && i < retries - 1) {
+        const wait = Math.pow(2, i + 1) * 1500; // 3s → 6s → 12s
+        console.warn(`[Content Writer] Rate limited. Retrying in ${wait}ms (attempt ${i + 1}/${retries})...`);
+        await new Promise((r) => setTimeout(r, wait));
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw new Error("claudeWithRetry: exhausted retries");
+}
+
+// ── Small delay helper to pace sequential calls ───────────────
+const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// ── Truncate helper to cap injected context tokens ───────────
+const truncate = (str: string, maxChars: number) =>
+  str.length > maxChars ? str.slice(0, maxChars) + "…" : str;
 
 export const contentWriterAgent = task({
   id: "content-writer-agent",
@@ -29,17 +63,39 @@ export const contentWriterAgent = task({
     keyMessages?: string[];
     dataPoints?: string[];
   }) => {
-    const { topic, pillar, week = 1, triggeredBy = "manual", hooks = [], keyMessages = [], dataPoints = [] } = payload;
+    const {
+      topic,
+      pillar,
+      week = 1,
+      triggeredBy = "manual",
+      hooks = [],
+      keyMessages = [],
+      dataPoints = [],
+    } = payload;
 
-    // Log the handoff from Researcher if present
     if (payload.briefId) {
       console.log(`[Content Writer] Received brief from Researcher — briefId: ${payload.briefId}`);
     }
-
     console.log(`[Content Writer] Starting — topic: "${topic}" | pillar: ${pillar} | from: ${triggeredBy}`);
 
-    // ── 1. Blog Post ──────────────────────────────────────
-    const blogRes = await anthropic.messages.create({
+    // Truncate injected context to keep input tokens in check
+    const safeHooks        = hooks.slice(0, 3).map((h) => truncate(h, 120));
+    const safeKeyMessages  = keyMessages.slice(0, 3).map((m) => truncate(m, 120));
+    const safeDataPoints   = dataPoints.slice(0, 3).map((d) => truncate(d, 150));
+
+    const hooksBlock        = safeHooks.length > 0
+      ? `Use one of these proven hooks as the opening line:\n${safeHooks.map((h, i) => `${i + 1}. ${h}`).join("\n")}`
+      : "";
+    const messagesBlock     = safeKeyMessages.length > 0
+      ? `Key messages to weave in:\n${safeKeyMessages.map((m, i) => `${i + 1}. ${m}`).join("\n")}`
+      : "";
+    const dataBlock         = safeDataPoints.length > 0
+      ? `Data points to include:\n${safeDataPoints.map((d) => `- ${d}`).join("\n")}`
+      : "";
+
+    // ── 1. Blog Post ──────────────────────────────────────────
+    console.log("[Content Writer] Writing blog post...");
+    const blogRes = await claudeWithRetry({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1500,
       messages: [{
@@ -48,8 +104,8 @@ export const contentWriterAgent = task({
 
 Write a compelling blog post on this topic: "${topic}"
 
-${keyMessages.length > 0 ? `Key messages to weave in:\n${keyMessages.map((m, i) => `${i+1}. ${m}`).join('\n')}` : ''}
-${dataPoints.length > 0 ? `Data points to include:\n${dataPoints.map(d => `- ${d}`).join('\n')}` : ''}
+${messagesBlock}
+${dataBlock}
 
 The post should:
 - Target ambitious African professionals (students to C-suite)
@@ -72,10 +128,16 @@ Return ONLY valid JSON:
     try {
       const blogText = blogRes.content[0].type === "text" ? blogRes.content[0].text : "";
       blog = JSON.parse(blogText.replace(/```json|```/g, "").trim());
-    } catch { blog = { title: topic, content: "Draft pending review", meta_description: "", cta: "" }; }
+    } catch {
+      blog = { title: topic, content: "Draft pending review", meta_description: "", cta: "" };
+    }
 
-    // ── 2. LinkedIn Posts (5) ─────────────────────────────
-    const linkedinRes = await anthropic.messages.create({
+    // ── Pause before next call ─────────────────────────────────
+    await pause(2000);
+
+    // ── 2. LinkedIn Posts (5) ─────────────────────────────────
+    console.log("[Content Writer] Writing LinkedIn posts...");
+    const linkedinRes = await claudeWithRetry({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1200,
       messages: [{
@@ -84,8 +146,8 @@ Return ONLY valid JSON:
 
 Topic: "${topic}"
 
-${hooks.length > 0 ? `Use one of these proven hooks as the opening line for your best post:\n${hooks.map((h, i) => `${i+1}. ${h}`).join('\n')}` : ''}
-${dataPoints.length > 0 ? `Weave in these data points where relevant:\n${dataPoints.map(d => `- ${d}`).join('\n')}` : ''}
+${hooksBlock}
+${dataBlock}
 
 Write 5 LinkedIn posts following the 4-1-1 rule:
 - 4 pure value posts (no selling)
@@ -95,8 +157,7 @@ Write 5 LinkedIn posts following the 4-1-1 rule:
 Return ONLY valid JSON:
 {
   "posts": [
-    { "type": "value", "hook": "First line hook", "content": "Full post text" },
-    ...
+    { "type": "value", "hook": "First line hook", "content": "Full post text" }
   ]
 }`,
       }],
@@ -106,10 +167,16 @@ Return ONLY valid JSON:
     try {
       const liText = linkedinRes.content[0].type === "text" ? linkedinRes.content[0].text : "";
       linkedin = JSON.parse(liText.replace(/```json|```/g, "").trim());
-    } catch { linkedin = { posts: [] }; }
+    } catch {
+      linkedin = { posts: [] };
+    }
 
-    // ── 3. Twitter/X Threads (3) ─────────────────────────
-    const twitterRes = await anthropic.messages.create({
+    // ── Pause before next call ─────────────────────────────────
+    await pause(2000);
+
+    // ── 3. Twitter/X Threads (3) ─────────────────────────────
+    console.log("[Content Writer] Writing Twitter threads...");
+    const twitterRes = await claudeWithRetry({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1000,
       messages: [{
@@ -118,7 +185,7 @@ Return ONLY valid JSON:
 
 Topic: "${topic}"
 
-${hooks.length > 0 ? `Use these as thread opener inspiration:\n${hooks.map((h, i) => `${i+1}. ${h}`).join('\n')}` : ''}
+${hooksBlock}
 
 Write 3 Twitter threads, each 5–7 tweets.
 Make thread openers punchy and curiosity-driven.
@@ -141,10 +208,16 @@ Return ONLY valid JSON:
     try {
       const twText = twitterRes.content[0].type === "text" ? twitterRes.content[0].text : "";
       twitter = JSON.parse(twText.replace(/```json|```/g, "").trim());
-    } catch { twitter = { threads: [] }; }
+    } catch {
+      twitter = { threads: [] };
+    }
 
-    // ── 4. Newsletter segment ─────────────────────────────
-    const newsletterRes = await anthropic.messages.create({
+    // ── Pause before next call ─────────────────────────────────
+    await pause(2000);
+
+    // ── 4. Newsletter segment ─────────────────────────────────
+    console.log("[Content Writer] Writing newsletter segment...");
+    const newsletterRes = await claudeWithRetry({
       model: "claude-sonnet-4-20250514",
       max_tokens: 800,
       messages: [{
@@ -156,8 +229,8 @@ Length: 400–600 words
 Style: Personal, warm, like a letter from a mentor. No corporate speak.
 Structure: Hook → Insight → Practical takeaway → Soft CTA to try Ascentor
 
-${dataPoints.length > 0 ? `Anchor the insight with these real data points:\n${dataPoints.map(d => `- ${d}`).join('\n')}` : ''}
-${hooks.length > 2 ? `Subject line inspiration: ${hooks[2]}` : ''}
+${dataBlock}
+${safeHooks.length > 2 ? `Subject line inspiration: ${safeHooks[2]}` : ""}
 
 Return ONLY valid JSON:
 {
@@ -172,30 +245,28 @@ Return ONLY valid JSON:
     try {
       const nlText = newsletterRes.content[0].type === "text" ? newsletterRes.content[0].text : "";
       newsletter = JSON.parse(nlText.replace(/```json|```/g, "").trim());
-    } catch { newsletter = { subject: topic, preview_text: "", body: "" }; }
+    } catch {
+      newsletter = { subject: topic, preview_text: "", body: "" };
+    }
 
-    // ── 5. Save all to Supabase content_calendar ──────────
+    // ── 5. Save all to Supabase content_calendar ──────────────
     const now = new Date().toISOString();
     const items = [
-      { pillar, type: "Blog Post",           title: blog.title || topic,                   platform: "Website",   week, status: "draft", content_data: blog },
+      { pillar, type: "Blog Post",       title: blog.title || topic,                            platform: "Website",  week, status: "draft", content_data: blog },
       ...(linkedin.posts || []).map((p: any, i: number) => ({
-        pillar, type: "LinkedIn Post", title: `${p.hook?.substring(0, 60) || `LinkedIn ${i+1}`}...`,
-        platform: "LinkedIn", week, status: "draft", content_data: p,
+        pillar, type: "LinkedIn Post",   title: `${p.hook?.substring(0, 60) || `LinkedIn ${i + 1}`}...`,
+        platform: "LinkedIn",  week, status: "draft", content_data: p,
       })),
       ...(twitter.threads || []).map((t: any, i: number) => ({
-        pillar, type: "Twitter Thread", title: `Thread: ${t.opener?.substring(0, 50) || `Thread ${i+1}`}...`,
+        pillar, type: "Twitter Thread",  title: `Thread: ${t.opener?.substring(0, 50) || `Thread ${i + 1}`}...`,
         platform: "Twitter/X", week, status: "draft", content_data: t,
       })),
-      { pillar, type: "Email Newsletter", title: newsletter.subject || `Newsletter: ${topic}`, platform: "Email", week, status: "draft", content_data: newsletter },
+      { pillar, type: "Email Newsletter", title: newsletter.subject || `Newsletter: ${topic}`, platform: "Email",    week, status: "draft", content_data: newsletter },
     ];
 
     const { error: insertError } = await supabase
       .from("content_calendar")
-      .insert(items.map(item => ({
-        ...item,
-        created_at: now,
-        triggered_by: triggeredBy,
-      })));
+      .insert(items.map((item) => ({ ...item, created_at: now, triggered_by: triggeredBy })));
 
     if (insertError) console.error("[Content Writer] Supabase insert error:", insertError);
 
@@ -204,10 +275,10 @@ Return ONLY valid JSON:
       pillar,
       week,
       generated: {
-        blog: 1,
-        linkedin_posts: linkedin.posts?.length || 0,
-        twitter_threads: twitter.threads?.length || 0,
-        newsletter: 1,
+        blog:             1,
+        linkedin_posts:   linkedin.posts?.length || 0,
+        twitter_threads:  twitter.threads?.length || 0,
+        newsletter:       1,
       },
       total_items: items.length,
     };
