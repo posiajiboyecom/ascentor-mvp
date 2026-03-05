@@ -14,7 +14,7 @@ const supabase = createClient(
 
 // ── Rate-limit-safe wrapper with exponential backoff ─────────
 async function claudeWithRetry(
-  params: Parameters<typeof anthropic.messages.create>[0],
+  params: Anthropic.MessageCreateParamsNonStreaming,
   retries = 3
 ): Promise<Anthropic.Message> {
   for (let i = 0; i < retries; i++) {

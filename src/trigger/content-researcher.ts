@@ -41,7 +41,7 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ── Rate-limit-safe wrapper with exponential backoff ─────────
 async function claudeWithRetry(
-  params: Parameters<typeof anthropic.messages.create>[0],
+  params: Anthropic.MessageCreateParamsNonStreaming,
   retries = 3
 ): Promise<Anthropic.Message> {
   for (let i = 0; i < retries; i++) {
