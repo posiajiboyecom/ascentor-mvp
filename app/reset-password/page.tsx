@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import PasswordInput from '@/components/PasswordInput';
 
 const B = {
   fontDisplay: "'Cormorant Garamond', Georgia, serif",
@@ -17,7 +19,6 @@ const B = {
   dark50:      '#F7F6F3',
   gold:        '#E8A020',
   gold600:     '#C87820',
-  goldMuted:   'rgba(232,160,32,0.10)',
   goldBorder:  'rgba(232,160,32,0.25)',
   border:      'rgba(212,207,195,0.10)',
   error:       '#EF4444',
@@ -26,27 +27,61 @@ const B = {
   successMuted:'rgba(34,197,94,0.08)',
 };
 
-export default function ForgotPasswordPage() {
-  const supabase = createClient();
+export default function ResetPasswordPage() {
+  const supabase     = createClient();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
 
-  const [email,   setEmail]   = useState('');
-  const [error,   setError]   = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [password,  setPassword]  = useState('');
+  const [confirm,   setConfirm]   = useState('');
+  const [error,     setError]     = useState<string | null>(null);
+  const [success,   setSuccess]   = useState(false);
+  const [loading,   setLoading]   = useState(false);
+  const [validLink, setValidLink] = useState<boolean | null>(null); // null = exchanging code
+
+  // Supabase sends ?code= in the URL for email OTP resets.
+  // We exchange it for a session, which authorises the password update.
+  useEffect(() => {
+    const code = searchParams.get('code');
+
+    if (!code) {
+      // No code in URL — invalid or already used link
+      setValidLink(false);
+      return;
+    }
+
+    supabase.auth.exchangeCodeForSession(code)
+      .then(({ error }) => {
+        if (error) {
+          console.error('[reset-password] code exchange failed:', error.message);
+          setValidLink(false);
+        } else {
+          setValidLink(true);
+        }
+      });
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+    if (password !== confirm) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
       setError(error.message);
     } else {
       setSuccess(true);
+      setTimeout(() => router.push('/dashboard'), 2500);
     }
     setLoading(false);
   }
@@ -55,125 +90,60 @@ export default function ForgotPasswordPage() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-
         *, *::before, *::after { box-sizing: border-box; }
         body { margin: 0; }
-
         .asc-page {
-          min-height: 100vh;
-          display: flex;
-          background: ${B.dark};
-          font-family: ${B.fontUI};
-          position: relative;
-          overflow: hidden;
+          min-height: 100vh; display: flex;
+          background: ${B.dark}; font-family: ${B.fontUI};
+          position: relative; overflow: hidden;
         }
         .asc-page::before {
-          content: '';
-          position: fixed;
-          top: -20vh; left: 50%;
-          transform: translateX(-50%);
-          width: 600px; height: 600px;
+          content: ''; position: fixed; top: -20vh; left: 50%;
+          transform: translateX(-50%); width: 600px; height: 600px;
           background: radial-gradient(ellipse at center, rgba(232,160,32,0.07) 0%, transparent 70%);
-          pointer-events: none;
-          z-index: 0;
+          pointer-events: none; z-index: 0;
         }
-
         .asc-brand-panel {
-          display: none;
-          width: 420px;
-          flex-shrink: 0;
-          background: ${B.dark700};
-          border-right: 1px solid ${B.border};
-          padding: 60px 48px;
-          flex-direction: column;
-          justify-content: space-between;
-          position: relative;
-          overflow: hidden;
+          display: none; width: 420px; flex-shrink: 0;
+          background: ${B.dark700}; border-right: 1px solid ${B.border};
+          padding: 60px 48px; flex-direction: column;
+          justify-content: space-between; position: relative; overflow: hidden;
         }
         .asc-brand-panel::after {
-          content: '';
-          position: absolute;
-          bottom: 0; left: 0; right: 0;
-          height: 50%;
+          content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 50%;
           background: linear-gradient(to top, rgba(232,160,32,0.04), transparent);
           pointer-events: none;
         }
         @media (min-width: 1024px) { .asc-brand-panel { display: flex; } }
-
         .asc-form-panel {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 40px 24px;
-          position: relative;
-          z-index: 1;
+          flex: 1; display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          padding: 40px 24px; position: relative; z-index: 1;
         }
-        .asc-form-inner {
-          width: 100%;
-          max-width: 400px;
-          display: flex;
-          flex-direction: column;
-          gap: 0;
-        }
-        .asc-rule {
-          height: 1px;
-          background: linear-gradient(90deg, ${B.gold} 0%, transparent 70%);
-          margin: 28px 0;
-        }
-        .asc-input {
-          width: 100%;
-          padding: 13px 16px;
-          border-radius: 10px;
-          border: 1px solid ${B.border};
-          background: ${B.dark700};
-          color: ${B.dark50};
-          font-family: ${B.fontUI};
-          font-size: 14px;
-          outline: none;
-          transition: border-color 0.15s ease;
-        }
-        .asc-input::placeholder { color: ${B.dark500}; }
-        .asc-input:focus        { border-color: ${B.goldBorder}; }
-
+        .asc-form-inner { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 0; }
+        .asc-rule { height: 1px; background: linear-gradient(90deg, ${B.gold} 0%, transparent 70%); margin: 28px 0; }
         .asc-btn-primary {
-          width: 100%;
-          padding: 14px 24px;
-          border-radius: 10px;
-          border: none;
-          cursor: pointer;
-          background: ${B.gold};
-          color: ${B.dark};
-          font-family: ${B.fontUI};
-          font-size: 14px;
-          font-weight: 700;
-          letter-spacing: 0.02em;
+          width: 100%; padding: 14px 24px; border-radius: 10px; border: none; cursor: pointer;
+          background: ${B.gold}; color: ${B.dark}; font-family: ${B.fontUI};
+          font-size: 14px; font-weight: 700; letter-spacing: 0.02em;
           transition: background 0.15s ease, opacity 0.15s ease;
         }
         .asc-btn-primary:hover:not(:disabled) { background: ${B.gold600}; }
         .asc-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
         .asc-error {
-          padding: 10px 14px;
-          border-radius: 8px;
-          background: ${B.errorMuted};
-          border: 1px solid rgba(239,68,68,0.2);
-          color: ${B.error};
-          font-family: ${B.fontUI};
-          font-size: 13px;
-          line-height: 1.5;
-          margin-bottom: 12px;
+          padding: 10px 14px; border-radius: 8px;
+          background: ${B.errorMuted}; border: 1px solid rgba(239,68,68,0.2);
+          color: ${B.error}; font-family: ${B.fontUI}; font-size: 13px; line-height: 1.5; margin-bottom: 12px;
         }
         .asc-success {
-          padding: 14px 16px;
-          border-radius: 10px;
-          background: ${B.successMuted};
-          border: 1px solid rgba(34,197,94,0.2);
-          color: ${B.success};
-          font-family: ${B.fontUI};
-          font-size: 13px;
-          line-height: 1.6;
+          padding: 14px 16px; border-radius: 10px;
+          background: ${B.successMuted}; border: 1px solid rgba(34,197,94,0.2);
+          color: ${B.success}; font-family: ${B.fontUI}; font-size: 13px; line-height: 1.6;
+        }
+        .asc-expired {
+          padding: 14px 16px; border-radius: 10px;
+          background: ${B.errorMuted}; border: 1px solid rgba(239,68,68,0.2);
+          color: ${B.error}; font-family: ${B.fontUI}; font-size: 13px; line-height: 1.6;
         }
       `}</style>
 
@@ -183,16 +153,13 @@ export default function ForgotPasswordPage() {
         <div className="asc-brand-panel">
           <div>
             <div style={{ marginBottom: '48px' }}>
-              <Link href="/">
-                <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: '32px', width: 'auto' }} />
-              </Link>
+              <Link href="/"><img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: '32px', width: 'auto' }} /></Link>
             </div>
             <h2 style={{ fontFamily: B.fontDisplay, fontStyle: 'italic', fontWeight: 600, fontSize: '36px', color: B.dark50, lineHeight: 1.25, margin: '0 0 20px' }}>
               Everyone who made it had someone.
             </h2>
             <p style={{ fontFamily: B.fontUI, fontSize: '14px', color: B.dark400, lineHeight: 1.7, margin: 0 }}>
-              Africa's mentorship platform — AI guidance, human expertise,
-              and peer accountability built for your reality.
+              Africa's mentorship platform — AI guidance, human expertise, and peer accountability built for your reality.
             </p>
           </div>
           <div style={{ borderLeft: `3px solid ${B.gold}`, paddingLeft: '16px' }}>
@@ -209,49 +176,55 @@ export default function ForgotPasswordPage() {
         <div className="asc-form-panel">
           <div className="asc-form-inner">
 
-            {/* Mobile logo */}
             <div style={{ marginBottom: '36px' }} className="lg:hidden">
-              <Link href="/">
-                <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: '32px', width: 'auto' }} />
-              </Link>
+              <Link href="/"><img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: '32px', width: 'auto' }} /></Link>
             </div>
 
             <h1 style={{ fontFamily: B.fontDisplay, fontWeight: 700, fontSize: 'clamp(28px, 4vw, 36px)', color: B.dark50, margin: '0 0 6px', lineHeight: 1.15 }}>
-              Reset your password.
+              Choose a new password.
             </h1>
             <p style={{ fontFamily: B.fontUI, fontSize: '14px', color: B.dark400, margin: '0 0 28px', lineHeight: 1.6 }}>
-              Enter your email and we'll send you a reset link.
+              Make it strong — at least 8 characters.
             </p>
 
             <div className="asc-rule" />
 
-            {success ? (
-              <div className="asc-success">
-                ✓ Check your inbox — a reset link is on its way to <strong>{email}</strong>.
-                <br /><br />
-                The link expires in 1 hour. Check your spam folder if you don't see it.
+            {/* Exchanging the code */}
+            {validLink === null && (
+              <p style={{ fontFamily: B.fontMono, fontSize: '11px', color: B.dark500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Verifying link…
+              </p>
+            )}
+
+            {/* Expired or invalid */}
+            {validLink === false && (
+              <div className="asc-expired">
+                This reset link has expired or has already been used.{' '}
+                <Link href="/forgot-password" style={{ color: B.error, fontWeight: 600 }}>
+                  Request a new one →
+                </Link>
               </div>
-            ) : (
+            )}
+
+            {/* Success */}
+            {success && (
+              <div className="asc-success">
+                ✓ Password updated. Redirecting you to your dashboard…
+              </div>
+            )}
+
+            {/* Form */}
+            {validLink === true && !success && (
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="Email address"
-                  className="asc-input"
-                  autoFocus
-                />
-
+                <PasswordInput value={password} onChange={setPassword} placeholder="New password" />
+                <PasswordInput value={confirm}   onChange={setConfirm}  placeholder="Confirm new password" />
                 {error && <div className="asc-error">{error}</div>}
-
                 <button type="submit" disabled={loading} className="asc-btn-primary" style={{ marginTop: '4px' }}>
-                  {loading ? 'Sending…' : 'Send Reset Link'}
+                  {loading ? 'Updating…' : 'Update Password'}
                 </button>
               </form>
             )}
 
-            {/* Back to login */}
             <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '24px', borderTop: `1px solid ${B.border}` }}>
               <Link href="/login" style={{ fontFamily: B.fontUI, fontSize: '13px', color: B.dark400, textDecoration: 'none' }}>
                 ← Back to login
