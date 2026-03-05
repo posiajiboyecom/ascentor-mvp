@@ -322,13 +322,14 @@ export default function AdminOverviewClient() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-2.5">
         {[
           { label: 'Create Cohort', href: '/admin/cohorts?action=create', icon: '➕' },
           { label: 'Add Expert Event', href: '/admin/experts?action=create', icon: '🎤' },
           { label: 'Add Course', href: '/admin/courses?action=create', icon: '📖' },
           { label: 'Manage Roles', href: '/admin/users', icon: '🔑' },
           { label: 'Manage Careers', href: '/admin/careers', icon: '💼' },
+          { label: 'Master Marketing', href: '/admin/master', icon: '🚀' },
         ].map((a) => (
           <Link key={a.label} href={a.href}>
             <div className="rounded-lg p-3 text-center transition-all hover:border-gray-600 cursor-pointer"
