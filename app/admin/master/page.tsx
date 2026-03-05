@@ -71,8 +71,15 @@ interface AgentStatus {
   id: string;
   name: string;
   description: string;
+  schedule: string;
+  toolStack: string;
+  type: string;
+  triggerTaskId: string | null;
+  canTrigger: boolean;
+  requiresPayload: boolean;
+  payloadSchema: Record<string, string> | null;
   lastRun: string | null;
-  nextRun: string | null;
+  lastStatus: string | null;
   status: 'active' | 'idle' | 'error' | 'building';
   runsThisWeek: number;
 }
@@ -100,15 +107,7 @@ const STATUS_COLORS = {
   building:  { bg: 'rgba(232,160,32,0.1)', color: '#E8A020', label: 'Building'  },
 };
 
-const AGENTS: AgentStatus[] = [
-  { id: '1', name: 'Content Researcher',   description: 'Perplexity AI → trending African leadership topics → Notion brief', lastRun: null, nextRun: 'Monday 06:00', status: 'building', runsThisWeek: 0 },
-  { id: '2', name: 'Content Writer',       description: 'Claude API → blog post, 5 LinkedIn posts, 3 threads, newsletter segment', lastRun: null, nextRun: 'Monday 08:00', status: 'building', runsThisWeek: 0 },
-  { id: '3', name: 'Social Scheduler',     description: 'Pushes approved content to Buffer/Publer via API', lastRun: null, nextRun: 'Monday 10:00', status: 'building', runsThisWeek: 0 },
-  { id: '4', name: 'Email Sequence Mgr',  description: 'New Supabase signup → MailerLite sequence enrol → cold lead flag', lastRun: null, nextRun: 'Continuous', status: 'building', runsThisWeek: 0 },
-  { id: '5', name: 'Lead Scorer',          description: 'Behaviour analysis → score 1–100 → upgrade prompt at 70+', lastRun: null, nextRun: 'Continuous', status: 'building', runsThisWeek: 0 },
-  { id: '6', name: 'Community Curator',    description: 'Top Circle discussions → weekly Community Digest post', lastRun: null, nextRun: 'Friday 09:00', status: 'building', runsThisWeek: 0 },
-  { id: '7', name: 'Analytics Reporter',   description: 'Supabase + Plausible → weekly growth summary → founder email', lastRun: null, nextRun: 'Monday 07:00', status: 'building', runsThisWeek: 0 },
-];
+// Agents loaded dynamically from /api/admin/agents
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
 const card: React.CSSProperties = {
@@ -178,6 +177,10 @@ export default function MasterAdminPage() {
   const [msg,       setMsg]             = useState('');
   const [filterPillar, setFilterPillar] = useState('all');
   const [filterWeek,   setFilterWeek]   = useState('all');
+  const [agentMsg,     setAgentMsg]     = useState<{ id: string; text: string; ok: boolean } | null>(null);
+  const [triggering,   setTriggering]   = useState<string | null>(null);
+  const [agentPayload, setAgentPayload] = useState<Record<string, string>>({});
+  const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
 
   // Content form
   const [showAddContent, setShowAddContent] = useState(false);
@@ -199,6 +202,7 @@ export default function MasterAdminPage() {
       if (tab === 'content') await loadContent();
       if (tab === 'leads') await loadMagnets();
       if (tab === 'social') await loadSocial();
+      if (tab === 'agents') await loadAgents();
     } catch (e) { console.error(e); }
     setLoading(p => ({ ...p, [tab]: false }));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -273,6 +277,40 @@ export default function MasterAdminPage() {
   async function loadSocial() {
     const { data } = await supabase.from('social_queue').select('*').order('scheduled_for');
     setSocial(data || []);
+  }
+
+  // ── Agents loader + trigger ────────────────────────────────────────────────────────────
+  async function loadAgents() {
+    try {
+      const res = await fetch('/api/admin/agents');
+      if (!res.ok) throw new Error('Failed to load agents');
+      const data = await res.json();
+      setAgents(data.agents || []);
+    } catch (e) {
+      console.error('loadAgents error:', e);
+    }
+  }
+
+  async function triggerAgent(agentId: string, payload: Record<string, string> = {}) {
+    setTriggering(agentId);
+    setAgentMsg(null);
+    try {
+      const res = await fetch('/api/admin/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId, payload }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAgentMsg({ id: agentId, text: `✓ ${data.message} · Run ID: ${data.runId?.substring(0, 12)}...`, ok: true });
+        setTimeout(() => load('agents'), 3000);
+      } else {
+        setAgentMsg({ id: agentId, text: `✗ ${data.error}`, ok: false });
+      }
+    } catch (e: any) {
+      setAgentMsg({ id: agentId, text: `✗ ${e.message}`, ok: false });
+    }
+    setTriggering(null);
   }
 
   // ── Content CRUD ─────────────────────────────────────────────────────────────
@@ -939,121 +977,209 @@ export default function MasterAdminPage() {
       {/* ══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'agents' && !isLoading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <SectionHeader eyebrow="Automation Architecture" title="AI Agent Monitor" />
+          <SectionHeader
+            eyebrow="Automation Architecture"
+            title="AI Agent Control Centre"
+            right={
+              <button onClick={() => load('agents')} style={{ ...inputStyle, width: 'auto', padding: '7px 14px', cursor: 'pointer', fontSize: 11 }}>
+                ↻ Refresh Status
+              </button>
+            }
+          />
 
           <div style={{ padding: '12px 16px', background: 'rgba(232,160,32,0.04)', border: '1px solid rgba(232,160,32,0.15)', borderRadius: 10 }}>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', margin: '0 0 4px', letterSpacing: '0.1em' }}>BUILD ORDER — MAXIMUM REVENUE IMPACT FIRST</p>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: '#7A7260', margin: 0 }}>W1: Email Manager → W2: Content Writer + Scheduler → W3: Researcher → W4: Lead Scorer → M2: Analytics + Community</p>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', margin: '0 0 4px', letterSpacing: '0.1em' }}>LIVE AGENTS — CONNECTED TO TRIGGER.DEV</p>
+            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: '#7A7260', margin: 0 }}>
+              Trigger agents manually · view last run status · monitor cron schedules · all runs logged to audit trail
+            </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {agents.map((agent, i) => (
-              <div key={agent.id} style={{ ...card, padding: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, flexWrap: 'wrap', gap: 10 }}>
-                  <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                      background: 'rgba(232,160,32,0.1)', border: '1.5px solid rgba(232,160,32,0.25)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: "'Cormorant Garamond', serif", fontSize: 16, fontWeight: 700, color: '#E8A020',
-                    }}>{i + 1}</div>
-                    <div>
-                      <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: '#FEF9EC', margin: '0 0 4px' }}>
-                        Agent {i + 1}: {agent.name}
-                      </p>
-                      <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: '#4A4438', margin: 0, lineHeight: 1.5 }}>{agent.description}</p>
+          {agents.length === 0 && (
+            <div style={{ ...card, padding: 40, textAlign: 'center' }}>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#4A4438', letterSpacing: '0.1em' }}>
+                LOADING AGENTS... · Deploy Trigger.dev tasks first if this persists
+              </p>
+              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: '#4A4438', marginTop: 8 }}>
+                Run <code style={{ color: '#E8A020' }}>npx trigger.dev@latest deploy</code> from your project root
+              </p>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {agents.map((agent, i) => {
+              const isExpanded = expandedAgent === agent.id;
+              const isTriggeringThis = triggering === agent.id;
+              const myMsg = agentMsg?.id === agent.id ? agentMsg : null;
+
+              return (
+                <div key={agent.id} style={{ ...card, overflow: 'hidden' }}>
+                  {/* Agent header row */}
+                  <div
+                    style={{ padding: '16px 20px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}
+                    onClick={() => setExpandedAgent(isExpanded ? null : agent.id)}
+                  >
+                    <div style={{ display: 'flex', gap: 14, alignItems: 'center', flex: 1, minWidth: 0 }}>
+                      {/* Number badge */}
+                      <div style={{
+                        width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                        background: agent.status === 'building' ? 'rgba(74,68,56,0.3)' : 'rgba(232,160,32,0.1)',
+                        border: `1.5px solid ${agent.status === 'building' ? '#2E2A22' : 'rgba(232,160,32,0.3)'}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: "'Cormorant Garamond', serif", fontSize: 15, fontWeight: 700,
+                        color: agent.status === 'building' ? '#4A4438' : '#E8A020',
+                      }}>{i + 1}</div>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, color: '#FEF9EC', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {agent.name}
+                        </p>
+                        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: '#4A4438', margin: 0, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {agent.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
+                      <StatusBadge status={agent.status as any} />
+                      <span style={{ color: '#4A4438', fontSize: 12 }}>{isExpanded ? '▲' : '▼'}</span>
                     </div>
                   </div>
-                  <StatusBadge status={agent.status as any} />
-                </div>
 
-                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', paddingTop: 10, borderTop: '1px solid #2E2A22' }}>
-                  <div>
-                    <p style={mono('Next Run')}>Next Run</p>
-                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#D4CFC3', margin: '3px 0 0' }}>{agent.nextRun || '—'}</p>
-                  </div>
-                  <div>
-                    <p style={mono('Last Run')}>Last Run</p>
-                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#D4CFC3', margin: '3px 0 0' }}>{agent.lastRun || 'Never'}</p>
-                  </div>
-                  <div>
-                    <p style={mono('Runs This Week')}>Runs This Week</p>
-                    <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, color: '#E8A020', margin: '3px 0 0', lineHeight: 1 }}>{agent.runsThisWeek}</p>
-                  </div>
-                  <div style={{ marginLeft: 'auto' }}>
-                    <p style={mono('Tool Stack')}>Tool Stack</p>
-                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#7A7260', margin: '3px 0 0' }}>
-                      {[
-                        'Perplexity + Notion',
-                        'Claude API + Notion',
-                        'Buffer API + Publer',
-                        'Supabase + MailerLite API',
-                        'Supabase + MailerLite Tags',
-                        'Supabase + Notion',
-                        'Supabase + Plausible',
-                      ][i]}
-                    </p>
-                  </div>
+                  {/* Expanded detail panel */}
+                  {isExpanded && (
+                    <div style={{ borderTop: '1px solid #2E2A22', padding: '16px 20px', background: '#0F0E0C' }}>
+
+                      {/* Stats row */}
+                      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginBottom: 16 }}>
+                        <div>
+                          <p style={mono('Schedule')}>Schedule</p>
+                          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#D4CFC3', margin: '3px 0 0' }}>{agent.schedule}</p>
+                        </div>
+                        <div>
+                          <p style={mono('Last Run')}>Last Run</p>
+                          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: agent.lastRun ? '#D4CFC3' : '#4A4438', margin: '3px 0 0' }}>
+                            {agent.lastRun || 'Never'}
+                          </p>
+                        </div>
+                        <div>
+                          <p style={mono('Last Status')}>Last Status</p>
+                          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, margin: '3px 0 0',
+                            color: agent.lastStatus === 'COMPLETED' ? '#10B981' : agent.lastStatus === 'FAILED' ? '#EF4444' : '#4A4438',
+                          }}>
+                            {agent.lastStatus || '—'}
+                          </p>
+                        </div>
+                        <div>
+                          <p style={mono('Runs This Week')}>Runs This Week</p>
+                          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#E8A020', margin: '3px 0 0', lineHeight: 1 }}>
+                            {agent.runsThisWeek}
+                          </p>
+                        </div>
+                        <div>
+                          <p style={mono('Tool Stack')}>Tool Stack</p>
+                          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#7A7260', margin: '3px 0 0' }}>{agent.toolStack}</p>
+                        </div>
+                        <div>
+                          <p style={mono('Type')}>Type</p>
+                          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#7A7260', margin: '3px 0 0', textTransform: 'capitalize' as const }}>{agent.type}</p>
+                        </div>
+                      </div>
+
+                      {/* Payload fields for agents that need input */}
+                      {agent.requiresPayload && agent.payloadSchema && (
+                        <div style={{ marginBottom: 14 }}>
+                          <p style={{ ...mono('Payload', true), marginBottom: 8 }}>Run Parameters</p>
+                          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                            {Object.entries(agent.payloadSchema).map(([key, hint]) => (
+                              <div key={key} style={{ flex: '1 1 160px', minWidth: 140 }}>
+                                <label style={{ ...mono(key), display: 'block', marginBottom: 4 }}>{key}</label>
+                                <input
+                                  value={agentPayload[`${agent.id}:${key}`] || ''}
+                                  onChange={e => setAgentPayload(p => ({ ...p, [`${agent.id}:${key}`]: e.target.value }))}
+                                  placeholder={hint as string}
+                                  style={{ ...inputStyle }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action buttons */}
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                        {agent.canTrigger ? (
+                          <button
+                            onClick={() => {
+                              const payload: Record<string, string> = {};
+                              if (agent.payloadSchema) {
+                                Object.keys(agent.payloadSchema).forEach(key => {
+                                  payload[key] = agentPayload[`${agent.id}:${key}`] || '';
+                                });
+                              }
+                              triggerAgent(agent.id, payload);
+                            }}
+                            disabled={isTriggeringThis}
+                            style={{
+                              padding: '8px 20px', borderRadius: 8, border: 'none',
+                              background: isTriggeringThis ? '#2E2A22' : '#E8A020',
+                              color: isTriggeringThis ? '#4A4438' : '#0C0B08',
+                              fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12,
+                              cursor: isTriggeringThis ? 'not-allowed' : 'pointer',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            {isTriggeringThis ? '⏳ Triggering...' : '▶ Run Now'}
+                          </button>
+                        ) : (
+                          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#4A4438', padding: '8px 14px', border: '1px solid #2E2A22', borderRadius: 8 }}>
+                            {agent.triggerTaskId ? 'SCHEDULED ONLY' : 'NOT YET BUILT'}
+                          </span>
+                        )}
+
+                        {agent.triggerTaskId && (
+                          <a
+                            href={`https://cloud.trigger.dev/projects/v3/proj_zwrdqutfrrdneuwbjvxi/runs?tasks=${agent.triggerTaskId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#7A7260', textDecoration: 'none', padding: '8px 14px', border: '1px solid #2E2A22', borderRadius: 8 }}
+                          >
+                            View in Trigger.dev ↗
+                          </a>
+                        )}
+                      </div>
+
+                      {/* Result message */}
+                      {myMsg && (
+                        <div style={{
+                          marginTop: 12, padding: '10px 14px', borderRadius: 8,
+                          background: myMsg.ok ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+                          border: `1px solid ${myMsg.ok ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                          fontFamily: "'DM Mono', monospace", fontSize: 11,
+                          color: myMsg.ok ? '#10B981' : '#EF4444',
+                          letterSpacing: '0.04em',
+                        }}>
+                          {myMsg.text}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Automation stack */}
-          <div style={{ ...card, padding: 20 }}>
-            <p style={mono('Full Automation Stack — Tool by Tool', true, false)}>Automation Stack</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10, marginTop: 16 }}>
-              {[
-                { tool: 'Trigger.dev',       role: 'Cron jobs + event automations', cost: 'Free (integrated)', status: 'active' },
-                { tool: 'n8n / Make.com',    role: 'Visual automation builder — connects all tools', cost: '$0 self-hosted', status: 'building' },
-                { tool: 'MailerLite API',    role: 'Email sequence triggers from Supabase events', cost: 'Included in plan', status: 'active' },
-                { tool: 'Buffer API',        role: 'Schedule social posts programmatically', cost: '$6/mo', status: 'building' },
-                { tool: 'Claude API',        role: 'Content writer agent + all copy generation', cost: '~$15–20/mo', status: 'active' },
-                { tool: 'Perplexity AI',     role: 'Research agent — trending African topics', cost: 'Free tier', status: 'building' },
-                { tool: 'Typeform',          role: 'Lead magnet quiz + segmentation trigger', cost: 'Free tier', status: 'building' },
-                { tool: 'Plausible',         role: 'Analytics — which content drives signups', cost: 'Integrated', status: 'active' },
-                { tool: 'Notion',            role: 'Content calendar + SOP hub + agent staging', cost: 'Free tier', status: 'building' },
-                { tool: 'Canva',             role: 'Visual content — carousels, quote cards', cost: 'Free tier', status: 'building' },
-              ].map(tool => (
-                <div key={tool.tool} style={{ padding: '12px 14px', background: '#1E1C17', borderRadius: 10, border: '1px solid #2E2A22' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, color: '#D4CFC3' }}>{tool.tool}</span>
-                    <StatusBadge status={tool.status as any} />
-                  </div>
-                  <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: '#4A4438', margin: '0 0 6px', lineHeight: 1.4 }}>{tool.role}</p>
-                  <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E8A020', margin: 0, letterSpacing: '0.06em' }}>{tool.cost}</p>
-                </div>
-              ))}
+          {/* Deployment banner */}
+          <div style={{ ...card, padding: 20, border: '1px solid rgba(232,160,32,0.2)', background: 'rgba(232,160,32,0.03)' }}>
+            <p style={mono('Deploy Trigger.dev Tasks First', true, false)}>Required: Deploy to Trigger.dev</p>
+            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: '#7A7260', margin: '8px 0 14px', lineHeight: 1.7 }}>
+              Agent controls won't work until tasks are deployed to Trigger.dev cloud. Run this command once from your project root:
+            </p>
+            <div style={{ padding: '12px 16px', background: '#0C0B08', borderRadius: 8, border: '1px solid #2E2A22' }}>
+              <code style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: '#E8A020', letterSpacing: '0.04em' }}>
+                npx trigger.dev@latest deploy
+              </code>
             </div>
-          </div>
-
-          {/* Budget */}
-          <div style={{ ...card, padding: 20 }}>
-            <p style={mono('Budget Allocation — $0–$500/Month', true, false)}>Monthly Budget</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 14 }}>
-              {[
-                { item: 'Claude API (content generation)',    cost: '$15–20',   note: 'Core content writer' },
-                { item: 'MailerLite',                         cost: 'Free tier', note: 'Up to 1,000 subscribers free' },
-                { item: 'Buffer (social scheduling)',          cost: '$6',        note: '3 channels' },
-                { item: 'Typefully (LinkedIn scheduler)',      cost: '$0',        note: 'Free tier' },
-                { item: 'Make.com (automation)',               cost: '$0',        note: '1,000 ops/mo free' },
-                { item: 'Typeform (quiz lead magnets)',        cost: '$0',        note: 'Free tier' },
-                { item: 'Perplexity AI (research)',            cost: '$0',        note: 'Free tier' },
-                { item: 'Canva',                              cost: '$0',        note: 'Free tier sufficient' },
-                { item: 'Notion',                             cost: '$0',        note: 'Free personal tier' },
-              ].map((row, i, arr) => (
-                <div key={row.item} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 160px', gap: 12, padding: '8px 12px', background: '#1E1C17', borderRadius: 8, alignItems: 'center' }}>
-                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: '#D4CFC3' }}>{row.item}</span>
-                  <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: '#E8A020', fontWeight: 700 }}>{row.cost}</span>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#4A4438' }}>{row.note}</span>
-                </div>
-              ))}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 160px', gap: 12, padding: '12px 12px', background: 'rgba(232,160,32,0.06)', border: '1px solid rgba(232,160,32,0.2)', borderRadius: 8, marginTop: 4 }}>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, color: '#FEF9EC' }}>TOTAL FIXED</span>
-                <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#E8A020', fontWeight: 700 }}>~$26/mo</span>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E8A020' }}>$474 reserved for M3+ paid ads</span>
-              </div>
-            </div>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#4A4438', margin: '10px 0 0', letterSpacing: '0.06em' }}>
+              Add FOUNDER_EMAIL to .env.local for the Analytics Reporter weekly email
+            </p>
           </div>
         </div>
       )}

@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
+import { addOrUpdateSubscriber, ML_GROUPS } from '@/lib/mailerlite';
 
 // Service role client — for writes that bypass RLS
 const supabase = createServiceClient(
@@ -90,6 +91,25 @@ export async function POST(req: NextRequest) {
             link:    '/dashboard',
           });
         } catch {} // Non-critical
+
+        // Sync promo activation to MailerLite
+        try {
+          const { data: authData } = await supabase.auth.admin.getUserById(userId);
+          const userEmail = authData?.user?.email;
+          if (userEmail) {
+            await addOrUpdateSubscriber({
+              email: userEmail,
+              groups: [ML_GROUPS.APP_USERS, ML_GROUPS.PAID_USERS],
+              fields: {
+                plan:        'pro',
+                promo_code:  body.promoCode?.toUpperCase() || '',
+                upgraded_at: new Date().toISOString(),
+              },
+            });
+          }
+        } catch (mlErr) {
+          console.error('[payment/initialize] MailerLite error (non-fatal):', mlErr);
+        }
 
         return NextResponse.json({
           success:  true,

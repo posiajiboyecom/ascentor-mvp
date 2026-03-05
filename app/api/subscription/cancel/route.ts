@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { addOrUpdateSubscriber, ML_GROUPS } from '@/lib/mailerlite';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -106,6 +107,26 @@ export async function POST(req: NextRequest) {
         link: '/checkout',
       });
     } catch {} // Non-critical
+
+    // Sync cancellation to MailerLite — move from Paid back to Free Users
+    try {
+      const { data: authData } = await supabase.auth.admin.getUserById(userId);
+      const userEmail = authData?.user?.email;
+      if (userEmail) {
+        await addOrUpdateSubscriber({
+          email: userEmail,
+          groups: [ML_GROUPS.APP_USERS, ML_GROUPS.FREE_USERS],
+          fields: {
+            plan:          'free',
+            cancelled_at:  new Date().toISOString(),
+            cancel_reason: reason || 'user_initiated',
+            access_until:  profile.subscription_end || '',
+          },
+        });
+      }
+    } catch (mlErr) {
+      console.error('[subscription/cancel] MailerLite error (non-fatal):', mlErr);
+    }
 
     return NextResponse.json({
       success: true,
