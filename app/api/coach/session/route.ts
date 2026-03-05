@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { checkUsage } from '@/lib/session-limits';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // P2 FIX: Sage chat now streams tokens as they arrive via ReadableStream.
@@ -60,23 +61,53 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Check usage limits
-  const { data: usageCheck } = await supabase.rpc('check_usage_limit', {
-    p_user_id: user.id,
-    p_feature: 'coachingSessions',
-  }) as { data: { limit_reached: boolean } | null; error: unknown };
+  // ── Enforce monthly session limit ────────────────────────────────
+  // Explorer: 10/month · Builder: unlimited · Climber: unlimited · Free: 3/month
+  const usage = await checkUsage(
+    user.id,
+    'coachingSessions',
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
 
-  if (usageCheck?.limit_reached) {
+  if (!usage.allowed) {
     return NextResponse.json(
-      { error: 'Session limit reached', upgradeRequired: true },
+      {
+        error: usage.message || 'Monthly session limit reached',
+        upgradeRequired: true,
+        used:  usage.used,
+        limit: usage.limit,
+      },
       { status: 429 }
     );
   }
 
-  const { userInput, sessionType = 'challenge_navigation' } = await req.json();
+  const { userInput, sessionType = 'challenge_navigation', messageCount = 0 } = await req.json();
 
   if (!userInput?.trim()) {
     return NextResponse.json({ error: 'No input provided' }, { status: 400 });
+  }
+
+  // ── Enforce session length (messages per conversation) ───────────
+  // messageCount is the number of user messages already sent THIS session,
+  // passed from the frontend. Free: 10, Explorer: 20, Builder/Climber: unlimited.
+  const sessionLengthCheck = await checkUsage(
+    user.id,
+    'sessionLength',
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+
+  // For unlimited plans (-1) skip the check entirely
+  if (sessionLengthCheck.limit !== -1 && messageCount >= sessionLengthCheck.limit) {
+    return NextResponse.json(
+      {
+        error: `You've reached the ${sessionLengthCheck.limit}-message limit for this conversation on your plan. Start a new session or upgrade for longer conversations.`,
+        sessionLimitReached: true,
+        upgradeRequired: sessionLengthCheck.limit <= 10,
+      },
+      { status: 429 }
+    );
   }
 
   const systemPrompt = SYSTEM_PROMPTS[sessionType] ?? SYSTEM_PROMPTS.challenge_navigation;

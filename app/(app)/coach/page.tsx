@@ -138,6 +138,9 @@ export default function CoachPage() {
     setInput('');
     setLoading(true);
 
+    // Count user messages already in this conversation (excluding the one being sent)
+    const userMessageCount = messages.filter(m => m.role === 'user').length;
+
     // Build the two new messages synchronously so we know exact positions
     setMessages(prev => {
       const next = [
@@ -154,24 +157,33 @@ export default function CoachPage() {
       const res = await fetch('/api/coach/session', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ userInput: userMsg, sessionType }),
+        body:    JSON.stringify({ userInput: userMsg, sessionType, messageCount: userMessageCount }),
       });
 
       if (res.status === 429) {
         const data = await res.json();
-        setLimitReached(true);
         analytics.coachingLimitReached();
+
+        // sessionLimitReached = hit the per-conversation message cap
+        // upgradeRequired = hit the monthly session cap
+        const isSessionCap = data.sessionLimitReached;
+
         setMessages(m => m.map((msg, i) =>
           i === streamingIndexRef.current
             ? {
                 role:       'assistant',
                 streaming:  false,
-                reflection: data.error || "You've reached your daily Sage session limit.",
-                question:   "Upgrade your plan to continue your Sage sessions today.",
-                action:     null,
+                reflection: data.error || "You've reached your session limit.",
+                question:   isSessionCap
+                  ? "This conversation has reached its message limit. Start a new session to continue coaching."
+                  : "Upgrade your plan to continue your Sage sessions this month.",
+                action: null,
               }
             : msg
         ));
+
+        // Only lock the input on monthly limit — session cap just ends this convo
+        if (!isSessionCap) setLimitReached(true);
         setLoading(false);
         return;
       }
