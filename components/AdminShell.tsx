@@ -4,19 +4,16 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { hasPermission, NAV_PERMISSION, type UserRole, type Permission } from '@/lib/permissions';
 
 // ─────────────────────────────────────────────────────────────────
 // ASCENTOR · AdminShell · Brand Book v1.0 · 2026
-// Sidebar navigation — role-gated per permissions.ts
+// Sidebar navigation for all /admin pages
 // ─────────────────────────────────────────────────────────────────
 
-// All possible nav items in display order
-const ALL_NAV = [
+const NAV = [
   {
     href: '/admin',
     label: 'Overview',
-    group: 'Menu',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -27,7 +24,6 @@ const ALL_NAV = [
   {
     href: '/admin/users',
     label: 'Users',
-    group: 'Menu',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
@@ -38,7 +34,6 @@ const ALL_NAV = [
   {
     href: '/admin/cohorts',
     label: 'Cohorts',
-    group: 'Menu',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -49,7 +44,6 @@ const ALL_NAV = [
   {
     href: '/admin/experts',
     label: 'Expert Events',
-    group: 'Menu',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
@@ -60,7 +54,6 @@ const ALL_NAV = [
   {
     href: '/admin/courses',
     label: 'Courses',
-    group: 'Menu',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
@@ -70,7 +63,6 @@ const ALL_NAV = [
   {
     href: '/admin/coaching',
     label: 'Chat Data',
-    group: 'Menu',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -80,7 +72,6 @@ const ALL_NAV = [
   {
     href: '/admin/blog',
     label: 'Blog',
-    group: 'Content',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/>
@@ -89,9 +80,18 @@ const ALL_NAV = [
     ),
   },
   {
+    href: '/admin/products',
+    label: 'Products',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+    ),
+  },
+  {
     href: '/admin/newsletter',
     label: 'Newsletter',
-    group: 'Content',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -101,7 +101,6 @@ const ALL_NAV = [
   {
     href: '/admin/mentors',
     label: 'Mentors',
-    group: 'People',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -111,7 +110,6 @@ const ALL_NAV = [
   {
     href: '/admin/promo-codes',
     label: 'Promo Codes',
-    group: 'Finance',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
@@ -121,7 +119,6 @@ const ALL_NAV = [
   {
     href: '/admin/logs',
     label: 'Audit Logs',
-    group: 'System',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -131,7 +128,6 @@ const ALL_NAV = [
   {
     href: '/admin/reports',
     label: 'Reports',
-    group: 'System',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
@@ -139,41 +135,16 @@ const ALL_NAV = [
       </svg>
     ),
   },
-  // ── Admin-only items ──────────────────────────────────────────
-  {
-    href: '/admin/master',
-    label: 'Master Dashboard',
-    group: 'Root',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-      </svg>
-    ),
-  },
-  {
-    href: '/admin/permissions',
-    label: 'Permissions',
-    group: 'Root',
-    icon: (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-      </svg>
-    ),
-  },
 ];
 
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-
   .admin-sidebar-nav { padding: 8px; }
   .admin-nav-group-label {
     font-family: 'DM Mono', monospace;
     font-size: 9px; font-weight: 500;
     letter-spacing: 0.14em; text-transform: uppercase;
-    color: #4A4438; padding: 0 10px; margin: 12px 0 4px;
+    color: #4A4438; padding: 0 10px; margin: 8px 0 4px;
   }
-  .admin-nav-group-label:first-child { margin-top: 4px; }
   .admin-nav-link {
     display: flex; align-items: center; gap: 10px;
     padding: 9px 10px; border-radius: 8px; margin-bottom: 1px;
@@ -192,18 +163,6 @@ const STYLES = `
     width: 4px; height: 4px; border-radius: 50%;
     background: #E8A020; margin-left: auto; flex-shrink: 0;
   }
-  .admin-nav-link.root-item {
-    color: #E8A020;
-    background: rgba(232,160,32,0.05);
-    border: 1px solid rgba(232,160,32,0.12);
-  }
-  .admin-nav-link.root-item:hover {
-    background: rgba(232,160,32,0.12);
-  }
-  .admin-nav-link.root-item.active {
-    background: rgba(232,160,32,0.18);
-    border-color: rgba(232,160,32,0.3);
-  }
   @media (max-width: 1023px) {
     .admin-desktop-sidebar { display: none !important; }
   }
@@ -213,21 +172,51 @@ const STYLES = `
 
   /* ── Mobile admin content fixes ── */
   @media (max-width: 1023px) {
-    .admin-main-content { padding: 16px 12px 32px !important; }
-    .admin-main-content h1 { font-size: 1.25rem !important; }
+    .admin-main-content {
+      padding: 16px 12px 32px !important;
+    }
+    .admin-main-content h1 {
+      font-size: 1.25rem !important;
+    }
+    /* All tables scroll horizontally */
     .admin-main-content table {
-      display: block; width: 100%;
-      overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap;
+      display: block;
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      white-space: nowrap;
     }
-    .admin-main-content .admin-stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
-    .admin-main-content button, .admin-main-content select, .admin-main-content input {
-      font-size: 13px !important; min-height: 36px;
+    /* Stat cards stack */
+    .admin-main-content .admin-stats-grid {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 10px !important;
     }
+    /* Buttons stay readable */
+    .admin-main-content button,
+    .admin-main-content select,
+    .admin-main-content input {
+      font-size: 13px !important;
+      min-height: 36px;
+    }
+    /* Wide grids collapse */
     .admin-main-content [class*="grid-cols-3"],
-    .admin-main-content [class*="grid-cols-4"] { grid-template-columns: 1fr 1fr !important; }
-    .admin-main-content .admin-action-row { flex-wrap: wrap; gap: 8px; }
-    .admin-main-content .admin-card { width: 100% !important; }
-    .admin-main-content .admin-table-cell { padding: 10px 8px !important; font-size: 12px !important; }
+    .admin-main-content [class*="grid-cols-4"] {
+      grid-template-columns: 1fr 1fr !important;
+    }
+    /* Action rows wrap */
+    .admin-main-content .admin-action-row {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    /* Cards full width */
+    .admin-main-content .admin-card {
+      width: 100% !important;
+    }
+    /* Reduce dense padding */
+    .admin-main-content .admin-table-cell {
+      padding: 10px 8px !important;
+      font-size: 12px !important;
+    }
   }
 `;
 
@@ -235,16 +224,14 @@ export default function AdminShell({
   children,
   name,
   role,
-  userPermissions,
 }: {
   children: React.ReactNode;
   name: string;
   role: string;
-  userPermissions?: Permission[] | null;
 }) {
-  const pathname = usePathname();
-  const router   = useRouter();
-  const supabase = createClient();
+  const pathname  = usePathname();
+  const router    = useRouter();
+  const supabase  = createClient();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -254,20 +241,6 @@ export default function AdminShell({
 
   const isActive = (href: string) =>
     href === '/admin' ? pathname === '/admin' : pathname?.startsWith(href);
-
-  // Filter nav items to only those the current user can access
-  const visibleNav = ALL_NAV.filter(item => {
-    const requiredPermission = NAV_PERMISSION[item.href];
-    if (!requiredPermission) return true; // no gate = always show
-    return hasPermission(role as UserRole, requiredPermission, userPermissions);
-  });
-
-  // Group items for display
-  const groups = visibleNav.reduce<Record<string, typeof ALL_NAV>>((acc, item) => {
-    if (!acc[item.group]) acc[item.group] = [];
-    acc[item.group].push(item);
-    return acc;
-  }, {});
 
   const SidebarContent = ({ onNav }: { onNav?: () => void }) => (
     <>
@@ -287,36 +260,32 @@ export default function AdminShell({
           fontFamily: "'DM Mono', monospace",
           fontSize: '9px', fontWeight: 500,
           letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-          color: role === 'admin' ? '#E8A020' : '#14B8A6',
-          background: role === 'admin' ? 'rgba(232,160,32,0.10)' : 'rgba(20,184,166,0.10)',
-          border: `1px solid ${role === 'admin' ? 'rgba(232,160,32,0.20)' : 'rgba(20,184,166,0.20)'}`,
+          color: '#E8A020',
+          background: 'rgba(232,160,32,0.10)',
+          border: '1px solid rgba(232,160,32,0.20)',
           padding: '3px 8px', borderRadius: '100px',
           display: 'inline-block',
         }}>
-          {role === 'admin' ? '⬡ Root' : '◈ Moderator'}
+          {role}
         </span>
       </div>
 
-      {/* Nav — grouped, role-gated */}
-      <nav className="admin-sidebar-nav" style={{ flex: 1, overflowY: 'auto', padding: '8px 8px 12px' }}>
-        {Object.entries(groups).map(([group, items]) => (
-          <div key={group}>
-            <p className="admin-nav-group-label">{group}</p>
-            {items.map(item => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onNav}
-                className={`admin-nav-link${isActive(item.href) ? ' active' : ''}${item.group === 'Root' ? ' root-item' : ''}`}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0, opacity: isActive(item.href) ? 1 : 0.7 }}>
-                  {item.icon}
-                </span>
-                {item.label}
-                {isActive(item.href) && <span className="nav-dot" />}
-              </Link>
-            ))}
-          </div>
+      {/* Nav */}
+      <nav className="admin-sidebar-nav" style={{ flex: 1, overflowY: 'auto', padding: '12px 8px' }}>
+        <p className="admin-nav-group-label">Menu</p>
+        {NAV.map(item => (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNav}
+            className={`admin-nav-link ${isActive(item.href) ? 'active' : ''}`}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0, opacity: isActive(item.href) ? 1 : 0.7 }}>
+              {item.icon}
+            </span>
+            {item.label}
+            {isActive(item.href) && <span className="nav-dot" />}
+          </Link>
         ))}
       </nav>
 
@@ -328,13 +297,11 @@ export default function AdminShell({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
           <div style={{
             width: '28px', height: '28px', borderRadius: '50%',
-            background: role === 'admin' ? 'rgba(232,160,32,0.12)' : 'rgba(20,184,166,0.12)',
-            border: `1.5px solid ${role === 'admin' ? 'rgba(232,160,32,0.25)' : 'rgba(20,184,166,0.25)'}`,
+            background: 'rgba(232,160,32,0.12)',
+            border: '1.5px solid rgba(232,160,32,0.25)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: "'Syne', sans-serif", fontSize: '11px',
-            fontWeight: 700,
-            color: role === 'admin' ? '#E8A020' : '#14B8A6',
-            flexShrink: 0,
+            fontWeight: 700, color: '#E8A020', flexShrink: 0,
           }}>
             {name.charAt(0).toUpperCase()}
           </div>
@@ -354,6 +321,7 @@ export default function AdminShell({
               fontSize: '11px', padding: '5px 10px', borderRadius: '7px',
               color: '#7A7260', border: '1px solid rgba(212,207,195,0.12)',
               textDecoration: 'none', fontFamily: "'Syne', sans-serif",
+              transition: 'color 0.15s',
             }}
           >
             ← App
@@ -393,12 +361,11 @@ export default function AdminShell({
           <span style={{
             fontFamily: "'DM Mono', monospace", fontSize: '9px', fontWeight: 500,
             letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-            color: role === 'admin' ? '#E8A020' : '#14B8A6',
-            background: role === 'admin' ? 'rgba(232,160,32,0.10)' : 'rgba(20,184,166,0.10)',
-            border: `1px solid ${role === 'admin' ? 'rgba(232,160,32,0.20)' : 'rgba(20,184,166,0.20)'}`,
+            color: '#E8A020', background: 'rgba(232,160,32,0.10)',
+            border: '1px solid rgba(232,160,32,0.20)',
             padding: '3px 8px', borderRadius: '100px',
           }}>
-            {role === 'admin' ? '⬡ Root' : '◈ Mod'}
+            {role}
           </span>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
