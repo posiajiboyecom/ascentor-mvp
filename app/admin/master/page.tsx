@@ -48,6 +48,7 @@ interface ContentItem {
   status: 'draft' | 'scheduled' | 'published';
   platform: string;
   scheduled_for: string | null;
+  content_data?: Record<string, any> | null;
 }
 
 interface LeadMagnet {
