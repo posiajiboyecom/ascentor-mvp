@@ -48,7 +48,7 @@ export async function GET() {
     const [subsRes, groupsRes, campaignsRes] = await Promise.all([
       mlFetch('/subscribers?limit=1&filter[status]=active'),
       mlFetch('/groups?limit=25'),
-      mlFetch('/campaigns?limit=10&filter[status]=sent&sort=-scheduled_for'),
+      mlFetch('/campaigns?limit=10'),
     ]);
 
     // ── Subscriber stats ──────────────────────────────────
