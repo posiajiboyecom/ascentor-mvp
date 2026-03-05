@@ -77,6 +77,28 @@ const AGENT_REGISTRY = [
     schedule: "Monday 07:00 UTC",
     toolStack: "Supabase + Resend + Claude",
   },
+  {
+    id: "8",
+    name: "Coaching Summary",
+    triggerTaskId: "process-coaching-summary",
+    type: "event-driven",
+    description: "Session ends → Claude summarises → sends key takeaways email to user",
+    schedule: "After every coaching session",
+    toolStack: "Claude + Resend + Supabase",
+    requiresPayload: true,
+    payloadSchema: { sessionId: "uuid", userId: "uuid" },
+  },
+  {
+    id: "9",
+    name: "Newsletter Sender",
+    triggerTaskId: "send-newsletter",
+    type: "manual",
+    description: "Batch sends a newsletter to all active Supabase subscribers via Resend",
+    schedule: "Manual — triggered from admin",
+    toolStack: "Resend + Supabase",
+    requiresPayload: true,
+    payloadSchema: { subject: "Email subject line", content: "Full HTML email body", sentBy: "admin" },
+  },
 ];
 
 // ── Fetch recent runs from Trigger.dev Management API ─────────
