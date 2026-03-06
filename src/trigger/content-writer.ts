@@ -1,15 +1,16 @@
 // ═══════════════════════════════════════════════════════════
-// Agent 2: Content Writer — FREE TIER EDITION
+// Agent 2: Content Writer — FREE TIER EDITION v3
 //
-// Free tier constraints respected:
-//   - NO retry: { maxAttempts } — retries burn compute, task
-//     already succeeds; failed rows are logged, not thrown.
-//   - All 4 Claude calls run in parallel (Promise.allSettled)
-//     so total wall-clock time is ~15-25s instead of ~60-90s.
-//   - max_tokens bumped to avoid truncated JSON (was root cause
-//     of LinkedIn parse failures).
-//   - Robust extractJSON() handles fenced or partial responses.
-//   - Rows inserted one-by-one so a bad row can't kill the batch.
+// Fixes in this version:
+//   - system: SYSTEM on every Claude call stops the model
+//     wrapping JSON in ```json fences (root cause of all
+//     LinkedIn parse failures).
+//   - Array guards on linkedinPosts / twitterThreads so a
+//     parse returning a non-array never pollutes other items.
+//   - Only columns that exist in content_calendar are sent
+//     (id, pillar, type, title, platform, week, status,
+//      content_data, triggered_by, created_at).
+//   - trigger.config.ts must declare env vars — see that file.
 // ═══════════════════════════════════════════════════════════
 import { task, logger } from "@trigger.dev/sdk/v3";
 import Anthropic from "@anthropic-ai/sdk";
@@ -23,15 +24,10 @@ const supabase = createClient(
 );
 
 // ── Robust JSON extractor ──────────────────────────────────
-// Handles: raw JSON, ```json fences, truncated responses
 function extractJSON(raw: string): any {
-  // Strip markdown fences
   let text = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-
-  // Try direct parse
   try { return JSON.parse(text); } catch { /* continue */ }
 
-  // Find outermost { } or [ ] and extract
   const firstBrace   = text.indexOf("{");
   const firstBracket = text.indexOf("[");
   const start =
@@ -40,22 +36,27 @@ function extractJSON(raw: string): any {
     Math.min(firstBrace, firstBracket);
 
   if (start !== -1) {
-    const opener = text[start];
-    const closer = opener === "{" ? "}" : "]";
+    const closer = text[start] === "{" ? "}" : "]";
     const lastClose = text.lastIndexOf(closer);
     if (lastClose > start) {
       try { return JSON.parse(text.slice(start, lastClose + 1)); } catch { /* continue */ }
     }
   }
-
-  throw new Error(`Could not parse JSON. Raw start: ${raw.slice(0, 120)}`);
+  throw new Error(`Could not parse JSON. Raw: ${raw.slice(0, 120)}`);
 }
+
+// ── System prompt applied to ALL Claude calls ─────────────
+// In system: is a hard constraint — far more reliable than
+// a user-turn reminder for preventing ```json fences.
+const SYSTEM =
+  "You are a JSON API. Respond with ONLY a valid raw JSON object. " +
+  "Never use markdown code fences (no triple backticks). " +
+  "Never add any text before or after the JSON. " +
+  "Your entire response must begin with { and end with }.";
 
 export const contentWriterAgent = task({
   id: "content-writer-agent",
-  // NO retry — saves compute on free tier. Each Claude call has
-  // its own try/catch with a safe fallback so the task won't throw.
-  maxDuration: 120, // 2-minute ceiling; parallel calls finish in ~20s
+  maxDuration: 120,
   run: async (payload: {
     topic: string;
     pillar: "leadership" | "career" | "ai" | "coaching" | "community";
@@ -76,17 +77,13 @@ export const contentWriterAgent = task({
     }
     logger.info(`[Content Writer] Starting — topic: "${topic}" | pillar: ${pillar} | from: ${triggeredBy}`);
 
-    // ── Build shared context strings once ─────────────────
     const keyMsgBlock = keyMessages.length > 0
-      ? `Key messages to weave in:\n${keyMessages.map((m, i) => `${i+1}. ${m}`).join("\n")}` : "";
+      ? `Key messages:\n${keyMessages.map((m, i) => `${i + 1}. ${m}`).join("\n")}` : "";
     const dataBlock = dataPoints.length > 0
-      ? `Data points to include:\n${dataPoints.map(d => `- ${d}`).join("\n")}` : "";
+      ? `Data points:\n${dataPoints.map(d => `- ${d}`).join("\n")}` : "";
     const hookBlock = hooks.length > 0
-      ? `Proven hooks (use one as your opener):\n${hooks.map((h, i) => `${i+1}. ${h}`).join("\n")}` : "";
-    const JSON_REMINDER = `IMPORTANT: Return ONLY a raw JSON object. No markdown fences, no preamble. Start with { and end with }.`;
+      ? `Proven hooks (use one as opener):\n${hooks.map((h, i) => `${i + 1}. ${h}`).join("\n")}` : "";
 
-    // ── Fire all 4 Claude calls in PARALLEL ───────────────
-    // Cuts wall-clock time from ~90s down to ~20s on free tier.
     logger.info("[Content Writer] Firing all 4 Claude calls in parallel...");
 
     const [blogSettled, linkedinSettled, twitterSettled, newsletterSettled] =
@@ -96,23 +93,19 @@ export const contentWriterAgent = task({
         anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1500,
+          system: SYSTEM,
           messages: [{
             role: "user",
-            content: `You are a content writer for Ascentor, an AI leadership coaching platform for African professionals.
+            content: `Write a compelling blog post for Ascentor (AI leadership coaching for African professionals).
 
-Write a compelling blog post on: "${topic}"
+Topic: "${topic}"
 ${keyMsgBlock}
 ${dataBlock}
 
-Requirements:
-- Target ambitious African professionals (students to C-suite)
-- 600–800 words
-- Strong headline, 3–4 subheadings, CTA at the end
-- Personal and authoritative tone
-- Reference African business context where relevant
+600-800 words. Strong headline, 3-4 subheadings, CTA at end.
+Personal and authoritative tone. African business context.
 
-${JSON_REMINDER}
-{ "title": "...", "content": "Full post in markdown", "meta_description": "160 char SEO desc", "cta": "CTA sentence" }`,
+Return exactly: { "title": "...", "content": "full markdown", "meta_description": "160 char", "cta": "..." }`,
           }],
         }),
 
@@ -120,19 +113,19 @@ ${JSON_REMINDER}
         anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1500,
+          system: SYSTEM,
           messages: [{
             role: "user",
-            content: `You write LinkedIn content for Ascentor — AI coaching for African professionals.
+            content: `Write LinkedIn content for Ascentor (AI coaching for African professionals).
 
 Topic: "${topic}"
 ${hookBlock}
 ${dataBlock}
 
-Write 5 LinkedIn posts (4-1-1 rule: 4 value, 1 social proof).
-Each: 150–300 words, strong hook first line, line breaks for readability.
+Write 5 posts using the 4-1-1 rule (4 value, 1 social proof).
+Each post: 150-300 words, strong hook first line.
 
-${JSON_REMINDER}
-{ "posts": [ { "type": "value", "hook": "First line", "content": "Full post" } ] }`,
+Return exactly: { "posts": [ { "type": "value", "hook": "first line", "content": "full post" } ] }`,
           }],
         }),
 
@@ -140,17 +133,17 @@ ${JSON_REMINDER}
         anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1200,
+          system: SYSTEM,
           messages: [{
             role: "user",
-            content: `You write viral Twitter/X threads for Ascentor — AI leadership coaching for Africa.
+            content: `Write Twitter/X threads for Ascentor (AI leadership coaching for Africa).
 
 Topic: "${topic}"
 ${hookBlock}
 
-Write 3 threads, each 5–7 tweets. Punchy openers, soft CTA at end.
+Write 3 threads, each 5-7 tweets. Punchy openers, soft CTA at end.
 
-${JSON_REMINDER}
-{ "threads": [ { "opener": "Hook tweet", "tweets": ["t1","t2","t3","t4","t5"], "cta": "CTA tweet" } ] }`,
+Return exactly: { "threads": [ { "opener": "hook", "tweets": ["t1","t2","t3","t4","t5"], "cta": "cta tweet" } ] }`,
           }],
         }),
 
@@ -158,60 +151,66 @@ ${JSON_REMINDER}
         anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1200,
+          system: SYSTEM,
           messages: [{
             role: "user",
-            content: `Write a newsletter segment for "The African Leader" — Ascentor's weekly email.
+            content: `Write a newsletter segment for "The African Leader" (Ascentor weekly email).
 
 Topic: "${topic}"
-400–600 words. Personal, warm, mentor-letter style. No corporate speak.
-Structure: Hook → Insight → Practical takeaway → Soft CTA to try Ascentor
+400-600 words. Personal, warm, mentor-letter style. No corporate speak.
+Structure: Hook, Insight, Practical takeaway, Soft CTA to try Ascentor.
 ${dataBlock}
-${hooks.length > 2 ? `Subject line inspiration: ${hooks[2]}` : ""}
+${hooks.length > 2 ? `Subject inspiration: ${hooks[2]}` : ""}
 
-${JSON_REMINDER}
-{ "subject": "...", "preview_text": "90 char preview", "body": "Full body in markdown" }`,
+Return exactly: { "subject": "...", "preview_text": "90 chars max", "body": "full markdown" }`,
           }],
         }),
       ]);
 
-    // ── Extract results with safe fallbacks ───────────────
+    // ── Extract with safe fallbacks & array guards ────────
     let blog: any = { title: topic, content: "Draft pending review", meta_description: "", cta: "" };
     if (blogSettled.status === "fulfilled") {
       try {
         const raw = blogSettled.value.content[0].type === "text" ? blogSettled.value.content[0].text : "";
         blog = extractJSON(raw);
-        logger.info(`[Content Writer] Blog ✓ — "${blog.title}"`);
+        logger.info(`[Content Writer] Blog ok — "${blog.title}"`);
       } catch (e) { logger.error(`[Content Writer] Blog parse failed: ${e}`); }
-    } else { logger.error(`[Content Writer] Blog API call failed: ${blogSettled.reason}`); }
+    } else { logger.error(`[Content Writer] Blog API error: ${blogSettled.reason}`); }
 
-    let linkedin: any = { posts: [] };
+    // Explicit array guard — if parse returns wrong shape, default to []
+    let linkedinPosts: any[] = [];
     if (linkedinSettled.status === "fulfilled") {
       try {
         const raw = linkedinSettled.value.content[0].type === "text" ? linkedinSettled.value.content[0].text : "";
-        linkedin = extractJSON(raw);
-        logger.info(`[Content Writer] LinkedIn ✓ — ${linkedin.posts?.length || 0} posts`);
+        const parsed = extractJSON(raw);
+        linkedinPosts = Array.isArray(parsed.posts) ? parsed.posts : [];
+        logger.info(`[Content Writer] LinkedIn ok — ${linkedinPosts.length} posts`);
       } catch (e) { logger.error(`[Content Writer] LinkedIn parse failed: ${e}`); }
-    } else { logger.error(`[Content Writer] LinkedIn API call failed: ${linkedinSettled.reason}`); }
+    } else { logger.error(`[Content Writer] LinkedIn API error: ${linkedinSettled.reason}`); }
 
-    let twitter: any = { threads: [] };
+    // Explicit array guard
+    let twitterThreads: any[] = [];
     if (twitterSettled.status === "fulfilled") {
       try {
         const raw = twitterSettled.value.content[0].type === "text" ? twitterSettled.value.content[0].text : "";
-        twitter = extractJSON(raw);
-        logger.info(`[Content Writer] Twitter ✓ — ${twitter.threads?.length || 0} threads`);
+        const parsed = extractJSON(raw);
+        twitterThreads = Array.isArray(parsed.threads) ? parsed.threads : [];
+        logger.info(`[Content Writer] Twitter ok — ${twitterThreads.length} threads`);
       } catch (e) { logger.error(`[Content Writer] Twitter parse failed: ${e}`); }
-    } else { logger.error(`[Content Writer] Twitter API call failed: ${twitterSettled.reason}`); }
+    } else { logger.error(`[Content Writer] Twitter API error: ${twitterSettled.reason}`); }
 
     let newsletter: any = { subject: `Newsletter: ${topic}`, preview_text: "", body: "" };
     if (newsletterSettled.status === "fulfilled") {
       try {
         const raw = newsletterSettled.value.content[0].type === "text" ? newsletterSettled.value.content[0].text : "";
         newsletter = extractJSON(raw);
-        logger.info(`[Content Writer] Newsletter ✓ — "${newsletter.subject}"`);
+        logger.info(`[Content Writer] Newsletter ok — "${newsletter.subject}"`);
       } catch (e) { logger.error(`[Content Writer] Newsletter parse failed: ${e}`); }
-    } else { logger.error(`[Content Writer] Newsletter API call failed: ${newsletterSettled.reason}`); }
+    } else { logger.error(`[Content Writer] Newsletter API error: ${newsletterSettled.reason}`); }
 
-    // ── Build insert rows ─────────────────────────────────
+    // ── Build rows with ONLY columns that exist in the table
+    // Columns: id, pillar, type, title, platform, week,
+    //          status, content_data, triggered_by, created_at
     const now = new Date().toISOString();
     const items = [
       {
@@ -220,13 +219,13 @@ ${JSON_REMINDER}
         title: (blog.title || topic).substring(0, 255),
         content_data: blog,
       },
-      ...(linkedin.posts || []).map((p: any, i: number) => ({
+      ...linkedinPosts.map((p: any, i: number) => ({
         pillar, week, status: "draft", platform: "LinkedIn",
         type: "LinkedIn Post",
         title: `${(p.hook || `LinkedIn ${i + 1}`).substring(0, 60)}...`,
         content_data: p,
       })),
-      ...(twitter.threads || []).map((t: any, i: number) => ({
+      ...twitterThreads.map((t: any, i: number) => ({
         pillar, week, status: "draft", platform: "Twitter/X",
         type: "Twitter Thread",
         title: `Thread: ${(t.opener || `Thread ${i + 1}`).substring(0, 50)}...`,
@@ -240,7 +239,7 @@ ${JSON_REMINDER}
       },
     ];
 
-    // ── Insert one-by-one so a bad row can't kill the batch ──
+    // ── Insert one-by-one ─────────────────────────────────
     let insertedCount = 0;
     for (const item of items) {
       const { error } = await supabase
@@ -258,16 +257,10 @@ ${JSON_REMINDER}
 
     const summary = {
       topic, pillar, week,
-      generated: {
-        blog: 1,
-        linkedin_posts: linkedin.posts?.length || 0,
-        twitter_threads: twitter.threads?.length || 0,
-        newsletter: 1,
-      },
+      generated: { blog: 1, linkedin_posts: linkedinPosts.length, twitter_threads: twitterThreads.length, newsletter: 1 },
       total_items: items.length,
       inserted: insertedCount,
     };
-
     logger.info("[Content Writer] Done:", summary);
     return summary;
   },
