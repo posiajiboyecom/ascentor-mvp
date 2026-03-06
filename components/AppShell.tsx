@@ -44,9 +44,11 @@ function ThemeToggle() {
 function Shell({
   children,
   initials,
+  isAdmin, // <-- Added isAdmin here
 }: {
   children: React.ReactNode;
   initials: string;
+  isAdmin?: boolean; // <-- Added TypeScript definition
 }) {
   const supabase        = createClient();
   const router          = useRouter();
@@ -133,6 +135,21 @@ function Shell({
                 zIndex:       50,
                 boxShadow:    '0 8px 32px rgba(0,0,0,0.25)',
               }}>
+                
+                {/* ── Optional: Show Admin Link if isAdmin is true ── */}
+                {isAdmin && (
+                  <>
+                    <Link
+                      href="/admin"
+                      onClick={() => setShowMenu(false)}
+                      style={{ display: 'block', padding: '10px 16px', fontFamily: "'Syne', sans-serif", fontSize: '13px', fontWeight: 600, color: '#10B981', textDecoration: 'none' }}
+                    >
+                      Admin Dashboard
+                    </Link>
+                    <div style={{ height: '1px', background: 'var(--app-border)', margin: '4px 0' }} />
+                  </>
+                )}
+
                 <Link
                   href="/referral"
                   onClick={() => setShowMenu(false)}
@@ -178,13 +195,16 @@ function Shell({
 export default function AppShell({
   children,
   initials = 'U',
+  isAdmin = false, // <-- Added default value here
 }: {
   children: React.ReactNode;
   initials?: string;
+  isAdmin?: boolean; // <-- Added TypeScript definition here
 }) {
   return (
     <AppThemeProvider>
-      <Shell initials={initials}>{children}</Shell>
+      {/* Pass isAdmin down to the Shell component */}
+      <Shell initials={initials} isAdmin={isAdmin}>{children}</Shell>
     </AppThemeProvider>
   );
 }

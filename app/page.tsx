@@ -778,7 +778,7 @@ export default function LandingPage() {
               <Link href="/signup" className="lp-btn-primary" style={{ fontSize: '17px', padding: '18px 36px' }}>
                 Start Free — 7 Days →
               </Link>
-              <a href="https://chat.whatsapp.com/HGWexQqTh5XE2VT8DhbDnx" className="lp-btn-whatsapp" target="_blank" rel="noreferrer">
+              <a href="https://chat.whatsapp.com/FLHef9sbMywIcdxH0MJCsl?mode=gi_t" className="lp-btn-whatsapp" target="_blank" rel="noreferrer">
                 💬 Join Founders WhatsApp Community
               </a>
             </div>
