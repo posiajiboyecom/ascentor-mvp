@@ -9,9 +9,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  // Select core fields first — always exists
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, permissions')
+    .select('full_name, role')
     .eq('id', user.id)
     .single();
 
@@ -19,11 +20,24 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/dashboard');
   }
 
+  // Permissions column may not exist yet — fetch separately and swallow error
+  let userPermissions: string[] | null = null;
+  try {
+    const { data: permRow } = await supabase
+      .from('profiles')
+      .select('permissions')
+      .eq('id', user.id)
+      .single();
+    userPermissions = (permRow?.permissions as string[] | null) ?? null;
+  } catch {
+    // Column doesn't exist yet — permissions system not migrated, skip silently
+  }
+
   return (
     <AdminShell
       name={profile.full_name || user.email || 'Admin'}
       role={profile.role}
-      userPermissions={(profile.permissions as string[] | null) ?? null}
+      userPermissions={userPermissions}
     >
       <div className="admin-wrapper">
         <style>{`
