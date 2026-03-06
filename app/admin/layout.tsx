@@ -35,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             .admin-wrapper button { white-space: nowrap; font-size: 0.75rem; }
             .admin-wrapper select { font-size: 0.75rem; }
           }
-        \`}</style>
+        `}</style>
         {children}
       </div>
     </AdminShell>
