@@ -380,7 +380,7 @@ export default function AboutPage() {
           </Link>
           <div className="ab-nav-links">
             <Link href="/careers" className="ab-nav-link">Careers</Link>
-            <Link href="/#features" className="ab-nav-link">Product</Link>
+            <Link href="/products" className="ab-nav-link">Products</Link>
             <Link href="/login" className="ab-nav-cta">Get Started</Link>
           </div>
         </nav>
