@@ -486,8 +486,10 @@ export default function LandingPage() {
           <div className="lp-drawer-overlay" onClick={() => setMobileMenuOpen(false)} />
           <div className="lp-drawer-panel">
             <button className="lp-drawer-close" onClick={() => setMobileMenuOpen(false)}>✕</button>
+            <Link href="/about" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>About</Link>
             <Link href="/who-its-for" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Who It's For</Link>
-            <Link href="#pillars" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>How It Works</Link>
+            <Link href="/how-it-works" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>How It Works</Link>
+            <Link href="/products" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Products</Link>
             <Link href="/pricing" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
             {hasBlogPosts && <Link href="/blog" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Blog</Link>}
             <div className="lp-drawer-divider" />
@@ -849,7 +851,7 @@ export default function LandingPage() {
           <div className="lp-footer-top">
             <div>
               <img
-                  src="/ascentor-light-landscape.svg"
+                  src="/ascentor-color-for-dark-pages.svg"
                   alt="Ascentor"
                   style={{ height: '28px', width: 'auto', marginBottom: '12px' }}
                 />
