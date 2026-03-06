@@ -24,7 +24,7 @@ const B = {
   dark500:     'var(--admin-text-faint)',
   dark400:     'var(--admin-text-muted)',
   dark200:     'var(--admin-text)',
-  dark50:      '#F7F6F3',
+  dark50:      var(--admin-text-heading),
   // Gold scale
   gold:        '#E8A020',
   gold600:     '#C87820',

@@ -250,6 +250,7 @@ const STYLES = `
     --admin-bg-card:         #1E1C17;
     --admin-bg-card-hover:   #23201A;
     --admin-bg-input:        #2E2A22;
+    --admin-text-heading:    #FEF9EC;
     --admin-text:            #D4CFC3;
     --admin-text-dim:        #9A9280;
     --admin-text-muted:      #7A7260;
@@ -265,10 +266,11 @@ const STYLES = `
     --admin-bg-card:         #FFFFFF;
     --admin-bg-card-hover:   #F7F4EE;
     --admin-bg-input:        #F0EDE6;
+    --admin-text-heading:    #0F0D0A;
     --admin-text:            #1A1714;
-    --admin-text-dim:        #6B6355;
-    --admin-text-muted:      #7A6E60;
-    --admin-text-faint:      #9C9080;
+    --admin-text-dim:        #3D3529;
+    --admin-text-muted:      #5C5244;
+    --admin-text-faint:      #7A6E60;
     --admin-border:          rgba(0,0,0,0.08);
     --admin-border-strong:   rgba(0,0,0,0.13);
   }

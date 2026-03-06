@@ -262,7 +262,7 @@ export default function AdminContentPage() {
             { num: queue.length,      label: 'Queued Posts' },
           ].map(s => (
             <div key={s.label} className="cp-stat">
-              <div className="cp-stat-num" style={{ color: s.highlight ? '#E8A020' : '#fff' }}>{s.num}</div>
+              <div className="cp-stat-num" style={{ color: s.highlight ? '#E8A020' : 'var(--admin-text)' }}>{s.num}</div>
               <div className="cp-stat-label">{s.label}</div>
             </div>
           ))}

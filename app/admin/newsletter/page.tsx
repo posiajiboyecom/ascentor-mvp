@@ -308,7 +308,7 @@ export default function AdminNewsletterPage() {
 
       {/* ─── Page Header ──────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px', flexWrap: 'wrap', gap: '10px' }}>
-        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '28px', fontWeight: 700, color: '#FEF9EC', margin: 0, lineHeight: 1.1 }}>
+        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '28px', fontWeight: 700, color: var(--admin-text-heading), margin: 0, lineHeight: 1.1 }}>
           Newsletter
         </h1>
         <span style={{
@@ -662,7 +662,7 @@ export default function AdminNewsletterPage() {
             <div key={item.id} className="asc-history-row" style={{ ...card, padding: '18px 20px', transition: 'border-color 0.15s' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '10px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h4 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '18px', fontWeight: 700, color: '#FEF9EC', margin: '0 0 4px' }}>
+                  <h4 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '18px', fontWeight: 700, color: var(--admin-text-heading), margin: '0 0 4px' }}>
                     {item.subject}
                   </h4>
                   <p style={{ ...monoLabel }}>

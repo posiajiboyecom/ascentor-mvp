@@ -166,7 +166,7 @@ export default function AdminPromoCodesPage() {
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: '28px',
             fontWeight: 700,
-            color: '#FEF9EC',
+            color: var(--admin-text-heading),
             margin: 0,
             lineHeight: 1.1,
             marginBottom: '6px',
@@ -220,7 +220,7 @@ export default function AdminPromoCodesPage() {
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: '20px',
             fontWeight: 700,
-            color: '#FEF9EC',
+            color: var(--admin-text-heading),
             margin: '0 0 20px',
           }}>
             Create Promo Code
