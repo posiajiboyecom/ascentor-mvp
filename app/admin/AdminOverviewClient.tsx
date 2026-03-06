@@ -5,6 +5,24 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import SageLoader from '@/components/SageLoader';
 
+// ── SVG icons (no emojis) ─────────────────────────────────────
+const IcoUsers     = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>);
+const IcoChat      = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>);
+const IcoPosts     = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span>);
+const IcoBook      = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>);
+const IcoGrad      = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg></span>);
+const IcoBriefcase = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="12"/></svg></span>);
+const IcoTrend     = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>);
+const IcoTarget    = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>);
+const IcoTrophy    = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/><path d="M12 17c-5 0-8-3-8-8V5h16v4c0 5-3 8-8 8z"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg></span>);
+const IcoUserNew   = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></span>);
+const IcoGroup     = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>);
+const IcoPlus      = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>);
+const IcoMic       = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span>);
+const IcoOpenBook  = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>);
+const IcoKey       = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></span>);
+const IcoRocket    = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></span>);
+
 export default function AdminOverviewClient() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
@@ -131,18 +149,18 @@ export default function AdminOverviewClient() {
       {/* ═══ TOP STAT CARDS ═══ */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-2.5 mb-6">
         {[
-          { icon: '👥', value: stats.totalUsers, label: 'Total Users', sub: `+${stats.newUsers7d} this week`, color: 'var(--blue)', href: '/admin/users' },
-          { icon: '💬', value: stats.totalSessions, label: 'AI Sessions', sub: `+${stats.sessions7d} this week`, color: 'var(--accent)', href: '/admin/coaching' },
-          { icon: '📝', value: stats.totalPosts, label: 'Community Posts', sub: `+${stats.posts7d} this week`, color: 'var(--teal)', href: '/admin/coaching' },
-          { icon: '📚', value: stats.publishedCourses, label: 'Courses', sub: 'Published', color: 'var(--purple)', href: '/admin/courses' },
-          { icon: '🎓', value: stats.upcomingEvents, label: 'Upcoming Events', sub: 'Scheduled', color: 'var(--success)', href: '/admin/experts' },
-          { icon: '💼', value: stats.openJobs, label: 'Open Roles', sub: 'Live on /careers', color: 'var(--accent)', href: '/admin/careers' },
+          { icon: <IcoUsers />, value: stats.totalUsers, label: 'Total Users', sub: `+${stats.newUsers7d} this week`, color: 'var(--blue)', href: '/admin/users' },
+          { icon: <IcoChat />, value: stats.totalSessions, label: 'AI Sessions', sub: `+${stats.sessions7d} this week`, color: 'var(--accent)', href: '/admin/coaching' },
+          { icon: <IcoPosts />, value: stats.totalPosts, label: 'Community Posts', sub: `+${stats.posts7d} this week`, color: 'var(--teal)', href: '/admin/coaching' },
+          { icon: <IcoBook />, value: stats.publishedCourses, label: 'Courses', sub: 'Published', color: 'var(--purple)', href: '/admin/courses' },
+          { icon: <IcoGrad />, value: stats.upcomingEvents, label: 'Upcoming Events', sub: 'Scheduled', color: 'var(--success)', href: '/admin/experts' },
+          { icon: <IcoBriefcase />, value: stats.openJobs, label: 'Open Roles', sub: 'Live on /careers', color: 'var(--accent)', href: '/admin/careers' },
         ].map((s) => (
           <Link key={s.label} href={s.href}>
             <div className="rounded-xl p-3.5 transition-all hover:border-gray-600 cursor-pointer"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
               <div className="flex justify-between items-start mb-1.5">
-                <span className="text-xl">{s.icon}</span>
+                <span style={{display:"inline-flex",alignItems:"center",color:s.color}}>{s.icon}</span>
                 <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
                   style={{ background: `color-mix(in srgb, ${s.color} 12%, transparent)`, color: s.color }}>
                   {s.sub}
@@ -160,7 +178,7 @@ export default function AdminOverviewClient() {
       {/* ═══ ACTIVITY CHART (last 14 days) ═══ */}
       <div className="rounded-xl p-5 mb-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         <div className="flex justify-between items-center mb-4">
-          <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>📈 Activity — Last 14 Days</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}><IcoTrend />&nbsp;Activity — Last 14 Days</span>
           <div className="flex gap-3 text-[10px]" style={{ color: 'var(--text-dim)' }}>
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }} /> Sessions
@@ -203,7 +221,7 @@ export default function AdminOverviewClient() {
 
         {/* Session Types Breakdown */}
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🎯 Session Types (30d)</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}><IcoTarget />&nbsp;Session Types (30d)</span>
           <div className="mt-3">
             {sessionTypes.length === 0 ? (
               <p className="text-xs" style={{ color: 'var(--text-dim)' }}>No session data yet</p>
@@ -228,7 +246,7 @@ export default function AdminOverviewClient() {
         {/* Top Users by Engagement */}
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🏆 Top Users (30d)</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}><IcoTrophy />&nbsp;Top Users (30d)</span>
             <Link href="/admin/users" className="text-xs" style={{ color: 'var(--accent)' }}>View all →</Link>
           </div>
           {topUsers.length === 0 ? (
@@ -258,7 +276,7 @@ export default function AdminOverviewClient() {
         {/* Recent Signups */}
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🆕 Recent Signups</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}><IcoUserNew />&nbsp;Recent Signups</span>
           </div>
           {recentSignups.map((u) => (
             <div key={u.id} className="flex items-center gap-2 py-1.5"
@@ -281,7 +299,7 @@ export default function AdminOverviewClient() {
         {/* Top Cohorts */}
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🏘️ Top Cohorts</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}><IcoGroup />&nbsp;Top Cohorts</span>
             <Link href="/admin/cohorts" className="text-xs" style={{ color: 'var(--accent)' }}>Manage →</Link>
           </div>
           {topCohorts.length === 0 ? (
@@ -289,7 +307,7 @@ export default function AdminOverviewClient() {
           ) : topCohorts.map((c) => (
             <div key={c.id} className="flex items-center gap-2 py-2"
               style={{ borderBottom: '1px solid var(--border)' }}>
-              <span className="text-lg">{c.icon || '👥'}</span>
+              <span style={{display:'inline-flex',alignItems:'center',color:'var(--teal)'}}><IcoGroup /></span>
               <span className="text-sm flex-1" style={{ color: 'var(--text-muted)' }}>{c.name}</span>
               <span className="text-xs font-semibold" style={{ color: 'var(--teal)' }}>
                 {c.member_count || 0}
@@ -301,7 +319,7 @@ export default function AdminOverviewClient() {
         {/* Upcoming Events */}
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🎓 Upcoming Events</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}><IcoGrad />&nbsp;Upcoming Events</span>
             <Link href="/admin/experts" className="text-xs" style={{ color: 'var(--accent)' }}>Manage →</Link>
           </div>
           {upcomingEvents.length === 0 ? (
@@ -320,17 +338,17 @@ export default function AdminOverviewClient() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-2.5">
         {[
-          { label: 'Create Cohort', href: '/admin/cohorts?action=create', icon: '➕' },
-          { label: 'Add Expert Event', href: '/admin/experts?action=create', icon: '🎤' },
-          { label: 'Add Course', href: '/admin/courses?action=create', icon: '📖' },
-          { label: 'Manage Roles', href: '/admin/users', icon: '🔑' },
-          { label: 'Manage Careers', href: '/admin/careers', icon: '💼' },
-          { label: 'Master Marketing', href: '/admin/master', icon: '🚀' },
+          { label: 'Create Cohort', href: '/admin/cohorts?action=create', icon: <IcoPlus /> },
+          { label: 'Add Expert Event', href: '/admin/experts?action=create', icon: <IcoMic /> },
+          { label: 'Add Course', href: '/admin/courses?action=create', icon: <IcoOpenBook /> },
+          { label: 'Manage Roles', href: '/admin/users', icon: <IcoKey /> },
+          { label: 'Manage Careers', href: '/admin/careers', icon: <IcoBriefcase /> },
+          { label: 'Master Marketing', href: '/admin/master', icon: <IcoRocket /> },
         ].map((a) => (
           <Link key={a.label} href={a.href}>
             <div className="rounded-lg p-3 text-center transition-all hover:border-gray-600 cursor-pointer"
               style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
-              <span className="text-xl">{a.icon}</span>
+              <span style={{display:"flex",justifyContent:"center",alignItems:"center",color:"var(--accent)"}}>{a.icon}</span>
               <p className="text-xs font-semibold mt-1" style={{ color: 'var(--text-muted)' }}>{a.label}</p>
             </div>
           </Link>

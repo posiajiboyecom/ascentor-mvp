@@ -22,11 +22,22 @@ type ContentFilter = 'all' | 'Blog Post' | 'LinkedIn Post' | 'Twitter Thread' | 
 type StatusFilter = 'all' | 'draft' | 'approved' | 'published';
 
 const TYPE_META: Record<string, { icon: string; color: string; bg: string }> = {
-  'Blog Post':       { icon: '📝', color: '#E8A020', bg: 'rgba(232,160,32,0.10)' },
-  'LinkedIn Post':   { icon: '💼', color: '#0A66C2', bg: 'rgba(10,102,194,0.10)' },
-  'Twitter Thread':  { icon: '𝕏',  color: 'var(--admin-text)', bg: 'var(--admin-border)' },
-  'Email Newsletter':{ icon: '✉️', color: '#14B8A6', bg: 'rgba(20,184,166,0.10)' },
+  'Blog Post':       { icon: 'blog', color: '#E8A020', bg: 'rgba(232,160,32,0.10)' },
+  'LinkedIn Post':   { icon: 'linkedin', color: '#0A66C2', bg: 'rgba(10,102,194,0.10)' },
+  'Twitter Thread':  { icon: 'twitter',  color: 'var(--admin-text)', bg: 'var(--admin-border)' },
+  'Email Newsletter':{ icon: 'email', color: '#14B8A6', bg: 'rgba(20,184,166,0.10)' },
 };
+
+
+function TypeIcon({ type }: { type: string }) {
+  const icons: Record<string, JSX.Element> = {
+    blog:     <IcoBlog />,
+    linkedin: <IcoLinkedin />,
+    twitter:  <IcoTwitter />,
+    email:    <IcoEmail />,
+  };
+  return icons[type] || <IcoBlog />;
+}
 
 const PILLAR_COLORS: Record<string, string> = {
   leadership: '#E8A020',
@@ -48,6 +59,21 @@ function timeAgo(iso: string) {
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
+
+// ── SVG icons (no emojis) ─────────────────────────────────────
+const IcoPencil    = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>);
+const IcoFlask     = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3h6"/><path d="M10 3v6l-4 9a1 1 0 0 0 .9 1.45h10.2A1 1 0 0 0 18 18l-4-9V3"/></svg></span>);
+const IcoClock     = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>);
+const IcoBlog      = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>);
+const IcoLinkedin  = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></span>);
+const IcoTwitter   = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.259 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span>);
+const IcoEmail     = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>);
+const IcoInbox     = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span>);
+const IcoPointLeft = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></span>);
+const IcoBeaker    = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3h6"/><path d="M10 3v6l-4 9a1 1 0 0 0 .9 1.45h10.2A1 1 0 0 0 18 18l-4-9V3"/></svg></span>);
+const IcoCalEmpty  = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>);
+const IcoCheck     = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>);
+const IcoClipboard = () => (<span style={{display:'inline-flex',alignItems:'center',verticalAlign:'middle'}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></span>);
 
 export default function AdminContentPage() {
   const [tab, setTab] = useState<Tab>('content');
@@ -80,7 +106,7 @@ export default function AdminContentPage() {
       });
       const data = await res.json();
       if (data.success) {
-        showToast(`✓ Researcher running — run ID: ${data.runId.slice(0, 8)}…`);
+        showToast(`Researcher running — run ID: ${data.runId.slice(0, 8)}…`);
         setRunModal(false);
         setRunTopic('');
         setRunPillar('');
@@ -140,14 +166,14 @@ export default function AdminContentPage() {
       showToast(`Error: ${error.message}`);
     } else {
       await updateStatus(item.id, 'published');
-      showToast('✓ Sent to Blog drafts — publish from /admin/blog');
+      showToast('Sent to Blog drafts — publish from /admin/blog');
     }
     setPublishing(null);
   }
 
   async function copyToClipboard(text: string) {
     await navigator.clipboard.writeText(text);
-    showToast('✓ Copied to clipboard');
+    showToast('Copied to clipboard');
   }
 
   const filteredItems = items.filter(it => {
@@ -326,7 +352,7 @@ export default function AdminContentPage() {
           {(['content', 'briefs', 'queue'] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`cp-tab ${tab === t ? 'active' : 'inactive'}`}>
-              {t === 'content' ? '✍️ Content' : t === 'briefs' ? '🔬 Research' : '📅 Queue'}
+              {t === 'content' ? 'Content' : t === 'briefs' ? 'Research' : 'Queue'}
             </button>
           ))}
         </div>
@@ -355,7 +381,7 @@ export default function AdminContentPage() {
 
             {filteredItems.length === 0 ? (
               <div className="cp-empty">
-                <div className="cp-empty-icon">📭</div>
+                <div className="cp-empty-icon"><IcoInbox /></div>
                 <p className="cp-empty-text">No content matches these filters</p>
               </div>
             ) : (
@@ -371,7 +397,7 @@ export default function AdminContentPage() {
                         onClick={() => setSelectedItem(item)}>
                         <div className="cp-item-top">
                           <span className="cp-type-badge" style={{ background: meta.bg, color: meta.color }}>
-                            {meta.icon} {item.type}
+                            <TypeIcon type={meta.icon} /> {item.type}
                           </span>
                           <span className="cp-pillar-dot" style={{ background: pillarColor }} title={item.pillar} />
                         </div>
@@ -393,7 +419,7 @@ export default function AdminContentPage() {
                 <div className="cp-detail">
                   {!selectedItem ? (
                     <div className="cp-detail-empty">
-                      <div className="cp-detail-empty-icon">👈</div>
+                      <div className="cp-detail-empty-icon"><IcoPointLeft /></div>
                       <p className="cp-detail-empty-text">Select an item to preview</p>
                     </div>
                   ) : (
@@ -416,7 +442,7 @@ export default function AdminContentPage() {
           <div>
             {briefs.length === 0 ? (
               <div className="cp-empty">
-                <div className="cp-empty-icon">🔬</div>
+                <div className="cp-empty-icon"><IcoBeaker /></div>
                 <p className="cp-empty-text">No research briefs yet — they appear after the researcher agent runs</p>
               </div>
             ) : briefs.map(brief => (
@@ -430,7 +456,7 @@ export default function AdminContentPage() {
           <div>
             {queue.length === 0 ? (
               <div className="cp-empty">
-                <div className="cp-empty-icon">📅</div>
+                <div className="cp-empty-icon"><IcoCalEmpty /></div>
                 <p className="cp-empty-text">No posts in queue yet</p>
               </div>
             ) : queue.map(post => (
@@ -630,7 +656,7 @@ function ContentDetail({ item, onStatusChange, onPublishToBlog, onCopy, publishi
           padding: '3px 10px', borderRadius: 6,
           background: meta.bg, color: meta.color,
         }}>
-          {meta.icon} {item.type}
+          <TypeIcon type={meta.icon} /> {item.type}
         </span>
         <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)' }}>
           {item.pillar && `• ${item.pillar}`} {item.week && `• Week ${item.week}`}
@@ -645,7 +671,7 @@ function ContentDetail({ item, onStatusChange, onPublishToBlog, onCopy, publishi
         {/* Status actions */}
         {item.status === 'draft' && (
           <button className="cp-btn cp-btn-gold" onClick={() => onStatusChange(item.id, 'approved')}>
-            ✓ Approve
+            <IcoCheck />&nbsp;Approve
           </button>
         )}
         {item.status === 'approved' && (
@@ -667,25 +693,25 @@ function ContentDetail({ item, onStatusChange, onPublishToBlog, onCopy, publishi
 
         {item.type === 'LinkedIn Post' && (
           <button className="cp-btn cp-btn-outline" onClick={() => onCopy(getCopyText())}>
-            📋 Copy for LinkedIn
+            <IcoClipboard />&nbsp;Copy for LinkedIn
           </button>
         )}
 
         {item.type === 'Twitter Thread' && (
           <button className="cp-btn cp-btn-outline" onClick={() => onCopy(getCopyText())}>
-            📋 Copy Thread
+            <IcoClipboard />&nbsp;Copy Thread
           </button>
         )}
 
         {item.type === 'Email Newsletter' && (
           <button className="cp-btn cp-btn-outline" onClick={() => onCopy(getCopyText())}>
-            📋 Copy Newsletter
+            <IcoClipboard />&nbsp;Copy Newsletter
           </button>
         )}
 
         {/* Always available */}
         <button className="cp-btn cp-btn-outline" onClick={() => onCopy(getCopyText())}>
-          📋 Copy Raw Content
+          <IcoClipboard />&nbsp;Copy Raw Content
         </button>
       </div>
     </>
