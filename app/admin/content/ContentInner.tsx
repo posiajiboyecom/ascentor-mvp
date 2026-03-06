@@ -95,6 +95,8 @@ export default function AdminContentPage() {
   }
 
   useEffect(() => { loadAll(); }, []);
+
+  async function loadAll() {
     setLoading(true);
     const [b, i, q] = await Promise.all([
       supabase.from('research_briefs').select('*').order('created_at', { ascending: false }).limit(20),
