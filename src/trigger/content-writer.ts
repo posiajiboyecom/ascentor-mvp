@@ -1,16 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-// Agent 2: Content Writer — FREE TIER EDITION v3
-//
-// Fixes in this version:
-//   - system: SYSTEM on every Claude call stops the model
-//     wrapping JSON in ```json fences (root cause of all
-//     LinkedIn parse failures).
-//   - Array guards on linkedinPosts / twitterThreads so a
-//     parse returning a non-array never pollutes other items.
-//   - Only columns that exist in content_calendar are sent
-//     (id, pillar, type, title, platform, week, status,
-//      content_data, triggered_by, created_at).
-//   - trigger.config.ts must declare env vars — see that file.
+// Agent 2: Content Writer — FREE TIER EDITION v4
 // ═══════════════════════════════════════════════════════════
 import { task, logger } from "@trigger.dev/sdk/v3";
 import Anthropic from "@anthropic-ai/sdk";
@@ -45,9 +34,7 @@ function extractJSON(raw: string): any {
   throw new Error(`Could not parse JSON. Raw: ${raw.slice(0, 120)}`);
 }
 
-// ── System prompt applied to ALL Claude calls ─────────────
-// In system: is a hard constraint — far more reliable than
-// a user-turn reminder for preventing ```json fences.
+// System prompt forces raw JSON — no markdown fences ever
 const SYSTEM =
   "You are a JSON API. Respond with ONLY a valid raw JSON object. " +
   "Never use markdown code fences (no triple backticks). " +
@@ -68,14 +55,14 @@ export const contentWriterAgent = task({
     dataPoints?: string[];
   }) => {
     const {
-      topic, pillar, week = 1, triggeredBy = "manual",
+      topic, pillar, week = 1,
       hooks = [], keyMessages = [], dataPoints = [],
     } = payload;
 
     if (payload.briefId) {
       logger.info(`[Content Writer] Received brief — briefId: ${payload.briefId}`);
     }
-    logger.info(`[Content Writer] Starting — topic: "${topic}" | pillar: ${pillar} | from: ${triggeredBy}`);
+    logger.info(`[Content Writer] Starting — topic: "${topic}" | pillar: ${pillar}`);
 
     const keyMsgBlock = keyMessages.length > 0
       ? `Key messages:\n${keyMessages.map((m, i) => `${i + 1}. ${m}`).join("\n")}` : "";
@@ -89,7 +76,6 @@ export const contentWriterAgent = task({
     const [blogSettled, linkedinSettled, twitterSettled, newsletterSettled] =
       await Promise.allSettled([
 
-        // 1. Blog Post
         anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1500,
@@ -97,19 +83,14 @@ export const contentWriterAgent = task({
           messages: [{
             role: "user",
             content: `Write a compelling blog post for Ascentor (AI leadership coaching for African professionals).
-
 Topic: "${topic}"
 ${keyMsgBlock}
 ${dataBlock}
-
-600-800 words. Strong headline, 3-4 subheadings, CTA at end.
-Personal and authoritative tone. African business context.
-
+600-800 words. Strong headline, 3-4 subheadings, CTA at end. Personal tone. African business context.
 Return exactly: { "title": "...", "content": "full markdown", "meta_description": "160 char", "cta": "..." }`,
           }],
         }),
 
-        // 2. LinkedIn Posts (5)
         anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1500,
@@ -117,19 +98,14 @@ Return exactly: { "title": "...", "content": "full markdown", "meta_description"
           messages: [{
             role: "user",
             content: `Write LinkedIn content for Ascentor (AI coaching for African professionals).
-
 Topic: "${topic}"
 ${hookBlock}
 ${dataBlock}
-
-Write 5 posts using the 4-1-1 rule (4 value, 1 social proof).
-Each post: 150-300 words, strong hook first line.
-
+Write 5 posts (4-1-1 rule: 4 value, 1 social proof). Each: 150-300 words, strong hook first line.
 Return exactly: { "posts": [ { "type": "value", "hook": "first line", "content": "full post" } ] }`,
           }],
         }),
 
-        // 3. Twitter/X Threads (3)
         anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1200,
@@ -137,37 +113,31 @@ Return exactly: { "posts": [ { "type": "value", "hook": "first line", "content":
           messages: [{
             role: "user",
             content: `Write Twitter/X threads for Ascentor (AI leadership coaching for Africa).
-
 Topic: "${topic}"
 ${hookBlock}
-
 Write 3 threads, each 5-7 tweets. Punchy openers, soft CTA at end.
-
 Return exactly: { "threads": [ { "opener": "hook", "tweets": ["t1","t2","t3","t4","t5"], "cta": "cta tweet" } ] }`,
           }],
         }),
 
-        // 4. Newsletter segment
         anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1200,
           system: SYSTEM,
           messages: [{
             role: "user",
-            content: `Write a newsletter segment for "The African Leader" (Ascentor weekly email).
-
+            content: `Write a newsletter for "The African Leader" (Ascentor weekly email).
 Topic: "${topic}"
 400-600 words. Personal, warm, mentor-letter style. No corporate speak.
 Structure: Hook, Insight, Practical takeaway, Soft CTA to try Ascentor.
 ${dataBlock}
 ${hooks.length > 2 ? `Subject inspiration: ${hooks[2]}` : ""}
-
 Return exactly: { "subject": "...", "preview_text": "90 chars max", "body": "full markdown" }`,
           }],
         }),
       ]);
 
-    // ── Extract with safe fallbacks & array guards ────────
+    // ── Extract with safe fallbacks ───────────────────────
     let blog: any = { title: topic, content: "Draft pending review", meta_description: "", cta: "" };
     if (blogSettled.status === "fulfilled") {
       try {
@@ -177,7 +147,6 @@ Return exactly: { "subject": "...", "preview_text": "90 chars max", "body": "ful
       } catch (e) { logger.error(`[Content Writer] Blog parse failed: ${e}`); }
     } else { logger.error(`[Content Writer] Blog API error: ${blogSettled.reason}`); }
 
-    // Explicit array guard — if parse returns wrong shape, default to []
     let linkedinPosts: any[] = [];
     if (linkedinSettled.status === "fulfilled") {
       try {
@@ -188,7 +157,6 @@ Return exactly: { "subject": "...", "preview_text": "90 chars max", "body": "ful
       } catch (e) { logger.error(`[Content Writer] LinkedIn parse failed: ${e}`); }
     } else { logger.error(`[Content Writer] LinkedIn API error: ${linkedinSettled.reason}`); }
 
-    // Explicit array guard
     let twitterThreads: any[] = [];
     if (twitterSettled.status === "fulfilled") {
       try {
@@ -208,10 +176,10 @@ Return exactly: { "subject": "...", "preview_text": "90 chars max", "body": "ful
       } catch (e) { logger.error(`[Content Writer] Newsletter parse failed: ${e}`); }
     } else { logger.error(`[Content Writer] Newsletter API error: ${newsletterSettled.reason}`); }
 
-    // ── Build rows with ONLY columns that exist in the table
-    // Columns: id, pillar, type, title, platform, week,
-    //          status, content_data, triggered_by, created_at
-    const now = new Date().toISOString();
+    // ── Build rows — ONLY columns confirmed to exist in table
+    // Confirmed columns: id (auto), pillar, type, title, platform,
+    //                    week, status, content_data, created_at (auto)
+    // NOT in table: triggered_by, scheduled_for
     const items = [
       {
         pillar, week, status: "draft", platform: "Website",
@@ -244,7 +212,7 @@ Return exactly: { "subject": "...", "preview_text": "90 chars max", "body": "ful
     for (const item of items) {
       const { error } = await supabase
         .from("content_calendar")
-        .insert({ ...item, created_at: now, triggered_by: triggeredBy });
+        .insert(item);
 
       if (error) {
         logger.error(`[Content Writer] Insert failed for "${item.title}": ${JSON.stringify(error)}`);
@@ -253,7 +221,7 @@ Return exactly: { "subject": "...", "preview_text": "90 chars max", "body": "ful
       }
     }
 
-    logger.info(`[Content Writer] Saved ${insertedCount}/${items.length} rows to content_calendar`);
+    logger.info(`[Content Writer] Saved ${insertedCount}/${items.length} rows`);
 
     const summary = {
       topic, pillar, week,
