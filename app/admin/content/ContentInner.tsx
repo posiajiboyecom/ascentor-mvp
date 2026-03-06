@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactElement } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // ─────────────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ const TYPE_META: Record<string, { icon: string; color: string; bg: string }> = {
 
 
 function TypeIcon({ type }: { type: string }) {
-  const icons: Record<string, JSX.Element> = {
+  const icons: Record<string, ReactElement> = {
     blog:     <IcoBlog />,
     linkedin: <IcoLinkedin />,
     twitter:  <IcoTwitter />,
