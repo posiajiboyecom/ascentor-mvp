@@ -410,13 +410,17 @@ export default function AdminShell({
   const router   = useRouter();
   const supabase = createClient();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
-  // Load saved theme on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('ascentor-admin-theme') as 'dark' | 'light' | null;
-    if (saved === 'light' || saved === 'dark') setTheme(saved);
-  }, []);
+  // Read theme synchronously from localStorage to avoid flash.
+  // We default to 'dark' for SSR, then instantly correct on mount
+  // via the inline <script> injected into the wrapper div.
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ascentor-admin-theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    }
+    return 'dark';
+  });
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -553,6 +557,17 @@ export default function AdminShell({
   return (
     <div data-admin-theme={theme} style={{ minHeight: '100vh', background: 'var(--bg-root)', display: 'flex', flexDirection: 'column' }}>
       <style>{STYLES}</style>
+      {/* Inline script: runs synchronously before browser paints, kills any theme flash */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          try {
+            var t = localStorage.getItem('ascentor-admin-theme');
+            if (t === 'light' || t === 'dark') {
+              document.currentScript.parentElement.setAttribute('data-admin-theme', t);
+            }
+          } catch(e){}
+        })();
+      `}} />
 
       {/* Mobile header */}
       <div className="admin-mobile-header" style={{
