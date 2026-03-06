@@ -278,8 +278,8 @@ export default function LandingPage() {
         .lp-testimonial-card { background: var(--light); border-radius: 20px; padding: 36px; border: 1px solid rgba(42,40,32,0.06); display: flex; flex-direction: column; transition: transform 0.25s, box-shadow 0.25s; }
         .lp-testimonial-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.07); }
         .lp-testimonial-card.featured { background: var(--dark); border-color: rgba(232,160,32,0.2); }
-        .lp-testimonial-stars { display: flex; gap: 3px; margin-bottom: 20px; }
-        .lp-star { color: var(--gold); font-size: 16px; }
+        .lp-testimonial-stars { display: flex; gap: 4px; margin-bottom: 20px; align-items: center; }
+        .lp-star { display: flex; align-items: center; color: var(--gold); }
         .lp-testimonial-quote { font-size: 15px; line-height: 1.75; color: var(--text); flex: 1; margin-bottom: 24px; }
         .featured .lp-testimonial-quote { color: rgba(255,255,255,0.85); }
         .lp-testimonial-author { display: flex; align-items: center; gap: 12px; }
@@ -605,7 +605,16 @@ export default function LandingPage() {
           <p className="lp-section-sub">Everything you need to grow — AI, human mentors, and a community that holds you accountable.</p>
           <div className="lp-pillars-grid">
             <div className="lp-pillar-card">
-              <div className="lp-pillar-icon">🤖</div>
+              <div className="lp-pillar-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{color:'var(--gold)'}}>
+                  <rect x="3" y="11" width="18" height="10" rx="2"/>
+                  <path d="M12 2a2 2 0 0 1 2 2v1H10V4a2 2 0 0 1 2-2z"/>
+                  <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                  <circle cx="9" cy="16" r="1" fill="currentColor" stroke="none"/>
+                  <circle cx="15" cy="16" r="1" fill="currentColor" stroke="none"/>
+                  <path d="M12 19v1"/>
+                </svg>
+              </div>
               <div className="lp-pillar-title">Sage</div>
               <p className="lp-pillar-desc">Your personal mentor, available at 2am before your big presentation. Trained on African business context, career frameworks, and life navigation.</p>
               <ul className="lp-pillar-features">
@@ -617,8 +626,13 @@ export default function LandingPage() {
               </ul>
             </div>
             <div className="lp-pillar-card" style={{ borderColor: 'rgba(232,160,32,0.2)' }}>
-              <div className="lp-pillar-icon">🎓</div>
-              <div className="lp-pillar-title">Human Mentors & Live Sessions</div>
+              <div className="lp-pillar-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{color:'var(--gold)'}}>
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                  <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                </svg>
+              </div>
+              <div className="lp-pillar-title">Human Mentors &amp; Live Sessions</div>
               <p className="lp-pillar-desc">Live sessions with Africa's top professionals who've navigated the exact challenges you're facing. Real experience, not theory.</p>
               <ul className="lp-pillar-features">
                 <li>Monthly live mentor sessions</li>
@@ -629,7 +643,14 @@ export default function LandingPage() {
               </ul>
             </div>
             <div className="lp-pillar-card">
-              <div className="lp-pillar-icon">👥</div>
+              <div className="lp-pillar-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{color:'var(--gold)'}}>
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
               <div className="lp-pillar-title">Mentorship Circles</div>
               <p className="lp-pillar-desc">Matched with peers at your exact career stage and industry. Your personal board of advisors who get it — because they're living it too.</p>
               <ul className="lp-pillar-features">
@@ -672,12 +693,34 @@ export default function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', maxWidth: '900px', width: '100%', marginTop: '48px' }}
   className="lp-founding-grid">
             {[
-              { icon: '🔒', title: 'Locked-in pricing', desc: 'Your founding rate is yours for life — never increases as the platform grows.' },
-              { icon: '🎙️', title: 'Shape the roadmap', desc: 'Direct line to the founding team. Your feedback ships in weeks, not quarters.' },
-              { icon: '🌍', title: 'Founding community', desc: 'The first circle of African professionals building careers with intention.' },
+              { icon: 'lock',  title: 'Locked-in pricing', desc: 'Your founding rate is yours for life — never increases as the platform grows.' },
+              { icon: 'mic',   title: 'Shape the roadmap', desc: 'Direct line to the founding team. Your feedback ships in weeks, not quarters.' },
+              { icon: 'globe', title: 'Founding community', desc: 'The first circle of African professionals building careers with intention.' },
             ].map((card) => (
               <div key={card.title} style={{ background: 'var(--light)', borderRadius: '20px', padding: '32px 28px', border: '1px solid rgba(42,40,32,0.06)' }}>
-                <div style={{ fontSize: '28px', marginBottom: '14px' }}>{card.icon}</div>
+                <div style={{ width: 44, height: 44, background: 'rgba(232,160,32,0.12)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                  {card.icon === 'lock' && (
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                  )}
+                  {card.icon === 'mic' && (
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                      <line x1="12" y1="19" x2="12" y2="23"/>
+                      <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                  )}
+                  {card.icon === 'globe' && (
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="2" y1="12" x2="22" y2="12"/>
+                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    </svg>
+                  )}
+                </div>
                 <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '20px', fontWeight: 700, color: 'var(--dark)', marginBottom: '10px' }}>{card.title}</div>
                 <p style={{ fontSize: '14px', lineHeight: 1.7, color: 'var(--text-light)' }}>{card.desc}</p>
               </div>
@@ -781,7 +824,11 @@ export default function LandingPage() {
                 Start Free — 7 Days →
               </Link>
               <a href="https://chat.whatsapp.com/FLHef9sbMywIcdxH0MJCsl?mode=gi_t" className="lp-btn-whatsapp" target="_blank" rel="noreferrer">
-                💬 Join Founders WhatsApp Community
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{flexShrink:0}}>
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.554 4.118 1.528 5.845L0 24l6.341-1.507A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.794 9.794 0 0 1-5.012-1.376l-.36-.214-3.766.895.942-3.667-.234-.374A9.789 9.789 0 0 1 2.182 12C2.182 6.578 6.578 2.182 12 2.182S21.818 6.578 21.818 12 17.422 21.818 12 21.818z"/>
+                </svg>
+                Join Founders WhatsApp Community
               </a>
             </div>
             <p style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '8px' }}>Or get weekly mentorship insights — free</p>
@@ -820,7 +867,13 @@ export default function LandingPage() {
                   <div className="lp-product-img">
                     {p.image_url
                       ? <img src={p.image_url} alt={p.name} />
-                      : <div className="lp-product-img-placeholder">📦</div>
+                      : <div className="lp-product-img-placeholder">
+                          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                          </svg>
+                        </div>
                     }
                     {p.badge && <span className="lp-product-badge">{p.badge}</span>}
                   </div>
@@ -890,7 +943,7 @@ export default function LandingPage() {
           </div>
           <div className="lp-footer-bottom">
             <span>© 2026 Ascentor. All rights reserved.</span>
-            <span>Built with ❤️ for Africa</span>
+            <span>Built with <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--gold)" stroke="none" style={{display:'inline',verticalAlign:'middle',margin:'0 2px'}}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> for Africa</span>
           </div>
         </footer>
 
