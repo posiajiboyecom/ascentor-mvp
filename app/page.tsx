@@ -9,6 +9,7 @@ export default function LandingPage() {
 
   const [email, setEmail] = useState('');
   const [hasBlogPosts, setHasBlogPosts] = useState(false);
+  const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
 
   // B7: Check if blog has published posts — hide nav link when empty
   useEffect(() => {
@@ -17,6 +18,15 @@ export default function LandingPage() {
       .select('id', { count: 'exact', head: true })
       .eq('is_published', true)
       .then(({ count }) => { if ((count || 0) > 0) setHasBlogPosts(true); });
+
+    supabase
+      .from('products')
+      .select('id, name, tagline, price, currency, image_url, category, badge, cta_label')
+      .eq('published', true)
+      .eq('is_featured', true)
+      .order('sort_order', { ascending: true })
+      .limit(3)
+      .then(({ data }) => { if (data?.length) setFeaturedProducts(data); });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
@@ -326,6 +336,25 @@ export default function LandingPage() {
         .lp-email-form button:hover { background: var(--gold-light); }
         .lp-cta-note { font-size: 12px; color: var(--text-light); margin-top: 12px; position: relative; z-index: 1; }
 
+        /* ── PRODUCTS ── */
+        .lp-products-section { padding: 100px 48px; background: var(--light); display: flex; flex-direction: column; align-items: center; }
+        .lp-products-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1000px; margin-top: 56px; width: 100%; }
+        .lp-product-card { background: var(--white); border-radius: 20px; overflow: hidden; border: 1px solid rgba(232,160,32,0.1); text-decoration: none; color: inherit; transition: transform 0.25s, box-shadow 0.25s; display: flex; flex-direction: column; }
+        .lp-product-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(232,160,32,0.1); }
+        .lp-product-img { aspect-ratio: 16/9; background: #EDE9E3; position: relative; overflow: hidden; }
+        .lp-product-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
+        .lp-product-card:hover .lp-product-img img { transform: scale(1.04); }
+        .lp-product-img-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+        .lp-product-badge { position: absolute; top: 10px; left: 10px; background: var(--dark); color: var(--gold); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; }
+        .lp-product-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+        .lp-product-cat { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; display: block; }
+        .lp-product-name { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 20px; font-weight: 700; color: var(--dark); margin-bottom: 6px; line-height: 1.2; }
+        .lp-product-tagline { font-size: 13px; color: var(--text-light); line-height: 1.5; flex: 1; margin-bottom: 16px; }
+        .lp-product-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid rgba(232,160,32,0.1); }
+        .lp-product-price { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 700; color: var(--dark); }
+        .lp-product-price.free { color: #14B8A6; }
+        .lp-product-cta { font-size: 12px; font-weight: 700; color: var(--gold); }
+
         /* ── FOOTER ── */
         .lp-footer { background: var(--dark-2); padding: 60px 48px 32px; }
         .lp-footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,0.06); }
@@ -410,13 +439,13 @@ export default function LandingPage() {
           .lp-stats-bar { flex-direction: column; gap: 32px; padding: 48px 24px; }
           .lp-stat-item { border-right: none; padding: 0; }
           .lp-problem-grid, .lp-for-grid, .lp-pillars-grid,
-          .lp-testimonials-grid, .lp-mentors-grid, .lp-pricing-cards { grid-template-columns: 1fr; }
+          .lp-testimonials-grid, .lp-mentors-grid, .lp-pricing-cards, .lp-products-grid { grid-template-columns: 1fr; }
           .lp-steps-container { flex-direction: column; gap: 40px; }
           .lp-steps-container::before { display: none; }
           .lp-footer-top { grid-template-columns: 1fr 1fr; }
           .lp-problem-section, .lp-for-section, .lp-pillars-section, .lp-how-section,
           .lp-testimonials-section, .lp-mentors-section, .lp-pricing-section,
-          .lp-cta-section { padding: 72px 24px; }
+          .lp-products-section, .lp-cta-section { padding: 72px 24px; }
           .lp-footer { padding: 48px 24px 24px; }
           .lp-founding-grid { grid-template-columns: 1fr !important; }
         }
@@ -775,6 +804,44 @@ export default function LandingPage() {
             <p className="lp-cta-note">No credit card · Cancel anytime · 30-day money-back guarantee</p>
           </div>
         </section>
+
+        {/* PRODUCTS */}
+        {featuredProducts.length > 0 && (
+          <section className="lp-products-section">
+            <div className="lp-section-label">From the Shop</div>
+            <h2 className="lp-section-headline">Resources built for African ambition</h2>
+            <p className="lp-section-sub">Playbooks, templates, and tools you can use today.</p>
+            <div className="lp-products-grid">
+              {featuredProducts.map(p => (
+                <Link key={p.id} href={`/products/${p.id}`} className="lp-product-card">
+                  <div className="lp-product-img">
+                    {p.image_url
+                      ? <img src={p.image_url} alt={p.name} />
+                      : <div className="lp-product-img-placeholder">📦</div>
+                    }
+                    {p.badge && <span className="lp-product-badge">{p.badge}</span>}
+                  </div>
+                  <div className="lp-product-body">
+                    <span className="lp-product-cat">{p.category}</span>
+                    <h3 className="lp-product-name">{p.name}</h3>
+                    <p className="lp-product-tagline">{p.tagline}</p>
+                    <div className="lp-product-footer">
+                      <span className={`lp-product-price${p.price === 0 ? ' free' : ''}`}>
+                        {p.price === 0 ? 'Free' : `${p.currency} ${p.price}`}
+                      </span>
+                      <span className="lp-product-cta">
+                        {p.cta_label || (p.price === 0 ? 'Get Free →' : 'Buy Now →')}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <Link href="/products" className="lp-btn-secondary" style={{ marginTop: '40px' }}>
+              See all products →
+            </Link>
+          </section>
+        )}
 
         {/* FOOTER */}
         <footer className="lp-footer">
