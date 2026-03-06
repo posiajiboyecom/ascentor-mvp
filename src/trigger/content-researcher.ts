@@ -14,7 +14,7 @@
 //   - Total compute time: ~10-15s — well within free tier limits
 // ═══════════════════════════════════════════════════════════
 
-import { schedules, tasks } from "@trigger.dev/sdk/v3";
+import { schedules, tasks, task } from "@trigger.dev/sdk/v3";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 
@@ -303,7 +303,7 @@ async function runResearch(params: {
 // ═══════════════════════════════════════════════════════════
 // MANUAL TASK — trigger from admin panel with custom topic/pillar
 // ═══════════════════════════════════════════════════════════
-export const contentResearcherManual = tasks.task({
+export const contentResearcherManual = task({
   id: "content-researcher-manual",
   maxDuration: 60,
   run: async (payload: {
