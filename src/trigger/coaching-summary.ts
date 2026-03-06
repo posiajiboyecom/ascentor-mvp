@@ -1,7 +1,6 @@
 import { task } from "@trigger.dev/sdk/v3";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
-// Cost optimisation: Haiku model, min 6 messages before summarising
 import Anthropic from "@anthropic-ai/sdk";
 import { coachingSummaryEmail } from "./emails/email-templates";
 
@@ -41,7 +40,7 @@ export const processCoachingSummary = task({
 
     // Get conversation messages
     const messages = session.messages || [];
-    if (messages.length < 6) {
+    if (messages.length < 8) {
       console.log("Session too short for summary");
       return { success: true, skipped: true, reason: "too_short" };
     }

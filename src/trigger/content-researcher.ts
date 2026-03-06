@@ -12,7 +12,7 @@
 //   ANTHROPIC_API_KEY — already set. That is all.
 // ═══════════════════════════════════════════════════════════
 
-import { schedules, tasks } from "@trigger.dev/sdk/v3";
+import { schedules, tasks, wait } from "@trigger.dev/sdk/v3";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 
@@ -33,79 +33,47 @@ const PILLAR_ROTATION = [
 
 type Pillar = typeof PILLAR_ROTATION[number];
 
-// ── Rate-limit-safe Claude caller ────────────────────────────
-// Retries on 429 with exponential backoff. Also enforces a
-// minimum inter-call delay so sequential calls never burst.
+// ── Helper: call Claude with web search — durable retries via wait.for ──
+async function claudeWebSearch(prompt: string, maxTokens = 1200): Promise<string> {
+  const MAX_RETRIES = 4;
+  // Retry delays in seconds — wait.for() is durable (no compute consumed)
+  const WAIT_SECONDS = [15, 30, 60, 120];
 
-async function claudeWithRetry(
-  fn: () => Promise<Anthropic.Message>,
-  label: string,
-  maxAttempts = 4
-): Promise<Anthropic.Message> {
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      return await fn();
-    } catch (err: any) {
-      const is429 = err?.status === 429 || err?.error?.type === "rate_limit_error";
-      if (is429 && attempt < maxAttempts) {
-        const retryAfter = err?.headers?.["retry-after"];
-        const waitMs = retryAfter
-          ? parseInt(retryAfter, 10) * 1000
-          : Math.min(15_000 * Math.pow(2, attempt - 1), 120_000); // 15s, 30s, 60s, 120s
-        console.warn(
-          `[${label}] Rate limited (attempt ${attempt}/${maxAttempts}). Waiting ${waitMs / 1000}s…`
-        );
-        await new Promise((r) => setTimeout(r, waitMs));
-        continue;
-      }
-      throw err;
-    }
-  }
-  throw new Error(`[${label}] Exhausted ${maxAttempts} attempts`);
-}
-
-// ── Helper: call Claude with web search ──────────────────────
-async function claudeWebSearch(
-  prompt: string,
-  maxTokens = 2000,
-  label = "claudeWebSearch"
-): Promise<string> {
-  const response = await claudeWithRetry(
-    () =>
-      anthropic.messages.create({
+      const response = await anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
         max_tokens: maxTokens,
         tools: [{ type: "web_search_20250305", name: "web_search" } as any],
         messages: [{ role: "user", content: prompt }],
-      }),
-    label
-  );
+      });
 
-  return response.content
-    .filter((b: any) => b.type === "text")
-    .map((b: any) => b.text)
-    .join("\n")
-    .trim();
-}
+      return response.content
+        .filter((b: any) => b.type === "text")
+        .map((b: any) => b.text)
+        .join("\n")
+        .trim();
 
-// ── Helper: call Claude without tools (Haiku — cheap structured tasks) ───────
-async function claudeChat(
-  prompt: string,
-  maxTokens = 1000,
-  label = "claudeChat"
-): Promise<string> {
-  const response = await claudeWithRetry(
-    () =>
-      anthropic.messages.create({
-        model: "claude-haiku-4-5-20251001", // Haiku: ~20× cheaper, great for JSON synthesis
-        max_tokens: maxTokens,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    label
-  );
+    } catch (err: any) {
+      const isRateLimit = err?.status === 429 || err?.message?.includes("rate limit");
+      const isLast = attempt === MAX_RETRIES - 1;
 
-  const block = response.content[0];
-  return block.type === "text" ? block.text : "";
+      if (isRateLimit && !isLast) {
+        const secs = WAIT_SECONDS[attempt];
+        console.info(
+          `[deepResearch] Rate limited (attempt ${attempt + 1}/${MAX_RETRIES}). Waiting ${secs}s via durable sleep...`
+        );
+        // Durable sleep — pauses the run checkpoint, zero compute consumed
+        await wait.for({ seconds: secs });
+        continue;
+      }
+
+      // Non-rate-limit error or final attempt — rethrow
+      throw err;
+    }
+  }
+
+  throw new Error("[claudeWebSearch] All retries exhausted");
 }
 
 // ── Step 1: Discover what is trending this week ───────────────
@@ -133,9 +101,7 @@ async function discoverTrends(pillar: Pillar): Promise<{
     `    { "title": "headline", "snippet": "one sentence summary" }\n` +
     `  ],\n` +
     `  "summary": "2-3 sentence overview of what is hot this week for African professionals in this space"\n` +
-    `}`,
-    2000,
-    "discoverTrends"
+    `}`
   );
 
   try {
@@ -154,7 +120,6 @@ async function discoverTrends(pillar: Pillar): Promise<{
 
 // ── Step 2: Deep research on the chosen topic ─────────────────
 async function deepResearch(topic: string, pillar: Pillar): Promise<string> {
-
   const raw = await claudeWebSearch(
     `You are a research assistant for Ascentor, an AI coaching platform for ambitious African professionals.\n\n` +
     `Do deep web research on this topic: "${topic}"\n\n` +
@@ -165,8 +130,7 @@ async function deepResearch(topic: string, pillar: Pillar): Promise<string> {
     `4. The biggest pain points or misconceptions professionals have about this\n` +
     `5. The freshest angles or contrarian takes circulating this week\n\n` +
     `Be specific. Name real companies, people, and events. Prioritise African sources and context.`,
-    2000, // Reduced from 2500
-    "deepResearch"
+    1500
   );
 
   console.log(`[Researcher] Deep research: ${raw.length} chars`);
@@ -195,12 +159,6 @@ async function buildContentBrief(params: {
   estimatedEngagement: string;
   urgencyReason: string;
 }> {
-
-  // Trim research to avoid bloating input tokens — keep first 1500 chars
-  const researchTrimmed = params.research.length > 1500
-    ? params.research.substring(0, 1500) + "\n[...trimmed for brevity]"
-    : params.research;
-
   const prompt =
     `You are a senior content strategist for Ascentor — an AI leadership coaching platform ` +
     `for ambitious African professionals (students to C-suite, aged 22-45, ` +
@@ -211,7 +169,7 @@ async function buildContentBrief(params: {
     `=== TRENDING TOPICS ===\n${params.trends.join(", ") || "None captured"}\n\n` +
     `=== NEWS HEADLINES ===\n` +
     `${params.news.map(n => `- ${n.title}: ${n.snippet}`).join("\n") || "None captured"}\n\n` +
-    `=== DEEP RESEARCH ===\n${researchTrimmed}\n\n` +
+    `=== DEEP RESEARCH ===\n${params.research}\n\n` +
     `---\n` +
     `Choose the ONE best topic to write about this week that:\n` +
     `1. Fits the ${params.pillar} pillar\n` +
@@ -234,7 +192,14 @@ async function buildContentBrief(params: {
     `  "urgencyReason": "Why publish this now vs later"\n` +
     `}`;
 
-  const text = await claudeChat(prompt, 1000, "buildContentBrief");
+  // No web search needed for brief synthesis — pure reasoning
+  const res = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 700,
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  const text = res.content[0].type === "text" ? res.content[0].text : "";
 
   try {
     return JSON.parse(text.replace(/```json|```/g, "").trim());
@@ -263,8 +228,7 @@ async function buildContentBrief(params: {
 export const contentResearcherAgent = schedules.task({
   id: "content-researcher-agent",
   cron: "0 5 * * 1", // Every Monday 05:00 UTC = 06:00 WAT
-  maxDuration: 120,   // 2 min — no proactive delays, retries only on actual 429s
-  retry: { maxAttempts: 2 },
+  maxDuration: 600, // 10 min — durable sleeps don't consume compute, so this is safe
   run: async () => {
     console.log("[Researcher] Starting weekly research...");
 
@@ -278,7 +242,7 @@ export const contentResearcherAgent = schedules.task({
     // Step 1 — Trends + news discovery
     const { trends, news, summary: trendSummary } = await discoverTrends(pillar);
 
-    // Step 2 — Deep research (delay built into function)
+    // Step 2 — Deep research on the strongest trend
     const pillarFallback: Record<Pillar, string> = {
       leadership: "African leadership trends 2025",
       career:     "career growth Africa professionals 2025",
@@ -289,7 +253,7 @@ export const contentResearcherAgent = schedules.task({
     const researchTopic = trends[0] || pillarFallback[pillar];
     const research = await deepResearch(researchTopic, pillar);
 
-    // Step 3 — Synthesise the content brief (delay built into function)
+    // Step 3 — Synthesise the content brief
     const brief = await buildContentBrief({ pillar, weekNumber, trendSummary, trends, news, research });
     console.log(`[Researcher] Brief: "${brief.chosenTopic}"`);
 
@@ -313,7 +277,7 @@ export const contentResearcherAgent = schedules.task({
 
     if (error) console.error("[Researcher] Supabase error:", error);
 
-
+    // Step 5 — Auto-trigger Content Writer
     const writerHandle = await tasks.trigger("content-writer-agent", {
       topic:       brief.chosenTopic,
       pillar,

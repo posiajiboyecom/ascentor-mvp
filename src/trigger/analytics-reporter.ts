@@ -90,7 +90,7 @@ export const analyticsReporterAgent = schedules.task({
     // ── Ask Claude to write a compelling founder summary ──
     const claudeRes = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 450,
+      max_tokens: 400,
       messages: [{
         role: "user",
         content: `You are writing a weekly business report email for the founder of Ascentor — an AI mentorship platform for African professionals.
