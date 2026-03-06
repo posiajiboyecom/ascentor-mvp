@@ -79,8 +79,11 @@ async function researchAndDiscover(pillar: Pillar, weekNumber: number): Promise<
     .join("\n")
     .trim();
 
+  // Extract JSON even if Claude wraps it in prose
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  const jsonStr = jsonMatch ? jsonMatch[0] : text;
   try {
-    const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+    const parsed = JSON.parse(jsonStr);
     console.log(`[Researcher] Trends: ${parsed.trends?.length || 0}, news: ${parsed.news?.length || 0}`);
     return {
       trends:   parsed.trends   || [],
@@ -130,8 +133,10 @@ async function buildBrief(params: {
 
   const text = response.content[0]?.type === "text" ? response.content[0].text : "";
 
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  const jsonStr = jsonMatch ? jsonMatch[0] : text;
   try {
-    return JSON.parse(text.replace(/```json|```/g, "").trim());
+    return JSON.parse(jsonStr);
   } catch {
     console.warn("[Researcher] Brief parse failed — using fallback");
     const month = new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" });
@@ -173,25 +178,30 @@ export const contentResearcherAgent = schedules.task({
     const brief = await buildBrief({ pillar, weekNumber, trends, news, summary, research });
     console.log(`[Researcher] Brief: "${brief.chosenTopic}"`);
 
-    // Save to Supabase
-    const { data: savedBrief, error } = await supabase
-      .from("research_briefs")
-      .insert({
-        week_number:  weekNumber,
-        pillar,
-        topic:        brief.chosenTopic,
-        angle:        brief.angle,
-        brief_data:   brief,
-        trends_raw:   trends,
-        news_raw:     news,
-        research_raw: research,
-        status:       "ready",
-        created_at:   now.toISOString(),
-      })
-      .select("id")
-      .single();
-
-    if (error) console.error("[Researcher] Supabase error:", error);
+    // Save to Supabase (non-fatal — continues even if table missing)
+    let savedBriefId: string | null = null;
+    try {
+      const { data: savedBrief, error } = await supabase
+        .from("research_briefs")
+        .insert({
+          week_number:  weekNumber,
+          pillar,
+          topic:        brief.chosenTopic,
+          angle:        brief.angle,
+          brief_data:   brief,
+          trends_raw:   trends,
+          news_raw:     news,
+          research_raw: research,
+          status:       "ready",
+          created_at:   now.toISOString(),
+        })
+        .select("id")
+        .single();
+      if (error) console.error("[Researcher] Supabase error:", error.message);
+      else savedBriefId = savedBrief?.id || null;
+    } catch (err: any) {
+      console.error("[Researcher] Supabase insert failed (non-fatal):", err.message);
+    }
 
     // Trigger Content Writer
     const writerHandle = await tasks.trigger("content-writer-agent", {
@@ -199,7 +209,7 @@ export const contentResearcherAgent = schedules.task({
       pillar,
       week:        weekNumber,
       triggeredBy: `researcher-agent:week-${weekNumber}`,
-      briefId:     savedBrief?.id || null,
+      briefId:     savedBriefId,
       hooks:       brief.hooks,
       keyMessages: brief.keyMessages,
       dataPoints:  brief.dataPoints,
@@ -213,7 +223,7 @@ export const contentResearcherAgent = schedules.task({
       pillar,
       topic:              brief.chosenTopic,
       trendsFound:        trends.length,
-      briefId:            savedBrief?.id || null,
+      briefId:            savedBriefId,
       contentWriterRunId: writerHandle.id,
     };
   },
