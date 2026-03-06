@@ -464,6 +464,7 @@ export default function LandingPage() {
             <li><Link href="/about">About</Link></li>
             <li><Link href="/who-its-for">Who It's For</Link></li>
             <li><Link href="/how-it-works">How It Works</Link></li>
+            <li><Link href="/products">Products</Link></li>
             <li><Link href="/pricing">Pricing</Link></li>
             {hasBlogPosts && <li><Link href="/blog" style={{ color: 'var(--text)' }}>Blog</Link></li>}
             <li><Link href="/login" style={{ color: 'var(--text)' }}>Log In</Link></li>
@@ -857,6 +858,7 @@ export default function LandingPage() {
             <div>
               <div className="lp-footer-col-title">Platform</div>
               <ul className="lp-footer-links">
+                <li><Link href="/products">Products</Link></li>
                 <li><Link href="/pricing">Pricing</Link></li>
                 {hasBlogPosts && <li><Link href="/blog">Blog</Link></li>}
                 <li><Link href="https://ascentor.zohobookings.com/#/4738058000000052054">For Teams</Link></li>
