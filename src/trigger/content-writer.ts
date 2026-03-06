@@ -1,5 +1,10 @@
 // ═══════════════════════════════════════════════════════════
-// Agent 2: Content Writer — FREE TIER EDITION v4
+// Agent 2: Content Writer — FREE TIER EDITION v5
+// Root cause of Blog/LinkedIn parse failures:
+//   The model writes markdown with literal newlines inside JSON
+//   string values, making the JSON invalid. Fix: use JSON5-style
+//   repair to escape control chars before parsing, AND tell the
+//   model to use \n instead of real newlines in string fields.
 // ═══════════════════════════════════════════════════════════
 import { task, logger } from "@trigger.dev/sdk/v3";
 import Anthropic from "@anthropic-ai/sdk";
@@ -13,10 +18,39 @@ const supabase = createClient(
 );
 
 // ── Robust JSON extractor ──────────────────────────────────
+// Handles: markdown fences, literal newlines inside string values,
+// truncated responses, and outermost-brace extraction.
 function extractJSON(raw: string): any {
+  // 1. Strip markdown fences
   let text = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+
+  // 2. Direct parse (works if model behaved)
   try { return JSON.parse(text); } catch { /* continue */ }
 
+  // 3. Fix literal newlines/tabs inside JSON string values then retry.
+  //    Walks char-by-char: inside a string, replace bare \n \r \t with \\n \\r \\t
+  function repairJSON(s: string): string {
+    let result = "";
+    let inString = false;
+    let escape = false;
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (escape) { result += ch; escape = false; continue; }
+      if (ch === "\\") { escape = true; result += ch; continue; }
+      if (ch === '"') { inString = !inString; result += ch; continue; }
+      if (inString) {
+        if      (ch === "\n") { result += "\\n";  continue; }
+        else if (ch === "\r") { result += "\\r";  continue; }
+        else if (ch === "\t") { result += "\\t";  continue; }
+      }
+      result += ch;
+    }
+    return result;
+  }
+
+  try { return JSON.parse(repairJSON(text)); } catch { /* continue */ }
+
+  // 4. Find outermost { } or [ ] and retry both raw and repaired
   const firstBrace   = text.indexOf("{");
   const firstBracket = text.indexOf("[");
   const start =
@@ -28,18 +62,22 @@ function extractJSON(raw: string): any {
     const closer = text[start] === "{" ? "}" : "]";
     const lastClose = text.lastIndexOf(closer);
     if (lastClose > start) {
-      try { return JSON.parse(text.slice(start, lastClose + 1)); } catch { /* continue */ }
+      const slice = text.slice(start, lastClose + 1);
+      try { return JSON.parse(slice); } catch { /* continue */ }
+      try { return JSON.parse(repairJSON(slice)); } catch { /* continue */ }
     }
   }
+
   throw new Error(`Could not parse JSON. Raw: ${raw.slice(0, 120)}`);
 }
 
-// System prompt forces raw JSON — no markdown fences ever
+// System prompt — hard constraint on JSON format
 const SYSTEM =
   "You are a JSON API. Respond with ONLY a valid raw JSON object. " +
-  "Never use markdown code fences (no triple backticks). " +
-  "Never add any text before or after the JSON. " +
-  "Your entire response must begin with { and end with }.";
+  "Never use markdown code fences. Never add text before or after the JSON. " +
+  "Your response must begin with { and end with }. " +
+  "CRITICAL: Inside JSON string values, represent newlines as the two characters \\n (backslash + n), " +
+  "never as actual line breaks. All string values must be on one line.";
 
 export const contentWriterAgent = task({
   id: "content-writer-agent",
@@ -59,17 +97,15 @@ export const contentWriterAgent = task({
       hooks = [], keyMessages = [], dataPoints = [],
     } = payload;
 
-    if (payload.briefId) {
-      logger.info(`[Content Writer] Received brief — briefId: ${payload.briefId}`);
-    }
-    logger.info(`[Content Writer] Starting — topic: "${topic}" | pillar: ${pillar}`);
+    if (payload.briefId) logger.info(`[Content Writer] briefId: ${payload.briefId}`);
+    logger.info(`[Content Writer] Starting — "${topic}" | ${pillar}`);
 
     const keyMsgBlock = keyMessages.length > 0
       ? `Key messages:\n${keyMessages.map((m, i) => `${i + 1}. ${m}`).join("\n")}` : "";
     const dataBlock = dataPoints.length > 0
       ? `Data points:\n${dataPoints.map(d => `- ${d}`).join("\n")}` : "";
     const hookBlock = hooks.length > 0
-      ? `Proven hooks (use one as opener):\n${hooks.map((h, i) => `${i + 1}. ${h}`).join("\n")}` : "";
+      ? `Hooks (use one as opener):\n${hooks.map((h, i) => `${i + 1}. ${h}`).join("\n")}` : "";
 
     logger.info("[Content Writer] Firing all 4 Claude calls in parallel...");
 
@@ -82,12 +118,13 @@ export const contentWriterAgent = task({
           system: SYSTEM,
           messages: [{
             role: "user",
-            content: `Write a compelling blog post for Ascentor (AI leadership coaching for African professionals).
+            content: `Write a blog post for Ascentor (AI leadership coaching for African professionals).
 Topic: "${topic}"
 ${keyMsgBlock}
 ${dataBlock}
-600-800 words. Strong headline, 3-4 subheadings, CTA at end. Personal tone. African business context.
-Return exactly: { "title": "...", "content": "full markdown", "meta_description": "160 char", "cta": "..." }`,
+600-800 words. Strong headline, 3-4 subheadings, CTA at end. African business context.
+Use \\n for line breaks inside the content string.
+Return: { "title": "...", "content": "markdown with \\n line breaks", "meta_description": "160 char", "cta": "..." }`,
           }],
         }),
 
@@ -97,12 +134,12 @@ Return exactly: { "title": "...", "content": "full markdown", "meta_description"
           system: SYSTEM,
           messages: [{
             role: "user",
-            content: `Write LinkedIn content for Ascentor (AI coaching for African professionals).
+            content: `Write LinkedIn posts for Ascentor (AI coaching for African professionals).
 Topic: "${topic}"
 ${hookBlock}
 ${dataBlock}
-Write 5 posts (4-1-1 rule: 4 value, 1 social proof). Each: 150-300 words, strong hook first line.
-Return exactly: { "posts": [ { "type": "value", "hook": "first line", "content": "full post" } ] }`,
+5 posts (4-1-1: 4 value, 1 social proof). 150-300 words each. Use \\n for line breaks.
+Return: { "posts": [ { "type": "value", "hook": "first line", "content": "post with \\n breaks" } ] }`,
           }],
         }),
 
@@ -115,8 +152,8 @@ Return exactly: { "posts": [ { "type": "value", "hook": "first line", "content":
             content: `Write Twitter/X threads for Ascentor (AI leadership coaching for Africa).
 Topic: "${topic}"
 ${hookBlock}
-Write 3 threads, each 5-7 tweets. Punchy openers, soft CTA at end.
-Return exactly: { "threads": [ { "opener": "hook", "tweets": ["t1","t2","t3","t4","t5"], "cta": "cta tweet" } ] }`,
+3 threads, 5-7 tweets each. Punchy openers, soft CTA at end.
+Return: { "threads": [ { "opener": "hook", "tweets": ["t1","t2","t3","t4","t5"], "cta": "cta" } ] }`,
           }],
         }),
 
@@ -128,20 +165,21 @@ Return exactly: { "threads": [ { "opener": "hook", "tweets": ["t1","t2","t3","t4
             role: "user",
             content: `Write a newsletter for "The African Leader" (Ascentor weekly email).
 Topic: "${topic}"
-400-600 words. Personal, warm, mentor-letter style. No corporate speak.
-Structure: Hook, Insight, Practical takeaway, Soft CTA to try Ascentor.
+400-600 words. Warm mentor-letter style. Structure: Hook, Insight, Takeaway, Soft CTA.
 ${dataBlock}
 ${hooks.length > 2 ? `Subject inspiration: ${hooks[2]}` : ""}
-Return exactly: { "subject": "...", "preview_text": "90 chars max", "body": "full markdown" }`,
+Use \\n for line breaks inside the body string.
+Return: { "subject": "...", "preview_text": "90 chars max", "body": "markdown with \\n breaks" }`,
           }],
         }),
       ]);
 
-    // ── Extract with safe fallbacks ───────────────────────
+    // ── Extract with fallbacks ────────────────────────────
     let blog: any = { title: topic, content: "Draft pending review", meta_description: "", cta: "" };
     if (blogSettled.status === "fulfilled") {
       try {
         const raw = blogSettled.value.content[0].type === "text" ? blogSettled.value.content[0].text : "";
+        logger.info(`[Content Writer] Blog raw (first 300): ${raw.slice(0, 300)}`);
         blog = extractJSON(raw);
         logger.info(`[Content Writer] Blog ok — "${blog.title}"`);
       } catch (e) { logger.error(`[Content Writer] Blog parse failed: ${e}`); }
@@ -151,6 +189,7 @@ Return exactly: { "subject": "...", "preview_text": "90 chars max", "body": "ful
     if (linkedinSettled.status === "fulfilled") {
       try {
         const raw = linkedinSettled.value.content[0].type === "text" ? linkedinSettled.value.content[0].text : "";
+        logger.info(`[Content Writer] LinkedIn raw (first 300): ${raw.slice(0, 300)}`);
         const parsed = extractJSON(raw);
         linkedinPosts = Array.isArray(parsed.posts) ? parsed.posts : [];
         logger.info(`[Content Writer] LinkedIn ok — ${linkedinPosts.length} posts`);
@@ -176,10 +215,7 @@ Return exactly: { "subject": "...", "preview_text": "90 chars max", "body": "ful
       } catch (e) { logger.error(`[Content Writer] Newsletter parse failed: ${e}`); }
     } else { logger.error(`[Content Writer] Newsletter API error: ${newsletterSettled.reason}`); }
 
-    // ── Build rows — ONLY columns confirmed to exist in table
-    // Confirmed columns: id (auto), pillar, type, title, platform,
-    //                    week, status, content_data, created_at (auto)
-    // NOT in table: triggered_by, scheduled_for
+    // ── Build rows — only real table columns ──────────────
     const items = [
       {
         pillar, week, status: "draft", platform: "Website",
@@ -215,14 +251,13 @@ Return exactly: { "subject": "...", "preview_text": "90 chars max", "body": "ful
         .insert(item);
 
       if (error) {
-        logger.error(`[Content Writer] Insert failed for "${item.title}": ${JSON.stringify(error)}`);
+        logger.error(`[Content Writer] Insert failed "${item.title}": ${JSON.stringify(error)}`);
       } else {
         insertedCount++;
       }
     }
 
     logger.info(`[Content Writer] Saved ${insertedCount}/${items.length} rows`);
-
     const summary = {
       topic, pillar, week,
       generated: { blog: 1, linkedin_posts: linkedinPosts.length, twitter_threads: twitterThreads.length, newsletter: 1 },
