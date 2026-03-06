@@ -308,9 +308,195 @@ export interface WaitlistEntry {
 }
 
 export interface NewsletterSubscriber {
+  id:            string;
+  email:         string;
+  first_name:    string | null;
+  /** 'website' | 'landing_page' | etc. */
+  source:        string | null;
+  is_active:     boolean;
+  subscribed_at: string | null;
+  created_at:    string;
+}
+
+// ── Profiles addendum ─────────────────────────────────────────
+// These columns exist on profiles but were missing from the interface above.
+// Rather than duplicate the full interface, extend it via declaration merging:
+export interface Profile {
+  /** Per-user permission overrides stored as Permission[]. Null = use role defaults. */
+  permissions: Json | null;
+  /** Lead score 1–100 set by lead-scorer-agent. */
+  lead_score:  number | null;
+}
+
+// ── CoachingSession addendum ──────────────────────────────────
+export interface CoachingSession {
+  /** AI-extracted key takeaways from the session. */
+  key_takeaways: Json | null;
+  /** AI-extracted next steps from the session. */
+  next_steps:    Json | null;
+}
+
+// ── PushSubscription addendum ─────────────────────────────────
+export interface PushSubscription {
+  /** Browser push endpoint URL — used as upsert conflict target. */
+  endpoint: string | null;
+}
+
+// ── PromoCode addendum ────────────────────────────────────────
+export interface PromoCode {
+  /** Admin user who created this promo code. */
+  created_by: string | null;
+}
+
+export type ContentPillar = 'leadership' | 'career' | 'ai' | 'coaching' | 'community';
+export type ContentType   = 'Blog Post' | 'LinkedIn Post' | 'Twitter Thread' | 'Email Newsletter';
+export type ContentStatus = 'draft' | 'approved' | 'published' | 'scheduled';
+
+export interface ContentCalendar {
+  id:           string;
+  pillar:       ContentPillar;
+  type:         ContentType;
+  title:        string;
+  platform:     string;
+  week:         number;
+  status:       ContentStatus;
+  /** JSONB — shape varies by type (blog, linkedin post, twitter thread, newsletter) */
+  content_data: Json | null;
+  triggered_by: string | null;
+  created_at:   string;
+}
+
+export interface ResearchBrief {
+  id:           string;
+  topic:        string;
+  pillar:       ContentPillar;
+  week_number:  number | null;
+  angle:        string | null;
+  /** JSONB — { angle, targetAudience, keyMessages, hooks, dataPoints, seoKeywords, urgencyReason } */
+  brief_data:   Json | null;
+  research_raw: string | null;
+  news_raw:     string | null;
+  trends_raw:   string[] | null;
+  status:       string | null;
+  created_at:   string;
+}
+
+export interface SocialQueue {
+  id:                  string;
+  platform:            string;
+  content:             string;
+  pillar:              ContentPillar | null;
+  scheduled_for:       string | null;
+  status:              string | null;
+  content_calendar_id: string | null;
+  /** @deprecated use content_calendar_id */
+  source_item_id:      string | null;
+  created_at:          string;
+}
+
+export interface Product {
+  id:          string;
+  name:        string;
+  tagline:     string;
+  description: string;
+  price:       number;
+  currency:    string;
+  image_url:   string | null;
+  category:    string;
+  badge:       string | null;
+  cta_label:   string;
+  cta_url:     string;
+  is_featured: boolean;
+  published:   boolean;
+  sort_order:  number;
+  created_at:  string;
+}
+
+export interface ProductPurchase {
+  id:            string;
+  user_id:       string;
+  product_id:    string;
+  product_name:  string | null;
+  amount_paid:   number;
+  currency:      string;
+  reference:     string | null;
+  paystack_data: Json | null;
+  created_at:    string;
+}
+
+export interface JobListing {
+  id:           string;
+  title:        string;
+  department:   string;
+  location:     string;
+  type:         string;
+  mode:         string;
+  description:  string;
+  requirements: string[];
+  nice_to_have: string[];
+  apply_url:    string | null;
+  apply_email:  string | null;
+  is_active:    boolean;
+  created_at:   string;
+}
+
+export interface MentorApplication {
+  id:                  string;
+  full_name:           string;
+  email:               string;
+  phone:               string | null;
+  country:             string | null;
+  role_title:          string | null;
+  company:             string | null;
+  years_experience:    string | null;
+  industry:            string | null;
+  linkedin_url:        string | null;
+  career_summary:      string | null;
+  why_mentor:          string | null;
+  mentor_style:        string | null;
+  availability_hours:  string | null;
+  has_mentored_before: string | null;
+  success_story:       string | null;
+  /** Comma-separated age group strings */
+  age_groups:          string | null;
+  terms_accepted:      boolean;
+  status:              'pending' | 'approved' | 'rejected';
+  applied_at:          string;
+  created_at:          string;
+}
+
+export interface LeadMagnet {
+  id:          string;
+  name:        string;
+  type:        string;
+  downloads:   number;
+  conversions: number;
+  active:      boolean;
+  created_at:  string;
+}
+
+export interface SentNewsletter {
+  id:               string;
+  subject:          string;
+  content:          string;
+  sent_by:          string | null;
+  subscriber_count: number;
+  status:           string;
+  trigger_run_id:   string | null;
+  sent_at:          string;
+}
+
+export interface SessionLocation {
   id:         string;
-  email:      string;
-  first_name: string | null;
+  user_id:    string;
+  ip_address: string | null;
+  country:    string | null;
+  city:       string | null;
+  latitude:   number | null;
+  longitude:  number | null;
+  user_agent: string | null;
+  risk_level: string | null;
+  blocked:    boolean;
   created_at: string;
 }
 
@@ -345,4 +531,14 @@ type TableMap = {
   deletion_requests:        DeletionRequest;
   waitlist_entries:         WaitlistEntry;
   newsletter_subscribers:   NewsletterSubscriber;
+  content_calendar:         ContentCalendar;
+  research_briefs:          ResearchBrief;
+  social_queue:             SocialQueue;
+  products:                 Product;
+  product_purchases:        ProductPurchase;
+  job_listings:             JobListing;
+  mentor_applications:      MentorApplication;
+  lead_magnets:             LeadMagnet;
+  sent_newsletters:         SentNewsletter;
+  session_locations:        SessionLocation;
 };

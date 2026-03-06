@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // ─────────────────────────────────────────────────────────────────
@@ -243,27 +243,111 @@ function canSeeItem(item: NavItem, role: string, userPermissions: string[] | nul
 }
 
 const STYLES = `
+  /* ── Theme tokens ──────────────────────────────────────── */
+  [data-admin-theme="dark"] {
+    --bg-root:        #0C0B08;
+    --bg-sidebar:     #1E1C17;
+    --bg-hover:       rgba(232,160,32,0.07);
+    --bg-active:      rgba(232,160,32,0.12);
+    --bg-root-active: rgba(232,160,32,0.18);
+    --bg-drawer:      #1E1C17;
+    --bg-mobile-hdr:  #1E1C17;
+    --bg-menu-btn:    #2E2A22;
+    --border:         rgba(212,207,195,0.10);
+    --border-menu:    rgba(212,207,195,0.10);
+    --text-primary:   #D4CFC3;
+    --text-nav:       #7A7260;
+    --text-muted:     #4A4438;
+    --text-active:    #E8A020;
+    --text-root-nav:  #E8A020;
+    --accent:         #E8A020;
+    --accent-bg:      rgba(232,160,32,0.10);
+    --accent-border:  rgba(232,160,32,0.20);
+    --teal:           #14B8A6;
+    --teal-bg:        rgba(20,184,166,0.10);
+    --teal-border:    rgba(20,184,166,0.20);
+    --avatar-bg:      rgba(232,160,32,0.12);
+    --avatar-border:  rgba(232,160,32,0.25);
+    --signout-color:  #EF4444;
+    --signout-border: rgba(239,68,68,0.2);
+    --app-link-color: #7A7260;
+    --app-link-border:rgba(212,207,195,0.12);
+    --toggle-bg:      #2E2A22;
+    --toggle-border:  rgba(212,207,195,0.15);
+    --toggle-icon:    #7A7260;
+    --toggle-hover-bg:#3A342A;
+    --logo-filter:    none;
+  }
+
+  [data-admin-theme="light"] {
+    --bg-root:        #F5F3EE;
+    --bg-sidebar:     #FFFFFF;
+    --bg-hover:       rgba(180,120,0,0.06);
+    --bg-active:      rgba(180,120,0,0.10);
+    --bg-root-active: rgba(180,120,0,0.14);
+    --bg-drawer:      #FFFFFF;
+    --bg-mobile-hdr:  #FFFFFF;
+    --bg-menu-btn:    #F0EDE6;
+    --border:         rgba(0,0,0,0.09);
+    --border-menu:    rgba(0,0,0,0.09);
+    --text-primary:   #1A1714;
+    --text-nav:       #6B6355;
+    --text-muted:     #9C9080;
+    --text-active:    #A0720A;
+    --text-root-nav:  #A0720A;
+    --accent:         #A0720A;
+    --accent-bg:      rgba(160,114,10,0.08);
+    --accent-border:  rgba(160,114,10,0.18);
+    --teal:           #0F766E;
+    --teal-bg:        rgba(15,118,110,0.08);
+    --teal-border:    rgba(15,118,110,0.18);
+    --avatar-bg:      rgba(160,114,10,0.10);
+    --avatar-border:  rgba(160,114,10,0.22);
+    --signout-color:  #DC2626;
+    --signout-border: rgba(220,38,38,0.2);
+    --app-link-color: #6B6355;
+    --app-link-border:rgba(0,0,0,0.12);
+    --toggle-bg:      #F0EDE6;
+    --toggle-border:  rgba(0,0,0,0.10);
+    --toggle-icon:    #9C9080;
+    --toggle-hover-bg:#E8E3D8;
+    --logo-filter:    brightness(0.1) sepia(1) hue-rotate(10deg) saturate(3);
+  }
+
+  /* ── Nav styles (use CSS vars) ─────────────────────────── */
   .admin-sidebar-nav { padding: 8px; }
   .admin-nav-group-label {
     font-family: 'DM Mono', monospace;
     font-size: 9px; font-weight: 500;
     letter-spacing: 0.14em; text-transform: uppercase;
-    color: #4A4438; padding: 0 10px; margin: 12px 0 4px;
+    color: var(--text-muted); padding: 0 10px; margin: 12px 0 4px;
   }
   .admin-nav-link {
     display: flex; align-items: center; gap: 10px;
     padding: 9px 10px; border-radius: 8px; margin-bottom: 1px;
     font-family: 'Syne', system-ui, sans-serif;
     font-size: 13px; font-weight: 400;
-    color: #7A7260; text-decoration: none;
+    color: var(--text-nav); text-decoration: none;
     transition: background 0.15s, color 0.15s; position: relative;
   }
-  .admin-nav-link:hover { background: rgba(232,160,32,0.07); color: #D4CFC3; }
-  .admin-nav-link.active { background: rgba(232,160,32,0.12); color: #E8A020; font-weight: 600; }
-  .admin-nav-link .nav-dot { width: 4px; height: 4px; border-radius: 50%; background: #E8A020; margin-left: auto; flex-shrink: 0; }
-  .admin-nav-link.root-item { color: #E8A020; }
-  .admin-nav-link.root-item:hover { background: rgba(232,160,32,0.10); }
-  .admin-nav-link.root-item.active { background: rgba(232,160,32,0.18); }
+  .admin-nav-link:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .admin-nav-link.active { background: var(--bg-active); color: var(--text-active); font-weight: 600; }
+  .admin-nav-link .nav-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); margin-left: auto; flex-shrink: 0; }
+  .admin-nav-link.root-item { color: var(--text-root-nav); }
+  .admin-nav-link.root-item:hover { background: var(--bg-hover); }
+  .admin-nav-link.root-item.active { background: var(--bg-root-active); }
+
+  /* ── Theme toggle button ───────────────────────────────── */
+  .theme-toggle {
+    display: flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+    background: var(--toggle-bg); border: 1px solid var(--toggle-border);
+    color: var(--toggle-icon); cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .theme-toggle:hover { background: var(--toggle-hover-bg); color: var(--text-primary); }
+
+  /* ── Responsive ────────────────────────────────────────── */
   @media (max-width: 1023px) { .admin-desktop-sidebar { display: none !important; } }
   @media (min-width: 1024px) { .admin-mobile-header { display: none !important; } }
   @media (max-width: 1023px) {
@@ -294,6 +378,19 @@ export default function AdminShell({
   const router   = useRouter();
   const supabase = createClient();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  // Load saved theme on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('ascentor-admin-theme') as 'dark' | 'light' | null;
+    if (saved === 'light' || saved === 'dark') setTheme(saved);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('ascentor-admin-theme', next);
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -305,19 +402,52 @@ export default function AdminShell({
 
   const perms = userPermissions ?? null;
 
+  // Logo: use dark-page logo for dark theme, swap for light theme
+  const logoSrc = theme === 'dark'
+    ? '/ascentor-color-for-dark-pages.svg'
+    : '/ascentor-color-for-dark-pages.svg'; // use filter via CSS var --logo-filter
+
+  const ThemeToggle = () => (
+    <button
+      className="theme-toggle"
+      onClick={toggleTheme}
+      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {theme === 'dark' ? (
+        // Sun icon
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      ) : (
+        // Moon icon
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      )}
+    </button>
+  );
+
   const SidebarContent = ({ onNav }: { onNav?: () => void }) => (
     <>
       {/* Logo + badge */}
-      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(212,207,195,0.10)' }}>
+      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }}>
         <Link href="/admin" style={{ display: 'block', textDecoration: 'none', marginBottom: '10px' }}>
-          <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: '26px', width: 'auto' }} />
+          <img
+            src={logoSrc}
+            alt="Ascentor"
+            style={{ height: '26px', width: 'auto', filter: 'var(--logo-filter)' }}
+          />
         </Link>
         <span style={{
           fontFamily: "'DM Mono', monospace", fontSize: '9px', fontWeight: 500,
           letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-          color: role === 'admin' ? '#E8A020' : '#14B8A6',
-          background: role === 'admin' ? 'rgba(232,160,32,0.10)' : 'rgba(20,184,166,0.10)',
-          border: role === 'admin' ? '1px solid rgba(232,160,32,0.20)' : '1px solid rgba(20,184,166,0.20)',
+          color: role === 'admin' ? 'var(--accent)' : 'var(--teal)',
+          background: role === 'admin' ? 'var(--accent-bg)' : 'var(--teal-bg)',
+          border: `1px solid ${role === 'admin' ? 'var(--accent-border)' : 'var(--teal-border)'}`,
           padding: '3px 8px', borderRadius: '100px', display: 'inline-block',
         }}>
           {role === 'admin' ? '⬡ Root Admin' : '◈ Moderator'}
@@ -353,33 +483,34 @@ export default function AdminShell({
       </nav>
 
       {/* Footer */}
-      <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(212,207,195,0.10)' }}>
+      <div style={{ padding: '14px 16px', borderTop: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
           <div style={{
             width: '28px', height: '28px', borderRadius: '50%',
-            background: 'rgba(232,160,32,0.12)', border: '1.5px solid rgba(232,160,32,0.25)',
+            background: 'var(--avatar-bg)', border: '1.5px solid var(--avatar-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: "'Syne', sans-serif", fontSize: '11px', fontWeight: 700,
-            color: '#E8A020', flexShrink: 0,
+            color: 'var(--accent)', flexShrink: 0,
           }}>
             {name.charAt(0).toUpperCase()}
           </div>
           <p style={{
             fontFamily: "'Syne', sans-serif", fontSize: '12px', fontWeight: 600,
-            color: '#D4CFC3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
+            color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
           }}>
             {name}
           </p>
+          <ThemeToggle />
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           <Link href="/dashboard" onClick={onNav} style={{
             fontSize: '11px', padding: '5px 10px', borderRadius: '7px',
-            color: '#7A7260', border: '1px solid rgba(212,207,195,0.12)',
+            color: 'var(--app-link-color)', border: '1px solid var(--app-link-border)',
             textDecoration: 'none', fontFamily: "'Syne', sans-serif",
           }}>← App</Link>
           <button onClick={handleSignOut} style={{
             fontSize: '11px', padding: '5px 10px', borderRadius: '7px',
-            color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)',
+            color: 'var(--signout-color)', border: '1px solid var(--signout-border)',
             background: 'transparent', cursor: 'pointer', fontFamily: "'Syne', sans-serif",
           }}>Sign Out</button>
         </div>
@@ -388,23 +519,24 @@ export default function AdminShell({
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0C0B08', display: 'flex', flexDirection: 'column' }}>
+    <div data-admin-theme={theme} style={{ minHeight: '100vh', background: 'var(--bg-root)', display: 'flex', flexDirection: 'column' }}>
       <style>{STYLES}</style>
 
       {/* Mobile header */}
       <div className="admin-mobile-header" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 16px', background: '#1E1C17',
-        borderBottom: '1px solid rgba(212,207,195,0.10)',
+        padding: '12px 16px', background: 'var(--bg-mobile-hdr)',
+        borderBottom: '1px solid var(--border)',
       }}>
-        <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: '24px', width: 'auto' }} />
+        <img src={logoSrc} alt="Ascentor" style={{ height: '24px', width: 'auto', filter: 'var(--logo-filter)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ThemeToggle />
           <span style={{
             fontFamily: "'DM Mono', monospace", fontSize: '9px', fontWeight: 500,
             letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-            color: role === 'admin' ? '#E8A020' : '#14B8A6',
-            background: role === 'admin' ? 'rgba(232,160,32,0.10)' : 'rgba(20,184,166,0.10)',
-            border: role === 'admin' ? '1px solid rgba(232,160,32,0.20)' : '1px solid rgba(20,184,166,0.20)',
+            color: role === 'admin' ? 'var(--accent)' : 'var(--teal)',
+            background: role === 'admin' ? 'var(--accent-bg)' : 'var(--teal-bg)',
+            border: `1px solid ${role === 'admin' ? 'var(--accent-border)' : 'var(--teal-border)'}`,
             padding: '3px 8px', borderRadius: '100px',
           }}>
             {role === 'admin' ? '⬡ Root' : '◈ Mod'}
@@ -412,8 +544,8 @@ export default function AdminShell({
           <button onClick={() => setMenuOpen(!menuOpen)} style={{
             width: '34px', height: '34px', display: 'flex', alignItems: 'center',
             justifyContent: 'center', borderRadius: '8px',
-            background: '#2E2A22', border: '1px solid rgba(212,207,195,0.10)',
-            color: '#D4CFC3', cursor: 'pointer', fontSize: '14px',
+            background: 'var(--bg-menu-btn)', border: '1px solid var(--border-menu)',
+            color: 'var(--text-primary)', cursor: 'pointer', fontSize: '14px',
           }}>
             {menuOpen ? '✕' : '☰'}
           </button>
@@ -422,9 +554,9 @@ export default function AdminShell({
 
       {/* Mobile drawer */}
       {menuOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.7)' }}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.55)' }}
           onClick={() => setMenuOpen(false)}>
-          <div style={{ width: '240px', height: '100%', display: 'flex', flexDirection: 'column', background: '#1E1C17' }}
+          <div style={{ width: '240px', height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-drawer)' }}
             onClick={e => e.stopPropagation()}>
             <SidebarContent onNav={() => setMenuOpen(false)} />
           </div>
@@ -436,7 +568,7 @@ export default function AdminShell({
         <aside className="admin-desktop-sidebar" style={{
           width: '220px', flexShrink: 0, display: 'flex', flexDirection: 'column',
           height: '100vh', position: 'sticky', top: 0,
-          background: '#1E1C17', borderRight: '1px solid rgba(212,207,195,0.10)',
+          background: 'var(--bg-sidebar)', borderRight: '1px solid var(--border)',
         }}>
           <SidebarContent />
         </aside>
@@ -444,7 +576,7 @@ export default function AdminShell({
         {/* Main */}
         <main className="admin-main-content" style={{
           flex: 1, minWidth: 0, padding: '28px 32px',
-          color: '#D4CFC3', overflowY: 'auto',
+          color: 'var(--text-primary)', overflowY: 'auto',
         }}>
           {children}
         </main>
