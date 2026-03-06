@@ -1,9 +1,21 @@
 // ═══════════════════════════════════════════════════════════
 // Agent 2: Content Writer
-// Triggered manually or after Research Agent completes.
-// Uses Claude to write: 1 blog post, 5 LinkedIn posts,
-// 3 Twitter threads, 1 newsletter segment.
-// Saves all output to content_calendar in Supabase.
+// Triggered automatically after Research Agent completes.
+//
+// Architecture: Blog-first content repurposing
+//   1. Write full blog post (1200–1500 words) — the primary asset
+//   2. Derive all social posts FROM the blog (not independently)
+//      - 5 LinkedIn posts (key insights extracted from blog)
+//      - 3 Twitter/X threads (key arguments from blog)
+//      - 1 Newsletter segment (blog summary + CTA)
+//
+// Fix notes:
+//   - Added maxDuration: 300 (5 min) — 4 sequential Claude calls
+//     need ~60-90s compute; default timeout was killing the task
+//   - Increased max_tokens on blog to 2500 to fit full 1200-word post
+//   - Social posts now receive blog content as context so they
+//     are coherent extensions of the blog, not disconnected pieces
+//   - Robust JSON extraction handles markdown fences and trailing text
 // ═══════════════════════════════════════════════════════════
 import { task } from "@trigger.dev/sdk/v3";
 import Anthropic from "@anthropic-ai/sdk";
@@ -16,8 +28,17 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// Safely extract and parse the first JSON object from any Claude response
+function extractJSON(text: string): any {
+  const cleaned = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("No JSON object found in response");
+  return JSON.parse(jsonMatch[0]);
+}
+
 export const contentWriterAgent = task({
   id: "content-writer-agent",
+  maxDuration: 300, // 5 minutes — needed for 4 sequential Claude calls (~60-90s total compute)
   retry: { maxAttempts: 2 },
   run: async (payload: {
     topic: string;
@@ -31,72 +52,89 @@ export const contentWriterAgent = task({
   }) => {
     const { topic, pillar, week = 1, triggeredBy = "manual", hooks = [], keyMessages = [], dataPoints = [] } = payload;
 
-    // Log the handoff from Researcher if present
     if (payload.briefId) {
       console.log(`[Content Writer] Received brief from Researcher — briefId: ${payload.briefId}`);
     }
-
     console.log(`[Content Writer] Starting — topic: "${topic}" | pillar: ${pillar} | from: ${triggeredBy}`);
 
-    // ── 1. Blog Post ──────────────────────────────────────
+    // ── STEP 1: Full Blog Post (primary asset) ────────────
+    // This is the source of truth. All social content will be
+    // derived from this post to ensure coherence and consistency.
+    console.log("[Content Writer] Writing blog post...");
     const blogRes = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 800,
+      max_tokens: 2500, // Enough for 1200-1500 word post + JSON wrapper
       messages: [{
         role: "user",
-        content: `You are a content writer for Ascentor, an AI leadership coaching platform for African professionals.
+        content: `You are a senior content writer for Ascentor, an AI leadership coaching platform for African professionals.
 
-Write a compelling blog post on this topic: "${topic}"
+Write a full, authoritative blog post on: "${topic}"
 
-${keyMessages.length > 0 ? `Key messages to weave in:\n${keyMessages.map((m, i) => `${i+1}. ${m}`).join('\n')}` : ''}
-${dataPoints.length > 0 ? `Data points to include:\n${dataPoints.map(d => `- ${d}`).join('\n')}` : ''}
+${keyMessages.length > 0 ? `Core messages to weave throughout:\n${keyMessages.map((m, i) => `${i+1}. ${m}`).join('\n')}\n` : ''}
+${dataPoints.length > 0 ? `Real data points to anchor the post:\n${dataPoints.map(d => `- ${d}`).join('\n')}\n` : ''}
 
-The post should:
-- Target ambitious African professionals (students to C-suite)
-- Be 600–800 words
-- Have a strong headline, 3–4 subheadings, and a CTA at the end
-- Feel personal and authoritative, not generic
-- Reference African business context where relevant
+Requirements:
+- 1200–1500 words (this is the full article, not a summary)
+- Target audience: ambitious African professionals aged 25-45 (managers to C-suite)
+- Tone: authoritative but warm, like a respected mentor writing to a peer
+- Structure: compelling headline → relatable opening story/hook → 3-4 subheadings with substantive insights → practical actionable takeaways → strong closing CTA
+- Ground every claim in African business reality (Nigeria, Kenya, Ghana, South Africa)
+- No generic "hustle culture" clichés — Ascentor is premium and nuanced
 
-Return ONLY valid JSON:
+Return ONLY valid JSON with no text before or after:
 {
-  "title": "Post headline",
-  "content": "Full blog post in markdown",
-  "meta_description": "160 char SEO description",
-  "cta": "Call-to-action sentence"
+  "title": "Compelling SEO-optimised headline (max 70 chars)",
+  "content": "Full blog post in markdown — must be 1200-1500 words",
+  "meta_description": "SEO meta description (max 160 chars)",
+  "excerpt": "2-sentence teaser for blog listings",
+  "cta": "Closing call-to-action sentence linking to Ascentor"
 }`,
       }],
     });
 
-    let blog: any = {};
+    let blog: any = { title: topic, content: "", meta_description: "", excerpt: "", cta: "" };
     try {
       const blogText = blogRes.content[0].type === "text" ? blogRes.content[0].text : "";
-      blog = JSON.parse(blogText.replace(/```json|```/g, "").trim());
-    } catch { blog = { title: topic, content: "Draft pending review", meta_description: "", cta: "" }; }
+      blog = extractJSON(blogText);
+      console.log(`[Content Writer] Blog written — title: "${blog.title}", length: ${blog.content?.length || 0} chars`);
+    } catch (e: any) {
+      console.error("[Content Writer] Blog JSON parse failed:", e.message);
+      // Save raw text so we don't lose the content
+      const rawText = blogRes.content[0].type === "text" ? blogRes.content[0].text : "";
+      blog = { title: topic, content: rawText, meta_description: "", excerpt: "", cta: "" };
+    }
 
-    // ── 2. LinkedIn Posts (5) ─────────────────────────────
+    // ── STEP 2: LinkedIn Posts derived from the blog ──────
+    // Pass the blog content so LinkedIn posts are coherent
+    // extensions of the article, not independently generated pieces.
+    console.log("[Content Writer] Writing LinkedIn posts...");
     const linkedinRes = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 800,
+      max_tokens: 1500,
       messages: [{
         role: "user",
         content: `You write LinkedIn content for Ascentor — an AI coaching platform for African professionals.
 
-Topic: "${topic}"
+This week's blog post has just been published:
+TITLE: ${blog.title}
+CONTENT SUMMARY: ${(blog.content || "").substring(0, 800)}...
 
-${hooks.length > 0 ? `Use one of these proven hooks as the opening line for your best post:\n${hooks.map((h, i) => `${i+1}. ${h}`).join('\n')}` : ''}
-${dataPoints.length > 0 ? `Weave in these data points where relevant:\n${dataPoints.map(d => `- ${d}`).join('\n')}` : ''}
+${hooks.length > 0 ? `Proven hooks to adapt (use as inspiration, not copy-paste):\n${hooks.map((h, i) => `${i+1}. ${h}`).join('\n')}\n` : ''}
 
-Write 5 LinkedIn posts following the 4-1-1 rule:
-- 4 pure value posts (no selling)
-- 1 social proof post (community/member success)
-- Each post: 150–300 words, strong hook first line, line breaks for readability
+Now write 5 LinkedIn posts that promote and expand on the blog. Follow the 4-1-1 rule:
+- Post 1-4: Pure value (extract a key insight, framework, or story from the blog — no selling)
+- Post 5: Social proof angle (how an African professional applied this kind of thinking)
+
+Each post: 150-250 words, strong hook as first line, short punchy paragraphs, 3-5 relevant hashtags.
 
 Return ONLY valid JSON:
 {
   "posts": [
-    { "type": "value", "hook": "First line hook", "content": "Full post text" },
-    ...
+    { "type": "value", "hook": "First line hook", "content": "Full post text including hashtags" },
+    { "type": "value", "hook": "...", "content": "..." },
+    { "type": "value", "hook": "...", "content": "..." },
+    { "type": "value", "hook": "...", "content": "..." },
+    { "type": "social_proof", "hook": "...", "content": "..." }
   ]
 }`,
       }],
@@ -105,32 +143,39 @@ Return ONLY valid JSON:
     let linkedin: any = { posts: [] };
     try {
       const liText = linkedinRes.content[0].type === "text" ? linkedinRes.content[0].text : "";
-      linkedin = JSON.parse(liText.replace(/```json|```/g, "").trim());
-    } catch { linkedin = { posts: [] }; }
+      linkedin = extractJSON(liText);
+      console.log(`[Content Writer] LinkedIn: ${linkedin.posts?.length || 0} posts`);
+    } catch (e: any) {
+      console.error("[Content Writer] LinkedIn JSON parse failed:", e.message);
+    }
 
-    // ── 3. Twitter/X Threads (3) ─────────────────────────
+    // ── STEP 3: Twitter/X Threads derived from the blog ──
+    console.log("[Content Writer] Writing Twitter threads...");
     const twitterRes = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 700,
+      max_tokens: 1200,
       messages: [{
         role: "user",
         content: `You write viral Twitter/X threads for Ascentor — AI leadership coaching for Africa.
 
-Topic: "${topic}"
+Source blog post: "${blog.title}"
+Key insight to expand: ${(blog.content || "").substring(0, 500)}...
 
-${hooks.length > 0 ? `Use these as thread opener inspiration:\n${hooks.map((h, i) => `${i+1}. ${h}`).join('\n')}` : ''}
+Write 3 Twitter threads, each with 5-7 tweets. Each thread should take ONE argument or insight from the blog and go deeper on it.
 
-Write 3 Twitter threads, each 5–7 tweets.
-Make thread openers punchy and curiosity-driven.
-End each thread with a soft CTA.
+Rules:
+- Thread opener: punchy, curiosity-driven, stands alone as a great tweet
+- Middle tweets: each adds a distinct insight (not padding)
+- Final tweet: soft CTA to read the full article on Ascentor
+- Max 280 chars per tweet
 
 Return ONLY valid JSON:
 {
   "threads": [
     {
-      "opener": "First tweet (hook)",
-      "tweets": ["tweet 1", "tweet 2", "tweet 3", "tweet 4", "tweet 5"],
-      "cta": "Last tweet CTA"
+      "opener": "First tweet (hook, max 280 chars)",
+      "tweets": ["tweet 2", "tweet 3", "tweet 4", "tweet 5"],
+      "cta": "Final CTA tweet"
     }
   ]
 }`,
@@ -140,53 +185,78 @@ Return ONLY valid JSON:
     let twitter: any = { threads: [] };
     try {
       const twText = twitterRes.content[0].type === "text" ? twitterRes.content[0].text : "";
-      twitter = JSON.parse(twText.replace(/```json|```/g, "").trim());
-    } catch { twitter = { threads: [] }; }
+      twitter = extractJSON(twText);
+      console.log(`[Content Writer] Twitter: ${twitter.threads?.length || 0} threads`);
+    } catch (e: any) {
+      console.error("[Content Writer] Twitter JSON parse failed:", e.message);
+    }
 
-    // ── 4. Newsletter segment ─────────────────────────────
+    // ── STEP 4: Newsletter derived from the blog ──────────
+    console.log("[Content Writer] Writing newsletter...");
     const newsletterRes = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 800,
+      max_tokens: 1200,
       messages: [{
         role: "user",
-        content: `Write a newsletter segment for "The African Leader" — Ascentor's weekly email.
+        content: `Write the weekly "The African Leader" newsletter edition based on this week's blog post.
 
-Topic: "${topic}"
-Length: 400–600 words
-Style: Personal, warm, like a letter from a mentor. No corporate speak.
-Structure: Hook → Insight → Practical takeaway → Soft CTA to try Ascentor
+Blog title: "${blog.title}"
+Blog excerpt: ${blog.excerpt || (blog.content || "").substring(0, 300)}
 
-${dataPoints.length > 0 ? `Anchor the insight with these real data points:\n${dataPoints.map(d => `- ${d}`).join('\n')}` : ''}
-${hooks.length > 2 ? `Subject line inspiration: ${hooks[2]}` : ''}
+${dataPoints.length > 0 ? `Key data points to anchor the insight:\n${dataPoints.map(d => `- ${d}`).join('\n')}\n` : ''}
+${hooks.length > 2 ? `Subject line inspiration: ${hooks[2]}\n` : ''}
+
+The newsletter should:
+- 400-500 words
+- Feel like a personal letter from a mentor, not a corporate email
+- Structure: Warm personal opening → the core insight (from blog) → one practical takeaway readers can use TODAY → soft CTA to try Ascentor's AI coach
+- End with a first-name sign-off ("— Gregory" or similar)
 
 Return ONLY valid JSON:
 {
-  "subject": "Email subject line",
-  "preview_text": "Email preview text (90 chars)",
-  "body": "Full newsletter body in markdown"
+  "subject": "Email subject line (max 60 chars, no clickbait)",
+  "preview_text": "Email preview text (max 90 chars)",
+  "body": "Full newsletter in markdown (400-500 words)"
 }`,
       }],
     });
 
-    let newsletter: any = {};
+    let newsletter: any = { subject: topic, preview_text: "", body: "" };
     try {
       const nlText = newsletterRes.content[0].type === "text" ? newsletterRes.content[0].text : "";
-      newsletter = JSON.parse(nlText.replace(/```json|```/g, "").trim());
-    } catch { newsletter = { subject: topic, preview_text: "", body: "" }; }
+      newsletter = extractJSON(nlText);
+      console.log(`[Content Writer] Newsletter written — subject: "${newsletter.subject}"`);
+    } catch (e: any) {
+      console.error("[Content Writer] Newsletter JSON parse failed:", e.message);
+    }
 
-    // ── 5. Save all to Supabase content_calendar ──────────
+    // ── STEP 5: Save all to Supabase content_calendar ─────
     const now = new Date().toISOString();
     const items = [
-      { pillar, type: "Blog Post",           title: blog.title || topic,                   platform: "Website",   week, status: "draft", content_data: blog },
+      {
+        pillar, type: "Blog Post",
+        title: blog.title || topic,
+        platform: "Website", week, status: "draft",
+        content_data: blog,
+      },
       ...(linkedin.posts || []).map((p: any, i: number) => ({
-        pillar, type: "LinkedIn Post", title: `${p.hook?.substring(0, 60) || `LinkedIn ${i+1}`}...`,
-        platform: "LinkedIn", week, status: "draft", content_data: p,
+        pillar, type: "LinkedIn Post",
+        title: `${(p.hook || `LinkedIn post ${i + 1}`).substring(0, 80)}`,
+        platform: "LinkedIn", week, status: "draft",
+        content_data: p,
       })),
       ...(twitter.threads || []).map((t: any, i: number) => ({
-        pillar, type: "Twitter Thread", title: `Thread: ${t.opener?.substring(0, 50) || `Thread ${i+1}`}...`,
-        platform: "Twitter/X", week, status: "draft", content_data: t,
+        pillar, type: "Twitter Thread",
+        title: `Thread: ${(t.opener || `Thread ${i + 1}`).substring(0, 60)}`,
+        platform: "Twitter/X", week, status: "draft",
+        content_data: t,
       })),
-      { pillar, type: "Email Newsletter", title: newsletter.subject || `Newsletter: ${topic}`, platform: "Email", week, status: "draft", content_data: newsletter },
+      {
+        pillar, type: "Email Newsletter",
+        title: newsletter.subject || `Newsletter: ${topic}`,
+        platform: "Email", week, status: "draft",
+        content_data: newsletter,
+      },
     ];
 
     const { error: insertError } = await supabase
@@ -195,14 +265,20 @@ Return ONLY valid JSON:
         ...item,
         created_at: now,
         triggered_by: triggeredBy,
+        brief_id: payload.briefId || null,
       })));
 
-    if (insertError) console.error("[Content Writer] Supabase insert error:", insertError);
+    if (insertError) {
+      console.error("[Content Writer] Supabase insert error:", insertError.message);
+    } else {
+      console.log(`[Content Writer] Saved ${items.length} items to content_calendar`);
+    }
 
     const summary = {
       topic,
       pillar,
       week,
+      briefId: payload.briefId,
       generated: {
         blog: 1,
         linkedin_posts: linkedin.posts?.length || 0,
@@ -210,9 +286,10 @@ Return ONLY valid JSON:
         newsletter: 1,
       },
       total_items: items.length,
+      blog_title: blog.title,
     };
 
-    console.log("[Content Writer] Done:", summary);
+    console.log("[Content Writer] Complete:", summary);
     return summary;
   },
 });
