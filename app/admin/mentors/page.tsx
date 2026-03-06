@@ -64,7 +64,7 @@ const brand = {
   dark500:     'var(--admin-text-faint)',
   dark400:     'var(--admin-text-muted)',
   dark200:     'var(--admin-text)',
-  dark50:      var(--admin-text-heading),
+  dark50: 'var(--admin-text-heading)',
   card:        'var(--admin-bg-deep)',
   cardHover:   'var(--admin-bg-card)',
   border:      'var(--admin-border)',

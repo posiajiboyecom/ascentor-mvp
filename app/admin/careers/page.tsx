@@ -380,7 +380,7 @@ export default function AdminCareersPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, flexWrap: 'wrap', gap: 10 }}>
         <h1 style={{
           fontFamily: "'Cormorant Garamond', serif", fontSize: 28,
-          fontWeight: 700, color: var(--admin-text-heading), margin: 0, lineHeight: 1.1,
+          fontWeight: 700, color: 'var(--admin-text-heading)', margin: 0, lineHeight: 1.1,
         }}>
           Careers
         </h1>
@@ -483,7 +483,7 @@ export default function AdminCareersPage() {
                 <div>
                   <p style={{
                     fontFamily: "'Syne', sans-serif", fontSize: 14,
-                    fontWeight: 600, color: var(--admin-text-heading), margin: '0 0 4px',
+                    fontWeight: 600, color: 'var(--admin-text-heading)', margin: '0 0 4px',
                   }}>
                     {job.title}
                   </p>
@@ -527,7 +527,7 @@ export default function AdminCareersPage() {
         <div style={{ ...card, padding: 24 }}>
           <h2 style={{
             fontFamily: "'Cormorant Garamond', serif", fontSize: 22,
-            fontWeight: 700, color: var(--admin-text-heading), margin: '0 0 24px',
+            fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 24px',
           }}>
             {tab === 'create' ? 'New Role' : `Editing: ${editing?.title}`}
           </h2>

@@ -174,7 +174,7 @@ export default function AdminUsersPage() {
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: '28px',
             fontWeight: 700,
-            color: var(--admin-text-heading),
+            color: 'var(--admin-text-heading)',
             margin: 0,
             lineHeight: 1.1,
             marginBottom: '6px',
@@ -550,7 +550,7 @@ export default function AdminUsersPage() {
                 fontFamily: "'Cormorant Garamond', serif",
                 fontSize: '22px',
                 fontWeight: 700,
-                color: var(--admin-text-heading),
+                color: 'var(--admin-text-heading)',
                 margin: 0,
               }}>
                 User Details

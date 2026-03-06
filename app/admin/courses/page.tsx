@@ -22,7 +22,7 @@ const B = {
   dark500:     'var(--admin-text-faint)',
   dark400:     'var(--admin-text-muted)',
   dark200:     'var(--admin-text)',
-  dark50:      var(--admin-text-heading),
+  dark50: 'var(--admin-text-heading)',
   gold:        '#E8A020',
   gold300:     '#F9D97A',
   gold600:     '#C87820',

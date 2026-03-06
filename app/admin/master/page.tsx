@@ -134,7 +134,7 @@ function SectionHeader({ eyebrow, title, right }: { eyebrow: string; title: stri
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
       <div>
         <p style={mono(eyebrow, true)}>{eyebrow}</p>
-        <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: var(--admin-text-heading), margin: '4px 0 0', lineHeight: 1.1 }}>{title}</h2>
+        <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '4px 0 0', lineHeight: 1.1 }}>{title}</h2>
       </div>
       {right}
     </div>
@@ -395,7 +395,7 @@ export default function MasterAdminPage() {
         <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#E8A020', marginBottom: 6 }}>
           Marketing System Control
         </p>
-        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 30, fontWeight: 700, color: var(--admin-text-heading), margin: 0, lineHeight: 1.1 }}>
+        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 30, fontWeight: 700, color: 'var(--admin-text-heading)', margin: 0, lineHeight: 1.1 }}>
           Master Admin
         </h1>
         <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)', letterSpacing: '0.08em', marginTop: 6 }}>
@@ -426,7 +426,7 @@ export default function MasterAdminPage() {
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #E8A020 40%, #E8A020 60%, transparent)' }} />
             <p style={mono('⭐ North Star Metric', true)}>⭐ North Star Metric</p>
             <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 72, fontWeight: 700, color: '#E8A020', margin: '8px 0 4px', lineHeight: 1 }}>{kpi.wacu}</p>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 600, color: var(--admin-text-heading), margin: 0 }}>Weekly Active Coached Users (WACU)</p>
+            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 600, color: 'var(--admin-text-heading)', margin: 0 }}>Weekly Active Coached Users (WACU)</p>
             <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)', marginTop: 6, letterSpacing: '0.08em' }}>Users with ≥1 coaching session this week · drives retention, word-of-mouth, conversion</p>
           </div>
 
@@ -862,7 +862,7 @@ export default function MasterAdminPage() {
             ].map(m => (
               <div key={m.name} style={{ ...card, padding: 18 }}>
                 <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#E8A020', background: 'rgba(232,160,32,0.08)', border: '1px solid rgba(232,160,32,0.2)', borderRadius: 100, padding: '2px 8px' }}>{m.type}</span>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: var(--admin-text-heading), margin: '10px 0 6px', lineHeight: 1.3 }}>{m.name}</p>
+                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--admin-text-heading)', margin: '10px 0 6px', lineHeight: 1.3 }}>{m.name}</p>
                 <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', lineHeight: 1.6, margin: 0 }}>{m.desc}</p>
               </div>
             ))}
@@ -1119,7 +1119,7 @@ export default function MasterAdminPage() {
                         color: agent.status === 'building' ? 'var(--admin-text-faint)' : '#E8A020',
                       }}>{i + 1}</div>
                       <div style={{ minWidth: 0 }}>
-                        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, color: var(--admin-text-heading), margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {agent.name}
                         </p>
                         <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', margin: 0, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
