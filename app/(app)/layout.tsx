@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+// Coach page needs chatLayout so the input bar doesn't overlap the bottom nav
+export default async function CoachLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -21,5 +22,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const isAdmin = ['admin', 'moderator'].includes(profile?.role || '');
 
-  return <AppShell initials={initials} isAdmin={isAdmin}>{children}</AppShell>;
+  return (
+    <AppShell initials={initials} isAdmin={isAdmin} chatLayout>
+      {children}
+    </AppShell>
+  );
 }

@@ -63,11 +63,13 @@ function ThemeToggle() {
 function Shell({
   children,
   initials,
-  isAdmin, // <-- Added isAdmin here
+  isAdmin,
+  chatLayout,
 }: {
   children: React.ReactNode;
   initials: string;
-  isAdmin?: boolean; // <-- Added TypeScript definition
+  isAdmin?: boolean;
+  chatLayout?: boolean;
 }) {
   const supabase        = createClient();
   const router          = useRouter();
@@ -201,7 +203,10 @@ function Shell({
       )}
 
       {/* Page content */}
-      <main style={{ flex: 1, width: '100%', maxWidth: '672px', margin: '0 auto', padding: '0 20px 96px', overflowY: 'auto' }}>
+      <main style={chatLayout
+        ? { flex: 1, width: '100%', maxWidth: '672px', margin: '0 auto', padding: '0 20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }
+        : { flex: 1, width: '100%', maxWidth: '672px', margin: '0 auto', padding: '0 20px 96px', overflowY: 'auto' }
+      }>
         {children}
       </main>
 
@@ -214,16 +219,17 @@ function Shell({
 export default function AppShell({
   children,
   initials = 'U',
-  isAdmin = false, // <-- Added default value here
+  isAdmin = false,
+  chatLayout = false,
 }: {
   children: React.ReactNode;
   initials?: string;
-  isAdmin?: boolean; // <-- Added TypeScript definition here
+  isAdmin?: boolean;
+  chatLayout?: boolean;
 }) {
   return (
     <AppThemeProvider>
-      {/* Pass isAdmin down to the Shell component */}
-      <Shell initials={initials} isAdmin={isAdmin}>{children}</Shell>
+      <Shell initials={initials} isAdmin={isAdmin} chatLayout={chatLayout}>{children}</Shell>
     </AppThemeProvider>
   );
 }

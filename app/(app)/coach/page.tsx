@@ -274,7 +274,11 @@ export default function CoachPage() {
   return (
     <div
       className="animate-fade-up flex flex-col"
-      style={{ height: '100%', paddingTop: 16, overflow: 'hidden' }}
+      style={{
+        height: 'calc(100dvh - 64px - 64px)',
+        paddingTop: 16,
+        overflow: 'hidden',
+      }}
     >
 
       {/* ── FIX 2: Header is OUTSIDE the scroll container — always visible ── */}
@@ -547,7 +551,7 @@ export default function CoachPage() {
       </div>
 
       {/* ── Input bar — always at bottom ────────────────────────────────── */}
-      <div className="flex gap-2 items-end" style={{ flexShrink: 0, paddingBottom: 85 }}>
+      <div className="flex gap-2 items-end" style={{ flexShrink: 0, paddingBottom: 8 }}>
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
