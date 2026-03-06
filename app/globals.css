@@ -235,3 +235,63 @@ select:focus {
 
 /* ── Safe-area utility ── */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* ══════════════════════════════════════════════════════════════════
+   APP THEME — light / dark
+   Scoped to [data-app-theme] set by AppThemeProvider.
+   Uses --app-* vars consumed by AppShell, BottomNav, and app pages.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Dark defaults (matches existing brand) */
+[data-app-theme="dark"] {
+  --app-bg:           #0C0B08;
+  --app-bg-card:      #1E1C17;
+  --app-bg-input:     #2E2A22;
+  --app-bg-hover:     #2E2A22;
+
+  --app-text:         #F7F6F3;
+  --app-text-muted:   #C8C3B8;
+  --app-text-dim:     #8A8272;
+
+  --app-border:       rgba(212,207,195,0.10);
+  --app-border-gold:  rgba(232,160,32,0.18);
+  --app-nav-shadow:   rgba(0,0,0,0.60);
+
+  --app-accent:       #E8A020;
+  --app-accent-glow:  rgba(232,160,32,0.12);
+
+  --app-card-shadow:  0 2px 12px rgba(0,0,0,0.40);
+}
+
+/* Light overrides — warm parchment */
+[data-app-theme="light"] {
+  --app-bg:           #F5F3EE;
+  --app-bg-card:      #FFFFFF;
+  --app-bg-input:     #F0EDE6;
+  --app-bg-hover:     #EDE9E0;
+
+  --app-text:         #1A1714;
+  --app-text-muted:   #4A3F30;
+  --app-text-dim:     #7A6E60;
+
+  --app-border:       rgba(0,0,0,0.09);
+  --app-border-gold:  rgba(160,114,10,0.22);
+  --app-nav-shadow:   rgba(0,0,0,0.10);
+
+  --app-accent:       #A0720A;
+  --app-accent-glow:  rgba(160,114,10,0.10);
+
+  --app-card-shadow:  0 2px 12px rgba(0,0,0,0.08);
+}
+
+/* Light theme — override body background */
+[data-app-theme="light"],
+[data-app-theme="light"] body {
+  background-color: #F5F3EE !important;
+  color: #1A1714 !important;
+}
+
+/* Scrollbar — adapts to theme */
+[data-app-theme="light"] ::-webkit-scrollbar-track { background: #E8E3D8; }
+[data-app-theme="light"] ::-webkit-scrollbar-thumb { background: #C8BFB0; border-radius: 4px; }
+[data-app-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #A89E90; }
