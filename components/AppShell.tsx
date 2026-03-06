@@ -83,8 +83,8 @@ function Shell({
   };
 
   const logoSrc = isDark
-    ? '/ascentor-color-on-dark.svg'
-    : '/ascentor-color-on-light.svg';
+    ? '/ascentor-color-for-dark-pages.svg'
+    : '/ascentor-color-for-light-pages.svg';
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--app-bg)' }}>
@@ -109,7 +109,7 @@ function Shell({
           <img
             src={logoSrc}
             alt="Ascentor"
-            onError={e => { (e.target as HTMLImageElement).src = '/ascentor-color-on-dark.svg'; }}
+            onError={e => { (e.target as HTMLImageElement).src = '/ascentor-color-for-dark-pages.svg'; }}
             style={{ height: '28px', width: 'auto' }}
           />
         </Link>
