@@ -282,6 +282,31 @@ select:focus {
   --app-accent-glow:  rgba(160,114,10,0.10);
 
   --app-card-shadow:  0 2px 12px rgba(0,0,0,0.08);
+
+  /* ── Also override the root semantic vars so existing page components
+     that use var(--bg-card), var(--text), var(--border) etc. pick up
+     the light palette without needing any code changes. ── */
+  --bg:              #F5F3EE;
+  --bg-card:         #FFFFFF;
+  --bg-card-hover:   #EDE9E0;
+  --bg-input:        #F0EDE6;
+
+  --accent:          #A0720A;
+  --accent-dim:      #7A5208;
+  --accent-glow:     rgba(160,114,10,0.10);
+
+  --text:            #1A1714;
+  --text-muted:      #4A3F30;
+  --text-dim:        #7A6E60;
+
+  --border:          rgba(0,0,0,0.09);
+  --border-light:    rgba(0,0,0,0.13);
+
+  --success:         #059669;
+  --error:           #DC2626;
+  --blue:            #2563EB;
+  --purple:          #7C3AED;
+  --teal:            #0F766E;
 }
 
 /* Light theme — override body background */
