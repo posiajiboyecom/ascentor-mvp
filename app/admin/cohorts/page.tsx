@@ -10,25 +10,25 @@ import { useSearchParams } from 'next/navigation';
 // Display : Cormorant Garamond 700 / Italic 600
 // UI      : Syne 400–800
 // Mono    : DM Mono 400/500
-// Gold    : #E8A020   Dark: #0C0B08
+// Gold    : #E8A020   Dark: var(--admin-bg)
 // ============================================================
 const B = {
   fontDisplay: "'Cormorant Garamond', Georgia, serif",
   fontUI:      "'Syne', system-ui, sans-serif",
   fontMono:    "'DM Mono', 'Courier New', monospace",
-  dark:        '#0C0B08',
-  dark800:     '#141310',
-  dark700:     '#1E1C17',
-  dark600:     '#2E2A22',
-  dark500:     '#4A4438',
-  dark400:     '#7A7260',
-  dark200:     '#D4CFC3',
+  dark:        'var(--admin-bg)',
+  dark800:     'var(--admin-bg-deep)',
+  dark700:     'var(--admin-bg-card)',
+  dark600:     'var(--admin-bg-input)',
+  dark500:     'var(--admin-text-faint)',
+  dark400:     'var(--admin-text-muted)',
+  dark200:     'var(--admin-text)',
   dark50:      '#F7F6F3',
   gold:        '#E8A020',
   gold600:     '#C87820',
   goldMuted:   'rgba(232,160,32,0.09)',
   goldBorder:  'rgba(232,160,32,0.25)',
-  border:      'rgba(212,207,195,0.10)',
+  border:      'var(--admin-border)',
   explorer:    '#14B8A6',
   climber:     '#8B5CF6',
   success:     '#10B981',
@@ -139,7 +139,7 @@ const CSS = `
   .asc-btn-ghost:hover { border-color: ${B.goldBorder}; color: ${B.dark200}; }
 
   .asc-cohort-card { transition: border-color 0.12s ease; }
-  .asc-cohort-card:hover { border-color: rgba(212,207,195,0.20) !important; }
+  .asc-cohort-card:hover { border-color: var(--admin-border-strong) !important; }
 
   .asc-emoji-btn {
     width: 38px; height: 38px; border-radius: 8px; border: 1px solid ${B.border};

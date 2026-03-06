@@ -16,15 +16,15 @@ const brand = {
   gold:        '#E8A020',
   goldMuted:   'rgba(232,160,32,0.08)',
   goldBorder:  'rgba(232,160,32,0.22)',
-  dark:        '#0C0B08',
-  dark700:     '#1E1C17',
-  dark600:     '#2E2A22',
-  dark500:     '#4A4438',
-  dark400:     '#7A7260',
-  dark200:     '#D4CFC3',
+  dark:        'var(--admin-bg)',
+  dark700:     'var(--admin-bg-card)',
+  dark600:     'var(--admin-bg-input)',
+  dark500:     'var(--admin-text-faint)',
+  dark400:     'var(--admin-text-muted)',
+  dark200:     'var(--admin-text)',
   dark50:      '#F7F6F3',
-  card:        '#141310',
-  border:      'rgba(212,207,195,0.1)',
+  card:        'var(--admin-bg-deep)',
+  border:      'var(--admin-border)',
   teal:        '#14B8A6',
   red:         '#EF4444',
 };
@@ -210,17 +210,17 @@ export default function AdminProductsPage() {
         .prod-input {
           font-family: 'Syne', sans-serif; font-size: 13px;
           padding: 10px 14px; border-radius: 9px; width: 100%;
-          background: #1E1C17; color: #D4CFC3;
-          border: 1px solid rgba(212,207,195,0.12); outline: none;
+          background: var(--admin-bg-card); color: var(--admin-text);
+          border: 1px solid var(--admin-border); outline: none;
           transition: border-color 0.15s;
         }
         .prod-input:focus { border-color: rgba(232,160,32,0.4); }
-        .prod-input::placeholder { color: #4A4438; }
-        select.prod-input option { background: #1E1C17; }
+        .prod-input::placeholder { color: var(--admin-text-faint); }
+        select.prod-input option { background: var(--admin-bg-card); }
         .prod-label {
           font-family: 'DM Mono', monospace; font-size: 10px;
           font-weight: 500; letter-spacing: 0.08em;
-          text-transform: uppercase; color: #7A7260;
+          text-transform: uppercase; color: var(--admin-text-muted);
           display: block; margin-bottom: 6px;
         }
         .prod-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -236,7 +236,7 @@ export default function AdminProductsPage() {
           background: #fff; top: 3px; transition: left 0.2s;
         }
         .toggle-on  { background: #14B8A6; }
-        .toggle-off { background: #2E2A22; }
+        .toggle-off { background: var(--admin-bg-input); }
         .toggle-on::after  { left: 19px; }
         .toggle-off::after { left: 3px;  }
       `}</style>

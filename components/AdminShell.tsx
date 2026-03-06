@@ -243,7 +243,37 @@ function canSeeItem(item: NavItem, role: string, userPermissions: string[] | nul
 }
 
 const STYLES = `
-  /* ── Theme tokens ──────────────────────────────────────── */
+  /* ── Admin page vars — dark (default) ─────────────────── */
+  [data-admin-theme="dark"] {
+    --admin-bg:              #0C0B08;
+    --admin-bg-deep:         #141210;
+    --admin-bg-card:         #1E1C17;
+    --admin-bg-card-hover:   #23201A;
+    --admin-bg-input:        #2E2A22;
+    --admin-text:            #D4CFC3;
+    --admin-text-dim:        #9A9280;
+    --admin-text-muted:      #7A7260;
+    --admin-text-faint:      #4A4438;
+    --admin-border:          rgba(212,207,195,0.10);
+    --admin-border-strong:   rgba(212,207,195,0.18);
+  }
+
+  /* ── Admin page vars — light ───────────────────────────── */
+  [data-admin-theme="light"] {
+    --admin-bg:              #F5F3EE;
+    --admin-bg-deep:         #EEE9E0;
+    --admin-bg-card:         #FFFFFF;
+    --admin-bg-card-hover:   #F7F4EE;
+    --admin-bg-input:        #F0EDE6;
+    --admin-text:            #1A1714;
+    --admin-text-dim:        #6B6355;
+    --admin-text-muted:      #7A6E60;
+    --admin-text-faint:      #9C9080;
+    --admin-border:          rgba(0,0,0,0.08);
+    --admin-border-strong:   rgba(0,0,0,0.13);
+  }
+
+  /* ── Shell theme tokens ────────────────────────────────── */
   [data-admin-theme="dark"] {
     --bg-root:        #0C0B08;
     --bg-sidebar:     #1E1C17;

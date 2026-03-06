@@ -156,7 +156,7 @@ export default function AdminReportsPage() {
           color: #fff; margin-bottom: 6px;
         }
         .rp-sub {
-          font-size: 13px; color: #7A7260;
+          font-size: 13px; color: var(--admin-text-muted);
         }
 
         /* ── Date range ── */
@@ -170,13 +170,13 @@ export default function AdminReportsPage() {
           transition: all 0.18s;
         }
         .rp-range-btn.active {
-          background: #E8A020; color: #0C0B08; font-weight: 500;
+          background: #E8A020; color: var(--admin-bg); font-weight: 500;
         }
         .rp-range-btn.inactive {
-          background: #1E1C17; color: #4A4438;
-          border: 1px solid #2E2A22;
+          background: var(--admin-bg-card); color: var(--admin-text-faint);
+          border: 1px solid var(--admin-bg-input);
         }
-        .rp-range-btn.inactive:hover { color: #D4CFC3; border-color: #4A4438; }
+        .rp-range-btn.inactive:hover { color: var(--admin-text); border-color: var(--admin-text-faint); }
 
         /* ── Report type grid ── */
         .rp-grid {
@@ -185,11 +185,11 @@ export default function AdminReportsPage() {
           gap: 12px; margin-bottom: 28px;
         }
         .rp-type-btn {
-          background: #141310;
+          background: var(--admin-bg-deep);
           border-radius: 12px; padding: 20px;
           cursor: pointer; text-align: left;
           transition: all 0.2s; position: relative; overflow: hidden;
-          border: 1px solid #2E2A22;
+          border: 1px solid var(--admin-bg-input);
         }
         .rp-type-btn:hover { border-color: rgba(232,160,32,0.3); transform: translateY(-2px); }
         .rp-type-btn.active { border-color: rgba(232,160,32,0.5); background: rgba(232,160,32,0.04); }
@@ -201,7 +201,7 @@ export default function AdminReportsPage() {
         .rp-type-label {
           font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px;
         }
-        .rp-type-desc { font-size: 12px; color: #4A4438; line-height: 1.4; }
+        .rp-type-desc { font-size: 12px; color: var(--admin-text-faint); line-height: 1.4; }
         .rp-type-active-dot {
           position: absolute; top: 14px; right: 14px;
           width: 6px; height: 6px; border-radius: 50%; background: #E8A020;
@@ -209,25 +209,25 @@ export default function AdminReportsPage() {
 
         /* ── Loading ── */
         .rp-loading {
-          background: #141310; border: 1px solid #2E2A22;
+          background: var(--admin-bg-deep); border: 1px solid var(--admin-bg-input);
           border-radius: 14px; padding: 48px;
           text-align: center;
         }
         .rp-loading-label {
           font-family: 'DM Mono', monospace;
           font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
-          color: #4A4438; animation: rp-pulse 1.5s ease-in-out infinite;
+          color: var(--admin-text-faint); animation: rp-pulse 1.5s ease-in-out infinite;
         }
         @keyframes rp-pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
 
         /* ── Result card ── */
         .rp-result {
-          background: #141310; border: 1px solid #2E2A22;
+          background: var(--admin-bg-deep); border: 1px solid var(--admin-bg-input);
           border-radius: 14px; overflow: hidden;
         }
         .rp-result-head {
           padding: 20px 24px;
-          border-bottom: 1px solid #2E2A22;
+          border-bottom: 1px solid var(--admin-bg-input);
           display: flex; align-items: flex-start; justify-content: space-between;
           gap: 12px; flex-wrap: wrap;
         }
@@ -237,37 +237,37 @@ export default function AdminReportsPage() {
         }
         .rp-result-meta {
           font-family: 'DM Mono', monospace;
-          font-size: 10px; letter-spacing: 0.08em; color: #4A4438;
+          font-size: 10px; letter-spacing: 0.08em; color: var(--admin-text-faint);
         }
         .rp-export-row { display: flex; gap: 8px; }
         .rp-export-btn {
           padding: 8px 16px; border-radius: 8px; cursor: pointer;
           font-family: 'DM Mono', monospace;
           font-size: 10px; letter-spacing: 0.08em;
-          background: #1E1C17; color: #7A7260;
-          border: 1px solid #2E2A22;
+          background: var(--admin-bg-card); color: var(--admin-text-muted);
+          border: 1px solid var(--admin-bg-input);
           transition: all 0.18s;
         }
-        .rp-export-btn:hover { color: #D4CFC3; border-color: #4A4438; }
-        .rp-export-btn.primary { background: #E8A020; color: #0C0B08; border-color: transparent; }
+        .rp-export-btn:hover { color: var(--admin-text); border-color: var(--admin-text-faint); }
+        .rp-export-btn.primary { background: #E8A020; color: var(--admin-bg); border-color: transparent; }
         .rp-export-btn.primary:hover { background: #F5C55A; }
 
         /* ── Summary cards ── */
         .rp-summary {
           padding: 20px 24px;
-          border-bottom: 1px solid #2E2A22;
+          border-bottom: 1px solid var(--admin-bg-input);
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
           gap: 12px;
         }
         .rp-stat {
-          background: #1E1C17; border-radius: 10px; padding: 14px 16px;
-          border: 1px solid #2E2A22;
+          background: var(--admin-bg-card); border-radius: 10px; padding: 14px 16px;
+          border: 1px solid var(--admin-bg-input);
         }
         .rp-stat-label {
           font-family: 'DM Mono', monospace;
           font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
-          color: #4A4438; margin-bottom: 8px;
+          color: var(--admin-text-faint); margin-bottom: 8px;
         }
         .rp-stat-value {
           font-family: 'Cormorant Garamond', serif;
@@ -285,24 +285,24 @@ export default function AdminReportsPage() {
           padding: 10px 16px; text-align: left;
           font-family: 'DM Mono', monospace;
           font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
-          color: #4A4438; font-weight: 400;
-          border-bottom: 1px solid #2E2A22;
+          color: var(--admin-text-faint); font-weight: 400;
+          border-bottom: 1px solid var(--admin-bg-input);
           white-space: nowrap;
-          background: #141310;
+          background: var(--admin-bg-deep);
         }
         .rp-table td {
-          padding: 10px 16px; color: #7A7260;
-          border-bottom: 1px solid #1E1C17;
+          padding: 10px 16px; color: var(--admin-text-muted);
+          border-bottom: 1px solid var(--admin-bg-card);
           max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
           font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.02em;
         }
         .rp-table tr:last-child td { border-bottom: none; }
-        .rp-table tr:hover td { background: rgba(232,160,32,0.02); color: #D4CFC3; }
+        .rp-table tr:hover td { background: rgba(232,160,32,0.02); color: var(--admin-text); }
         .rp-table-footer {
           padding: 12px 16px; text-align: center;
           font-family: 'DM Mono', monospace;
-          font-size: 10px; letter-spacing: 0.08em; color: #4A4438;
-          border-top: 1px solid #2E2A22;
+          font-size: 10px; letter-spacing: 0.08em; color: var(--admin-text-faint);
+          border-top: 1px solid var(--admin-bg-input);
         }
 
         /* Status badges in table */
@@ -416,9 +416,9 @@ export default function AdminReportsPage() {
                               <td key={c}>
                                 <span className="rp-badge" style={{
                                   background: val === '—' ? 'transparent'
-                                    : isActive ? 'rgba(20,184,166,0.1)' : 'rgba(74,68,56,0.3)',
-                                  color: val === '—' ? '#4A4438'
-                                    : isActive ? '#14B8A6' : '#7A7260',
+                                    : isActive ? 'rgba(20,184,166,0.1)' : 'var(--admin-border-strong)',
+                                  color: val === '—' ? 'var(--admin-text-faint)'
+                                    : isActive ? '#14B8A6' : 'var(--admin-text-muted)',
                                 }}>
                                   {val}
                                 </span>

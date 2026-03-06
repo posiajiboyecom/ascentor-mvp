@@ -22,15 +22,15 @@ const brand = {
   gold:        '#E8A020',
   goldMuted:   'rgba(232,160,32,0.08)',
   goldBorder:  'rgba(232,160,32,0.22)',
-  dark:        '#0C0B08',
-  dark700:     '#1E1C17',
-  dark600:     '#2E2A22',
-  dark500:     '#4A4438',
-  dark400:     '#7A7260',
-  dark200:     '#D4CFC3',
+  dark:        'var(--admin-bg)',
+  dark700:     'var(--admin-bg-card)',
+  dark600:     'var(--admin-bg-input)',
+  dark500:     'var(--admin-text-faint)',
+  dark400:     'var(--admin-text-muted)',
+  dark200:     'var(--admin-text)',
   dark50:      '#F7F6F3',
-  card:        '#141310',
-  border:      'rgba(212,207,195,0.1)',
+  card:        'var(--admin-bg-deep)',
+  border:      'var(--admin-border)',
   teal:        '#14B8A6',
   tealMuted:   'rgba(20,184,166,0.08)',
   tealBorder:  'rgba(20,184,166,0.22)',
@@ -341,7 +341,7 @@ export default function PermissionsPage() {
                             }}>
                               {isEnabled && (
                                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                                  <path d="M2 6l3 3 5-5" stroke="#0C0B08" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M2 6l3 3 5-5" stroke="var(--admin-bg)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                                 </svg>
                               )}
                             </div>

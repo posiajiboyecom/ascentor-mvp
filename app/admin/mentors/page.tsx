@@ -9,7 +9,7 @@ import { useModal } from '@/components/Modal';
 // Display : Cormorant Garamond 700 / Italic 600
 // UI      : Syne 400–800
 // Mono    : DM Mono 400/500
-// Gold    : #E8A020  Dark: #0C0B08
+// Gold    : #E8A020  Dark: var(--admin-bg)
 // ─────────────────────────────────────────────
 
 type Application = {
@@ -58,16 +58,16 @@ const brand = {
   gold:        '#E8A020',
   goldMuted:   'rgba(232,160,32,0.12)',
   goldBorder:  'rgba(232,160,32,0.22)',
-  dark:        '#0C0B08',
-  dark700:     '#1E1C17',
-  dark600:     '#2E2A22',
-  dark500:     '#4A4438',
-  dark400:     '#7A7260',
-  dark200:     '#D4CFC3',
+  dark:        'var(--admin-bg)',
+  dark700:     'var(--admin-bg-card)',
+  dark600:     'var(--admin-bg-input)',
+  dark500:     'var(--admin-text-faint)',
+  dark400:     'var(--admin-text-muted)',
+  dark200:     'var(--admin-text)',
   dark50:      '#F7F6F3',
-  card:        '#141310',
-  cardHover:   '#1E1C17',
-  border:      'rgba(212,207,195,0.1)',
+  card:        'var(--admin-bg-deep)',
+  cardHover:   'var(--admin-bg-card)',
+  border:      'var(--admin-border)',
   borderGold:  'rgba(232,160,32,0.22)',
 };
 
@@ -938,7 +938,7 @@ export default function AdminMentorsPage() {
             .ascentor-header-row    { flex-direction: column !important; align-items: flex-start !important; }
             .ascentor-search-row    { flex-direction: column !important; }
           }
-          input::placeholder { color: #4A4438; }
+          input::placeholder { color: var(--admin-text-faint); }
           input:focus { border-color: rgba(232,160,32,0.35) !important; }
           * { box-sizing: border-box; }
 

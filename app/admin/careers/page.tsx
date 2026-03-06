@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 // ============================================================
 // ADMIN CAREERS — /admin/careers
 // Create, edit, publish/unpublish, and delete job listings
-// Ascentor brand: Dark #0C0B08 · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
+// Ascentor brand: Dark var(--admin-bg) · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
 // ============================================================
 
 interface Job {
@@ -145,27 +145,27 @@ export default function AdminCareersPage() {
 
   // ── Shared style tokens ────────────────────────────────────────────────────
   const card: React.CSSProperties = {
-    background: '#141310', border: '1px solid #2E2A22', borderRadius: 12,
+    background: 'var(--admin-bg-deep)', border: '1px solid var(--admin-bg-input)', borderRadius: 12,
   };
   const inputBase: React.CSSProperties = {
     width: '100%', padding: '10px 14px', borderRadius: 8,
-    border: '1px solid #2E2A22', background: '#1E1C17',
-    color: '#D4CFC3', fontSize: 13,
+    border: '1px solid var(--admin-bg-input)', background: 'var(--admin-bg-card)',
+    color: 'var(--admin-text)', fontSize: 13,
     fontFamily: "'Syne', sans-serif", outline: 'none',
   };
   const label: React.CSSProperties = {
     fontFamily: "'DM Mono', monospace", fontSize: 10,
     letterSpacing: '0.1em', textTransform: 'uppercase' as const,
-    color: '#4A4438', display: 'block', marginBottom: 6,
+    color: 'var(--admin-text-faint)', display: 'block', marginBottom: 6,
   };
   const monoTag = (text: string, gold = false) => (
     <span style={{
       fontFamily: "'DM Mono', monospace", fontSize: 9,
       letterSpacing: '0.1em', textTransform: 'uppercase' as const,
-      color: gold ? '#E8A020' : '#7A7260',
+      color: gold ? '#E8A020' : 'var(--admin-text-muted)',
       padding: '2px 8px',
-      background: gold ? 'rgba(232,160,32,0.08)' : '#1E1C17',
-      border: `1px solid ${gold ? 'rgba(232,160,32,0.2)' : '#2E2A22'}`,
+      background: gold ? 'rgba(232,160,32,0.08)' : 'var(--admin-bg-card)',
+      border: `1px solid ${gold ? 'rgba(232,160,32,0.2)' : 'var(--admin-bg-input)'}`,
       borderRadius: 100,
     }}>{text}</span>
   );
@@ -213,8 +213,8 @@ export default function AdminCareersPage() {
         <button
           onClick={() => onChange([...value, ''])}
           style={{
-            padding: '7px 14px', borderRadius: 6, border: '1px dashed #2E2A22',
-            background: 'transparent', color: '#4A4438', cursor: 'pointer',
+            padding: '7px 14px', borderRadius: 6, border: '1px dashed var(--admin-bg-input)',
+            background: 'transparent', color: 'var(--admin-text-faint)', cursor: 'pointer',
             fontFamily: "'DM Mono', monospace", fontSize: 10,
             letterSpacing: '0.08em', textTransform: 'uppercase' as const,
             textAlign: 'left' as const,
@@ -314,18 +314,18 @@ export default function AdminCareersPage() {
             onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
             style={{
               width: 40, height: 22, borderRadius: 100,
-              background: form.is_active ? '#E8A020' : '#2E2A22',
+              background: form.is_active ? '#E8A020' : 'var(--admin-bg-input)',
               position: 'relative', transition: 'background 0.2s', cursor: 'pointer',
             }}
           >
             <div style={{
               position: 'absolute', top: 3, left: form.is_active ? 21 : 3,
               width: 16, height: 16, borderRadius: '50%',
-              background: form.is_active ? '#0C0B08' : '#4A4438',
+              background: form.is_active ? 'var(--admin-bg)' : 'var(--admin-text-faint)',
               transition: 'left 0.2s',
             }} />
           </div>
-          <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: '#D4CFC3' }}>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text)' }}>
             {form.is_active ? 'Published — visible on /careers' : 'Draft — hidden from public'}
           </span>
         </label>
@@ -348,7 +348,7 @@ export default function AdminCareersPage() {
       <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
         <button onClick={handleSave} disabled={saving} style={{
           padding: '11px 24px', borderRadius: 8, border: 'none',
-          background: '#E8A020', color: '#0C0B08',
+          background: '#E8A020', color: 'var(--admin-bg)',
           fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13,
           cursor: saving ? 'not-allowed' : 'pointer',
           opacity: saving ? 0.5 : 1,
@@ -357,8 +357,8 @@ export default function AdminCareersPage() {
         </button>
         <button onClick={() => { setTab('listings'); setMsg(null); }} style={{
           padding: '11px 20px', borderRadius: 8,
-          border: '1px solid #2E2A22', background: 'transparent',
-          color: '#7A7260', fontFamily: "'Syne', sans-serif",
+          border: '1px solid var(--admin-bg-input)', background: 'transparent',
+          color: 'var(--admin-text-muted)', fontFamily: "'Syne', sans-serif",
           fontSize: 13, fontWeight: 600, cursor: 'pointer',
         }}>
           Cancel
@@ -372,7 +372,7 @@ export default function AdminCareersPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
         @keyframes asc-fade-up { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-        select option { background: #1E1C17; color: #D4CFC3; }
+        select option { background: var(--admin-bg-card); color: var(--admin-text); }
         input:focus, textarea:focus, select:focus { border-color: #E8A020 !important; }
       `}</style>
 
@@ -387,8 +387,8 @@ export default function AdminCareersPage() {
         <div style={{ display: 'flex', gap: 8 }}>
           <a href="/careers" target="_blank" rel="noopener noreferrer" style={{
             padding: '8px 16px', borderRadius: 8,
-            border: '1px solid #2E2A22', background: 'transparent',
-            color: '#7A7260', fontFamily: "'DM Mono', monospace",
+            border: '1px solid var(--admin-bg-input)', background: 'transparent',
+            color: 'var(--admin-text-muted)', fontFamily: "'DM Mono', monospace",
             fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase',
             cursor: 'pointer', textDecoration: 'none',
           }}>
@@ -397,7 +397,7 @@ export default function AdminCareersPage() {
           {tab === 'listings' && (
             <button onClick={openCreate} style={{
               padding: '8px 18px', borderRadius: 8, border: 'none',
-              background: '#E8A020', color: '#0C0B08',
+              background: '#E8A020', color: 'var(--admin-bg)',
               fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13,
               cursor: 'pointer',
             }}>
@@ -409,7 +409,7 @@ export default function AdminCareersPage() {
       <p style={{
         fontFamily: "'DM Mono', monospace", fontSize: 10,
         letterSpacing: '0.1em', textTransform: 'uppercase',
-        color: '#4A4438', marginBottom: 24,
+        color: 'var(--admin-text-faint)', marginBottom: 24,
       }}>
         {jobs.filter(j => j.is_active).length} published · {jobs.filter(j => !j.is_active).length} drafts
       </p>
@@ -418,8 +418,8 @@ export default function AdminCareersPage() {
       {(tab === 'create' || tab === 'edit') && (
         <div style={{
           display: 'flex', gap: 2, marginBottom: 20,
-          padding: 4, background: '#1E1C17',
-          borderRadius: 10, border: '1px solid #2E2A22',
+          padding: 4, background: 'var(--admin-bg-card)',
+          borderRadius: 10, border: '1px solid var(--admin-bg-input)',
           width: 'fit-content',
         }}>
           {[
@@ -428,8 +428,8 @@ export default function AdminCareersPage() {
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key as any)} style={{
               padding: '7px 16px', borderRadius: 7, border: 'none',
-              background: tab === t.key ? '#141310' : 'transparent',
-              color: tab === t.key ? '#E8A020' : '#4A4438',
+              background: tab === t.key ? 'var(--admin-bg-deep)' : 'transparent',
+              color: tab === t.key ? '#E8A020' : 'var(--admin-text-faint)',
               fontFamily: "'DM Mono', monospace", fontSize: 10,
               letterSpacing: '0.1em', textTransform: 'uppercase' as const,
               cursor: 'pointer', whiteSpace: 'nowrap' as const,
@@ -446,14 +446,14 @@ export default function AdminCareersPage() {
           <div style={{ padding: '48px 0', textAlign: 'center' }}>
             <div style={{
               width: 28, height: 28, borderRadius: '50%', margin: '0 auto',
-              border: '2px solid #2E2A22', borderTopColor: '#E8A020',
+              border: '2px solid var(--admin-bg-input)', borderTopColor: '#E8A020',
               animation: 'asc-spin 0.8s linear infinite',
             }} />
             <style>{`@keyframes asc-spin { to { transform: rotate(360deg); } }`}</style>
           </div>
         ) : jobs.length === 0 ? (
           <div style={{ ...card, padding: '48px 24px', textAlign: 'center' }}>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: '#4A4438', margin: 0 }}>
+            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: 'var(--admin-text-faint)', margin: 0 }}>
               No job listings yet. Create one to get started.
             </p>
           </div>
@@ -462,12 +462,12 @@ export default function AdminCareersPage() {
             {/* Header */}
             <div style={{
               display: 'grid', gridTemplateColumns: '1fr 120px 100px 80px 120px',
-              padding: '10px 20px', borderBottom: '1px solid #2E2A22',
+              padding: '10px 20px', borderBottom: '1px solid var(--admin-bg-input)',
             }}>
               {['Role', 'Department', 'Type', 'Mode', 'Actions'].map(h => (
                 <span key={h} style={{
                   fontFamily: "'DM Mono', monospace", fontSize: 9,
-                  letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#4A4438',
+                  letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--admin-text-faint)',
                 }}>{h}</span>
               ))}
             </div>
@@ -475,7 +475,7 @@ export default function AdminCareersPage() {
             {jobs.map(job => (
               <div key={job.id} style={{
                 display: 'grid', gridTemplateColumns: '1fr 120px 100px 80px 120px',
-                padding: '14px 20px', borderBottom: '1px solid #2E2A22',
+                padding: '14px 20px', borderBottom: '1px solid var(--admin-bg-input)',
                 alignItems: 'center', opacity: job.is_active ? 1 : 0.5,
                 transition: 'background 0.15s',
               }}>
@@ -491,27 +491,27 @@ export default function AdminCareersPage() {
                     {monoTag(job.is_active ? 'Live' : 'Draft', job.is_active)}
                     <span style={{
                       fontFamily: "'DM Mono', monospace", fontSize: 9,
-                      color: '#4A4438', letterSpacing: '0.06em',
+                      color: 'var(--admin-text-faint)', letterSpacing: '0.06em',
                     }}>
                       {job.location}
                     </span>
                   </div>
                 </div>
 
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#7A7260', letterSpacing: '0.06em' }}>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)', letterSpacing: '0.06em' }}>
                   {job.department}
                 </span>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#7A7260' }}>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)' }}>
                   {job.type}
                 </span>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#7A7260' }}>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)' }}>
                   {job.mode}
                 </span>
 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <ActionBtn onClick={() => openEdit(job)} color="#E8A020">Edit</ActionBtn>
-                  <ActionBtn onClick={() => toggleActive(job)} color={job.is_active ? '#7A7260' : '#14B8A6'}>
+                  <ActionBtn onClick={() => toggleActive(job)} color={job.is_active ? 'var(--admin-text-muted)' : '#14B8A6'}>
                     {job.is_active ? 'Unpublish' : 'Publish'}
                   </ActionBtn>
                   <ActionBtn onClick={() => deleteJob(job)} color="#EF4444">Delete</ActionBtn>

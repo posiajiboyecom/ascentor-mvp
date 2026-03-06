@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 // ============================================================
 // ADMIN USER MANAGEMENT — /admin/users
 // View, search, filter, edit roles, ban/unban users
-// Ascentor brand: Dark #0C0B08 · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
+// Ascentor brand: Dark var(--admin-bg) · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
 // ============================================================
 
 interface User {
@@ -103,25 +103,25 @@ export default function AdminUsersPage() {
     const map: Record<string, { color: string; bg: string; label: string }> = {
       active:    { color: '#14B8A6', bg: 'rgba(20,184,166,0.1)',  label: 'Active' },
       trialing:  { color: '#E8A020', bg: 'rgba(232,160,32,0.1)',  label: 'Trial' },
-      cancelled: { color: '#7A7260', bg: 'rgba(122,114,96,0.12)', label: 'Cancelled' },
+      cancelled: { color: 'var(--admin-text-muted)', bg: 'var(--admin-border)', label: 'Cancelled' },
       past_due:  { color: '#EF4444', bg: 'rgba(239,68,68,0.1)',   label: 'Past Due' },
     };
-    return map[status || ''] || { color: '#4A4438', bg: 'rgba(74,68,56,0.15)', label: 'Free' };
+    return map[status || ''] || { color: 'var(--admin-text-faint)', bg: 'var(--admin-border)', label: 'Free' };
   };
 
   // ─── Shared style tokens ──────────────────────────────────────────────────
   const card: React.CSSProperties = {
-    background: '#141310',
-    border: '1px solid #2E2A22',
+    background: 'var(--admin-bg-deep)',
+    border: '1px solid var(--admin-bg-input)',
     borderRadius: '12px',
   };
 
   const inputBase: React.CSSProperties = {
     padding: '10px 14px',
     borderRadius: '8px',
-    border: '1px solid #2E2A22',
-    background: '#1E1C17',
-    color: '#D4CFC3',
+    border: '1px solid var(--admin-bg-input)',
+    background: 'var(--admin-bg-card)',
+    color: 'var(--admin-text)',
     fontSize: '13px',
     fontFamily: "'Syne', sans-serif",
     outline: 'none',
@@ -133,7 +133,7 @@ export default function AdminUsersPage() {
     fontSize: '10px',
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
-    color: '#4A4438',
+    color: 'var(--admin-text-faint)',
   };
 
   const totalPages = Math.ceil(total / 50) || 1;
@@ -144,8 +144,8 @@ export default function AdminUsersPage() {
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 
         .asc-input:focus          { border-color: #E8A020 !important; }
-        .asc-input:hover          { border-color: #4A4438 !important; }
-        .asc-tr:hover td          { background: #1A1815 !important; }
+        .asc-input:hover          { border-color: var(--admin-text-faint) !important; }
+        .asc-tr:hover td          { background: var(--admin-bg-deep) !important; }
         .asc-btn-ghost:hover      { border-color: #E8A020 !important; color: #E8A020 !important; }
         .asc-btn-danger:hover     { background: rgba(239,68,68,0.08) !important; }
         .asc-btn-safe:hover       { background: rgba(20,184,166,0.08) !important; }
@@ -240,7 +240,7 @@ export default function AdminUsersPage() {
           <div style={{ padding: '48px', textAlign: 'center' }}>
             <div style={{
               width: '32px', height: '32px', borderRadius: '50%',
-              border: '2px solid #2E2A22', borderTopColor: '#E8A020',
+              border: '2px solid var(--admin-bg-input)', borderTopColor: '#E8A020',
               animation: 'asc-spin 0.9s linear infinite',
               margin: '0 auto 12px',
             }} />
@@ -253,7 +253,7 @@ export default function AdminUsersPage() {
             <div className="asc-table-desktop" style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #2E2A22' }}>
+                  <tr style={{ borderBottom: '1px solid var(--admin-bg-input)' }}>
                     {['User', 'Role', 'Plan', 'Status', 'Joined', 'Actions'].map(h => (
                       <th key={h} style={{
                         padding: '12px 16px',
@@ -262,7 +262,7 @@ export default function AdminUsersPage() {
                         fontSize: '10px',
                         letterSpacing: '0.1em',
                         textTransform: 'uppercase',
-                        color: '#4A4438',
+                        color: 'var(--admin-text-faint)',
                         fontWeight: 500,
                         whiteSpace: 'nowrap',
                       }}>
@@ -275,16 +275,16 @@ export default function AdminUsersPage() {
                   {users.map(u => {
                     const badge = statusBadge(u.subscription_status, u.banned);
                     return (
-                      <tr key={u.id} className="asc-tr" style={{ borderBottom: '1px solid #2E2A22', opacity: u.banned ? 0.55 : 1 }}>
+                      <tr key={u.id} className="asc-tr" style={{ borderBottom: '1px solid var(--admin-bg-input)', opacity: u.banned ? 0.55 : 1 }}>
 
                         {/* User */}
                         <td style={{ padding: '13px 16px' }}>
-                          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: '13px', color: '#D4CFC3', marginBottom: '2px' }}>
+                          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: '13px', color: 'var(--admin-text)', marginBottom: '2px' }}>
                             {u.full_name || 'Unnamed'}
                           </div>
-                          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: '#4A4438' }}>{u.email}</div>
+                          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: 'var(--admin-text-faint)' }}>{u.email}</div>
                           {u.current_role && (
-                            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: '#4A4438', marginTop: '2px', letterSpacing: '0.04em' }}>
+                            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: 'var(--admin-text-faint)', marginTop: '2px', letterSpacing: '0.04em' }}>
                               {u.current_role}{u.industry ? ` · ${u.industry}` : ''}
                             </div>
                           )}
@@ -305,7 +305,7 @@ export default function AdminUsersPage() {
 
                         {/* Plan */}
                         <td style={{ padding: '13px 16px' }}>
-                          <span style={{ ...monoLabel, fontSize: '11px', color: '#7A7260' }}>
+                          <span style={{ ...monoLabel, fontSize: '11px', color: 'var(--admin-text-muted)' }}>
                             {u.subscription_plan || 'free'}
                           </span>
                         </td>
@@ -343,7 +343,7 @@ export default function AdminUsersPage() {
                                 padding: '5px 12px',
                                 fontSize: '11px',
                                 cursor: 'pointer',
-                                color: '#7A7260',
+                                color: 'var(--admin-text-muted)',
                               }}
                             >
                               View
@@ -399,17 +399,17 @@ export default function AdminUsersPage() {
                     key={u.id}
                     style={{
                       padding: '16px',
-                      borderBottom: '1px solid #2E2A22',
+                      borderBottom: '1px solid var(--admin-bg-input)',
                       opacity: u.banned ? 0.6 : 1,
                     }}
                   >
                     {/* Top row: name + status badge */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                       <div>
-                        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: '14px', color: '#D4CFC3' }}>
+                        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: '14px', color: 'var(--admin-text)' }}>
                           {u.full_name || 'Unnamed'}
                         </div>
-                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: '#4A4438', marginTop: '2px' }}>
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: 'var(--admin-text-faint)', marginTop: '2px' }}>
                           {u.email}
                         </div>
                       </div>
@@ -458,7 +458,7 @@ export default function AdminUsersPage() {
                       <button
                         onClick={() => setSelectedUser(u)}
                         className="asc-btn-ghost"
-                        style={{ ...inputBase, padding: '6px 14px', fontSize: '12px', cursor: 'pointer', color: '#7A7260' }}
+                        style={{ ...inputBase, padding: '6px 14px', fontSize: '12px', cursor: 'pointer', color: 'var(--admin-text-muted)' }}
                       >
                         View
                       </button>
@@ -500,7 +500,7 @@ export default function AdminUsersPage() {
             ...inputBase,
             cursor: page === 0 ? 'not-allowed' : 'pointer',
             opacity: page === 0 ? 0.35 : 1,
-            color: '#7A7260',
+            color: 'var(--admin-text-muted)',
           }}
         >
           Previous
@@ -516,7 +516,7 @@ export default function AdminUsersPage() {
             ...inputBase,
             cursor: users.length < 50 ? 'not-allowed' : 'pointer',
             opacity: users.length < 50 ? 0.35 : 1,
-            color: '#7A7260',
+            color: 'var(--admin-text-muted)',
           }}
         >
           Next
@@ -534,8 +534,8 @@ export default function AdminUsersPage() {
             position: 'fixed',
             top: '50%', left: '50%',
             transform: 'translate(-50%, -50%)',
-            background: '#141310',
-            border: '1px solid #2E2A22',
+            background: 'var(--admin-bg-deep)',
+            border: '1px solid var(--admin-bg-input)',
             borderRadius: '14px',
             padding: '28px',
             width: '90%',
@@ -559,9 +559,9 @@ export default function AdminUsersPage() {
                 onClick={() => setSelectedUser(null)}
                 style={{
                   background: 'none',
-                  border: '1px solid #2E2A22',
+                  border: '1px solid var(--admin-bg-input)',
                   borderRadius: '6px',
-                  color: '#4A4438',
+                  color: 'var(--admin-text-faint)',
                   cursor: 'pointer',
                   fontSize: '18px',
                   lineHeight: 1,
@@ -597,14 +597,14 @@ export default function AdminUsersPage() {
                   display: 'flex',
                   justifyContent: 'space-between',
                   padding: '9px 0',
-                  borderBottom: '1px solid #2E2A22',
+                  borderBottom: '1px solid var(--admin-bg-input)',
                 }}
               >
                 <span style={{ ...monoLabel }}>{label}</span>
                 <span style={{
                   fontFamily: "'Syne', sans-serif",
                   fontSize: '13px',
-                  color: '#D4CFC3',
+                  color: 'var(--admin-text)',
                   fontWeight: 500,
                   textAlign: 'right',
                   maxWidth: '60%',

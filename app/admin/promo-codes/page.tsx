@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 // ============================================================
 // ADMIN PROMO CODES — /admin/promo-codes
 // Create, manage, enable/disable promotional codes
-// Ascentor brand: Dark #0C0B08 · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
+// Ascentor brand: Dark var(--admin-bg) · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
 // ============================================================
 
 interface PromoCode {
@@ -107,17 +107,17 @@ export default function AdminPromoCodesPage() {
 
   // ─── Shared style tokens ──────────────────────────────────────────────────
   const card: React.CSSProperties = {
-    background: '#141310',
-    border: '1px solid #2E2A22',
+    background: 'var(--admin-bg-deep)',
+    border: '1px solid var(--admin-bg-input)',
     borderRadius: '12px',
   };
 
   const inputBase: React.CSSProperties = {
     padding: '10px 14px',
     borderRadius: '8px',
-    border: '1px solid #2E2A22',
-    background: '#1E1C17',
-    color: '#D4CFC3',
+    border: '1px solid var(--admin-bg-input)',
+    background: 'var(--admin-bg-card)',
+    color: 'var(--admin-text)',
     fontSize: '13px',
     fontFamily: "'Syne', sans-serif",
     outline: 'none',
@@ -130,7 +130,7 @@ export default function AdminPromoCodesPage() {
     fontSize: '10px',
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
-    color: '#4A4438',
+    color: 'var(--admin-text-faint)',
   };
 
   const fieldLabel: React.CSSProperties = {
@@ -139,7 +139,7 @@ export default function AdminPromoCodesPage() {
     fontSize: '10px',
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
-    color: '#4A4438',
+    color: 'var(--admin-text-faint)',
     marginBottom: '6px',
   };
 
@@ -149,8 +149,8 @@ export default function AdminPromoCodesPage() {
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 
         .asc-input:focus       { border-color: #E8A020 !important; }
-        .asc-input:hover       { border-color: #4A4438 !important; }
-        .asc-tr:hover td       { background: #1A1815 !important; }
+        .asc-input:hover       { border-color: var(--admin-text-faint) !important; }
+        .asc-tr:hover td       { background: var(--admin-bg-deep) !important; }
         .asc-btn-ghost:hover   { border-color: #E8A020 !important; color: #E8A020 !important; }
         .asc-btn-danger:hover  { background: rgba(239,68,68,0.08) !important; }
         .asc-btn-gold:hover    { background: #C87820 !important; }
@@ -182,8 +182,8 @@ export default function AdminPromoCodesPage() {
             padding: '10px 20px',
             borderRadius: '8px',
             border: 'none',
-            background: showCreate ? '#2E2A22' : '#E8A020',
-            color: showCreate ? '#7A7260' : '#0C0B08',
+            background: showCreate ? 'var(--admin-bg-input)' : '#E8A020',
+            color: showCreate ? 'var(--admin-text-muted)' : 'var(--admin-bg)',
             fontFamily: "'Syne', sans-serif",
             fontWeight: 700,
             fontSize: '13px',
@@ -297,7 +297,7 @@ export default function AdminPromoCodesPage() {
                       onChange={(e) => setNewPlans(e.target.checked ? [...newPlans, p] : newPlans.filter(x => x !== p))}
                       className="asc-checkbox"
                     />
-                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: '#D4CFC3', textTransform: 'capitalize' }}>{p}</span>
+                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: 'var(--admin-text)', textTransform: 'capitalize' }}>{p}</span>
                   </label>
                 ))}
               </div>
@@ -314,7 +314,7 @@ export default function AdminPromoCodesPage() {
               borderRadius: '8px',
               border: 'none',
               background: '#E8A020',
-              color: '#0C0B08',
+              color: 'var(--admin-bg)',
               fontFamily: "'Syne', sans-serif",
               fontWeight: 700,
               fontSize: '13px',
@@ -335,7 +335,7 @@ export default function AdminPromoCodesPage() {
           <div style={{ padding: '48px', textAlign: 'center' }}>
             <div style={{
               width: '32px', height: '32px', borderRadius: '50%',
-              border: '2px solid #2E2A22', borderTopColor: '#E8A020',
+              border: '2px solid var(--admin-bg-input)', borderTopColor: '#E8A020',
               animation: 'asc-spin 0.9s linear infinite',
               margin: '0 auto 12px',
             }} />
@@ -343,14 +343,14 @@ export default function AdminPromoCodesPage() {
           </div>
         ) : codes.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center' }}>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', color: '#4A4438', marginBottom: '4px' }}>No promo codes yet.</p>
+            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', color: 'var(--admin-text-faint)', marginBottom: '4px' }}>No promo codes yet.</p>
             <p style={{ ...monoLabel }}>Create one above to get started.</p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #2E2A22' }}>
+                <tr style={{ borderBottom: '1px solid var(--admin-bg-input)' }}>
                   {['Code', 'Discount', 'Label', 'Plans', 'Uses', 'Expires', 'Status', 'Actions'].map(h => (
                     <th key={h} style={{
                       padding: '12px 16px',
@@ -359,7 +359,7 @@ export default function AdminPromoCodesPage() {
                       fontSize: '10px',
                       letterSpacing: '0.1em',
                       textTransform: 'uppercase',
-                      color: '#4A4438',
+                      color: 'var(--admin-text-faint)',
                       fontWeight: 500,
                       whiteSpace: 'nowrap',
                     }}>
@@ -370,7 +370,7 @@ export default function AdminPromoCodesPage() {
               </thead>
               <tbody>
                 {codes.map(c => (
-                  <tr key={c.id} className="asc-tr" style={{ borderBottom: '1px solid #2E2A22', opacity: c.active ? 1 : 0.45 }}>
+                  <tr key={c.id} className="asc-tr" style={{ borderBottom: '1px solid var(--admin-bg-input)', opacity: c.active ? 1 : 0.45 }}>
 
                     {/* Code */}
                     <td style={{ padding: '13px 16px' }}>
@@ -387,14 +387,14 @@ export default function AdminPromoCodesPage() {
 
                     {/* Discount */}
                     <td style={{ padding: '13px 16px' }}>
-                      <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '17px', fontWeight: 700, color: '#D4CFC3' }}>
+                      <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '17px', fontWeight: 700, color: 'var(--admin-text)' }}>
                         {Math.round(c.discount * 100)}%
                       </span>
                     </td>
 
                     {/* Label */}
                     <td style={{ padding: '13px 16px' }}>
-                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: '#7A7260' }}>{c.label}</span>
+                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: 'var(--admin-text-muted)' }}>{c.label}</span>
                     </td>
 
                     {/* Plans */}
@@ -404,7 +404,7 @@ export default function AdminPromoCodesPage() {
 
                     {/* Uses */}
                     <td style={{ padding: '13px 16px' }}>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '12px', color: '#7A7260' }}>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '12px', color: 'var(--admin-text-muted)' }}>
                         {c.current_uses}{c.max_uses ? `/${c.max_uses}` : ''}
                       </span>
                     </td>
@@ -426,8 +426,8 @@ export default function AdminPromoCodesPage() {
                         fontWeight: 500,
                         letterSpacing: '0.06em',
                         textTransform: 'uppercase',
-                        background: c.active ? 'rgba(20,184,166,0.1)' : 'rgba(74,68,56,0.15)',
-                        color: c.active ? '#14B8A6' : '#4A4438',
+                        background: c.active ? 'rgba(20,184,166,0.1)' : 'var(--admin-border)',
+                        color: c.active ? '#14B8A6' : 'var(--admin-text-faint)',
                       }}>
                         {c.active ? 'Active' : 'Disabled'}
                       </span>
@@ -442,9 +442,9 @@ export default function AdminPromoCodesPage() {
                           style={{
                             padding: '5px 12px',
                             borderRadius: '7px',
-                            border: '1px solid #2E2A22',
+                            border: '1px solid var(--admin-bg-input)',
                             background: 'transparent',
-                            color: '#7A7260',
+                            color: 'var(--admin-text-muted)',
                             fontFamily: "'Syne', sans-serif",
                             fontSize: '11px',
                             fontWeight: 600,

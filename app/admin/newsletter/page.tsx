@@ -7,7 +7,7 @@ import { useModal } from '@/components/Modal';
 // ============================================================
 // ADMIN NEWSLETTER — /admin/newsletter
 // Compose, send, manage subscribers and history
-// Ascentor brand: Dark #0C0B08 · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
+// Ascentor brand: Dark var(--admin-bg) · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
 // ============================================================
 
 export default function AdminNewsletterPage() {
@@ -121,14 +121,14 @@ export default function AdminNewsletterPage() {
     const text = sel?.toString() || 'Your quote here';
     editorRef.current?.focus();
     document.execCommand('insertHTML', false,
-      `<blockquote style="border-left:3px solid #E8A020;margin:24px 0;padding:16px 24px;font-style:italic;font-size:17px;color:#D4CFC3;background:rgba(232,160,32,0.05);border-radius:0 8px 8px 0;">\u201C${text}\u201D</blockquote><p><br></p>`
+      `<blockquote style="border-left:3px solid #E8A020;margin:24px 0;padding:16px 24px;font-style:italic;font-size:17px;color:var(--admin-text);background:rgba(232,160,32,0.05);border-radius:0 8px 8px 0;">\u201C${text}\u201D</blockquote><p><br></p>`
     );
   };
 
   const insertDivider = () => {
     editorRef.current?.focus();
     document.execCommand('insertHTML', false,
-      '<hr style="border:none;border-top:1px solid #2E2A22;margin:32px 0;"><p><br></p>'
+      '<hr style="border:none;border-top:1px solid var(--admin-bg-input);margin:32px 0;"><p><br></p>'
     );
   };
 
@@ -149,32 +149,32 @@ export default function AdminNewsletterPage() {
     return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
-  body{margin:0;padding:0;background:#0C0B08;font-family:Georgia,'Times New Roman',serif;}
-  .wrapper{max-width:640px;margin:0 auto;background:#141310;}
-  .header{background:#0C0B08;padding:32px 40px 24px;text-align:center;border-bottom:1px solid #2E2A22;}
+  body{margin:0;padding:0;background:var(--admin-bg);font-family:Georgia,'Times New Roman',serif;}
+  .wrapper{max-width:640px;margin:0 auto;background:var(--admin-bg-deep);}
+  .header{background:var(--admin-bg);padding:32px 40px 24px;text-align:center;border-bottom:1px solid var(--admin-bg-input);}
   .header-tag{font-family:'DM Mono',monospace,sans-serif;font-size:10px;letter-spacing:0.15em;color:#E8A020;text-transform:uppercase;margin-bottom:12px;}
   .header-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;font-weight:700;color:#FEF9EC;margin:12px 0 8px;line-height:1.1;}
-  .header-subtitle{font-family:'DM Mono',monospace,sans-serif;font-size:12px;color:#4A4438;letter-spacing:0.06em;}
-  .header-vol{font-family:'DM Mono',monospace,sans-serif;font-size:11px;color:#4A4438;margin-top:12px;padding-top:12px;border-top:1px solid #2E2A22;letter-spacing:0.08em;text-transform:uppercase;}
-  .content{padding:40px;color:#D4CFC3;font-size:16px;line-height:1.8;}
+  .header-subtitle{font-family:'DM Mono',monospace,sans-serif;font-size:12px;color:var(--admin-text-faint);letter-spacing:0.06em;}
+  .header-vol{font-family:'DM Mono',monospace,sans-serif;font-size:11px;color:var(--admin-text-faint);margin-top:12px;padding-top:12px;border-top:1px solid var(--admin-bg-input);letter-spacing:0.08em;text-transform:uppercase;}
+  .content{padding:40px;color:var(--admin-text);font-size:16px;line-height:1.8;}
   .content h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:700;color:#FEF9EC;margin:32px 0 12px;}
   .content h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:600;color:#FEF9EC;margin:24px 0 8px;}
   .content p{margin:0 0 16px;}
-  .content blockquote{border-left:3px solid #E8A020;margin:24px 0;padding:16px 24px;font-style:italic;font-size:17px;color:#D4CFC3;background:rgba(232,160,32,0.05);border-radius:0 8px 8px 0;}
+  .content blockquote{border-left:3px solid #E8A020;margin:24px 0;padding:16px 24px;font-style:italic;font-size:17px;color:var(--admin-text);background:rgba(232,160,32,0.05);border-radius:0 8px 8px 0;}
   .content img{max-width:100%;height:auto;border-radius:8px;margin:16px 0;}
   .content a{color:#E8A020;text-decoration:underline;}
   .content ul,.content ol{padding-left:24px;margin:12px 0;}
   .content li{margin-bottom:8px;}
-  .content hr{border:none;border-top:1px solid #2E2A22;margin:32px 0;}
-  .final-word{text-align:center;padding:32px 40px;background:#0C0B08;border-top:1px solid #2E2A22;}
-  .final-word p{color:#7A7260;font-family:Georgia,serif;font-size:16px;line-height:1.6;margin:0 0 8px;}
+  .content hr{border:none;border-top:1px solid var(--admin-bg-input);margin:32px 0;}
+  .final-word{text-align:center;padding:32px 40px;background:var(--admin-bg);border-top:1px solid var(--admin-bg-input);}
+  .final-word p{color:var(--admin-text-muted);font-family:Georgia,serif;font-size:16px;line-height:1.6;margin:0 0 8px;}
   .final-word .highlight{color:#E8A020;font-weight:700;}
-  .footer{background:#0C0B08;padding:24px 40px;text-align:center;border-top:1px solid #2E2A22;}
+  .footer{background:var(--admin-bg);padding:24px 40px;text-align:center;border-top:1px solid var(--admin-bg-input);}
   .footer-brand{font-family:'DM Mono',monospace,sans-serif;font-size:10px;letter-spacing:0.15em;color:#E8A020;text-transform:uppercase;margin-bottom:8px;}
-  .footer-text{font-family:'DM Mono',monospace,sans-serif;font-size:11px;color:#4A4438;line-height:1.8;letter-spacing:0.04em;}
+  .footer-text{font-family:'DM Mono',monospace,sans-serif;font-size:11px;color:var(--admin-text-faint);line-height:1.8;letter-spacing:0.04em;}
   .footer a{color:#E8A020;text-decoration:none;}
   .social-links{margin:12px 0;}
-  .social-links a{display:inline-block;margin:0 8px;color:#7A7260;font-family:'DM Mono',monospace,sans-serif;font-size:11px;text-decoration:none;}
+  .social-links a{display:inline-block;margin:0 8px;color:var(--admin-text-muted);font-family:'DM Mono',monospace,sans-serif;font-size:11px;text-decoration:none;}
   @media(max-width:640px){.header{padding:24px 20px 16px;}.header-title{font-size:28px;}.content{padding:24px 20px;}.final-word{padding:24px 20px;}.footer{padding:20px;}}
 </style></head><body>
 <div class="wrapper">
@@ -188,13 +188,13 @@ export default function AdminNewsletterPage() {
   <div class="final-word">
     <p>The world isn\u2019t waiting for a perfect leader.</p>
     <p>It\u2019s waiting for a <span class="highlight">real one.</span></p>
-    <p style="color:#4A4438;font-size:13px;margin-top:16px;font-family:'DM Mono',monospace,sans-serif;letter-spacing:0.06em;text-transform:uppercase;">That\u2019s you \u2014 if you choose to show up.</p>
+    <p style="color:var(--admin-text-faint);font-size:13px;margin-top:16px;font-family:'DM Mono',monospace,sans-serif;letter-spacing:0.06em;text-transform:uppercase;">That\u2019s you \u2014 if you choose to show up.</p>
   </div>
   <div class="footer">
     <div class="footer-brand">Ascentor</div>
     <div class="footer-text">Africa\u2019s mentorship platform</div>
     <div class="social-links"><a href="https://ascentor.co">ascentor.co</a></div>
-    <div class="footer-text" style="margin-top:16px;font-size:10px;">You received this because you subscribed to The Rise Letter.<br><a href="#" style="color:#4A4438;">Unsubscribe</a></div>
+    <div class="footer-text" style="margin-top:16px;font-size:10px;">You received this because you subscribed to The Rise Letter.<br><a href="#" style="color:var(--admin-text-faint);">Unsubscribe</a></div>
   </div>
 </div>
 </body></html>`;
@@ -242,17 +242,17 @@ export default function AdminNewsletterPage() {
   }
 
   // ─── Shared style tokens ──────────────────────────────────────────────────
-  const card: React.CSSProperties = { background: '#141310', border: '1px solid #2E2A22', borderRadius: '12px' };
+  const card: React.CSSProperties = { background: 'var(--admin-bg-deep)', border: '1px solid var(--admin-bg-input)', borderRadius: '12px' };
   const inputBase: React.CSSProperties = {
     width: '100%', padding: '10px 14px', borderRadius: '8px',
-    border: '1px solid #2E2A22', background: '#1E1C17',
-    color: '#D4CFC3', fontSize: '13px',
+    border: '1px solid var(--admin-bg-input)', background: 'var(--admin-bg-card)',
+    color: 'var(--admin-text)', fontSize: '13px',
     fontFamily: "'Syne', sans-serif", outline: 'none',
     transition: 'border-color 0.2s',
   };
   const monoLabel: React.CSSProperties = {
     fontFamily: "'DM Mono', monospace", fontSize: '10px',
-    letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#4A4438',
+    letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--admin-text-faint)',
   };
   const fieldLabel: React.CSSProperties = { ...monoLabel, display: 'block', marginBottom: '6px' };
 
@@ -266,7 +266,7 @@ export default function AdminNewsletterPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         borderRadius: '6px',
         background: active ? 'rgba(232,160,32,0.15)' : 'transparent',
-        color: active ? '#E8A020' : '#7A7260',
+        color: active ? '#E8A020' : 'var(--admin-text-muted)',
         border: active ? '1px solid rgba(232,160,32,0.35)' : '1px solid transparent',
         fontFamily: "'Syne', sans-serif",
         fontSize: '11px', fontWeight: active ? 700 : 400,
@@ -280,7 +280,7 @@ export default function AdminNewsletterPage() {
   );
 
   const ToolSep = () => (
-    <div style={{ width: '1px', height: '20px', background: '#2E2A22', margin: '0 3px', flexShrink: 0 }} />
+    <div style={{ width: '1px', height: '20px', background: 'var(--admin-bg-input)', margin: '0 3px', flexShrink: 0 }} />
   );
 
   return (
@@ -290,18 +290,18 @@ export default function AdminNewsletterPage() {
         @keyframes asc-fade-up { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:translateY(0);} }
         @keyframes asc-spin    { to { transform:rotate(360deg);} }
         .asc-input:focus       { border-color: #E8A020 !important; }
-        .asc-input:hover       { border-color: #4A4438 !important; }
-        .asc-tab-btn:hover     { color: #D4CFC3 !important; }
-        .asc-tool-btn:hover    { background: #1E1C17 !important; color: #D4CFC3 !important; border-color: #2E2A22 !important; }
+        .asc-input:hover       { border-color: var(--admin-text-faint) !important; }
+        .asc-tab-btn:hover     { color: var(--admin-text) !important; }
+        .asc-tool-btn:hover    { background: var(--admin-bg-card) !important; color: var(--admin-text) !important; border-color: var(--admin-bg-input) !important; }
         .asc-ghost:hover       { border-color: #E8A020 !important; color: #E8A020 !important; }
-        .asc-sub-row:hover     { background: #1A1815 !important; }
-        .asc-history-row:hover { border-color: #4A4438 !important; }
+        .asc-sub-row:hover     { background: var(--admin-bg-deep) !important; }
+        .asc-history-row:hover { border-color: var(--admin-text-faint) !important; }
         .asc-editor { line-height: 1.8; font-family: 'Syne', sans-serif; }
         .asc-editor h2 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: #FEF9EC; margin: 28px 0 10px; }
         .asc-editor h3 { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: #FEF9EC; margin: 20px 0 8px; }
         .asc-editor p  { margin: 0 0 14px; }
         .asc-editor a  { color: #E8A020; }
-        .asc-editor blockquote { border-left: 3px solid #E8A020; margin: 20px 0; padding: 14px 20px; font-style: italic; background: rgba(232,160,32,0.05); border-radius: 0 8px 8px 0; color: #D4CFC3; }
+        .asc-editor blockquote { border-left: 3px solid #E8A020; margin: 20px 0; padding: 14px 20px; font-style: italic; background: rgba(232,160,32,0.05); border-radius: 0 8px 8px 0; color: var(--admin-text); }
         .asc-editor ul, .asc-editor ol { padding-left: 22px; margin: 10px 0; }
         .asc-editor li { margin-bottom: 6px; }
       `}</style>
@@ -327,7 +327,7 @@ export default function AdminNewsletterPage() {
       </p>
 
       {/* ─── Tab Bar ──────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '2px', marginBottom: '24px', padding: '4px', background: '#1E1C17', borderRadius: '10px', border: '1px solid #2E2A22' }}>
+      <div style={{ display: 'flex', gap: '2px', marginBottom: '24px', padding: '4px', background: 'var(--admin-bg-card)', borderRadius: '10px', border: '1px solid var(--admin-bg-input)' }}>
         {(['compose', 'subscribers', 'history'] as const).map((t) => (
           <button
             key={t}
@@ -338,8 +338,8 @@ export default function AdminNewsletterPage() {
               padding: '8px 12px',
               borderRadius: '7px',
               border: 'none',
-              background: tab === t ? '#141310' : 'transparent',
-              color: tab === t ? '#E8A020' : '#4A4438',
+              background: tab === t ? 'var(--admin-bg-deep)' : 'transparent',
+              color: tab === t ? '#E8A020' : 'var(--admin-text-faint)',
               fontFamily: "'DM Mono', monospace",
               fontSize: '10px',
               fontWeight: 500,
@@ -391,8 +391,8 @@ export default function AdminNewsletterPage() {
             <div style={{
               display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '2px',
               padding: '8px 10px',
-              background: '#1E1C17',
-              border: '1px solid #2E2A22',
+              background: 'var(--admin-bg-card)',
+              border: '1px solid var(--admin-bg-input)',
               borderBottom: 'none',
               borderRadius: '8px 8px 0 0',
             }}>
@@ -451,9 +451,9 @@ export default function AdminNewsletterPage() {
               style={{
                 minHeight: '400px',
                 padding: '20px',
-                background: '#1E1C17',
-                color: '#D4CFC3',
-                border: '1px solid #2E2A22',
+                background: 'var(--admin-bg-card)',
+                color: 'var(--admin-text)',
+                border: '1px solid var(--admin-bg-input)',
                 borderTop: 'none',
                 borderRadius: '0 0 8px 8px',
                 outline: 'none',
@@ -479,7 +479,7 @@ export default function AdminNewsletterPage() {
                   borderRadius: '8px',
                   border: 'none',
                   background: '#E8A020',
-                  color: '#0C0B08',
+                  color: 'var(--admin-bg)',
                   fontFamily: "'Syne', sans-serif",
                   fontWeight: 700,
                   fontSize: '13px',
@@ -497,9 +497,9 @@ export default function AdminNewsletterPage() {
                 style={{
                   padding: '11px 22px',
                   borderRadius: '8px',
-                  border: '1px solid #2E2A22',
+                  border: '1px solid var(--admin-bg-input)',
                   background: 'transparent',
-                  color: '#7A7260',
+                  color: 'var(--admin-text-muted)',
                   fontFamily: "'Syne', sans-serif",
                   fontWeight: 600,
                   fontSize: '13px',
@@ -532,7 +532,7 @@ export default function AdminNewsletterPage() {
               {/* Preview header bar */}
               <div style={{
                 padding: '10px 16px',
-                background: '#2E2A22',
+                background: 'var(--admin-bg-input)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '10px',
@@ -573,7 +573,7 @@ export default function AdminNewsletterPage() {
         <>
           {subscribers.length === 0 ? (
             <div style={{ padding: '48px', textAlign: 'center' }}>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', color: '#4A4438' }}>No subscribers yet.</p>
+              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', color: 'var(--admin-text-faint)' }}>No subscribers yet.</p>
             </div>
           ) : (
             <div style={{ ...card, overflow: 'hidden' }}>
@@ -581,7 +581,7 @@ export default function AdminNewsletterPage() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #2E2A22' }}>
+                    <tr style={{ borderBottom: '1px solid var(--admin-bg-input)' }}>
                       {['Email', 'Name', 'Source', 'Subscribed', 'Status', 'Actions'].map(h => (
                         <th key={h} style={{ ...monoLabel, padding: '12px 16px', textAlign: 'left', fontWeight: 500, whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
@@ -589,9 +589,9 @@ export default function AdminNewsletterPage() {
                   </thead>
                   <tbody>
                     {subscribers.map((sub) => (
-                      <tr key={sub.id} className="asc-sub-row" style={{ borderBottom: '1px solid #2E2A22', opacity: sub.is_active ? 1 : 0.5 }}>
-                        <td style={{ padding: '12px 16px', fontFamily: "'Syne', sans-serif", color: '#D4CFC3', fontSize: '13px' }}>{sub.email}</td>
-                        <td style={{ padding: '12px 16px', fontFamily: "'Syne', sans-serif", color: '#7A7260', fontSize: '12px' }}>{sub.first_name || '—'}</td>
+                      <tr key={sub.id} className="asc-sub-row" style={{ borderBottom: '1px solid var(--admin-bg-input)', opacity: sub.is_active ? 1 : 0.5 }}>
+                        <td style={{ padding: '12px 16px', fontFamily: "'Syne', sans-serif", color: 'var(--admin-text)', fontSize: '13px' }}>{sub.email}</td>
+                        <td style={{ padding: '12px 16px', fontFamily: "'Syne', sans-serif", color: 'var(--admin-text-muted)', fontSize: '12px' }}>{sub.first_name || '—'}</td>
                         <td style={{ padding: '12px 16px' }}>
                           <span style={{ ...monoLabel, background: 'rgba(232,160,32,0.08)', color: '#E8A020', padding: '2px 8px', borderRadius: '100px', fontSize: '9px' }}>
                             {sub.source || 'website'}
@@ -606,8 +606,8 @@ export default function AdminNewsletterPage() {
                           <span style={{
                             ...monoLabel, fontSize: '9px',
                             padding: '2px 8px', borderRadius: '100px',
-                            background: sub.is_active ? 'rgba(20,184,166,0.1)' : 'rgba(74,68,56,0.15)',
-                            color: sub.is_active ? '#14B8A6' : '#4A4438',
+                            background: sub.is_active ? 'rgba(20,184,166,0.1)' : 'var(--admin-border)',
+                            color: sub.is_active ? '#14B8A6' : 'var(--admin-text-faint)',
                           }}>
                             {sub.is_active ? 'Active' : 'Paused'}
                           </span>
@@ -619,8 +619,8 @@ export default function AdminNewsletterPage() {
                               className="asc-ghost"
                               style={{
                                 padding: '4px 10px', borderRadius: '6px',
-                                border: '1px solid #2E2A22', background: 'transparent',
-                                color: '#7A7260', fontFamily: "'Syne', sans-serif",
+                                border: '1px solid var(--admin-bg-input)', background: 'transparent',
+                                color: 'var(--admin-text-muted)', fontFamily: "'Syne', sans-serif",
                                 fontSize: '11px', fontWeight: 600, cursor: 'pointer',
                                 transition: 'border-color 0.15s, color 0.15s',
                               }}
@@ -655,7 +655,7 @@ export default function AdminNewsletterPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {history.length === 0 && (
             <div style={{ padding: '48px', textAlign: 'center' }}>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', color: '#4A4438' }}>No newsletters sent yet.</p>
+              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', color: 'var(--admin-text-faint)' }}>No newsletters sent yet.</p>
             </div>
           )}
           {history.map((item) => (
@@ -680,7 +680,7 @@ export default function AdminNewsletterPage() {
               </div>
               <details>
                 <summary style={{ ...monoLabel, cursor: 'pointer', userSelect: 'none' }}>Preview email</summary>
-                <iframe srcDoc={item.content} style={{ width: '100%', border: 'none', minHeight: '500px', background: '#0C0B08', borderRadius: '8px', marginTop: '10px' }} title="Preview" />
+                <iframe srcDoc={item.content} style={{ width: '100%', border: 'none', minHeight: '500px', background: 'var(--admin-bg)', borderRadius: '8px', marginTop: '10px' }} title="Preview" />
               </details>
             </div>
           ))}

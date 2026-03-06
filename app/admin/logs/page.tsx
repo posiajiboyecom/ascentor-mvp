@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 // Display : Cormorant Garamond 700 / Italic 600
 // UI      : Syne 400–800
 // Mono    : DM Mono 400/500
-// Gold    : #E8A020   Dark: #0C0B08
+// Gold    : #E8A020   Dark: var(--admin-bg)
 // ============================================================
 
 const B = {
@@ -16,14 +16,14 @@ const B = {
   fontUI:      "'Syne', system-ui, sans-serif",
   fontMono:    "'DM Mono', 'Courier New', monospace",
   // Dark scale
-  dark:        '#0C0B08',
-  dark900:     '#0C0B08',
-  dark800:     '#141310',
-  dark700:     '#1E1C17',
-  dark600:     '#2E2A22',
-  dark500:     '#4A4438',
-  dark400:     '#7A7260',
-  dark200:     '#D4CFC3',
+  dark:        'var(--admin-bg)',
+  dark900:     'var(--admin-bg)',
+  dark800:     'var(--admin-bg-deep)',
+  dark700:     'var(--admin-bg-card)',
+  dark600:     'var(--admin-bg-input)',
+  dark500:     'var(--admin-text-faint)',
+  dark400:     'var(--admin-text-muted)',
+  dark200:     'var(--admin-text)',
   dark50:      '#F7F6F3',
   // Gold scale
   gold:        '#E8A020',
@@ -31,8 +31,8 @@ const B = {
   goldMuted:   'rgba(232,160,32,0.09)',
   goldBorder:  'rgba(232,160,32,0.22)',
   // Warm border
-  border:      'rgba(212,207,195,0.10)',
-  borderHover: 'rgba(212,207,195,0.18)',
+  border:      'var(--admin-border)',
+  borderHover: 'var(--admin-border-strong)',
   // Stage colors (brand book pg 4)
   explorer:    '#14B8A6',  // Students 15–22
   builder:     '#E8A020',  // Early career 22–32
