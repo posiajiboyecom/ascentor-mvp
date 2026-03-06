@@ -14,12 +14,13 @@ const AGENT_REGISTRY = [
   {
     id: "1",
     name: "Content Researcher",
-    triggerTaskId: "content-researcher-agent",
-    type: "scheduled",
+    triggerTaskId: "content-researcher-manual",
+    type: "manual",
     description: "SerpAPI Google Trends + Perplexity deep research → Claude brief → auto-triggers Content Writer",
-    schedule: "Monday 05:00 UTC (06:00 WAT)",
+    schedule: "Monday 05:00 UTC (06:00 WAT) — or trigger manually with a custom topic",
     toolStack: "SerpAPI + Perplexity + Claude + Supabase",
     requiresPayload: false,
+    payloadSchema: { topic: "optional: override the AI-chosen topic", pillar: "optional: leadership|career|ai|coaching|community" },
   },
   {
     id: "2",

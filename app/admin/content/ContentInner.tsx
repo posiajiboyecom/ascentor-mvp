@@ -61,9 +61,40 @@ export default function AdminContentPage() {
   const [publishing, setPublishing] = useState<string | null>(null);
   const [toast, setToast] = useState('');
 
-  useEffect(() => { loadAll(); }, []);
+  const [runModal, setRunModal] = useState(false);
+  const [runTopic, setRunTopic] = useState('');
+  const [runPillar, setRunPillar] = useState('');
+  const [runAudience, setRunAudience] = useState('young_professional');
+  const [running, setRunning] = useState(false);
 
-  async function loadAll() {
+  async function triggerResearcher() {
+    setRunning(true);
+    try {
+      const payload: any = { audience: runAudience };
+      if (runTopic.trim()) payload.topic = runTopic.trim();
+      if (runPillar) payload.pillar = runPillar;
+      const res = await fetch('/api/admin/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId: '1', payload }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`✓ Researcher running — run ID: ${data.runId.slice(0, 8)}…`);
+        setRunModal(false);
+        setRunTopic('');
+        setRunPillar('');
+        setRunAudience('young_professional');
+      } else {
+        showToast(`Error: ${data.error}`);
+      }
+    } catch (e: any) {
+      showToast(`Error: ${e.message}`);
+    }
+    setRunning(false);
+  }
+
+  useEffect(() => { loadAll(); }, []);
     setLoading(true);
     const [b, i, q] = await Promise.all([
       supabase.from('research_briefs').select('*').order('created_at', { ascending: false }).limit(20),
@@ -236,8 +267,25 @@ export default function AdminContentPage() {
         /* ── Toast ── */
         .cp-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: var(--admin-bg-card-hover); border: 1px solid rgba(232,160,32,0.25); color: #E8A020; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em; padding: 10px 20px; border-radius: 8px; z-index: 100; white-space: nowrap; }
 
-        /* ── Loading ── */
-        .cp-loading { display: flex; align-items: center; justify-content: center; height: 200px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--admin-text-faint); letter-spacing: 0.1em; }
+        .cp-run-btn { padding: 8px 18px; border-radius: 8px; border: 1px solid rgba(232,160,32,0.35); background: rgba(232,160,32,0.08); color: #E8A020; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: all 0.15s; }
+        .cp-run-btn:hover { background: rgba(232,160,32,0.16); border-color: rgba(232,160,32,0.6); }
+
+        /* ── Modal ── */
+        .cp-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .cp-modal { background: var(--admin-bg-card); border: 1px solid var(--admin-bg-input); border-radius: 16px; padding: 28px; width: 100%; max-width: 440px; }
+        .cp-modal-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+        .cp-modal-sub { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--admin-text-faint); letter-spacing: 0.08em; margin-bottom: 24px; }
+        .cp-field { margin-bottom: 18px; }
+        .cp-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--admin-text-faint); margin-bottom: 7px; display: block; }
+        .cp-input { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-bg-input); background: var(--admin-bg-deep); color: var(--admin-text); font-family: 'Syne', sans-serif; font-size: 13px; outline: none; box-sizing: border-box; }
+        .cp-input:focus { border-color: rgba(232,160,32,0.4); }
+        .cp-input::placeholder { color: var(--admin-text-faint); }
+        .cp-select { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-bg-input); background: var(--admin-bg-deep); color: var(--admin-text); font-family: 'Syne', sans-serif; font-size: 13px; outline: none; cursor: pointer; }
+        .cp-modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+        .cp-modal-cancel { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--admin-bg-input); background: transparent; color: var(--admin-text-muted); font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .cp-modal-run { flex: 2; padding: 10px; border-radius: 8px; border: none; background: #E8A020; color: var(--admin-bg); font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+        .cp-modal-run:hover:not(:disabled) { background: #F5C55A; }
+        .cp-modal-run:disabled { opacity: 0.5; cursor: not-allowed; }
       `}</style>
 
       <div className="cp-wrap">
@@ -248,7 +296,10 @@ export default function AdminContentPage() {
             <h1 className="cp-title">Content <span>Pipeline</span></h1>
             <p className="cp-subtitle">AI-generated content — review, approve, publish</p>
           </div>
-          <button className="cp-refresh" onClick={loadAll}>↻ Refresh</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="cp-run-btn" onClick={() => setRunModal(true)}>▶ Run Researcher</button>
+            <button className="cp-refresh" onClick={loadAll}>↻ Refresh</button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -407,6 +458,68 @@ export default function AdminContentPage() {
         )}
 
       </div>
+
+      {runModal && (
+        <div className="cp-modal-backdrop" onClick={(e) => e.target === e.currentTarget && setRunModal(false)}>
+          <div className="cp-modal">
+            <div className="cp-modal-title">Run Researcher</div>
+            <p className="cp-modal-sub">Triggers the content researcher + writer pipeline immediately</p>
+
+            <div className="cp-field">
+              <label className="cp-label">Audience</label>
+              <select
+                className="cp-select"
+                value={runAudience}
+                onChange={e => setRunAudience(e.target.value)}
+              >
+                <option value="young_professional">Young Professional (21–28) — hustle, first jobs, Gen Z</option>
+                <option value="mid_career">Mid-Career (29–38) — management, promotions, pivots</option>
+                <option value="executive">Executive / Senior (39–50) — strategy, legacy, leadership</option>
+                <option value="general">General (all ages)</option>
+              </select>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
+                Shapes both what the researcher looks for and how the writer sounds
+              </div>
+            </div>
+
+            <div className="cp-field">
+              <label className="cp-label">Topic (optional)</label>
+              <input
+                className="cp-input"
+                placeholder="e.g. Navigating salary negotiations in Lagos"
+                value={runTopic}
+                onChange={e => setRunTopic(e.target.value)}
+              />
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
+                Leave blank to let the AI choose based on trends
+              </div>
+            </div>
+
+            <div className="cp-field">
+              <label className="cp-label">Pillar (optional)</label>
+              <select
+                className="cp-select"
+                value={runPillar}
+                onChange={e => setRunPillar(e.target.value)}
+              >
+                <option value="">Auto (follows weekly rotation)</option>
+                <option value="leadership">Leadership</option>
+                <option value="career">Career</option>
+                <option value="ai">AI</option>
+                <option value="coaching">Coaching</option>
+                <option value="community">Community</option>
+              </select>
+            </div>
+
+            <div className="cp-modal-actions">
+              <button className="cp-modal-cancel" onClick={() => setRunModal(false)}>Cancel</button>
+              <button className="cp-modal-run" onClick={triggerResearcher} disabled={running}>
+                {running ? 'Triggering…' : '▶ Run Now'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && <div className="cp-toast">{toast}</div>}
     </>

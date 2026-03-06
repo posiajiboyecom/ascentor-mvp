@@ -9,6 +9,7 @@
 import { task, logger } from "@trigger.dev/sdk/v3";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
+import { type AudiencePreset, AUDIENCE_META } from "./content-researcher";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -68,6 +69,39 @@ function extractJSON(raw: string): any {
     }
   }
 
+  // 5. Truncation recovery: response was cut mid-stream.
+  //    Find the last complete object in an array and close it off.
+  //    e.g. { "posts": [ {...}, {...}, {  <-- truncated here
+  //    Strategy: find the last well-formed } before truncation, close the array + object.
+  const arrayStart = text.indexOf("[");
+  if (arrayStart !== -1) {
+    // Walk backwards from end to find the last complete item boundary
+    const lastCompleteClose = (() => {
+      let depth = 0;
+      let lastGoodClose = -1;
+      for (let i = arrayStart; i < text.length; i++) {
+        if (text[i] === "{") depth++;
+        if (text[i] === "}") {
+          depth--;
+          if (depth === 0) lastGoodClose = i;
+        }
+      }
+      return lastGoodClose;
+    })();
+
+    if (lastCompleteClose > arrayStart) {
+      // Reconstruct: take everything up to last complete item, close array + object
+      const truncated = text.slice(0, lastCompleteClose + 1);
+      // Find key name before the array to wrap correctly: e.g. "posts" or "threads"
+      const keyMatch = text.slice(0, arrayStart).match(/"(\w+)"\s*:\s*\[?\s*$/);
+      const recovered = keyMatch
+        ? `{ "${keyMatch[1]}": [${truncated.slice(truncated.indexOf("[") + 1)}] }`
+        : `{ "items": [${truncated.slice(truncated.indexOf("[") + 1)}] }`;
+      try { return JSON.parse(recovered); } catch { /* continue */ }
+      try { return JSON.parse(repairJSON(recovered)); } catch { /* continue */ }
+    }
+  }
+
   throw new Error(`Could not parse JSON. Raw: ${raw.slice(0, 120)}`);
 }
 
@@ -91,11 +125,16 @@ export const contentWriterAgent = task({
     hooks?: string[];
     keyMessages?: string[];
     dataPoints?: string[];
+    audience?: AudiencePreset;
   }) => {
     const {
       topic, pillar, week = 1,
       hooks = [], keyMessages = [], dataPoints = [],
+      audience = 'general',
     } = payload;
+
+    const audienceMeta = AUDIENCE_META[audience];
+    const voiceBlock = `Audience: ${audienceMeta.label} (${audienceMeta.ageRange} year olds).\n${audienceMeta.writerVoice}`;
 
     if (payload.briefId) logger.info(`[Content Writer] briefId: ${payload.briefId}`);
     logger.info(`[Content Writer] Starting — "${topic}" | ${pillar}`);
@@ -119,6 +158,7 @@ export const contentWriterAgent = task({
           messages: [{
             role: "user",
             content: `Write a blog post for Ascentor (AI leadership coaching for African professionals).
+${voiceBlock}
 Topic: "${topic}"
 ${keyMsgBlock}
 ${dataBlock}
@@ -130,29 +170,31 @@ Return: { "title": "...", "content": "markdown with \\n line breaks", "meta_desc
 
         anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 1500,
+          max_tokens: 3000,
           system: SYSTEM,
           messages: [{
             role: "user",
             content: `Write LinkedIn posts for Ascentor (AI coaching for African professionals).
+${voiceBlock}
 Topic: "${topic}"
 ${hookBlock}
 ${dataBlock}
-5 posts (4-1-1: 4 value, 1 social proof). 150-300 words each. Use \\n for line breaks.
+3 posts (2 value, 1 social proof). 150-200 words each. Use \\n for line breaks.
 Return: { "posts": [ { "type": "value", "hook": "first line", "content": "post with \\n breaks" } ] }`,
           }],
         }),
 
         anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 1200,
+          max_tokens: 2000,
           system: SYSTEM,
           messages: [{
             role: "user",
             content: `Write Twitter/X threads for Ascentor (AI leadership coaching for Africa).
+${voiceBlock}
 Topic: "${topic}"
 ${hookBlock}
-3 threads, 5-7 tweets each. Punchy openers, soft CTA at end.
+2 threads, 5 tweets each. Punchy openers, soft CTA at end.
 Return: { "threads": [ { "opener": "hook", "tweets": ["t1","t2","t3","t4","t5"], "cta": "cta" } ] }`,
           }],
         }),
@@ -164,6 +206,7 @@ Return: { "threads": [ { "opener": "hook", "tweets": ["t1","t2","t3","t4","t5"],
           messages: [{
             role: "user",
             content: `Write a newsletter for "The African Leader" (Ascentor weekly email).
+${voiceBlock}
 Topic: "${topic}"
 400-600 words. Warm mentor-letter style. Structure: Hook, Insight, Takeaway, Soft CTA.
 ${dataBlock}
