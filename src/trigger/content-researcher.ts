@@ -88,6 +88,7 @@ export const AUDIENCE_META: Record<AudiencePreset, {
   },
 };
 
+const PILLAR_ROTATION = [
   "leadership",
   "career",
   "ai",
