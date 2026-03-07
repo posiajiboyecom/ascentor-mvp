@@ -44,11 +44,13 @@ function ThemeToggle() {
 function Shell({
   children,
   initials,
-  isAdmin, // <-- Added isAdmin here
+  isAdmin,
+  chatLayout,
 }: {
   children: React.ReactNode;
   initials: string;
-  isAdmin?: boolean; // <-- Added TypeScript definition
+  isAdmin?: boolean;
+  chatLayout?: boolean;
 }) {
   const supabase        = createClient();
   const router          = useRouter();
@@ -197,16 +199,17 @@ function Shell({
 export default function AppShell({
   children,
   initials = 'U',
-  isAdmin = false, // <-- Added default value here
+  isAdmin = false,
+  chatLayout = false,
 }: {
   children: React.ReactNode;
   initials?: string;
-  isAdmin?: boolean; // <-- Added TypeScript definition here
+  isAdmin?: boolean;
+  chatLayout?: boolean;
 }) {
   return (
     <AppThemeProvider>
-      {/* Pass isAdmin down to the Shell component */}
-      <Shell initials={initials} isAdmin={isAdmin}>{children}</Shell>
+      <Shell initials={initials} isAdmin={isAdmin} chatLayout={chatLayout}>{children}</Shell>
     </AppThemeProvider>
   );
 }
