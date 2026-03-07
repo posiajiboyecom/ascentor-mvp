@@ -145,7 +145,7 @@ export default function AdminBlogPageInner() {
         <div className="rounded-xl px-4 py-3 mb-4 text-sm flex items-center justify-between gap-3"
           style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#EF4444' }}>
           <span>{saveError}</span>
-          <button onClick={() => setSaveError('')} style={{ fontSize: '16px', lineHeight: 1, background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}>✕</button>
+          <button onClick={() => setSaveError('')} style={{ fontSize: '16px', lineHeight: 1, background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
       )}
 

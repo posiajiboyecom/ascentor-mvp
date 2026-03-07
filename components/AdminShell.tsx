@@ -410,17 +410,13 @@ export default function AdminShell({
   const router   = useRouter();
   const supabase = createClient();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
-  // Read theme synchronously from localStorage to avoid flash.
-  // We default to 'dark' for SSR, then instantly correct on mount
-  // via the inline <script> injected into the wrapper div.
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('ascentor-admin-theme');
-      if (saved === 'light' || saved === 'dark') return saved;
-    }
-    return 'dark';
-  });
+  // Load saved theme on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('ascentor-admin-theme') as 'dark' | 'light' | null;
+    if (saved === 'light' || saved === 'dark') setTheme(saved);
+  }, []);
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -486,7 +482,7 @@ export default function AdminShell({
           border: `1px solid ${role === 'admin' ? 'var(--accent-border)' : 'var(--teal-border)'}`,
           padding: '3px 8px', borderRadius: '100px', display: 'inline-block',
         }}>
-          {role === 'admin' ? '⬡ Root Admin' : '◈ Moderator'}
+          {role === 'admin' ? 'Root Admin' : 'Moderator'}
         </span>
       </div>
 
@@ -543,7 +539,7 @@ export default function AdminShell({
             fontSize: '11px', padding: '5px 10px', borderRadius: '7px',
             color: 'var(--app-link-color)', border: '1px solid var(--app-link-border)',
             textDecoration: 'none', fontFamily: "'Syne', sans-serif",
-          }}>← App</Link>
+          }}>&#8592; App</Link>
           <button onClick={handleSignOut} style={{
             fontSize: '11px', padding: '5px 10px', borderRadius: '7px',
             color: 'var(--signout-color)', border: '1px solid var(--signout-border)',
@@ -557,17 +553,6 @@ export default function AdminShell({
   return (
     <div data-admin-theme={theme} style={{ minHeight: '100vh', background: 'var(--bg-root)', display: 'flex', flexDirection: 'column' }}>
       <style>{STYLES}</style>
-      {/* Inline script: runs synchronously before browser paints, kills any theme flash */}
-      <script dangerouslySetInnerHTML={{ __html: `
-        (function(){
-          try {
-            var t = localStorage.getItem('ascentor-admin-theme');
-            if (t === 'light' || t === 'dark') {
-              document.currentScript.parentElement.setAttribute('data-admin-theme', t);
-            }
-          } catch(e){}
-        })();
-      `}} />
 
       {/* Mobile header */}
       <div className="admin-mobile-header" style={{
@@ -586,7 +571,7 @@ export default function AdminShell({
             border: `1px solid ${role === 'admin' ? 'var(--accent-border)' : 'var(--teal-border)'}`,
             padding: '3px 8px', borderRadius: '100px',
           }}>
-            {role === 'admin' ? '⬡ Root' : '◈ Mod'}
+            {role === 'admin' ? 'Root' : 'Mod'}
           </span>
           <button onClick={() => setMenuOpen(!menuOpen)} style={{
             width: '34px', height: '34px', display: 'flex', alignItems: 'center',
@@ -594,7 +579,9 @@ export default function AdminShell({
             background: 'var(--bg-menu-btn)', border: '1px solid var(--border-menu)',
             color: 'var(--text-primary)', cursor: 'pointer', fontSize: '14px',
           }}>
-            {menuOpen ? '✕' : '☰'}
+            {menuOpen
+                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>}
           </button>
         </div>
       </div>

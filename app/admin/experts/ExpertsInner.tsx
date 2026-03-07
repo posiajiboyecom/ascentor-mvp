@@ -231,8 +231,8 @@ export default function AdminExpertsPageInner() {
               </span>
             </div>
             <div className="flex gap-3 items-center text-[11px] mb-3" style={{ color: 'var(--text-dim)' }}>
-              {e.registration_url && <span>📋 Reg link</span>}
-              {e.join_url && <span>🎥 Join link</span>}
+              {e.registration_url && <span style={{display:"inline-flex",alignItems:"center",gap:3}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Reg link</span>}
+              {e.join_url && <span style={{display:"inline-flex",alignItems:"center",gap:3}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> Join link</span>}
             </div>
             <div className="flex gap-2">
               <button onClick={() => openEdit(e)}
