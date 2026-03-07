@@ -1,6 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+
+// Renders SVG icon strings safely  
+function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
+  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 export const metadata: Metadata = {
   title: "Who It's For — Ascentor",
   description:
@@ -12,7 +18,7 @@ const PERSONAS = [
   {
     stage:    'Explorer',
     age:      '15 – 22',
-    emoji:    '🌱',
+    emoji:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>',
     color:    '#14B8A6',
     bg:       'rgba(20,184,166,0.06)',
     border:   'rgba(20,184,166,0.18)',
@@ -42,7 +48,7 @@ const PERSONAS = [
   {
     stage:    'Builder',
     age:      '22 – 32',
-    emoji:    '🚀',
+    emoji:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
     color:    '#E8A020',
     bg:       'rgba(245,158,11,0.06)',
     border:   'rgba(245,158,11,0.22)',
@@ -73,7 +79,7 @@ const PERSONAS = [
   {
     stage:    'Climber',
     age:      '32 – 50',
-    emoji:    '⚡',
+    emoji:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
     color:    '#8B5CF6',
     bg:       'rgba(139,92,246,0.06)',
     border:   'rgba(139,92,246,0.18)',
@@ -107,8 +113,8 @@ const ACROSS_AFRICA = [
   { flag: '🇬🇭', country: 'Ghana',        desc: 'Growing fast in Accra\'s startup and finance scene' },
   { flag: '🇰🇪', country: 'Kenya',        desc: 'Nairobi\'s tech ecosystem and beyond' },
   { flag: '🇿🇦', country: 'South Africa', desc: 'Johannesburg, Cape Town, and the diaspora bridge' },
-  { flag: '🌍', country: 'Diaspora',      desc: 'UK, US, Canada — African professionals building global careers' },
-  { flag: '🌐', country: '15+ Countries', desc: 'And growing across the entire continent' },
+  { flag: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>', country: 'Diaspora',      desc: 'UK, US, Canada — African professionals building global careers' },
+  { flag: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>', country: '15+ Countries', desc: 'And growing across the entire continent' },
 ];
 
 /* ── Nav (identical to pricing page) ───────────────────── */
@@ -172,7 +178,7 @@ export default function WhoItsForPage() {
             <a key={p.stage} href={`#${p.stage.toLowerCase()}`}
               className="px-5 py-2 rounded-full text-sm font-semibold transition-all hover:scale-105"
               style={{ background: p.bg, border: `1.5px solid ${p.border}`, color: p.color }}>
-              {p.emoji} {p.stage} · {p.age}
+              <span dangerouslySetInnerHTML={{ __html: p.emoji }} /> {p.stage} · {p.age}
             </a>
           ))}
         </div>
@@ -193,7 +199,7 @@ export default function WhoItsForPage() {
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
                   style={{ background: p.bg, border: `1.5px solid ${p.border}` }}>
-                  {p.emoji}
+                  <span dangerouslySetInnerHTML={{ __html: p.emoji }} />
                 </div>
                 <div>
                   <div className="flex items-center gap-3">

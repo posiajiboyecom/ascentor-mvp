@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
+
+// Renders SVG icon strings safely  
+function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
+  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 type BillingCycle = 'monthly' | 'yearly';
 
 interface Plan {
@@ -552,7 +558,7 @@ export default function CheckoutPage() {
           {/* U6: Nudge text below toggle when user is on monthly */}
           {billing === 'monthly' && (
             <p style={{ fontSize: 12, color: '#7A7260', marginTop: 10 }}>
-              💡 Switch to yearly and save up to{' '}
+              <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg> Switch to yearly and save up to{' '}
               <span style={{ color: '#E8A020', fontWeight: 600 }}>
                 ${Math.max(...PLANS.map(yearlySavings))}/year
               </span>
@@ -697,13 +703,13 @@ export default function CheckoutPage() {
         <div className="co-trust">
           <div className="co-trust-items">
             {[
-              { icon: '🎁', text: '7-DAY FREE TRIAL' },
-              { icon: '🔒', text: 'PAYSTACK SECURED' },
-              { icon: '↩', text: 'CANCEL ANYTIME' },
-              { icon: '💳', text: 'CARD · BANK · USSD' },
+              { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>', text: '7-DAY FREE TRIAL' },
+              { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>', text: 'PAYSTACK SECURED' },
+              { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>', text: 'CANCEL ANYTIME' },
+              { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>', text: 'CARD · BANK · USSD' },
             ].map((t, i) => (
               <div key={i} className="co-trust-item">
-                <span>{t.icon}</span>{t.text}
+                <span dangerouslySetInnerHTML={{ __html: t.icon }} />{t.text}
               </div>
             ))}
           </div>

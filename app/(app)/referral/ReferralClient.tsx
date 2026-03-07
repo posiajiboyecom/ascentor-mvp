@@ -2,6 +2,12 @@
 
 import { useState } from 'react';
 
+
+// Renders SVG icon strings safely  
+function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
+  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   signed_up: { label: 'Signed Up', color: 'var(--blue)', bg: 'rgba(59,130,246,0.09)' },
   onboarded: { label: 'Onboarded', color: 'var(--teal)', bg: 'rgba(20,184,166,0.09)' },
@@ -91,13 +97,13 @@ export default function ReferralClient({ firstName, referralCode, referralCount,
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         {[
-          { icon: '🔗', value: String(referralCount), label: 'INVITES', color: 'var(--accent)' },
-          { icon: '🎁', value: String(rewardedCount), label: 'REWARDS', color: 'var(--success)' },
-          { icon: '📅', value: `${daysEarned}d`, label: 'DAYS EARNED', color: 'var(--teal)' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>', value: String(referralCount), label: 'INVITES', color: 'var(--accent)' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>', value: String(rewardedCount), label: 'REWARDS', color: 'var(--success)' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>', value: `${daysEarned}d`, label: 'DAYS EARNED', color: 'var(--teal)' },
         ].map((s) => (
           <div key={s.label} className="rounded-xl p-4 text-center"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <div className="text-xl mb-1">{s.icon}</div>
+            <div className="text-xl mb-1" dangerouslySetInnerHTML={{ __html: s.icon }} />
             <div className="text-2xl font-bold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: s.color }}>
               {s.value}
             </div>
@@ -184,7 +190,7 @@ export default function ReferralClient({ firstName, referralCode, referralCount,
 
         {referrals.length === 0 ? (
           <div className="text-center py-8">
-            <div className="text-3xl mb-2">🔗</div>
+            <div className="text-3xl mb-2"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
             <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
               No referrals yet. Share your link to get started!
             </p>

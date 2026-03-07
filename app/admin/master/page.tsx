@@ -424,7 +424,7 @@ export default function MasterAdminPage() {
           {/* North Star */}
           <div style={{ ...card, padding: '24px', background: 'linear-gradient(135deg, var(--admin-bg-deep) 60%, rgba(232,160,32,0.05))', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #E8A020 40%, #E8A020 60%, transparent)' }} />
-            <p style={mono('⭐ North Star Metric', true)}>⭐ North Star Metric</p>
+            <p style={mono('<svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> North Star Metric', true)}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> North Star Metric</p>
             <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 72, fontWeight: 700, color: '#E8A020', margin: '8px 0 4px', lineHeight: 1 }}>{kpi.wacu}</p>
             <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 600, color: 'var(--admin-text-heading)', margin: 0 }}>Weekly Active Coached Users (WACU)</p>
             <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)', marginTop: 6, letterSpacing: '0.08em' }}>Users with ≥1 coaching session this week · drives retention, word-of-mouth, conversion</p>
@@ -584,9 +584,9 @@ export default function MasterAdminPage() {
                 { day: 14, subject: 'Case study — specific member transformation' },
                 { day: 18, subject: 'Value — the 5-minute leadership habit' },
                 { day: 21, subject: 'Peer cohorts — you don\'t have to grow alone' },
-                { day: 24, subject: '🔥 Founders Promo — 50% off (first CTA)' },
+                { day: 24, subject: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A4.5 4.5 0 0 0 17 12c0-4-3.5-6.5-4-9-.5 2.5-3.5 5-3.5 5-1.5-2-2-4-2-4-1 2.5-2 5-2 7a6 6 0 0 0 6 6 4.5 4.5 0 0 0 4.5-4.5c0-1.5-.5-3-1.5-4z"/></svg> Founders Promo — 50% off (first CTA)' },
                 { day: 26, subject: 'FAQ — remove all friction to purchase' },
-                { day: 28, subject: '⏰ Last chance — Founders Promo expires' },
+                { day: 28, subject: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last chance — Founders Promo expires' },
                 { day: 30, subject: 'Re-engagement — if not now, when?' },
               ].map((email, i) => (
                 <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 12px', background: 'var(--admin-bg-card)', borderRadius: 8, border: '1px solid var(--admin-bg-input)' }}>

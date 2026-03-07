@@ -31,12 +31,31 @@ function ThemeToggle() {
         border:          '1px solid var(--app-border)',
         color:           'var(--app-text-dim)',
         cursor:          'pointer',
-        fontSize:        '16px',
-        transition:      'background 0.15s, border-color 0.15s',
+        transition:      'background 0.15s, border-color 0.15s, color 0.15s',
         flexShrink:      0,
       }}
     >
-      {isDark ? '☀️' : '🌙'}
+      {isDark ? (
+        /* Sun icon — shown in dark mode, click to go light */
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      ) : (
+        /* Moon icon — shown in light mode, click to go dark */
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      )}
     </button>
   );
 }
@@ -64,11 +83,11 @@ function Shell({
   };
 
   const logoSrc = isDark
-    ? '/ascentor-color-on-dark.svg'
-    : '/ascentor-color-on-light.svg';
+    ? '/ascentor-color-for-dark-pages.svg'
+    : '/ascentor-color-for-light-pages.svg';
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--app-bg)', overflow: 'hidden' } as React.CSSProperties}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--app-bg)' }}>
 
       {/* ── Header ── */}
       <header style={{
@@ -90,7 +109,7 @@ function Shell({
           <img
             src={logoSrc}
             alt="Ascentor"
-            onError={e => { (e.target as HTMLImageElement).src = '/ascentor-color-on-dark.svg'; }}
+            onError={e => { (e.target as HTMLImageElement).src = '/ascentor-color-for-dark-pages.svg'; }}
             style={{ height: '28px', width: 'auto' }}
           />
         </Link>
@@ -184,10 +203,11 @@ function Shell({
       )}
 
       {/* Page content */}
-      <main style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
-        <div style={{ width: '100%', maxWidth: '672px', margin: '0 auto', padding: '0 20px 96px' }}>
-          {children}
-        </div>
+      <main style={chatLayout
+        ? { flex: 1, width: '100%', maxWidth: '672px', margin: '0 auto', padding: '0 20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }
+        : { flex: 1, width: '100%', maxWidth: '672px', margin: '0 auto', padding: '0 20px 96px', overflowY: 'auto' }
+      }>
+        {children}
       </main>
 
       <BottomNav />

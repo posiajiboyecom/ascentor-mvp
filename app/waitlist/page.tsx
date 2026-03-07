@@ -3,6 +3,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 
+
+// Renders SVG icon strings safely  
+function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
+  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 /* ─── TYPES ─────────────────────────────────────────────── */
 type LifeStage      = 'explorer' | 'builder' | 'climber';
 type ReferralSource = 'instagram' | 'tiktok' | 'linkedin' | 'whatsapp' | 'friend' | 'other';
@@ -20,17 +26,17 @@ interface SuccessData { position: number; referral_code: string; }
 
 /* ─── CONSTANTS ─────────────────────────────────────────── */
 const STAGES = [
-  { value: 'explorer' as LifeStage, emoji: '🌱', label: 'Explorer', age: '15–22' },
-  { value: 'builder'  as LifeStage, emoji: '🚀', label: 'Builder',  age: '22–32' },
-  { value: 'climber'  as LifeStage, emoji: '⚡', label: 'Climber',  age: '32–50' },
+  { value: 'explorer' as LifeStage, emoji: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>', label: 'Explorer', age: '15–22' },
+  { value: 'builder'  as LifeStage, emoji: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>', label: 'Builder',  age: '22–32' },
+  { value: 'climber'  as LifeStage, emoji: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>', label: 'Climber',  age: '32–50' },
 ];
 const SOURCES = [
   { value: 'instagram' as ReferralSource, label: '📸 Instagram' },
   { value: 'tiktok'    as ReferralSource, label: '🎵 TikTok'    },
-  { value: 'linkedin'  as ReferralSource, label: '💼 LinkedIn'  },
-  { value: 'whatsapp'  as ReferralSource, label: '💬 WhatsApp'  },
+  { value: 'linkedin'  as ReferralSource, label: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg> LinkedIn'  },
+  { value: 'whatsapp'  as ReferralSource, label: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp'  },
   { value: 'friend'    as ReferralSource, label: '👤 A Friend'  },
-  { value: 'other'     as ReferralSource, label: '🌐 Other'     },
+  { value: 'other'     as ReferralSource, label: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> Other'     },
 ];
 const COUNTRIES = [
   { code: 'NG', label: '🇳🇬 Nigeria' }, { code: 'GH', label: '🇬🇭 Ghana' },
@@ -42,7 +48,7 @@ const COUNTRIES = [
   { code: 'DIASPORA-UK', label: '🇬🇧 UK (Diaspora)' },
   { code: 'DIASPORA-US', label: '🇺🇸 US (Diaspora)' },
   { code: 'DIASPORA-CA', label: '🇨🇦 Canada (Diaspora)' },
-  { code: 'OTHER', label: '🌍 Other Africa' },
+  { code: 'OTHER', label: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> Other Africa' },
 ];
 const INDUSTRIES = [
   { value: 'fintech',    label: 'Fintech / Finance' },
@@ -288,7 +294,7 @@ export default function WaitlistPage() {
         <canvas ref={canvasRef} style={{position:'fixed',inset:0,zIndex:0,pointerEvents:'none'}} />
         <div style={{position:'relative',zIndex:2,minHeight:'100vh',background:'#0C0B08',display:'flex',alignItems:'center',justifyContent:'center',padding:'40px 24px'}}>
           <div className="success-wrap">
-            <div className="suc-icon">🎉</div>
+            <div className="suc-icon"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12v0c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11v0c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98v0C9.52 4.9 9 5.52 9 6.23V7"/></svg></div>
             <h2 className="suc-title">You&apos;re in,<br /><em>officially.</em></h2>
             <p className="suc-sub">Welcome to the Ascentor waitlist. Check your inbox — a confirmation is on its way. Your mentor is almost ready for you.</p>
             <div className="pos-card">
@@ -297,10 +303,10 @@ export default function WaitlistPage() {
               <div className="pos-sub">Early members get 3 months free · No credit card needed</div>
             </div>
             <div style={{width:'100%'}}>
-              <p className="share-lbl">Move up the list — share with someone who needs this 🚀</p>
+              <p className="share-lbl">Move up the list — share with someone who needs this <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></p>
               <div className="share-btns">
-                <a href={`https://wa.me/?text=${txt}%20${url}`} target="_blank" rel="noopener noreferrer" className="share-btn wa">💬 Share on WhatsApp</a>
-                <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${url}`} target="_blank" rel="noopener noreferrer" className="share-btn li">💼 Share on LinkedIn</a>
+                <a href={`https://wa.me/?text=${txt}%20${url}`} target="_blank" rel="noopener noreferrer" className="share-btn wa"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Share on WhatsApp</a>
+                <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${url}`} target="_blank" rel="noopener noreferrer" className="share-btn li"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg> Share on LinkedIn</a>
               </div>
               <div className="copy-row">
                 <span className="copy-url">{rawUrl}</span>
@@ -350,12 +356,12 @@ export default function WaitlistPage() {
 
             <div className="proofs">
               {[
-                { e:'🤖', t:'Meet Sage', d:'Personalized guidance trained on African career context — available at 2am before your biggest moment.' },
-                { e:'🎓', t:"Human Mentors Who've Been There", d:"Live sessions with Africa's top professionals. Real experience. Not theory." },
-                { e:'👥', t:'Your Mentorship Circle', d:'Matched with peers at your exact life stage. Your personal board of advisors.' },
+                { e:'<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>', t:'Meet Sage', d:'Personalized guidance trained on African career context — available at 2am before your biggest moment.' },
+                { e:'<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>', t:"Human Mentors Who've Been There", d:"Live sessions with Africa's top professionals. Real experience. Not theory." },
+                { e:'<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', t:'Your Mentorship Circle', d:'Matched with peers at your exact life stage. Your personal board of advisors.' },
               ].map(p => (
                 <div className="proof-item" key={p.t}>
-                  <div className="proof-icon">{p.e}</div>
+                  <div className="proof-icon"><span dangerouslySetInnerHTML={{ __html: p.e }} /></div>
                   <div className="proof-body"><strong>{p.t}</strong>{p.d}</div>
                 </div>
               ))}
@@ -437,7 +443,7 @@ export default function WaitlistPage() {
                     <button key={s.value} type="button"
                       className={`stage-btn${form.life_stage===s.value?' on':''}`}
                       onClick={()=>set('life_stage',s.value)}>
-                      <span className="stage-emoji">{s.emoji}</span>
+                      <span className="stage-emoji"><span dangerouslySetInnerHTML={{ __html: s.emoji }} /></span>
                       <span className="stage-name">{s.label}</span>
                       <span className="stage-age">{s.age}</span>
                     </button>
@@ -502,7 +508,7 @@ export default function WaitlistPage() {
 
               {/* Trust */}
               <div className="trust">
-                {[['🔒','Secure & private'],['🎁','3 months free'],['✨','No spam, ever']].map(([ic,tx])=>(
+                {[['<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>','Secure & private'],['<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>','3 months free'],['<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M5 19l.5 1.5L7 21l-1.5.5L5 23l-.5-1.5L3 21l1.5-.5L5 19z"/></svg>','No spam, ever']].map(([ic,tx])=>(
                   <div className="trust-item" key={tx}><span>{ic}</span>{tx}</div>
                 ))}
               </div>

@@ -1,6 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+
+// Renders SVG icon strings safely  
+function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
+  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 export const metadata: Metadata = {
   title: 'How It Works — Ascentor',
   description:
@@ -14,7 +20,7 @@ const STEPS = [
     title:  'Join & set your goal',
     desc:   'Sign up in under 2 minutes. Tell us your life stage, career goal, and biggest challenge. No lengthy forms — just the essentials Sage needs to get started.',
     detail: 'Your 90-day goal becomes the anchor for every session. Sage refers back to it constantly, keeping you accountable even when life gets in the way.',
-    icon:   '🎯',
+    icon:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
     color:  '#E8A020',
     tags:   ['2-min setup', 'Goal setting', 'Instant access'],
   },
@@ -23,7 +29,7 @@ const STEPS = [
     title:  'Sage learns you',
     desc:   'Unlike ChatGPT, Sage is trained on African business culture, career dynamics, and leadership frameworks. It uses a Socratic coaching model — asking you the right questions.',
     detail: 'Every session is saved. The AI remembers what you discussed last week, tracks your progress, and adapts its coaching style to how you respond. It gets smarter about you over time.',
-    icon:   '🤖',
+    icon:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>',
     color:  '#14B8A6',
     tags:   ['African context', 'Remembers everything', 'Socratic model'],
   },
@@ -32,7 +38,7 @@ const STEPS = [
     title:  'Get matched to your circle',
     desc:   "We match you with 8–12 professionals at your exact life stage, in a similar industry, facing similar challenges. This isn't a random group chat — it's your personal board.",
     detail: 'Your circle meets weekly (async or live). You celebrate wins together, hold each other accountable, and share opportunities. Some of our members have co-founded businesses from their circles.',
-    icon:   '👥',
+    icon:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     color:  '#8B5CF6',
     tags:   ['Matched by stage', 'Weekly check-ins', 'Real accountability'],
   },
@@ -41,7 +47,7 @@ const STEPS = [
     title:  'Book a human mentor session',
     desc:   'When you need a real conversation, book a 1-on-1 session with a verified mentor who has walked the exact path you\'re on. Not a coach with a certificate — someone who has done it.',
     detail: "Our mentors are vetted African professionals — CTOs, founders, directors, GPs. They've navigated the same systems, the same cultures, and the same barriers you're facing right now.",
-    icon:   '🎓',
+    icon:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>',
     color:  '#E8A020',
     tags:   ['Verified mentors', 'African professionals', '1-on-1 sessions'],
   },
@@ -50,7 +56,7 @@ const STEPS = [
     title:  'Track your progress',
     desc:   'Your dashboard shows your goal progress, session history, milestones hit, and upcoming commitments. Sage generates a weekly summary of your growth.',
     detail: "At 30, 60, and 90 days you'll receive a progress report that shows exactly how far you've come. Most members report a measurable career outcome within their first 90 days.",
-    icon:   '📈',
+    icon:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>',
     color:  '#14B8A6',
     tags:   ['Weekly summaries', '90-day reports', 'Milestone tracking'],
   },
@@ -58,7 +64,7 @@ const STEPS = [
 
 const PILLARS = [
   {
-    emoji: '🤖',
+    emoji: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>',
     title: 'Sage',
     color: '#14B8A6',
     bg:    'rgba(20,184,166,0.06)',
@@ -72,7 +78,7 @@ const PILLARS = [
     ],
   },
   {
-    emoji: '🎓',
+    emoji: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>',
     title: 'Human Mentors',
     color: '#E8A020',
     bg:    'rgba(245,158,11,0.06)',
@@ -86,7 +92,7 @@ const PILLARS = [
     ],
   },
   {
-    emoji: '👥',
+    emoji: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     title: 'Mentorship Circles',
     color: '#8B5CF6',
     bg:    'rgba(139,92,246,0.06)',
@@ -197,7 +203,7 @@ export default function HowItWorksPage() {
               style={{ background: '#fff', border: '1px solid #E5E5E4', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-4 flex-shrink-0"
                 style={{ background: p.bg, border: `1.5px solid ${p.border}` }}>
-                {p.emoji}
+                <span dangerouslySetInnerHTML={{ __html: p.emoji }} />
               </div>
               <h3 className="text-lg font-semibold mb-4"
                 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
@@ -235,7 +241,7 @@ export default function HowItWorksPage() {
                 <div className="flex flex-col items-center flex-shrink-0">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
                     style={{ background: `rgba(${s.color === '#E8A020' ? '245,158,11' : s.color === '#14B8A6' ? '20,184,166' : '139,92,246'},0.1)`, border: `1.5px solid ${s.color}30` }}>
-                    {s.icon}
+                    <span dangerouslySetInnerHTML={{ __html: s.icon }} />
                   </div>
                   {i < STEPS.length - 1 && (
                     <div className="w-px flex-1 mt-2" style={{ background: '#E5E5E4', minHeight: 32 }} />

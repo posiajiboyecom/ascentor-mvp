@@ -9,6 +9,12 @@ import Link from 'next/link';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { analytics } from '@/lib/analytics';
 
+
+// Renders SVG icon strings safely  
+function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
+  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 export default function CommunityPage() {
   const [cohorts, setCohorts] = useState<any[]>([]);
   const [myCohortIds, setMyCohortIds] = useState<Set<string>>(new Set());
@@ -202,7 +208,7 @@ export default function CommunityPage() {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
                       style={{ background: 'rgba(245,158,11,0.06)' }}>
-                      {cohort.icon || '👥'}
+                      <span dangerouslySetInnerHTML={{ __html: cohort.icon || "" }} />
                     </div>
                     <div className="flex-1">
                       <h4 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{cohort.name}</h4>
@@ -307,14 +313,14 @@ export default function CommunityPage() {
               <div className="flex gap-3">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
                   style={{ background: 'rgba(245,158,11,0.06)' }}>
-                  {cohort.icon || '👥'}
+                  <span dangerouslySetInnerHTML={{ __html: cohort.icon || "" }} />
                 </div>
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold mb-0.5" style={{ color: 'var(--text)' }}>{cohort.name}</h4>
                   <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>{cohort.description}</p>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-dim)' }}>
-                      <span>👥 {cohort.member_count || 0}/{cohort.max_members || 1000}</span>
+                      <span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> {cohort.member_count || 0}/{cohort.max_members || 1000}</span>
                       <span>·</span>
                       <span>{cohort.category || 'General'}</span>
                     </div>

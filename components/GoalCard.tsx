@@ -22,7 +22,7 @@ export default function GoalCard({ goal: initialGoal }: { goal: any }) {
       <div className="rounded-xl p-5 mb-5"
         style={{ background: 'var(--bg-card)', border: '1px dashed var(--border)' }}>
         <div className="flex items-center gap-3">
-          <span style={{ fontSize: '24px' }}>🎯</span>
+          <span style={{ fontSize: '24px' }}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
           <div className="flex-1">
             <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
               Set your 90-day goal
@@ -158,7 +158,7 @@ export default function GoalCard({ goal: initialGoal }: { goal: any }) {
     <div className="rounded-xl p-5 mb-5"
       style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
       <div className="flex justify-between items-center mb-2.5">
-        <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🎯 90-Day Goal</span>
+        <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> 90-Day Goal</span>
         <div className="flex items-center gap-2">
           <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
             style={{

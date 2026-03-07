@@ -5,27 +5,11 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import SageLoader from '@/components/SageLoader';
 
-// ── SVG icon helpers (replaces emojis) ───────────────────────────
-const Svg = {
-  Users: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>,
-  Chat:  () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-  Edit:  () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
-  Book:  () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
-  Cap:   () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>,
-  Brief: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>,
-  TrendUp:()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
-  Target: ()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
-  Trophy: ()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>,
-  New:    ()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>,
-  Group:  ()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-  Plus:   ()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-  Mic:    ()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>,
-  OpenBook:()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
-  Key:    ()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>,
-  Briefcase:()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>,
-  Rocket: ()=><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>,
-};
 
+// Renders SVG icon strings safely  
+function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
+  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+}
 
 export default function AdminOverviewClient() {
   const supabase = createClient();
@@ -153,18 +137,18 @@ export default function AdminOverviewClient() {
       {/* ═══ TOP STAT CARDS ═══ */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-2.5 mb-6">
         {[
-          { icon: <Svg.Users />, value: stats.totalUsers, label: 'Total Users', sub: `+${stats.newUsers7d} this week`, color: 'var(--blue)', href: '/admin/users' },
-          { icon: <Svg.Chat />, value: stats.totalSessions, label: 'AI Sessions', sub: `+${stats.sessions7d} this week`, color: 'var(--accent)', href: '/admin/coaching' },
-          { icon: <Svg.Edit />, value: stats.totalPosts, label: 'Community Posts', sub: `+${stats.posts7d} this week`, color: 'var(--teal)', href: '/admin/coaching' },
-          { icon: <Svg.Book />, value: stats.publishedCourses, label: 'Courses', sub: 'Published', color: 'var(--purple)', href: '/admin/courses' },
-          { icon: <Svg.Cap />, value: stats.upcomingEvents, label: 'Upcoming Events', sub: 'Scheduled', color: 'var(--success)', href: '/admin/experts' },
-          { icon: <Svg.Brief />, value: stats.openJobs, label: 'Open Roles', sub: 'Live on /careers', color: 'var(--accent)', href: '/admin/careers' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', value: stats.totalUsers, label: 'Total Users', sub: `+${stats.newUsers7d} this week`, color: 'var(--blue)', href: '/admin/users' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>', value: stats.totalSessions, label: 'AI Sessions', sub: `+${stats.sessions7d} this week`, color: 'var(--accent)', href: '/admin/coaching' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>', value: stats.totalPosts, label: 'Community Posts', sub: `+${stats.posts7d} this week`, color: 'var(--teal)', href: '/admin/coaching' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', value: stats.publishedCourses, label: 'Courses', sub: 'Published', color: 'var(--purple)', href: '/admin/courses' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>', value: stats.upcomingEvents, label: 'Upcoming Events', sub: 'Scheduled', color: 'var(--success)', href: '/admin/experts' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>', value: stats.openJobs, label: 'Open Roles', sub: 'Live on /careers', color: 'var(--accent)', href: '/admin/careers' },
         ].map((s) => (
           <Link key={s.label} href={s.href}>
             <div className="rounded-xl p-3.5 transition-all hover:border-gray-600 cursor-pointer"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
               <div className="flex justify-between items-start mb-1.5">
-                <span className="flex items-center">{s.icon}</span>
+                <span className="text-xl" dangerouslySetInnerHTML={{ __html: s.icon }} />
                 <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
                   style={{ background: `color-mix(in srgb, ${s.color} 12%, transparent)`, color: s.color }}>
                   {s.sub}
@@ -182,7 +166,7 @@ export default function AdminOverviewClient() {
       {/* ═══ ACTIVITY CHART (last 14 days) ═══ */}
       <div className="rounded-xl p-5 mb-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         <div className="flex justify-between items-center mb-4">
-          <span className="text-sm font-semibold" style={{ color: 'var(--text)' }} className="flex items-center gap-1.5"><Svg.TrendUp /> Activity — Last 14 Days</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Activity — Last 14 Days</span>
           <div className="flex gap-3 text-[10px]" style={{ color: 'var(--text-dim)' }}>
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }} /> Sessions
@@ -225,7 +209,7 @@ export default function AdminOverviewClient() {
 
         {/* Session Types Breakdown */}
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <span className="text-sm font-semibold" style={{ color: 'var(--text)' }} className="flex items-center gap-1.5"><Svg.Target /> Session Types (30d)</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Session Types (30d)</span>
           <div className="mt-3">
             {sessionTypes.length === 0 ? (
               <p className="text-xs" style={{ color: 'var(--text-dim)' }}>No session data yet</p>
@@ -250,7 +234,7 @@ export default function AdminOverviewClient() {
         {/* Top Users by Engagement */}
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }} className="flex items-center gap-1.5"><Svg.Trophy /> Top Users (30d)</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> Top Users (30d)</span>
             <Link href="/admin/users" className="text-xs" style={{ color: 'var(--accent)' }}>View all →</Link>
           </div>
           {topUsers.length === 0 ? (
@@ -280,7 +264,7 @@ export default function AdminOverviewClient() {
         {/* Recent Signups */}
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }} className="flex items-center gap-1.5"><Svg.New /> Recent Signups</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🆕 Recent Signups</span>
           </div>
           {recentSignups.map((u) => (
             <div key={u.id} className="flex items-center gap-2 py-1.5"
@@ -303,7 +287,7 @@ export default function AdminOverviewClient() {
         {/* Top Cohorts */}
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }} className="flex items-center gap-1.5"><Svg.Group /> Top Cohorts</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🏘️ Top Cohorts</span>
             <Link href="/admin/cohorts" className="text-xs" style={{ color: 'var(--accent)' }}>Manage →</Link>
           </div>
           {topCohorts.length === 0 ? (
@@ -311,7 +295,7 @@ export default function AdminOverviewClient() {
           ) : topCohorts.map((c) => (
             <div key={c.id} className="flex items-center gap-2 py-2"
               style={{ borderBottom: '1px solid var(--border)' }}>
-              <span className="flex items-center text-base">{c.icon || <Svg.Group />}</span>
+              <span className="text-lg" dangerouslySetInnerHTML={{ __html: c.icon || "" }} />
               <span className="text-sm flex-1" style={{ color: 'var(--text-muted)' }}>{c.name}</span>
               <span className="text-xs font-semibold" style={{ color: 'var(--teal)' }}>
                 {c.member_count || 0}
@@ -323,7 +307,7 @@ export default function AdminOverviewClient() {
         {/* Upcoming Events */}
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }} className="flex items-center gap-1.5"><Svg.Cap /> Upcoming Events</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Upcoming Events</span>
             <Link href="/admin/experts" className="text-xs" style={{ color: 'var(--accent)' }}>Manage →</Link>
           </div>
           {upcomingEvents.length === 0 ? (
@@ -342,17 +326,17 @@ export default function AdminOverviewClient() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-2.5">
         {[
-          { label: 'Create Cohort', href: '/admin/cohorts?action=create', icon: <Svg.Plus /> },
-          { label: 'Add Expert Event', href: '/admin/experts?action=create', icon: <Svg.Mic /> },
-          { label: 'Add Course', href: '/admin/courses?action=create', icon: <Svg.OpenBook /> },
-          { label: 'Manage Roles', href: '/admin/users', icon: <Svg.Key /> },
-          { label: 'Manage Careers', href: '/admin/careers', icon: <Svg.Briefcase /> },
-          { label: 'Master Marketing', href: '/admin/master', icon: <Svg.Rocket /> },
+          { label: 'Create Cohort', href: '/admin/cohorts?action=create', icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' },
+          { label: 'Add Expert Event', href: '/admin/experts?action=create', icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>' },
+          { label: 'Add Course', href: '/admin/courses?action=create', icon: '📖' },
+          { label: 'Manage Roles', href: '/admin/users', icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>' },
+          { label: 'Manage Careers', href: '/admin/careers', icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>' },
+          { label: 'Master Marketing', href: '/admin/master', icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>' },
         ].map((a) => (
           <Link key={a.label} href={a.href}>
             <div className="rounded-lg p-3 text-center transition-all hover:border-gray-600 cursor-pointer"
               style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
-              <span className="flex justify-center mb-1">{a.icon}</span>
+              <span className="text-xl">{a.icon}</span>
               <p className="text-xs font-semibold mt-1" style={{ color: 'var(--text-muted)' }}>{a.label}</p>
             </div>
           </Link>

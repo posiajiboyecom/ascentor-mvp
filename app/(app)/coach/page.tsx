@@ -275,9 +275,12 @@ export default function CoachPage() {
     <div
       className="animate-fade-up flex flex-col"
       style={{
-        height: 'calc(100dvh - 64px - 64px)',
+        height: 'calc(100dvh - 64px - 72px)',
         paddingTop: 16,
         overflow: 'hidden',
+        maxWidth: '672px',
+        margin: '0 auto',
+        width: '100%',
       }}
     >
 
@@ -586,9 +589,6 @@ export default function CoachPage() {
           40%            { opacity: 1;   transform: scale(1);   }
         }
         .messages-scroll::-webkit-scrollbar { display: none; }
-          0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
-          40%            { opacity: 1;   transform: scale(1);   }
-        }
       `}</style>
     </div>
   );

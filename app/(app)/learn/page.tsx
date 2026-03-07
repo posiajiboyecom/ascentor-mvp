@@ -6,6 +6,12 @@ import { createClient } from '@/lib/supabase/client';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { analytics } from '@/lib/analytics';
 
+
+// Renders SVG icon strings safely  
+function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
+  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 // ─── Brand tokens ────────────────────────────────────────────
 const B = {
   dark:       '#0C0B08',
@@ -168,7 +174,7 @@ function SectionAccordion({
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 17, transition: 'all 0.2s',
         }}>
-          {section.courses[0]?.emoji || '📚'}
+          <span dangerouslySetInnerHTML={{ __html: section.courses[0]?.emoji || "" }} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -889,7 +895,7 @@ export default function LearnPage() {
       {/* Sections */}
       {sections.length === 0 ? (
         <div style={{ textAlign: 'center', paddingTop: 60 }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>📚</div>
+          <div style={{ fontSize: 36, marginBottom: 12 }}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
           <p style={{ fontFamily: B.fontUI, fontSize: 13, color: B.dark400 }}>No courses yet — check back soon!</p>
         </div>
       ) : (

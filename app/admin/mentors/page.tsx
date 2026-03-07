@@ -602,7 +602,7 @@ export default function AdminMentorsPage() {
                       />
                     )}
                     <ActionButton
-                      label="📝 Note"
+                      label="<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Note"
                       bg="transparent"
                       color={brand.dark400}
                       border={brand.border}
@@ -835,7 +835,7 @@ export default function AdminMentorsPage() {
                     {selected.status !== 'rejected' && (
                       <ActionButton label="✕ Reject" bg="rgba(239,68,68,0.06)" color="#EF4444" border="rgba(239,68,68,0.18)" onClick={() => updateStatus(selected.id, 'rejected')} />
                     )}
-                    <ActionButton label="📝 Note" bg="transparent" color={brand.dark400} border={brand.border} onClick={() => handleAddNote(selected)} />
+                    <ActionButton label="<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Note" bg="transparent" color={brand.dark400} border={brand.border} onClick={() => handleAddNote(selected)} />
                     <ActionButton label="🗑 Delete" bg="rgba(239,68,68,0.04)" color="#EF4444" border="rgba(239,68,68,0.15)" onClick={() => handleDelete(selected)} />
                   </div>
                 </div>

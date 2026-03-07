@@ -6,6 +6,12 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useParams, useRouter } from 'next/navigation';
 
+
+// Renders SVG icon strings safely  
+function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
+  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 type Reply = {
   id: string;
   content: string;
@@ -449,7 +455,7 @@ export default function CohortFeedPage() {
         <div className="flex gap-3 items-center">
           <div className="w-11 h-11 rounded-lg flex items-center justify-center text-2xl"
             style={{ background: 'rgba(245,158,11,0.06)' }}>
-            {cohort?.icon || '👥'}
+            <span dangerouslySetInnerHTML={{ __html: cohort?.icon || "" }} />
           </div>
           <div>
             <h2 className="text-xl font-semibold"
@@ -519,7 +525,7 @@ export default function CohortFeedPage() {
       {/* ── Feed ──────────────────────────────────────────────────────────── */}
       {posts.length === 0 ? (
         <div className="text-center py-12">
-          <div className="text-4xl mb-3">💬</div>
+          <div className="text-4xl mb-3"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             Be the first to post in this circle!
           </p>
@@ -577,7 +583,7 @@ export default function CohortFeedPage() {
                       <button onClick={() => toggleReplies(post.id)}
                         className="text-xs flex items-center gap-1"
                         style={{ color: 'var(--text-dim)' }}>
-                        💬 {post.reply_count} {post.reply_count === 1 ? 'reply' : 'replies'}
+                        <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> {post.reply_count} {post.reply_count === 1 ? 'reply' : 'replies'}
                       </button>
                       <button
                         onClick={() => { setReplyingTo(replyingTo === post.id ? null : post.id); setReplyText(''); }}

@@ -3,6 +3,12 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
+
+// Renders SVG icon strings safely  
+function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
+  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 // ═══ PARTICLE SYSTEM — community feel ═══
 function ParticleCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -186,7 +192,7 @@ export default function LandingClient() {
       <nav className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(250,250,249,0.88)', borderBottom: '1px solid #E5E5E4' }}>
         <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl" style={{ color: '#E8A020' }}>⬆</span>
+            <span className="text-xl" style={{ color: '#E8A020' }}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></span>
             <span className="text-lg font-semibold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Ascentor</span>
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm" style={{ color: '#6B7280' }}>
@@ -276,17 +282,17 @@ export default function LandingClient() {
           <div className="grid md:grid-cols-3 gap-5">
             {[
               {
-                icon: '🤖', title: 'Sage', color: '#E8A020',
+                icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>', title: 'Sage', color: '#E8A020',
                 desc: 'A Socratic coach trained on leadership frameworks and African business context. Ask anything at 2am before your big meeting.',
                 features: ['Personalized to your career stage', 'GROW model + African context', 'Action items after every session'],
               },
               {
-                icon: '🎓', title: 'Expert Sessions', color: '#8B5CF6',
+                icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>', title: 'Expert Sessions', color: '#8B5CF6',
                 desc: 'Live workshops with real African leaders who\'ve navigated the exact challenges you face. Not theory — lived experience.',
                 features: ['Monthly live workshops', 'Q&A with industry leaders', 'Recordings library access'],
               },
               {
-                icon: '👥', title: 'Peer Cohorts', color: '#14B8A6',
+                icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', title: 'Peer Cohorts', color: '#14B8A6',
                 desc: '15-person accountability groups matched by industry and career stage. Your personal board of advisors.',
                 features: ['Matched by industry & stage', 'Weekly check-ins', 'Shared goal tracking'],
               },
@@ -295,7 +301,7 @@ export default function LandingClient() {
                 style={{ background: '#fff', border: '1px solid #E5E5E4', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-4"
                   style={{ background: `${p.color}12` }}>
-                  {p.icon}
+                  <span dangerouslySetInnerHTML={{ __html: p.icon }} />
                 </div>
                 <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
                   {p.title}
@@ -416,7 +422,7 @@ export default function LandingClient() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span style={{ color: '#E8A020' }}>⬆</span>
+                <span style={{ color: '#E8A020' }}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></span>
                 <span className="font-semibold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#F3F4F6' }}>Ascentor</span>
               </div>
               <p className="text-xs" style={{ color: '#6B7280' }}>Leadership development for Africa's next generation.</p>
