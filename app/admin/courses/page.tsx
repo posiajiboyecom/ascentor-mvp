@@ -665,10 +665,9 @@ function AdminCoursesInner() {
                     className={`asc-emoji-btn${form.emoji === emoji ? ' selected' : ''}`}
                     onClick={() => setForm({ ...form, emoji })}
                     type="button"
-                    title={emoji}
-                  >
-                    {emoji}
-                  </button>
+                    title="icon"
+                    dangerouslySetInnerHTML={{ __html: emoji }}
+                  />
                 ))}
               </div>
             </div>
