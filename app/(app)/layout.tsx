@@ -23,7 +23,7 @@ export default async function CoachLayout({ children }: { children: React.ReactN
   const isAdmin = ['admin', 'moderator'].includes(profile?.role || '');
 
   return (
-    <AppShell initials={initials} isAdmin={isAdmin}>
+    <AppShell initials={initials} isAdmin={isAdmin} chatLayout>
       {children}
     </AppShell>
   );
