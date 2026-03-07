@@ -5,6 +5,23 @@ import SageLoader from '@/components/SageLoader';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
+// ── SVG icons for coaching page ───────────────────────────────────
+const CoachIcons = {
+  Chat:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  Edit:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
+  Users:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>,
+  Bot:     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>,
+  Group:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  EmptyChat: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  SelectCohort: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
+  EmptyPosts: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+  Pin:     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+  ChevUp:  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>,
+  ChevDn:  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+  ThumbUp: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>,
+};
+
+
 type Tab = 'coaching' | 'community';
 
 interface UserGroup {
@@ -192,9 +209,9 @@ export default function AdminCoachingPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
-          { icon: '💬', value: stats.totalSessions, label: 'AI Coaching Sessions', color: 'var(--accent)' },
-          { icon: '📝', value: stats.totalPosts, label: 'Community Posts', color: 'var(--teal)' },
-          { icon: '👥', value: stats.activeUsers, label: 'Active Users (7d)', color: 'var(--purple)' },
+          { icon: CoachIcons.Chat, value: stats.totalSessions, label: 'AI Coaching Sessions', color: 'var(--accent)' },
+          { icon: CoachIcons.Edit, value: stats.totalPosts, label: 'Community Posts', color: 'var(--teal)' },
+          { icon: CoachIcons.Users, value: stats.activeUsers, label: 'Active Users (7d)', color: 'var(--purple)' },
         ].map((s) => (
           <div key={s.label} className="rounded-xl p-4"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
@@ -210,8 +227,8 @@ export default function AdminCoachingPage() {
       {/* Tabs */}
       <div className="flex gap-1 mb-5 p-1 rounded-lg" style={{ background: 'var(--bg-input)' }}>
         {([
-          { key: 'coaching' as Tab, label: `AI Coaching (${stats.totalSessions})`, icon: '🤖' },
-          { key: 'community' as Tab, label: `Community (${stats.totalPosts})`, icon: '👥' },
+          { key: 'coaching' as Tab, label: `AI Coaching (${stats.totalSessions})`, icon: CoachIcons.Bot },
+          { key: 'community' as Tab, label: `Community (${stats.totalPosts})`, icon: CoachIcons.Group },
         ]).map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className="flex-1 py-2.5 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
@@ -230,7 +247,7 @@ export default function AdminCoachingPage() {
           {userGroups.length === 0 ? (
             <div className="text-center py-10 rounded-xl"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              <div className="text-3xl mb-2">💬</div>
+              <div className="mb-2">{CoachIcons.EmptyChat}</div>
               <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
                 No coaching sessions yet.
               </p>
@@ -264,7 +281,7 @@ export default function AdminCoachingPage() {
                       Last: {new Date(group.lastActive).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </p>
                   </div>
-                  <span className="text-xs ml-1" style={{ color: 'var(--text-dim)' }}>{isUserOpen ? '▲' : '▼'}</span>
+                  <span className="text-xs ml-1" style={{ color: 'var(--text-dim)' }}>{isUserOpen ? CoachIcons.ChevUp : CoachIcons.ChevDn}</span>
                 </button>
 
                 {/* User's sessions */}
@@ -289,7 +306,7 @@ export default function AdminCoachingPage() {
                               })}
                             </span>
                             <span className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
-                              {isSessionOpen ? '▲' : '▼'}
+                              {isSessionOpen ? CoachIcons.ChevUp : CoachIcons.ChevDn}
                             </span>
                           </button>
 
@@ -321,7 +338,7 @@ export default function AdminCoachingPage() {
                                   {ai.action && (
                                     <p className="text-xs px-3 py-2 rounded-xl"
                                       style={{ background: 'rgba(20,184,166,0.06)', color: 'var(--teal)', border: '1px solid rgba(20,184,166,0.15)' }}>
-                                      📌 {ai.action}
+                                      <span className="inline-flex items-center gap-1">{CoachIcons.Pin} {ai.action}</span>
                                     </p>
                                   )}
                                 </div>
@@ -361,7 +378,7 @@ export default function AdminCoachingPage() {
                   border: selectedCohort === c.id ? '1.5px solid var(--accent)' : '1px solid var(--border)',
                   color: selectedCohort === c.id ? 'var(--accent)' : 'var(--text-muted)',
                 }}>
-                <span>{c.icon || '👥'}</span> {c.name}
+                <span>{c.icon || CoachIcons.Group}</span> {c.name}
                 <span className="text-[10px] opacity-60">({c.member_count || 0})</span>
               </button>
             ))}
@@ -371,7 +388,7 @@ export default function AdminCoachingPage() {
           {!selectedCohort && cohorts.length > 0 && (
             <div className="text-center py-10 rounded-xl"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              <div className="text-3xl mb-2">👆</div>
+              <div className="mb-2">{CoachIcons.SelectCohort}</div>
               <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
                 Select a cohort above to view its conversations
               </p>
@@ -391,7 +408,7 @@ export default function AdminCoachingPage() {
               {posts.length === 0 ? (
                 <div className="text-center py-10 rounded-xl"
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                  <div className="text-3xl mb-2">🕳️</div>
+                  <div className="mb-2">{CoachIcons.EmptyPosts}</div>
                   <p className="text-sm" style={{ color: 'var(--text-dim)' }}>No posts in this cohort yet.</p>
                 </div>
               ) : posts.map((p) => {
@@ -420,7 +437,7 @@ export default function AdminCoachingPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-semibold" style={{ color: 'var(--accent)' }}>
-                            ▲ {p.upvotes || 0}
+                            <span className="inline-flex items-center gap-1">{CoachIcons.ThumbUp} {p.upvotes || 0}</span>
                           </span>
                           {p.replies?.length > 0 && (
                             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"

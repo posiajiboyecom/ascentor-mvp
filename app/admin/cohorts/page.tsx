@@ -5,6 +5,31 @@ import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 
+// ── SVG icon set replacing emoji picker ─────────────────────────
+type CohortIconKey = 'users'|'code'|'money'|'bank'|'rocket'|'globe'|'target'|'chart'|'fire'|'bulb';
+const COHORT_SVG_ICONS: Record<CohortIconKey, React.ReactNode> = {
+  users:  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>,
+  code:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>,
+  money:  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+  bank:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>,
+  rocket: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg>,
+  globe:  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+  target: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  chart:  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+  fire:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"/></svg>,
+  bulb:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>,
+};
+const ICON_KEYS = Object.keys(COHORT_SVG_ICONS) as CohortIconKey[];
+const ICON_LABELS: Record<CohortIconKey, string> = {
+  users:'Team', code:'Tech', money:'Finance', bank:'Banking', rocket:'Startup',
+  globe:'Global', target:'Goals', chart:'Growth', fire:'Trending', bulb:'Ideas',
+};
+function CohortIconDisplay({ iconKey }: { iconKey: string }) {
+  const key = (iconKey || 'users') as CohortIconKey;
+  return <span className="flex items-center justify-center">{COHORT_SVG_ICONS[key] ?? COHORT_SVG_ICONS.users}</span>;
+}
+
+
 // ============================================================
 // ASCENTOR BRAND TOKENS · Brand Book v1.0 · 2026
 // Display : Cormorant Garamond 700 / Italic 600
@@ -49,7 +74,7 @@ const CAT_COLOR: Record<string, string> = {
 };
 
 const CATEGORIES = ['Technology', 'Finance', 'Leadership', 'Diversity', 'Entrepreneurship', 'Consulting', 'Career Growth', 'Executive'];
-const ICONS      = ['👥', '💻', '💰', '🏛️', '🚀', '🌍', '🎯', '📈', '🔥', '💡'];
+// ICONS replaced by COHORT_SVG_ICONS above
 
 // ── Shared primitives ────────────────────────────────────────────
 function MonoLabel({ children, color = B.dark500 }: { children: React.ReactNode; color?: string }) {
@@ -190,7 +215,7 @@ function AdminCohortsInner() {
   const [editing,  setEditing]  = useState<any>(null);
   const [saving,   setSaving]   = useState(false);
 
-  const emptyForm = { name: '', description: '', category: 'Technology', icon: '👥', max_members: 1000 };
+  const emptyForm = { name: '', description: '', category: 'Technology', icon: 'users', max_members: 1000 };
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => { loadCohorts(); }, []);
@@ -207,7 +232,7 @@ function AdminCohortsInner() {
       name:        cohort.name,
       description: cohort.description  || '',
       category:    cohort.category     || 'Technology',
-      icon:        cohort.icon         || '👥',
+      icon:        cohort.icon         || 'users',
       max_members: cohort.max_members  || 1000,
     });
     setEditing(cohort);
@@ -414,15 +439,16 @@ function AdminCohortsInner() {
             <div>
               <FieldLabel>Icon</FieldLabel>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {ICONS.map(icon => (
+                {ICON_KEYS.map(key => (
                   <button
-                    key={icon}
+                    key={key}
                     type="button"
-                    className={`asc-emoji-btn${form.icon === icon ? ' sel' : ''}`}
-                    onClick={() => setForm({ ...form, icon })}
-                    title={icon}
+                    className={`asc-emoji-btn${form.icon === key ? ' sel' : ''}`}
+                    onClick={() => setForm({ ...form, icon: key })}
+                    title={ICON_LABELS[key]}
+                    style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:'6px' }}
                   >
-                    {icon}
+                    {COHORT_SVG_ICONS[key]}
                   </button>
                 ))}
               </div>
@@ -498,7 +524,7 @@ function AdminCohortsInner() {
                     fontSize:       '22px',
                     flexShrink:     0,
                   }}>
-                    {c.icon || '👥'}
+                    <CohortIconDisplay iconKey={c.icon || 'users'} />
                   </div>
 
                   {/* Info */}

@@ -66,7 +66,7 @@ function Shell({
     : '/ascentor-color-on-light.svg';
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--app-bg)', overflow: 'hidden' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--app-bg)', overflow: 'hidden' } as React.CSSProperties}>
 
       {/* ── Header ── */}
       <header style={{
