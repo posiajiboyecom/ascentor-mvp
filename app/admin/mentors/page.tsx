@@ -550,7 +550,7 @@ export default function AdminMentorsPage() {
                     lineHeight: '20px',
                   }}
                 >
-                  ✕
+                  x
                 </button>
               </div>
 
@@ -567,7 +567,7 @@ export default function AdminMentorsPage() {
                   <div className="ascentor-action-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {selected.status !== 'approved' && (
                       <ActionButton
-                        label="✓ Approve"
+                        label="Approve"
                         bg="rgba(20,184,166,0.08)"
                         color="#14B8A6"
                         border="rgba(20,184,166,0.25)"
@@ -585,7 +585,7 @@ export default function AdminMentorsPage() {
                     )}
                     {selected.status !== 'rejected' && (
                       <ActionButton
-                        label="✕ Reject"
+                        label="Reject"
                         bg="rgba(239,68,68,0.06)"
                         color="#EF4444"
                         border="rgba(239,68,68,0.18)"
@@ -602,14 +602,14 @@ export default function AdminMentorsPage() {
                       />
                     )}
                     <ActionButton
-                      label="<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Note"
+                      label={<span style={{display:'inline-flex',alignItems:'center',gap:4}}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Note</span>}
                       bg="transparent"
                       color={brand.dark400}
                       border={brand.border}
                       onClick={() => handleAddNote(selected)}
                     />
                     <ActionButton
-                      label="🗑 Delete"
+                      label={<span style={{display:'inline-flex',alignItems:'center',gap:4}}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Delete</span>}
                       bg="rgba(239,68,68,0.04)"
                       color="#EF4444"
                       border="rgba(239,68,68,0.15)"
@@ -813,7 +813,7 @@ export default function AdminMentorsPage() {
                     marginTop: '2px',
                   }}
                 >
-                  ✕
+                  x
                 </button>
               </div>
 
@@ -827,16 +827,16 @@ export default function AdminMentorsPage() {
                   </div>
                   <div className="ascentor-action-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {selected.status !== 'approved' && (
-                      <ActionButton label="✓ Approve" bg="rgba(20,184,166,0.08)" color="#14B8A6" border="rgba(20,184,166,0.25)" onClick={() => updateStatus(selected.id, 'approved')} />
+                      <ActionButton label="Approve" bg="rgba(20,184,166,0.08)" color="#14B8A6" border="rgba(20,184,166,0.25)" onClick={() => updateStatus(selected.id, 'approved')} />
                     )}
                     {selected.status !== 'active' && (
                       <ActionButton label="▶ Activate" bg="rgba(139,92,246,0.08)" color="#8B5CF6" border="rgba(139,92,246,0.25)" onClick={() => updateStatus(selected.id, 'active')} />
                     )}
                     {selected.status !== 'rejected' && (
-                      <ActionButton label="✕ Reject" bg="rgba(239,68,68,0.06)" color="#EF4444" border="rgba(239,68,68,0.18)" onClick={() => updateStatus(selected.id, 'rejected')} />
+                      <ActionButton label="Reject" bg="rgba(239,68,68,0.06)" color="#EF4444" border="rgba(239,68,68,0.18)" onClick={() => updateStatus(selected.id, 'rejected')} />
                     )}
-                    <ActionButton label="<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Note" bg="transparent" color={brand.dark400} border={brand.border} onClick={() => handleAddNote(selected)} />
-                    <ActionButton label="🗑 Delete" bg="rgba(239,68,68,0.04)" color="#EF4444" border="rgba(239,68,68,0.15)" onClick={() => handleDelete(selected)} />
+                    <ActionButton label={<span style={{display:'inline-flex',alignItems:'center',gap:4}}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Note</span>} bg="transparent" color={brand.dark400} border={brand.border} onClick={() => handleAddNote(selected)} />
+                    <ActionButton label={<span style={{display:'inline-flex',alignItems:'center',gap:4}}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Delete</span>} bg="rgba(239,68,68,0.04)" color="#EF4444" border="rgba(239,68,68,0.15)" onClick={() => handleDelete(selected)} />
                   </div>
                 </div>
 
@@ -969,7 +969,7 @@ export default function AdminMentorsPage() {
 function ActionButton({
   label, bg, color, border, onClick,
 }: {
-  label: string; bg: string; color: string; border: string; onClick: () => void;
+  label: React.ReactNode; bg: string; color: string; border: string; onClick: () => void;
 }) {
   return (
     <button
