@@ -149,32 +149,32 @@ export default function AdminNewsletterPage() {
     return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
-  body{margin:0;padding:0;background:var(--admin-bg);font-family:Georgia,'Times New Roman',serif;}
-  .wrapper{max-width:640px;margin:0 auto;background:var(--admin-bg-deep);}
-  .header{background:var(--admin-bg);padding:32px 40px 24px;text-align:center;border-bottom:1px solid var(--admin-bg-input);}
+  body{margin:0;padding:0;background:#0E0C0A;font-family:Georgia,'Times New Roman',serif;}
+  .wrapper{max-width:640px;margin:0 auto;background:#161210;}
+  .header{background:#0E0C0A;padding:32px 40px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08);}
   .header-tag{font-family:'DM Mono',monospace,sans-serif;font-size:10px;letter-spacing:0.15em;color:#E8A020;text-transform:uppercase;margin-bottom:12px;}
   .header-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;font-weight:700;color:#FEF9EC;margin:12px 0 8px;line-height:1.1;}
-  .header-subtitle{font-family:'DM Mono',monospace,sans-serif;font-size:12px;color:var(--admin-text-faint);letter-spacing:0.06em;}
-  .header-vol{font-family:'DM Mono',monospace,sans-serif;font-size:11px;color:var(--admin-text-faint);margin-top:12px;padding-top:12px;border-top:1px solid var(--admin-bg-input);letter-spacing:0.08em;text-transform:uppercase;}
-  .content{padding:40px;color:var(--admin-text);font-size:16px;line-height:1.8;}
+  .header-subtitle{font-family:'DM Mono',monospace,sans-serif;font-size:12px;color:#9A8F85;letter-spacing:0.06em;}
+  .header-vol{font-family:'DM Mono',monospace,sans-serif;font-size:11px;color:#9A8F85;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);letter-spacing:0.08em;text-transform:uppercase;}
+  .content{padding:40px;color:#E8E0D5;font-size:16px;line-height:1.8;}
   .content h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:700;color:#FEF9EC;margin:32px 0 12px;}
   .content h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:600;color:#FEF9EC;margin:24px 0 8px;}
   .content p{margin:0 0 16px;}
-  .content blockquote{border-left:3px solid #E8A020;margin:24px 0;padding:16px 24px;font-style:italic;font-size:17px;color:var(--admin-text);background:rgba(232,160,32,0.05);border-radius:0 8px 8px 0;}
+  .content blockquote{border-left:3px solid #E8A020;margin:24px 0;padding:16px 24px;font-style:italic;font-size:17px;color:#E8E0D5;background:rgba(232,160,32,0.05);border-radius:0 8px 8px 0;}
   .content img{max-width:100%;height:auto;border-radius:8px;margin:16px 0;}
   .content a{color:#E8A020;text-decoration:underline;}
   .content ul,.content ol{padding-left:24px;margin:12px 0;}
   .content li{margin-bottom:8px;}
-  .content hr{border:none;border-top:1px solid var(--admin-bg-input);margin:32px 0;}
-  .final-word{text-align:center;padding:32px 40px;background:var(--admin-bg);border-top:1px solid var(--admin-bg-input);}
-  .final-word p{color:var(--admin-text-muted);font-family:Georgia,serif;font-size:16px;line-height:1.6;margin:0 0 8px;}
+  .content hr{border:none;border-top:1px solid rgba(255,255,255,0.08);margin:32px 0;}
+  .final-word{text-align:center;padding:32px 40px;background:#0E0C0A;border-top:1px solid rgba(255,255,255,0.08);}
+  .final-word p{color:#C4B8A8;font-family:Georgia,serif;font-size:16px;line-height:1.6;margin:0 0 8px;}
   .final-word .highlight{color:#E8A020;font-weight:700;}
-  .footer{background:var(--admin-bg);padding:24px 40px;text-align:center;border-top:1px solid var(--admin-bg-input);}
+  .footer{background:#0E0C0A;padding:24px 40px;text-align:center;border-top:1px solid rgba(255,255,255,0.08);}
   .footer-brand{font-family:'DM Mono',monospace,sans-serif;font-size:10px;letter-spacing:0.15em;color:#E8A020;text-transform:uppercase;margin-bottom:8px;}
-  .footer-text{font-family:'DM Mono',monospace,sans-serif;font-size:11px;color:var(--admin-text-faint);line-height:1.8;letter-spacing:0.04em;}
+  .footer-text{font-family:'DM Mono',monospace,sans-serif;font-size:11px;color:#9A8F85;line-height:1.8;letter-spacing:0.04em;}
   .footer a{color:#E8A020;text-decoration:none;}
   .social-links{margin:12px 0;}
-  .social-links a{display:inline-block;margin:0 8px;color:var(--admin-text-muted);font-family:'DM Mono',monospace,sans-serif;font-size:11px;text-decoration:none;}
+  .social-links a{display:inline-block;margin:0 8px;color:#C4B8A8;font-family:'DM Mono',monospace,sans-serif;font-size:11px;text-decoration:none;}
   @media(max-width:640px){.header{padding:24px 20px 16px;}.header-title{font-size:28px;}.content{padding:24px 20px;}.final-word{padding:24px 20px;}.footer{padding:20px;}}
 </style></head><body>
 <div class="wrapper">
@@ -528,7 +528,7 @@ export default function AdminNewsletterPage() {
 
           {/* ─── Email Preview ────────────────────────────────────────────── */}
           {showPreview && (
-            <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(232,160,32,0.35)', boxShadow: '0 0 0 4px rgba(232,160,32,0.06)' }}>
+            <div style={{ borderRadius: '12px', overflow: 'hidden', border: '2px solid rgba(232,160,32,0.55)', boxShadow: '0 0 0 6px rgba(232,160,32,0.10), 0 8px 32px rgba(0,0,0,0.35)', marginTop: '8px' }}>
               {/* Preview header bar */}
               <div style={{
                 padding: '10px 16px',

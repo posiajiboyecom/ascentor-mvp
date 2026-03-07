@@ -264,7 +264,7 @@ export default function AdminOverviewClient() {
         {/* Recent Signups */}
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🆕 Recent Signups</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>New Signups</span>
           </div>
           {recentSignups.map((u) => (
             <div key={u.id} className="flex items-center gap-2 py-1.5"
@@ -287,7 +287,7 @@ export default function AdminOverviewClient() {
         {/* Top Cohorts */}
         <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🏘️ Top Cohorts</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Top Cohorts</span>
             <Link href="/admin/cohorts" className="text-xs" style={{ color: 'var(--accent)' }}>Manage →</Link>
           </div>
           {topCohorts.length === 0 ? (
@@ -328,7 +328,7 @@ export default function AdminOverviewClient() {
         {[
           { label: 'Create Cohort', href: '/admin/cohorts?action=create', icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' },
           { label: 'Add Expert Event', href: '/admin/experts?action=create', icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>' },
-          { label: 'Add Course', href: '/admin/courses?action=create', icon: '📖' },
+          { label: 'Add Course', href: '/admin/courses?action=create', icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' },
           { label: 'Manage Roles', href: '/admin/users', icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>' },
           { label: 'Manage Careers', href: '/admin/careers', icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>' },
           { label: 'Master Marketing', href: '/admin/master', icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>' },
@@ -336,7 +336,7 @@ export default function AdminOverviewClient() {
           <Link key={a.label} href={a.href}>
             <div className="rounded-lg p-3 text-center transition-all hover:border-gray-600 cursor-pointer"
               style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
-              <span className="text-xl">{a.icon}</span>
+              <SvgIcon html={a.icon} style={{ display: "flex", justifyContent: "center", alignItems: "center", color: "var(--accent)" }} />
               <p className="text-xs font-semibold mt-1" style={{ color: 'var(--text-muted)' }}>{a.label}</p>
             </div>
           </Link>
