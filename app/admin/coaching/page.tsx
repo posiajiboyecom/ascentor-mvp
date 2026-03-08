@@ -113,12 +113,19 @@ export default function AdminCoachingPage() {
       activeUsers: uniqueActive.size,
     });
 
-    // Load cohorts for community tab
-    const { data: cohortsData } = await supabase
-      .from('cohorts')
-      .select('id, name, member_count, icon')
-      .order('member_count', { ascending: false });
-    setCohorts(cohortsData || []);
+    // Load cohorts via service-role API (bypasses RLS)
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || '';
+
+    const cohortsRes = await fetch('/api/admin/community', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (cohortsRes.ok) {
+      const { cohorts: cohortsData, totalPosts } = await cohortsRes.json();
+      setCohorts(cohortsData || []);
+      // Update stats with real post count from API
+      setStats(prev => ({ ...prev, totalPosts: totalPosts ?? prev.totalPosts }));
+    }
 
     setLoading(false);
   }
@@ -128,63 +135,27 @@ export default function AdminCoachingPage() {
     setSelectedCohort(cohortId);
     setExpandedPost(null);
 
-    const { data: postsData } = await supabase
-      .from('cohort_posts')
-      .select('id, user_id, content, upvotes, created_at')
-      .eq('cohort_id', cohortId)
-      .order('created_at', { ascending: false })
-      .limit(100);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || '';
 
-    if (postsData && postsData.length > 0) {
-      // Fetch profiles
-      const userIds = [...new Set(postsData.map((p: any) => p.user_id))];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', userIds);
+      const res = await fetch(`/api/admin/community?cohortId=${cohortId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      const profileMap: Record<string, string> = {};
-      profiles?.forEach((p: any) => { profileMap[p.id] = p.full_name; });
-
-      // Fetch replies for all posts
-      const postIds = postsData.map((p: any) => p.id);
-      let replies: any[] = [];
-
-      // Check if cohort_replies table exists by trying to query it
-      try {
-        const { data: repliesData } = await supabase
-          .from('cohort_replies')
-          .select('id, post_id, user_id, content, created_at')
-          .in('post_id', postIds)
-          .order('created_at', { ascending: true });
-
-        if (repliesData) {
-          // Get reply author names
-          const replyUserIds = [...new Set(repliesData.map((r: any) => r.user_id))];
-          const { data: replyProfiles } = replyUserIds.length > 0
-            ? await supabase.from('profiles').select('id, full_name').in('id', replyUserIds)
-            : { data: [] };
-          replyProfiles?.forEach((p: any) => { profileMap[p.id] = p.full_name; });
-          replies = repliesData;
-        }
-      } catch {
-        // cohort_replies table might not exist — that's fine
+      if (res.ok) {
+        const { posts: postsData } = await res.json();
+        setPosts(postsData || []);
+      } else {
+        console.error('[loadCohortPosts] API error:', await res.text());
+        setPosts([]);
       }
-
-      const enriched = postsData.map((p: any) => ({
-        ...p,
-        author: profileMap[p.user_id] || 'Unknown',
-        replies: replies
-          .filter((r: any) => r.post_id === p.id)
-          .map((r: any) => ({ ...r, author: profileMap[r.user_id] || 'Unknown' })),
-      }));
-
-      setPosts(enriched);
-    } else {
+    } catch (err) {
+      console.error('[loadCohortPosts]', err);
       setPosts([]);
+    } finally {
+      setLoadingPosts(false);
     }
-
-    setLoadingPosts(false);
   }
 
   if (loading) {
@@ -378,8 +349,10 @@ export default function AdminCoachingPage() {
                   border: selectedCohort === c.id ? '1.5px solid var(--accent)' : '1px solid var(--border)',
                   color: selectedCohort === c.id ? 'var(--accent)' : 'var(--text-muted)',
                 }}>
-                <span>{c.icon || CoachIcons.Group}</span> {c.name}
-                <span className="text-[10px] opacity-60">({c.member_count || 0})</span>
+                <span dangerouslySetInnerHTML={{ __html: c.icon || '' }} />
+                {!c.icon && <span>{CoachIcons.Group}</span>}
+                {c.name}
+                <span className="text-[10px] opacity-60">({c.post_count ?? 0} posts)</span>
               </button>
             ))}
           </div>
@@ -439,10 +412,10 @@ export default function AdminCoachingPage() {
                           <span className="text-[10px] font-semibold" style={{ color: 'var(--accent)' }}>
                             <span className="inline-flex items-center gap-1">{CoachIcons.ThumbUp} {p.upvotes || 0}</span>
                           </span>
-                          {p.replies?.length > 0 && (
+                          {((p.reply_count || 0) > 0 || p.replies?.length > 0) && (
                             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
                               style={{ background: 'rgba(59,130,246,0.09)', color: 'var(--blue)' }}>
-                              {p.replies.length} repl{p.replies.length === 1 ? 'y' : 'ies'}
+                              {p.reply_count || p.replies?.length || 0} repl{(p.reply_count || p.replies?.length || 0) === 1 ? 'y' : 'ies'}
                             </span>
                           )}
                         </div>
