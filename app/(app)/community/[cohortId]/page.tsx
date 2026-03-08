@@ -308,13 +308,16 @@ export default function CohortFeedPage() {
       const targetPost = posts.find(p => p.id === postId);
       if (targetPost && targetPost.user_id && targetPost.user_id !== userId) {
         const myName = authorCache.current[userId!] || 'A member';
-        supabase.from('notifications').insert({
+        const replyTitle   = '💬 New reply on your post';
+        const replyMessage = `${myName} replied: "${content.slice(0, 80)}${content.length > 80 ? '…' : ''}"`; 
+        void Promise.resolve(supabase.from('notifications').insert({
           user_id: targetPost.user_id,
           type:    'community',
-          title:   '💬 New reply on your post',
-          message: `${myName} replied: "${content.slice(0, 80)}${content.length > 80 ? '…' : ''}"`,
+          title:   replyTitle,
+          message: replyMessage,
           link:    `/community/${cohortId}`,
-        }).then(() => {}).catch(() => {});
+        })).catch(() => {});
+        triggerPush(targetPost.user_id, replyTitle, replyMessage, `/community/${cohortId}`);
       }
     }
   }
@@ -371,13 +374,16 @@ export default function CohortFeedPage() {
         if (post.user_id && post.user_id !== userId) {
           const myName = authorCache.current[userId!] || 'A member';
           const newTotal = (post.upvotes || 0) + 1;
-          supabase.from('notifications').insert({
+          const postUpvoteTitle   = '▲ Someone upvoted your post';
+          const postUpvoteMessage = `${myName} upvoted your post${newTotal > 1 ? ` (${newTotal} upvotes total)` : ''}`;
+          void Promise.resolve(supabase.from('notifications').insert({
             user_id: post.user_id,
             type:    'community',
-            title:   '▲ Someone upvoted your post',
-            message: `${myName} upvoted your post${newTotal > 1 ? ` (${newTotal} upvotes total)` : ''}`,
+            title:   postUpvoteTitle,
+            message: postUpvoteMessage,
             link:    `/community/${cohortId}`,
-          }).then(() => {}).catch(() => {});
+          })).catch(() => {});
+          triggerPush(post.user_id, postUpvoteTitle, postUpvoteMessage, `/community/${cohortId}`);
         }
       } else {
         await Promise.all([
@@ -421,13 +427,16 @@ export default function CohortFeedPage() {
         if (reply.user_id && reply.user_id !== userId) {
           const myName = authorCache.current[userId!] || 'A member';
           const newTotal = (reply.upvotes || 0) + 1;
-          supabase.from('notifications').insert({
+          const replyUpvoteTitle   = '▲ Someone upvoted your reply';
+          const replyUpvoteMessage = `${myName} upvoted your reply${newTotal > 1 ? ` (${newTotal} upvotes total)` : ''}`;
+          void Promise.resolve(supabase.from('notifications').insert({
             user_id: reply.user_id,
             type:    'community',
-            title:   '▲ Someone upvoted your reply',
-            message: `${myName} upvoted your reply${newTotal > 1 ? ` (${newTotal} upvotes total)` : ''}`,
+            title:   replyUpvoteTitle,
+            message: replyUpvoteMessage,
             link:    `/community/${cohortId}`,
-          }).then(() => {}).catch(() => {});
+          })).catch(() => {});
+          triggerPush(reply.user_id, replyUpvoteTitle, replyUpvoteMessage, `/community/${cohortId}`);
         }
       } else {
         await Promise.all([
@@ -453,6 +462,19 @@ export default function CohortFeedPage() {
     await supabase.from('cohort_members').delete()
       .eq('cohort_id', String(cohortId)).eq('user_id', userId);
     router.push('/community');
+  }
+
+
+  // ── Push helper — fires native phone notification after DB insert ──────
+  async function triggerPush(targetUserId: string, title: string, body: string, url: string) {
+    try {
+      await fetch('/api/push/community', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ targetUserId, title, body, url }),
+        credentials: 'include',
+      });
+    } catch { /* non-critical */ }
   }
 
   function timeAgo(dateStr: string) {

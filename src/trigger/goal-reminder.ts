@@ -2,6 +2,7 @@ import { schedules } from "@trigger.dev/sdk/v3";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
 import { goalReminderEmail } from "./emails/email-templates";
+import { sendPushToUser } from "@/lib/push";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -80,6 +81,18 @@ export const dailyGoalReminder = schedules.task({
       } catch (err) {
         console.error(`Failed to send reminder to ${profile.email}:`, err);
       }
+
+      // Also push to phone if user has subscribed
+      try {
+        const dayText = daysSince === 1 ? 'yesterday' : `${daysSince} days ago`;
+        await sendPushToUser(supabase, profile.id, {
+          title: 'Your coach is waiting 🌱',
+          body:  `Last session was ${dayText}. 5 minutes with Sage keeps momentum going.`,
+          url:   '/coach',
+          tag:   'goal-reminder',
+          icon:  '/icons/icon-192.png',
+        });
+      } catch { /* non-critical */ }
 
       // Rate limit: small delay between sends
       await new Promise((r) => setTimeout(r, 200));

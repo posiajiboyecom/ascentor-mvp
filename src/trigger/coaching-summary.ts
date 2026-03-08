@@ -1,6 +1,7 @@
 import { task } from "@trigger.dev/sdk/v3";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
+import { sendPushToUser } from "@/lib/push";
 import Anthropic from "@anthropic-ai/sdk";
 import { coachingSummaryEmail } from "./emails/email-templates";
 
@@ -114,6 +115,17 @@ Respond in this exact JSON format:
     });
 
     console.log(`Summary sent to ${profile.email} for session ${sessionId}`);
+
+    // Push notification — lands on phone immediately
+    try {
+      await sendPushToUser(supabase, userId, {
+        title: '✨ Your coaching summary is ready',
+        body:  'Sage has captured your key takeaways and next steps.',
+        url:   '/coach',
+        tag:   'coaching-summary',
+        icon:  '/icons/icon-192.png',
+      });
+    } catch { /* non-critical */ }
 
     return {
       success: true,
