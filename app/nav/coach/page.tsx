@@ -3,12 +3,24 @@
 import { useState, useRef, useEffect } from 'react';
 
 // ─────────────────────────────────────────────────────────────────
-// ASCENTOR · AI Mentor Page
-// All emojis replaced with SVG icons.
-// Coach avatar uses the real Ascentor logomark (LM-gold).
+// ASCENTOR · AI Mentor (Sage) Page
+//
+// WHAT CHANGED:
+//   1. CONVERSATION HISTORY — every message pair is kept in
+//      `conversationHistory` state and sent to the API on each
+//      request. Claude now has full session memory.
+//
+//   2. REAL STREAMING — the API returns an SSE stream.
+//      Previously the page called res.json() which silently
+//      discarded all streaming data. Now we read the stream
+//      with a ReadableStreamDefaultReader, parse SSE events,
+//      and render tokens progressively as they arrive.
+//      The typing indicator is replaced by a live streaming bubble.
+//
+//   3. messageCount sent to API for per-session limit enforcement.
 // ─────────────────────────────────────────────────────────────────
 
-// ── Session type icons ───────────────────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────
 const IconCompass = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10"/>
@@ -46,8 +58,6 @@ const IconSend = () => (
   </svg>
 );
 
-// ── The real Ascentor logomark (LM-gold) inlined as SVG ──────────
-// Used as the AI coach avatar throughout the chat
 const AscentorMark = ({ size = 20 }: { size?: number }) => (
   <svg
     viewBox="0 0 134.34 101.16"
@@ -55,16 +65,14 @@ const AscentorMark = ({ size = 20 }: { size?: number }) => (
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
   >
-    <path
-      fill="#fff"
-      d="M105.19,71.38H57l-2.73,6.11h53.63ZM83.83,23.62H78.37L58.82,67.39h44.59Zm-2.7,16.32,7.93,18.63H73.19Z"
-    />
+    <path fill="#fff" d="M105.19,71.38H57l-2.73,6.11h53.63ZM83.83,23.62H78.37L58.82,67.39h44.59Zm-2.7,16.32,7.93,18.63H73.19Z"/>
     <polygon fill="#fff" points="74.64 23.64 55.14 67.39 53.36 71.38 50.62 77.54 44.92 77.54 47.66 71.38 49.44 67.39 68.95 23.64 74.64 23.64"/>
     <polygon fill="#fff" points="65.42 23.64 41.39 77.54 35.69 77.54 59.72 23.64 65.42 23.64"/>
     <polygon fill="#fff" points="56.12 23.64 36.61 67.39 34.83 71.38 32.09 77.54 26.39 77.54 29.14 71.38 30.92 67.39 50.42 23.64 56.12 23.64"/>
   </svg>
 );
 
+// ── Types ─────────────────────────────────────────────────────────
 const SESSION_TYPES = [
   { id: 'challenge_navigation',   label: 'Navigate a Challenge', icon: <IconCompass /> },
   { id: 'difficult_conversation', label: 'Prep a Conversation',  icon: <IconChat />    },
@@ -72,78 +80,207 @@ const SESSION_TYPES = [
   { id: 'accountability_check',   label: 'Accountability Check', icon: <IconCheck />   },
 ];
 
+// Rendered message bubble
 type Message = {
-  role: 'user' | 'assistant';
-  content?: string;
-  reflection?: string;
-  question?: string;
-  action?: string;
+  role:        'user' | 'assistant';
+  content?:    string;   // user text OR streaming partial text
+  reflection?: string | null;
+  question?:   string | null;
+  action?:     string | null;
+  streaming?:  boolean;  // true while tokens are arriving
 };
 
+// What we send to the API as history
+type ConvTurn = { role: 'user' | 'assistant'; content: string };
+
+// ── Coach Avatar ──────────────────────────────────────────────────
+const CoachAvatar = () => (
+  <div style={{
+    width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
+    background: 'linear-gradient(135deg, rgba(247,246,243,0.10), rgba(247,246,243,0.20))',
+    border: '1.5px solid rgba(247,246,243,0.25)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  }}>
+    <AscentorMark size={18} />
+  </div>
+);
+
+// ════════════════════════════════════════════════════════════════
+// Main page
+// ════════════════════════════════════════════════════════════════
 export default function CoachPage() {
-  const [messages,     setMessages]     = useState<Message[]>([]);
-  const [input,        setInput]        = useState('');
-  const [loading,      setLoading]      = useState(false);
-  const [sessionType,  setSessionType]  = useState('challenge_navigation');
+  const [messages,             setMessages]             = useState<Message[]>([]);
+  const [conversationHistory,  setConversationHistory]  = useState<ConvTurn[]>([]);
+  const [input,                setInput]                = useState('');
+  const [loading,              setLoading]              = useState(false);
+  const [sessionType,          setSessionType]          = useState('challenge_navigation');
+  const [error,                setError]                = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  // ── Count only user turns for messageCount ──────────────────────
+  const userMessageCount = conversationHistory.filter((t) => t.role === 'user').length;
+
   const handleSend = async () => {
     if (!input.trim() || loading) return;
     const userMsg = input.trim();
     setInput('');
+    setError(null);
+
+    // Add user bubble
     setMessages((m) => [...m, { role: 'user', content: userMsg }]);
+
+    // Add streaming assistant bubble immediately (empty, flagged streaming)
+    const streamingIdx = messages.length + 1; // index of the bubble we're about to add
+    setMessages((m) => [...m, { role: 'assistant', content: '', streaming: true }]);
     setLoading(true);
 
     try {
-      const res  = await fetch('/api/coach/session', {
-        method: 'POST',
+      const res = await fetch('/api/coach/session', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userInput: userMsg, sessionType }),
+        body: JSON.stringify({
+          userInput:           userMsg,
+          sessionType,
+          messageCount:        userMessageCount,
+          conversationHistory, // full session history so far
+        }),
       });
-      const data = await res.json();
-      if (data.response) {
-        setMessages((m) => [...m, {
-          role:       'assistant',
-          reflection: data.response.reflection,
-          question:   data.response.question,
-          action:     data.response.action,
-        }]);
+
+      // ── Non-stream error responses (401, 429, 400) ─────────────
+      if (!res.ok || !res.body) {
+        const errData = await res.json().catch(() => ({}));
+        const msg     = errData.error || 'Something went wrong. Please try again.';
+        // Replace streaming bubble with error text
+        setMessages((m) =>
+          m.map((b, i) =>
+            i === m.length - 1 && b.streaming
+              ? { role: 'assistant', question: msg }
+              : b
+          )
+        );
+        setLoading(false);
+        return;
       }
-    } catch {
-      setMessages((m) => [...m, {
-        role:       'assistant',
-        reflection: "I'm here — your dedicated mentor for every step of your career journey.",
-        question:   "What's on your mind? Let's work through it together.",
-      }]);
+
+      // ── Read SSE stream ─────────────────────────────────────────
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder();
+      let   buffer  = '';
+
+      // Accumulate raw streaming text so we can build conversationHistory
+      let streamingRaw = '';
+
+      const finalData: { reflection?: string|null; question?: string|null; action?: string|null } = {};
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? ''; // keep incomplete line
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
+
+          let evt: any;
+          try { evt = JSON.parse(raw); } catch { continue; }
+
+          if (evt.type === 'delta') {
+            streamingRaw += evt.text;
+            // Update the streaming bubble with accumulated raw text
+            setMessages((m) =>
+              m.map((b, i) =>
+                i === m.length - 1 && b.streaming
+                  ? { ...b, content: streamingRaw }
+                  : b
+              )
+            );
+          }
+
+          if (evt.type === 'done') {
+            finalData.reflection = evt.reflection;
+            finalData.question   = evt.question;
+            finalData.action     = evt.action;
+
+            // Replace streaming bubble with fully structured response
+            setMessages((m) =>
+              m.map((b, i) =>
+                i === m.length - 1 && b.streaming
+                  ? {
+                      role:       'assistant',
+                      reflection: evt.reflection ?? null,
+                      question:   evt.question   ?? null,
+                      action:     evt.action     ?? null,
+                      streaming:  false,
+                    }
+                  : b
+              )
+            );
+          }
+
+          if (evt.type === 'error') {
+            setMessages((m) =>
+              m.map((b, i) =>
+                i === m.length - 1 && b.streaming
+                  ? { role: 'assistant', question: evt.message ?? 'Something went wrong.', streaming: false }
+                  : b
+              )
+            );
+          }
+        }
+      }
+
+      // ── Update conversation history for next turn ───────────────
+      // Assistant content for history = the coaching question (most meaningful single string)
+      const assistantContent =
+        [finalData.reflection, finalData.question, finalData.action]
+          .filter(Boolean)
+          .join(' ') || streamingRaw;
+
+      setConversationHistory((h) => [
+        ...h,
+        { role: 'user',      content: userMsg },
+        { role: 'assistant', content: assistantContent },
+      ]);
+
+    } catch (err) {
+      console.error('[coach/page]', err);
+      setMessages((m) =>
+        m.map((b, i) =>
+          i === m.length - 1 && b.streaming
+            ? {
+                role:       'assistant',
+                reflection: "I'm here — your dedicated mentor for every step of your career journey.",
+                question:   "What's on your mind? Let's work through it together.",
+                streaming:  false,
+              }
+            : b
+        )
+      );
     }
+
     setLoading(false);
   };
 
-  // The circular coach avatar
-  const CoachAvatar = () => (
-    <div style={{
-      width: '34px', height: '34px', borderRadius: '50%',
-      flexShrink: 0,
-      background: 'linear-gradient(135deg, rgba(247,246,243,0.10), rgba(247,246,243,0.20))',
-      border: '1.5px solid rgba(247,246,243,0.25)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <AscentorMark size={18} />
-    </div>
-  );
-
   return (
-    <div className="animate-fade-up flex flex-col" style={{ height: 'calc(100vh - 120px)', paddingTop: 16 }}>
-
-      {/* ── Session Type Selector (only shown before conversation starts) ── */}
+    <div
+      className="animate-fade-up flex flex-col"
+      style={{ height: 'calc(100vh - 120px)', paddingTop: 16 }}
+    >
+      {/* Session type selector — shown only before first message */}
       {messages.length === 0 && (
         <div className="mb-5">
-          <h2 className="text-2xl font-semibold mb-1"
-            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
+          <h2
+            className="text-2xl font-semibold mb-1"
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}
+          >
             AI Mentor
           </h2>
           <p className="text-[13px] mb-4" style={{ color: 'var(--text-muted)' }}>
@@ -165,8 +302,10 @@ export default function CoachPage() {
                   <span style={{ display: 'flex', color: active ? 'var(--accent)' : 'var(--text-dim)' }}>
                     {t.icon}
                   </span>
-                  <div className="text-[13px] font-medium mt-2"
-                    style={{ color: active ? 'var(--accent)' : 'var(--text)' }}>
+                  <div
+                    className="text-[13px] font-medium mt-2"
+                    style={{ color: active ? 'var(--accent)' : 'var(--text)' }}
+                  >
                     {t.label}
                   </div>
                 </button>
@@ -176,7 +315,7 @@ export default function CoachPage() {
         </div>
       )}
 
-      {/* ── Message Feed ── */}
+      {/* Message feed */}
       <div className="flex-1 overflow-y-auto mb-3 pr-0.5">
 
         {/* Empty state */}
@@ -190,23 +329,28 @@ export default function CoachPage() {
             }}>
               <AscentorMark size={32} />
             </div>
-            <p className="text-[15px] max-w-xs text-center" style={{ color: 'var(--text-muted)' }}>
-              Your mentor is here. Share a challenge, a goal, or anything you're navigating right now.
+            <p
+              className="text-[15px] max-w-xs text-center"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Your mentor is here. Share a challenge, a goal, or anything you&apos;re navigating right now.
             </p>
           </div>
         )}
 
         {/* Messages */}
         {messages.map((msg, i) => (
-          <div key={i} className="mb-4" style={{ animationDelay: `${i * 0.05}s` }}>
+          <div key={i} className="mb-4">
             {msg.role === 'user' ? (
               <div className="flex justify-end">
-                <div className="max-w-[80%] px-4 py-3 rounded-2xl rounded-br-sm text-sm leading-relaxed"
+                <div
+                  className="max-w-[80%] px-4 py-3 rounded-2xl rounded-br-sm text-sm leading-relaxed"
                   style={{
                     background: 'rgba(232,160,32,0.09)',
                     border: '1px solid rgba(232,160,32,0.20)',
                     color: 'var(--text)',
-                  }}>
+                  }}
+                >
                   {msg.content}
                 </div>
               </div>
@@ -214,25 +358,56 @@ export default function CoachPage() {
               <div className="flex gap-2.5 items-start">
                 <CoachAvatar />
                 <div className="max-w-[85%] flex flex-col gap-2">
-                  {msg.reflection && (
-                    <div className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed"
-                      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+
+                  {/* Streaming: show raw tokens in a single bubble while still arriving */}
+                  {msg.streaming && (
+                    <div
+                      className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed"
+                      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+                    >
+                      {msg.content || (
+                        <div className="flex gap-1">
+                          {[0, 1, 2].map((d) => (
+                            <div
+                              key={d}
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{
+                                background: 'var(--text-dim)',
+                                animation: `pulse-dot 1.2s infinite ${d * 0.2}s`,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Done: render structured parts */}
+                  {!msg.streaming && msg.reflection && (
+                    <div
+                      className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed"
+                      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+                    >
                       {msg.reflection}
                     </div>
                   )}
-                  {msg.question && (
-                    <div className="px-4 py-3 rounded-xl text-[15px] font-medium leading-relaxed"
-                      style={{ background: 'var(--bg-card)', border: '1px solid rgba(232,160,32,0.25)', color: 'var(--text)' }}>
+                  {!msg.streaming && msg.question && (
+                    <div
+                      className="px-4 py-3 rounded-xl text-[15px] font-medium leading-relaxed"
+                      style={{ background: 'var(--bg-card)', border: '1px solid rgba(232,160,32,0.25)', color: 'var(--text)' }}
+                    >
                       {msg.question}
                     </div>
                   )}
-                  {msg.action && (
-                    <div className="px-3.5 py-2.5 rounded-lg text-[13px] flex items-start gap-2"
+                  {!msg.streaming && msg.action && (
+                    <div
+                      className="px-3.5 py-2.5 rounded-lg text-[13px] flex items-start gap-2"
                       style={{
                         background: 'rgba(232,160,32,0.06)',
                         border: '1px solid rgba(232,160,32,0.15)',
                         color: 'var(--accent)',
-                      }}>
+                      }}
+                    >
                       <span style={{ flexShrink: 0, marginTop: '1px' }}><IconPin /></span>
                       <span>{msg.action}</span>
                     </div>
@@ -243,36 +418,15 @@ export default function CoachPage() {
           </div>
         ))}
 
-        {/* Typing indicator */}
-        {loading && (
-          <div className="flex gap-2.5 items-start mb-4">
-            <CoachAvatar />
-            <div className="px-4 py-3.5 rounded-2xl rounded-tl-sm"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-              <div className="flex gap-1">
-                {[0, 1, 2].map((d) => (
-                  <div key={d} className="w-1.5 h-1.5 rounded-full"
-                    style={{
-                      background: 'var(--text-dim)',
-                      animation: `pulse-dot 1.2s infinite ${d * 0.2}s`,
-                    }} />
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
         <div ref={messagesEndRef} />
       </div>
 
-      {/* ── Input Bar ── */}
+      {/* Input bar */}
       <div className="flex gap-2 items-end">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
-          }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
           placeholder="Talk to your mentor..."
           rows={2}
           className="flex-1 px-4 py-3 text-sm rounded-xl resize-none leading-relaxed"
