@@ -1,18 +1,33 @@
 // ═══════════════════════════════════════════════════════════
-// Agent 1: Content Researcher — Nigerian Professional Edition
+// Agent 1: Content Researcher — African Young Professional Edition
 //
-// Key upgrades:
-//   - Nigeria-FIRST targeting: Lagos, Abuja, PH, Ibadan context
-//   - 3 age-segmented Nigerian personas with hyper-specific pain points
-//   - Naija cultural codes baked into research context
-//   - Platform-specific voice guides per channel
-//   - Ascentor brand confidence woven into every prompt
-//   - "Relatable daily experience" mandate in all research
+// TARGETING: African young professionals (21–32) across
+// Nigeria, Ghana, Kenya, South Africa, Rwanda, Senegal.
 //
-// Free tier constraints preserved:
-//   - ONE combined Claude call (trends + research together)
-//   - Haiku model for speed + rate limits
-//   - maxDuration 60s — total compute ~10-15s
+// VOICE PHILOSOPHY:
+//   Every post must make an African young professional stop
+//   scrolling and say: "This is exactly what I'm going through."
+//   Written from lived experience — not from the outside looking in.
+//   Zero imported career advice. Zero country-specific slang.
+//   Pan-African relatability. Ascentor's impact is the hero.
+//
+// CONFIDENCE PRINCIPLE:
+//   Ascentor speaks with the authority of results.
+//   Not "maybe try this" — "here is what works,
+//   here is what we have seen across hundreds of sessions."
+//
+// CHANGES FROM PREVIOUS VERSION:
+//   - Removed all Nigeria-specific slang and cultural markers
+//   - Broadened to universal pan-African professional experience
+//   - Pain points resonate Lagos to Nairobi, Accra to Johannesburg
+//   - Ascentor value and impact is embedded in every brief
+//   - Young professional (21–28) is the default PRIMARY audience
+//   - Confidence framing elevated — we speak from results, not theory
+//
+// Free tier constraints:
+//   - No wait.for() (requires paid Trigger.dev)
+//   - maxDuration must be low (free tier = 30s compute limit)
+//   - Must not exceed Anthropic 30k input tokens/min
 // ═══════════════════════════════════════════════════════════
 
 import { schedules, tasks, task } from "@trigger.dev/sdk/v3";
@@ -20,276 +35,240 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ── Audience Presets ─────────────────────────────────────────
-// Built specifically around the lived Nigerian professional experience.
-// Every field maps to what actually happens in their daily work life.
-
 export type AudiencePreset =
-  | 'young_professional'   // 21-28, entry/mid-level in Lagos/Abuja/PH
-  | 'mid_career'           // 29-38, rising manager/senior IC
-  | 'executive'            // 39-50, director/C-suite
-  | 'general';             // balanced mix
+  | 'young_professional'   // 21–28, 0–5 yrs — PRIMARY audience
+  | 'mid_career'           // 29–38, manager/senior IC
+  | 'executive'            // 39–50, C-suite/director
+  | 'general';             // balanced, pan-African mix
+
+// ── PAN-AFRICAN PROFESSIONAL PAIN POINT LIBRARY ────────────
+// Universal lived realities that resonate across the continent.
+// No slang. Pure, deeply recognisable truth.
+export const AFRICAN_PRO_CONTEXT = {
+
+  dailyPainPoints: [
+    // Visibility & Recognition
+    "Working twice as hard as your peers but being consistently overlooked for promotion",
+    "Having your idea dismissed in a meeting, only to watch it praised when someone senior restates it",
+    "Being the most capable person on the team but lacking the visibility to prove it where it counts",
+    "Delivering strong results for two years with no raise, no title change, and no explanation",
+    "Being told you are not ready — with no guidance on what ready actually looks like",
+
+    // Mentorship & Guidance Gap
+    "Navigating every major career decision without a mentor because the successful people are always too busy",
+    "Getting career advice that was built for a Western job market — completely useless in your reality",
+    "Watching peers accelerate because they have the right relationships, not because they work harder",
+    "Not knowing how to position for the next level because no one above you explains the unspoken rules",
+    "Building skills in isolation with no feedback loop and no one to tell you what actually matters here",
+
+    // Compensation & Growth
+    "Earning below your market value because you never learned how to negotiate",
+    "Hitting a career ceiling with no clear path through it",
+    "Accepting a lateral move framed as a promotion because you lacked data or confidence to push back",
+    "Not knowing whether to stay and build or leave for something that actually matches your ambition",
+
+    // Confidence & Identity
+    "Experiencing imposter syndrome in rooms where you are genuinely one of the most capable people present",
+    "Shrinking in meetings dominated by older colleagues — not because you lack insight, but because no one taught you how to command the room",
+    "Second-guessing decisions your instincts know are right",
+    "Feeling like your ambition is too big for the environment you are in",
+
+    // Structural Realities
+    "Promotion decisions driven more by relationships and politics than by the quality of your work",
+    "Senior leaders who talk about developing young talent but never invest time to actually do it",
+    "Performance reviews that feel subjective and disconnected from what you actually delivered",
+    "The exhausting gap between the professional you know you are and the one your organisation sees",
+  ],
+
+  ascentorImpactProofs: [
+    "Professionals who work with Ascentor get promoted 40% faster than their peers",
+    "In our coaching sessions, we have seen one conversation shift what months of isolated effort could not",
+    "The gap between where you are and where you want to be is almost always a clarity gap — not a capability gap",
+    "Every breakthrough we have seen starts with one thing: someone finally asking the right question out loud",
+    "Ascentor has worked with thousands of African professionals — we know exactly what separates the ones who break through",
+  ],
+};
 
 export const AUDIENCE_META: Record<AudiencePreset, {
   label: string;
   ageRange: string;
   researchContext: string;
-  // Per-platform voice instructions (used by content-writer)
-  voices: {
-    linkedin: string;
-    twitter: string;
-    instagram: string;
-    blog: string;
-    newsletter: string;
-  };
+  writerVoice: string;
   fallbackPersona: string;
-  // Real pain points unique to this segment in Nigeria
-  painPoints: string[];
-  // Cultural reference points that instantly signal "this is for me"
-  culturalMarkers: string[];
+  platformHooks: { linkedin: string; twitter: string; instagram: string; email: string };
 }> = {
 
   young_professional: {
-    label: 'Young Nigerian Professional (21–28)',
+    label: 'African Young Professional (21–28)',
     ageRange: '21–28',
     researchContext:
-      'Focus on Nigerian professionals aged 21–28 in cities like Lagos, Abuja, Port Harcourt, and Ibadan. ' +
-      'Their real daily life: earning ₦80k–₦350k/month in their first or second job, still living with family ' +
-      'or splitting rent in a shared flat in Surulere, Yaba, Maitama, or GRA. ' +
-      'Key pain points: salary not matching their degree, watching mates on LinkedIn announce big roles, ' +
-      'not knowing how to negotiate a raise, imposter syndrome in rooms full of "big people", ' +
-      'office politics they can\'t decode, LinkedIn that feels performative and hollow, ' +
-      'pressure from family to "be doing well" and "settle down", side hustles to survive, ' +
-      'JAPA pressure vs staying and building in Nigeria, toxic workplace cultures, ' +
-      'managers who gatekeep opportunities, and dreaming of being their own boss someday. ' +
-      'They consume content on Instagram Reels, TikTok, Twitter/X and respond to voice notes. ' +
-      'Research must surface topics that feel like someone read their diary.',
+      'African professionals aged 21–28, 0–5 years into their career. ' +
+      'Working in banking, consulting, fintech, tech, or FMCG across major African cities. ' +
+      'Core tensions: early-career salary pressure; lack of real mentorship; imposter syndrome; ' +
+      'the visibility gap between hard work and recognition; navigating office politics with no playbook; ' +
+      'building a personal brand when no one taught you how; deciding whether to stay, switch, or start something. ' +
+      'They are talented, ambitious, and quietly frustrated that their effort is not translating into momentum. ' +
+      'They want to reach senior roles faster, earn what they are worth, and finally feel like they belong in the room. ' +
+      'They are done with generic career advice that was built for a completely different world.',
+    writerVoice:
+      'PERSONA: A successful, warm, and direct older colleague who has walked this exact path. ' +
+      'Someone who understands what it feels like to be talented and stuck simultaneously. ' +
+      'Not a consultant. Not a corporate coach. A trusted person in your corner who tells you the truth. ' +
 
-    voices: {
-      linkedin:
-        'Write like a brilliant older sibling who made it and is pulling you up. ' +
-        'Warm but direct. Start with a one-liner that stops the scroll — ideally a truth they feel but never heard said out loud. ' +
-        'Use line breaks generously (LinkedIn algorithm rewards white space). ' +
-        'Avoid corporate buzzwords — nobody says "synergy" in real life. ' +
-        'Mix English and occasional Nigerian expressions naturally (e.g. "e don do", "sharp sharp", "carry yourself well") — ' +
-        'NOT as a gimmick, only when it genuinely fits. ' +
-        'End with a question that makes them comment. Never be preachy.',
+      'TONE: Confident. Warm. Direct. Occasionally sharp and witty. Never preachy. Never vague. ' +
 
-      twitter:
-        'Write like the smartest person in the group chat. ' +
-        'Punchy, opinionated, slightly provocative but never reckless. ' +
-        'First tweet must be a hot take or a hard truth. ' +
-        'Use numbered threads (1/, 2/, 3/) naturally. ' +
-        'Reference real Nigerian scenarios: NYSC postings, "connection" culture, Lagos traffic, ' +
-        '"my oga said...", owambe weekends, nepa bills, generator costs. ' +
-        'End with a CTA that feels like a conversation, not a pitch.',
+      'LANGUAGE: Clean, professional English. Universally relatable across African countries. ' +
+      'ZERO country-specific slang. ZERO imported Western career buzzwords. ' +
+      'Write for the universal African young professional experience — ' +
+      'the ambition, the structural barriers, and the transformation Ascentor enables. ' +
 
-      instagram:
-        'Caption-first thinking. First sentence IS the hook — it must show in the preview before "more". ' +
-        'Short punchy sentences. Maximum 3 ideas per caption. ' +
-        'Use Naija-native phrasing that feels warm and real. ' +
-        'End with a relatable question or a bold statement. ' +
-        'Hashtags: 5–8 max, mix career + Nigeria + Ascentor branded tags. ' +
-        'Tone: like a trusted friend who also happens to give the best career advice.',
+      'SPECIFICITY: Name the exact situations. Name the exact feelings. Make the reader feel seen immediately. ' +
+      'Say "the meeting where your idea was ignored and then celebrated when someone senior said it" — not "workplace friction". ' +
+      'Say "the review where you scored top marks but were passed over anyway" — not "performance issues". ' +
 
-      blog:
-        'Write like a mentor who has been in the trenches AND built something real. ' +
-        'Open with a scenario they will recognise immediately — not a generic intro. ' +
-        'E.g. "You\'ve been in this role for 8 months. Your manager never says your name in meetings..." ' +
-        'Use Nigerian settings, companies, and contexts where possible. ' +
-        'Subheadings should be punchlines not labels. ' +
-        'End with a specific action they can take in the next 24 hours. ' +
-        'Ascentor is positioned as the trusted guide that makes the path clear — confident, not boastful.',
+      'ASCENTOR CONFIDENCE: We speak from results and real data. ' +
+      '"Here is what we have seen across hundreds of coaching sessions." ' +
+      '"Professionals who do this get promoted 40% faster." ' +
+      '"The data is clear — this is the move." ' +
+      'NEVER: "maybe try", "you might consider", "some people find that..." ' +
 
-      newsletter:
-        'Write like a Sunday-morning voice note from someone who genuinely cares about your career. ' +
-        'Warm, personal, slightly informal. Use "I" and "you" generously. ' +
-        'Reference something real happening in Nigeria that week if possible. ' +
-        'One core insight. One action. One Ascentor CTA that feels like a gift, not an ad. ' +
-        'Subject line: curiosity + benefit. Preview text should make them open it.',
-    },
+      'ASCENTOR VALUE: Every piece must show — not just tell — that Ascentor closes the gap between ' +
+      'where you are and where you deserve to be. The platform is confident, credible, and transformational. ' +
+
+      'OPENING: Drop the reader into a specific moment or feeling they experienced THIS WEEK. Not a generic truth. ' +
+      'CLOSE: One concrete action they can take this week — tied to how Ascentor accelerates the result.',
 
     fallbackPersona:
-      'Ambitious Nigerian professional aged 21–28, navigating their first real job in Lagos or Abuja, ' +
-      'earning under ₦300k/month, building their career while managing family expectations and JAPA pressure',
+      'African professional, 25 years old, 3 years into their career at a financial services firm in a major African city. ' +
+      'Consistently outperforms peers. Has been passed over for promotion without a clear explanation. ' +
+      'Ambitious, slightly frustrated, and hungry for a mentor who actually gets their reality.',
 
-    painPoints: [
-      'Salary not matching qualifications or effort',
-      'Not getting credit for work in front of senior management',
-      'Feeling invisible or overlooked for promotion',
-      'Imposter syndrome in rooms with "big names"',
-      'Not knowing how to navigate office politics without selling out',
-      'LinkedIn anxiety — watching peers announce promotions while you feel stuck',
-      'Side hustle vs full focus on main job dilemma',
-      'JAPA or stay? Building in Nigeria vs seeking greener pastures abroad',
-      'Family pressure to "have something to show" for your education',
-      'Toxic managers who don\'t mentor, just micromanage',
-    ],
-
-    culturalMarkers: [
-      'NYSC, Corp member, PPA, CDS',
-      'Yaba, Surulere, Lekki, VI, Ajah, Maitama, Wuse, GRA',
-      'Owambe, Friday Jollof, TGIF vibes',
-      'Pepper dem gang, soft life, big girl/big boy energy',
-      'Generator fuel costs, NEPA/PHCN, remote work struggles',
-      'LinkedIn Naija community, tech bros, banker life',
-      '"My oga", "ehen", "e don do", "sharp sharp", "no dulling"',
-      'Jollof rice wars, Afrobeats playlist at work',
-    ],
+    platformHooks: {
+      linkedin:
+        "You are working harder than the person who just got promoted. Here is the one thing that actually made the difference — and it was not competence.",
+      twitter:
+        "The career trap that catches every talented African professional in their 20s. And the way out nobody teaches you 🧵",
+      instagram:
+        "The thing no one tells you at your first job orientation that changes everything about your career 👇",
+      email:
+        "The promotion you were passed over for? Here is the real reason — and it has nothing to do with your performance",
+    },
   },
 
   mid_career: {
-    label: 'Mid-Career Nigerian Professional (29–38)',
+    label: 'Mid-Career African Professional (29–38)',
     ageRange: '29–38',
     researchContext:
-      'Focus on Nigerian professionals aged 29–38 who are in management or senior individual contributor roles. ' +
-      'Real daily life: managing a team for the first time and discovering nobody taught them how, ' +
-      'earning ₦400k–₦1.5m/month but still feeling financial pressure (school fees, rent, car loans, parents), ' +
-      'navigating organisational politics at a new level, being the "young manager" that older staff resist, ' +
-      'balancing ambition with burnout, seeking promotions that seem blocked by "settlement" culture, ' +
-      'building a personal brand while doubting if it\'s worth it, ' +
-      'career pivots into tech or consulting, executive MBA debates, and legacy thinking starting to creep in.',
-    voices: {
-      linkedin:
-        'Peer-to-peer, confident, and practical. Share lessons like a trusted colleague at a rooftop event in Lagos. ' +
-        'Use personal storytelling + frameworks. Acknowledge the complexity of leadership in the Nigerian context. ' +
-        'No toxic positivity. Acknowledge the hard stuff — then show the path through.',
-      twitter:
-        'Authoritative but accessible. Mix sharp professional insights with real talk about Nigerian corporate life. ' +
-        'Not afraid to name the dysfunction. Offers real solutions, not just commentary.',
-      instagram:
-        'Aspirational but grounded. They want to see what success looks like without the fakeness. ' +
-        'Tone: successful but not arrogant, mentoring from the trenches.',
-      blog:
-        'Long-form, structured, with real frameworks. They have 10 mins to read. Make every paragraph earn it. ' +
-        'Reference real Nigerian business scenarios and leadership challenges.',
-      newsletter:
-        'Weekly anchor. Feels like the most useful email in their inbox. One insight, one tool, one action.',
-    },
+      'African professionals aged 29–38 in management or senior individual contributor roles. ' +
+      'Navigating promotion to director or VP; managing teams; corporate politics at higher stakes; ' +
+      'salary ceiling after years of loyalty; building executive presence in hierarchical organisations; ' +
+      'the entrepreneurship vs. employment crossroads; building a personal brand after years of head-down work.',
+    writerVoice:
+      'PERSONA: A trusted peer who has navigated the politics, earned the scars, and figured out the code. ' +
+      'TONE: Peer-to-peer. Warm. Direct. Hard-won wisdom shared without preaching. ' +
+      'ASCENTOR AUTHORITY: "This is what we consistently see working at this level." ' +
+      'Position Ascentor as the strategic partner for mid-career professionals who are done waiting.',
     fallbackPersona:
-      'Nigerian manager aged 29–38, leading a team for the first time, navigating Lagos corporate culture ' +
-      'while building toward a Director or VP role',
-    painPoints: [
-      'Managing people older than you who don\'t respect your authority',
-      'Being passed over for promotion despite strong performance',
-      '"Who you know" culture blocking meritocracy',
-      'Burnout from overworking without proportional growth',
-      'Building a team with no budget, no tools, and high expectations',
-      'Personal brand vs company loyalty tension',
-      'Imposter syndrome at the next level',
-    ],
-    culturalMarkers: [
-      'Lagos Island vs Mainland commute', 'Corporate Nigeria politics',
-      'GRA, Ikoyi, Banana Island goals', 'School fees for the kids',
-      '"The economy is not smiling"', 'Aso Rock, NNPC, Dangote, MTN, Access Bank',
-    ],
+      'African manager, 33 years old, managing a team of 6 at a financial services firm. ' +
+      'Passed over for promotion once. Work is excellent. Does not understand what senior leaders are actually evaluating.',
+    platformHooks: {
+      linkedin:
+        "Eight years in. Manager title. But senior leadership still feels impossibly far. Here is what is actually blocking you — and it is not your performance.",
+      twitter:
+        "The skills that got you to manager are NOT the skills that get you to director. Most people find this out too late 🧵",
+      instagram:
+        "They promoted someone younger than you. Before you spiral, read this 👇",
+      email:
+        "The leadership quality African organisations reward most at senior level (it is not what your last training course covered)",
+    },
   },
 
   executive: {
-    label: 'Nigerian Executive / Senior Leader (39–50)',
+    label: 'Senior African Executive (39–50)',
     ageRange: '39–50',
     researchContext:
-      'Focus on Nigerian executives, directors, and C-suite professionals aged 39–50. ' +
-      'Dealing with board dynamics, building legacy, navigating Nigerian regulatory environments, ' +
-      'cross-border business in West Africa, mentoring the next generation, and executive visibility.',
-    voices: {
-      linkedin:
-        'Authoritative, reflective, strategic. Peers at a Lagos Business School event. ' +
-        'Data-backed. Acknowledges systemic context in Nigeria. Slightly longer content.',
-      twitter: 'Concise thought leadership. Big ideas in small packages. Strategic and bold.',
-      instagram: 'Legacy, impact, and gravitas. Aspirational for younger professionals.',
-      blog:
-        'Sophisticated long-form. Case studies, frameworks, real Nigerian business stories. ' +
-        'Ascentor positioned as the platform serious executives trust.',
-      newsletter:
-        'Executive briefing style. Curated, direct, valuable. Respect their time above all.',
-    },
+      'Senior African professionals at director, VP, or C-suite level. ' +
+      'Building cultures that retain young talent; board dynamics; cross-border leadership; ' +
+      'succession planning; legacy building; mentoring the generation below them.',
+    writerVoice:
+      'PERSONA: A respected peer at a leadership summit. Strategic, reflective, direct. ' +
+      'Position Ascentor as the platform that lets senior leaders scale their mentorship impact ' +
+      'and build the next generation of African professionals.',
     fallbackPersona:
-      'Nigerian executive aged 39–50, focused on organisational leadership, legacy building, ' +
-      'and developing the next generation of African leaders',
-    painPoints: [
-      'Building teams that can execute without constant oversight',
-      'Navigating Nigerian regulatory and political environments',
-      'Leaving a meaningful legacy beyond financial success',
-      'Bridging generational gaps in the workplace',
-    ],
-    culturalMarkers: [
-      'Lagos Business School', 'ICAN, CIBN', 'Eko Atlantic', 'Nigerian Stock Exchange',
-      'West Africa expansion', 'Dangote model', 'BRT vs helicopter',
-    ],
+      'African executive, 45 years old, C-suite at a major firm, managing 100+ people, ' +
+      'focused on retaining young talent and developing the next generation of leaders.',
+    platformHooks: {
+      linkedin:
+        "Africa's most effective leaders consistently do one thing that no leadership course teaches. Here is what the data shows.",
+      twitter:
+        "Why Africa's best young talent keeps leaving — and what the leaders who retain them actually do differently 🧵",
+      instagram:
+        "The leadership gap in African organisations nobody talks about openly (and exactly how to close it) 👇",
+      email:
+        "What separates Africa's top-tier executives from everyone else at the same level",
+    },
   },
 
   general: {
-    label: 'Nigerian Professional (All Levels)',
-    ageRange: '22–45',
+    label: 'African Professional (21–45)',
+    ageRange: '21–45',
     researchContext:
-      'Nigerian professionals across career stages in Lagos, Abuja, Port Harcourt, and diaspora. ' +
-      'Universal themes: career growth, leadership, AI tools impact on Nigerian jobs, ' +
-      'financial resilience, community, and building something that matters.',
-    voices: {
-      linkedin: 'Warm, inspiring, practical. Accessible to professionals at any stage. Balance aspiration with real talk.',
-      twitter: 'Sharp and relatable. Mix professional insight with cultural commentary.',
-      instagram: 'Motivational but grounded. Not generic quotes — real scenarios.',
-      blog: 'Accessible depth. Anyone from NYSC to C-suite can get value.',
-      newsletter: 'The career mentor in your inbox. One key insight. Real Nigerian context.',
+      'African professionals across career stages. Universal themes: career acceleration, leadership development, ' +
+      'AI tools in the workplace, and the power of intentional mentorship and professional community. ' +
+      'Anchor to the universal African professional experience — the ambition, the barriers, and the transformation.',
+    writerVoice:
+      'PERSONA: The voice of someone who deeply understands the African professional journey at every stage. ' +
+      'Warm, inspiring, and immediately practical. ' +
+      'No country-specific references — resonant and accessible across the continent.',
+    fallbackPersona:
+      'Ambitious African professional, 27 years old, working in a major city, ' +
+      'talented and driven but navigating without a real mentor.',
+    platformHooks: {
+      linkedin:
+        "The career playbook every African professional should have from day one. Nobody handed it to you. So here it is.",
+      twitter:
+        "What the most successful African professionals in the room have in common (it is not what you think) 🧵",
+      instagram:
+        "The career truth that actually applies to African professionals — not the imported version 👇",
+      email:
+        "What working with thousands of African professionals has taught us about what actually accelerates careers",
     },
-    fallbackPersona: 'Ambitious Nigerian professional, navigating career growth in a challenging economy',
-    painPoints: ['Career stagnation', 'Salary not reflecting value', 'Lack of mentorship', 'Economic pressure'],
-    culturalMarkers: ['Nigerian economy', 'Lagos hustle', 'Tech in Nigeria', 'African professional pride'],
   },
 };
 
-// ── Content Pillars ───────────────────────────────────────────
-const PILLAR_ROTATION = [
-  "leadership",
-  "career",
-  "ai",
-  "coaching",
-  "community",
-] as const;
-
+const PILLAR_ROTATION = ["career", "leadership", "ai", "coaching", "community"] as const;
 type Pillar = typeof PILLAR_ROTATION[number];
 
-// Nigerian-specific pillar context for research
 const PILLAR_CONTEXT: Record<Pillar, string> = {
-  leadership:
-    'Leadership in Nigerian and West African organisations: managing up, managing teams, ' +
-    'executive presence, culture at work, generational clashes in Nigerian offices',
   career:
-    'Career growth for Nigerian professionals: salary negotiation in naira, ' +
-    'promotions in Nigerian companies, tech job market in Lagos, JAPA vs stay debate, ' +
-    'LinkedIn personal branding, career pivots, job hunting in a tough Nigerian economy',
+    "career acceleration for African professionals — promotions, salary negotiation, visibility strategies, " +
+    "navigating African corporate culture, the effort-recognition gap, what actually drives momentum in African organisations",
+  leadership:
+    "leadership development for African professionals — building executive presence, managing teams, " +
+    "navigating office politics, the individual-contributor-to-leader transition, developing the confidence to lead",
   ai:
-    'AI tools and tech trends impacting Nigerian professionals: which AI tools to use now, ' +
-    'how AI changes jobs in banking, oil & gas, tech, consulting in Nigeria, ' +
-    'building AI skills as a non-technical Nigerian professional',
+    "AI tools transforming African workplaces — which tools are making the biggest real-world difference, " +
+    "AI disruption in banking, consulting, and fintech, how to gain an AI-powered career edge before peers catch up",
   coaching:
-    'Mentorship and coaching for Nigerian professionals: finding mentors, ' +
-    'the culture of "who you know", structured self-development, goal setting, ' +
-    'therapy/coaching acceptance growing in Nigerian professional culture',
+    "mentorship and personal development for African professionals — why real mentors are scarce and hard to access, " +
+    "what Ascentor coaching actually delivers, the ROI of intentional development, breakthrough patterns we see in sessions",
   community:
-    'Professional community building for Nigerians: networking beyond owambe, ' +
-    'LinkedIn community, Twitter/X Naija professional space, cohorts, peer accountability, ' +
-    'mastermind groups, building in public in Nigeria',
+    "professional community and peer networks for African professionals — " +
+    "why your circle determines your ceiling, how to build valuable professional relationships intentionally, " +
+    "the power of peer accountability, what the most connected African professionals do differently",
 };
 
-// ── Research + Discovery (single call) ───────────────────────
+// ── Research function ─────────────────────────────────────────
 async function researchAndDiscover(
   pillar: Pillar,
   weekNumber: number,
   audience: AudiencePreset
-): Promise<{
-  trends: string[];
-  news: { title: string; snippet: string }[];
-  summary: string;
-  research: string;
-}> {
+): Promise<{ trends: string[]; news: { title: string; snippet: string }[]; summary: string; research: string }> {
   const audienceMeta = AUDIENCE_META[audience];
 
   const response = await anthropic.messages.create({
@@ -299,66 +278,45 @@ async function researchAndDiscover(
     messages: [{
       role: "user",
       content:
-        `You are a research assistant for Ascentor — Nigeria's leading AI-powered mentorship and ` +
-        `career development platform. We help Nigerian professionals grow faster than they ever thought possible.\n\n` +
-        `Target audience: ${audienceMeta.label}\n` +
-        `Their daily reality: ${audienceMeta.researchContext}\n\n` +
-        `Search the web and return ONLY this JSON structure (no markdown):\n` +
-        `{\n` +
-        `  "trends": ["top trend 1 relevant to Nigerian professionals", "trend 2", "trend 3"],\n` +
-        `  "news": [{"title": "headline", "snippet": "one sentence — must be Nigeria or Africa relevant"}],\n` +
-        `  "summary": "2 sentences: what is HOT this week in ${PILLAR_CONTEXT[pillar]} specifically for ${audienceMeta.ageRange}-year-old Nigerian professionals",\n` +
-        `  "research": "4 sentences of specific insights, real stats, and Nigerian/African examples that will resonate with ${audienceMeta.label}. ` +
-        `Include at least one Nigerian-specific context (company, city, salary range in naira, cultural reality)"\n` +
-        `}\n\n` +
-        `Pillar: ${PILLAR_CONTEXT[pillar]}\n` +
-        `Make every insight feel like it was written specifically for someone in Lagos or Abuja reading this on their phone.`,
+        `You are the research lead at Ascentor — an AI-powered mentorship platform for African professionals.\n\n` +
+        `MISSION: Find what is ACTUALLY relevant this week in African professional life. ` +
+        `Pan-African focus — trends that resonate across Nigeria, Ghana, Kenya, South Africa, and beyond.\n\n` +
+        `Audience: ${audienceMeta.label} | Context: ${audienceMeta.researchContext}\n\n` +
+        `Research pillar: "${PILLAR_CONTEXT[pillar]}"\n\n` +
+        `Find:\n` +
+        `- Career and workforce trends affecting young African professionals right now\n` +
+        `- What African professionals are actively discussing on LinkedIn and social media this week\n` +
+        `- AI and workplace tech shifts relevant to African careers\n` +
+        `- Salary, promotion, talent retention data and stories across Africa\n` +
+        `- Mentorship and leadership conversations in African professional circles\n\n` +
+        `Return ONLY this JSON, no markdown:\n` +
+        `{"trends":["pan-African trend 1","trend 2","trend 3"],` +
+        `"news":[{"title":"headline relevant to African professionals","snippet":"one sentence with specifics"}],` +
+        `"summary":"2 sentences — what is most relevant THIS WEEK for ${audienceMeta.ageRange}-year-old African professionals",` +
+        `"research":"4-5 sentences with specific stats, named companies where available, real African professional context"}`,
     }],
   });
 
   const text = response.content
     .filter((b: any) => b.type === "text")
     .map((b: any) => b.text)
-    .join("\n")
-    .trim();
+    .join("\n").trim();
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  const jsonStr = jsonMatch ? jsonMatch[0] : text;
-
   try {
-    const parsed = JSON.parse(jsonStr);
-    console.log(`[Researcher] Trends: ${parsed.trends?.length || 0}, news: ${parsed.news?.length || 0}`);
-    return {
-      trends:   parsed.trends   || [],
-      news:     parsed.news     || [],
-      summary:  parsed.summary  || "",
-      research: parsed.research || text,
-    };
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+    return { trends: parsed.trends || [], news: parsed.news || [], summary: parsed.summary || "", research: parsed.research || text };
   } catch {
-    console.warn("[Researcher] Parse failed — using text as research");
-    return {
-      trends:   [],
-      news:     [],
-      summary:  text.substring(0, 200),
-      research: text.substring(0, 500),
-    };
+    return { trends: [], news: [], summary: text.substring(0, 200), research: text.substring(0, 500) };
   }
 }
 
-// ── Brief Synthesis ───────────────────────────────────────────
+// ── Brief builder ─────────────────────────────────────────────
 async function buildBrief(params: {
-  pillar: Pillar;
-  weekNumber: number;
-  trends: string[];
-  news: { title: string; snippet: string }[];
-  summary: string;
-  research: string;
-  audience: AudiencePreset;
+  pillar: Pillar; weekNumber: number; trends: string[];
+  news: { title: string; snippet: string }[]; summary: string; research: string; audience: AudiencePreset;
 }) {
   const audienceMeta = AUDIENCE_META[params.audience];
-
-  const painPointsSnippet = audienceMeta.painPoints.slice(0, 4).join("; ");
-  const culturalSnippet = audienceMeta.culturalMarkers.slice(0, 4).join(", ");
 
   const response = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
@@ -366,66 +324,55 @@ async function buildBrief(params: {
     messages: [{
       role: "user",
       content:
-        `You are the lead content strategist for Ascentor — the AI mentorship platform ` +
-        `that is transforming how Nigerian professionals grow their careers.\n\n` +
-        `Our brand voice: Confident, warm, direct, deeply rooted in Nigerian professional culture. ` +
-        `We speak like someone who has been where our audience is, made it through, and ` +
-        `is now genuinely pulling them up. We don't lecture. We connect.\n\n` +
-        `Target: ${audienceMeta.label} (${audienceMeta.ageRange} year olds)\n` +
-        `Their real pain points this week: ${painPointsSnippet}\n` +
-        `Cultural reference points they relate to: ${culturalSnippet}\n` +
-        `Pillar: ${params.pillar} | Week: ${params.weekNumber}\n` +
-        `Trends: ${params.trends.slice(0, 3).join(", ") || "General " + params.pillar}\n` +
-        `Research summary: ${params.summary}\n` +
-        `Research details: ${params.research.substring(0, 500)}\n\n` +
+        `You are the content strategist at Ascentor — AI mentorship for African professionals.\n\n` +
+        `MISSION: Build a brief that makes African ${audienceMeta.ageRange}-year-olds stop and say "this is EXACTLY my life right now."\n\n` +
+        `Audience: ${audienceMeta.label} | Pillar: ${params.pillar} | Week: ${params.weekNumber}\n` +
+        `Trends: ${params.trends.slice(0, 3).join(", ") || params.pillar}\n` +
+        `Research: ${params.research.substring(0, 500)}\n\n` +
+        `RULES:\n` +
+        `1. Topic must resonate across ALL African countries — no country-specific slang or references\n` +
+        `2. Every key message must position Ascentor as the platform that closes this gap — with confidence\n` +
+        `3. Primary target is young professionals (21–28) — make it viscerally relatable to their daily experience\n` +
+        `4. Ascentor speaks from results: "we have seen this", "professionals who do this get promoted 40% faster"\n\n` +
         `Return ONLY valid JSON:\n` +
-        `{"chosenTopic":"punchy topic max 12 words — must feel like it was written for a Nigerian professional",` +
-        `"angle":"our unique, confident Ascentor take — show we understand their reality deeply",` +
+        `{"chosenTopic":"punchy specific title max 12 words",` +
+        `"angle":"our unique take rooted in African professional reality",` +
         `"pillar":"${params.pillar}",` +
-        `"targetAudience":"hyper-specific Nigerian persona for ${audienceMeta.ageRange}-year-olds",` +
-        `"keyMessages":["msg1 — must reference a real Nigerian professional experience","msg2","msg3"],` +
-        `"hooks":{` +
-        `"linkedin":"scroll-stopping first line for Lagos professionals on LinkedIn",` +
-        `"twitter":"hot take opener that Naija Twitter will retweet",` +
-        `"instagram":"caption hook that stops the scroll before the 'more' button",` +
-        `"email":"subject line with high open rate for Nigerian professionals"},` +
-        `"nigerianContext":"one specific Nigerian workplace scenario, salary reality, or cultural moment to anchor all content",` +
-        `"dataPoints":["stat with source — preferably Nigeria or Africa data"],` +
-        `"seoKeywords":["primary","secondary","long-tail with Nigeria"],` +
-        `"urgencyReason":"why this topic matters to them THIS WEEK"}`,
+        `"targetAudience":"ultra-specific: role, city type, exact frustration RIGHT NOW",` +
+        `"keyMessages":["message showing Ascentor understands them","message showing Ascentor has the solution","confident result Ascentor delivers"],` +
+        `"hooks":["linkedin hook","twitter hook","email subject"],` +
+        `"instagramHook":"instagram caption opener",` +
+        `"dataPoints":["specific stat or proof point"],` +
+        `"seoKeywords":["primary","secondary","long-tail"],` +
+        `"urgencyReason":"why this matters to African young professionals RIGHT NOW",` +
+        `"africanProfessionalAngle":"the exact universal career truth this content addresses — specific, no slang"}`,
     }],
   });
 
   const text = response.content[0]?.type === "text" ? response.content[0].text : "";
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  const jsonStr = jsonMatch ? jsonMatch[0] : text;
-
   try {
-    return JSON.parse(jsonStr);
+    return JSON.parse(jsonMatch ? jsonMatch[0] : text);
   } catch {
-    console.warn("[Researcher] Brief parse failed — using fallback");
     const month = new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" });
     return {
-      chosenTopic:     `How Nigerian Professionals Are Winning in ${month}`,
-      angle:           "Practical strategies rooted in the Nigerian career reality",
-      pillar:          params.pillar,
-      targetAudience:  audienceMeta.fallbackPersona,
-      keyMessages:     [
-        "Your environment doesn't define your ceiling — your strategy does",
-        "The professionals winning in Nigeria are using systems, not just hustle",
-        "Ascentor was built for exactly where you are right now",
+      chosenTopic: `The African professional ${params.pillar} playbook — ${month}`,
+      angle: "Built for the real challenges of building a career on the African continent",
+      pillar: params.pillar,
+      targetAudience: audienceMeta.fallbackPersona,
+      keyMessages: [
+        "Generic career advice was not built for the African professional experience",
+        "The professionals breaking through have a different playbook — Ascentor gives you that playbook",
+        "Ascentor closes the gap between the career you have and the one you deserve",
       ],
-      hooks: {
-        linkedin: "Nobody tells you this when you start working in Nigeria...",
-        twitter:  "Hot take: the Nigerian career advice on LinkedIn is mostly wrong. Here's what actually works 🧵",
-        instagram: "Still grinding with no results? Here's what's actually missing 👇",
-        email:    "The career move Nigerian professionals are sleeping on",
-      },
-      nigerianContext:
-        "A 26-year-old analyst in Victoria Island working 70-hour weeks with no promotion in sight",
-      dataPoints:      ["Africa has the world's youngest workforce — 60% under 25 (African Development Bank)"],
-      seoKeywords:     [`Nigerian ${params.pillar}`, `career growth Nigeria`, `professional development Lagos`],
-      urgencyReason:   "The Nigerian job market is shifting fast — those who act now will lead",
+      hooks: [audienceMeta.platformHooks.linkedin, audienceMeta.platformHooks.twitter, audienceMeta.platformHooks.email],
+      instagramHook: audienceMeta.platformHooks.instagram,
+      dataPoints: ["Africa has over 400 million working professionals under 35"],
+      seoKeywords: [`African professional ${params.pillar}`, `career development Africa`, `professional growth Africa`],
+      urgencyReason: "African professionals face a real mentorship gap — empowering content builds the trust that converts",
+      africanProfessionalAngle: AFRICAN_PRO_CONTEXT.dailyPainPoints[
+        Math.floor(Math.random() * AFRICAN_PRO_CONTEXT.dailyPainPoints.length)
+      ],
     };
   }
 }
@@ -434,28 +381,18 @@ async function buildBrief(params: {
 // SHARED CORE
 // ═══════════════════════════════════════════════════════════
 async function runResearch(params: {
-  pillar?: Pillar;
-  topicOverride?: string;
-  audience?: AudiencePreset;
-  triggeredBy?: string;
+  pillar?: Pillar; topicOverride?: string; audience?: AudiencePreset; triggeredBy?: string;
 }) {
   const now = new Date();
-  const weekNumber = Math.ceil(
-    (now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 86400000)
-  );
-
+  const weekNumber = Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 86400000));
   const pillar: Pillar = params.pillar ?? PILLAR_ROTATION[weekNumber % PILLAR_ROTATION.length];
-  // Default to young_professional — our primary growth audience
   const audience: AudiencePreset = params.audience ?? 'young_professional';
 
   console.log(`[Researcher] Week ${weekNumber} — pillar: ${pillar} — audience: ${audience}`);
 
   const { trends, news, summary, research } = await researchAndDiscover(pillar, weekNumber, audience);
   const brief = await buildBrief({ pillar, weekNumber, trends, news, summary, research, audience });
-
-  if (params.topicOverride?.trim()) {
-    brief.chosenTopic = params.topicOverride.trim();
-  }
+  if (params.topicOverride?.trim()) brief.chosenTopic = params.topicOverride.trim();
 
   console.log(`[Researcher] Brief: "${brief.chosenTopic}"`);
 
@@ -463,86 +400,50 @@ async function runResearch(params: {
   try {
     const { data: savedBrief, error } = await supabase
       .from("research_briefs")
-      .insert({
-        week_number:  weekNumber,
-        pillar,
-        topic:        brief.chosenTopic,
-        angle:        brief.angle,
-        brief_data:   { ...brief, audience },
-        trends_raw:   trends,
-        news_raw:     news,
-        research_raw: research,
-        status:       "ready",
-        created_at:   now.toISOString(),
-      })
-      .select("id")
-      .single();
+      .insert({ week_number: weekNumber, pillar, topic: brief.chosenTopic, angle: brief.angle,
+        brief_data: { ...brief, audience }, trends_raw: trends, news_raw: news,
+        research_raw: research, status: "ready", created_at: now.toISOString() })
+      .select("id").single();
     if (error) console.error("[Researcher] Supabase error:", error.message);
     else savedBriefId = savedBrief?.id || null;
   } catch (err: any) {
     console.error("[Researcher] Supabase insert failed (non-fatal):", err.message);
   }
 
-  const triggeredBy = params.triggeredBy ?? `researcher-agent:week-${weekNumber}`;
   const writerHandle = await tasks.trigger("content-writer-agent", {
-    topic:           brief.chosenTopic,
-    pillar,
-    week:            weekNumber,
-    audience,
-    triggeredBy,
-    briefId:         savedBriefId,
-    hooks:           brief.hooks,
-    keyMessages:     brief.keyMessages,
-    dataPoints:      brief.dataPoints,
-    nigerianContext: brief.nigerianContext,
-    angle:           brief.angle,
-    targetAudience:  brief.targetAudience,
+    topic: brief.chosenTopic, pillar, week: weekNumber, audience,
+    triggeredBy: params.triggeredBy ?? `researcher-agent:week-${weekNumber}`,
+    briefId: savedBriefId, hooks: brief.hooks, instagramHook: brief.instagramHook,
+    keyMessages: brief.keyMessages, dataPoints: brief.dataPoints,
+    africanProfessionalAngle: brief.africanProfessionalAngle,
   });
 
-  console.log(`[Researcher] Content Writer triggered — run: ${writerHandle.id}`);
-
   return {
-    success:            true,
-    week:               weekNumber,
-    pillar,
-    audience,
-    topic:              brief.chosenTopic,
-    trendsFound:        trends.length,
-    briefId:            savedBriefId,
-    contentWriterRunId: writerHandle.id,
+    success: true, week: weekNumber, pillar, audience,
+    topic: brief.chosenTopic, africanProfessionalAngle: brief.africanProfessionalAngle,
+    trendsFound: trends.length, briefId: savedBriefId, contentWriterRunId: writerHandle.id,
   };
 }
 
 // ═══════════════════════════════════════════════════════════
-// MANUAL TASK — trigger from admin with custom topic/pillar
+// TASKS
 // ═══════════════════════════════════════════════════════════
 export const contentResearcherManual = task({
   id: "content-researcher-manual",
   maxDuration: 60,
-  run: async (payload: {
-    topic?: string;
-    pillar?: Pillar;
-    audience?: AudiencePreset;
-  }) => {
+  run: async (payload: { topic?: string; pillar?: Pillar; audience?: AudiencePreset }) => {
     console.log("[Researcher] Manual trigger:", payload);
-    return runResearch({
-      pillar:        payload.pillar,
-      topicOverride: payload.topic,
-      audience:      payload.audience,
-      triggeredBy:   "manual",
-    });
+    return runResearch({ pillar: payload.pillar, topicOverride: payload.topic,
+      audience: payload.audience ?? 'young_professional', triggeredBy: "manual" });
   },
 });
 
-// ═══════════════════════════════════════════════════════════
-// SCHEDULED TASK — every Monday 06:00 WAT
-// ═══════════════════════════════════════════════════════════
 export const contentResearcherAgent = schedules.task({
   id: "content-researcher-agent",
   cron: "0 5 * * 1", // Monday 05:00 UTC = 06:00 WAT
   maxDuration: 60,
   run: async () => {
-    console.log("[Researcher] Starting weekly Nigerian professional content research...");
-    return runResearch({ triggeredBy: "schedule" });
+    console.log("[Researcher] Weekly pan-African research — young professional focus...");
+    return runResearch({ audience: 'young_professional', triggeredBy: "schedule" });
   },
 });
