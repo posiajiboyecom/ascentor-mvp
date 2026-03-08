@@ -3,43 +3,44 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-
-// Renders SVG icon strings safely  
-function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
-  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
-}
-
-// ─────────────────────────────────────────────────────────────────
-// /admin/content — Content Pipeline
-// Central hub for all AI agent output:
-//   - Research briefs (from content-researcher-agent)
-//   - Content calendar items (from content-writer-agent)
-//     • Blog posts (1-click publish to blog_posts)
-//     • LinkedIn posts
-//     • Twitter/X threads
-//     • Email newsletters
-//   - Social queue (from social-scheduler-agent)
-// ─────────────────────────────────────────────────────────────────
-
 const supabase = createClient();
 
-type Tab = 'briefs' | 'content' | 'queue';
+type Tab           = 'content' | 'briefs' | 'queue';
 type ContentFilter = 'all' | 'Blog Post' | 'LinkedIn Post' | 'Twitter Thread' | 'Email Newsletter';
-type StatusFilter = 'all' | 'draft' | 'approved' | 'published';
+type StatusFilter  = 'all' | 'draft' | 'approved' | 'scheduled' | 'published';
+
+interface CalItem {
+  id:             string;
+  title:          string;
+  type:           string;
+  pillar:         string;
+  week:           number | null;
+  status:         string;
+  content_data:   any;
+  scheduled_date: string | null;
+  approved_at:    string | null;
+  published_at:   string | null;
+  publish_notes:  string | null;
+  created_at:     string;
+}
 
 const TYPE_META: Record<string, { icon: string; color: string; bg: string }> = {
-  'Blog Post':       { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>', color: '#E8A020', bg: 'rgba(232,160,32,0.10)' },
-  'LinkedIn Post':   { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>', color: '#0A66C2', bg: 'rgba(10,102,194,0.10)' },
-  'Twitter Thread':  { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.259 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>', color: 'var(--admin-text)', bg: 'var(--admin-bg-input)' },
-  'Email Newsletter':{ icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>', color: '#14B8A6', bg: 'rgba(20,184,166,0.10)' },
+  'Blog Post':        { icon: '✍', color: '#E8A020', bg: 'rgba(232,160,32,0.10)' },
+  'LinkedIn Post':    { icon: 'in', color: '#0A66C2', bg: 'rgba(10,102,194,0.10)' },
+  'Twitter Thread':   { icon: '𝕏',  color: '#aaa',   bg: 'rgba(180,180,180,0.10)' },
+  'Email Newsletter': { icon: '✉',  color: '#14B8A6', bg: 'rgba(20,184,166,0.10)' },
 };
 
-const PILLAR_COLORS: Record<string, string> = {
-  leadership: '#E8A020',
-  career:     '#14B8A6',
-  ai:         '#8B5CF6',
-  coaching:   '#3B82F6',
-  community:  '#EF4444',
+const PILLAR_COLOR: Record<string, string> = {
+  leadership: '#E8A020', career: '#14B8A6', ai: '#8B5CF6',
+  coaching: '#3B82F6',   community: '#EF4444',
+};
+
+const STATUS_COLOR: Record<string, string> = {
+  draft:     '#6B7280',
+  approved:  '#E8A020',
+  scheduled: '#3B82F6',
+  published: '#10B981',
 };
 
 function slugify(t: string) {
@@ -49,366 +50,275 @@ function slugify(t: string) {
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 60) return `${m}m ago`;
+  if (m < 60)  return m + 'm ago';
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  if (h < 24)  return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
+}
+
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export default function AdminContentPage() {
-  const [tab, setTab] = useState<Tab>('content');
-  const [briefs, setBriefs] = useState<any[]>([]);
-  const [items, setItems] = useState<any[]>([]);
-  const [queue, setQueue] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
+  const [tab,          setTab]          = useState<Tab>('content');
+  const [items,        setItems]        = useState<CalItem[]>([]);
+  const [briefs,       setBriefs]       = useState<any[]>([]);
+  const [queue,        setQueue]        = useState<any[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [typeFilter,   setTypeFilter]   = useState<ContentFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('draft');
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [publishing, setPublishing] = useState<string | null>(null);
-  const [toast, setToast] = useState('');
+  const [selectedItem, setSelectedItem] = useState<CalItem | null>(null);
+  const [saving,       setSaving]       = useState(false);
+  const [toast,        setToast]        = useState<{ msg: string; ok: boolean } | null>(null);
+  const [runModal,     setRunModal]     = useState(false);
+  const [runTopic,     setRunTopic]     = useState('');
+  const [runPillar,    setRunPillar]    = useState('');
+  const [runAudience,  setRunAudience]  = useState('young_professional');
+  const [running,      setRunning]      = useState(false);
 
-  const [runModal, setRunModal] = useState(false);
-  const [runTopic, setRunTopic] = useState('');
-  const [runPillar, setRunPillar] = useState('');
-  const [runAudience, setRunAudience] = useState('young_professional');
-  const [running, setRunning] = useState(false);
+  async function loadAll() {
+    setLoading(true);
+    const [cal, b, q] = await Promise.all([
+      supabase.from('content_calendar').select('*').order('created_at', { ascending: false }).limit(200),
+      supabase.from('research_briefs').select('*').order('created_at', { ascending: false }).limit(30),
+      supabase.from('social_queue').select('*').order('scheduled_for', { ascending: true }).limit(50),
+    ]);
+    setItems((cal.data ?? []) as CalItem[]);
+    setBriefs(b.data ?? []);
+    setQueue(q.data ?? []);
+    setLoading(false);
+  }
+
+  useEffect(() => { loadAll(); }, []); // eslint-disable-line
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!selectedItem) return;
+      if (e.key === 'Escape') { setSelectedItem(null); return; }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { handleApprove(); }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }); // eslint-disable-line
+
+  function showToast(msg: string, ok = true) {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  function patchItem(id: string, patch: Partial<CalItem>) {
+    setItems(prev => prev.map(it => it.id === id ? { ...it, ...patch } : it));
+    setSelectedItem(prev => prev?.id === id ? { ...prev, ...patch } as CalItem : prev);
+  }
+
+  async function setStatus(id: string, status: string, extra?: Partial<CalItem>) {
+    const { error } = await supabase.from('content_calendar').update({ status, ...extra }).eq('id', id);
+    if (error) { showToast('Error: ' + error.message, false); return; }
+    patchItem(id, { status, ...extra });
+  }
+
+  async function handleApprove() {
+    if (!selectedItem || saving || selectedItem.status !== 'draft') return;
+    setSaving(true);
+    await setStatus(selectedItem.id, 'approved', { approved_at: new Date().toISOString() });
+    showToast('✓ Approved — set a publish date to schedule');
+    setSaving(false);
+  }
+
+  async function handleSchedule(date: string) {
+    if (!selectedItem || saving) return;
+    setSaving(true);
+    await setStatus(selectedItem.id, 'scheduled', {
+      scheduled_date: date,
+      approved_at: selectedItem.approved_at ?? new Date().toISOString(),
+    });
+    showToast('✓ Scheduled for ' + fmtDate(date));
+    setSaving(false);
+  }
+
+  async function handlePublishBlog(item: CalItem) {
+    if (item.type !== 'Blog Post' || saving) return;
+    setSaving(true);
+    const d = item.content_data || {};
+    const { error } = await supabase.from('blog_posts').insert({
+      title:             d.title || item.title,
+      slug:              slugify(d.title || item.title),
+      excerpt:           d.meta_description || '',
+      content:           d.content || '',
+      category:          item.pillar ? item.pillar[0].toUpperCase() + item.pillar.slice(1) : 'General',
+      author_name:       'Ascentor AI',
+      read_time_minutes: Math.ceil(((d.content || '').split(' ').length || 800) / 200),
+      is_published:      false,
+      published_at:      null,
+    });
+    if (error) { showToast('Blog error: ' + error.message, false); setSaving(false); return; }
+    await setStatus(item.id, 'published', { published_at: new Date().toISOString() });
+    showToast('✓ Sent to Blog Drafts → publish from /admin/blog');
+    setSaving(false);
+  }
+
+  async function handleQueueSocial(item: CalItem, scheduledFor?: string) {
+    if (saving) return;
+    setSaving(true);
+    const d = item.content_data || {};
+    let content = '';
+    if (item.type === 'LinkedIn Post')    content = d.content || d.hook || item.title;
+    if (item.type === 'Twitter Thread')   content = [d.opener, ...(d.tweets ?? []), d.cta].filter(Boolean).join('\n\n---\n\n');
+    if (item.type === 'Email Newsletter') content = 'Subject: ' + (d.subject || item.title) + '\n\n' + (d.body || '');
+    const platform = item.type === 'LinkedIn Post' ? 'linkedin' : item.type === 'Twitter Thread' ? 'twitter' : item.type === 'Email Newsletter' ? 'email' : 'other';
+    const { error } = await supabase.from('social_queue').insert({
+      platform, content, pillar: item.pillar,
+      scheduled_for: scheduledFor ?? item.scheduled_date ?? null,
+      status: 'pending', content_calendar_id: item.id,
+    });
+    if (error) { showToast('Queue error: ' + error.message, false); setSaving(false); return; }
+    await setStatus(item.id, 'published', { published_at: new Date().toISOString() });
+    showToast('✓ Added to social queue');
+    setSaving(false);
+  }
+
+  async function handleSaveNotes(id: string, notes: string) {
+    const { error } = await supabase.from('content_calendar').update({ publish_notes: notes }).eq('id', id);
+    if (!error) patchItem(id, { publish_notes: notes });
+  }
 
   async function triggerResearcher() {
     setRunning(true);
     try {
       const payload: any = { audience: runAudience };
       if (runTopic.trim()) payload.topic = runTopic.trim();
-      if (runPillar) payload.pillar = runPillar;
-      const res = await fetch('/api/admin/agents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId: '1', payload }),
-      });
+      if (runPillar)        payload.pillar = runPillar;
+      const res = await fetch('/api/admin/agents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId: '1', payload }) });
       const data = await res.json();
-      if (data.success) {
-        showToast(`Researcher running — run ID: ${data.runId.slice(0, 8)}…`);
-        setRunModal(false);
-        setRunTopic('');
-        setRunPillar('');
-        setRunAudience('young_professional');
-      } else {
-        showToast(`Error: ${data.error}`);
-      }
-    } catch (e: any) {
-      showToast(`Error: ${e.message}`);
-    }
+      if (data.success) { showToast('Researcher running — ID: ' + (data.runId || '').slice(0, 8) + '…'); setRunModal(false); setRunTopic(''); setRunPillar(''); setRunAudience('young_professional'); }
+      else showToast('Error: ' + data.error, false);
+    } catch (e: any) { showToast('Error: ' + e.message, false); }
     setRunning(false);
   }
 
-  useEffect(() => { loadAll(); }, []);
-
-  async function loadAll() {
-    setLoading(true);
-    const [b, i, q] = await Promise.all([
-      supabase.from('research_briefs').select('*').order('created_at', { ascending: false }).limit(20),
-      supabase.from('content_calendar').select('*').order('created_at', { ascending: false }).limit(100),
-      supabase.from('social_queue').select('*').order('scheduled_for', { ascending: true }).limit(50),
-    ]);
-    setBriefs(b.data || []);
-    setItems(i.data || []);
-    setQueue(q.data || []);
-    setLoading(false);
-  }
-
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
-  }
-
-  async function updateStatus(id: string, status: string) {
-    await supabase.from('content_calendar').update({ status }).eq('id', id);
-    setItems(prev => prev.map(it => it.id === id ? { ...it, status } : it));
-    if (selectedItem?.id === id) setSelectedItem((p: any) => ({ ...p, status }));
-    showToast(`Marked as ${status}`);
-  }
-
-  async function publishToBlog(item: any) {
-    if (item.type !== 'Blog Post') return;
-    setPublishing(item.id);
-    const d = item.content_data || {};
-    const { error } = await supabase.from('blog_posts').insert({
-      title:              d.title || item.title,
-      slug:               slugify(d.title || item.title),
-      excerpt:            d.meta_description || '',
-      content:            d.content || '',
-      category:           item.pillar ? item.pillar.charAt(0).toUpperCase() + item.pillar.slice(1) : 'General',
-      author_name:        'Ascentor AI',
-      read_time_minutes:  5,
-      is_published:       false, // goes to blog as draft — admin publishes from /admin/blog
-      published_at:       null,
-    });
-    if (error) {
-      showToast(`Error: ${error.message}`);
-    } else {
-      await updateStatus(item.id, 'published');
-      showToast('Sent to Blog drafts — publish from /admin/blog');
-    }
-    setPublishing(null);
-  }
-
-  async function copyToClipboard(text: string) {
+  async function copyText(text: string) {
     await navigator.clipboard.writeText(text);
-    showToast('Copied to clipboard');
+    showToast('Copied');
   }
-
-  const filteredItems = items.filter(it => {
-    if (contentFilter !== 'all' && it.type !== contentFilter) return false;
-    if (statusFilter !== 'all' && it.status !== statusFilter) return false;
-    return true;
-  });
 
   const counts = {
     draft:     items.filter(i => i.status === 'draft').length,
     approved:  items.filter(i => i.status === 'approved').length,
+    scheduled: items.filter(i => i.status === 'scheduled').length,
     published: items.filter(i => i.status === 'published').length,
   };
 
+  const filtered = items.filter(it => {
+    if (typeFilter !== 'all' && it.type !== typeFilter) return false;
+    if (statusFilter !== 'all' && it.status !== statusFilter) return false;
+    return true;
+  });
+
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Cormorant+Garamond:ital,wght@0,600;1,600&display=swap');
-
-        .cp-wrap { font-family: 'Syne', sans-serif; color: var(--admin-text); min-height: 100vh; }
-
-        /* ── Header ── */
-        .cp-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
-        .cp-title { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 600; color: #fff; line-height: 1; }
-        .cp-title span { color: #E8A020; font-style: italic; }
-        .cp-subtitle { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: var(--admin-text-faint); margin-top: 6px; text-transform: uppercase; }
-        .cp-refresh { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--admin-bg-input); background: transparent; color: var(--admin-text-muted); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em; cursor: pointer; transition: all 0.15s; }
-        .cp-refresh:hover { color: #E8A020; border-color: rgba(232,160,32,0.3); }
-
-        /* ── Stats row ── */
-        .cp-stats { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-        .cp-stat { background: var(--admin-bg-card); border: 1px solid var(--admin-bg-input); border-radius: 12px; padding: 14px 20px; min-width: 110px; }
-        .cp-stat-num { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; line-height: 1; color: #fff; }
-        .cp-stat-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--admin-text-faint); margin-top: 4px; }
-
-        /* ── Tabs ── */
-        .cp-tabs { display: flex; gap: 2px; background: var(--admin-bg-card); border: 1px solid var(--admin-bg-input); border-radius: 10px; padding: 3px; margin-bottom: 24px; width: fit-content; }
-        .cp-tab { padding: 8px 20px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; transition: all 0.15s; }
-        .cp-tab.active { background: var(--admin-bg-input); color: #E8A020; }
-        .cp-tab.inactive { background: transparent; color: var(--admin-text-faint); }
-        .cp-tab:hover:not(.active) { color: var(--admin-text-muted); }
-
-        /* ── Filters ── */
-        .cp-filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
-        .cp-filter-btn { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--admin-bg-input); background: transparent; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: var(--admin-text-faint); transition: all 0.15s; }
-        .cp-filter-btn.active { background: rgba(232,160,32,0.10); border-color: rgba(232,160,32,0.25); color: #E8A020; }
-        .cp-filter-btn:hover:not(.active) { color: var(--admin-text); border-color: var(--admin-text-faint); }
-        .cp-filter-sep { width: 1px; height: 20px; background: var(--admin-bg-input); margin: 0 4px; }
-
-        /* ── Content grid ── */
-        .cp-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
-        @media (max-width: 1100px) { .cp-grid { grid-template-columns: 1fr; } }
-
-        /* ── Item list ── */
-        .cp-list { display: flex; flex-direction: column; gap: 8px; }
-        .cp-item { background: var(--admin-bg-card); border: 1px solid var(--admin-bg-input); border-radius: 12px; padding: 16px 18px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
-        .cp-item:hover { border-color: var(--admin-text-faint); }
-        .cp-item.selected { border-color: rgba(232,160,32,0.35); background: var(--admin-bg-card-hover); }
-        .cp-item-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-        .cp-type-badge { display: flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 6px; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.08em; font-weight: 500; white-space: nowrap; }
-        .cp-pillar-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-        .cp-item-title { font-size: 13px; font-weight: 600; color: var(--admin-text); line-height: 1.4; flex: 1; }
-        .cp-item-meta { display: flex; align-items: center; gap: 12px; }
-        .cp-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-        .cp-item-time { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--admin-text-faint); }
-        .cp-week-tag { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--admin-text-faint); }
-
-        /* ── Detail panel ── */
-        .cp-detail { background: var(--admin-bg-card); border: 1px solid var(--admin-bg-input); border-radius: 12px; padding: 24px; position: sticky; top: 20px; max-height: calc(100vh - 120px); overflow-y: auto; }
-        .cp-detail-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; gap: 12px; }
-        .cp-detail-empty-icon { font-size: 32px; opacity: 0.3; }
-        .cp-detail-empty-text { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: var(--admin-text-faint); }
-        .cp-detail-type { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
-        .cp-detail-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; color: #fff; line-height: 1.3; margin-bottom: 16px; }
-        .cp-detail-content { font-size: 13px; color: var(--admin-text-dim); line-height: 1.8; white-space: pre-wrap; margin-bottom: 20px; max-height: 320px; overflow-y: auto; border: 1px solid var(--admin-bg-input); border-radius: 8px; padding: 14px; background: var(--admin-bg-deep); }
-        .cp-detail-actions { display: flex; flex-direction: column; gap: 8px; }
-        .cp-btn { padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.03em; transition: all 0.15s; width: 100%; text-align: center; }
-        .cp-btn-gold { background: #E8A020; color: var(--admin-bg); }
-        .cp-btn-gold:hover { background: #F5C55A; }
-        .cp-btn-gold:disabled { opacity: 0.4; cursor: not-allowed; }
-        .cp-btn-outline { background: transparent; color: var(--admin-text-muted); border: 1px solid var(--admin-bg-input); }
-        .cp-btn-outline:hover { color: var(--admin-text); border-color: var(--admin-text-faint); }
-        .cp-btn-green { background: rgba(16,185,129,0.12); color: #10B981; border: 1px solid rgba(16,185,129,0.2); }
-        .cp-btn-green:hover { background: rgba(16,185,129,0.2); }
-        .cp-section-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--admin-text-faint); margin-bottom: 8px; margin-top: 16px; }
-        .cp-sub-content { background: var(--admin-bg-deep); border: 1px solid var(--admin-bg-input); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
-        .cp-sub-label { font-family: 'DM Mono', monospace; font-size: 9px; color: #E8A020; letter-spacing: 0.08em; margin-bottom: 6px; }
-        .cp-sub-text { font-size: 12px; color: var(--admin-text-dim); line-height: 1.7; white-space: pre-wrap; }
-
-        /* ── Briefs ── */
-        .cp-brief-card { background: var(--admin-bg-card); border: 1px solid var(--admin-bg-input); border-radius: 14px; padding: 20px 22px; margin-bottom: 12px; }
-        .cp-brief-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-        .cp-brief-topic { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; color: #fff; line-height: 1.25; }
-        .cp-brief-week { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--admin-text-faint); letter-spacing: 0.1em; white-space: nowrap; }
-        .cp-brief-angle { font-size: 13px; color: var(--admin-text-muted); line-height: 1.6; margin-bottom: 14px; }
-        .cp-brief-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-        .cp-tag { padding: 3px 10px; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.06em; background: var(--admin-bg-deep); border: 1px solid var(--admin-bg-input); color: var(--admin-text-muted); }
-        .cp-brief-section { margin-top: 14px; }
-        .cp-brief-items { list-style: none; margin: 6px 0 0; display: flex; flex-direction: column; gap: 4px; }
-        .cp-brief-items li { font-size: 12px; color: var(--admin-text-muted); padding-left: 12px; position: relative; line-height: 1.5; }
-        .cp-brief-items li::before { content: '→'; position: absolute; left: 0; color: var(--admin-text-faint); font-size: 10px; }
-
-        /* ── Queue ── */
-        .cp-queue-item { background: var(--admin-bg-card); border: 1px solid var(--admin-bg-input); border-radius: 10px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 14px; margin-bottom: 8px; }
-        .cp-queue-time { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--admin-text-faint); white-space: nowrap; min-width: 80px; padding-top: 2px; }
-        .cp-queue-content { flex: 1; font-size: 13px; color: var(--admin-text-dim); line-height: 1.6; }
-        .cp-queue-status { font-family: 'DM Mono', monospace; font-size: 9px; padding: 3px 8px; border-radius: 4px; }
-
-        /* ── Status colours ── */
-        .status-draft     { color: var(--admin-text-muted); }
-        .status-approved  { color: #E8A020; }
-        .status-published { color: #10B981; }
-
-        /* ── Empty state ── */
-        .cp-empty { text-align: center; padding: 60px 24px; }
-        .cp-empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
-        .cp-empty-text { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--admin-text-faint); letter-spacing: 0.08em; }
-
-        /* ── Toast ── */
-        .cp-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: var(--admin-bg-card-hover); border: 1px solid rgba(232,160,32,0.25); color: #E8A020; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em; padding: 10px 20px; border-radius: 8px; z-index: 100; white-space: nowrap; }
-
-        .cp-run-btn { padding: 8px 18px; border-radius: 8px; border: 1px solid rgba(232,160,32,0.35); background: rgba(232,160,32,0.08); color: #E8A020; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: all 0.15s; }
-        .cp-run-btn:hover { background: rgba(232,160,32,0.16); border-color: rgba(232,160,32,0.6); }
-
-        /* ── Modal ── */
-        .cp-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .cp-modal { background: var(--admin-bg-card); border: 1px solid var(--admin-bg-input); border-radius: 16px; padding: 28px; width: 100%; max-width: 440px; }
-        .cp-modal-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; color: #fff; margin-bottom: 6px; }
-        .cp-modal-sub { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--admin-text-faint); letter-spacing: 0.08em; margin-bottom: 24px; }
-        .cp-field { margin-bottom: 18px; }
-        .cp-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--admin-text-faint); margin-bottom: 7px; display: block; }
-        .cp-input { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-bg-input); background: var(--admin-bg-deep); color: var(--admin-text); font-family: 'Syne', sans-serif; font-size: 13px; outline: none; box-sizing: border-box; }
-        .cp-input:focus { border-color: rgba(232,160,32,0.4); }
-        .cp-input::placeholder { color: var(--admin-text-faint); }
-        .cp-select { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-bg-input); background: var(--admin-bg-deep); color: var(--admin-text); font-family: 'Syne', sans-serif; font-size: 13px; outline: none; cursor: pointer; }
-        .cp-modal-actions { display: flex; gap: 10px; margin-top: 24px; }
-        .cp-modal-cancel { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--admin-bg-input); background: transparent; color: var(--admin-text-muted); font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .cp-modal-run { flex: 2; padding: 10px; border-radius: 8px; border: none; background: #E8A020; color: var(--admin-bg); font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
-        .cp-modal-run:hover:not(:disabled) { background: #F5C55A; }
-        .cp-modal-run:disabled { opacity: 0.5; cursor: not-allowed; }
-      `}</style>
-
+      <style>{CSS}</style>
       <div className="cp-wrap">
-
-        {/* Header */}
         <div className="cp-header">
           <div>
-            <h1 className="cp-title">Content <span>Pipeline</span></h1>
-            <p className="cp-subtitle">AI-generated content — review, approve, publish</p>
+            <h1 className="cp-title">Content <em>Pipeline</em></h1>
+            <p className="cp-subtitle">Review · Approve · Schedule · Publish</p>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="cp-run-btn" onClick={() => setRunModal(true)}>▶ Run Researcher</button>
-            <button className="cp-refresh" onClick={loadAll}>↻ Refresh</button>
+          <div className="cp-topbtns">
+            <button className="cp-runbtn" onClick={() => setRunModal(true)}>▶ Run Researcher</button>
+            <button className="cp-refbtn" onClick={loadAll}>↻ Refresh</button>
           </div>
         </div>
 
-        {/* Stats */}
         <div className="cp-stats">
           {[
-            { num: items.length,      label: 'Total Items' },
-            { num: counts.draft,      label: 'Drafts',    highlight: counts.draft > 0 },
-            { num: counts.approved,   label: 'Approved' },
-            { num: counts.published,  label: 'Published' },
-            { num: briefs.length,     label: 'Briefs' },
-            { num: queue.length,      label: 'Queued Posts' },
+            { num: counts.draft,     lbl: 'Needs Review', color: counts.draft > 0 ? '#E8A020' : undefined },
+            { num: counts.approved,  lbl: 'Approved',     color: '#E8A020' },
+            { num: counts.scheduled, lbl: 'Scheduled',    color: '#3B82F6' },
+            { num: counts.published, lbl: 'Published',    color: '#10B981' },
+            { num: briefs.length,    lbl: 'Briefs' },
+            { num: queue.length,     lbl: 'In Queue' },
           ].map(s => (
-            <div key={s.label} className="cp-stat">
-              <div className="cp-stat-num" style={{ color: s.highlight ? '#E8A020' : 'var(--admin-text)' }}>{s.num}</div>
-              <div className="cp-stat-label">{s.label}</div>
+            <div key={s.lbl} className="cp-stat">
+              <div className="cp-stat-num" style={{ color: s.color ?? 'var(--admin-text)' }}>{s.num}</div>
+              <div className="cp-stat-lbl">{s.lbl}</div>
             </div>
           ))}
         </div>
 
-        {/* Tabs */}
         <div className="cp-tabs">
           {(['content', 'briefs', 'queue'] as Tab[]).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className={`cp-tab ${tab === t ? 'active' : 'inactive'}`}>
-              {t === 'content' ? 'Content' : t === 'briefs' ? 'Research' : 'Queue'}
+            <button key={t} onClick={() => setTab(t)} className={"cp-tab " + (tab === t ? 'on' : 'off')}>
+              {t === 'content' ? ('Content' + (counts.draft > 0 ? ' (' + counts.draft + ')' : '')) : t === 'briefs' ? 'Research' : 'Social Queue'}
             </button>
           ))}
         </div>
 
-        {loading && <div className="cp-loading">Loading pipeline...</div>}
+        {loading && <div className="cp-loading">Loading pipeline…</div>}
 
-        {/* ── CONTENT TAB ── */}
         {!loading && tab === 'content' && (
           <>
             <div className="cp-filters">
               {(['all', 'Blog Post', 'LinkedIn Post', 'Twitter Thread', 'Email Newsletter'] as ContentFilter[]).map(f => (
-                <button key={f} onClick={() => setContentFilter(f)}
-                  className={`cp-filter-btn ${contentFilter === f ? 'active' : ''}`}>
+                <button key={f} onClick={() => setTypeFilter(f)} className={"cp-fbtn " + (typeFilter === f ? 'on' : '')}>
                   {f === 'all' ? 'All Types' : f}
                 </button>
               ))}
-              <div className="cp-filter-sep" />
-              {(['all', 'draft', 'approved', 'published'] as StatusFilter[]).map(s => (
-                <button key={s} onClick={() => setStatusFilter(s)}
-                  className={`cp-filter-btn ${statusFilter === s ? 'active' : ''}`}>
-                  {s === 'all' ? 'All Status' : s.charAt(0).toUpperCase() + s.slice(1)}
-                  {s === 'draft' && counts.draft > 0 && ` (${counts.draft})`}
+              <div className="cp-fsep" />
+              {(['all', 'draft', 'approved', 'scheduled', 'published'] as StatusFilter[]).map(s => (
+                <button key={s} onClick={() => setStatusFilter(s)} className={"cp-fbtn " + (statusFilter === s ? 'on' : '')}>
+                  {s === 'all' ? 'All' : s[0].toUpperCase() + s.slice(1)}
+                  {s === 'draft' && counts.draft > 0 && ' (' + counts.draft + ')'}
+                  {s === 'scheduled' && counts.scheduled > 0 && ' (' + counts.scheduled + ')'}
                 </button>
               ))}
             </div>
 
-            {filteredItems.length === 0 ? (
-              <div className="cp-empty">
-                <div className="cp-empty-icon" dangerouslySetInnerHTML={{__html:'<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>'}} />
-                <p className="cp-empty-text">No content matches these filters</p>
-              </div>
+            {filtered.length === 0 ? (
+              <div className="cp-empty"><p className="cp-empty-text">No content matches these filters</p></div>
             ) : (
               <div className="cp-grid">
-                {/* List */}
                 <div className="cp-list">
-                  {filteredItems.map(item => {
-                    const meta = TYPE_META[item.type] || TYPE_META['Blog Post'];
-                    const pillarColor = PILLAR_COLORS[item.pillar] || 'var(--admin-text-muted)';
+                  {filtered.map(item => {
+                    const meta = TYPE_META[item.type] ?? TYPE_META['Blog Post'];
+                    const sc   = STATUS_COLOR[item.status] ?? '#6B7280';
+                    const pc   = PILLAR_COLOR[item.pillar]  ?? '#6B7280';
                     return (
-                      <div key={item.id}
-                        className={`cp-item ${selectedItem?.id === item.id ? 'selected' : ''}`}
-                        onClick={() => setSelectedItem(item)}>
-                        <div className="cp-item-top">
-                          <span className="cp-type-badge" style={{ background: meta.bg, color: meta.color }}>
-                            <span dangerouslySetInnerHTML={{ __html: meta.icon }} /> {item.type}
-                          </span>
-                          <span className="cp-pillar-dot" style={{ background: pillarColor }} title={item.pillar} />
+                      <div key={item.id} className={"cp-item " + (selectedItem?.id === item.id ? 'sel' : '')} onClick={() => setSelectedItem(item)}>
+                        <div className="cp-item-row1">
+                          <span className="cp-type-pill" style={{ background: meta.bg, color: meta.color }}>{meta.icon} {item.type}</span>
+                          <span className="cp-dot" style={{ background: pc }} title={item.pillar} />
+                          {item.scheduled_date && <span className="cp-muted" style={{ color: '#3B82F6' }}>📅 {fmtDate(item.scheduled_date)}</span>}
                         </div>
                         <div className="cp-item-title">{item.title}</div>
-                        <div className="cp-item-meta" style={{ marginTop: 8 }}>
-                          <span className="cp-status-dot" style={{
-                            background: item.status === 'published' ? '#10B981' : item.status === 'approved' ? '#E8A020' : 'var(--admin-text-faint)'
-                          }} />
-                          <span className={`cp-item-time status-${item.status}`}>{item.status}</span>
-                          {item.week && <span className="cp-week-tag">Week {item.week}</span>}
-                          <span className="cp-item-time">{item.created_at ? timeAgo(item.created_at) : ''}</span>
+                        <div className="cp-item-meta">
+                          <span className="cp-dot" style={{ background: sc }} />
+                          <span className="cp-muted" style={{ color: sc }}>{item.status}</span>
+                          {item.week ? <span className="cp-muted">Wk {item.week}</span> : null}
+                          <span className="cp-muted">{timeAgo(item.created_at)}</span>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-
-                {/* Detail panel */}
                 <div className="cp-detail">
                   {!selectedItem ? (
-                    <div className="cp-detail-empty">
-                      <div className="cp-detail-empty-icon" dangerouslySetInnerHTML={{__html:'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>'}} />
-                      <p className="cp-detail-empty-text">Select an item to preview</p>
+                    <div className="cp-empty-panel">
+                      <p className="cp-empty-msg">← Select an item to review</p>
+                      <p className="cp-muted" style={{ fontSize: 9 }}>{counts.draft > 0 ? counts.draft + ' draft' + (counts.draft > 1 ? 's' : '') + ' need review' : 'All caught up'}</p>
                     </div>
                   ) : (
-                    <ContentDetail
+                    <DetailPanel
+                      key={selectedItem.id}
                       item={selectedItem}
-                      onStatusChange={updateStatus}
-                      onPublishToBlog={publishToBlog}
-                      onCopy={copyToClipboard}
-                      publishing={publishing === selectedItem.id}
+                      saving={saving}
+                      onApprove={handleApprove}
+                      onSchedule={handleSchedule}
+                      onPublishBlog={handlePublishBlog}
+                      onQueueSocial={handleQueueSocial}
+                      onReject={(id) => setStatus(id, 'draft')}
+                      onCopy={copyText}
+                      onSaveNotes={handleSaveNotes}
                     />
                   )}
                 </div>
@@ -417,375 +327,358 @@ export default function AdminContentPage() {
           </>
         )}
 
-        {/* ── BRIEFS TAB ── */}
         {!loading && tab === 'briefs' && (
           <div>
-            {briefs.length === 0 ? (
-              <div className="cp-empty">
-                <div className="cp-empty-icon"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg></div>
-                <p className="cp-empty-text">No research briefs yet — they appear after the researcher agent runs</p>
-              </div>
-            ) : briefs.map(brief => (
-              <BriefCard key={brief.id} brief={brief} />
-            ))}
+            {briefs.length === 0
+              ? <div className="cp-empty"><p className="cp-empty-text">No research briefs yet — run the Researcher agent</p></div>
+              : briefs.map(b => <BriefCard key={b.id} brief={b} />)}
           </div>
         )}
 
-        {/* ── QUEUE TAB ── */}
         {!loading && tab === 'queue' && (
           <div>
-            {queue.length === 0 ? (
-              <div className="cp-empty">
-                <div className="cp-empty-icon"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-                <p className="cp-empty-text">No posts in queue yet</p>
-              </div>
-            ) : queue.map(post => (
-              <div key={post.id} className="cp-queue-item">
-                <div className="cp-queue-time">
-                  {post.scheduled_for
-                    ? new Date(post.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-                    : 'Unscheduled'}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-muted)', letterSpacing: '0.08em' }}>
-                      {post.platform}
-                    </span>
-                    <span className="cp-queue-status" style={{
-                      background: post.status === 'posted' ? 'rgba(16,185,129,0.1)' : 'rgba(232,160,32,0.08)',
-                      color: post.status === 'posted' ? '#10B981' : '#E8A020',
-                    }}>
-                      {post.status}
-                    </span>
+            {queue.length === 0
+              ? <div className="cp-empty"><p className="cp-empty-text">Queue is empty — approve social posts to push them here</p></div>
+              : queue.map(post => (
+                <div key={post.id} className="cp-qitem">
+                  <div className="cp-qtime">
+                    {post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Unscheduled'}
                   </div>
-                  <div className="cp-queue-content">{post.content?.substring(0, 200)}{post.content?.length > 200 ? '…' : ''}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <span className="cp-muted">{(post.platform || '').toUpperCase()}</span>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, padding: '2px 8px', borderRadius: 4, background: post.status === 'posted' ? 'rgba(16,185,129,0.1)' : 'rgba(232,160,32,0.08)', color: post.status === 'posted' ? '#10B981' : '#E8A020' }}>{post.status}</span>
+                    </div>
+                    <div className="cp-qtext">{(post.content || '').substring(0, 220)}{(post.content || '').length > 220 ? '…' : ''}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
-
       </div>
 
       {runModal && (
-        <div className="cp-modal-backdrop" onClick={(e) => e.target === e.currentTarget && setRunModal(false)}>
+        <div className="cp-backdrop" onClick={(e: any) => e.target === e.currentTarget && setRunModal(false)}>
           <div className="cp-modal">
             <div className="cp-modal-title">Run Researcher</div>
             <p className="cp-modal-sub">Triggers the content researcher + writer pipeline immediately</p>
-
             <div className="cp-field">
               <label className="cp-label">Audience</label>
-              <select
-                className="cp-select"
-                value={runAudience}
-                onChange={e => setRunAudience(e.target.value)}
-              >
-                <option value="young_professional">Young Professional (21–28) — hustle, first jobs, Gen Z</option>
-                <option value="mid_career">Mid-Career (29–38) — management, promotions, pivots</option>
-                <option value="executive">Executive / Senior (39–50) — strategy, legacy, leadership</option>
-                <option value="general">General (all ages)</option>
+              <select className="cp-select" value={runAudience} onChange={e => setRunAudience(e.target.value)}>
+                <option value="young_professional">Young Professional (21–28)</option>
+                <option value="mid_career">Mid-Career (29–38)</option>
+                <option value="executive">Executive / Senior (39–50)</option>
+                <option value="general">General</option>
               </select>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
-                Shapes both what the researcher looks for and how the writer sounds
-              </div>
             </div>
-
             <div className="cp-field">
               <label className="cp-label">Topic (optional)</label>
-              <input
-                className="cp-input"
-                placeholder="e.g. Navigating salary negotiations in Lagos"
-                value={runTopic}
-                onChange={e => setRunTopic(e.target.value)}
-              />
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
-                Leave blank to let the AI choose based on trends
-              </div>
+              <input className="cp-input" placeholder="e.g. Salary negotiations in Lagos" value={runTopic} onChange={e => setRunTopic(e.target.value)} />
             </div>
-
             <div className="cp-field">
               <label className="cp-label">Pillar (optional)</label>
-              <select
-                className="cp-select"
-                value={runPillar}
-                onChange={e => setRunPillar(e.target.value)}
-              >
-                <option value="">Auto (follows weekly rotation)</option>
-                <option value="leadership">Leadership</option>
-                <option value="career">Career</option>
-                <option value="ai">AI</option>
-                <option value="coaching">Coaching</option>
-                <option value="community">Community</option>
+              <select className="cp-select" value={runPillar} onChange={e => setRunPillar(e.target.value)}>
+                <option value="">Auto</option>
+                {['leadership','career','ai','coaching','community'].map(p => <option key={p} value={p}>{p[0].toUpperCase() + p.slice(1)}</option>)}
               </select>
             </div>
-
-            <div className="cp-modal-actions">
-              <button className="cp-modal-cancel" onClick={() => setRunModal(false)}>Cancel</button>
-              <button className="cp-modal-run" onClick={triggerResearcher} disabled={running}>
-                {running ? 'Triggering…' : '▶ Run Now'}
-              </button>
+            <div className="cp-modal-btns">
+              <button className="cp-btn-cancel" onClick={() => setRunModal(false)}>Cancel</button>
+              <button className="cp-btn-run" onClick={triggerResearcher} disabled={running}>{running ? 'Triggering…' : '▶ Run Now'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {toast && <div className="cp-toast">{toast}</div>}
+      {toast && <div className={"cp-toast " + (toast.ok ? 'ok' : 'err')}>{toast.msg}</div>}
     </>
   );
 }
 
-// ── Content Detail Component ──────────────────────────────────
-function ContentDetail({ item, onStatusChange, onPublishToBlog, onCopy, publishing }: {
-  item: any;
-  onStatusChange: (id: string, status: string) => void;
-  onPublishToBlog: (item: any) => void;
+function DetailPanel({ item, saving, onApprove, onSchedule, onPublishBlog, onQueueSocial, onReject, onCopy, onSaveNotes }: {
+  item: CalItem; saving: boolean;
+  onApprove: () => void;
+  onSchedule: (date: string) => void;
+  onPublishBlog: (item: CalItem) => void;
+  onQueueSocial: (item: CalItem, scheduledFor?: string) => void;
+  onReject: (id: string) => void;
   onCopy: (text: string) => void;
-  publishing: boolean;
+  onSaveNotes: (id: string, notes: string) => void;
 }) {
-  const d = item.content_data || {};
-  const meta = TYPE_META[item.type] || TYPE_META['Blog Post'];
+  const [schedDate, setSchedDate] = useState(item.scheduled_date ?? '');
+  const [notes, setNotes]         = useState(item.publish_notes ?? '');
+  const d = item.content_data ?? {};
+  const meta     = TYPE_META[item.type] ?? TYPE_META['Blog Post'];
+  const sc       = STATUS_COLOR[item.status] ?? '#6B7280';
+  const pc       = PILLAR_COLOR[item.pillar]  ?? '#6B7280';
+  const isBlog   = item.type === 'Blog Post';
+  const isDraft  = item.status === 'draft';
+  const isApprov = item.status === 'approved';
+  const isSchd   = item.status === 'scheduled';
+  const isDone   = item.status === 'published';
 
-  // Render content based on type
-  function renderContent() {
-    if (item.type === 'Blog Post') {
-      return (
-        <>
-          <p className="cp-section-label">Title</p>
-          <div className="cp-sub-content"><p className="cp-sub-text">{d.title || item.title}</p></div>
-          <p className="cp-section-label">Body</p>
-          <div className="cp-detail-content">{d.content || 'No content'}</div>
-          {d.meta_description && (
-            <>
-              <p className="cp-section-label">SEO Description</p>
-              <div className="cp-sub-content"><p className="cp-sub-text">{d.meta_description}</p></div>
-            </>
-          )}
-          {d.cta && (
-            <>
-              <p className="cp-section-label">CTA</p>
-              <div className="cp-sub-content"><p className="cp-sub-text">{d.cta}</p></div>
-            </>
-          )}
-        </>
-      );
-    }
-
-    if (item.type === 'LinkedIn Post') {
-      return (
-        <>
-          <p className="cp-section-label">Hook</p>
-          <div className="cp-sub-content"><p className="cp-sub-text">{d.hook || '—'}</p></div>
-          <p className="cp-section-label">Full Post</p>
-          <div className="cp-detail-content">{d.content || 'No content'}</div>
-        </>
-      );
-    }
-
-    if (item.type === 'Twitter Thread') {
-      const tweets = d.tweets || [];
-      return (
-        <>
-          <p className="cp-section-label">Thread Opener</p>
-          <div className="cp-sub-content"><p className="cp-sub-text">{d.opener || '—'}</p></div>
-          {tweets.map((tweet: string, i: number) => (
-            <div key={i} className="cp-sub-content" style={{ marginBottom: 6 }}>
-              <div className="cp-sub-label">{i + 2}/{tweets.length + 2}</div>
-              <p className="cp-sub-text">{tweet}</p>
-            </div>
-          ))}
-          {d.cta && (
-            <>
-              <p className="cp-section-label">CTA Tweet</p>
-              <div className="cp-sub-content"><p className="cp-sub-text">{d.cta}</p></div>
-            </>
-          )}
-        </>
-      );
-    }
-
-    if (item.type === 'Email Newsletter') {
-      return (
-        <>
-          <p className="cp-section-label">Subject Line</p>
-          <div className="cp-sub-content"><p className="cp-sub-text">{d.subject || '—'}</p></div>
-          <p className="cp-section-label">Preview Text</p>
-          <div className="cp-sub-content"><p className="cp-sub-text">{d.preview_text || '—'}</p></div>
-          <p className="cp-section-label">Body</p>
-          <div className="cp-detail-content">{d.body || 'No content'}</div>
-        </>
-      );
-    }
-
-    return <div className="cp-detail-content">{JSON.stringify(d, null, 2)}</div>;
-  }
-
-  // Copy the main shareable text
   function getCopyText() {
-    if (item.type === 'Blog Post') return d.content || '';
-    if (item.type === 'LinkedIn Post') return d.content || '';
-    if (item.type === 'Twitter Thread') return [d.opener, ...(d.tweets || []), d.cta].filter(Boolean).join('\n\n---\n\n');
-    if (item.type === 'Email Newsletter') return `Subject: ${d.subject}\n\n${d.body}`;
+    if (isBlog)                             return d.content || '';
+    if (item.type === 'LinkedIn Post')      return d.content || '';
+    if (item.type === 'Twitter Thread')     return [d.opener, ...(d.tweets ?? []), d.cta].filter(Boolean).join('\n\n---\n\n');
+    if (item.type === 'Email Newsletter')   return 'Subject: ' + (d.subject || '') + '\n\n' + (d.body || '');
     return JSON.stringify(d, null, 2);
   }
 
   return (
     <>
-      <div className="cp-detail-type">
-        <span style={{
-          fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em',
-          padding: '3px 10px', borderRadius: 6,
-          background: meta.bg, color: meta.color,
-        }}>
-          <span dangerouslySetInnerHTML={{ __html: meta.icon }} /> {item.type}
-        </span>
-        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)' }}>
-          {item.pillar && `• ${item.pillar}`} {item.week && `• Week ${item.week}`}
-        </span>
+      <div className="cp-detail-head">
+        <div className="cp-d-type">
+          <span className="cp-type-pill" style={{ background: meta.bg, color: meta.color }}>{meta.icon} {item.type}</span>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: pc, display: 'inline-block' }} />
+          <span className="cp-muted">{item.pillar}{item.week ? ' · Wk ' + item.week : ''}</span>
+          <span className="cp-status-badge" style={{ background: sc + '18', color: sc, border: '1px solid ' + sc + '30', marginLeft: 'auto' }}>● {item.status}</span>
+        </div>
+        <div className="cp-d-title">{item.title}</div>
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <span className="cp-muted">Created {timeAgo(item.created_at)}</span>
+          {item.approved_at && <span className="cp-muted" style={{ color: '#E8A020' }}>Approved {timeAgo(item.approved_at)}</span>}
+          {item.scheduled_date && <span className="cp-muted" style={{ color: '#3B82F6' }}>Scheduled {fmtDate(item.scheduled_date)}</span>}
+          {item.published_at   && <span className="cp-muted" style={{ color: '#10B981' }}>Published {timeAgo(item.published_at)}</span>}
+        </div>
       </div>
 
-      <div className="cp-detail-title">{item.title}</div>
+      <div className="cp-detail-body">
+        <ContentPreview item={item} d={d} />
+      </div>
 
-      {renderContent()}
+      <div className="cp-detail-foot">
+        <div className="cp-actions">
 
-      <div className="cp-detail-actions" style={{ marginTop: 20, borderTop: '1px solid var(--admin-bg-input)', paddingTop: 16 }}>
-        {/* Status actions */}
-        {item.status === 'draft' && (
-          <button className="cp-btn cp-btn-gold" onClick={() => onStatusChange(item.id, 'approved')}>
-            Approve
-          </button>
-        )}
-        {item.status === 'approved' && (
-          <button className="cp-btn cp-btn-outline" onClick={() => onStatusChange(item.id, 'draft')}>
-            ← Back to Draft
-          </button>
-        )}
+          {isDraft && (
+            <>
+              <button className="cp-btn-approve" onClick={onApprove} disabled={saving}>
+                {saving ? 'Approving…' : '✓ Approve Content'}
+              </button>
+              <p className="cp-kbd"><kbd>⌘</kbd><kbd>↵</kbd> to approve</p>
+            </>
+          )}
 
-        {/* Type-specific publish action */}
-        {item.type === 'Blog Post' && item.status !== 'published' && (
-          <button
-            className="cp-btn cp-btn-green"
-            onClick={() => onPublishToBlog(item)}
-            disabled={publishing}
-          >
-            {publishing ? 'Sending…' : '→ Send to Blog Drafts'}
-          </button>
-        )}
+          {(isApprov || isSchd) && (
+            <>
+              <div className="cp-schedule-row">
+                <input type="date" className="cp-date-input" value={schedDate} min={new Date().toISOString().split('T')[0]} onChange={e => setSchedDate(e.target.value)} />
+                <button className="cp-btn-sched" disabled={!schedDate || saving} onClick={() => onSchedule(schedDate)}>
+                  {saving ? '…' : isSchd ? '↻ Reschedule' : '📅 Schedule'}
+                </button>
+              </div>
+              {isSchd && item.scheduled_date && (
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#3B82F6', letterSpacing: '0.06em' }}>
+                  📅 Scheduled for {fmtDate(item.scheduled_date)}
+                </div>
+              )}
+              <div className="cp-divider" />
+            </>
+          )}
 
-        {item.type === 'LinkedIn Post' && (
-          <button className="cp-btn cp-btn-outline" onClick={() => onCopy(getCopyText())}>
-            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg> Copy for LinkedIn
-          </button>
-        )}
+          {!isDraft && !isDone && (
+            <div className="cp-action-row">
+              {isBlog ? (
+                <button className="cp-btn-pub cp-btn-green" onClick={() => onPublishBlog(item)} disabled={saving}>✍ Send to Blog Drafts</button>
+              ) : (
+                <button className="cp-btn-pub cp-btn-green" onClick={() => onQueueSocial(item, schedDate || undefined)} disabled={saving}>↑ Push to Social Queue</button>
+              )}
+              <button className="cp-btn-pub cp-btn-outline" onClick={() => onCopy(getCopyText())} style={{ flex: '0 0 auto', padding: '10px 14px' }}>⎘ Copy</button>
+            </div>
+          )}
 
-        {item.type === 'Twitter Thread' && (
-          <button className="cp-btn cp-btn-outline" onClick={() => onCopy(getCopyText())}>
-            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg> Copy Thread
-          </button>
-        )}
+          {isDone && (
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#10B981', letterSpacing: '0.08em' }}>
+                ✓ Published {item.published_at ? fmtDate(item.published_at) : ''}
+              </p>
+            </div>
+          )}
 
-        {item.type === 'Email Newsletter' && (
-          <button className="cp-btn cp-btn-outline" onClick={() => onCopy(getCopyText())}>
-            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg> Copy Newsletter
-          </button>
-        )}
+          {!isDraft && !isDone && (
+            <button className="cp-btn-pub cp-btn-outline" style={{ marginTop: 2 }} onClick={() => onReject(item.id)} disabled={saving}>← Back to Draft</button>
+          )}
 
-        {/* Always available */}
-        <button className="cp-btn cp-btn-outline" onClick={() => onCopy(getCopyText())}>
-          <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg> Copy Raw Content
-        </button>
+          <div className="cp-divider" />
+          <p className="cp-section-lbl" style={{ marginTop: 0 }}>Internal notes</p>
+          <textarea className="cp-notes" placeholder="Add notes for this content…" value={notes} onChange={e => setNotes(e.target.value)} onBlur={() => onSaveNotes(item.id, notes)} />
+          <p className="cp-kbd">Notes auto-save on blur</p>
+        </div>
       </div>
     </>
   );
 }
 
-// ── Brief Card Component ──────────────────────────────────────
+function ContentPreview({ item, d }: { item: CalItem; d: any }) {
+  if (item.type === 'Blog Post') return (
+    <>
+      {d.title && <><p className="cp-section-lbl">Title</p><div className="cp-sub-box"><p className="cp-sub-text">{d.title}</p></div></>}
+      {d.meta_description && <><p className="cp-section-lbl">SEO Description</p><div className="cp-sub-box"><p className="cp-sub-text">{d.meta_description}</p></div></>}
+      <p className="cp-section-lbl">Body</p>
+      <div className="cp-content-box">{d.content || 'No content'}</div>
+      {d.cta && <><p className="cp-section-lbl">CTA</p><div className="cp-sub-box"><p className="cp-sub-text">{d.cta}</p></div></>}
+    </>
+  );
+  if (item.type === 'LinkedIn Post') return (
+    <>
+      {d.hook && <><p className="cp-section-lbl">Hook</p><div className="cp-sub-box"><p className="cp-sub-text">{d.hook}</p></div></>}
+      <p className="cp-section-lbl">Full Post</p>
+      <div className="cp-content-box">{d.content || 'No content'}</div>
+    </>
+  );
+  if (item.type === 'Twitter Thread') {
+    const tweets: string[] = d.tweets ?? [];
+    return (
+      <>
+        <p className="cp-section-lbl">Opener</p>
+        <div className="cp-sub-box"><p className="cp-sub-text">{d.opener || '—'}</p></div>
+        {tweets.map((t, i) => <div key={i} className="cp-sub-box" style={{ marginBottom: 6 }}><div className="cp-sub-lbl">Tweet {i + 2}</div><p className="cp-sub-text">{t}</p></div>)}
+        {d.cta && <><p className="cp-section-lbl">CTA Tweet</p><div className="cp-sub-box"><p className="cp-sub-text">{d.cta}</p></div></>}
+      </>
+    );
+  }
+  if (item.type === 'Email Newsletter') return (
+    <>
+      <p className="cp-section-lbl">Subject</p><div className="cp-sub-box"><p className="cp-sub-text">{d.subject || '—'}</p></div>
+      {d.preview_text && <><p className="cp-section-lbl">Preview Text</p><div className="cp-sub-box"><p className="cp-sub-text">{d.preview_text}</p></div></>}
+      <p className="cp-section-lbl">Body</p>
+      <div className="cp-content-box">{d.body || 'No content'}</div>
+    </>
+  );
+  return <div className="cp-content-box">{JSON.stringify(d, null, 2)}</div>;
+}
+
 function BriefCard({ brief }: { brief: any }) {
   const [expanded, setExpanded] = useState(false);
-  const d = brief.brief_data || {};
-  const pillarColor = PILLAR_COLORS[brief.pillar] || 'var(--admin-text-muted)';
-
+  const d = brief.brief_data ?? {};
+  const pc = PILLAR_COLOR[brief.pillar] ?? '#9CA3AF';
   return (
-    <div className="cp-brief-card">
-      <div className="cp-brief-top">
-        <div style={{ flex: 1 }}>
+    <div className="cp-brief">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 8 }}>
+        <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <span style={{
-              fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em',
-              padding: '3px 10px', borderRadius: 6, textTransform: 'uppercase',
-              background: `${pillarColor}15`, color: pillarColor, border: `1px solid ${pillarColor}25`,
-            }}>
-              {brief.pillar}
-            </span>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)' }}>
-              Week {brief.week_number}
-            </span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em', padding: '3px 10px', borderRadius: 6, textTransform: 'uppercase' as const, background: pc + '18', color: pc, border: '1px solid ' + pc + '28' }}>{brief.pillar}</span>
+            <span className="cp-muted">Week {brief.week_number}</span>
           </div>
           <div className="cp-brief-topic">{brief.topic}</div>
         </div>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          style={{ background: 'none', border: 'none', color: 'var(--admin-text-faint)', cursor: 'pointer', fontSize: 12, padding: '4px 8px' }}
-        >
-          {expanded ? '▲' : '▼'}
-        </button>
+        <button onClick={() => setExpanded(!expanded)} style={{ background: 'none', border: 'none', color: 'var(--admin-text-faint)', cursor: 'pointer', padding: '4px 8px', fontSize: 11 }}>{expanded ? '▲' : '▼'}</button>
       </div>
-
       {d.angle && <p className="cp-brief-angle">{d.angle}</p>}
-
-      <div className="cp-brief-tags">
-        {(d.seoKeywords || brief.trends_raw || []).slice(0, 4).map((k: string, i: number) => (
-          <span key={i} className="cp-tag">{k}</span>
-        ))}
-      </div>
-
-      {expanded && (
+      {(d.seoKeywords ?? brief.trends_raw ?? []).slice(0, 5).map((k: string, i: number) => (
+        <span key={i} style={{ display: 'inline-block', marginRight: 6, marginBottom: 4, padding: '2px 8px', borderRadius: 4, fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.06em', background: 'var(--admin-bg-deep, #0C0B08)', border: '1px solid var(--admin-bg-input)', color: 'var(--admin-text-faint)' }}>{k}</span>
+      ))}
+      {expanded && d.keyMessages?.length > 0 && (
         <div style={{ marginTop: 16, borderTop: '1px solid var(--admin-bg-input)', paddingTop: 14 }}>
-          {d.targetAudience && (
-            <div className="cp-brief-section">
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Target Audience</p>
-              <p style={{ fontSize: 13, color: 'var(--admin-text-muted)' }}>{d.targetAudience}</p>
-            </div>
-          )}
-          {d.keyMessages?.length > 0 && (
-            <div className="cp-brief-section">
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Key Messages</p>
-              <ul className="cp-brief-items">
-                {d.keyMessages.map((m: string, i: number) => <li key={i}>{m}</li>)}
-              </ul>
-            </div>
-          )}
-          {d.hooks?.length > 0 && (
-            <div className="cp-brief-section">
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Hooks</p>
-              <ul className="cp-brief-items">
-                {d.hooks.map((h: string, i: number) => <li key={i}>{h}</li>)}
-              </ul>
-            </div>
-          )}
-          {d.dataPoints?.length > 0 && (
-            <div className="cp-brief-section">
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Data Points</p>
-              <ul className="cp-brief-items">
-                {d.dataPoints.map((p: string, i: number) => <li key={i}>{p}</li>)}
-              </ul>
-            </div>
-          )}
-          {d.urgencyReason && (
-            <div className="cp-brief-section">
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Why Now</p>
-              <p style={{ fontSize: 13, color: 'var(--admin-text-muted)' }}>{d.urgencyReason}</p>
-            </div>
-          )}
-          {brief.research_raw && (
-            <div className="cp-brief-section">
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Raw Research</p>
-              <div style={{ background: 'var(--admin-bg-deep)', border: '1px solid var(--admin-bg-input)', borderRadius: 8, padding: '12px 14px', fontSize: 12, color: 'var(--admin-text-muted)', lineHeight: 1.7, maxHeight: 200, overflowY: 'auto' }}>
-                {brief.research_raw}
-              </div>
-            </div>
-          )}
+          <p className="cp-muted" style={{ textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 6 }}>Key Messages</p>
+          <ul className="cp-brief-items">{d.keyMessages.map((m: string, i: number) => <li key={i}>{m}</li>)}</ul>
         </div>
       )}
     </div>
   );
 }
+
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Cormorant+Garamond:ital,wght@0,600;1,600&display=swap');
+  .cp-wrap{font-family:'Syne',sans-serif;color:var(--admin-text);min-height:100vh}
+  .cp-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px}
+  .cp-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:#fff;line-height:1}
+  .cp-title em{color:#E8A020;font-style:italic}
+  .cp-subtitle{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--admin-text-faint);margin-top:6px;text-transform:uppercase}
+  .cp-stats{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+  .cp-stat{background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:12px;padding:14px 20px;min-width:110px}
+  .cp-stat-num{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;line-height:1}
+  .cp-stat-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--admin-text-faint);margin-top:4px}
+  .cp-tabs{display:flex;gap:2px;background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:10px;padding:3px;margin-bottom:24px;width:fit-content}
+  .cp-tab{padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.04em;transition:all .15s}
+  .cp-tab.on{background:var(--admin-bg-input);color:#E8A020}
+  .cp-tab.off{background:transparent;color:var(--admin-text-faint)}
+  .cp-tab.off:hover{color:var(--admin-text)}
+  .cp-filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+  .cp-fbtn{padding:5px 14px;border-radius:6px;border:1px solid var(--admin-bg-input);background:transparent;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--admin-text-faint);transition:all .15s}
+  .cp-fbtn.on{background:rgba(232,160,32,.10);border-color:rgba(232,160,32,.25);color:#E8A020}
+  .cp-fbtn:hover:not(.on){color:var(--admin-text);border-color:var(--admin-text-faint)}
+  .cp-fsep{width:1px;height:20px;background:var(--admin-bg-input);margin:0 4px}
+  .cp-grid{display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:start}
+  @media(max-width:1100px){.cp-grid{grid-template-columns:1fr}}
+  .cp-list{display:flex;flex-direction:column;gap:6px}
+  .cp-item{background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .15s}
+  .cp-item:hover{border-color:var(--admin-text-faint)}
+  .cp-item.sel{border-color:rgba(232,160,32,.4);background:var(--admin-bg-card-hover,#1E1C17)}
+  .cp-item-row1{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .cp-type-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:5px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.07em;font-weight:500;white-space:nowrap}
+  .cp-item-title{font-size:13px;font-weight:600;color:var(--admin-text);line-height:1.4}
+  .cp-item-meta{display:flex;align-items:center;gap:10px;margin-top:7px}
+  .cp-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+  .cp-muted{font-family:'DM Mono',monospace;font-size:9px;color:var(--admin-text-faint)}
+  .cp-detail{background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:14px;position:sticky;top:16px;max-height:calc(100vh - 100px);overflow-y:auto;display:flex;flex-direction:column}
+  .cp-detail-head{padding:20px 22px 16px;border-bottom:1px solid var(--admin-bg-input)}
+  .cp-detail-body{padding:18px 22px;flex:1;overflow-y:auto}
+  .cp-detail-foot{padding:16px 22px;border-top:1px solid var(--admin-bg-input);background:var(--admin-bg-card);border-radius:0 0 14px 14px}
+  .cp-empty-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;height:320px;gap:10px}
+  .cp-empty-msg{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--admin-text-faint)}
+  .cp-d-type{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .cp-d-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#fff;line-height:1.3;margin-bottom:14px}
+  .cp-status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+  .cp-section-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--admin-text-faint);margin-bottom:6px;margin-top:14px}
+  .cp-content-box{background:var(--admin-bg-deep,#0C0B08);border:1px solid var(--admin-bg-input);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--admin-text-dim,#7A7260);line-height:1.75;white-space:pre-wrap;max-height:280px;overflow-y:auto}
+  .cp-sub-box{background:var(--admin-bg-deep,#0C0B08);border:1px solid var(--admin-bg-input);border-radius:8px;padding:10px 14px;margin-bottom:8px}
+  .cp-sub-lbl{font-family:'DM Mono',monospace;font-size:9px;color:#E8A020;letter-spacing:.08em;margin-bottom:5px}
+  .cp-sub-text{font-size:12px;color:var(--admin-text-dim,#7A7260);line-height:1.7;white-space:pre-wrap}
+  .cp-actions{display:flex;flex-direction:column;gap:8px}
+  .cp-action-row{display:flex;gap:8px}
+  .cp-btn-approve{flex:1;padding:13px;border-radius:10px;border:none;background:#E8A020;color:#0C0B08;font-family:'Syne',sans-serif;font-size:13px;font-weight:800;letter-spacing:.03em;cursor:pointer;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+  .cp-btn-approve:hover:not(:disabled){background:#F5C55A}
+  .cp-btn-approve:disabled{opacity:.4;cursor:not-allowed}
+  .cp-schedule-row{display:flex;gap:8px;align-items:center}
+  .cp-date-input{flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--admin-bg-input);background:var(--admin-bg-deep,#0C0B08);color:var(--admin-text);font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.04em;outline:none}
+  .cp-date-input:focus{border-color:rgba(59,130,246,.5)}
+  .cp-btn-sched{padding:9px 16px;border-radius:8px;border:1px solid rgba(59,130,246,.2);background:rgba(59,130,246,.12);color:#3B82F6;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s}
+  .cp-btn-sched:hover:not(:disabled){background:rgba(59,130,246,.2)}
+  .cp-btn-sched:disabled{opacity:.4;cursor:not-allowed}
+  .cp-btn-pub{flex:1;padding:10px 14px;border-radius:8px;border:none;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+  .cp-btn-green{background:rgba(16,185,129,.12);color:#10B981;border:1px solid rgba(16,185,129,.2)}
+  .cp-btn-green:hover:not(:disabled){background:rgba(16,185,129,.22)}
+  .cp-btn-outline{background:transparent;color:var(--admin-text-muted,#9CA3AF);border:1px solid var(--admin-bg-input)}
+  .cp-btn-outline:hover:not(:disabled){color:var(--admin-text);border-color:var(--admin-text-faint)}
+  .cp-btn-pub:disabled{opacity:.4;cursor:not-allowed}
+  .cp-notes{width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--admin-bg-input);background:var(--admin-bg-deep,#0C0B08);color:var(--admin-text);font-family:'Syne',sans-serif;font-size:12px;line-height:1.6;resize:vertical;outline:none;min-height:64px;box-sizing:border-box}
+  .cp-notes:focus{border-color:rgba(232,160,32,.3)}
+  .cp-kbd{font-family:'DM Mono',monospace;font-size:9px;color:var(--admin-text-faint);letter-spacing:.06em;text-align:right}
+  .cp-kbd kbd{background:var(--admin-bg-input);border:1px solid var(--admin-text-faint);border-radius:3px;padding:1px 4px;font-size:9px}
+  .cp-divider{height:1px;background:var(--admin-bg-input);margin:12px 0}
+  .cp-topbtns{display:flex;gap:8px}
+  .cp-runbtn{padding:8px 18px;border-radius:8px;border:1px solid rgba(232,160,32,.35);background:rgba(232,160,32,.08);color:#E8A020;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+  .cp-runbtn:hover{background:rgba(232,160,32,.16);border-color:rgba(232,160,32,.6)}
+  .cp-refbtn{padding:8px 16px;border-radius:8px;border:1px solid var(--admin-bg-input);background:transparent;color:var(--admin-text-faint);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;cursor:pointer;transition:all .15s}
+  .cp-refbtn:hover{color:#E8A020;border-color:rgba(232,160,32,.3)}
+  .cp-qitem{background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:10px;padding:14px 16px;display:flex;gap:14px;margin-bottom:8px}
+  .cp-qtime{font-family:'DM Mono',monospace;font-size:10px;color:var(--admin-text-faint);white-space:nowrap;min-width:80px;padding-top:2px}
+  .cp-qtext{flex:1;font-size:13px;color:var(--admin-text-dim,#7A7260);line-height:1.6}
+  .cp-brief{background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:14px;padding:20px 22px;margin-bottom:12px}
+  .cp-brief-topic{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#fff;line-height:1.25;margin-bottom:8px}
+  .cp-brief-angle{font-size:13px;color:var(--admin-text-muted,#9CA3AF);line-height:1.6;margin-bottom:12px}
+  .cp-brief-items{list-style:none;display:flex;flex-direction:column;gap:4px}
+  .cp-brief-items li{font-size:12px;color:var(--admin-text-muted,#9CA3AF);padding-left:14px;position:relative;line-height:1.5}
+  .cp-brief-items li::before{content:'→';position:absolute;left:0;color:var(--admin-text-faint);font-size:10px}
+  .cp-empty{text-align:center;padding:60px 24px}
+  .cp-empty-text{font-family:'DM Mono',monospace;font-size:11px;color:var(--admin-text-faint);letter-spacing:.08em}
+  .cp-loading{padding:40px 0;text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--admin-text-faint);letter-spacing:.1em}
+  .cp-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;z-index:1000;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.08em;white-space:nowrap;pointer-events:none}
+  .cp-toast.ok{background:var(--admin-bg-card,#1E1A12);border:1px solid rgba(232,160,32,.3);color:#E8A020}
+  .cp-toast.err{background:var(--admin-bg-card,#1E1A12);border:1px solid rgba(239,68,68,.3);color:#EF4444}
+  .cp-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+  .cp-modal{background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:16px;padding:28px;width:100%;max-width:440px}
+  .cp-modal-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#fff;margin-bottom:4px}
+  .cp-modal-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--admin-text-faint);letter-spacing:.08em;margin-bottom:22px}
+  .cp-field{margin-bottom:16px}
+  .cp-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--admin-text-faint);margin-bottom:6px;display:block}
+  .cp-input{width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--admin-bg-input);background:var(--admin-bg-deep,#0C0B08);color:var(--admin-text);font-family:'Syne',sans-serif;font-size:13px;outline:none;box-sizing:border-box}
+  .cp-input:focus{border-color:rgba(232,160,32,.4)}
+  .cp-select{width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--admin-bg-input);background:var(--admin-bg-deep,#0C0B08);color:var(--admin-text);font-family:'Syne',sans-serif;font-size:13px;outline:none;cursor:pointer}
+  .cp-modal-btns{display:flex;gap:10px;margin-top:22px}
+  .cp-btn-cancel{flex:1;padding:10px;border-radius:8px;border:1px solid var(--admin-bg-input);background:transparent;color:var(--admin-text-muted,#9CA3AF);font-family:'Syne',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+  .cp-btn-run{flex:2;padding:10px;border-radius:8px;border:none;background:#E8A020;color:#0C0B08;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s}
+  .cp-btn-run:hover:not(:disabled){background:#F5C55A}
+  .cp-btn-run:disabled{opacity:.5;cursor:not-allowed}
+`;
