@@ -107,6 +107,7 @@ interface UsageCheckResult {
   used: number;
   limit: number;
   remaining: number;
+  plan?: string;
   message?: string;
 }
 
