@@ -1,8 +1,10 @@
-import { createClient }   from '@/lib/supabase/server';
-import { NextRequest }      from 'next/server';
-import Anthropic            from '@anthropic-ai/sdk';
-import { checkUsage }       from '@/lib/session-limits';
-import { retrieveContext }  from '@/lib/rag';
+import { createClient }                        from '@/lib/supabase/server';
+import { NextRequest }                          from 'next/server';
+import Anthropic                                from '@anthropic-ai/sdk';
+import { checkUsage }                           from '@/lib/session-limits';
+import { retrieveContext }                      from '@/lib/rag';
+import { coachSessionLimiter, getClientIp }    from '@/lib/rate-limit';
+import { SESSION_TYPE_MAP }                     from '@/lib/session-types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SAGE COACH SESSION — /api/coach/session
@@ -28,51 +30,27 @@ import { retrieveContext }  from '@/lib/rag';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const SESSION_PROMPTS: Record<string, string> = {
-  challenge_navigation: `You are Sage, Ascentor's AI mentor for African professionals.
-Help the user navigate a specific career or workplace challenge.
-Be warm, direct, and practical. Draw on African professional context where relevant.
-You have full memory of this conversation — reference earlier messages naturally.
-Respond with a JSON object with exactly these three keys:
-- "reflection": A 1-2 sentence empathetic acknowledgement of what they shared
-- "question": One powerful coaching question to help them think deeper (end with ?)
-- "action": One concrete, specific action they can take this week (start with a verb)
-Respond ONLY with valid JSON. No markdown, no preamble.`,
-
-  difficult_conversation: `You are Sage, Ascentor's AI mentor for African professionals.
-Help the user prepare for a difficult conversation at work.
-Be practical and specific. Help them think through what to say and how.
-You have full memory of this conversation — use it.
-Respond with a JSON object with exactly these three keys:
-- "reflection": Acknowledge the challenge of the conversation they need to have
-- "question": A question to help them clarify their goal or approach
-- "action": A specific preparation step or opening line they could use
-Respond ONLY with valid JSON. No markdown, no preamble.`,
-
-  weekly_reflection: `You are Sage, Ascentor's AI mentor for African professionals.
-Guide the user through a meaningful weekly reflection.
-Help them extract learning and set intentions for the week ahead.
-Reference themes or commitments from earlier in this conversation if relevant.
-Respond with a JSON object with exactly these three keys:
-- "reflection": Acknowledge what they shared and affirm one thing worth celebrating
-- "question": A reflection question about patterns, growth, or lessons learned
-- "action": One clear intention or commitment for the coming week
-Respond ONLY with valid JSON. No markdown, no preamble.`,
-
-  accountability_check: `You are Sage, Ascentor's AI mentor for African professionals.
-Hold the user accountable to their commitments in a warm but direct way.
-Celebrate wins, explore blockers, and help them re-commit to what matters.
-You remember everything discussed earlier — reference those commitments directly.
-Respond with a JSON object with exactly these three keys:
-- "reflection": Acknowledge their update — celebrate wins or explore what got in the way
-- "question": A question that helps them understand what enabled or blocked progress
-- "action": A specific recommitment or adjusted action for the coming days
-Respond ONLY with valid JSON. No markdown, no preamble.`,
-};
-
 interface ConvMessage { role: 'user' | 'assistant'; content: string; }
 
 export async function POST(req: NextRequest) {
+  // ── IP-level rate limit (before auth — catches bypass attempts) ───────────
+  const ip = getClientIp(req);
+  const rl = coachSessionLimiter.check(ip);
+  if (!rl.allowed) {
+    return new Response(JSON.stringify({
+      error: 'Too many requests. Please slow down and try again.',
+      retryAfter: rl.retryAfter,
+    }), {
+      status: 429,
+      headers: {
+        'Content-Type':  'application/json',
+        'Retry-After':   String(rl.retryAfter),
+        'X-RateLimit-Limit': '30',
+        'X-RateLimit-Remaining': '0',
+      },
+    });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -133,7 +111,8 @@ export async function POST(req: NextRequest) {
   }
 
   // ── System prompt: base + optional RAG context ────────────────────────────
-  const base = SESSION_PROMPTS[sessionType] ?? SESSION_PROMPTS.challenge_navigation;
+  const sessionTypeDef = SESSION_TYPE_MAP[sessionType] ?? SESSION_TYPE_MAP['challenge_navigation'];
+  const base = sessionTypeDef.prompt;
   const systemPrompt = ragBlock
     ? `${base}\n\nRelevant knowledge from Ascentor's knowledge base — weave naturally into your response, do not quote verbatim:\n\n${ragBlock}`
     : base;

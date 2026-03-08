@@ -158,6 +158,7 @@ export async function checkUsage(
     used,
     limit,
     remaining,
+    plan,   // include plan so callers can do tier-based UI gating
     message: remaining > 0
       ? undefined
       : `You've reached your ${formatFeatureName(feature)} limit (${limit}/${getPeriod(feature)}). Upgrade to get more.`,

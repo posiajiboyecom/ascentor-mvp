@@ -4,13 +4,9 @@ import SageLoader from '@/components/SageLoader';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { analytics } from '@/lib/analytics';
+import { SESSION_TYPES, getAvailableSessionTypes } from '@/lib/session-types';
 
-const SESSION_TYPES = [
-  { id: 'challenge_navigation',   label: 'Navigate a Challenge', icon: 'Navigate a Challenge' },
-  { id: 'difficult_conversation', label: 'Prep a Conversation',  icon: 'Prep a Conversation'  },
-  { id: 'weekly_reflection',      label: 'Weekly Reflection',    icon: 'Weekly Reflection'    },
-  { id: 'accountability_check',   label: 'Accountability Check', icon: 'Accountability Check' },
-];
+// Session types loaded from lib/session-types (see below)
 
 type Message = {
   role: 'user' | 'assistant';
@@ -35,6 +31,7 @@ export default function CoachPage() {
   const [historyTotal,   setHistoryTotal]   = useState(0);
   const [historyLoaded,  setHistoryLoaded]  = useState(0);
   const [selectorOpen,   setSelectorOpen]   = useState(false);
+  const [userPlan,       setUserPlan]       = useState<string>('free');
 
   // ── FIX 1: Use a ref for streaming index so it's never stale ─────────────
   // The original bug: streamingIndex was captured as `messages.length + 1`
@@ -47,7 +44,8 @@ export default function CoachPage() {
   const selectorRef    = useRef<HTMLDivElement>(null);
 
   // ── FIX 2: Anchor the dropdown below the button using absolute positioning ─
-  const activeSession = SESSION_TYPES.find(t => t.id === sessionType) || SESSION_TYPES[0];
+  const availableTypes = getAvailableSessionTypes(userPlan);
+  const activeSession  = availableTypes.find(t => t.id === sessionType) ?? availableTypes[0];
 
   // Close selector when clicking outside
   useEffect(() => {
@@ -76,6 +74,7 @@ export default function CoachPage() {
       if (res.ok) {
         const data = await res.json();
         setUsageInfo({ used: data.used, limit: data.limit });
+        if (data.plan) setUserPlan(data.plan);
         if (!data.allowed) {
           setLimitReached(true);
           analytics.coachingLimitReached();
@@ -157,7 +156,21 @@ export default function CoachPage() {
       const res = await fetch('/api/coach/session', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ userInput: userMsg, sessionType, messageCount: userMessageCount }),
+        body:    JSON.stringify({
+          userInput:           userMsg,
+          sessionType,
+          messageCount:        userMessageCount,
+          // Pass current session messages as context so Claude remembers the conversation
+          conversationHistory: messages
+            .filter(m => !m.streaming)
+            .map(m => ({
+              role:    m.role,
+              content: m.role === 'user'
+                ? m.content ?? ''
+                : [m.reflection, m.question, m.action].filter(Boolean).join(' | '),
+            }))
+            .slice(-20), // last 20 messages (10 turns) to stay within context limits
+        }),
       });
 
       if (res.status === 429) {
@@ -328,22 +341,41 @@ export default function CoachPage() {
                 overflow: 'hidden',
               }}>
                 {SESSION_TYPES.map((t, i) => {
-                  const active = sessionType === t.id;
+                  const active    = sessionType === t.id;
+                  const available = availableTypes.some(a => a.id === t.id);
+                  const tierLabel = t.tier === 'builder' ? 'Builder' : t.tier === 'climber' ? 'Climber' : null;
                   return (
                     <button
                       key={t.id}
-                      onClick={() => { setSessionType(t.id); setSelectorOpen(false); }}
+                      onClick={() => {
+                        if (!available) return;
+                        setSessionType(t.id);
+                        setSelectorOpen(false);
+                      }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all"
                       style={{
                         background:   active ? 'rgba(232,160,32,0.07)' : 'transparent',
-                        color:        active ? 'var(--accent)' : 'var(--text)',
+                        color:        active ? 'var(--accent)' : available ? 'var(--text)' : 'var(--text-dim)',
                         borderBottom: i < SESSION_TYPES.length - 1 ? '1px solid var(--border)' : 'none',
                         fontFamily:   "'Syne', sans-serif",
                         fontSize:     13,
+                        opacity:      available ? 1 : 0.55,
+                        cursor:       available ? 'pointer' : 'default',
                       }}
                     >
                       <span className="flex-1">{t.label}</span>
-                      {active && (
+                      {!available && tierLabel && (
+                        <span style={{
+                          fontSize: 9, fontFamily: "'DM Mono', monospace",
+                          color: '#E8A020', letterSpacing: '0.08em',
+                          background: 'rgba(232,160,32,0.10)',
+                          border: '1px solid rgba(232,160,32,0.2)',
+                          borderRadius: 4, padding: '1px 5px',
+                        }}>
+                          {tierLabel}+
+                        </span>
+                      )}
+                      {active && available && (
                         <span style={{ fontSize: 11, color: 'var(--accent)' }}>✓</span>
                       )}
                     </button>

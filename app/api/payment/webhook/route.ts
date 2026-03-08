@@ -6,20 +6,15 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { notify } from '@/lib/notify';
+import { PROMO_CODES, lookupPromo } from '@/lib/promo-codes';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const PROMO_CODES: Record<string, { discount: number; label: string }> = {
-  'FOUNDER50':  { discount: 0.50, label: 'Founders 50% Off' },
-  'ASCENTOR50': { discount: 0.50, label: 'Ascentor 50% Off' },
-  'EARLYBIRD':  { discount: 0.50, label: 'Early Bird 50% Off' },
-  'TESTER100':  { discount: 1.00, label: 'Tester Free Access' },
-  'BETATESTER': { discount: 1.00, label: 'Beta Tester Free Access' },
-  'FREEACCESS': { discount: 1.00, label: 'Free Access' },
-};
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +25,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (promoCode) {
-      const promo = PROMO_CODES[promoCode.toUpperCase()];
+      const promo = lookupPromo(promoCode);
       if (!promo) {
         return NextResponse.json({ error: 'Invalid promo code' }, { status: 400 });
       }
@@ -64,13 +59,7 @@ export async function POST(req: NextRequest) {
 
         // Notification
         try {
-          await supabase.from('notifications').insert({
-            user_id: userId,
-            type: 'payment',
-            title: 'Account Activated!',
-            message: `Your Pro plan is active with ${promo.label}. Enjoy unlimited coaching.`,
-            link: '/dashboard',
-          });
+          await notify(supabase, { userId: userId, type: 'payment', title: 'Account Activated!', message: `Your Pro plan is active with ${promo.label}. Enjoy unlimited coaching.`, link: '/dashboard' });
         } catch {} // Non-critical
 
         return NextResponse.json({

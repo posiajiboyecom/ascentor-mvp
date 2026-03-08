@@ -30,11 +30,6 @@ interface ExpertSession {
   meeting_url:       string | null;
 }
 
-const FALLBACK: ExpertSession[] = [
-  { id: 'f1', title: "Breaking Through in African Tech — A Mentor's Playbook", expert_name: 'Amara Obi',    expert_bio: '15+ years mentoring engineers and scaling teams across West Africa',          session_date: new Date(Date.now() + 6  * 86400000).toISOString(), duration_minutes: 60, max_attendees: 50, current_attendees: 14, is_published: true, meeting_url: null },
-  { id: 'f2', title: 'From IC to Senior Leader: What No One Tells You',           expert_name: 'Kwame Asante',  expert_bio: 'Serial founder. 3 exits. Now mentoring the next generation of African builders.', session_date: new Date(Date.now() + 13 * 86400000).toISOString(), duration_minutes: 60, max_attendees: 50, current_attendees: 22, is_published: true, meeting_url: null },
-  { id: 'f3', title: 'Navigating Workplace Politics — With Your Integrity Intact', expert_name: 'Fatima Hassan', expert_bio: 'Led M-Pesa across 7 countries. Now mentoring leaders navigating complex organisations.', session_date: new Date(Date.now() + 20 * 86400000).toISOString(), duration_minutes: 60, max_attendees: 50, current_attendees:  8, is_published: true, meeting_url: null },
-];
 
 function Skeleton() {
   return (
@@ -62,6 +57,7 @@ export default function ExpertsPage() {
   const [userId,      setUserId]      = useState<string | null>(null);
   const [canAccess,   setCanAccess]   = useState(false);
   const [errors,      setErrors]      = useState<Record<string, string>>({});
+  const [fetchError,  setFetchError]  = useState(false);
 
   useEffect(() => { loadData(); }, []); // eslint-disable-line
 
@@ -83,7 +79,12 @@ export default function ExpertsPage() {
       supabase.from('session_registrations').select('session_id').eq('user_id', user.id),
     ]);
 
-    setSessions((upRes.data?.length ? upRes.data : FALLBACK) as ExpertSession[]);
+    // Show real data only — never fake data. Empty state is handled in the UI.
+    if (upRes.error) {
+      console.error('[experts] fetch error:', upRes.error.message);
+      setFetchError(true);
+    }
+    setSessions((upRes.data ?? []) as ExpertSession[]);
     setPast((pastRes.data ?? []) as ExpertSession[]);
     setRegistered(new Set((regRes.data ?? []).map((r: any) => r.session_id)));
     setLoading(false);
@@ -162,6 +163,30 @@ export default function ExpertsPage() {
       <div className="flex flex-col gap-4">
         {loading
           ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} />)
+          : fetchError
+          ? (
+            <div className="rounded-xl p-6 text-center"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+                Could not load sessions
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
+                Check your connection and refresh the page.
+              </p>
+            </div>
+          )
+          : sessions.length === 0
+          ? (
+            <div className="rounded-xl p-6 text-center"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+              <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+                No upcoming sessions yet
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
+                New expert sessions are added regularly — check back soon.
+              </p>
+            </div>
+          )
           : sessions.map((s, i) => {
               const isReg    = registered.has(s.id);
               const isTogg   = toggling === s.id;

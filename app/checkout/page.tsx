@@ -4,6 +4,7 @@ import { useState, useEffect, useRef} from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { PLAN_PRICING, MAX_YEARLY_SAVINGS } from '@/lib/pricing';
 
 
 // Renders SVG icon strings safely  
@@ -33,8 +34,8 @@ const PLANS: Plan[] = [
     description: 'For those 15–22 just starting to find their path.',
     stage: 'EXPLORER',
     stageColor: '#14B8A6',
-    monthlyPrice: 5,
-    yearlyPrice: 48,
+    monthlyPrice: PLAN_PRICING[0].monthlyPrice,
+    yearlyPrice: PLAN_PRICING[0].yearlyPrice,
     features: [
       'Sage — 10 sessions/month',
       '1 mentorship circle',
@@ -51,8 +52,8 @@ const PLANS: Plan[] = [
     description: 'For professionals 22–32 building their career edge.',
     stage: 'BUILDER',
     stageColor: '#E8A020',
-    monthlyPrice: 19,
-    yearlyPrice: 180,
+    monthlyPrice: PLAN_PRICING[1].monthlyPrice,
+    yearlyPrice: PLAN_PRICING[1].yearlyPrice,
     features: [
       'Sage — unlimited sessions',
       'Up to 3 mentorship circles',
@@ -72,8 +73,8 @@ const PLANS: Plan[] = [
     description: 'For leaders 32–50 scaling teams and building legacy.',
     stage: 'CLIMBER',
     stageColor: '#8B5CF6',
-    monthlyPrice: 39,
-    yearlyPrice: 372,
+    monthlyPrice: PLAN_PRICING[2].monthlyPrice,
+    yearlyPrice: PLAN_PRICING[2].yearlyPrice,
     features: [
       'Everything in Builder',
       'Unlimited mentorship circles',
@@ -93,7 +94,7 @@ const PLANS: Plan[] = [
 
 const NGN_PER_USD = 1600;
 
-// U6: compute yearly savings vs paying monthly for 12 months
+// Yearly savings computed from centralised pricing lib
 function yearlySavings(plan: Plan): number {
   return Math.round(plan.monthlyPrice * 12 - plan.yearlyPrice);
 }
@@ -551,7 +552,7 @@ export default function CheckoutPage() {
                 className={`co-billing-btn ${billing === cycle ? 'active' : 'inactive'}`}
               >
                 {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
-                {cycle === 'yearly' && <span className="co-save-pill">SAVE 33%</span>}
+                {cycle === 'yearly' && <span className="co-save-pill">SAVE 40%</span>}
               </button>
             ))}
           </div>
@@ -560,7 +561,7 @@ export default function CheckoutPage() {
             <p style={{ fontSize: 12, color: '#7A7260', marginTop: 10 }}>
               <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg> Switch to yearly and save up to{' '}
               <span style={{ color: '#E8A020', fontWeight: 600 }}>
-                ${Math.max(...PLANS.map(yearlySavings))}/year
+                ${MAX_YEARLY_SAVINGS}/year
               </span>
             </p>
           )}

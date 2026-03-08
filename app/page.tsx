@@ -762,7 +762,7 @@ export default function LandingPage() {
           <div className="lp-pricing-cards">
             <div className="lp-pricing-card">
               <div className="lp-pricing-plan">Explorer</div>
-              <div className="lp-pricing-price">$5<span>/mo</span></div>
+              <div className="lp-pricing-price">$12<span>/mo</span></div>
               <div className="lp-pricing-for">For students & graduates (15–22)</div>
               <ul className="lp-pricing-features">
                 <li>Sage — career discovery mode</li>
@@ -776,7 +776,7 @@ export default function LandingPage() {
             <div className="lp-pricing-card popular">
               <div className="lp-popular-tag">Most Popular</div>
               <div className="lp-pricing-plan">Builder</div>
-              <div className="lp-pricing-price">$19<span>/mo</span></div>
+              <div className="lp-pricing-price">$24<span>/mo</span></div>
               <div className="lp-pricing-for">For early-career professionals (22–32)</div>
               <ul className="lp-pricing-features">
                 <li>Unlimited Sage sessions</li>

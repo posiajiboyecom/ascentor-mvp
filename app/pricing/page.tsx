@@ -3,13 +3,13 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Pricing — Ascentor',
-  description: 'Affordable mentorship for African professionals. Plans from $5/month with Sage, expert sessions, and peer circles.',
+  description: 'Affordable mentorship for African professionals. Plans from $12/month with Sage, expert sessions, and peer circles.',
 };
 
 const TIERS = [
   {
     name: 'Explorer',
-    price: 5,
+    price: 12,
     desc: 'For those 15–22 just starting to find their path.',
     color: '#14B8A6',
     features: [
@@ -27,7 +27,7 @@ const TIERS = [
   },
   {
     name: 'Builder',
-    price: 19,
+    price: 24,
     desc: 'For professionals 22–32 building their career edge.',
     color: '#E8A020',
     features: [
@@ -97,7 +97,7 @@ export default function PricingPage() {
           Invest in your growth
         </h1>
         <p className="text-base max-w-xl mx-auto" style={{ color: '#6B7280' }}>
-          What used to cost $5,000–$10,000 in executive mentorship, now starts at $5/month. All plans include a 7-day free trial.
+          What used to cost $5,000–$10,000 in executive coaching, now starts at $12/month. All plans include a 7-day free trial.
         </p>
       </section>
 

@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { addOrUpdateSubscriber, ML_GROUPS } from '@/lib/mailerlite';
+import { PROMO_CODES, lookupPromo } from '@/lib/promo-codes';
 
 // Service role client — for writes that bypass RLS
 const supabase = createServiceClient(
@@ -20,14 +21,7 @@ const supabase = createServiceClient(
 );
 
 // Promo codes live SERVER-SIDE ONLY — never exposed to client bundle
-const PROMO_CODES: Record<string, { discount: number; label: string }> = {
-  'FOUNDER50':  { discount: 0.50, label: 'Founders 50% Off' },
-  'ASCENTOR50': { discount: 0.50, label: 'Ascentor 50% Off' },
-  'EARLYBIRD':  { discount: 0.50, label: 'Early Bird 50% Off' },
-  'TESTER100':  { discount: 1.00, label: 'Tester Free Access' },
-  'BETATESTER': { discount: 1.00, label: 'Beta Tester Free Access' },
-  'FREEACCESS': { discount: 1.00, label: 'Free Access' },
-};
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     // ── 3. HANDLE PROMO CODE ───────────────────────────────────────
     if (promoCode) {
-      const promo = PROMO_CODES[promoCode.trim().toUpperCase()];
+      const promo = lookupPromo(promoCode);
 
       if (!promo) {
         return NextResponse.json({ error: 'Invalid promo code' }, { status: 400 });
