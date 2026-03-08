@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
     // ── Fetch posts for a specific cohort ──────────────────────────────────
     const { data: posts, error: postsError } = await supabaseAdmin
       .from('cohort_posts')
-      .select('id, user_id, content, upvotes, reply_count, created_at')
+      .select('id, user_id, content, upvotes, created_at')
       .eq('cohort_id', cohortId)
       .order('created_at', { ascending: false })
       .limit(100);
@@ -115,13 +115,17 @@ export async function GET(req: NextRequest) {
       (replyProfiles || []).forEach((p: any) => { profileMap[p.id] = p.full_name || 'Unknown'; });
     }
 
-    const enriched = posts.map((p: any) => ({
-      ...p,
-      author: profileMap[p.user_id] || 'Unknown',
-      replies: (replies || [])
+    const enriched = posts.map((p: any) => {
+      const postReplies = (replies || [])
         .filter((r: any) => r.post_id === p.id)
-        .map((r: any) => ({ ...r, author: profileMap[r.user_id] || 'Unknown' })),
-    }));
+        .map((r: any) => ({ ...r, author: profileMap[r.user_id] || 'Unknown' }));
+      return {
+        ...p,
+        author: profileMap[p.user_id] || 'Unknown',
+        reply_count: postReplies.length,
+        replies: postReplies,
+      };
+    });
 
     return NextResponse.json({ posts: enriched });
 
