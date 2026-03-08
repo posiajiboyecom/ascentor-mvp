@@ -214,19 +214,47 @@ export default function LandingClient() {
 
       {/* ═══ HERO ═══ */}
       <section className="relative overflow-hidden" style={{ minHeight: '85vh' }}>
+        {/* ── Community image background ── */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', inset: 0, zIndex: 0,
+            backgroundImage: "url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=1600&q=80&auto=format&fit=crop')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 30%',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
+        {/* Dark gradient overlay — keeps text readable, adds depth */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', inset: 0, zIndex: 1,
+            background: 'linear-gradient(135deg, rgba(12,11,8,0.82) 0%, rgba(12,11,8,0.65) 50%, rgba(12,11,8,0.78) 100%)',
+          }}
+        />
+        {/* Amber accent glow — reinforces brand colour over the dark overlay */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2,
+            height: '40%',
+            background: 'linear-gradient(to top, rgba(232,160,32,0.12), transparent)',
+          }}
+        />
         <ParticleCanvas />
         <div className="relative z-10 max-w-4xl mx-auto px-5 pt-20 pb-16 lg:pt-32 lg:pb-24 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-6"
-            style={{ background: 'rgba(245,158,11,0.1)', color: '#D97706', border: '1px solid rgba(245,158,11,0.2)' }}>
+            style={{ background: 'rgba(245,158,11,0.15)', color: '#F5C55A', border: '1px solid rgba(245,158,11,0.3)' }}>
             <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#10B981' }} />
             Now in beta — join 50+ early leaders
           </div>
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-semibold mb-5 leading-tight"
-            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#FAF9F6' }}>
             Your AI leadership<br />
             coach for <span style={{ color: '#E8A020' }}>Africa</span>
           </h1>
-          <p className="text-base md:text-lg max-w-2xl mx-auto mb-8" style={{ color: '#6B7280', lineHeight: 1.7 }}>
+          <p className="text-base md:text-lg max-w-2xl mx-auto mb-8" style={{ color: '#D1CFC9', lineHeight: 1.7 }}>
             Sage, live expert sessions, and peer accountability cohorts — built for ambitious African professionals who refuse to wait for permission to lead.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
@@ -235,10 +263,10 @@ export default function LandingClient() {
               style={{ background: '#E8A020', color: '#000' }}>
               Start 7-Day Free Trial →
             </Link>
-            <Link href="/pricing"
+            <Link href="/how-it-works"
               className="px-8 py-4 rounded-xl text-base font-semibold transition-colors"
-              style={{ border: '1.5px solid #E5E5E4', color: '#374151' }}>
-              View Pricing
+              style={{ border: '1.5px solid rgba(255,255,255,0.2)', color: '#FAF9F6', background: 'rgba(255,255,255,0.06)' }}>
+              See How It Works
             </Link>
           </div>
           <p className="text-xs" style={{ color: '#9CA3AF' }}>No credit card required · Cancel anytime · 30-day money-back guarantee</p>
