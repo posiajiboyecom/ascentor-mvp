@@ -35,6 +35,33 @@ export default function CommunityPage() {
     loadData();
   }, []);
 
+  // ── Feature 1: Subscribe to cohort_members so member counts stay live ──
+  useEffect(() => {
+    const sb = supabaseRef.current;
+    const channel = sb
+      .channel('community-page-members-rt')
+      .on('postgres_changes', {
+        event:  '*',    // INSERT = join, DELETE = leave
+        schema: 'public',
+        table:  'cohort_members',
+      }, async (payload: any) => {
+        const row = (payload.new ?? payload.old) as any;
+        if (!row?.cohort_id) return;
+        // Re-fetch exact live count from DB for that cohort
+        const { count } = await sb
+          .from('cohort_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('cohort_id', row.cohort_id);
+        if (typeof count === 'number') {
+          setCohorts(prev => prev.map(c =>
+            c.id === row.cohort_id ? { ...c, member_count: count } : c
+          ));
+        }
+      })
+      .subscribe();
+    return () => { sb.removeChannel(channel); };
+  }, []);
+
   async function loadData() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }

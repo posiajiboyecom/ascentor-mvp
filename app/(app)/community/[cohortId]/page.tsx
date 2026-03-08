@@ -6,10 +6,19 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useParams, useRouter } from 'next/navigation';
 
-
-// Renders SVG icon strings safely  
-function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
-  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+// Heart SVG — filled when liked, outline when not
+function HeartIcon({ filled }: { filled: boolean }) {
+  return filled ? (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  ) : (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  );
 }
 
 type Reply = {
@@ -50,12 +59,14 @@ export default function CohortFeedPage() {
   const [userId,       setUserId]       = useState<string | null>(null);
   const [loading,      setLoading]      = useState(true);
   const [posting,      setPosting]      = useState(false);
+  // ── Feature 1: Real member count (live from DB, not hardcoded) ──
   const [memberCount,  setMemberCount]  = useState(0);
-  const [onlineCount,  setOnlineCount]  = useState(1);
+  // ── Feature 2: Real online count via Supabase Presence ──────────
+  const [onlineCount,  setOnlineCount]  = useState(0);
 
   const userIdRef    = useRef<string | null>(null);
   const authorCache  = useRef<Record<string, string>>({});
-  const channelRefs = useRef<ReturnType<typeof supabase.channel>[]>([]);
+  const channelRefs  = useRef<ReturnType<typeof supabase.channel>[]>([]);
 
   function cleanupChannels() {
     channelRefs.current.forEach(ch => {
@@ -88,7 +99,17 @@ export default function CohortFeedPage() {
     return name;
   }
 
+  // ── Feature 1 helper: fetch live member count from cohort_members table ──
+  async function fetchMemberCount() {
+    const { count } = await supabase
+      .from('cohort_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('cohort_id', String(cohortId));
+    if (typeof count === 'number') setMemberCount(count);
+  }
+
   function subscribeRealtime() {
+    // ── Posts channel ──────────────────────────────────────────────────────
     const postsChannel = supabase
       .channel(`cohort-${cohortId}-posts-${Date.now()}`)
       .on('postgres_changes', {
@@ -137,6 +158,7 @@ export default function CohortFeedPage() {
       });
     channelRefs.current.push(postsChannel);
 
+    // ── Replies channel ────────────────────────────────────────────────────
     const repliesChannel = supabase
       .channel(`cohort-${cohortId}-replies-${Date.now()}`)
       .on('postgres_changes', {
@@ -181,17 +203,48 @@ export default function CohortFeedPage() {
       });
     channelRefs.current.push(repliesChannel);
 
+    // ── Feature 1: Real-time member count via cohort_members changes ───────
+    const membersChannel = supabase
+      .channel(`cohort-${cohortId}-members-${Date.now()}`)
+      .on('postgres_changes', {
+        event:  '*',           // INSERT (join) and DELETE (leave)
+        schema: 'public',
+        table:  'cohort_members',
+        filter: `cohort_id=eq.${cohortId}`,
+      }, () => {
+        // Refetch exact count from DB on any membership change
+        fetchMemberCount();
+      })
+      .subscribe();
+    channelRefs.current.push(membersChannel);
+
+    // ── Feature 2: Real online presence via Supabase Presence ─────────────
+    // Presence tracks who is actively on this page right now.
+    // When user closes tab or navigates away, they are auto-removed.
     const presenceChannel = supabase.channel(`cohort-${cohortId}-presence-${Date.now()}`, {
       config: { presence: { key: userIdRef.current || 'anon' } },
     });
     presenceChannel
       .on('presence', { event: 'sync' }, () => {
+        // presenceState() returns { [key]: [{ online_at, ... }] }
+        // Each unique key = one user, so Object.keys gives real online count
         const state = presenceChannel.presenceState();
         setOnlineCount(Object.keys(state).length);
       })
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        // Eagerly increment so UI reacts without waiting for sync
+        setOnlineCount(prev => prev + newPresences.length);
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        setOnlineCount(prev => Math.max(0, prev - leftPresences.length));
+      })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await presenceChannel.track({ online_at: new Date().toISOString() });
+          // Track self — heartbeat keeps this alive; unsubscribe removes it
+          await presenceChannel.track({
+            user_id:   userIdRef.current,
+            online_at: new Date().toISOString(),
+          });
         }
       });
     channelRefs.current.push(presenceChannel);
@@ -225,7 +278,13 @@ export default function CohortFeedPage() {
     const { data: cohortData } = await supabase
       .from('cohorts').select('*').eq('id', String(cohortId)).single();
     setCohort(cohortData);
-    setMemberCount(cohortData?.member_count || 0);
+
+    // ── Feature 1: Get accurate member count from cohort_members, not cached column ──
+    const { count: liveCount } = await supabase
+      .from('cohort_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('cohort_id', String(cohortId));
+    setMemberCount(liveCount ?? cohortData?.member_count ?? 0);
 
     const { data: postsData } = await supabase
       .from('cohort_posts').select('*')
@@ -304,12 +363,11 @@ export default function CohortFeedPage() {
           : p
       ));
 
-      // Notify post author when someone else replies to their post
       const targetPost = posts.find(p => p.id === postId);
       if (targetPost && targetPost.user_id && targetPost.user_id !== userId) {
         const myName = authorCache.current[userId!] || 'A member';
         const replyTitle   = '💬 New reply on your post';
-        const replyMessage = `${myName} replied: "${content.slice(0, 80)}${content.length > 80 ? '…' : ''}"`; 
+        const replyMessage = `${myName} replied: "${content.slice(0, 80)}${content.length > 80 ? '…' : ''}"`;
         void Promise.resolve(supabase.from('notifications').insert({
           user_id: targetPost.user_id,
           type:    'community',
@@ -353,11 +411,13 @@ export default function CohortFeedPage() {
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, showReplies: true, replies: mapped } : p));
   }
 
-  async function upvotePost(postId: string) {
+  // ── Feature 3: Like (was upvote) — same DB logic, new UX ────────────────
+  async function likePost(postId: string) {
     const post = posts.find(p => p.id === postId);
     if (!post || !userId) return;
 
     const toggled = !post.voted;
+    // Optimistic update — instant UI feedback
     setPosts(prev => prev.map(p => p.id === postId ? {
       ...p,
       upvotes: Math.max(0, (p.upvotes || 0) + (toggled ? 1 : -1)),
@@ -370,20 +430,16 @@ export default function CohortFeedPage() {
           supabase.from('cohort_votes').insert({ user_id: userId, post_id: postId }),
           supabase.rpc('increment_post_upvotes', { post_id: postId, delta: 1 }),
         ]);
-        // Notify post author when someone upvotes (not themselves)
         if (post.user_id && post.user_id !== userId) {
           const myName = authorCache.current[userId!] || 'A member';
           const newTotal = (post.upvotes || 0) + 1;
-          const postUpvoteTitle   = '▲ Someone upvoted your post';
-          const postUpvoteMessage = `${myName} upvoted your post${newTotal > 1 ? ` (${newTotal} upvotes total)` : ''}`;
+          const title   = '❤️ Someone liked your post';
+          const message = `${myName} liked your post${newTotal > 1 ? ` (${newTotal} likes total)` : ''}`;
           void Promise.resolve(supabase.from('notifications').insert({
-            user_id: post.user_id,
-            type:    'community',
-            title:   postUpvoteTitle,
-            message: postUpvoteMessage,
-            link:    `/community/${cohortId}`,
+            user_id: post.user_id, type: 'community', title, message,
+            link: `/community/${cohortId}`,
           })).catch(() => {});
-          triggerPush(post.user_id, postUpvoteTitle, postUpvoteMessage, `/community/${cohortId}`);
+          triggerPush(post.user_id, title, message, `/community/${cohortId}`);
         }
       } else {
         await Promise.all([
@@ -392,7 +448,8 @@ export default function CohortFeedPage() {
         ]);
       }
     } catch (err) {
-      console.error('[upvote] post error:', err);
+      console.error('[like] post error:', err);
+      // Roll back optimistic update on error
       setPosts(prev => prev.map(p => p.id === postId ? {
         ...p,
         upvotes: Math.max(0, (p.upvotes || 0) + (toggled ? -1 : 1)),
@@ -401,7 +458,7 @@ export default function CohortFeedPage() {
     }
   }
 
-  async function upvoteReply(postId: string, replyId: string) {
+  async function likeReply(postId: string, replyId: string) {
     if (!userId) return;
     const post  = posts.find(p => p.id === postId);
     const reply = post?.replies?.find(r => r.id === replyId);
@@ -423,20 +480,16 @@ export default function CohortFeedPage() {
           supabase.from('cohort_votes').insert({ user_id: userId, reply_id: replyId }),
           supabase.rpc('increment_reply_upvotes', { reply_id: replyId, delta: 1 }),
         ]);
-        // Notify reply author when someone upvotes their reply (not themselves)
         if (reply.user_id && reply.user_id !== userId) {
           const myName = authorCache.current[userId!] || 'A member';
           const newTotal = (reply.upvotes || 0) + 1;
-          const replyUpvoteTitle   = '▲ Someone upvoted your reply';
-          const replyUpvoteMessage = `${myName} upvoted your reply${newTotal > 1 ? ` (${newTotal} upvotes total)` : ''}`;
+          const title   = '❤️ Someone liked your reply';
+          const message = `${myName} liked your reply${newTotal > 1 ? ` (${newTotal} likes total)` : ''}`;
           void Promise.resolve(supabase.from('notifications').insert({
-            user_id: reply.user_id,
-            type:    'community',
-            title:   replyUpvoteTitle,
-            message: replyUpvoteMessage,
-            link:    `/community/${cohortId}`,
+            user_id: reply.user_id, type: 'community', title, message,
+            link: `/community/${cohortId}`,
           })).catch(() => {});
-          triggerPush(reply.user_id, replyUpvoteTitle, replyUpvoteMessage, `/community/${cohortId}`);
+          triggerPush(reply.user_id, title, message, `/community/${cohortId}`);
         }
       } else {
         await Promise.all([
@@ -445,7 +498,7 @@ export default function CohortFeedPage() {
         ]);
       }
     } catch (err) {
-      console.error('[upvote] reply error:', err);
+      console.error('[like] reply error:', err);
       setPosts(prev => prev.map(p => p.id === postId ? {
         ...p,
         replies: p.replies?.map(r => r.id === replyId ? {
@@ -464,8 +517,6 @@ export default function CohortFeedPage() {
     router.push('/community');
   }
 
-
-  // ── Push helper — fires native phone notification after DB insert ──────
   async function triggerPush(targetUserId: string, title: string, body: string, url: string) {
     try {
       await fetch('/api/push/community', {
@@ -490,9 +541,7 @@ export default function CohortFeedPage() {
   }
 
   if (loading) {
-    return (
-      <SageLoader message="Loading feed…" />
-    );
+    return <SageLoader message="Loading feed…" />;
   }
 
   return (
@@ -507,9 +556,15 @@ export default function CohortFeedPage() {
           to   { opacity: 1; transform: translateY(0); }
         }
         .rt-new-post { animation: slide-in-post 0.3s ease both; }
+        @keyframes like-pop {
+          0%   { transform: scale(1); }
+          40%  { transform: scale(1.4); }
+          100% { transform: scale(1); }
+        }
+        .like-pop { animation: like-pop 0.25s ease both; }
       `}</style>
 
-      {/* ── Header ────────────────────────────────────────────────────────── */}
+      {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex justify-between items-start mb-6">
         <div className="flex gap-3 items-center">
           <div className="w-11 h-11 rounded-lg flex items-center justify-center text-2xl"
@@ -522,9 +577,11 @@ export default function CohortFeedPage() {
               {cohort?.name}
             </h2>
             <div className="flex items-center gap-2">
+              {/* Feature 1: live member count from DB */}
               <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-                {memberCount} members · {cohort?.category}
+                {memberCount} member{memberCount !== 1 ? 's' : ''} · {cohort?.category}
               </p>
+              {/* Feature 2: real online count from Supabase Presence */}
               <div className="flex items-center gap-1">
                 <div style={{ position: 'relative', width: 7, height: 7 }}>
                   <div style={{
@@ -558,7 +615,7 @@ export default function CohortFeedPage() {
         </div>
       </div>
 
-      {/* ── New Post ──────────────────────────────────────────────────────── */}
+      {/* ── New Post ────────────────────────────────────────────────────── */}
       <div className="rounded-xl p-4 mb-6"
         style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         <textarea
@@ -581,10 +638,15 @@ export default function CohortFeedPage() {
         </div>
       </div>
 
-      {/* ── Feed ──────────────────────────────────────────────────────────── */}
+      {/* ── Feed ────────────────────────────────────────────────────────── */}
       {posts.length === 0 ? (
         <div className="text-center py-12">
-          <div className="text-4xl mb-3"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div className="text-4xl mb-3">
+            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             Be the first to post in this circle!
           </p>
@@ -599,19 +661,22 @@ export default function CohortFeedPage() {
               <div className="p-4">
                 <div className="flex gap-2.5 items-start">
 
-                  {/* Upvote */}
+                  {/* ── Feature 3: Like button (replaces upvote triangle) ── */}
                   <div className="flex flex-col items-center gap-0.5 pt-1">
-                    <button onClick={() => upvotePost(post.id)}
-                      className="w-7 h-7 rounded-md flex items-center justify-center text-sm transition-all"
+                    <button
+                      onClick={() => likePost(post.id)}
+                      className={`w-7 h-7 rounded-md flex items-center justify-center transition-all ${post.voted ? 'like-pop' : ''}`}
                       style={{
-                        background: post.voted ? 'rgba(245,158,11,0.15)' : 'transparent',
-                        color:      post.voted ? 'var(--accent)' : 'var(--text-dim)',
-                        border:     `1px solid ${post.voted ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`,
-                      }}>
-                      ▲
+                        background: post.voted ? 'rgba(239,68,68,0.12)' : 'transparent',
+                        color:      post.voted ? '#EF4444' : 'var(--text-dim)',
+                        border:     `1px solid ${post.voted ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`,
+                      }}
+                      title={post.voted ? 'Unlike' : 'Like'}
+                    >
+                      <HeartIcon filled={!!post.voted} />
                     </button>
                     <span className="text-xs font-semibold"
-                      style={{ color: post.voted ? 'var(--accent)' : 'var(--text-dim)' }}>
+                      style={{ color: post.voted ? '#EF4444' : 'var(--text-dim)' }}>
                       {post.upvotes || 0}
                     </span>
                   </div>
@@ -642,7 +707,11 @@ export default function CohortFeedPage() {
                       <button onClick={() => toggleReplies(post.id)}
                         className="text-xs flex items-center gap-1"
                         style={{ color: 'var(--text-dim)' }}>
-                        <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> {post.reply_count} {post.reply_count === 1 ? 'reply' : 'replies'}
+                        <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        {' '}{post.reply_count} {post.reply_count === 1 ? 'reply' : 'replies'}
                       </button>
                       <button
                         onClick={() => { setReplyingTo(replyingTo === post.id ? null : post.id); setReplyText(''); }}
@@ -655,20 +724,15 @@ export default function CohortFeedPage() {
                 </div>
               </div>
 
-              {/* Reply input — FIXED */}
+              {/* Reply input */}
               {replyingTo === post.id && (
                 <div className="px-4 pb-3 pl-14">
                   <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    padding: '8px 12px',
-                    marginTop: '8px',
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    width: '100%', boxSizing: 'border-box',
+                    padding: '8px 12px', marginTop: '8px',
                     background: 'rgba(255,255,255,0.04)',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(232,160,32,0.2)',
+                    borderRadius: '8px', border: '1px solid rgba(232,160,32,0.2)',
                   }}>
                     <input
                       value={replyText}
@@ -698,12 +762,18 @@ export default function CohortFeedPage() {
                   {post.replies.map((reply) => (
                     <div key={reply.id} className="flex gap-2 py-2.5"
                       style={{ borderBottom: '1px solid var(--border)' }}>
-                      <button onClick={() => upvoteReply(post.id, reply.id)}
-                        className="flex flex-col items-center gap-0 shrink-0"
-                        style={{ color: reply.voted ? 'var(--accent)' : 'var(--text-dim)' }}>
-                        <span className="text-[10px]">▲</span>
-                        <span className="text-[10px] font-semibold">{reply.upvotes || 0}</span>
+
+                      {/* ── Feature 3: Like on replies too ── */}
+                      <button
+                        onClick={() => likeReply(post.id, reply.id)}
+                        className="flex flex-col items-center gap-0 shrink-0 pt-0.5"
+                        style={{ color: reply.voted ? '#EF4444' : 'var(--text-dim)' }}
+                        title={reply.voted ? 'Unlike' : 'Like'}
+                      >
+                        <HeartIcon filled={!!reply.voted} />
+                        <span className="text-[10px] font-semibold mt-0.5">{reply.upvotes || 0}</span>
                       </button>
+
                       <div className="flex-1">
                         <div className="flex items-center gap-1.5 mb-1">
                           <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
