@@ -13,20 +13,22 @@ function SvgIcon({ html, className, style }: { html: string; className?: string;
 }
 
 // ─── Brand tokens ────────────────────────────────────────────
+// Uses CSS variables so light/dark theme is respected automatically.
 const B = {
-  dark:       '#0C0B08',
-  dark800:    '#141310',
-  dark700:    '#1E1C17',
-  dark600:    '#2E2A22',
-  dark500:    '#4A4438',
-  dark400:    '#7A7260',
-  dark200:    '#D4CFC3',
-  gold:       '#E8A020',
-  goldDark:   '#B9760A',
-  goldMuted:  'rgba(232,160,32,0.09)',
-  goldBorder: 'rgba(232,160,32,0.22)',
-  success:    '#10B981',
-  border:     'rgba(212,207,195,0.10)',
+  // Backgrounds — map to theme-aware CSS vars
+  dark:       'var(--bg, #0C0B08)',
+  dark800:    'var(--bg, #141310)',
+  dark700:    'var(--bg-card, #1E1C17)',
+  dark600:    'var(--bg-input, #2E2A22)',
+  dark500:    'var(--text-dim, #4A4438)',
+  dark400:    'var(--text-dim, #7A7260)',
+  dark200:    'var(--text-muted, #D4CFC3)',
+  gold:       'var(--accent, #E8A020)',
+  goldDark:   'var(--accent-dim, #B9760A)',
+  goldMuted:  'var(--accent-glow, rgba(232,160,32,0.09))',
+  goldBorder: 'var(--border, rgba(232,160,32,0.22))',
+  success:    'var(--success, #10B981)',
+  border:     'var(--border, rgba(212,207,195,0.10))',
   fontDisplay:"'Cormorant Garamond', Georgia, serif",
   fontUI:     "'Syne', system-ui, sans-serif",
   fontMono:   "'DM Mono', monospace",
@@ -112,7 +114,7 @@ function ContinueBanner({ course, onResume }: { course: Course; onResume: () => 
           {/* Progress bar over thumbnail */}
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
-            height: 3, background: 'rgba(255,255,255,0.15)',
+            height: 3, background: 'var(--bg-input, rgba(255,255,255,0.15))',
           }}>
             <div style={{ height: '100%', width: `${pct}%`, background: B.gold, transition: 'width 0.4s ease' }} />
           </div>
@@ -169,7 +171,7 @@ function SectionAccordion({
         {/* Category emoji / icon */}
         <div style={{
           width: 36, height: 36, borderRadius: 9, flexShrink: 0,
-          background: isOpen ? B.goldMuted : 'rgba(255,255,255,0.04)',
+          background: isOpen ? B.goldMuted : 'var(--bg-input, rgba(255,255,255,0.04))',
           border: `1px solid ${isOpen ? B.goldBorder : B.border}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 17, transition: 'all 0.2s',
@@ -207,7 +209,7 @@ function SectionAccordion({
         {/* Chevron */}
         <div style={{
           width: 24, height: 24, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.04)',
+          background: 'var(--bg-input, rgba(255,255,255,0.04))',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
           transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -291,7 +293,7 @@ function CourseCard({ course, idx, onOpen }: { course: Course; idx: number; onOp
             </div>
             {/* Progress sliver at bottom */}
             {isInProgress && (
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: 'rgba(255,255,255,0.15)' }}>
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: 'var(--bg-input, rgba(255,255,255,0.15))' }}>
                 <div style={{ height: '100%', width: `${pct}%`, background: B.gold }} />
               </div>
             )}

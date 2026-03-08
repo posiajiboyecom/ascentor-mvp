@@ -1,0 +1,322 @@
+/* ══════════════════════════════════════════════════════════════════
+   ASCENTOR GLOBAL STYLES · Brand Book v1.0 · 2026
+   Display  : Cormorant Garamond 700 / Italic 600
+   UI       : Syne 400–800
+   Mono     : DM Mono 400/500
+   Gold     : #E8A020   Dark: #0C0B08
+   ══════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
+@import "tailwindcss";
+
+/* ── Brand token CSS variables ── */
+:root {
+  /* Core palette */
+  --dark:        #0C0B08;
+  --dark-900:    #0C0B08;
+  --dark-800:    #141310;
+  --dark-700:    #1E1C17;
+  --dark-600:    #2E2A22;
+  --dark-500:    #4A4438;
+  --dark-400:    #7A7260;
+  --dark-200:    #D4CFC3;
+  --dark-50:     #F7F6F3;
+
+  /* Gold scale */
+  --gold:        #E8A020;
+  --gold-600:    #C87820;
+  --gold-400:    #F5C55A;
+  --gold-300:    #F9D97A;
+  --gold-muted:  rgba(232,160,32,0.10);
+  --gold-border: rgba(232,160,32,0.25);
+
+  /* Stage colours */
+  --explorer:    #14B8A6;
+  --builder:     #E8A020;
+  --climber:     #8B5CF6;
+
+  /* Semantic aliases — used by components */
+  --bg:           #0C0B08;
+  --bg-card:      #1E1C17;
+  --bg-card-hover:#2E2A22;
+  --bg-input:     #1E1C17;
+  --accent:       #E8A020;
+  --accent-dim:   #C87820;
+  --accent-glow:  rgba(232,160,32,0.12);
+  --text:         #F7F6F3;    /* primary — near white */
+  --text-muted:   #C8C3B8;    /* secondary — warm light grey */
+  --text-dim:     #8A8272;    /* tertiary — readable mid-tone */
+  --border:       rgba(212,207,195,0.14);
+  --border-light: rgba(212,207,195,0.18);
+  --success:      #10B981;
+  --error:        #EF4444;
+  --blue:         #3B82F6;
+  --purple:       #8B5CF6;
+  --teal:         #14B8A6;
+
+  /* Typography */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-ui:      'Syne', system-ui, sans-serif;
+  --font-mono:    'DM Mono', 'Courier New', monospace;
+}
+
+@theme {
+  --color-bg:           #0C0B08;
+  --color-bg-card:      #1E1C17;
+  --color-bg-card-hover:#2E2A22;
+  --color-bg-input:     #1E1C17;
+  --color-accent:       #E8A020;
+  --color-accent-dim:   #C87820;
+  --color-text:         #F7F6F3;
+  --color-text-muted:   #C8C3B8;
+  --color-text-dim:     #8A8272;
+  --color-border:       rgba(212,207,195,0.10);
+  --color-border-light: rgba(212,207,195,0.18);
+  --color-success:      #10B981;
+  --color-error:        #EF4444;
+  --color-blue:         #3B82F6;
+  --color-purple:       #8B5CF6;
+  --color-teal:         #14B8A6;
+}
+
+@layer base {
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-ui) !important;
+    background-color: var(--bg, #0C0B08) !important;
+    color: var(--text, #F7F6F3) !important;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ADMIN LIGHT THEME
+   Scoped to [data-admin-theme="light"] — set by AdminShell.tsx
+   Overrides all semantic vars used by admin pages & components.
+   ══════════════════════════════════════════════════════════════════ */
+[data-admin-theme="light"] {
+  /* Surfaces */
+  --bg:              #F5F3EE;
+  --bg-card:         #FFFFFF;
+  --bg-card-hover:   #F0EDE6;
+  --bg-input:        #F0EDE6;
+
+  /* Accent — deeper gold for light bg contrast */
+  --accent:          #A0720A;
+  --accent-dim:      #7A5208;
+  --accent-glow:     rgba(160,114,10,0.10);
+
+  /* Text */
+  --text:            #1A1714;
+  --text-muted:      #4A3F30;
+  --text-dim:        #7A6E60;
+
+  /* Borders */
+  --border:          rgba(0,0,0,0.09);
+  --border-light:    rgba(0,0,0,0.13);
+
+  /* Semantic colours stay vivid but slightly adjusted */
+  --success:         #059669;
+  --error:           #DC2626;
+  --blue:            #2563EB;
+  --purple:          #7C3AED;
+  --teal:            #0F766E;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ADMIN PAGE CSS VARIABLES
+   --admin-* vars used across all admin pages (replacing hardcoded hex).
+   Dark theme (default) matches the original warm charcoal palette.
+   Light theme overrides to a clean warm white palette.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Dark defaults */
+[data-admin-theme="dark"],
+:root {
+  /* Surfaces */
+  --admin-bg:              #0C0B08;
+  --admin-bg-deep:         #141210;
+  --admin-bg-card:         #1E1C17;
+  --admin-bg-card-hover:   #23201A;
+  --admin-bg-input:        #2E2A22;
+
+  /* Text */
+  --admin-text-heading:    #FEF9EC;
+  --admin-text:            #D4CFC3;
+  --admin-text-dim:        #9A9280;
+  --admin-text-muted:      #7A7260;
+  --admin-text-faint:      #4A4438;
+
+  /* Borders */
+  --admin-border:          rgba(212,207,195,0.10);
+  --admin-border-strong:   rgba(212,207,195,0.18);
+}
+
+/* Light overrides */
+[data-admin-theme="light"] {
+  /* Surfaces */
+  --admin-bg:              #F5F3EE;
+  --admin-bg-deep:         #EEE9E0;
+  --admin-bg-card:         #FFFFFF;
+  --admin-bg-card-hover:   #F7F4EE;
+  --admin-bg-input:        #F0EDE6;
+
+  /* Text — strong contrast for readability */
+  --admin-text-heading:    #0F0D0A;
+  --admin-text:            #1A1714;
+  --admin-text-dim:        #3D3529;
+  --admin-text-muted:      #5C5244;
+  --admin-text-faint:      #7A6E60;
+
+  /* Borders */
+  --admin-border:          rgba(0,0,0,0.08);
+  --admin-border-strong:   rgba(0,0,0,0.13);
+}
+
+/* Also override body bg when light theme is active */
+[data-admin-theme="light"],
+[data-admin-theme="light"] body {
+  background-color: #F5F3EE !important;
+  color: #1A1714 !important;
+}
+
+/* ── Scrollbar — brand-consistent ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--dark); }
+::-webkit-scrollbar-thumb { background: var(--dark-600); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dark-500); }
+
+[data-admin-theme="light"] ::-webkit-scrollbar-track { background: #E8E3D8; }
+[data-admin-theme="light"] ::-webkit-scrollbar-thumb { background: #C8BFB0; }
+[data-admin-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #A89E90; }
+
+/* ── Focus ring — gold, not browser default ── */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(232,160,32,0.50) !important;
+  outline: none;
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+@keyframes goldGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(232,160,32,0.08); }
+  50%       { box-shadow: 0 0 36px rgba(232,160,32,0.20); }
+}
+
+.animate-fade-up   { animation: fadeUp  0.5s ease-out both; }
+.animate-fade-in   { animation: fadeIn  0.4s ease-out both; }
+.animate-slide-in  { animation: slideIn 0.3s ease-out both; }
+.animate-glow      { animation: goldGlow 3s infinite; }
+
+/* ── Safe-area utility ── */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* ══════════════════════════════════════════════════════════════════
+   APP THEME — light / dark
+   Scoped to [data-app-theme] set by AppThemeProvider.
+   Uses --app-* vars consumed by AppShell, BottomNav, and app pages.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Dark defaults (matches existing brand) */
+[data-app-theme="dark"] {
+  --app-bg:           #0C0B08;
+  --app-bg-card:      #1E1C17;
+  --app-bg-input:     #2E2A22;
+  --app-bg-hover:     #2E2A22;
+
+  --app-text:         #F7F6F3;
+  --app-text-muted:   #C8C3B8;
+  --app-text-dim:     #8A8272;
+
+  --app-border:       rgba(212,207,195,0.10);
+  --app-border-gold:  rgba(232,160,32,0.18);
+  --app-nav-shadow:   rgba(0,0,0,0.60);
+
+  --app-accent:       #E8A020;
+  --app-accent-glow:  rgba(232,160,32,0.12);
+
+  --app-card-shadow:  0 2px 12px rgba(0,0,0,0.40);
+}
+
+/* Light overrides — warm parchment */
+[data-app-theme="light"] {
+  --app-bg:           #F5F3EE;
+  --app-bg-card:      #FFFFFF;
+  --app-bg-input:     #F0EDE6;
+  --app-bg-hover:     #EDE9E0;
+
+  --app-text:         #1A1714;
+  --app-text-muted:   #4A3F30;
+  --app-text-dim:     #7A6E60;
+
+  --app-border:       rgba(0,0,0,0.09);
+  --app-border-gold:  rgba(160,114,10,0.22);
+  --app-nav-shadow:   rgba(0,0,0,0.10);
+
+  --app-accent:       #A0720A;
+  --app-accent-glow:  rgba(160,114,10,0.10);
+
+  --app-card-shadow:  0 2px 12px rgba(0,0,0,0.08);
+
+  /* ── Also override the root semantic vars so existing page components
+     that use var(--bg-card), var(--text), var(--border) etc. pick up
+     the light palette without needing any code changes. ── */
+  --bg:              #F5F3EE;
+  --bg-card:         #FFFFFF;
+  --bg-card-hover:   #EDE9E0;
+  --bg-input:        #F0EDE6;
+
+  --accent:          #A0720A;
+  --accent-dim:      #7A5208;
+  --accent-glow:     rgba(160,114,10,0.10);
+
+  --text:            #1A1714;
+  --text-muted:      #4A3F30;
+  --text-dim:        #7A6E60;
+
+  --border:          rgba(0,0,0,0.09);
+  --border-light:    rgba(0,0,0,0.13);
+
+  --success:         #059669;
+  --error:           #DC2626;
+  --blue:            #2563EB;
+  --purple:          #7C3AED;
+  --teal:            #0F766E;
+}
+
+/* Light theme — override body background */
+[data-app-theme="light"],
+[data-app-theme="light"] body {
+  background-color: #F5F3EE !important;
+  color: #1A1714 !important;
+}
+
+/* Scrollbar — adapts to theme */
+[data-app-theme="light"] ::-webkit-scrollbar-track { background: #E8E3D8; }
+[data-app-theme="light"] ::-webkit-scrollbar-thumb { background: #C8BFB0; border-radius: 4px; }
+[data-app-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #A89E90; }

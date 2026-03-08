@@ -303,6 +303,19 @@ export default function CohortFeedPage() {
             }
           : p
       ));
+
+      // Notify post author when someone else replies to their post
+      const targetPost = posts.find(p => p.id === postId);
+      if (targetPost && targetPost.user_id && targetPost.user_id !== userId) {
+        const myName = authorCache.current[userId!] || 'A member';
+        supabase.from('notifications').insert({
+          user_id: targetPost.user_id,
+          type:    'community',
+          title:   '💬 New reply on your post',
+          message: `${myName} replied: "${content.slice(0, 80)}${content.length > 80 ? '…' : ''}"`,
+          link:    `/community/${cohortId}`,
+        }).then(() => {}).catch(() => {});
+      }
     }
   }
 
@@ -354,6 +367,18 @@ export default function CohortFeedPage() {
           supabase.from('cohort_votes').insert({ user_id: userId, post_id: postId }),
           supabase.rpc('increment_post_upvotes', { post_id: postId, delta: 1 }),
         ]);
+        // Notify post author when someone upvotes (not themselves)
+        if (post.user_id && post.user_id !== userId) {
+          const myName = authorCache.current[userId!] || 'A member';
+          const newTotal = (post.upvotes || 0) + 1;
+          supabase.from('notifications').insert({
+            user_id: post.user_id,
+            type:    'community',
+            title:   '▲ Someone upvoted your post',
+            message: `${myName} upvoted your post${newTotal > 1 ? ` (${newTotal} upvotes total)` : ''}`,
+            link:    `/community/${cohortId}`,
+          }).then(() => {}).catch(() => {});
+        }
       } else {
         await Promise.all([
           supabase.from('cohort_votes').delete().eq('user_id', userId).eq('post_id', postId),
@@ -392,6 +417,18 @@ export default function CohortFeedPage() {
           supabase.from('cohort_votes').insert({ user_id: userId, reply_id: replyId }),
           supabase.rpc('increment_reply_upvotes', { reply_id: replyId, delta: 1 }),
         ]);
+        // Notify reply author when someone upvotes their reply (not themselves)
+        if (reply.user_id && reply.user_id !== userId) {
+          const myName = authorCache.current[userId!] || 'A member';
+          const newTotal = (reply.upvotes || 0) + 1;
+          supabase.from('notifications').insert({
+            user_id: reply.user_id,
+            type:    'community',
+            title:   '▲ Someone upvoted your reply',
+            message: `${myName} upvoted your reply${newTotal > 1 ? ` (${newTotal} upvotes total)` : ''}`,
+            link:    `/community/${cohortId}`,
+          }).then(() => {}).catch(() => {});
+        }
       } else {
         await Promise.all([
           supabase.from('cohort_votes').delete().eq('user_id', userId).eq('reply_id', replyId),
