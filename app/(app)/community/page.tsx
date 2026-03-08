@@ -66,13 +66,28 @@ export default function CommunityPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    const [cohortsRes, membershipRes, profileRes] = await Promise.all([
+    const [cohortsRes, membershipRes, profileRes, liveCountsRes] = await Promise.all([
       supabase.from('cohorts').select('*').order('member_count', { ascending: false }),
       supabase.from('cohort_members').select('cohort_id').eq('user_id', user.id),
       supabase.from('profiles').select('subscription_plan, subscription_status, subscription_end').eq('id', user.id).single(),
+      // Live count: fetch all cohort_members rows to count per cohort
+      supabase.from('cohort_members').select('cohort_id'),
     ]);
 
-    setCohorts(cohortsRes.data || []);
+    // Build live count map: { [cohort_id]: actualMemberCount }
+    const liveCountMap: Record<string, number> = {};
+    (liveCountsRes.data || []).forEach((row: any) => {
+      liveCountMap[row.cohort_id] = (liveCountMap[row.cohort_id] || 0) + 1;
+    });
+
+    // Override stale member_count column with real live count
+    const cohortsWithLiveCount = (cohortsRes.data || []).map((c: any) => ({
+      ...c,
+      member_count: liveCountMap[c.id] ?? 0,
+    }));
+    cohortsWithLiveCount.sort((a: any, b: any) => b.member_count - a.member_count);
+
+    setCohorts(cohortsWithLiveCount);
     setMyCohortIds(new Set(membershipRes.data?.map((m: any) => m.cohort_id) || []));
 
     // Determine subscription — free users limited to 3 communities
