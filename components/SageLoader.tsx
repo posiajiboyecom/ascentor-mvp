@@ -105,7 +105,7 @@ export default function SageLoader({
       {fullScreen ? (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
-          background: '#0C0B08',
+          background: 'var(--bg, #0C0B08)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {content}

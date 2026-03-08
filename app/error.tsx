@@ -20,7 +20,7 @@ export default function ErrorPage({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#0C0B08',
+      background: 'var(--bg, #0C0B08)',
       fontFamily: "'Syne', system-ui, sans-serif",
       padding: '24px',
     }}>
