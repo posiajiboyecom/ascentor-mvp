@@ -5,10 +5,11 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { addOrUpdateSubscriber, ML_GROUPS } from '@/lib/mailerlite';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
-const supabase = createClient(
+// Service client only used for Paystack lookup (needs admin.getUserById)
+const supabaseService = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -17,11 +18,18 @@ const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, reason } = await req.json();
+    // ✅ FIX 1.2: Verify the caller is authenticated and owns the userId
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
     }
+
+    const { reason } = await req.json();
+
+    // Always use the authenticated user's ID — ignore any userId from the body
+    const userId = user.id;
 
     // Get current profile
     const { data: profile } = await supabase
@@ -37,10 +45,9 @@ export async function POST(req: NextRequest) {
     // If paid via Paystack, try to disable the subscription there
     if (profile.payment_method === 'paystack' && PAYSTACK_SECRET) {
       try {
-        // Find the Paystack subscription by user email
-        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+        // Use service client only for admin lookup
+        const { data: authUser } = await supabaseService.auth.admin.getUserById(userId);
         if (authUser?.user?.email) {
-          // List customer's subscriptions
           const customerRes = await fetch(
             `https://api.paystack.co/subscription?customer=${encodeURIComponent(authUser.user.email)}`,
             { headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` } }
@@ -48,7 +55,6 @@ export async function POST(req: NextRequest) {
           const customerData = await customerRes.json();
 
           if (customerData.status && customerData.data?.length > 0) {
-            // Disable active subscriptions
             for (const sub of customerData.data) {
               if (sub.status === 'active') {
                 await fetch('https://api.paystack.co/subscription/disable', {
@@ -107,26 +113,6 @@ export async function POST(req: NextRequest) {
         link: '/checkout',
       });
     } catch {} // Non-critical
-
-    // Sync cancellation to MailerLite — move from Paid back to Free Users
-    try {
-      const { data: authData } = await supabase.auth.admin.getUserById(userId);
-      const userEmail = authData?.user?.email;
-      if (userEmail) {
-        await addOrUpdateSubscriber({
-          email: userEmail,
-          groups: [ML_GROUPS.APP_USERS, ML_GROUPS.FREE_USERS],
-          fields: {
-            plan:          'free',
-            cancelled_at:  new Date().toISOString(),
-            cancel_reason: reason || 'user_initiated',
-            access_until:  profile.subscription_end || '',
-          },
-        });
-      }
-    } catch (mlErr) {
-      console.error('[subscription/cancel] MailerLite error (non-fatal):', mlErr);
-    }
 
     return NextResponse.json({
       success: true,
