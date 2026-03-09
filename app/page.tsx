@@ -122,10 +122,10 @@ export default function LandingPage() {
         }
         .lp-hero-img {
           position: absolute; inset: 0;
-          background-image: url('https://images.unsplash.com/photo-1573164713988-8665fc963095?w=1600&auto=format&fit=crop&q=80');
+          background-image: url('https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1600');
           background-size: cover;
-          background-position: center 40%;
-          opacity: 0.12;
+          background-position: center 35%;
+          opacity: 0.13;
           z-index: 0;
         }
         .lp-hero-bg {
