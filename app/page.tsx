@@ -477,7 +477,22 @@ export default function LandingPage() {
 
         {/* HERO */}
         <section className="lp-hero">
-          <div className="lp-hero-img" />
+          <img
+            src="/hero-bg.jpg"
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center 40%',
+              opacity: 0.3,
+              zIndex: 0,
+              pointerEvents: 'none',
+            }}
+          />
           <div className="lp-hero-bg" />
           <div className="lp-badge">
             <div className="lp-badge-dot" />
