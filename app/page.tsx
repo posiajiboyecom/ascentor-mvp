@@ -122,18 +122,18 @@ export default function LandingPage() {
         }
         .lp-hero-img {
           position: absolute; inset: 0;
-          background-image: url('https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1600');
+          background-image: url('/hero-bg.jpg');
           background-size: cover;
-          background-position: center 35%;
-          opacity: 0.13;
+          background-position: center 40%;
+          opacity: 0.28;
           z-index: 0;
         }
         .lp-hero-bg {
           position: absolute; inset: 0; pointer-events: none; z-index: 1;
           background:
-            linear-gradient(to bottom, rgba(253,252,249,0.55) 0%, rgba(253,252,249,0.1) 40%, rgba(253,252,249,0.7) 100%),
-            radial-gradient(ellipse 60% 50% at 15% 80%, rgba(232,160,32,0.12) 0%, transparent 70%),
-            radial-gradient(ellipse 40% 40% at 85% 20%, rgba(232,160,32,0.08) 0%, transparent 60%);
+            linear-gradient(to bottom, rgba(253,252,249,0.65) 0%, rgba(253,252,249,0.15) 40%, rgba(253,252,249,0.75) 100%),
+            radial-gradient(ellipse 60% 50% at 15% 80%, rgba(232,160,32,0.14) 0%, transparent 70%),
+            radial-gradient(ellipse 40% 40% at 85% 20%, rgba(232,160,32,0.10) 0%, transparent 60%);
         }
         .lp-badge {
           display: inline-flex; align-items: center; gap: 8px;
