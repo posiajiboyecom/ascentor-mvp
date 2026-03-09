@@ -122,10 +122,10 @@ export default function LandingPage() {
         }
         .lp-hero-img {
           position: absolute; inset: 0;
-          background-image: url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=1600&auto=format&fit=crop&q=80');
+          background-image: url('https://images.unsplash.com/photo-1573164713988-8665fc963095?w=1600&auto=format&fit=crop&q=80');
           background-size: cover;
-          background-position: center 30%;
-          opacity: 0.18;
+          background-position: center 40%;
+          opacity: 0.12;
           z-index: 0;
         }
         .lp-hero-bg {
@@ -299,27 +299,6 @@ export default function LandingPage() {
         .lp-mentor-title { font-size: 13px; color: var(--text-light); margin-bottom: 16px; line-height: 1.5; }
         .lp-mentor-badge { display: inline-block; background: rgba(232,160,32,0.12); color: #8B6010; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 12px; border-radius: 100px; }
 
-        /* ── PRICING ── */
-        .lp-pricing-section { padding: 100px 48px; background: var(--dark); display: flex; flex-direction: column; align-items: center; }
-        .lp-pricing-section .lp-section-headline { color: var(--white); }
-        .lp-pricing-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 900px; margin-top: 56px; width: 100%; }
-        .lp-pricing-card { background: var(--dark-2); border-radius: 20px; padding: 36px 28px; border: 1px solid rgba(255,255,255,0.06); transition: border-color 0.25s, transform 0.25s; position: relative; }
-        .lp-pricing-card:hover { border-color: rgba(232,160,32,0.25); transform: translateY(-3px); }
-        .lp-pricing-card.popular { border-color: var(--gold); background: var(--dark-3); }
-        .lp-popular-tag { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--gold); color: var(--dark); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 14px; border-radius: 100px; white-space: nowrap; }
-        .lp-pricing-plan { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
-        .lp-pricing-price { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 48px; font-weight: 700; color: var(--white); line-height: 1; }
-        .lp-pricing-price span { font-size: 18px; font-weight: 400; color: rgba(255,255,255,0.4); font-family: 'Syne', system-ui, sans-serif; }
-        .lp-pricing-for { font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 6px; margin-bottom: 28px; }
-        .lp-pricing-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
-        .lp-pricing-features li { font-size: 13px; color: rgba(255,255,255,0.65); display: flex; align-items: flex-start; gap: 10px; line-height: 1.5; }
-        .lp-pricing-features li::before { content: '✓'; color: var(--gold); font-size: 12px; flex-shrink: 0; margin-top: 2px; }
-        .lp-pricing-btn { display: block; text-align: center; text-decoration: none; padding: 13px; border-radius: 10px; font-size: 14px; font-weight: 700; transition: all 0.2s; }
-        .lp-pricing-btn.outline { border: 1.5px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
-        .lp-pricing-btn.outline:hover { border-color: var(--gold); color: var(--gold); }
-        .lp-pricing-btn.filled { background: var(--gold); color: var(--dark); border: none; box-shadow: 0 4px 20px rgba(232,160,32,0.3); }
-        .lp-pricing-btn.filled:hover { background: var(--gold-light); transform: translateY(-1px); }
-
         /* ── CTA ── */
         .lp-cta-section { padding: 120px 48px; background: var(--white); display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; overflow: hidden; }
         .lp-cta-section::before { content: ''; position: absolute; width: 800px; height: 800px; border-radius: 50%; background: radial-gradient(circle, rgba(232,160,32,0.07) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); }
@@ -439,12 +418,12 @@ export default function LandingPage() {
           .lp-stats-bar { flex-direction: column; gap: 32px; padding: 48px 24px; }
           .lp-stat-item { border-right: none; padding: 0; }
           .lp-problem-grid, .lp-for-grid, .lp-pillars-grid,
-          .lp-testimonials-grid, .lp-mentors-grid, .lp-pricing-cards, .lp-products-grid { grid-template-columns: 1fr; }
+          .lp-testimonials-grid, .lp-mentors-grid, .lp-products-grid { grid-template-columns: 1fr; }
           .lp-steps-container { flex-direction: column; gap: 40px; }
           .lp-steps-container::before { display: none; }
           .lp-footer-top { grid-template-columns: 1fr 1fr; }
           .lp-problem-section, .lp-for-section, .lp-pillars-section, .lp-how-section,
-          .lp-testimonials-section, .lp-mentors-section, .lp-pricing-section,
+          .lp-testimonials-section, .lp-mentors-section,
           .lp-products-section, .lp-cta-section { padding: 72px 24px; }
           .lp-footer { padding: 48px 24px 24px; }
           .lp-founding-grid { grid-template-columns: 1fr !important; }
@@ -465,7 +444,6 @@ export default function LandingPage() {
             <li><Link href="/who-its-for">Who It's For</Link></li>
             <li><Link href="/how-it-works">How It Works</Link></li>
             <li><Link href="/products">Products</Link></li>
-            <li><Link href="/pricing">Pricing</Link></li>
             {hasBlogPosts && <li><Link href="/blog" style={{ color: 'var(--text)' }}>Blog</Link></li>}
             <li><Link href="/login" style={{ color: 'var(--text)' }}>Log In</Link></li>
             <li><Link href="/signup" className="lp-nav-cta">Start Free →</Link></li>
@@ -490,7 +468,6 @@ export default function LandingPage() {
             <Link href="/who-its-for" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Who It's For</Link>
             <Link href="/how-it-works" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>How It Works</Link>
             <Link href="/products" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Products</Link>
-            <Link href="/pricing" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
             {hasBlogPosts && <Link href="/blog" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Blog</Link>}
             <div className="lp-drawer-divider" />
             <Link href="/login" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
@@ -755,60 +732,6 @@ export default function LandingPage() {
           </p>
         </section>
 
-        {/* PRICING */}
-        <section className="lp-pricing-section" id="pricing">
-          <div className="lp-section-label" style={{ color: 'rgba(232,160,32,0.7)' }}>Simple Pricing</div>
-          <h2 className="lp-section-headline">World-class mentorship at African prices</h2>
-          <div className="lp-pricing-cards">
-            <div className="lp-pricing-card">
-              <div className="lp-pricing-plan">Explorer</div>
-              <div className="lp-pricing-price">$12<span>/mo</span></div>
-              <div className="lp-pricing-for">For students & graduates (15–22)</div>
-              <ul className="lp-pricing-features">
-                <li>Sage — career discovery mode</li>
-                <li>Opportunity & scholarship board</li>
-                <li>Peer community access</li>
-                <li>Basic learning library</li>
-                <li>Monthly group mentor session</li>
-              </ul>
-              <Link href="/pricing" className="lp-pricing-btn outline">Start Free Trial</Link>
-            </div>
-            <div className="lp-pricing-card popular">
-              <div className="lp-popular-tag">Most Popular</div>
-              <div className="lp-pricing-plan">Builder</div>
-              <div className="lp-pricing-price">$24<span>/mo</span></div>
-              <div className="lp-pricing-for">For early-career professionals (22–32)</div>
-              <ul className="lp-pricing-features">
-                <li>Unlimited Sage sessions</li>
-                <li>Live mentor masterclasses</li>
-                <li>All mentorship circles</li>
-                <li>1-on-1 mentor booking (2/month)</li>
-                <li>Full mentorship resource library</li>
-                <li>Session summaries & goal tracking</li>
-              </ul>
-              <Link href="/pricing" className="lp-pricing-btn filled">Start Free Trial</Link>
-            </div>
-            <div className="lp-pricing-card">
-              <div className="lp-pricing-plan">Climber</div>
-              <div className="lp-pricing-price">$39<span>/mo</span></div>
-              <div className="lp-pricing-for">For mid-career leaders (32–50)</div>
-              <ul className="lp-pricing-features">
-                <li>Everything in Builder</li>
-                <li>Priority Sage responses</li>
-                <li>Unlimited 1-on-1 mentor sessions</li>
-                <li>Private executive circle</li>
-                <li>Live Q&A priority access</li>
-                <li>1-on-1 onboarding call</li>
-              </ul>
-              <Link href="/pricing" className="lp-pricing-btn outline">Start Free Trial</Link>
-            </div>
-          </div>
-          <p style={{ marginTop: '32px', fontSize: '14px', color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>
-            Looking for team or corporate plans?{' '}
-            <Link href="https://zbooking.us/kA4x3" style={{ color: 'var(--gold)', textDecoration: 'none' }}>Talk to us →</Link>
-          </p>
-        </section>
-
         {/* CTA */}
         <section className="lp-cta-section">
           <h2 className="lp-cta-headline">
@@ -914,7 +837,6 @@ export default function LandingPage() {
               <div className="lp-footer-col-title">Platform</div>
               <ul className="lp-footer-links">
                 <li><Link href="/products">Products</Link></li>
-                <li><Link href="/pricing">Pricing</Link></li>
                 {hasBlogPosts && <li><Link href="/blog">Blog</Link></li>}
                 <li><Link href="https://ascentor.zohobookings.com/#/4738058000000052054">For Teams</Link></li>
                 <li><Link href="/mentor-apply">Become a Mentor</Link></li>
