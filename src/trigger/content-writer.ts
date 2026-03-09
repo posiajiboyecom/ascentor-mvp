@@ -1,16 +1,16 @@
 // ═══════════════════════════════════════════════════════════
-// Agent 2: Content Writer — African Young Professional Edition
+// Agent 2: Content Writer — Ambitious Professional Edition
 //
-// WHAT CHANGED FROM NIGERIA-FIRST VERSION:
-//   - All prompts now write from a pan-African insider perspective
-//   - Zero Nigeria-specific slang — universally relatable across Africa
+// WHAT CHANGED FROM REGION-SPECIFIC VERSION:
+//   - All prompts now write from a universal insider perspective
+//   - Zero region-specific slang — relatable to professionals worldwide
 //   - Young professional (21–28) is the hero of every piece
 //   - Ascentor's VALUE and IMPACT is the North Star of every post
 //   - Every platform prompt demands Ascentor's confidence framing
 //   - Relatability rule: if a young pro reads it and doesn't say
 //     "this is me", the post failed
 //   - Instagram fully integrated as a first-class platform
-//   - Blog SEO targets pan-African career search terms
+//   - Blog SEO targets universal career search terms
 //   - Newsletter reads as a letter from a brilliant mentor,
 //     not a corporate email blast
 // ═══════════════════════════════════════════════════════════
@@ -97,8 +97,8 @@ const SYSTEM =
 // This is the non-negotiable identity of every piece of content.
 const ASCENTOR_BRAND =
   "ABOUT ASCENTOR: We are an AI-powered mentorship and leadership development platform " +
-  "built specifically for African professionals. " +
-  "We have worked with thousands of professionals across the continent — " +
+  "built for ambitious professionals worldwide. " +
+  "We have worked with thousands of professionals across industries and continents — " +
   "we have seen the promotions, the plateaus, and the breakthroughs. " +
   "We know what works because we have been in the room, not because we studied it from outside. " +
 
@@ -110,7 +110,7 @@ const ASCENTOR_BRAND =
 
   "OUR PROMISE TO READERS: We see you. We understand what it actually feels like " +
   "to be talented, ambitious, and stuck in an environment that is not built to help you grow. " +
-  "We are the mentor most African professionals never had — and we are accessible. " +
+  "We are the mentor most professionals never had — and we are accessible. " +
 
   "CONTENT MISSION: Every piece of content must do three things: " +
   "1. Make the reader feel deeply understood and seen. " +
@@ -131,14 +131,17 @@ export const contentWriterAgent = task({
     keyMessages?: string[];
     dataPoints?: string[];
     audience?: AudiencePreset;
-    africanProfessionalAngle?: string;
+    professionalAngle?: string;
+    africanProfessionalAngle?: string; // legacy alias — kept for backwards compatibility
   }) => {
     const {
       topic, pillar, week = 1,
       hooks = [], instagramHook = "", keyMessages = [], dataPoints = [],
       audience = 'young_professional',
-      africanProfessionalAngle = "",
     } = payload;
+
+    // Support both the new field name and the legacy alias
+    const professionalAngle = payload.professionalAngle || payload.africanProfessionalAngle || "";
 
     const audienceMeta = AUDIENCE_META[audience];
 
@@ -148,13 +151,13 @@ export const contentWriterAgent = task({
       `${ASCENTOR_BRAND}\n\n` +
       `TARGET AUDIENCE: ${audienceMeta.label} — ${audienceMeta.ageRange} year olds.\n` +
       `WRITING VOICE RULES:\n${audienceMeta.writerVoice}\n` +
-      (africanProfessionalAngle
-        ? `\nCORE AFRICAN PROFESSIONAL TRUTH TO ADDRESS IN THIS CONTENT:\n"${africanProfessionalAngle}"\n`
+      (professionalAngle
+        ? `\nCORE PROFESSIONAL TRUTH TO ADDRESS IN THIS CONTENT:\n"${professionalAngle}"\n`
         : "") +
       `\nCRITICAL LANGUAGE RULES FOR ALL CONTENT:\n` +
-      `- ZERO country-specific slang (no "oga", "sharp sharp", "japa", "NYSC" etc.)\n` +
-      `- Write for a pan-African professional audience — relatable Lagos to Nairobi to Johannesburg\n` +
-      `- Speak to UNIVERSAL African career experiences — every reader should say "this is me"\n` +
+      `- ZERO region-specific slang or cultural references that would alienate any reader\n` +
+      `- Write for a universal professional audience — relatable to anyone building their career\n` +
+      `- Speak to UNIVERSAL career experiences — every reader should say "this is me"\n` +
       `- Ascentor's confidence is earned from results — use that authority in every sentence\n` +
       `- When mentioning Ascentor, show impact: "Ascentor members", "in our coaching sessions", ` +
       `"professionals who work with Ascentor" — not just "Ascentor can help"\n`;
@@ -186,19 +189,19 @@ export const contentWriterAgent = task({
               `TOPIC: "${topic}"\n` +
               `${keyMsgBlock}${dataBlock}\n` +
               `BLOG REQUIREMENTS:\n` +
-              `- 650–800 words. Tight and purposeful — African professionals are busy, respect that.\n` +
-              `- HEADLINE: Specific, punchy, and directly relevant to an African young professional's real experience.\n` +
+              `- 650–800 words. Tight and purposeful — your readers are busy, respect that.\n` +
+              `- HEADLINE: Specific, punchy, and directly relevant to a young professional's real experience.\n` +
               `  STRONG: "Why the Hardest Workers in the Room Are Still Getting Passed Over for Promotion"\n` +
               `  WEAK: "How to Advance Your Career at Work"\n` +
               `- OPENING PARAGRAPH: Drop the reader into a specific, recognisable moment. Make them feel seen before you say a word of advice.\n` +
               `  Example: "It is a Tuesday afternoon. You just sat through a meeting where the idea you shared three weeks ago was presented as new — by someone else. You smiled and said nothing. If that has happened to you, this post is written for you."\n` +
               `- 3 SUBHEADINGS: Each one should feel like a chapter in a book about their career life.\n` +
-              `- EACH SECTION: Lead with the insight, ground it in a specific African professional scenario, then give the practical application.\n` +
-              `- ZERO generic advice. Every point must feel written for someone building their career in an African city.\n` +
+              `- EACH SECTION: Lead with the insight, ground it in a specific and relatable professional scenario, then give the practical application.\n` +
+              `- ZERO generic advice. Every point must feel written for someone actively building their career.\n` +
               `- ASCENTOR CTA: Close with a confident, specific invitation to Ascentor.\n` +
               `  STRONG: "This is exactly what Ascentor was built for. Our members are not waiting to be discovered — they are learning to engineer their visibility. Join them."\n` +
               `  WEAK: "Ascentor might be able to help you with this."\n` +
-              `- SEO: naturally include terms like "career growth Africa", "African professional development", the pillar topic.\n` +
+              `- SEO: naturally include terms like "career growth", "professional development", the pillar topic.\n` +
               `- Use \\n for line breaks.\n\n` +
               `Return: { "title": "...", "content": "markdown with \\n line breaks", "meta_description": "under 160 chars — specific and compelling", "cta": "..." }`,
           }],
@@ -220,16 +223,16 @@ export const contentWriterAgent = task({
               `- 3 posts total: 2 VALUE posts, 1 SOCIAL PROOF/ASCENTOR IMPACT post.\n` +
               `- Each post: 150–200 words.\n` +
               `- THE OPENING LINE IS EVERYTHING.\n` +
-              `  It must stop the scroll BEFORE "...see more". It must name a specific, painful, recognisable African young professional experience.\n` +
+              `  It must stop the scroll BEFORE "...see more". It must name a specific, painful, recognisable young professional experience.\n` +
               `  STRONG: "Nobody prepares you for the moment a less experienced colleague gets the promotion you worked two years for. Not HR. Not your manager. Nobody."\n` +
               `  WEAK: "Career development is crucial for professionals at every stage."\n` +
-              `- VALUE POST STRUCTURE: Hook → The real insight (grounded in African professional reality) → 3–5 concrete actions → Ascentor CTA.\n` +
+              `- VALUE POST STRUCTURE: Hook → The real insight (grounded in universal professional reality) → 3–5 concrete actions → Ascentor CTA.\n` +
               `- SOCIAL PROOF POST STRUCTURE: Open with a real result we have seen → what the professional was struggling with → what changed → confident invitation to join.\n` +
               `  Frame as: "In our coaching sessions, we keep seeing this..." or "The professionals who break through do this one thing differently..."\n` +
               `- ASCENTOR CONFIDENCE: Use results-based framing. "Ascentor members who do this are promoted 40% faster" not "Ascentor can help you grow".\n` +
               `- Max 5 relevant emojis per post.\n` +
               `- Use \\n for line breaks.\n\n` +
-              `Return: { "posts": [ { "type": "value|social_proof", "hook": "opening line only", "content": "full post with \\n breaks", "hashtags": ["#AfricanProfessionals", "#CareerGrowth", ...] } ] }`,
+              `Return: { "posts": [ { "type": "value|social_proof", "hook": "opening line only", "content": "full post with \\n breaks", "hashtags": ["#AmbitiousProfessionals", "#CareerGrowth", ...] } ] }`,
           }],
         }),
 
@@ -247,8 +250,8 @@ export const contentWriterAgent = task({
               `${hooksBlock}\n` +
               `TWITTER/X REQUIREMENTS:\n` +
               `- 2 threads, 5–6 tweets each. Under 280 characters per tweet.\n` +
-              `- Thread 1: VALUE — practical insight, grounded in African professional reality.\n` +
-              `- Thread 2: STORY — a scenario African young professionals recognise immediately, with a clear lesson.\n` +
+              `- Thread 1: VALUE — practical insight, grounded in universal professional reality.\n` +
+              `- Thread 2: STORY — a scenario any ambitious professional recognises immediately, with a clear lesson.\n` +
               `- TWEET 1 (OPENER): This is the most important sentence you will write. It must make someone stop mid-scroll and feel called out in the best way.\n` +
               `  STRONG: "The most talented professional in the room is often the last one to get promoted. Here is why — and what actually changes it 🧵"\n` +
               `  WEAK: "Here are some career tips every professional should know 🧵"\n` +
@@ -256,7 +259,7 @@ export const contentWriterAgent = task({
               `- Tweet 5: The insight that makes them want to save and share immediately.\n` +
               `- Final tweet: Natural mention of Ascentor — not an ad, a genuine invite from someone who knows what they are talking about.\n` +
               `- Max 2 emojis per tweet.\n` +
-              `- ZERO country-specific slang.\n\n` +
+              `- ZERO region-specific slang.\n\n` +
               `Return: { "threads": [ { "opener": "tweet 1", "tweets": ["t1","t2","t3","t4","t5"], "cta": "final tweet", "theme": "value|story" } ] }`,
           }],
         }),
@@ -277,13 +280,13 @@ export const contentWriterAgent = task({
               `INSTAGRAM REQUIREMENTS:\n` +
               `- 3 posts: 1 CAROUSEL (swipeable list), 1 REEL SCRIPT, 1 ENGAGEMENT post.\n\n` +
               `CAROUSEL POST:\n` +
-              `  Caption: 100–150 words. Open with a single sentence that makes a young African professional immediately tap to read more.\n` +
+              `  Caption: 100–150 words. Open with a single sentence that makes a young professional immediately tap to read more.\n` +
               `  End caption with: "Save this post — you will need it."\n` +
               `  Slides (5–7 slides): Each slide is ONE punchy statement. Max 15 words per slide.\n` +
               `  Slide 1: The hook — what the whole carousel is about. Make them swipe.\n` +
               `    STRONG Slide 1: "What your organisation is not telling you about how promotions actually work"\n` +
               `    WEAK Slide 1: "Career tips for professionals"\n` +
-              `  Each slide: A bold, specific truth about African professional career life.\n` +
+              `  Each slide: A bold, specific truth about professional career life.\n` +
               `  Last slide: Ascentor — "This is exactly what Ascentor helps you master. Link in bio."\n\n` +
               `REEL SCRIPT:\n` +
               `  60–90 second script. Fast-paced, conversational, direct.\n` +
@@ -291,11 +294,11 @@ export const contentWriterAgent = task({
               `  Include [visual cue] markers.\n` +
               `  End with a confident Ascentor mention that feels like a recommendation, not an ad.\n\n` +
               `ENGAGEMENT POST:\n` +
-              `  A question that African young professionals will actually want to answer in the comments.\n` +
+              `  A question that young professionals will actually want to answer in the comments.\n` +
               `  STRONG: "What is the one thing you wish someone had told you before your first performance review? Drop it below."\n` +
               `  WEAK: "What do you think about career development?"\n` +
               `  80–100 words caption. Max 2 emojis.\n\n` +
-              `- Hashtag strategy: mix high-reach (#AfricanProfessionals, #CareerGrowth, #Ascentor) with niche relevant tags.\n` +
+              `- Hashtag strategy: mix high-reach (#AmbitiousProfessionals, #CareerGrowth, #Ascentor) with niche relevant tags.\n` +
               `- Use \\n for line breaks.\n\n` +
               `Return: { "posts": [ { "type": "carousel|reel|engagement", "caption": "...", "slides": ["slide 1",...] or null, "script": "..." or null, "hashtags": [...] } ] }`,
           }],
@@ -323,8 +326,8 @@ export const contentWriterAgent = task({
               `  STRONG: "The meeting they had about your promotion — without you in the room"\n` +
               `  WEAK: "This week's career growth tips from Ascentor"\n\n` +
               `STRUCTURE:\n` +
-              `1. HOOK (2–3 sentences): Drop them into a specific, recognisable African professional moment. Make them feel so seen they forward the email.\n` +
-              `2. THE REAL TALK (150–200 words): The core insight. Address what is actually happening in African professional life right now.\n` +
+              `1. HOOK (2–3 sentences): Drop them into a specific, recognisable professional moment. Make them feel so seen they forward the email.\n` +
+              `2. THE REAL TALK (150–200 words): The core insight. Address what is actually happening in professional life right now.\n` +
               `   Be specific. Reference real dynamics. No platitudes.\n` +
               `3. WHAT WE HAVE SEEN (80–100 words): One pattern from Ascentor's coaching work.\n` +
               `   "In our sessions this week, we keep seeing..." or "The professionals who break through do this differently..."\n` +
@@ -417,7 +420,7 @@ export const contentWriterAgent = task({
     logger.info(`[Writer] Saved ${insertedCount}/${items.length} rows to content_calendar`);
 
     const summary = {
-      topic, pillar, week, audience, africanProfessionalAngle,
+      topic, pillar, week, audience, professionalAngle,
       generated: {
         blog: 1, linkedin_posts: linkedinPosts.length,
         twitter_threads: twitterThreads.length,
