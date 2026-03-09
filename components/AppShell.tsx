@@ -33,7 +33,7 @@ export default function AppShell({
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg, #0C0B08)' }}>
 
-      {/* ── Header ── */
+      {/* ── Header ── */}
       <header style={{
         position:        'sticky',
         top:             0,
