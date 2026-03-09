@@ -16,9 +16,11 @@ import { NotificationBell } from '@/components/Notifications';
 export default function AppShell({
   children,
   initials = 'U',
+  isAdmin = false,
 }: {
   children: React.ReactNode;
   initials?: string;
+  isAdmin?: boolean;
 }) {
   const supabase = createClient();
   const router   = useRouter();
