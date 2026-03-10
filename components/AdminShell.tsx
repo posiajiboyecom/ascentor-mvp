@@ -420,6 +420,7 @@ export default function AdminShell({
           padding: '12px 16px',
           background: '#1E1C17',
           borderBottom: '1px solid rgba(212,207,195,0.10)',
+          position: 'sticky', top: 0, zIndex: 40,
         }}
       >
         <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: '24px', width: 'auto' }} />

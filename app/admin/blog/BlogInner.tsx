@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 
-const CATEGORIES = ['Leadership', 'Career Growth', 'African Context', 'Communication', 'Frameworks', 'Stories', 'General'];
+const CATEGORIES = ['Leadership', 'Career Growth', 'Communication', 'Frameworks', 'Stories', 'General'];
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -26,7 +26,7 @@ export default function AdminBlogPageInner() {
   const emptyForm = {
     title: '', slug: '', excerpt: '', content: '', category: 'General',
     author_name: 'Posi Ajiboye', read_time_minutes: 5, is_published: false,
-    cover_image_url: '',
+    cover_image: '',
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -43,7 +43,7 @@ export default function AdminBlogPageInner() {
       title: post.title, slug: post.slug, excerpt: post.excerpt || '',
       content: post.content, category: post.category || 'General',
       author_name: post.author_name || '', read_time_minutes: post.read_time_minutes || 5,
-      is_published: post.is_published, cover_image_url: post.cover_image_url || '',
+      is_published: post.is_published, cover_image: post.cover_image || '',
     });
     setEditing(post);
     setShowForm(true);
@@ -67,7 +67,7 @@ export default function AdminBlogPageInner() {
       content: form.content,
       category: form.category || 'General',
       author_name: form.author_name || null,
-      cover_image_url: form.cover_image_url || null,
+      cover_image: form.cover_image || null,
       read_time_minutes: Number(form.read_time_minutes) || 5,
       is_published: form.is_published,
       published_at: form.is_published ? (editing?.published_at || new Date().toISOString()) : null,
@@ -228,8 +228,8 @@ export default function AdminBlogPageInner() {
             <input
               className="blog-input w-full px-3.5 py-3 text-sm rounded-xl"
               style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-              value={form.cover_image_url}
-              onChange={(e) => setForm({ ...form, cover_image_url: e.target.value })}
+              value={form.cover_image}
+              onChange={(e) => setForm({ ...form, cover_image: e.target.value })}
               placeholder="Cover image URL"
             />
 
