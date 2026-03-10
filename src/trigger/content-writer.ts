@@ -494,7 +494,7 @@ export const contentWriterAgent = task({
         pillar, week, status: "draft", platform: "Instagram",
         type: `Instagram ${(p.type || "post").charAt(0).toUpperCase() + (p.type || "post").slice(1)}`,
         audience,
-        title: `IG ${p.type || "post"}: ${(p.caption || `Instagram ${i + 1}`).replace(/\\n/g, ' ').substring(0, 55)}...`,
+        title: `IG ${p.type || "post"}: ${(p.caption || `Instagram ${i + 1}`).replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 60)}...`,
         content_data: p })),
       { pillar, week, status: "draft", platform: "Email", type: "Email Newsletter", audience,
         title: (newsletter.subject || `The Ascentor Edge: ${topic}`).substring(0, 255), content_data: newsletter },

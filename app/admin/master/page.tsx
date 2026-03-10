@@ -88,7 +88,7 @@ interface AgentStatus {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const PILLARS = [
-  { id: 'leadership', label: 'African Leadership Stories', color: '#E8A020' },
+  { id: 'leadership', label: 'leadership Stories', color: '#E8A020' },
   { id: 'career',     label: 'Career Growth Tactics',      color: '#14B8A6' },
   { id: 'ai',         label: 'AI & Future of Work',        color: '#8B5CF6' },
   { id: 'coaching',   label: 'Coaching Insights',          color: '#3B82F6' },
@@ -184,9 +184,6 @@ export default function MasterAdminPage() {
   const [agentPayload, setAgentPayload] = useState<Record<string, string>>({});
   const [expandedAgent,   setExpandedAgent]   = useState<string | null>(null);
   const [expandedContent, setExpandedContent] = useState<string | null>(null);
-
-  // Stage picker modal for Content Researcher
-  const [stageModal, setStageModal] = useState<{ agentId: string; basePayload: Record<string, string> } | null>(null);
 
   // Content form
   const [showAddContent, setShowAddContent] = useState(false);
@@ -391,113 +388,7 @@ export default function MasterAdminPage() {
         .ma-tab.inactive:hover { color:var(--admin-text-muted); }
         .ma-row:hover { background: var(--admin-border-strong) !important; }
         textarea { resize: vertical; }
-        .stage-card { padding:16px 18px; border-radius:12px; border:1px solid var(--admin-bg-input); background:var(--admin-bg-deep); cursor:pointer; transition:all 0.15s; text-align:left; width:100%; }
-        .stage-card:hover { border-color:rgba(232,160,32,0.5); background:rgba(232,160,32,0.04); }
-        .stage-card.explorer:hover { border-color:rgba(20,184,166,0.5); background:rgba(20,184,166,0.04); }
-        .stage-card.builder:hover  { border-color:rgba(232,160,32,0.5); background:rgba(232,160,32,0.04); }
-        .stage-card.climber:hover  { border-color:rgba(139,92,246,0.5); background:rgba(139,92,246,0.04); }
       `}</style>
-
-      {/* ── Stage Picker Modal ───────────────────────────────────────────── */}
-      {stageModal && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-        }}
-          onClick={() => setStageModal(null)}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: 'var(--admin-bg-card)', borderRadius: 16,
-              border: '1px solid var(--admin-bg-input)',
-              padding: 28, width: '100%', maxWidth: 480,
-              boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
-            }}
-          >
-            {/* Modal header */}
-            <div style={{ marginBottom: 20 }}>
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#E8A020', margin: '0 0 6px' }}>
-                Content Researcher
-              </p>
-              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 6px' }}>
-                Which audience are you targeting?
-              </h3>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', margin: 0 }}>
-                Select a stage. The researcher will tailor the brief and brief the writer accordingly.
-              </p>
-            </div>
-
-            {/* Stage cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-              {[
-                {
-                  stage: 'explorer',
-                  label: 'Explorer',
-                  share: '30%',
-                  color: '#14B8A6',
-                  desc: 'Students, graduates, first job, anyone figuring out direction',
-                  who: 'Secondary school leavers · Undergrads · Recent graduates · Career undecideds',
-                },
-                {
-                  stage: 'builder',
-                  label: 'Builder',
-                  share: '50%',
-                  color: '#E8A020',
-                  desc: 'Early-career pros, first-time managers, entrepreneurs, career switchers',
-                  who: '0–7 yrs experience · First-time managers · Founders · Industry switchers',
-                },
-                {
-                  stage: 'climber',
-                  label: 'Climber',
-                  share: '20%',
-                  color: '#8B5CF6',
-                  desc: 'Senior leaders, directors, scaling founders, exec transitions',
-                  who: 'Mid-career leaders · Directors · Scaling founders · Board-bound execs',
-                },
-              ].map(({ stage, label, share, color, desc, who }) => (
-                <button
-                  key={stage}
-                  className={`stage-card ${stage}`}
-                  onClick={() => {
-                    setStageModal(null);
-                    triggerAgent(stageModal.agentId, { ...stageModal.basePayload, stage });
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{
-                        fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color,
-                      }}>{label}</span>
-                      <span style={{
-                        fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em',
-                        padding: '2px 8px', borderRadius: 100,
-                        background: `${color}18`, color, border: `1px solid ${color}30`,
-                      }}>TARGET {share}</span>
-                    </div>
-                  </div>
-                  <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text)', margin: '0 0 4px', fontWeight: 600 }}>{desc}</p>
-                  <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)', margin: 0, letterSpacing: '0.04em' }}>{who}</p>
-                </button>
-              ))}
-            </div>
-
-            {/* Cancel */}
-            <button
-              onClick={() => setStageModal(null)}
-              style={{
-                width: '100%', padding: '9px 0', borderRadius: 8,
-                border: '1px solid var(--admin-bg-input)', background: 'transparent',
-                fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.1em',
-                textTransform: 'uppercase', color: 'var(--admin-text-faint)', cursor: 'pointer',
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── Page header ──────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 24 }}>
@@ -685,7 +576,7 @@ export default function MasterAdminPage() {
               {[
                 { day: 0,  subject: 'Welcome + lead magnet delivery' },
                 { day: 1,  subject: 'Why I built Ascentor — founder story' },
-                { day: 3,  subject: 'The #1 leadership mistake African professionals make' },
+                { day: 3,  subject: 'The #1 leadership mistake ambitious professionals make' },
                 { day: 5,  subject: 'Meet Sage — your AI coach (demo)' },
                 { day: 7,  subject: 'Social proof — member transformation story' },
                 { day: 10, subject: 'The 3 pillars of Ascentor (soft product intro)' },
@@ -816,7 +707,17 @@ export default function MasterAdminPage() {
                     return tweets.join('\n\n');
                   }
                   if (item.type === 'Email Newsletter') return cd.body || cd.subject || null;
-                  return JSON.stringify(cd, null, 2);
+                  // Instagram — all 3 types store their main text in caption
+                  if (
+                    item.type === 'Instagram Carousel' ||
+                    item.type === 'Instagram Reel' ||
+                    item.type === 'Instagram Engagement' ||
+                    item.platform === 'Instagram'
+                  ) {
+                    return cd.caption || null;
+                  }
+                  // Fallback: try common text fields before raw JSON
+                  return cd.caption || cd.content || cd.body || cd.text || null;
                 }
 
                 const previewText = getPreviewText();
@@ -893,6 +794,36 @@ export default function MasterAdminPage() {
                                 Hook: {cd.hook}
                               </p>
                             )}
+                            {/* Instagram carousel slides */}
+                            {item.platform === 'Instagram' && cd?.type === 'carousel' && Array.isArray(cd?.slides) && (
+                              <div style={{ marginBottom: 12 }}>
+                                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E1306C', letterSpacing: '0.1em', margin: '0 0 8px' }}>SLIDES ({cd.slides.length})</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                  {cd.slides.map((slide: string, si: number) => (
+                                    <div key={si} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '6px 10px', background: 'var(--admin-bg-card)', borderRadius: 6, border: '1px solid var(--admin-bg-input)' }}>
+                                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E1306C', flexShrink: 0, paddingTop: 1 }}>{si + 1}</span>
+                                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text)', lineHeight: 1.4 }}>{slide}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {/* Instagram reel script */}
+                            {item.platform === 'Instagram' && cd?.type === 'reel' && cd?.script && (
+                              <div style={{ marginBottom: 12 }}>
+                                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E1306C', letterSpacing: '0.1em', margin: '0 0 8px' }}>REEL SCRIPT</p>
+                                <pre style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--admin-text-muted)', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6, padding: '10px 12px', background: 'var(--admin-bg-card)', borderRadius: 6, border: '1px solid var(--admin-bg-input)' }}>
+                                  {cd.script.replace(/\\n/g, '\n')}
+                                </pre>
+                              </div>
+                            )}
+                            {/* Instagram hashtags */}
+                            {item.platform === 'Instagram' && Array.isArray(cd?.hashtags) && cd.hashtags.length > 0 && (
+                              <div style={{ marginBottom: 12 }}>
+                                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E1306C', letterSpacing: '0.1em', margin: '0 0 6px' }}>HASHTAGS</p>
+                                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--admin-text-muted)', margin: 0, lineHeight: 1.8 }}>{cd.hashtags.join('  ')}</p>
+                              </div>
+                            )}
                             {/* Main content */}
                             <pre style={{
                               fontFamily: item.type === 'Blog Post' || item.type === 'Email Newsletter'
@@ -904,7 +835,7 @@ export default function MasterAdminPage() {
                               wordBreak: 'break-word',
                               lineHeight: 1.7,
                             }}>
-                              {previewText}
+                              {typeof previewText === 'string' ? previewText.replace(/\\n/g, '\n') : previewText}
                             </pre>
                             {/* Blog CTA */}
                             {item.type === 'Blog Post' && cd?.cta && (
@@ -927,12 +858,12 @@ export default function MasterAdminPage() {
             <p style={mono('Monday Content Flywheel — One Input → 12 Outputs', true, false)}>Monday Content Flywheel</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
               {[
-                { time: '6:00', step: 'Research Agent', desc: 'Perplexity AI — 5 trending African leadership topics' },
+                { time: '6:00', step: 'Research Agent', desc: 'Perplexity AI — 5 trending leadership topics' },
                 { time: '8:00', step: 'Content Writer Agent', desc: 'Claude API — 1 blog post, 5 LinkedIn posts, 3 Twitter threads, 1 newsletter' },
                 { time: '10:00', step: 'Founder Review', desc: '5-min approval window before scheduler fires' },
                 { time: '10:30', step: 'Social Scheduler Agent', desc: 'Buffer API — entire week of posts queued automatically' },
                 { time: 'Async', step: 'Canva Graphics', desc: '5x quote cards from article — schedule across week' },
-                { time: 'Friday', step: 'Newsletter Send', desc: '"The African Leader" — 400–600 words, written by Claude in 20 mins' },
+                { time: 'Friday', step: 'Newsletter Send', desc: '"The leaders" — 400–600 words, written by Claude in 20 mins' },
               ].map((s, i) => (
                 <div key={i} style={{ display: 'flex', gap: 12, padding: '10px 14px', background: 'var(--admin-bg-card)', borderRadius: 8, alignItems: 'flex-start' }}>
                   <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', width: 44, flexShrink: 0, paddingTop: 1 }}>{s.time}</span>
@@ -964,10 +895,10 @@ export default function MasterAdminPage() {
           {/* Canonical 4 from the marketing doc */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
             {[
-              { name: 'The African Leadership Blueprint', type: 'PDF', desc: '10-page guide · 7 frameworks used by Africa\'s top CEOs · created with Claude in 2 hours' },
+              { name: 'The leadership Blueprint', type: 'PDF', desc: '10-page guide · 7 frameworks used by top CEOs · created with Claude in 2 hours' },
               { name: 'Free 30-Day Leadership Challenge', type: 'Email Series', desc: 'Daily email · 1 leadership exercise per day · builds habit + proves value before payment' },
               { name: 'Career Acceleration Audit', type: 'Quiz', desc: '10-question Typeform quiz · reveals leadership gaps · personalised email sequence trigger' },
-              { name: 'African Professional Salary Negotiation Toolkit', type: 'Template Pack', desc: 'Scripts, email templates, prep frameworks · high perceived value · viral LinkedIn potential' },
+              { name: 'ambitious professional Salary Negotiation Toolkit', type: 'Template Pack', desc: 'Scripts, email templates, prep frameworks · high perceived value · viral LinkedIn potential' },
             ].map(m => (
               <div key={m.name} style={{ ...card, padding: 18 }}>
                 <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#E8A020', background: 'rgba(232,160,32,0.08)', border: '1px solid rgba(232,160,32,0.2)', borderRadius: 100, padding: '2px 8px' }}>{m.type}</span>
@@ -1068,11 +999,11 @@ export default function MasterAdminPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
             {[
               { platform: 'LinkedIn',   priority: '#1', note: 'ICP lives here · organic reach strong · founder must post daily', color: '#0A66C2' },
-              { platform: 'Twitter/X',  priority: '#2', note: 'African tech/business community · threads go viral', color: '#1DA1F2' },
+              { platform: 'Twitter/X',  priority: '#2', note: 'tech/business community · threads go viral', color: '#1DA1F2' },
               { platform: 'WhatsApp',   priority: '#3', note: '95%+ penetration · 3×/week · Mon/Wed/Fri cadence', color: '#25D366' },
               { platform: 'Instagram',  priority: '#4', note: 'Visual storytelling · carousels · younger segment', color: '#E1306C' },
               { platform: 'YouTube',    priority: 'M4+', note: 'Long-form coaching demos · highest SEO value', color: '#FF0000' },
-              { platform: 'TikTok',     priority: 'M6+', note: 'Gen Z African professionals · short coaching tips', color: '#010101' },
+              { platform: 'TikTok',     priority: 'M6+', note: 'Gen Z ambitious professionals · short coaching tips', color: '#010101' },
             ].map(p => (
               <div key={p.platform} style={{ ...card, padding: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -1154,7 +1085,7 @@ export default function MasterAdminPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
               {[
                 { week: 1, theme: 'Leadership Foundations',  mix: '2 LinkedIn long-form + 3 Twitter threads + 4 carousels + WhatsApp daily' },
-                { week: 2, theme: 'African Success Stories', mix: 'Founder story + member spotlight + 1 viral Twitter poll + email newsletter' },
+                { week: 2, theme: 'Success Stories', mix: 'Founder story + member spotlight + 1 viral Twitter poll + email newsletter' },
                 { week: 3, theme: 'AI & Career Future',      mix: 'Thought leadership + coaching tip series + WhatsApp broadcast + 1 lead magnet push' },
                 { week: 4, theme: 'Community & Conversion',  mix: 'Cohort preview + social proof + Founders Promo activation + monthly review post' },
               ].map(row => (
@@ -1313,12 +1244,7 @@ export default function MasterAdminPage() {
                                   payload[key] = agentPayload[`${agent.id}:${key}`] || '';
                                 });
                               }
-                              // Content Researcher gets a stage picker first
-                              if (agent.triggerTaskId === 'content-researcher-manual') {
-                                setStageModal({ agentId: agent.id, basePayload: payload });
-                              } else {
-                                triggerAgent(agent.id, payload);
-                              }
+                              triggerAgent(agent.id, payload);
                             }}
                             disabled={isTriggeringThis}
                             style={{
