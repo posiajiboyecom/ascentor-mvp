@@ -76,6 +76,8 @@ export default function AdminContentPage() {
   const [runPillar,    setRunPillar]    = useState('');
   const [runAudience,  setRunAudience]  = useState('young_professional');
   const [running,      setRunning]      = useState(false);
+  // Used to switch filter AFTER patchItem state update completes
+  const [pendingFilter, setPendingFilter] = useState<StatusFilter | null>(null);
 
   async function loadAll() {
     setLoading(true);
@@ -91,6 +93,14 @@ export default function AdminContentPage() {
   }
 
   useEffect(() => { loadAll(); }, []); // eslint-disable-line
+
+  // Apply filter switch AFTER items state has updated from patchItem
+  useEffect(() => {
+    if (pendingFilter !== null) {
+      setStatusFilter(pendingFilter);
+      setPendingFilter(null);
+    }
+  }, [pendingFilter, items]); // eslint-disable-line
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -151,7 +161,7 @@ export default function AdminContentPage() {
 
     // Switch filter to 'approved' so the item stays visible in its new state
     // instead of disappearing from the 'draft' filter
-    setStatusFilter('approved');
+    setPendingFilter('approved');
     setSelectedItem(null);
     setSaving(false);
   }
@@ -164,7 +174,7 @@ export default function AdminContentPage() {
       approved_at: selectedItem.approved_at ?? new Date().toISOString(),
     });
     showToast('✓ Scheduled for ' + fmtDate(date));
-    setStatusFilter('scheduled');
+    setPendingFilter('scheduled');
     setSelectedItem(null);
     setSaving(false);
   }
@@ -187,7 +197,7 @@ export default function AdminContentPage() {
     if (error) { showToast('Blog error: ' + error.message, false); setSaving(false); return; }
     await setStatus(item.id, 'published', { published_at: new Date().toISOString() });
     showToast('✓ Sent to Blog Drafts → publish from /admin/blog');
-    setStatusFilter('published');
+    setPendingFilter('published');
     setSelectedItem(null);
     setSaving(false);
   }
@@ -209,7 +219,7 @@ export default function AdminContentPage() {
     if (error) { showToast('Queue error: ' + error.message, false); setSaving(false); return; }
     await setStatus(item.id, 'published', { published_at: new Date().toISOString() });
     showToast('✓ Added to social queue');
-    setStatusFilter('published');
+    setPendingFilter('published');
     setSelectedItem(null);
     setSaving(false);
   }
@@ -352,7 +362,7 @@ export default function AdminContentPage() {
                       onSchedule={handleSchedule}
                       onPublishBlog={handlePublishBlog}
                       onQueueSocial={handleQueueSocial}
-                      onReject={(id) => { setStatus(id, 'draft'); setStatusFilter('draft'); setSelectedItem(null); }}
+                      onReject={(id) => { setStatus(id, 'draft'); setPendingFilter('draft'); setSelectedItem(null); }}
                       onCopy={copyText}
                       onSaveNotes={handleSaveNotes}
                     />
