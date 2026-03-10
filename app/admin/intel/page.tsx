@@ -147,7 +147,8 @@ export default function IntelPage() {
   const [lastRefresh,  setLastRefresh]  = useState<Date | null>(null);
   const [error,        setError]        = useState('');
   const [activeTab,    setActiveTab]    = useState<'overview' | 'insights' | 'users' | 'community'>('overview');
-  const [autoRefresh,  setAutoRefresh]  = useState(true);
+  const [autoRefresh,  setAutoRefresh]  = useState(false);
+  const [snapshotMeta, setSnapshotMeta]  = useState<{id?:string; generated_by?:string; token_cost?:{cost_usd:number;input_tokens:number;output_tokens:number}; duration_ms?:number} | null>(null);
   const [creatingRec,  setCreatingRec]  = useState<Record<string, boolean>>({});
   const [createdRec,   setCreatedRec]   = useState<Record<string, boolean>>({});
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -397,7 +398,7 @@ Rules:
       const res = await fetch('/api/intel-analyse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, raw_data: data }),
       });
 
       const apiData = await res.json();
@@ -406,15 +407,37 @@ Rules:
       const parsed: AIReport = apiData.report;
       setReport(parsed);
       setLastRefresh(new Date());
+      if (apiData.token_cost) setSnapshotMeta({ id: apiData.snapshot_id, generated_by: 'manual', token_cost: apiData.token_cost });
     } catch (e: any) {
       setError(`Analysis failed: ${e?.message}`);
     }
     setAnalysing(false);
   }, []);
 
-  // ── Full refresh ─────────────────────────────────────────────
+  // ── Load from cache (on mount) ───────────────────────────────
+  const loadFromCache = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/intel-analyse');
+      const json = await res.json();
+      if (json.snapshot) {
+        const snap = json.snapshot;
+        setRawData(snap.raw_data as RawData);
+        setReport(snap.ai_report as AIReport);
+        setSnapshotMeta({ id: snap.id, generated_by: snap.generated_by, token_cost: snap.token_cost, duration_ms: snap.duration_ms });
+        setLastRefresh(new Date(snap.generated_at));
+      }
+    } catch (e: any) {
+      setError(`Cache load failed: ${e?.message}`);
+    }
+    setLoading(false);
+  }, []);
+
+  // ── Full refresh (manual — fetches live data + calls Claude) ─
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError('');
     const data = await fetchData();
     setLoading(false);
     if (data) {
@@ -423,9 +446,9 @@ Rules:
     }
   }, [fetchData, runAnalysis]);
 
-  // Initial load + auto-refresh every 5 min
+  // Initial load from cache, auto-refresh if enabled
   useEffect(() => {
-    refresh();
+    loadFromCache();
   }, []);
 
   useEffect(() => {
@@ -495,24 +518,33 @@ Rules:
             )}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {/* Auto-refresh toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--admin-bg-deep)', border: '1px solid var(--admin-bg-input)', borderRadius: 8 }}>
-            <div
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              style={{ width: 28, height: 16, borderRadius: 100, background: autoRefresh ? B.gold : 'var(--admin-bg-input)', position: 'relative', cursor: 'pointer', transition: 'background 0.2s' }}
-            >
-              <div style={{ position: 'absolute', top: 2, left: autoRefresh ? 14 : 2, width: 12, height: 12, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Cost badge */}
+          {snapshotMeta?.token_cost && (
+            <div style={{ padding: '6px 12px', background: 'var(--admin-bg-deep)', border: '1px solid var(--admin-bg-input)', borderRadius: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span style={{ fontFamily: B.fontMono, fontSize: 9, color: 'var(--admin-text-faint)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Last run</span>
+              <span style={{ fontFamily: B.fontMono, fontSize: 10, color: B.green }}>
+                ${snapshotMeta.token_cost.cost_usd.toFixed(4)}
+              </span>
+              <span style={{ fontFamily: B.fontMono, fontSize: 9, color: 'var(--admin-text-faint)' }}>
+                {snapshotMeta.token_cost.input_tokens + snapshotMeta.token_cost.output_tokens} tokens
+              </span>
             </div>
-            <span style={{ fontFamily: B.fontMono, fontSize: 9, color: 'var(--admin-text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Auto</span>
+          )}
+          {/* Freshness indicator */}
+          <div style={{ padding: '6px 12px', background: 'var(--admin-bg-deep)', border: '1px solid var(--admin-bg-input)', borderRadius: 8 }}>
+            <span style={{ fontFamily: B.fontMono, fontSize: 9, color: 'var(--admin-text-faint)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              {snapshotMeta?.generated_by?.startsWith('manual') ? '⚡ Manual refresh' : '🕐 Daily schedule'}
+            </span>
           </div>
           <button
             onClick={refresh}
             disabled={loading || analysing}
+            title="Fetches live data and runs a fresh Claude analysis. ~$0.005 per run."
             style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: B.gold, color: '#0C0B08', fontFamily: B.fontUI, fontWeight: 700, fontSize: 12, cursor: 'pointer', opacity: (loading || analysing) ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: 6 }}
           >
             {(loading || analysing) ? <Spinner size={12} color="#0C0B08" /> : null}
-            Refresh Now
+            {analysing ? 'Analysing…' : loading ? 'Loading…' : 'Refresh Now'}
           </button>
         </div>
       </div>
