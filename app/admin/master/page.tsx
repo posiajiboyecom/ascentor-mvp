@@ -185,6 +185,9 @@ export default function MasterAdminPage() {
   const [expandedAgent,   setExpandedAgent]   = useState<string | null>(null);
   const [expandedContent, setExpandedContent] = useState<string | null>(null);
 
+  // Stage picker modal for Content Researcher
+  const [stageModal, setStageModal] = useState<{ agentId: string; basePayload: Record<string, string> } | null>(null);
+
   // Content form
   const [showAddContent, setShowAddContent] = useState(false);
   const [newContent, setNewContent] = useState({ pillar: 'leadership', type: 'Blog Post', title: '', platform: 'LinkedIn', status: 'draft' as const, week: 1, scheduled_for: '' });
@@ -388,7 +391,75 @@ export default function MasterAdminPage() {
         .ma-tab.inactive:hover { color:var(--admin-text-muted); }
         .ma-row:hover { background: var(--admin-border-strong) !important; }
         textarea { resize: vertical; }
+        .stage-card { padding:16px 18px; border-radius:12px; border:1px solid var(--admin-bg-input); background:var(--admin-bg-deep); cursor:pointer; transition:all 0.15s; text-align:left; width:100%; }
+        .stage-card.explorer:hover { border-color:rgba(20,184,166,0.5); background:rgba(20,184,166,0.04); }
+        .stage-card.builder:hover  { border-color:rgba(232,160,32,0.5); background:rgba(232,160,32,0.04); }
+        .stage-card.climber:hover  { border-color:rgba(139,92,246,0.5); background:rgba(139,92,246,0.04); }
       `}</style>
+
+      {/* ── Stage Picker Modal ───────────────────────────────────────────── */}
+      {stageModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+        }}
+          onClick={() => setStageModal(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--admin-bg-card)', borderRadius: 16,
+              border: '1px solid var(--admin-bg-input)',
+              padding: 28, width: '100%', maxWidth: 480,
+              boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
+            }}
+          >
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#E8A020', margin: '0 0 6px' }}>
+                Content Researcher
+              </p>
+              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 6px' }}>
+                Which audience are you targeting?
+              </h3>
+              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', margin: 0 }}>
+                Select a stage. The researcher will tailor the brief and trigger the writer accordingly.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+              {[
+                { stage: 'explorer', label: 'Explorer',  share: '30%', color: '#14B8A6', desc: 'Students, graduates, first job, anyone figuring out direction',           who: 'Secondary school leavers · Undergrads · Recent graduates · Career undecideds' },
+                { stage: 'builder',  label: 'Builder',   share: '50%', color: '#E8A020', desc: 'Early-career pros, first-time managers, entrepreneurs, career switchers', who: '0–7 yrs experience · First-time managers · Founders · Industry switchers'      },
+                { stage: 'climber',  label: 'Climber',   share: '20%', color: '#8B5CF6', desc: 'Senior leaders, directors, scaling founders, exec transitions',           who: 'Mid-career leaders · Directors · Scaling founders · Board-bound execs'        },
+              ].map(({ stage, label, share, color, desc, who }) => (
+                <button
+                  key={stage}
+                  className={`stage-card ${stage}`}
+                  onClick={() => {
+                    setStageModal(null);
+                    triggerAgent(stageModal!.agentId, { ...stageModal!.basePayload, stage });
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color }}>{label}</span>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em', padding: '2px 8px', borderRadius: 100, background: `${color}18`, color, border: `1px solid ${color}30` }}>TARGET {share}</span>
+                  </div>
+                  <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text)', margin: '0 0 4px', fontWeight: 600 }}>{desc}</p>
+                  <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)', margin: 0, letterSpacing: '0.04em' }}>{who}</p>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setStageModal(null)}
+              style={{ width: '100%', padding: '9px 0', borderRadius: 8, border: '1px solid var(--admin-bg-input)', background: 'transparent', fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--admin-text-faint)', cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Page header ──────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 24 }}>
@@ -1244,7 +1315,12 @@ export default function MasterAdminPage() {
                                   payload[key] = agentPayload[`${agent.id}:${key}`] || '';
                                 });
                               }
-                              triggerAgent(agent.id, payload);
+                              // Content Researcher gets stage picker modal first
+                              if (agent.triggerTaskId === 'content-researcher-manual') {
+                                setStageModal({ agentId: agent.id, basePayload: payload });
+                              } else {
+                                triggerAgent(agent.id, payload);
+                              }
                             }}
                             disabled={isTriggeringThis}
                             style={{
