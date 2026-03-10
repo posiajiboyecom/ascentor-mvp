@@ -439,11 +439,18 @@ async function researchAndDiscover(
 // ── Brief builder ─────────────────────────────────────────────
 async function buildBrief(params: {
   pillar: Pillar; weekNumber: number; trends: string[];
-  news: { title: string; snippet: string }[]; summary: string; research: string; audience: AudiencePreset;
+  news: { title: string; snippet: string }[]; summary: string; research: string;
+  audience: AudiencePreset; recentTopics: string[];
 }) {
   const audienceMeta = AUDIENCE_META[params.audience];
   const painPoints = getPainPoints(params.audience);
   const stageLabel = audienceMeta.label;
+
+  const avoidBlock = params.recentTopics.length > 0
+    ? `\nDO NOT REPEAT — TOPICS ALREADY COVERED (last ${params.recentTopics.length}):\n` +
+      params.recentTopics.map(t => `- "${t}"`).join("\n") +
+      `\nChoose a FRESH angle, scenario, and insight that has not appeared in any of the above.\n`
+    : "";
 
   const response = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
@@ -455,8 +462,9 @@ async function buildBrief(params: {
         `MISSION: Build a brief that makes a ${stageLabel} stop and say "this is EXACTLY my life right now."\n\n` +
         `Audience segment: ${stageLabel} | Pillar: ${params.pillar} | Week: ${params.weekNumber}\n` +
         `Trends: ${params.trends.slice(0, 3).join(", ") || params.pillar}\n` +
-        `Research: ${params.research.substring(0, 500)}\n\n` +
-        `RULES:\n` +
+        `Research: ${params.research.substring(0, 500)}\n` +
+        avoidBlock +
+        `\nRULES:\n` +
         `1. Topic must speak directly to the ${stageLabel} stage — no generic career advice\n` +
         `2. Every key message must position Ascentor as the platform that closes this specific gap\n` +
         `3. Ascentor speaks from results: "we have seen this", "professionals who do this get promoted 40% faster"\n` +
@@ -515,8 +523,24 @@ async function runResearch(params: {
 
   console.log(`[Researcher] Week ${weekNumber} — pillar: ${pillar} — segment: ${audience}`);
 
+  // Fetch recent topics to avoid repetition
+  let recentTopics: string[] = [];
+  try {
+    const { data: recentBriefs } = await supabase
+      .from("research_briefs")
+      .select("topic")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    recentTopics = (recentBriefs || []).map((r: any) => r.topic).filter(Boolean);
+    if (recentTopics.length > 0) {
+      console.log(`[Researcher] Loaded ${recentTopics.length} recent topics for deduplication`);
+    }
+  } catch (e) {
+    console.warn(`[Researcher] Could not load recent topics (non-fatal):`, e);
+  }
+
   const { trends, news, summary, research } = await researchAndDiscover(pillar, weekNumber, audience);
-  const brief = await buildBrief({ pillar, weekNumber, trends, news, summary, research, audience });
+  const brief = await buildBrief({ pillar, weekNumber, trends, news, summary, research, audience, recentTopics });
   if (params.topicOverride?.trim()) brief.chosenTopic = params.topicOverride.trim();
 
   console.log(`[Researcher] Brief: "${brief.chosenTopic}" — segment: ${audience}`);

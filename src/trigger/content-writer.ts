@@ -200,6 +200,34 @@ export const contentWriterAgent = task({
     const segmentCTA = getSegmentCTA(audience);
     const specificity = getSpecificity(audience);
 
+    // ── Fetch recent content to avoid repetition ──────────────
+    // Pull the last 30 blog/newsletter titles from content_calendar
+    // so every prompt knows what has already been written
+    let recentTopicsBlock = "";
+    try {
+      const { data: recentItems } = await supabase
+        .from("content_calendar")
+        .select("title, type, pillar, created_at")
+        .in("type", ["Blog Post", "Email Newsletter"])
+        .order("created_at", { ascending: false })
+        .limit(30);
+
+      if (recentItems && recentItems.length > 0) {
+        const recentList = recentItems
+          .map(r => `- "${r.title.replace(/^IG \w+: |^Thread: /, '')}"`)
+          .join("\n");
+        recentTopicsBlock =
+          `\nDO NOT REPEAT — ALREADY PUBLISHED (last ${recentItems.length} pieces):\n` +
+          `${recentList}\n` +
+          `Every angle, hook, opening scenario, and key insight must be FRESH. ` +
+          `If any of the above topics are related, approach from a completely different angle, ` +
+          `different scenario, different reader moment, and different actionable takeaway.\n`;
+        logger.info(`[Writer] Loaded ${recentItems.length} recent titles for deduplication`);
+      }
+    } catch (e) {
+      logger.warn(`[Writer] Could not load recent topics (non-fatal): ${e}`);
+    }
+
     // ── Master voice block ────────────────────────────────────
     const VOICE_BLOCK =
       `${ASCENTOR_BRAND}\n\n` +
@@ -210,7 +238,8 @@ export const contentWriterAgent = task({
       (professionalAngle
         ? `CORE TRUTH THIS CONTENT MUST ADDRESS:\n"${professionalAngle}"\n\n`
         : "") +
-      `${segmentCTA}\n`;
+      `${segmentCTA}\n` +
+      recentTopicsBlock;
 
     const keyMsgBlock = keyMessages.length > 0
       ? `Key messages (weave in naturally — never as a list):\n${keyMessages.map((m, i) => `${i + 1}. ${m}`).join("\n")}\n\n` : "";
