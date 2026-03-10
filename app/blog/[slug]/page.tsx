@@ -104,7 +104,7 @@ export default async function BlogPostPage({ params }: Props) {
         <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
           <Link href="/" className="lp-nav-logo">
             <img
-              src="/ascentor-color-on-light-pages.svg"
+              src="/ascentor-color-for-light-pages.svg"
               alt="Ascentor"
               style={{ height: '32px', width: 'auto' }}
             />
@@ -136,10 +136,21 @@ export default async function BlogPostPage({ params }: Props) {
           <div>
             <p className="text-sm font-semibold" style={{ color: '#0C0B08' }}>{post.author_name}</p>
             <p className="text-xs" style={{ color: '#9CA3AF' }}>
-              {post.published_at && new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · {post.read_time_min} min read
+              {post.published_at && new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · {post.read_time_minutes} min read
             </p>
           </div>
         </div>
+
+        {post.cover_image && (
+          <div className="mb-8 rounded-2xl overflow-hidden" style={{ maxHeight: '460px' }}>
+            <img
+              src={post.cover_image}
+              alt={post.title}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          </div>
+        )}
 
         <div>{renderContent(post.content)}</div>
 
