@@ -20,9 +20,8 @@ async function buildRecipientList(): Promise<Recipient[]> {
       .eq("is_active", true),
 
     supabase
-      .from("users")
-      .select("email, full_name")
-      .eq("email_opt_out", false), // only include users who haven't opted out
+      .from("profiles")
+      .select("email, full_name"),
   ]);
 
   const recipients = new Map<string, Recipient>();
