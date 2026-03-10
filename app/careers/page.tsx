@@ -123,6 +123,7 @@ export default function CareersPage() {
         years_experience: appForm.years_experience || null,
         how_did_you_hear: appForm.how_did_you_hear || null,
         cv_url:           cvUrl,
+        cv_filename:      cvFile ? cvFile.name : null,
         status:           'new',
       });
       if (error) throw error;

@@ -69,6 +69,65 @@ const CARD_STYLE: React.CSSProperties = {
 // them on state changes (which would kill input focus on every keystroke).
 // ══════════════════════════════════════════════════════════════════════════════
 
+
+// ── CvDownloadBtn: generates a signed URL for private bucket download ─────────
+function CvDownloadBtn({ cvUrl, cvFilename, supabase }: {
+  cvUrl: string;
+  cvFilename: string | null;
+  supabase: ReturnType<typeof createClient>;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState('');
+
+  async function handleDownload() {
+    setLoading(true);
+    setError('');
+    try {
+      const marker = '/resumes/';
+      const idx = cvUrl.indexOf(marker);
+      if (idx === -1) {
+        window.open(cvUrl, '_blank');
+        setLoading(false);
+        return;
+      }
+      const storagePath = cvUrl.slice(idx + marker.length);
+      const { data, error: signErr } = await supabase.storage
+        .from('resumes')
+        .createSignedUrl(storagePath, 60);
+      if (signErr || !data?.signedUrl) {
+        setError('Could not generate download link.');
+      } else {
+        window.open(data.signedUrl, '_blank');
+      }
+    } catch {
+      setError('Download failed.');
+    }
+    setLoading(false);
+  }
+
+  return (
+    <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
+      <button
+        onClick={handleDownload}
+        disabled={loading}
+        style={{
+          fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#22C55E',
+          background: 'none', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 5,
+          padding: '3px 10px', cursor: loading ? 'not-allowed' : 'pointer',
+          opacity: loading ? 0.6 : 1,
+        }}
+      >
+        {loading ? 'Generating link…' : `⇩ Download CV${cvFilename ? ` — ${cvFilename}` : ''}`}
+      </button>
+      {error && (
+        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#EF4444' }}>
+          {error}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function ActionBtn({ onClick, color, children }: { onClick: () => void; color: string; children: React.ReactNode }) {
   return (
     <button onClick={onClick} style={{
@@ -675,10 +734,11 @@ export default function AdminCareersPage() {
                           {app.linkedin_url && <a href={app.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#14B8A6', textDecoration: 'none' }}>↗ LinkedIn</a>}
                           {app.portfolio_url && <a href={app.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#8B5CF6', textDecoration: 'none' }}>↗ Portfolio</a>}
                           {app.cv_url && (
-                            <a href={app.cv_url} download={app.cv_filename || true} target="_blank" rel="noopener noreferrer"
-                              style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#22C55E', textDecoration: 'none', padding: '3px 10px', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 5 }}>
-                              ⬇ Download CV{app.cv_filename ? ` — ${app.cv_filename}` : ''}
-                            </a>
+                            <CvDownloadBtn
+                              cvUrl={app.cv_url}
+                              cvFilename={app.cv_filename}
+                              supabase={supabase}
+                            />
                           )}
                           {app.how_did_you_hear && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)' }}>via {app.how_did_you_hear}</span>}
                         </div>
