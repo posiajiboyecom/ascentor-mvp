@@ -84,7 +84,7 @@ const DOMAIN_COLOR: Record<string, string> = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────
-const fmt = (n: number) => n >= 1000 ? `${(n/1000).toFixed(1)}k` : String(n);
+const fmt = (n: unknown): string => { const num = typeof n === "number" ? n : Number(n); if (isNaN(num)) return "0"; return num >= 1000 ? `${(num/1000).toFixed(1)}k` : String(Math.round(num)); };
 const pct = (a: number, b: number) => b > 0 ? `${Math.round((a/b)*100)}%` : '0%';
 const delta = (now: number, prev: number): { text: string; up: boolean } => {
   if (prev === 0) return { text: prev === 0 && now > 0 ? '+∞' : '—', up: now >= 0 };
@@ -224,15 +224,15 @@ export default function IntelPage() {
       });
 
       // Revenue totals
-      const totalRevenue = (revenueAllRes.data || []).reduce((s: number, r: any) => s + (r.amount || 0), 0);
-      const rev7  = (revenue7Res.data  || []).reduce((s: number, r: any) => s + (r.amount || 0), 0);
-      const rev30 = (revenue30Res.data || []).reduce((s: number, r: any) => s + (r.amount || 0), 0);
+      const totalRevenue = (revenueAllRes.data || []).reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+      const rev7  = (revenue7Res.data  || []).reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+      const rev30 = (revenue30Res.data || []).reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
 
       // Unique coaches
       const uniqueCoaches = new Set((uniqueCoach7Res.data || []).map((r: any) => r.user_id)).size;
 
       // Token usage
-      const totalTokens = (tokenRes.data || []).reduce((s: number, r: any) => s + (r.token_usage || 0), 0);
+      const totalTokens = (tokenRes.data || []).reduce((s: number, r: any) => s + (Number(r.token_usage) || 0), 0);
 
       // Behaviour breakdowns
       const industryBd: Record<string, number> = {};
@@ -394,22 +394,16 @@ Rules:
 - Think like a $100M SaaS founder advising a fellow founder on their metrics`;
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/intel-analyse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+        body: JSON.stringify({ prompt }),
       });
 
       const apiData = await res.json();
-      if (!res.ok) throw new Error(apiData?.error?.message || 'API error');
+      if (!res.ok) throw new Error(apiData?.error || 'API error');
 
-      const text = apiData.content?.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('') || '';
-      const clean = text.replace(/```json|```/g, '').trim();
-      const parsed: AIReport = JSON.parse(clean);
+      const parsed: AIReport = apiData.report;
       setReport(parsed);
       setLastRefresh(new Date());
     } catch (e: any) {
