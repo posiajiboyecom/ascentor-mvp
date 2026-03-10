@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Ascentor',
-    startupImage: '/icons/icon-512.png',
+    startupImage: '/icon/icon-512.png',
   },
   other: {
     'mobile-web-app-capable': 'yes',
@@ -33,8 +33,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icon/apple-touch-icon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/icon/icon-192.png" />
         
         {/* 2. Add Plausible Analytics Script */}
         <Script
