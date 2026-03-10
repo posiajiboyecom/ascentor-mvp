@@ -192,8 +192,8 @@ export default function AdminNewsletterPage() {
   </div>
   <div class="footer">
     <div class="footer-brand">Ascentor</div>
-    <div class="footer-text">Africa\u2019s mentorship platform</div>
-    <div class="social-links"><a href="https://ascentor.co">ascentor.co</a></div>
+    <div class="footer-text">Your Mentorship Platform</div>
+    <div class="social-links"><a href="https://ascentorbi.com">ascentorbi.com</a></div>
     <div class="footer-text" style="margin-top:16px;font-size:10px;">You received this because you subscribed to The Rise Letter.<br><a href="#" style="color:var(--admin-text-faint);">Unsubscribe</a></div>
   </div>
 </div>
