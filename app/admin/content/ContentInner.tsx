@@ -121,8 +121,38 @@ export default function AdminContentPage() {
   async function handleApprove() {
     if (!selectedItem || saving || selectedItem.status !== 'draft') return;
     setSaving(true);
+
     await setStatus(selectedItem.id, 'approved', { approved_at: new Date().toISOString() });
-    showToast('✓ Approved — set a publish date to schedule');
+
+    // Auto-create blog draft when a Blog Post is approved
+    if (selectedItem.type === 'Blog Post') {
+      const d = (selectedItem.content_data || {}) as any;
+      const { error } = await supabase.from('blog_posts').insert({
+        title:             d.title || selectedItem.title,
+        slug:              slugify(d.title || selectedItem.title),
+        excerpt:           d.meta_description || d.excerpt || '',
+        content:           d.content || '',
+        category:          selectedItem.pillar
+                             ? selectedItem.pillar[0].toUpperCase() + selectedItem.pillar.slice(1)
+                             : 'General',
+        author_name:       'Ascentor',
+        read_time_minutes: Math.ceil(((d.content || '').split(' ').length || 400) / 200),
+        is_published:      false,
+        published_at:      null,
+      });
+      if (error) {
+        showToast('Approved but blog draft failed: ' + error.message, false);
+      } else {
+        showToast('✓ Approved → Blog draft created. Publish from /admin/blog');
+      }
+    } else {
+      showToast('✓ Approved — moved to Approved queue');
+    }
+
+    // Switch filter to 'approved' so the item stays visible in its new state
+    // instead of disappearing from the 'draft' filter
+    setStatusFilter('approved');
+    setSelectedItem(null);
     setSaving(false);
   }
 
@@ -134,6 +164,8 @@ export default function AdminContentPage() {
       approved_at: selectedItem.approved_at ?? new Date().toISOString(),
     });
     showToast('✓ Scheduled for ' + fmtDate(date));
+    setStatusFilter('scheduled');
+    setSelectedItem(null);
     setSaving(false);
   }
 
@@ -155,6 +187,8 @@ export default function AdminContentPage() {
     if (error) { showToast('Blog error: ' + error.message, false); setSaving(false); return; }
     await setStatus(item.id, 'published', { published_at: new Date().toISOString() });
     showToast('✓ Sent to Blog Drafts → publish from /admin/blog');
+    setStatusFilter('published');
+    setSelectedItem(null);
     setSaving(false);
   }
 
@@ -175,6 +209,8 @@ export default function AdminContentPage() {
     if (error) { showToast('Queue error: ' + error.message, false); setSaving(false); return; }
     await setStatus(item.id, 'published', { published_at: new Date().toISOString() });
     showToast('✓ Added to social queue');
+    setStatusFilter('published');
+    setSelectedItem(null);
     setSaving(false);
   }
 
@@ -316,7 +352,7 @@ export default function AdminContentPage() {
                       onSchedule={handleSchedule}
                       onPublishBlog={handlePublishBlog}
                       onQueueSocial={handleQueueSocial}
-                      onReject={(id) => setStatus(id, 'draft')}
+                      onReject={(id) => { setStatus(id, 'draft'); setStatusFilter('draft'); setSelectedItem(null); }}
                       onCopy={copyText}
                       onSaveNotes={handleSaveNotes}
                     />
@@ -479,7 +515,7 @@ function DetailPanel({ item, saving, onApprove, onSchedule, onPublishBlog, onQue
           {!isDraft && !isDone && (
             <div className="cp-action-row">
               {isBlog ? (
-                <button className="cp-btn-pub cp-btn-green" onClick={() => onPublishBlog(item)} disabled={saving}>✍ Send to Blog Drafts</button>
+                <a href="/admin/blog" className="cp-btn-pub cp-btn-green" style={{ textDecoration: 'none', textAlign: 'center' }}>✍ View in Blog Admin</a>
               ) : (
                 <button className="cp-btn-pub cp-btn-green" onClick={() => onQueueSocial(item, schedDate || undefined)} disabled={saving}>↑ Push to Social Queue</button>
               )}
