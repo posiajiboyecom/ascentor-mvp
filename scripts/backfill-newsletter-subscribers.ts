@@ -84,7 +84,6 @@ async function backfill() {
         "",
       source: "app_user",
       is_active: true,
-      created_at: u.created_at,
     }));
 
   if (toInsert.length === 0) {
