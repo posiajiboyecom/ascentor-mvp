@@ -10,8 +10,20 @@ import { createClient } from '@/lib/supabase/client';
 // Sidebar navigation for all /admin pages
 // ─────────────────────────────────────────────────────────────────
 
-const NAV = [
+// ─── Nav item type ─────────────────────────────────────────────
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  group: string;
+  /** If set, only render this link when role matches one of these values */
+  roles?: string[];
+};
+
+const NAV: NavItem[] = [
+  // ── Core ──────────────────────────────────────────────────────
   {
+    group: 'Core',
     href: '/admin',
     label: 'Overview',
     icon: (
@@ -22,6 +34,7 @@ const NAV = [
     ),
   },
   {
+    group: 'Core',
     href: '/admin/users',
     label: 'Users',
     icon: (
@@ -32,6 +45,7 @@ const NAV = [
     ),
   },
   {
+    group: 'Core',
     href: '/admin/cohorts',
     label: 'Cohorts',
     icon: (
@@ -42,6 +56,7 @@ const NAV = [
     ),
   },
   {
+    group: 'Core',
     href: '/admin/experts',
     label: 'Expert Events',
     icon: (
@@ -52,6 +67,17 @@ const NAV = [
     ),
   },
   {
+    group: 'Core',
+    href: '/admin/mentors',
+    label: 'Mentors',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    ),
+  },
+  {
+    group: 'Core',
     href: '/admin/courses',
     label: 'Courses',
     icon: (
@@ -61,6 +87,7 @@ const NAV = [
     ),
   },
   {
+    group: 'Core',
     href: '/admin/coaching',
     label: 'Chat Data',
     icon: (
@@ -69,7 +96,34 @@ const NAV = [
       </svg>
     ),
   },
+
+  // ── Content & Marketing ───────────────────────────────────────
   {
+    group: 'Content & Marketing',
+    href: '/admin/master',
+    label: 'Master Admin',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    ),
+    roles: ['admin'],
+  },
+  {
+    group: 'Content & Marketing',
+    href: '/admin/content',
+    label: 'Content Pipeline',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="4" rx="1"/>
+        <rect x="3" y="10" width="12" height="4" rx="1"/>
+        <rect x="3" y="17" width="7" height="4" rx="1"/>
+        <polyline points="17 15 19 17 23 13"/>
+      </svg>
+    ),
+  },
+  {
+    group: 'Content & Marketing',
     href: '/admin/blog',
     label: 'Blog',
     icon: (
@@ -80,6 +134,7 @@ const NAV = [
     ),
   },
   {
+    group: 'Content & Marketing',
     href: '/admin/newsletter',
     label: 'Newsletter',
     icon: (
@@ -89,15 +144,34 @@ const NAV = [
     ),
   },
   {
-    href: '/admin/mentors',
-    label: 'Mentors',
+    group: 'Content & Marketing',
+    href: '/admin/products',
+    label: 'Products',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
       </svg>
     ),
   },
+
+  // ── Careers ───────────────────────────────────────────────────
   {
+    group: 'Careers',
+    href: '/admin/careers',
+    label: 'Careers',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="7" width="20" height="14" rx="2"/>
+        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+        <line x1="12" y1="12" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/>
+      </svg>
+    ),
+  },
+
+  // ── Finance & Reporting ───────────────────────────────────────
+  {
+    group: 'Finance & Reporting',
     href: '/admin/promo-codes',
     label: 'Promo Codes',
     icon: (
@@ -107,6 +181,20 @@ const NAV = [
     ),
   },
   {
+    group: 'Finance & Reporting',
+    href: '/admin/reports',
+    label: 'Reports',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+      </svg>
+    ),
+  },
+
+  // ── System ────────────────────────────────────────────────────
+  {
+    group: 'System',
     href: '/admin/logs',
     label: 'Audit Logs',
     icon: (
@@ -116,14 +204,16 @@ const NAV = [
     ),
   },
   {
-    href: '/admin/reports',
-    label: 'Reports',
+    group: 'System',
+    href: '/admin/permissions',
+    label: 'Permissions',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
-        <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
       </svg>
     ),
+    roles: ['admin'],
   },
 ];
 
@@ -215,21 +305,31 @@ export default function AdminShell({
 
       {/* Nav */}
       <nav className="admin-sidebar-nav" style={{ flex: 1, overflowY: 'auto', padding: '12px 8px' }}>
-        <p className="admin-nav-group-label">Menu</p>
-        {NAV.map(item => (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNav}
-            className={`admin-nav-link ${isActive(item.href) ? 'active' : ''}`}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0, opacity: isActive(item.href) ? 1 : 0.7 }}>
-              {item.icon}
-            </span>
-            {item.label}
-            {isActive(item.href) && <span className="nav-dot" />}
-          </Link>
-        ))}
+        {(() => {
+          const visibleItems = NAV.filter(item =>
+            !item.roles || item.roles.includes(role.toLowerCase())
+          );
+          const groups = Array.from(new Set(visibleItems.map(i => i.group)));
+          return groups.map(group => (
+            <div key={group}>
+              <p className="admin-nav-group-label">{group}</p>
+              {visibleItems.filter(i => i.group === group).map(item => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNav}
+                  className={`admin-nav-link ${isActive(item.href) ? 'active' : ''}`}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0, opacity: isActive(item.href) ? 1 : 0.7 }}>
+                    {item.icon}
+                  </span>
+                  {item.label}
+                  {isActive(item.href) && <span className="nav-dot" />}
+                </Link>
+              ))}
+            </div>
+          ));
+        })()}
       </nav>
 
       {/* Footer */}
