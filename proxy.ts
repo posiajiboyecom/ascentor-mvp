@@ -12,17 +12,6 @@
 // by this middleware — that routing decision lives in route.ts
 // (the auth callback), which is the single source of truth for
 // post-login destination.
-//
-// BUG FIX (Bug 1): Added /api/subscription/webhook to PUBLIC_API_ROUTES.
-// Paystack webhook calls arrive with no auth cookie — they were previously
-// blocked by the /api/subscription PROTECTED_API_PREFIXES match, silently
-// dropping all renewal/cancellation/failed-payment events. The webhook
-// does its own HMAC-SHA512 signature verification.
-//
-// BUG FIX (Bug 3): Replaced the broad '/api/auth' whitelist entry with
-// only the two endpoints that are genuinely public. The old entry exposed
-// /api/auth/security-check to unauthenticated callers, allowing anyone to
-// globally sign out any user by passing an arbitrary userId in the body.
 // ============================================================
 
 import { createServerClient } from '@supabase/ssr';
@@ -60,27 +49,12 @@ const PUBLIC_ROUTES = [
   '/p', // Partner/white-label shell — auth handled internally per route
 ];
 
-// API routes that are intentionally public.
-// ORDER MATTERS: these are checked with startsWith BEFORE the
-// PROTECTED_API_PREFIXES block, so specific public sub-paths (e.g.
-// /api/subscription/webhook) correctly bypass the broader protected prefix
-// (/api/subscription) that would otherwise block them.
+// API routes that are intentionally public
 const PUBLIC_API_ROUTES = [
   '/api/waitlist',
   '/api/newsletter',
   '/api/welcome',
-  // BUG FIX (Bug 3): Narrowed from '/api/auth' to only the two endpoints
-  // that are genuinely public. /api/auth/security-check must NOT be public —
-  // it calls supabase.auth.admin.signOut(userId) for an arbitrary userId from
-  // the request body, making it a global account-logout weapon if unauthenticated.
-  '/api/auth/callback',
-  '/api/auth/check-email',
-  '/api/auth/check-partner-membership', // called before account creation — no session yet
-  // BUG FIX (Bug 1): Paystack's servers have no auth cookie. Without this
-  // entry the /api/subscription prefix above blocks all webhook events (renewals,
-  // cancellations, failed payments). The route verifies the Paystack HMAC
-  // signature itself — no middleware auth needed.
-  '/api/subscription/webhook',
+  '/api/auth',
 ];
 
 export default async function proxy(request: NextRequest) {
@@ -95,18 +69,17 @@ export default async function proxy(request: NextRequest) {
   const subdomain = subdomainMatch?.[1];
 
   if (subdomain && subdomain !== 'www' && !pathname.startsWith('/p/')) {
+    // /partner/* = admin portal — must NOT be rewritten into /p/[subdomain]/partner/*
+    // (no such route exists). Let it pass through directly to app/partner/* pages.
+    if (pathname === '/partner' || pathname.startsWith('/partner/')) {
+      return NextResponse.next();
+    }
+
     const rewrittenPath = `/p/${subdomain}${pathname === '/' ? '' : pathname}`;
     const rewriteUrl = new URL(rewrittenPath, request.url);
     rewriteUrl.search = request.nextUrl.search;
-    const rewriteResponse = NextResponse.rewrite(rewriteUrl);
-    // Pass original pathname so layout can determine public vs protected pages
-    rewriteResponse.headers.set('x-partner-pathname', pathname);
-    return rewriteResponse;
-  }
-
-  // For direct /p/[subdomain]/* access, pass pathname through
-  if (pathname.startsWith('/p/')) {
-    const response = NextResponse.next();
+    // Pass original pathname so layout can check public paths correctly
+    const response = NextResponse.rewrite(rewriteUrl);
     response.headers.set('x-partner-pathname', pathname);
     return response;
   }
@@ -128,10 +101,7 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Always pass through public API routes.
-  // This check runs BEFORE the PROTECTED_API_PREFIXES check so that specific
-  // public sub-paths (e.g. /api/subscription/webhook) are correctly allowed
-  // through even when their parent prefix is protected.
+  // Always pass through public API routes
   if (PUBLIC_API_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     return NextResponse.next();
   }

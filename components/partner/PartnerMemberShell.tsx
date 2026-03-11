@@ -69,12 +69,12 @@ export default function PartnerMemberShell({
   const navItems: NavItem[] = [
     { label: 'Home',      segment: 'dashboard',  icon: <HomeIcon /> },
     ...(features.ai_coach  ? [{ label: 'Mentor',    segment: 'coach',      icon: <CoachIcon /> }]     : []),
-    ...(features.experts   ? [{ label: 'Sessions',  segment: 'community',  icon: <ExpertsIcon /> }]   : []),
     ...(features.community ? [{ label: 'Circle',    segment: 'community',  icon: <CommunityIcon /> }] : []),
+    ...(features.experts   ? [{ label: 'Sessions',  segment: 'sessions',   icon: <ExpertsIcon /> }]   : []),
     { label: 'Account',   segment: 'account',    icon: <AccountIcon /> },
   ];
 
-  // Deduplicate (community + experts might both be off)
+  // Deduplicate by segment
   const uniqueNav = navItems.filter((item, idx, self) =>
     self.findIndex(i => i.segment === item.segment) === idx
   );
