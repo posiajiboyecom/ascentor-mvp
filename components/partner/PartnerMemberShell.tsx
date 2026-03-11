@@ -1,5 +1,7 @@
 'use client';
 
+import type { Partner } from '@/types/partner';
+
 // ============================================================
 // components/partner/PartnerMemberShell.tsx
 //

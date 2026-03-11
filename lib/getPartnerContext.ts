@@ -117,8 +117,10 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
     const { data } = await supabase
       .from('partners')
       .select(`
-        id, name, subdomain, custom_domain, status, owner_id,
-        revenue_share_percent, brand, features, plan_overrides
+        id, name, slug, subdomain, custom_domain, status, owner_id,
+        revenue_share_percent, paystack_subaccount_code,
+        brand, features, plan_overrides,
+        created_at, updated_at, onboarded_at
       `)
       .or(
         subdomain

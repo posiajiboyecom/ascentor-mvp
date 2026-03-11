@@ -1,10 +1,24 @@
 // ============================================================
 // types/partner.ts
-// Shared type definitions for the partner/white-label system.
-// Used by getPartnerContext, PartnerCheckoutClient, and all
-// partner API routes and page components.
+// Single source of truth for all partner/white-label types.
+// Consumed by:
+//   - lib/getPartnerContext.ts
+//   - components/partner/PartnerProvider.tsx
+//   - app/p/[subdomain]/checkout/PartnerCheckoutClient.tsx
+//   - app/api/partner/brand/route.ts
+//   - app/partner/brand/page.tsx
 // ============================================================
 
+// ── Font options (matches allowed list in brand/route.ts) ──
+export type FontOption =
+  | 'Cormorant Garamond'
+  | 'Playfair Display'
+  | 'Merriweather'
+  | 'Syne'
+  | 'Inter'
+  | 'DM Sans';
+
+// ── Brand ─────────────────────────────────────────────────
 export interface PartnerBrand {
   platform_name:          string;
   tagline:                string | null;
@@ -16,11 +30,12 @@ export interface PartnerBrand {
   text_color:             string;
   bg_color:               string;
   card_color:             string;
-  font_heading:           string;
-  font_body:              string;
+  font_heading:           FontOption | string;
+  font_body:              FontOption | string;
   hide_ascentor_branding: boolean;
 }
 
+// ── Features ──────────────────────────────────────────────
 export interface PartnerFeatures {
   ai_coach:  boolean;
   community: boolean;
@@ -28,6 +43,7 @@ export interface PartnerFeatures {
   courses:   boolean;
 }
 
+// ── Plan overrides ────────────────────────────────────────
 export interface PartnerPlanOverrides {
   explorer_name?:      string;
   explorer_price_usd?: number;
@@ -36,8 +52,10 @@ export interface PartnerPlanOverrides {
   climber_name?:       string;
   climber_price_usd?:  number;
   trial_days?:         number;
+  [key: string]:       string | number | undefined; // allow arbitrary overrides
 }
 
+// ── Partner ───────────────────────────────────────────────
 export interface Partner {
   id:                       string;
   name:                     string;
@@ -48,6 +66,7 @@ export interface Partner {
   owner_id:                 string;
   revenue_share_percent:    number;
   paystack_subaccount_code: string | null;
+  paystack_secret_key?:     string | null;
   brand:                    PartnerBrand;
   features:                 PartnerFeatures;
   plan_overrides:           PartnerPlanOverrides | null;
@@ -56,6 +75,7 @@ export interface Partner {
   onboarded_at:             string | null;
 }
 
+// ── Context (returned by getPartnerContext) ───────────────
 export interface PartnerContext {
   isWhiteLabel: boolean;
   partner:      Partner;
