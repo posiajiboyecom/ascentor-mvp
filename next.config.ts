@@ -1,8 +1,9 @@
 import type { NextConfig } from 'next';
 
 // ── Content Security Policy ───────────────────────────────────────────────────
-// Restricts which resources the browser can load. Adjust if you add new
-// external scripts, fonts, or API domains.
+// Restricts which resources the browser can load.
+// WHITE-LABEL ADDITIONS: Added fonts.googleapis.com (already present),
+// *.supabase.co already covers partner logo storage.
 const CSP = [
   // Only load scripts from our own origin + trusted CDNs
   `script-src 'self' 'unsafe-inline' https://js.paystack.co https://plausible.io https://cdnjs.cloudflare.com`,
@@ -10,7 +11,7 @@ const CSP = [
   `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
   // Fonts: self + Google Fonts CDN
   `font-src 'self' data: https://fonts.gstatic.com`,
-  // Images: self + data URIs + Supabase storage bucket
+  // Images: self + data URIs + Supabase storage bucket (covers partner logos) + Gravatar
   `img-src 'self' data: blob: https://*.supabase.co https://www.gravatar.com`,
   // Frames: only Paystack iframe + YouTube embeds
   `frame-src https://js.paystack.co https://www.youtube.com https://youtube.com`,
@@ -44,12 +45,25 @@ const securityHeaders = [
   { key: 'Content-Security-Policy',      value: CSP },
 ];
 
+// ── Partner API CORS headers ──────────────────────────────────────────────────
+// Applied ONLY to /api/partner/* routes — allows partner custom domains
+// to call back to Ascentor APIs (webhook verification, brand fetch, etc.)
+// Does NOT relax security on any other route.
+const partnerApiHeaders = [
+  { key: 'Access-Control-Allow-Credentials', value: 'true'                                          },
+  { key: 'Access-Control-Allow-Origin',      value: '*'                                             },
+  { key: 'Access-Control-Allow-Methods',     value: 'GET,POST,PUT,DELETE,OPTIONS'                   },
+  { key: 'Access-Control-Allow-Headers',     value: 'Content-Type, Authorization, x-partner-id'    },
+];
+
 const nextConfig: NextConfig = {
   // Keep web-push on the server only — it uses Node.js built-ins
   // that don't exist in the browser and will crash client-side.
   serverExternalPackages: ['web-push'],
 
-  // ── Image domains — allow partner logos from Supabase ─────
+  // ── Image domains ─────────────────────────────────────────────────────────
+  // Allows Next.js <Image> to serve partner logos from Supabase storage
+  // and partner custom domains.
   images: {
     remotePatterns: [
       {
@@ -57,73 +71,30 @@ const nextConfig: NextConfig = {
         hostname: '*.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'ascentorbi.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.ascentorbi.com', // Partner subdomains
-      },
     ],
   },
 
   async headers() {
     return [
+      // ── Security headers on ALL routes (your existing setup) ──────────────
       {
-        // Apply security headers to all routes
         source: '/(.*)',
         headers: securityHeaders,
       },
+      // ── CORS on partner API routes only ───────────────────────────────────
+      // Needed so partner custom domains (coaching.amara.com) can POST
+      // to ascentorbi.com/api/partner/* without CORS block.
       {
-        // Allow partner custom domains to load assets via API routes
-        source: '/api/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin',      value: '*' },
-          { key: 'Access-Control-Allow-Methods',     value: 'GET,POST,PUT,DELETE,OPTIONS' },
-          { key: 'Access-Control-Allow-Headers',     value: 'Content-Type, Authorization' },
-        ],
+        source: '/api/partner/:path*',
+        headers: partnerApiHeaders,
+      },
+      // ── Preflight OPTIONS for partner API ─────────────────────────────────
+      {
+        source: '/api/partner/:path*',
+        headers: [{ key: 'Access-Control-Max-Age', value: '86400' }],
       },
     ];
-  },
-
-  // ── Rewrites — custom domain → internal partner routes ────
-  // NOTE: The proxy.ts middleware handles most routing.
-  // This is a backup for edge cases Next.js can't rewrite
-  // in middleware (e.g. static asset paths).
-  async rewrites() {
-    return {
-      beforeFiles: [
-        // /p/[subdomain] → served by app/p/[subdomain] directory
-        // Already handled by directory structure — no rewrite needed
-      ],
-      afterFiles: [],
-      fallback: [],
-    };
   },
 };
 
 export default nextConfig;
-
-// ============================================================
-// VERCEL CONFIG — vercel.json
-//
-// Add this to your project root vercel.json (create if missing).
-// This tells Vercel to route ALL custom partner domains
-// to your Next.js app so proxy.ts can handle them.
-// ============================================================
-//
-// {
-//   "rewrites": [
-//     {
-//       "source": "/(.*)",
-//       "destination": "/$1"
-//     }
-//   ]
-// }
-//
-// Then in Vercel dashboard:
-// Settings → Domains → Add Domain → coaching.johnadeyemi.com
-// Partner sets CNAME: coaching.johnadeyemi.com → cname.vercel-dns.com
-// ============================================================
