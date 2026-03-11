@@ -47,7 +47,7 @@ export default async function PartnerHomePage({
           }
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Link href={`/login`}
+          <Link href={`/p/${subdomain}/login`}
             style={{
               padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
               color: 'var(--text)', border: '1px solid var(--border)',
@@ -55,7 +55,7 @@ export default async function PartnerHomePage({
             }}>
             Log in
           </Link>
-          <Link href={`/signup`}
+          <Link href={`/p/${subdomain}/signup`}
             style={{
               padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700,
               background: 'var(--accent)', color: '#000',
@@ -101,7 +101,7 @@ export default async function PartnerHomePage({
         </div>
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href={`/signup`}
+          <Link href={`/p/${subdomain}/signup`}
             style={{
               padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700,
               background: 'var(--accent)', color: '#000', textDecoration: 'none',
@@ -109,7 +109,7 @@ export default async function PartnerHomePage({
             Start your journey →
           </Link>
           {features.ai_coach && (
-            <Link href={`/login`}
+            <Link href={`/p/${subdomain}/login`}
               style={{
                 padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 600,
                 color: 'var(--text)', border: '1px solid var(--border)',
