@@ -123,7 +123,7 @@ export async function PATCH(req: NextRequest) {
 
   const { data: partner } = await supabase
     .from('partners')
-    .select('id, name, status, subdomain, owner_id')
+    .select('id, name, status, subdomain, owner_id, revenue_share_percent')
     .eq('id', partnerId)
     .single();
 
