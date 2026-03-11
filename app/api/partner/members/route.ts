@@ -229,13 +229,15 @@ export async function POST(req: NextRequest) {
     // Audit log
     const invited = results.filter(r => r.status === 'invited' || r.status === 'active');
     if (invited.length > 0) {
-      await supabase.from('audit_logs').insert({
-        user_id:     user.id,
-        action:      emails.length > 1 ? 'partner_bulk_invite' : 'partner_member_invited',
-        entity_type: 'partner',
-        entity_id:   partner.id,
-        details:     { emails: invited.map(r => r.email), role, count: invited.length },
-      }).catch(() => {});
+      try {
+        await supabase.from('audit_logs').insert({
+          user_id:     user.id,
+          action:      emails.length > 1 ? 'partner_bulk_invite' : 'partner_member_invited',
+          entity_type: 'partner',
+          entity_id:   partner.id,
+          details:     { emails: invited.map(r => r.email), role, count: invited.length },
+        });
+      } catch { /* non-critical */ }
     }
 
     const successCount = results.filter(r => r.status === 'invited' || r.status === 'active').length;
@@ -342,13 +344,15 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Audit log
-    await supabase.from('audit_logs').insert({
-      user_id:     user.id,
-      action:      `partner_member_${action}`,
-      entity_type: 'partner',
-      entity_id:   partner.id,
-      details:     { member_email: member.email, from_status: member.status, to_status: newStatus },
-    }).catch(() => {});
+    try {
+      await supabase.from('audit_logs').insert({
+        user_id:     user.id,
+        action:      `partner_member_${action}`,
+        entity_type: 'partner',
+        entity_id:   partner.id,
+        details:     { member_email: member.email, from_status: member.status, to_status: newStatus },
+      });
+    } catch { /* non-critical */ }
 
     return NextResponse.json({ success: true, action, newStatus });
 
