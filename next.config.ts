@@ -49,6 +49,25 @@ const nextConfig: NextConfig = {
   // that don't exist in the browser and will crash client-side.
   serverExternalPackages: ['web-push'],
 
+  // ── Image domains — allow partner logos from Supabase ─────
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ascentorbi.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.ascentorbi.com', // Partner subdomains
+      },
+    ],
+  },
+
   async headers() {
     return [
       {
@@ -56,8 +75,55 @@ const nextConfig: NextConfig = {
         source: '/(.*)',
         headers: securityHeaders,
       },
+      {
+        // Allow partner custom domains to load assets via API routes
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Origin',      value: '*' },
+          { key: 'Access-Control-Allow-Methods',     value: 'GET,POST,PUT,DELETE,OPTIONS' },
+          { key: 'Access-Control-Allow-Headers',     value: 'Content-Type, Authorization' },
+        ],
+      },
     ];
+  },
+
+  // ── Rewrites — custom domain → internal partner routes ────
+  // NOTE: The proxy.ts middleware handles most routing.
+  // This is a backup for edge cases Next.js can't rewrite
+  // in middleware (e.g. static asset paths).
+  async rewrites() {
+    return {
+      beforeFiles: [
+        // /p/[subdomain] → served by app/p/[subdomain] directory
+        // Already handled by directory structure — no rewrite needed
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
   },
 };
 
 export default nextConfig;
+
+// ============================================================
+// VERCEL CONFIG — vercel.json
+//
+// Add this to your project root vercel.json (create if missing).
+// This tells Vercel to route ALL custom partner domains
+// to your Next.js app so proxy.ts can handle them.
+// ============================================================
+//
+// {
+//   "rewrites": [
+//     {
+//       "source": "/(.*)",
+//       "destination": "/$1"
+//     }
+//   ]
+// }
+//
+// Then in Vercel dashboard:
+// Settings → Domains → Add Domain → coaching.johnadeyemi.com
+// Partner sets CNAME: coaching.johnadeyemi.com → cname.vercel-dns.com
+// ============================================================
