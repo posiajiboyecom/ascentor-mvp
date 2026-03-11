@@ -274,7 +274,7 @@ export default function PartnerAccountClient({
   ];
 
   return (
-    <div style={{ maxWidth: 560, paddingBottom: 40 }}>
+    <div style={{ maxWidth: 560, paddingBottom: 40, margin: '0 auto' }}>
 
       {/* ── Avatar + name header ──────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
@@ -326,12 +326,12 @@ export default function PartnerAccountClient({
 
       {/* ── Tab bar ──────────────────────────────────────── */}
       <div style={{
-        display: 'flex', gap: 2, padding: 4, borderRadius: 12,
-        background: 'var(--bg-input)', marginBottom: 20, overflowX: 'auto' as const,
+        display: 'inline-flex', gap: 2, padding: 4, borderRadius: 12,
+        background: 'var(--bg-input)', marginBottom: 20,
       }}>
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
-            flex: 1, padding: '8px 4px', borderRadius: 9, border: 'none',
+            padding: '8px 18px', borderRadius: 9, border: 'none',
             background: tab === t.key ? 'var(--bg-card)' : 'transparent',
             color: tab === t.key ? 'var(--accent)' : 'var(--text-dim)',
             fontSize: 11, fontWeight: 700, cursor: 'pointer',
