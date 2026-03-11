@@ -75,6 +75,7 @@ const PUBLIC_API_ROUTES = [
   // the request body, making it a global account-logout weapon if unauthenticated.
   '/api/auth/callback',
   '/api/auth/check-email',
+  '/api/auth/check-partner-membership', // called before account creation — no session yet
   // BUG FIX (Bug 1): Paystack's servers have no auth cookie. Without this
   // entry the /api/subscription prefix above blocks all webhook events (renewals,
   // cancellations, failed payments). The route verifies the Paystack HMAC

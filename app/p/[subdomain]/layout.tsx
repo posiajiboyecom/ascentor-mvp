@@ -1,16 +1,39 @@
 // ============================================================
-// WHITE-LABEL SHELL LAYOUT
-// app/p/[subdomain]/layout.tsx
+// WHITE-LABEL SHELL LAYOUT — app/p/[subdomain]/layout.tsx
 //
-// Every partner page renders inside this layout.
-// It injects brand CSS vars, partner fonts, and logo.
-// The user sees the partner's brand — not "Ascentor".
+// WHITELIST ENFORCEMENT (new):
+// After resolving the partner context, checks whether the
+// currently-logged-in user is an active member of this partner.
+//
+// Rules:
+//   - Public pages (/, /login, /signup, /join) — always pass through.
+//     The user must be able to reach login/signup to become a member.
+//   - Unauthenticated users on protected pages — redirect to partner login.
+//   - Authenticated users NOT in partner_members — redirect to /p/[subdomain]/access-denied.
+//   - Authenticated users with status 'invited' — auto-activate them, then allow.
+//   - Authenticated users with status 'suspended' or 'removed' — block.
 // ============================================================
 
-import { headers } from 'next/headers';
-import { notFound } from 'next/navigation';
+import { headers }       from 'next/headers';
+import { notFound, redirect } from 'next/navigation';
+import { createClient }  from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { getPartnerContext } from '@/lib/getPartnerContext';
-import { PartnerProvider } from '@/components/partner/PartnerProvider';
+import { PartnerProvider }   from '@/components/partner/PartnerProvider';
+
+const supabaseService = createServiceClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+// Pages inside /p/[subdomain]/ that are always public —
+// the user must be able to reach these without being a member yet.
+const PUBLIC_PATHS = [
+  '/login',
+  '/signup',
+  '/join',           // invite accept page
+  '/access-denied',  // shown when blocked
+];
 
 export default async function PartnerLayout({
   children,
@@ -19,30 +42,79 @@ export default async function PartnerLayout({
   children: React.ReactNode;
   params: Promise<{ subdomain: string }>;
 }) {
-  await params; // Next.js 15+ requires params to be awaited
-  const headersList = await headers();
-  const hostname = headersList.get('host') || '';
+  const { subdomain } = await params;
+  const headersList   = await headers();
+  const hostname      = headersList.get('host') || '';
 
+  // ── 1. Resolve partner context ────────────────────────────
   const ctx = await getPartnerContext(hostname);
-
-  // If subdomain doesn't resolve to an active partner, 404
-  if (!ctx.isWhiteLabel) {
-    notFound();
-  }
+  if (!ctx.isWhiteLabel) notFound();
 
   const { partner, cssVars } = ctx;
   const brand = partner.brand;
 
-  // Build CSS var string for inline injection
+  // ── 2. Determine current path ─────────────────────────────
+  // Next.js doesn't expose pathname in server layouts directly,
+  // so we read x-invoke-path or x-pathname set by middleware,
+  // falling back to the referer header for path detection.
+  const invokedPath = headersList.get('x-invoke-path') || '';
+  const isPublicPath = PUBLIC_PATHS.some(p =>
+    invokedPath.endsWith(p) || invokedPath.includes(p + '?')
+  );
+
+  // ── 3. Whitelist check on protected pages ─────────────────
+  if (!isPublicPath) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      // Not logged in — redirect to partner login
+      redirect(`/p/${subdomain}/login?redirect=${encodeURIComponent(invokedPath || `/p/${subdomain}/dashboard`)}`);
+    }
+
+    // Check membership in partner_members
+    const { data: membership } = await supabaseService
+      .from('partner_members')
+      .select('id, status')
+      .eq('partner_id', partner.id)
+      .eq('email', user.email!)
+      .maybeSingle();
+
+    if (!membership) {
+      // Not in whitelist at all
+      redirect(`/p/${subdomain}/access-denied?reason=not_invited`);
+    }
+
+    if (membership.status === 'suspended') {
+      redirect(`/p/${subdomain}/access-denied?reason=suspended`);
+    }
+
+    if (membership.status === 'removed') {
+      redirect(`/p/${subdomain}/access-denied?reason=removed`);
+    }
+
+    // Auto-activate 'invited' members who have now logged in
+    if (membership.status === 'invited') {
+      await supabaseService
+        .from('partner_members')
+        .update({
+          status:    'active',
+          user_id:   user.id,
+          joined_at: new Date().toISOString(),
+        })
+        .eq('id', membership.id);
+    }
+  }
+
+  // ── 4. Build CSS vars ─────────────────────────────────────
   const cssVarString = Object.entries(cssVars)
     .map(([k, v]) => `${k}: ${v}`)
     .join('; ');
 
-  // Google Fonts URL for partner's chosen fonts
-  const fontsNeeded = [...new Set([brand.font_heading, brand.font_body])];
-  const fontFamilies = fontsNeeded.map(f =>
-    `family=${f.replace(/ /g, '+')}:wght@400;500;600;700`
-  ).join('&');
+  const fontsNeeded  = [...new Set([brand.font_heading, brand.font_body])];
+  const fontFamilies = fontsNeeded
+    .map(f => `family=${f.replace(/ /g, '+')}:wght@400;500;600;700`)
+    .join('&');
 
   return (
     <html lang="en">
@@ -52,12 +124,10 @@ export default async function PartnerLayout({
         <title>{brand.platform_name}</title>
         {brand.tagline && <meta name="description" content={brand.tagline} />}
 
-        {/* Partner favicon */}
         {brand.favicon_url && (
           <link rel="icon" href={brand.favicon_url} />
         )}
 
-        {/* Partner fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -65,11 +135,10 @@ export default async function PartnerLayout({
           rel="stylesheet"
         />
 
-        {/* Partner brand CSS vars — overrides Ascentor defaults */}
         <style>{`
           :root { ${cssVarString}; }
 
-          * { box-sizing: border-box; margin: 0; padding: 0; }
+          *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
           body {
             background: var(--bg);
@@ -82,14 +151,12 @@ export default async function PartnerLayout({
             font-family: var(--font-heading, 'Cormorant Garamond', Georgia, serif);
           }
 
-          /* Resets for inputs to pick up partner colours */
           input, select, textarea {
             background: var(--bg-input);
             color: var(--text);
             border: 1px solid var(--border);
           }
 
-          /* Scrollbar tinted to brand */
           ::-webkit-scrollbar { width: 6px; }
           ::-webkit-scrollbar-track { background: var(--bg); }
           ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
@@ -110,17 +177,17 @@ export async function generateMetadata({
 }: {
   params: Promise<{ subdomain: string }>;
 }) {
-  await params; // Next.js 15+ requires params to be awaited
+  await params;
   const headersList = await headers();
-  const hostname = headersList.get('host') || '';
-  const ctx = await getPartnerContext(hostname);
+  const hostname    = headersList.get('host') || '';
+  const ctx         = await getPartnerContext(hostname);
 
   if (!ctx.isWhiteLabel) return {};
 
   const { brand } = ctx.partner;
   return {
-    title: brand.platform_name,
+    title:       brand.platform_name,
     description: brand.tagline,
-    icons: brand.favicon_url ? [{ url: brand.favicon_url }] : [],
+    icons:       brand.favicon_url ? [{ url: brand.favicon_url }] : [],
   };
 }
