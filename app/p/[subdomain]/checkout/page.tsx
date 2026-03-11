@@ -34,24 +34,26 @@ export default async function PartnerCheckoutPage({
   const NGN_RATE = 1600;
 
   // Build plan pricing — prefer NGN overrides, fall back to USD * rate, then defaults
+  // All numeric fields explicitly cast with Number() to satisfy TypeScript
+  // (plan_overrides is JSONB so Supabase types fields as string | number)
   const plans = {
     explorer: {
-      name:           overrides?.explorer_name        || 'Explorer',
-      monthly_ngn:    overrides?.explorer_monthly_ngn || ((overrides?.explorer_price_usd || 9)  * NGN_RATE),
-      yearly_ngn:     overrides?.explorer_yearly_ngn  || (Math.round((overrides?.explorer_price_usd || 9)  * 10) * NGN_RATE),
-      features:       overrides?.explorer_features    || null,
+      name:        String(overrides?.explorer_name     || 'Explorer'),
+      monthly_ngn: Number(overrides?.explorer_monthly_ngn || ((Number(overrides?.explorer_price_usd) || 9)  * NGN_RATE)),
+      yearly_ngn:  Number(overrides?.explorer_yearly_ngn  || (Math.round((Number(overrides?.explorer_price_usd) || 9)  * 10) * NGN_RATE)),
+      features:    overrides?.explorer_features ? String(overrides.explorer_features) : null,
     },
     builder: {
-      name:           overrides?.builder_name         || 'Builder',
-      monthly_ngn:    overrides?.builder_monthly_ngn  || ((overrides?.builder_price_usd  || 19) * NGN_RATE),
-      yearly_ngn:     overrides?.builder_yearly_ngn   || (Math.round((overrides?.builder_price_usd  || 19) * 10) * NGN_RATE),
-      features:       overrides?.builder_features     || null,
+      name:        String(overrides?.builder_name      || 'Builder'),
+      monthly_ngn: Number(overrides?.builder_monthly_ngn  || ((Number(overrides?.builder_price_usd)  || 19) * NGN_RATE)),
+      yearly_ngn:  Number(overrides?.builder_yearly_ngn   || (Math.round((Number(overrides?.builder_price_usd)  || 19) * 10) * NGN_RATE)),
+      features:    overrides?.builder_features  ? String(overrides.builder_features)  : null,
     },
     climber: {
-      name:           overrides?.climber_name         || 'Climber',
-      monthly_ngn:    overrides?.climber_monthly_ngn  || ((overrides?.climber_price_usd  || 39) * NGN_RATE),
-      yearly_ngn:     overrides?.climber_yearly_ngn   || (Math.round((overrides?.climber_price_usd  || 39) * 10) * NGN_RATE),
-      features:       overrides?.climber_features     || null,
+      name:        String(overrides?.climber_name      || 'Climber'),
+      monthly_ngn: Number(overrides?.climber_monthly_ngn  || ((Number(overrides?.climber_price_usd)  || 39) * NGN_RATE)),
+      yearly_ngn:  Number(overrides?.climber_yearly_ngn   || (Math.round((Number(overrides?.climber_price_usd)  || 39) * 10) * NGN_RATE)),
+      features:    overrides?.climber_features  ? String(overrides.climber_features)  : null,
     },
   };
 
