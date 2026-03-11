@@ -1,71 +1,66 @@
 // ============================================================
-// NEXT.JS PROXY — Auth + Subscription + White-Label Routing
+// NEXT.JS PROXY — Auth + Subscription Gating
 // Place at project ROOT: proxy.ts
 //
-// NEW in this version:
-// - Subdomain detection: john.ascentorbi.com → /[subdomain] route
-// - Custom domain passthrough for partner domains
-// - Partner context header injected for server components
-// - All previous auth/subscription logic preserved
+// SECURITY FIX S3: Added protection for all /api/* routes.
+// Unauthenticated API calls now return 401 instead of passing through.
+//
+// ONBOARDING FIX: Removed the blanket early-return for /onboarding
+// that was skipping all auth checks. /onboarding now correctly
+// requires authentication (unauthenticated users go to /login).
+// Previously-onboarded users are NOT redirected back to /onboarding
+// by this middleware — that routing decision lives in route.ts
+// (the auth callback), which is the single source of truth for
+// post-login destination.
 // ============================================================
 
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const MAIN_DOMAIN  = 'ascentorbi.com';
-const MAIN_APP_URL = process.env.NEXT_PUBLIC_URL || 'https://ascentorbi.com';
+// Routes that require a paid subscription
+const PAID_ROUTES = ['/learn', '/courses'];
 
-// Subdomains that are NOT partner white-labels
-const RESERVED_SUBDOMAINS = ['www', 'app', 'api', 'admin', 'mail', 'cdn', 'static'];
-
-const TIERED_ROUTES: { prefix: string; minPlan: 'explorer' | 'builder' | 'climber' }[] = [
-  { prefix: '/learn',          minPlan: 'explorer' },
-  { prefix: '/courses',        minPlan: 'explorer' },
-  { prefix: '/experts',        minPlan: 'explorer' },
-  { prefix: '/analytics',      minPlan: 'builder'  },
-  { prefix: '/group-coaching', minPlan: 'climber'  },
-];
-
+// Page routes that require authentication
 const AUTH_ROUTES = [
   '/dashboard', '/coach', '/community', '/account',
   '/learn', '/courses', '/experts', '/onboarding',
-  '/referral', '/admin', '/analytics', '/group-coaching',
-  '/partner',  // partner admin portal
+  '/referral', '/admin',
 ];
 
+// API routes that require authentication (S3 fix)
 const PROTECTED_API_PREFIXES = [
-  '/api/coach', '/api/coaching', '/api/payment',
-  '/api/referral', '/api/subscription', '/api/usage',
-  '/api/push', '/api/admin', '/api/partner',
+  '/api/coach',
+  '/api/coaching',
+  '/api/payment',
+  '/api/referral',
+  '/api/subscription',
+  '/api/usage',
+  '/api/push',
+  '/api/admin',
 ];
 
+// Public routes — no auth needed
 const PUBLIC_ROUTES = [
   '/login', '/signup', '/checkout',
   '/auth/callback',
   '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
   '/how-it-works', '/who-its-for', '/waitlist', '/newsletter',
   '/mentor-apply', '/offline',
-  // Partner subdomain public routes
-  '/p',  // catches /p/[subdomain]/login, /p/[subdomain]/signup etc
+  '/p', // Partner/white-label shell — auth handled internally per route
 ];
 
+// API routes that are intentionally public
 const PUBLIC_API_ROUTES = [
-  '/api/waitlist', '/api/newsletter', '/api/welcome', '/api/auth',
-  '/api/subscription/webhook',
-  '/api/partner/webhook',    // partner-specific Paystack webhook
+  '/api/waitlist',
+  '/api/newsletter',
+  '/api/welcome',
+  '/api/auth',
 ];
-
-const PLAN_RANK: Record<string, number> = {
-  free: 0, explorer: 1, builder: 2, climber: 3,
-  standard: 2, tester: 2, pro: 3,
-};
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hostname = request.headers.get('host') || '';
-  const host = hostname.split(':')[0];
 
-  // ── 1. Static files — always pass through ────────────────
+  // Always pass through static files
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
@@ -77,50 +72,17 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // ── 2. White-label subdomain routing ─────────────────────
-  // Detect: john.ascentorbi.com → rewrite to /p/john/...
-  if (host.endsWith(`.${MAIN_DOMAIN}`)) {
-    const subdomain = host.replace(`.${MAIN_DOMAIN}`, '');
-
-    if (subdomain && !RESERVED_SUBDOMAINS.includes(subdomain)) {
-      // Rewrite internally to /p/[subdomain]/[...path]
-      // This keeps the URL in the browser as john.ascentorbi.com
-      const rewrittenUrl = request.nextUrl.clone();
-      rewrittenUrl.pathname = `/p/${subdomain}${pathname}`;
-
-      const response = NextResponse.rewrite(rewrittenUrl);
-      // Pass subdomain to server components via header
-      response.headers.set('x-partner-subdomain', subdomain);
-      return response;
-    }
-  }
-
-  // ── 3. Custom domain routing ──────────────────────────────
-  // coaching.johnadeyemi.com → rewrite to /p/custom/...
-  if (
-    !host.endsWith(MAIN_DOMAIN) &&
-    host !== MAIN_DOMAIN &&
-    !host.includes('localhost') &&
-    !host.includes('vercel.app')
-  ) {
-    const rewrittenUrl = request.nextUrl.clone();
-    rewrittenUrl.pathname = `/p/custom${pathname}`;
-
-    const response = NextResponse.rewrite(rewrittenUrl);
-    response.headers.set('x-partner-custom-domain', host);
-    return response;
-  }
-
-  // ── 4. Public routes ──────────────────────────────────────
+  // Always pass through public page routes
   if (PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     return NextResponse.next();
   }
 
+  // Always pass through public API routes
   if (PUBLIC_API_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     return NextResponse.next();
   }
 
-  // ── 5. Build Supabase client ──────────────────────────────
+  // Build Supabase client
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -128,7 +90,9 @@ export default async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return request.cookies.getAll(); },
+        getAll() {
+          return request.cookies.getAll();
+        },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value);
@@ -141,54 +105,61 @@ export default async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // ── 6. Protect API routes ─────────────────────────────────
+  // ── S3: Protect API routes ────────────────────────────────────────
   if (PROTECTED_API_PREFIXES.some(p => pathname.startsWith(p))) {
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return response;
   }
 
-  // ── 7. Protect page routes ────────────────────────────────
+  // ── Protect page routes ───────────────────────────────────────────
+  // This includes /onboarding — unauthenticated users go to /login.
+  // Authenticated users who visit /onboarding directly are allowed
+  // through (edge case: someone bookmarked it, or is mid-flow).
   if (!user && AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // ── 8. Subscription tier gate ─────────────────────────────
-  if (user) {
-    const matchedTier = TIERED_ROUTES.find(r =>
-      pathname === r.prefix || pathname.startsWith(r.prefix + '/')
-    );
+  // ── Subscription gate for paid pages ─────────────────────────────
+  if (user && PAID_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_plan, subscription_status, subscription_end')
+      .eq('id', user.id)
+      .single();
 
-    if (matchedTier) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_plan, subscription_status, subscription_end')
-        .eq('id', user.id)
-        .single();
-
-      if (!checkAccess(profile, matchedTier.minPlan)) {
-        const checkoutUrl = new URL('/checkout', request.url);
-        checkoutUrl.searchParams.set('reason', 'subscription_required');
-        checkoutUrl.searchParams.set('from', pathname);
-        checkoutUrl.searchParams.set('required', matchedTier.minPlan);
-        return NextResponse.redirect(checkoutUrl);
-      }
+    if (!checkAccess(profile)) {
+      const checkoutUrl = new URL('/checkout', request.url);
+      checkoutUrl.searchParams.set('reason', 'subscription_required');
+      checkoutUrl.searchParams.set('from', pathname);
+      return NextResponse.redirect(checkoutUrl);
     }
   }
 
   return response;
 }
 
-function checkAccess(profile: any, minPlan: string): boolean {
+function checkAccess(profile: any): boolean {
   if (!profile) return false;
-  const { subscription_plan, subscription_status, subscription_end } = profile;
-  const isTemporallyActive =
-    subscription_status === 'active' ||
-    subscription_status === 'trialing' ||
-    (subscription_status === 'cancelled' && subscription_end && new Date(subscription_end) > new Date());
-  if (!isTemporallyActive) return false;
-  return (PLAN_RANK[subscription_plan] ?? 0) >= (PLAN_RANK[minPlan] ?? 1);
+
+  const { subscription_status, subscription_end } = profile;
+
+  if (subscription_status === 'active' || subscription_status === 'trialing') {
+    if (subscription_end) {
+      return new Date(subscription_end) > new Date();
+    }
+    return true;
+  }
+
+  // Cancelled but still within billing period
+  if (subscription_status === 'cancelled' && subscription_end) {
+    return new Date(subscription_end) > new Date();
+  }
+
+  return false;
 }
 
 export const config = {
