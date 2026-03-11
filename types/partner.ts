@@ -35,6 +35,7 @@ export interface PartnerPlanOverrides {
   builder_price_usd?:  number;
   climber_name?:       string;
   climber_price_usd?:  number;
+  trial_days?:         number;
 }
 
 export interface Partner {
