@@ -97,21 +97,31 @@ export default function BrandAdminPage() {
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'favicon') => {
     const file = e.target.files?.[0];
     if (!file || !partnerId) return;
-    if (!file.type.startsWith('image/')) { alert('Please select an image.'); return; }
-    if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB.'); return; }
+    if (!file.type.startsWith('image/')) { setError('Please select an image file.'); return; }
+    if (file.size > 2 * 1024 * 1024) { setError('Image must be under 2MB.'); return; }
 
     const setter = type === 'logo' ? setLogoUploading : setFaviconUploading;
     setter(true);
+    setError('');
 
-    const ext = file.name.split('.').pop();
+    const ext  = file.name.split('.').pop();
     const path = `partners/${partnerId}/${type}.${ext}`;
+
+    // Ensure bucket exists — create it if not (service role required)
+    const ensureRes = await fetch('/api/partner/storage/ensure-bucket', { method: 'POST' });
+    if (!ensureRes.ok) {
+      const j = await ensureRes.json().catch(() => ({}));
+      setError('Storage setup failed: ' + (j.error || 'unknown'));
+      setter(false);
+      return;
+    }
 
     const { error: uploadError } = await supabase.storage
       .from('partner-assets')
       .upload(path, file, { upsert: true });
 
     if (uploadError) {
-      alert('Upload failed: ' + uploadError.message);
+      setError('Upload failed: ' + uploadError.message);
       setter(false);
       return;
     }
