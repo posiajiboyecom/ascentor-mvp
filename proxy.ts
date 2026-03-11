@@ -1,33 +1,35 @@
 // ============================================================
-// NEXT.JS PROXY — Auth + Subscription Gating
+// NEXT.JS PROXY — Auth + Subscription Gating  [UPDATED]
 // Place at project ROOT: proxy.ts
 //
-// SECURITY FIX S3: Added protection for all /api/* routes.
-// Unauthenticated API calls now return 401 instead of passing through.
-//
-// ONBOARDING FIX: Removed the blanket early-return for /onboarding
-// that was skipping all auth checks. /onboarding now correctly
-// requires authentication (unauthenticated users go to /login).
-// Previously-onboarded users are NOT redirected back to /onboarding
-// by this middleware — that routing decision lives in route.ts
-// (the auth callback), which is the single source of truth for
-// post-login destination.
+// CHANGES FROM PREVIOUS VERSION:
+// - Extended PAID_ROUTES to cover all plan-gated pages
+// - Added per-route minimum plan enforcement (explorer/builder/climber)
+// - Webhook route explicitly whitelisted in PUBLIC_API_ROUTES
+// - checkAccess() now takes minPlan parameter for tiered enforcement
 // ============================================================
 
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// Routes that require a paid subscription
-const PAID_ROUTES = ['/learn', '/courses'];
+// ── Route → minimum plan required ──────────────────────────
+// 'explorer' = any paid plan | 'builder' = builder+ | 'climber' = climber only
+const TIERED_ROUTES: { prefix: string; minPlan: 'explorer' | 'builder' | 'climber' }[] = [
+  { prefix: '/learn',            minPlan: 'explorer' },
+  { prefix: '/courses',          minPlan: 'explorer' },
+  { prefix: '/experts',          minPlan: 'explorer' },  // add if gated
+  { prefix: '/analytics',        minPlan: 'builder'  },
+  { prefix: '/group-coaching',   minPlan: 'climber'  },
+];
 
 // Page routes that require authentication
 const AUTH_ROUTES = [
   '/dashboard', '/coach', '/community', '/account',
   '/learn', '/courses', '/experts', '/onboarding',
-  '/referral', '/admin',
+  '/referral', '/admin', '/analytics', '/group-coaching',
 ];
 
-// API routes that require authentication (S3 fix)
+// API routes that require authentication
 const PROTECTED_API_PREFIXES = [
   '/api/coach',
   '/api/coaching',
@@ -54,6 +56,7 @@ const PUBLIC_API_ROUTES = [
   '/api/newsletter',
   '/api/welcome',
   '/api/auth',
+  '/api/subscription/webhook',  // ← Paystack webhook must stay public
 ];
 
 export default async function proxy(request: NextRequest) {
@@ -104,7 +107,7 @@ export default async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // ── S3: Protect API routes ────────────────────────────────────────
+  // ── Protect API routes ────────────────────────────────────
   if (PROTECTED_API_PREFIXES.some(p => pathname.startsWith(p))) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -112,53 +115,68 @@ export default async function proxy(request: NextRequest) {
     return response;
   }
 
-  // ── Protect page routes ───────────────────────────────────────────
-  // This includes /onboarding — unauthenticated users go to /login.
-  // Authenticated users who visit /onboarding directly are allowed
-  // through (edge case: someone bookmarked it, or is mid-flow).
+  // ── Protect page routes ───────────────────────────────────
   if (!user && AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // ── Subscription gate for paid pages ─────────────────────────────
-  if (user && PAID_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('subscription_plan, subscription_status, subscription_end')
-      .eq('id', user.id)
-      .single();
+  // ── Tiered subscription gate ──────────────────────────────
+  if (user) {
+    const matchedTier = TIERED_ROUTES.find(r =>
+      pathname === r.prefix || pathname.startsWith(r.prefix + '/')
+    );
 
-    if (!checkAccess(profile)) {
-      const checkoutUrl = new URL('/checkout', request.url);
-      checkoutUrl.searchParams.set('reason', 'subscription_required');
-      checkoutUrl.searchParams.set('from', pathname);
-      return NextResponse.redirect(checkoutUrl);
+    if (matchedTier) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_plan, subscription_status, subscription_end')
+        .eq('id', user.id)
+        .single();
+
+      if (!checkAccess(profile, matchedTier.minPlan)) {
+        const checkoutUrl = new URL('/checkout', request.url);
+        checkoutUrl.searchParams.set('reason', 'subscription_required');
+        checkoutUrl.searchParams.set('from', pathname);
+        checkoutUrl.searchParams.set('required', matchedTier.minPlan);
+        return NextResponse.redirect(checkoutUrl);
+      }
     }
   }
 
   return response;
 }
 
-function checkAccess(profile: any): boolean {
+// ── Plan rank for comparison ──────────────────────────────
+const PLAN_RANK: Record<string, number> = {
+  free: 0,
+  explorer: 1,
+  builder: 2,
+  climber: 3,
+  // Legacy aliases from AccountClient
+  standard: 2,
+  tester: 2,
+  pro: 3,
+};
+
+function checkAccess(profile: any, minPlan: 'explorer' | 'builder' | 'climber'): boolean {
   if (!profile) return false;
 
-  const { subscription_status, subscription_end } = profile;
+  const { subscription_plan, subscription_status, subscription_end } = profile;
 
-  if (subscription_status === 'active' || subscription_status === 'trialing') {
-    if (subscription_end) {
-      return new Date(subscription_end) > new Date();
-    }
-    return true;
-  }
+  // Determine if subscription is temporally active
+  const isTemporallyActive =
+    subscription_status === 'active' ||
+    subscription_status === 'trialing' ||
+    (subscription_status === 'cancelled' && subscription_end && new Date(subscription_end) > new Date());
 
-  // Cancelled but still within billing period
-  if (subscription_status === 'cancelled' && subscription_end) {
-    return new Date(subscription_end) > new Date();
-  }
+  if (!isTemporallyActive) return false;
 
-  return false;
+  // Check plan rank meets minimum
+  const userRank = PLAN_RANK[subscription_plan] ?? 0;
+  const minRank  = PLAN_RANK[minPlan] ?? 1;
+  return userRank >= minRank;
 }
 
 export const config = {

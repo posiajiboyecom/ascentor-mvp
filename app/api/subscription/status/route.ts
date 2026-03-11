@@ -1,68 +1,108 @@
 // ============================================================
 // SUBSCRIPTION STATUS — /api/subscription/status
-// Returns user's subscription details for the settings page
+// Returns current plan, usage counts, and limit flags.
+// Uses your plan names: explorer | builder | climber
 // ============================================================
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Match your AccountClient planMeta limits exactly
+const PLAN_LIMITS: Record<string, { coachSessions: number; communityPosts: number }> = {
+  free:     { coachSessions: 3,   communityPosts: 5   },
+  explorer: { coachSessions: 10,  communityPosts: -1  },
+  builder:  { coachSessions: -1,  communityPosts: -1  },
+  climber:  { coachSessions: -1,  communityPosts: -1  },
+  // Legacy aliases
+  standard: { coachSessions: -1,  communityPosts: -1  },
+  tester:   { coachSessions: -1,  communityPosts: -1  },
+  pro:      { coachSessions: -1,  communityPosts: -1  },
+};
 
-export async function GET(req: NextRequest) {
+const PLAN_RANK: Record<string, number> = {
+  free: 0, explorer: 1, builder: 2, climber: 3,
+  standard: 2, tester: 2, pro: 3,
+};
+
+export async function GET() {
   try {
-    const authHeader = req.headers.get('authorization');
-    const anonClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { global: { headers: { Authorization: authHeader || '' } } }
-    );
+    const supabase = await createClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
 
-    const { data: { user } } = await anonClient.auth.getUser();
-    if (!user) {
+    if (error || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('subscription_plan, subscription_status, subscription_end, payment_method, referral_count')
+      .select('subscription_plan, subscription_status, subscription_end, subscription_start, payment_method')
       .eq('id', user.id)
       .single();
 
-    if (!profile) {
-      return NextResponse.json({ plan: 'free', status: 'free' });
-    }
+    const plan = profile?.subscription_plan || 'free';
+    const status = profile?.subscription_status || 'free';
 
-    const now = new Date();
-    const endDate = profile.subscription_end ? new Date(profile.subscription_end) : null;
-    const isActive = ['active', 'trialing'].includes(profile.subscription_status) && (!endDate || endDate > now);
-    const isCancelled = profile.subscription_status === 'cancelled' && endDate && endDate > now;
-    const daysLeft = endDate ? Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / 86400000)) : 0;
+    const isActive =
+      status === 'active' ||
+      status === 'trialing' ||
+      (status === 'cancelled' &&
+        profile?.subscription_end &&
+        new Date(profile.subscription_end) > new Date());
 
-    // Count payments
-    const { count: paymentCount } = await supabase
-      .from('payments')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('status', 'success');
+    const effectivePlan = isActive ? plan : 'free';
+    const limits = PLAN_LIMITS[effectivePlan] || PLAN_LIMITS.free;
+
+    // Monthly usage counts
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const [coachRes, postRes] = await Promise.all([
+      supabase
+        .from('coaching_sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', startOfMonth.toISOString()),
+      supabase
+        .from('cohort_posts')  // your table is cohort_posts (from AccountClient export)
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', startOfMonth.toISOString()),
+    ]);
+
+    const usage = {
+      coachSessions: coachRes.count || 0,
+      communityPosts: postRes.count || 0,
+    };
+
+    const remaining = {
+      coachSessions: limits.coachSessions === -1
+        ? null
+        : Math.max(0, limits.coachSessions - usage.coachSessions),
+    };
 
     return NextResponse.json({
-      plan: profile.subscription_plan || 'free',
-      status: profile.subscription_status || 'free',
-      isActive: isActive || isCancelled,
-      isCancelled,
-      isTrialing: profile.subscription_status === 'trialing',
-      subscriptionEnd: profile.subscription_end,
-      daysLeft,
-      paymentMethod: profile.payment_method,
-      paymentCount: paymentCount || 0,
-      referralCount: profile.referral_count || 0,
-      canCancel: isActive && !isCancelled,
+      plan: effectivePlan,
+      rawPlan: plan,           // the actual DB value before effective calculation
+      status,
+      isActive,
+      planRank: PLAN_RANK[effectivePlan] || 0,
+      subscriptionEnd: profile?.subscription_end,
+      subscriptionStart: profile?.subscription_start,
+      paymentMethod: profile?.payment_method,
+      limits,
+      usage,
+      remaining,
+      // Convenience flags
+      canUseCoach: limits.coachSessions === -1 || usage.coachSessions < limits.coachSessions,
+      canPost: limits.communityPosts === -1 || usage.communityPosts < limits.communityPosts,
+      isExplorerPlus: PLAN_RANK[effectivePlan] >= 1,
+      isBuilderPlus:  PLAN_RANK[effectivePlan] >= 2,
+      isClimber:      PLAN_RANK[effectivePlan] >= 3,
     });
+
   } catch (err: any) {
-    console.error('Subscription status error:', err);
-    return NextResponse.json({ error: 'Failed to get status' }, { status: 500 });
+    console.error('[Status API]', err);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

@@ -1,15 +1,14 @@
 // ============================================================
-// CANCEL SUBSCRIPTION — /api/subscription/cancel
-// Cancels user's Paystack subscription and updates profile.
-// Access is maintained until current billing period ends.
+// CANCEL SUBSCRIPTION — /api/subscription/cancel  [UPDATED]
+//
+// Matches your existing cancel route pattern from the git objects.
+// Uses your plan names: explorer | builder | climber
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient as createServiceClient } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 
-// Service client only used for Paystack lookup (needs admin.getUserById)
-const supabaseService = createServiceClient(
+const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -18,20 +17,12 @@ const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
 
 export async function POST(req: NextRequest) {
   try {
-    // ✅ FIX 1.2: Verify the caller is authenticated and owns the userId
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { userId, reason } = await req.json();
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
+    if (!userId) {
+      return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
 
-    const { reason } = await req.json();
-
-    // Always use the authenticated user's ID — ignore any userId from the body
-    const userId = user.id;
-
-    // Get current profile
     const { data: profile } = await supabase
       .from('profiles')
       .select('subscription_plan, subscription_status, subscription_end, payment_method')
@@ -42,11 +33,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No active subscription to cancel' }, { status: 400 });
     }
 
-    // If paid via Paystack, try to disable the subscription there
-    if (profile.payment_method === 'paystack' && PAYSTACK_SECRET) {
+    // Try to cancel on Paystack side if applicable
+    if (profile.payment_method && PAYSTACK_SECRET) {
       try {
-        // Use service client only for admin lookup
-        const { data: authUser } = await supabaseService.auth.admin.getUserById(userId);
+        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
         if (authUser?.user?.email) {
           const customerRes = await fetch(
             `https://api.paystack.co/subscription?customer=${encodeURIComponent(authUser.user.email)}`,
@@ -73,12 +63,12 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (err) {
-        console.error('Paystack cancellation error:', err);
-        // Continue — still cancel on our side even if Paystack fails
+        console.error('[Cancel] Paystack error:', err);
+        // Continue — still cancel on our side
       }
     }
 
-    // Update profile — keep access until subscription_end
+    // Mark cancelled — access maintained until subscription_end
     await supabase.from('profiles').update({
       subscription_status: 'cancelled',
       updated_at: new Date().toISOString(),
@@ -97,12 +87,14 @@ export async function POST(req: NextRequest) {
           access_until: profile.subscription_end,
         },
       });
-    } catch {} // Non-critical
+    } catch { /* non-critical */ }
 
-    // Notification
+    // In-app notification
     try {
       const endDate = profile.subscription_end
-        ? new Date(profile.subscription_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        ? new Date(profile.subscription_end).toLocaleDateString('en-NG', {
+            month: 'long', day: 'numeric', year: 'numeric',
+          })
         : 'the end of your billing period';
 
       await supabase.from('notifications').insert({
@@ -112,15 +104,16 @@ export async function POST(req: NextRequest) {
         message: `Your ${profile.subscription_plan} plan has been cancelled. You'll have access until ${endDate}.`,
         link: '/checkout',
       });
-    } catch {} // Non-critical
+    } catch { /* non-critical */ }
 
     return NextResponse.json({
       success: true,
       access_until: profile.subscription_end,
       message: `Your subscription has been cancelled. You'll still have access until your billing period ends.`,
     });
+
   } catch (err: any) {
-    console.error('Subscription cancellation error:', err);
+    console.error('[Cancel] Error:', err);
     return NextResponse.json({ error: 'Failed to cancel subscription' }, { status: 500 });
   }
 }

@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
       .update({
         subscription_plan:   plan || 'standard',
         subscription_status: 'trialing',
+        subscription_start:  new Date().toISOString(),
         subscription_end:    subscriptionEnd.toISOString(),
         payment_method:      'paystack',
         updated_at:          new Date().toISOString(),
