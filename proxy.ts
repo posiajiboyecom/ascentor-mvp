@@ -59,6 +59,21 @@ const PUBLIC_API_ROUTES = [
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hostname = request.headers.get('host') || '';
+
+  // ── Subdomain → /p/[subdomain] rewrite ───────────────────────────
+  // demo.ascentorbi.com/        → /p/demo
+  // demo.ascentorbi.com/login   → /p/demo/login
+  // demo.ascentorbi.com/signup  → /p/demo/signup
+  const subdomainMatch = hostname.match(/^([^.:]+)\.ascentorbi\.com(:\d+)?$/);
+  const subdomain = subdomainMatch?.[1];
+
+  if (subdomain && subdomain !== 'www' && !pathname.startsWith('/p/')) {
+    const rewrittenPath = `/p/${subdomain}${pathname === '/' ? '' : pathname}`;
+    const rewriteUrl = new URL(rewrittenPath, request.url);
+    rewriteUrl.search = request.nextUrl.search;
+    return NextResponse.rewrite(rewriteUrl);
+  }
 
   // Always pass through static files
   if (
