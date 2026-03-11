@@ -256,7 +256,7 @@ export default function PartnerAccountClient({
   const handleDelete = async () => {
     if (deleteConfirm !== 'DELETE') return;
     setDeleting(true);
-    await supabase.from('deletion_requests').insert({ user_id: userId, email, status: 'pending', requested_at: new Date().toISOString() }).catch(() => {});
+    try { await supabase.from('deletion_requests').insert({ user_id: userId, email, status: 'pending', requested_at: new Date().toISOString() }); } catch { /* non-critical */ }
     await supabase.auth.signOut();
     router.push('/');
   };
