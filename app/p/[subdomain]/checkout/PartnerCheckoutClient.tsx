@@ -10,14 +10,12 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Partner } from '@/types/partner';
 
-const NGN_RATE = 1600;
-
 interface Props {
   partner: Partner;
   plans: {
-    explorer: { name: string; monthly: number; yearly: number };
-    builder:  { name: string; monthly: number; yearly: number };
-    climber:  { name: string; monthly: number; yearly: number };
+    explorer: { name: string; monthly_ngn: number; yearly_ngn: number; features?: string | null };
+    builder:  { name: string; monthly_ngn: number; yearly_ngn: number; features?: string | null };
+    climber:  { name: string; monthly_ngn: number; yearly_ngn: number; features?: string | null };
   };
   paystackKey:    string;
   defaultPlan:    string;
@@ -48,10 +46,9 @@ export default function PartnerCheckoutClient({
   }, []);
 
   const currentPlan = plans[selectedPlan];
-  const priceUSD    = billing === 'yearly' ? currentPlan.yearly : currentPlan.monthly;
-  const priceNGN    = priceUSD * NGN_RATE;
+  const priceNGN    = billing === 'yearly' ? currentPlan.yearly_ngn : currentPlan.monthly_ngn;
   const savings     = billing === 'yearly'
-    ? Math.round(((currentPlan.monthly * 12) - currentPlan.yearly) * NGN_RATE)
+    ? Math.max(0, (currentPlan.monthly_ngn * 12) - currentPlan.yearly_ngn)
     : 0;
 
   const handleCheckout = async () => {
@@ -175,8 +172,7 @@ export default function PartnerCheckoutClient({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
             {planEntries.map(([key, plan]) => {
               const isSelected = selectedPlan === key;
-              const usd  = billing === 'yearly' ? plan.yearly : plan.monthly;
-              const ngn  = usd * NGN_RATE;
+              const ngn  = billing === 'yearly' ? plan.yearly_ngn : plan.monthly_ngn;
               return (
                 <button key={key} onClick={() => setSelectedPlan(key)}
                   style={{
@@ -198,7 +194,6 @@ export default function PartnerCheckoutClient({
                       <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
                         ₦{ngn.toLocaleString()}<span style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 400 }}>/mo</span>
                       </p>
-                      <p style={{ fontSize: 10, color: 'var(--text-dim)' }}>${usd} USD</p>
                     </div>
                   </div>
                 </button>
@@ -214,7 +209,7 @@ export default function PartnerCheckoutClient({
             <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
               ✦ Start with a <strong style={{ color: 'var(--accent)' }}>{trialDays}-day free trial</strong>.
               You won't be charged until day {trialDays + 1}.
-              {savings > 0 && ` You save ₦${savings.toLocaleString()} with annual billing.`}
+              {savings > 0 && ` Save ₦${savings.toLocaleString()} with annual billing.`}
             </p>
           </div>
 

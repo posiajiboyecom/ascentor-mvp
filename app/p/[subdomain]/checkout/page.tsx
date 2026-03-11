@@ -23,24 +23,35 @@ export default async function PartnerCheckoutPage({
   const { partner } = ctx;
 
   const overrides = partner.plan_overrides;
-  const paystackPublicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!;
+  // Use partner's own Paystack PUBLIC key if configured, else fall back to Ascentor's
+  // The partner's public key is stored as paystack_public_key on the partners table.
+  // The secret key is stored separately and never sent to client.
+  const paystackPublicKey =
+    (partner as any).paystack_public_key ||
+    process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!;
 
-  // Build plan pricing — use partner overrides if set, else Ascentor defaults
+  // NGN_RATE for USD fallback (partners setting NGN directly won't need this)
+  const NGN_RATE = 1600;
+
+  // Build plan pricing — prefer NGN overrides, fall back to USD * rate, then defaults
   const plans = {
     explorer: {
-      name:      overrides?.explorer_name  || 'Explorer',
-      monthly:   overrides?.explorer_price_usd || 9,
-      yearly:    Math.round((overrides?.explorer_price_usd || 9) * 10),
+      name:           overrides?.explorer_name        || 'Explorer',
+      monthly_ngn:    overrides?.explorer_monthly_ngn || ((overrides?.explorer_price_usd || 9)  * NGN_RATE),
+      yearly_ngn:     overrides?.explorer_yearly_ngn  || (Math.round((overrides?.explorer_price_usd || 9)  * 10) * NGN_RATE),
+      features:       overrides?.explorer_features    || null,
     },
     builder: {
-      name:      overrides?.builder_name   || 'Builder',
-      monthly:   overrides?.builder_price_usd  || 19,
-      yearly:    Math.round((overrides?.builder_price_usd  || 19) * 10),
+      name:           overrides?.builder_name         || 'Builder',
+      monthly_ngn:    overrides?.builder_monthly_ngn  || ((overrides?.builder_price_usd  || 19) * NGN_RATE),
+      yearly_ngn:     overrides?.builder_yearly_ngn   || (Math.round((overrides?.builder_price_usd  || 19) * 10) * NGN_RATE),
+      features:       overrides?.builder_features     || null,
     },
     climber: {
-      name:      overrides?.climber_name   || 'Climber',
-      monthly:   overrides?.climber_price_usd  || 39,
-      yearly:    Math.round((overrides?.climber_price_usd  || 39) * 10),
+      name:           overrides?.climber_name         || 'Climber',
+      monthly_ngn:    overrides?.climber_monthly_ngn  || ((overrides?.climber_price_usd  || 39) * NGN_RATE),
+      yearly_ngn:     overrides?.climber_yearly_ngn   || (Math.round((overrides?.climber_price_usd  || 39) * 10) * NGN_RATE),
+      features:       overrides?.climber_features     || null,
     },
   };
 

@@ -12,10 +12,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/partner/brand',    label: 'Brand',    icon: '✦', desc: 'Logo, colours, fonts' },
-  { href: '/partner/members',  label: 'Members',  icon: '⬡', desc: 'Invite & manage'     },
-  { href: '/partner/revenue',  label: 'Revenue',  icon: '◈', desc: 'Earnings & splits'   },
-  { href: '/partner/settings', label: 'Settings', icon: '⚙', desc: 'Domain & plan config' },
+  { href: '/partner/brand',     label: 'Brand',     icon: '✦', desc: 'Logo, colours, fonts'    },
+  { href: '/partner/courses',   label: 'Courses',   icon: '▶', desc: 'Create & publish content' },
+  { href: '/partner/pricing',   label: 'Pricing',   icon: '₦', desc: 'Plan prices in Naira'    },
+  { href: '/partner/members',   label: 'Members',   icon: '⬡', desc: 'Invite & manage'         },
+  { href: '/partner/analytics', label: 'Analytics', icon: '◉', desc: 'Enrollments & growth'    },
+  { href: '/partner/revenue',   label: 'Revenue',   icon: '◈', desc: 'Earnings & splits'       },
+  { href: '/partner/settings',  label: 'Settings',  icon: '⚙', desc: 'Domain & Paystack'       },
 ];
 
 export default function PartnerAdminShell({
