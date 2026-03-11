@@ -74,7 +74,7 @@ export default async function PartnerLayout({
 
     if (!user) {
       // Not logged in — redirect to partner login
-      redirect(`/p/${subdomain}/login?redirect=${encodeURIComponent(invokedPath || `/p/${subdomain}/dashboard`)}`);
+      redirect(`/p/${subdomain}/login?redirect=${encodeURIComponent(partnerPathname || `/p/${subdomain}/dashboard`)}`);
     }
 
     // Check membership in partner_members
