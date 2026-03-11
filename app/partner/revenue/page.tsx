@@ -220,10 +220,10 @@ function SummaryCard({ label, value, sub, accent }: {
 }) {
   return (
     <div style={{
-      background: 'var(--bg-card)', border: `1px solid ${accent ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`,
-      borderRadius: 12, padding: '16px 18px',
       background: accent ? 'rgba(245,158,11,0.04)' : 'var(--bg-card)',
-    } as any}>
+      border: `1px solid ${accent ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`,
+      borderRadius: 12, padding: '16px 18px',
+    }}>
       <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-dim)', marginBottom: 8 }}>
         {label}
       </p>
