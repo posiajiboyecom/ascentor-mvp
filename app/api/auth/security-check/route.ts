@@ -1,14 +1,26 @@
 // ============================================================
 // FEATURE #6: API Route — /api/auth/security-check
 // Called after successful authentication to validate location.
-// POST body: { userId }
 // Headers: x-forwarded-for (IP from Vercel)
+//
+// BUG FIX (Bug 3): The original route accepted userId from the POST body
+// with no session verification. Combined with the broad '/api/auth' entry
+// in proxy.ts PUBLIC_API_ROUTES (now fixed), any unauthenticated caller
+// could POST { userId: "<victim-uuid>" } and trigger a global sign-out
+// for any user on the platform.
+//
+// Fix: userId is now taken exclusively from the authenticated session via
+// supabase.auth.getUser(). The body is no longer trusted for identity.
+// The route also now correctly returns 401 if called without a valid session,
+// consistent with all other protected API routes.
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import { checkImpossibleTravel, type SessionLocation } from '@/lib/security-location';
 
+// Service-role client for writes (audit_logs, session_locations, admin signOut)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -36,10 +48,20 @@ async function getGeoFromIP(ip: string): Promise<{
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await req.json();
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+    // ── 1. AUTHENTICATE SESSION FIRST ──────────────────────────────
+    // BUG FIX (Bug 3): Never trust userId from the request body.
+    // The original code read `const { userId } = await req.json()` and used
+    // it directly to call supabase.auth.admin.signOut(userId, 'global'),
+    // creating a global-logout weapon for unauthenticated callers.
+    // Session is the sole source of truth for identity.
+    const authClient = await createServerClient();
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const userId = user.id; // session-derived — never from body
 
     // Get IP from Vercel headers
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -97,7 +119,7 @@ export async function POST(req: NextRequest) {
       userAgent, result.risk_level, !result.allowed
     );
 
-    // If blocked, also log to audit_logs (Feature #1)
+    // If blocked, also log to audit_logs
     if (!result.allowed) {
       try {
         await supabase.from('audit_logs').insert({
@@ -112,7 +134,7 @@ export async function POST(req: NextRequest) {
             location: `${geo.city}, ${geo.country}`,
           },
         });
-      } catch {} // Non-critical // Non-critical
+      } catch {} // Non-critical
 
       // Sign out all sessions for this user (security measure)
       try { await supabase.auth.admin.signOut(userId, 'global'); } catch {}

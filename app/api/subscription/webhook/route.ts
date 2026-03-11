@@ -11,6 +11,14 @@
 //
 // SECURITY: HMAC-SHA512 signature verified on every request.
 // This route is whitelisted in proxy.ts PUBLIC_API_ROUTES.
+//
+// BUG FIX (Bug 5): handleChargeSuccess previously checked
+// profile.subscription_status === 'active' AFTER the profile had already
+// been updated to 'active', making the pre-update status unreliable.
+// The fix captures the previous status before the update and uses
+// wasTrialing to correctly suppress the notification only for first-ever
+// activations (trialing → active, handled by /api/payment/verify).
+// Users recovering from past_due now correctly receive the renewal notice.
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -59,7 +67,7 @@ async function getProfileByEmail(email: string) {
   return profile;
 }
 
-// ── Derive plan from metadata or amount ───────────────────
+// ── Derive plan from metadata ─────────────────────────────
 // Your checkout passes metadata: { plan: 'explorer'|'builder'|'climber', ... }
 function getPlanFromMetadata(metadata: any): string {
   // Paystack metadata comes back as custom_fields array or direct object
@@ -117,6 +125,14 @@ async function handleChargeSuccess(data: any) {
 
   const plan = getPlanFromMetadata(data.metadata);
 
+  // BUG FIX (Bug 5): Capture the previous status BEFORE the update.
+  // The original code checked profile.subscription_status === 'active' after
+  // the update had already set it to 'active', making the check always pass
+  // (even on first activation) or always fail (for past_due recoveries).
+  // Correct logic: skip the notification only when this is the very first
+  // payment (trialing → active), which is already handled by /api/payment/verify.
+  const wasTrialing = profile.subscription_status === 'trialing';
+
   // Calculate next billing date (30 days from payment)
   const paidAt = data.paid_at ? new Date(data.paid_at) : new Date();
   const nextBilling = new Date(paidAt);
@@ -137,8 +153,10 @@ async function handleChargeSuccess(data: any) {
     channel: data.channel,
   });
 
-  // Only notify on renewal (not first payment — /api/payment/verify handles that)
-  if (profile.subscription_status === 'active') {
+  // Only notify on renewal — not on first payment (trialing → active),
+  // which is already handled by /api/payment/verify.
+  // This correctly covers: active→active renewals AND past_due recoveries.
+  if (!wasTrialing) {
     await notify(
       profile.id,
       'success',
