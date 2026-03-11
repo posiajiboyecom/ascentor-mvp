@@ -57,6 +57,35 @@ export default function PartnerSettingsPage() {
     setFeatures(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const [domainStatus, setDomainStatus] = useState<null | { verified: boolean; cname_target?: string; message?: string }>(null);
+  const [provisioningDomain, setProvisioningDomain] = useState(false);
+
+  // Check domain verification status on load
+  useEffect(() => {
+    fetch('/api/partner/domain')
+      .then(r => r.json())
+      .then(data => {
+        if (data.domain) setDomainStatus({ verified: data.verified });
+      }).catch(() => {});
+  }, []);
+
+  const handleProvisionDomain = async () => {
+    if (!partner || !customDomain.trim()) return;
+    setProvisioningDomain(true); setError('');
+    const res = await fetch('/api/partner/domain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ partnerId: partner.id, domain: customDomain.trim() }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setDomainStatus({ verified: data.verified, cname_target: data.cname_target, message: data.message });
+    } else {
+      setError(data.error || 'Domain provisioning failed');
+    }
+    setProvisioningDomain(false);
+  };
+
   const handleSave = async () => {
     if (!partner) return;
     setSaving(true); setError(''); setSaved(false);
@@ -117,16 +146,54 @@ export default function PartnerSettingsPage() {
           </div>
 
           <Field label="Custom Domain (Optional)">
-            <input
-              value={customDomain}
-              onChange={e => setCustomDomain(e.target.value)}
-              placeholder="coaching.yourdomain.com"
-              style={inputStyle}
-            />
-            <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6, lineHeight: 1.5 }}>
-              Point a CNAME from your domain to <code style={{ color: 'var(--accent)' }}>cname.vercel-dns.com</code>,
-              then enter it here. Allow 30 minutes for SSL.
-            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                value={customDomain}
+                onChange={e => { setCustomDomain(e.target.value); setDomainStatus(null); }}
+                placeholder="coaching.yourdomain.com"
+                style={{ ...inputStyle, flex: 1 }}
+              />
+              <button
+                onClick={handleProvisionDomain}
+                disabled={provisioningDomain || !customDomain.trim()}
+                style={{
+                  padding: '10px 16px', borderRadius: 10, border: 'none',
+                  background: 'var(--accent)', color: '#000',
+                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  opacity: (provisioningDomain || !customDomain.trim()) ? 0.5 : 1,
+                  whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                {provisioningDomain ? 'Connecting...' : 'Connect'}
+              </button>
+            </div>
+            {domainStatus && (
+              <div style={{
+                marginTop: 10, padding: '10px 14px', borderRadius: 10,
+                background: domainStatus.verified ? 'rgba(16,185,129,0.06)' : 'rgba(232,160,32,0.06)',
+                border: `1px solid ${domainStatus.verified ? 'rgba(16,185,129,0.2)' : 'rgba(232,160,32,0.2)'}`,
+              }}>
+                <p style={{ fontSize: 12, fontWeight: 600,
+                  color: domainStatus.verified ? 'var(--success)' : 'var(--accent)',
+                  marginBottom: domainStatus.message ? 4 : 0 }}>
+                  {domainStatus.verified ? '✓ Domain is live' : '◎ Pending DNS verification'}
+                </p>
+                {domainStatus.message && (
+                  <p style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                    {domainStatus.message}
+                  </p>
+                )}
+                {domainStatus.cname_target && !domainStatus.verified && (
+                  <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6 }}>
+                    CNAME target: <code style={{ color: 'var(--accent)', fontSize: 10 }}>{domainStatus.cname_target}</code>
+                  </p>
+                )}
+              </div>
+            )}
+            {!domainStatus && (
+              <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6, lineHeight: 1.5 }}>
+                Enter your domain and click Connect. We will automatically provision SSL via Vercel.
+              </p>
+            )}
           </Field>
         </Section>
 
