@@ -69,6 +69,8 @@ export default async function PartnerLayout({
     );
 
   // ── 3. Whitelist check on protected pages ─────────────────
+  let isOwner = false;
+
   if (!isPublicPath) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -77,6 +79,9 @@ export default async function PartnerLayout({
       // Not logged in — redirect to partner login
       redirect(`/p/${subdomain}/login?redirect=${encodeURIComponent(partnerPathname || `/p/${subdomain}/dashboard`)}`);
     }
+
+    // Detect if this user is the partner owner
+    isOwner = partner.owner_id === user.id;
 
     // Check membership in partner_members
     const { data: membership } = await supabaseService
@@ -87,28 +92,30 @@ export default async function PartnerLayout({
       .maybeSingle();
 
     if (!membership) {
-      // Not in whitelist at all
-      redirect(`/p/${subdomain}/access-denied?reason=not_invited`);
-    }
+      // Owner always has access even if not explicitly in partner_members
+      if (!isOwner) {
+        redirect(`/p/${subdomain}/access-denied?reason=not_invited`);
+      }
+    } else {
+      if (membership.status === 'suspended' && !isOwner) {
+        redirect(`/p/${subdomain}/access-denied?reason=suspended`);
+      }
 
-    if (membership.status === 'suspended') {
-      redirect(`/p/${subdomain}/access-denied?reason=suspended`);
-    }
+      if (membership.status === 'removed' && !isOwner) {
+        redirect(`/p/${subdomain}/access-denied?reason=removed`);
+      }
 
-    if (membership.status === 'removed') {
-      redirect(`/p/${subdomain}/access-denied?reason=removed`);
-    }
-
-    // Auto-activate 'invited' members who have now logged in
-    if (membership.status === 'invited') {
-      await supabaseService
-        .from('partner_members')
-        .update({
-          status:    'active',
-          user_id:   user.id,
-          joined_at: new Date().toISOString(),
-        })
-        .eq('id', membership.id);
+      // Auto-activate 'invited' members who have now logged in
+      if (membership.status === 'invited') {
+        await supabaseService
+          .from('partner_members')
+          .update({
+            status:    'active',
+            user_id:   user.id,
+            joined_at: new Date().toISOString(),
+          })
+          .eq('id', membership.id);
+      }
     }
   }
 
@@ -171,7 +178,7 @@ export default async function PartnerLayout({
       <body style={{ background: 'var(--bg)' }}>
         <PartnerProvider context={ctx}>
           {isPublicPath ? children : (
-            <PartnerMemberShell partner={partner}>
+            <PartnerMemberShell partner={partner} isOwner={isOwner}>
               {children}
             </PartnerMemberShell>
           )}

@@ -27,6 +27,7 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
+function AdminIcon()     { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>; }
 function HomeIcon()      { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>; }
 function CoachIcon()     { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 function ExpertsIcon()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>; }
@@ -36,8 +37,10 @@ function AccountIcon()   { return <svg width="20" height="20" viewBox="0 0 24 24
 export default function PartnerMemberShell({
   children,
   partner,
+  isOwner = false,
 }: {
   children: React.ReactNode;
+  isOwner?: boolean;
   partner: {
     subdomain: string;
     name: string;
@@ -123,18 +126,66 @@ export default function PartnerMemberShell({
           })}
         </nav>
 
-        {/* Sign out */}
-        <button
-          onClick={handleSignOut}
-          style={{
-            padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)',
-            background: 'transparent', color: 'var(--text-dim)',
-            fontSize: 12, fontWeight: 600, cursor: 'pointer',
-          }}
-        >
-          Sign out
-        </button>
+        {/* Right side: admin link + sign out */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {isOwner && (
+            <Link
+              href="/partner/brand"
+              style={{
+                padding: '6px 14px', borderRadius: 8,
+                background: 'rgba(232,160,32,0.10)',
+                border: '1px solid rgba(232,160,32,0.30)',
+                color: 'var(--accent)',
+                fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6,
+                transition: 'background 0.15s',
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+              </svg>
+              Admin
+            </Link>
+          )}
+          <button
+            onClick={handleSignOut}
+            style={{
+              padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)',
+              background: 'transparent', color: 'var(--text-dim)',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            Sign out
+          </button>
+        </div>
       </header>
+
+      {/* ── Owner admin banner ───────────────────────────────── */}
+      {isOwner && (
+        <div style={{
+          background: 'rgba(232,160,32,0.06)',
+          borderBottom: '1px solid rgba(232,160,32,0.15)',
+          padding: '8px 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 12,
+        }}>
+          <p style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600 }}>
+            You are viewing your platform as a member.
+          </p>
+          <Link
+            href="/partner/brand"
+            style={{
+              fontSize: 11, fontWeight: 700, color: 'var(--accent)',
+              textDecoration: 'none', whiteSpace: 'nowrap',
+              padding: '4px 12px', borderRadius: 6,
+              border: '1px solid rgba(232,160,32,0.30)',
+              background: 'rgba(232,160,32,0.08)',
+            }}
+          >
+            Go to Admin Panel →
+          </Link>
+        </div>
+      )}
 
       {/* ── Page content ────────────────────────────────────── */}
       <main style={{ flex: 1, padding: '0 0 80px' }}>
