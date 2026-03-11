@@ -14,53 +14,9 @@
 // ============================================================
 
 import { createClient } from '@supabase/supabase-js';
+import type { Partner, PartnerBrand, PartnerContext } from '@/types/partner';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-// ── Types ─────────────────────────────────────────────────
-
-export interface PartnerBrand {
-  platform_name:          string;
-  tagline:                string | null;
-  logo_url:               string | null;
-  logo_dark_url:          string | null;
-  favicon_url:            string | null;
-  primary_color:          string;
-  accent_color:           string;
-  text_color:             string;
-  bg_color:               string;
-  card_color:             string;
-  font_heading:           string;
-  font_body:              string;
-  hide_ascentor_branding: boolean;
-}
-
-export interface Partner {
-  id:                   string;
-  name:                 string;
-  subdomain:            string;
-  custom_domain:        string | null;
-  status:               string;
-  owner_id:             string;
-  revenue_share_percent: number;
-  brand:                PartnerBrand;
-  features: {
-    ai_coach:  boolean;
-    community: boolean;
-    experts:   boolean;
-    courses:   boolean;
-  };
-  plan_overrides: Record<string, any> | null;
-}
-
-export interface PartnerContext {
-  isWhiteLabel: boolean;
-  partner:      Partner;
-  cssVars:      Record<string, string>;
-}
+export type { Partner, PartnerBrand, PartnerContext };
 
 // ── In-memory cache ───────────────────────────────────────
 
@@ -180,12 +136,14 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
     const ctx: PartnerContext = {
       isWhiteLabel: false,
       partner: {
-        id: '', name: '', subdomain: '', custom_domain: null,
-        status: 'inactive', owner_id: '',
+        id: '', name: '', slug: '', subdomain: '', custom_domain: null,
+        status: 'pending' as const, owner_id: '',
         revenue_share_percent: 0,
+        paystack_subaccount_code: null,
         brand: DEFAULT_BRAND,
         features: { ai_coach: true, community: true, experts: true, courses: true },
         plan_overrides: null,
+        created_at: '', updated_at: '', onboarded_at: null,
       },
       cssVars: buildCssVars(DEFAULT_BRAND),
     };
