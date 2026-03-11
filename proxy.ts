@@ -98,7 +98,17 @@ export default async function proxy(request: NextRequest) {
     const rewrittenPath = `/p/${subdomain}${pathname === '/' ? '' : pathname}`;
     const rewriteUrl = new URL(rewrittenPath, request.url);
     rewriteUrl.search = request.nextUrl.search;
-    return NextResponse.rewrite(rewriteUrl);
+    const rewriteResponse = NextResponse.rewrite(rewriteUrl);
+    // Pass original pathname so layout can determine public vs protected pages
+    rewriteResponse.headers.set('x-partner-pathname', pathname);
+    return rewriteResponse;
+  }
+
+  // For direct /p/[subdomain]/* access, pass pathname through
+  if (pathname.startsWith('/p/')) {
+    const response = NextResponse.next();
+    response.headers.set('x-partner-pathname', pathname);
+    return response;
   }
 
   // Always pass through static files

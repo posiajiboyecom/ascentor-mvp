@@ -54,13 +54,18 @@ export default async function PartnerLayout({
   const brand = partner.brand;
 
   // ── 2. Determine current path ─────────────────────────────
-  // Next.js doesn't expose pathname in server layouts directly,
-  // so we read x-invoke-path or x-pathname set by middleware,
-  // falling back to the referer header for path detection.
-  const invokedPath = headersList.get('x-invoke-path') || '';
-  const isPublicPath = PUBLIC_PATHS.some(p =>
-    invokedPath.endsWith(p) || invokedPath.includes(p + '?')
-  );
+  // proxy.ts sets x-partner-pathname on all /p/* rewrites.
+  // For subdomain rewrites (demo.ascentorbi.com/login → /p/demo/login)
+  // the header contains the original path e.g. '/login'.
+  // For direct /p/* access it contains the full path e.g. '/p/demo/login'.
+  const partnerPathname = headersList.get('x-partner-pathname') || '';
+  const isPublicPath =
+    PUBLIC_PATHS.some(p =>
+      partnerPathname === p ||
+      partnerPathname.startsWith(p + '?') ||
+      partnerPathname.endsWith(p) ||
+      partnerPathname.includes(p + '?')
+    );
 
   // ── 3. Whitelist check on protected pages ─────────────────
   if (!isPublicPath) {
