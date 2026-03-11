@@ -17,8 +17,9 @@ export default async function PartnerLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { subdomain: string };
+  params: Promise<{ subdomain: string }>;
 }) {
+  await params; // Next.js 15+ requires params to be awaited
   const headersList = await headers();
   const hostname = headersList.get('host') || '';
 
@@ -107,8 +108,9 @@ export default async function PartnerLayout({
 export async function generateMetadata({
   params,
 }: {
-  params: { subdomain: string };
+  params: Promise<{ subdomain: string }>;
 }) {
+  await params; // Next.js 15+ requires params to be awaited
   const headersList = await headers();
   const hostname = headersList.get('host') || '';
   const ctx = await getPartnerContext(hostname);

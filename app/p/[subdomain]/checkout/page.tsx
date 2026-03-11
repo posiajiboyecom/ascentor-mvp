@@ -13,9 +13,10 @@ export default async function PartnerCheckoutPage({
   params,
   searchParams,
 }: {
-  params: { subdomain: string };
+  params: Promise<{ subdomain: string }>;
   searchParams: { plan?: string; billing?: string; required?: string };
 }) {
+  await params; // Next.js 15+ requires params to be awaited
   const headersList = await headers();
   const hostname = headersList.get('host') || '';
   const ctx = await getPartnerContext(hostname);

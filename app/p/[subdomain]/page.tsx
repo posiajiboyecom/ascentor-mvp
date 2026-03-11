@@ -13,8 +13,9 @@ import Link from 'next/link';
 export default async function PartnerHomePage({
   params,
 }: {
-  params: { subdomain: string };
+  params: Promise<{ subdomain: string }>;
 }) {
+  const { subdomain } = await params;
   const headersList = await headers();
   const hostname = headersList.get('host') || '';
   const ctx = await getPartnerContext(hostname);
@@ -24,7 +25,7 @@ export default async function PartnerHomePage({
   // If user is already logged in, send to dashboard
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect(`/p/${params.subdomain}/dashboard`);
+  if (user) redirect(`/p/${subdomain}/dashboard`);
 
   const features = partner.features;
 
@@ -46,7 +47,7 @@ export default async function PartnerHomePage({
           }
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Link href={`/p/${params.subdomain}/login`}
+          <Link href={`/p/${subdomain}/login`}
             style={{
               padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
               color: 'var(--text)', border: '1px solid var(--border)',
@@ -54,7 +55,7 @@ export default async function PartnerHomePage({
             }}>
             Log in
           </Link>
-          <Link href={`/p/${params.subdomain}/signup`}
+          <Link href={`/p/${subdomain}/signup`}
             style={{
               padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700,
               background: 'var(--accent)', color: '#000',
@@ -100,7 +101,7 @@ export default async function PartnerHomePage({
         </div>
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href={`/p/${params.subdomain}/signup`}
+          <Link href={`/p/${subdomain}/signup`}
             style={{
               padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700,
               background: 'var(--accent)', color: '#000', textDecoration: 'none',
@@ -108,7 +109,7 @@ export default async function PartnerHomePage({
             Start your journey →
           </Link>
           {features.ai_coach && (
-            <Link href={`/p/${params.subdomain}/login`}
+            <Link href={`/p/${subdomain}/login`}
               style={{
                 padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 600,
                 color: 'var(--text)', border: '1px solid var(--border)',
