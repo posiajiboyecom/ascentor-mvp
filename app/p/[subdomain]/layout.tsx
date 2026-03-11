@@ -20,6 +20,7 @@ import { createClient }  from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { getPartnerContext } from '@/lib/getPartnerContext';
 import { PartnerProvider }   from '@/components/partner/PartnerProvider';
+import PartnerMemberShell  from '@/components/partner/PartnerMemberShell';
 
 const supabaseService = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -169,7 +170,11 @@ export default async function PartnerLayout({
       </head>
       <body style={{ background: 'var(--bg)' }}>
         <PartnerProvider context={ctx}>
-          {children}
+          {isPublicPath ? children : (
+            <PartnerMemberShell partner={partner}>
+              {children}
+            </PartnerMemberShell>
+          )}
         </PartnerProvider>
       </body>
     </html>

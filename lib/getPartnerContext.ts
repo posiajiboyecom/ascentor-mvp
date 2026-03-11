@@ -1,149 +1,206 @@
 // ============================================================
 // lib/getPartnerContext.ts
 //
-// Resolves a hostname → PartnerContext for white-label pages.
+// Resolves a partner from the request hostname and returns
+// their full brand context + CSS variables.
 //
-// Resolution order:
-//   1. Custom domain  (coaching.johnadeyemi.com)
-//   2. *.ascentorbi.com subdomain  (john.ascentorbi.com)
-//   3. "demo" slug fallback — returns Ascentor default brand
-//      so demo.ascentorbi.com always works without a DB row
+// Supports:
+//   - Subdomain:    demo.ascentorbi.com
+//   - Custom domain: coaching.acme.com
 //
-// Results are cached in-memory (per deployment) for 60s
-// to avoid a DB hit on every page render.
-// Call clearPartnerCache(hostname) after brand updates.
+// Results are cached in-memory per hostname for 60s to avoid
+// a DB hit on every server render. Cache is busted when brand
+// or settings are saved via their respective API routes.
 // ============================================================
 
 import { createClient } from '@supabase/supabase-js';
-import { PartnerContext, ASCENTOR_BRAND, Partner } from '@/types/partner';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+// ── Types ─────────────────────────────────────────────────
+
+export interface PartnerBrand {
+  platform_name:          string;
+  tagline:                string | null;
+  logo_url:               string | null;
+  logo_dark_url:          string | null;
+  favicon_url:            string | null;
+  primary_color:          string;
+  accent_color:           string;
+  text_color:             string;
+  bg_color:               string;
+  card_color:             string;
+  font_heading:           string;
+  font_body:              string;
+  hide_ascentor_branding: boolean;
+}
+
+export interface Partner {
+  id:                   string;
+  name:                 string;
+  subdomain:            string;
+  custom_domain:        string | null;
+  status:               string;
+  owner_id:             string;
+  revenue_share_percent: number;
+  brand:                PartnerBrand;
+  features: {
+    ai_coach:  boolean;
+    community: boolean;
+    experts:   boolean;
+    courses:   boolean;
+  };
+  plan_overrides: Record<string, any> | null;
+}
+
+export interface PartnerContext {
+  isWhiteLabel: boolean;
+  partner:      Partner;
+  cssVars:      Record<string, string>;
+}
 
 // ── In-memory cache ───────────────────────────────────────
-interface CacheEntry {
-  context: PartnerContext;
-  expiresAt: number;
+
+const cache = new Map<string, { ctx: PartnerContext; expires: number }>();
+const CACHE_TTL = 60_000; // 60 seconds
+
+export function clearPartnerCache(subdomain?: string) {
+  if (subdomain) {
+    // Clear all entries that match this subdomain
+    for (const key of cache.keys()) {
+      if (key.includes(subdomain)) cache.delete(key);
+    }
+  } else {
+    cache.clear();
+  }
 }
 
-const cache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+// ── Default brand fallback ────────────────────────────────
 
-export function clearPartnerCache(hostname: string) {
-  cache.delete(normaliseHost(hostname));
-}
-
-function normaliseHost(hostname: string): string {
-  // Strip port (useful in local dev: localhost:3000)
-  return hostname.split(':')[0].toLowerCase();
-}
-
-// ── Demo / fallback context (no DB required) ──────────────
-const DEMO_CONTEXT: PartnerContext = {
-  isWhiteLabel: true,
-  cssVars: buildCssVars(ASCENTOR_BRAND),
-  partner: {
-    id: 'demo',
-    slug: 'demo',
-    name: 'Ascentor Demo',
-    owner_id: '',
-    status: 'active',
-    brand: ASCENTOR_BRAND,
-    paystack_subaccount_code: null,
-    revenue_share_percent: 0,
-    custom_domain: null,
-    subdomain: 'demo',
-    plan_overrides: null,
-    features: {
-      ai_coach:   true,
-      community:  true,
-      experts:    true,
-      courses:    true,
-      referrals:  true,
-    },
-    created_at: '',
-    updated_at: '',
-    onboarded_at: null,
-  },
+const DEFAULT_BRAND: PartnerBrand = {
+  platform_name:          'Partner Platform',
+  tagline:                null,
+  logo_url:               null,
+  logo_dark_url:          null,
+  favicon_url:            null,
+  primary_color:          '#E8A020',
+  accent_color:           '#C87820',
+  text_color:             '#D4CFC3',
+  bg_color:               '#0C0B08',
+  card_color:             '#1E1C17',
+  font_heading:           'Cormorant Garamond',
+  font_body:              'Syne',
+  hide_ascentor_branding: false,
 };
 
-// ── Main export ───────────────────────────────────────────
-export async function getPartnerContext(hostname: string): Promise<PartnerContext> {
-  const host = normaliseHost(hostname);
+// ── CSS var builder ───────────────────────────────────────
 
-  // 1. Check cache
-  const cached = cache.get(host);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.context;
-  }
+function buildCssVars(brand: PartnerBrand): Record<string, string> {
+  return {
+    '--bg':           brand.bg_color,
+    '--bg-card':      brand.card_color,
+    '--bg-input':     adjustBrightness(brand.card_color, 8),
+    '--text':         brand.text_color,
+    '--text-muted':   adjustBrightness(brand.text_color, -30),
+    '--text-dim':     adjustBrightness(brand.text_color, -50),
+    '--accent':       brand.primary_color,
+    '--accent-hover': brand.accent_color,
+    '--border':       `rgba(${hexToRgb(brand.text_color)}, 0.10)`,
+    '--font-heading': `'${brand.font_heading}', Georgia, serif`,
+    '--font-body':    `'${brand.font_body}', system-ui, sans-serif`,
+    '--success':      '#10B981',
+    '--error':        '#EF4444',
+  };
+}
 
-  // 2. Extract subdomain from *.ascentorbi.com
-  const ROOT_DOMAIN = 'ascentorbi.com';
-  let subdomain: string | null = null;
+function hexToRgb(hex: string): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return '212, 207, 195';
+  return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+}
 
-  if (host.endsWith(`.${ROOT_DOMAIN}`)) {
-    subdomain = host.slice(0, -(ROOT_DOMAIN.length + 1));
-  }
-
-  // 3. Demo subdomain — return immediately without a DB hit
-  if (subdomain === 'demo' || host === 'demo' || host === 'localhost') {
-    cache.set(host, { context: DEMO_CONTEXT, expiresAt: Date.now() + CACHE_TTL_MS });
-    return DEMO_CONTEXT;
-  }
-
-  // 4. Main ascentorbi.com — not a white-label
-  if (host === ROOT_DOMAIN || host === `www.${ROOT_DOMAIN}`) {
-    const ctx: PartnerContext = { isWhiteLabel: false, partner: {} as Partner, cssVars: {} };
-    cache.set(host, { context: ctx, expiresAt: Date.now() + CACHE_TTL_MS });
-    return ctx;
-  }
-
-  // 5. Look up partner in DB
+function adjustBrightness(hex: string, amount: number): string {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return hex;
+    const r = Math.min(255, Math.max(0, parseInt(result[1], 16) + amount));
+    const g = Math.min(255, Math.max(0, parseInt(result[2], 16) + amount));
+    const b = Math.min(255, Math.max(0, parseInt(result[3], 16) + amount));
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  } catch {
+    return hex;
+  }
+}
 
-    // Match on custom_domain first, then subdomain
-    const { data: partner } = await supabase
+// ── Main function ─────────────────────────────────────────
+
+export async function getPartnerContext(hostname: string): Promise<PartnerContext> {
+  // Strip port for local dev
+  const host = hostname.replace(/:\d+$/, '');
+
+  // Check cache
+  const cached = cache.get(host);
+  if (cached && cached.expires > Date.now()) {
+    return cached.ctx;
+  }
+
+  // Extract subdomain from *.ascentorbi.com
+  const subdomainMatch = host.match(/^([^.]+)\.ascentorbi\.com$/);
+  const subdomain = subdomainMatch?.[1];
+
+  // Skip non-partner hosts
+  const isMainDomain = host === 'ascentorbi.com' || host === 'www.ascentorbi.com' || host === 'localhost';
+
+  let partner: Partner | null = null;
+
+  if (!isMainDomain) {
+    // Try subdomain first, then custom domain
+    const { data } = await supabase
       .from('partners')
-      .select('*')
-      .or(`custom_domain.eq.${host},subdomain.eq.${subdomain ?? ''}`)
+      .select(`
+        id, name, subdomain, custom_domain, status, owner_id,
+        revenue_share_percent, brand, features, plan_overrides
+      `)
+      .or(
+        subdomain
+          ? `subdomain.eq.${subdomain},custom_domain.eq.${host}`
+          : `custom_domain.eq.${host}`
+      )
       .eq('status', 'active')
       .single();
 
-    if (!partner) {
-      // Unknown host — not a white-label, fall through to 404 in layout
-      const ctx: PartnerContext = { isWhiteLabel: false, partner: {} as Partner, cssVars: {} };
-      cache.set(host, { context: ctx, expiresAt: Date.now() + CACHE_TTL_MS });
-      return ctx;
-    }
-
-    const ctx: PartnerContext = {
-      isWhiteLabel: true,
-      partner: partner as Partner,
-      cssVars: buildCssVars(partner.brand),
-    };
-
-    cache.set(host, { context: ctx, expiresAt: Date.now() + CACHE_TTL_MS });
-    return ctx;
-
-  } catch (err) {
-    console.error('[getPartnerContext] DB error:', err);
-    // On DB failure, fall back to demo brand so page still renders
-    return DEMO_CONTEXT;
+    partner = data as Partner | null;
   }
-}
 
-// ── CSS var builder ───────────────────────────────────────
-function buildCssVars(brand: typeof ASCENTOR_BRAND): Record<string, string> {
-  return {
-    '--accent':       brand.primary_color,
-    '--accent-2':     brand.accent_color,
-    '--text':         brand.text_color,
-    '--bg':           brand.bg_color,
-    '--bg-card':      brand.card_color,
-    '--bg-input':     brand.card_color,
-    '--border':       `${brand.primary_color}28`,   // 16% opacity
-    '--font-heading': `'${brand.font_heading}', Georgia, serif`,
-    '--font-body':    `'${brand.font_body}', system-ui, sans-serif`,
+  if (!partner) {
+    // Not a partner host — return a non-whitelabel context
+    const ctx: PartnerContext = {
+      isWhiteLabel: false,
+      partner: {
+        id: '', name: '', subdomain: '', custom_domain: null,
+        status: 'inactive', owner_id: '',
+        revenue_share_percent: 0,
+        brand: DEFAULT_BRAND,
+        features: { ai_coach: true, community: true, experts: true, courses: true },
+        plan_overrides: null,
+      },
+      cssVars: buildCssVars(DEFAULT_BRAND),
+    };
+    return ctx;
+  }
+
+  // Merge brand with defaults for missing fields
+  const brand: PartnerBrand = { ...DEFAULT_BRAND, ...(partner.brand || {}) };
+
+  const ctx: PartnerContext = {
+    isWhiteLabel: true,
+    partner: { ...partner, brand },
+    cssVars: buildCssVars(brand),
   };
+
+  cache.set(host, { ctx, expires: Date.now() + CACHE_TTL });
+  return ctx;
 }
