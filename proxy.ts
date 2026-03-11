@@ -45,6 +45,8 @@ const PUBLIC_ROUTES = [
   '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
   '/how-it-works', '/who-its-for', '/waitlist', '/newsletter',
   '/mentor-apply', '/offline',
+  // Partner subdomain public routes
+  '/p',  // catches /p/[subdomain]/login, /p/[subdomain]/signup etc
 ];
 
 const PUBLIC_API_ROUTES = [
