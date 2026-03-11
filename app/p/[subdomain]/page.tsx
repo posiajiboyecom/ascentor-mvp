@@ -25,7 +25,7 @@ export default async function PartnerHomePage({
   // If user is already logged in, send to dashboard
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect(`/dashboard`);
+  if (user) redirect(`/p/${subdomain}/dashboard`);
 
   const features = partner.features;
 

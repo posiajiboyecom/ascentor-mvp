@@ -2,10 +2,15 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import DashboardClient from './DashboardClient';
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  params,
+}: {
+  params: Promise<{ subdomain: string }>;
+}) {
+  const { subdomain } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  if (!user) redirect(`/p/${subdomain}/login`);
 
   const [profileRes, goalRes, sessionsRes, commitmentsRes, expertRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
