@@ -237,11 +237,13 @@ export async function PATCH(req: NextRequest) {
 }
 
 async function logAudit(adminId: string, action: string, entityId: string, details: object) {
-  await supabase.from('audit_logs').insert({
-    user_id:     adminId,
-    action,
-    entity_type: 'partner',
-    entity_id:   entityId,
-    details,
-  }).catch(() => {});
+  try {
+    await supabase.from('audit_logs').insert({
+      user_id:     adminId,
+      action,
+      entity_type: 'partner',
+      entity_id:   entityId,
+      details,
+    });
+  } catch { /* non-critical */ }
 }
