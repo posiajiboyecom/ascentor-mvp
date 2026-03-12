@@ -64,7 +64,7 @@ export default async function PartnerLayout({
   const partnerPathname = headersList.get('x-partner-pathname') || '';
   const isPublicPath =
     PUBLIC_PATHS.some(p => {
-      if (p === '/') return partnerPathname === '/' || partnerPathname === '';
+      if (p === '/') return partnerPathname === '/';
       return (
         partnerPathname === p ||
         partnerPathname.startsWith(p + '?') ||

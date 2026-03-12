@@ -108,6 +108,7 @@ export default async function proxy(request: NextRequest) {
 
       const response = NextResponse.rewrite(rewrittenUrl);
       response.headers.set('x-partner-subdomain', subdomain);
+      response.headers.set('x-partner-pathname', pathname); // layout uses this for public path check
       // BUG-11 header: checkout needs the canonical API base
       response.headers.set('x-ascentor-api-base', MAIN_APP_URL);
       return response;
