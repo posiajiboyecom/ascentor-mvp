@@ -48,24 +48,30 @@ export default function PartnerCheckoutClient({
   paystackKey,
   trialDays,
   apiBase = '',   // FIX BUG-11: injected by server component; empty on subdomain, full URL on custom domain
+  defaultPlan,
+  defaultBilling,
+  requiredPlan: requiredPlanProp,
 }: {
-  partner:     Partner;
-  plans:       Record<PlanKey, PlanConfig>;
-  paystackKey: string;
-  trialDays:   number;
-  apiBase?:    string;
+  partner:       Partner;
+  plans:         Record<PlanKey, PlanConfig>;
+  paystackKey:   string;
+  trialDays:     number;
+  apiBase?:      string;
+  defaultPlan?:  string;
+  defaultBilling?: string;
+  requiredPlan?: string;
 }) {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const supabase     = createClient();
 
-  const [selectedPlan, setSelectedPlan] = useState<PlanKey>((searchParams.get('plan') as PlanKey) || 'builder');
-  const [billing, setBilling]           = useState<'monthly' | 'yearly'>('monthly');
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>(((defaultPlan || searchParams.get('plan')) as PlanKey) || 'builder');
+  const [billing, setBilling]           = useState<'monthly' | 'yearly'>((defaultBilling as 'monthly' | 'yearly') || 'monthly');
   const [loading, setLoading]           = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   const [userEmail, setUserEmail]         = useState('');
   const [userId, setUserId]               = useState('');
-  const [requiredPlan]                    = useState(searchParams.get('required_plan'));
+  const [requiredPlan]                    = useState(requiredPlanProp || searchParams.get('required_plan'));
 
   const brand = partner.brand as PartnerBrand;
 
