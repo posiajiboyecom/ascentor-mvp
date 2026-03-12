@@ -38,6 +38,7 @@ function CoachIcon()     { return <svg width="20" height="20" viewBox="0 0 24 24
 function ExpertsIcon()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>; }
 function CommunityIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/><path d="M18 14a3 3 0 0 1 3 3v1"/></svg>; }
 function AccountIcon()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20v-1a8 8 0 0 1 16 0v1"/></svg>; }
+function LearnIcon()     { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>; }
 
 export default function PartnerMemberShell({
   children,
@@ -74,8 +75,9 @@ export default function PartnerMemberShell({
   const navItems: NavItem[] = [
     { label: 'Home',      segment: 'dashboard',  icon: <HomeIcon /> },
     ...(features.ai_coach  ? [{ label: 'Mentor',    segment: 'coach',      icon: <CoachIcon /> }]     : []),
-    ...(features.community ? [{ label: 'Circle',    segment: 'community',  icon: <CommunityIcon /> }] : []),
     ...(features.experts   ? [{ label: 'Sessions',  segment: 'experts',    icon: <ExpertsIcon /> }]   : []),
+    ...(features.community ? [{ label: 'Circle',    segment: 'community',  icon: <CommunityIcon /> }] : []),
+    ...(features.courses   ? [{ label: 'Learn',     segment: 'courses',    icon: <LearnIcon /> }]     : []),
     { label: 'Account',   segment: 'account',    icon: <AccountIcon /> },
   ];
 
@@ -163,11 +165,24 @@ export default function PartnerMemberShell({
           background: 'rgba(232,160,32,0.06)',
           borderBottom: '1px solid rgba(232,160,32,0.15)',
           padding: '8px 20px',
-          display: 'flex', alignItems: 'center',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 12,
         }}>
           <p style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600 }}>
             You are viewing your platform as a member.
           </p>
+          <Link
+            href="/partner/brand"
+            style={{
+              fontSize: 11, fontWeight: 700, color: 'var(--accent)',
+              textDecoration: 'none', whiteSpace: 'nowrap',
+              padding: '4px 12px', borderRadius: 6,
+              border: '1px solid rgba(232,160,32,0.30)',
+              background: 'rgba(232,160,32,0.08)',
+            }}
+          >
+            Go to Admin Panel →
+          </Link>
         </div>
       )}
 

@@ -35,7 +35,7 @@ const PUBLIC_PATHS = [
   '/signup',
   '/join',           // invite accept page
   '/access-denied',  // shown when blocked
-  '/checkout',       // pricing/checkout page — public so guests can see plans
+  '/checkout',       // public so guests can see plans
 ];
 
 export default async function PartnerLayout({
