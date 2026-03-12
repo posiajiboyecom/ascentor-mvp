@@ -165,29 +165,15 @@ export default function PartnerMemberShell({
           background: 'rgba(232,160,32,0.06)',
           borderBottom: '1px solid rgba(232,160,32,0.15)',
           padding: '8px 20px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: 12,
         }}>
           <p style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600 }}>
             You are viewing your platform as a member.
           </p>
-          <Link
-            href="/partner/brand"
-            style={{
-              fontSize: 11, fontWeight: 700, color: 'var(--accent)',
-              textDecoration: 'none', whiteSpace: 'nowrap',
-              padding: '4px 12px', borderRadius: 6,
-              border: '1px solid rgba(232,160,32,0.30)',
-              background: 'rgba(232,160,32,0.08)',
-            }}
-          >
-            Go to Admin Panel →
-          </Link>
         </div>
       )}
 
       {/* ── Page content ────────────────────────────────────── */}
-      <main style={{ flex: 1, padding: '0 0 80px' }}>
+      <main style={{ flex: 1, padding: '0 0 80px', overflowX: 'hidden' }}>
         {children}
       </main>
 
