@@ -36,6 +36,7 @@ export default function PartnerCheckoutClient({
   const [selectedPlan, setSelectedPlan]     = useState<PlanKey>((defaultPlan as PlanKey) || 'explorer');
   const [billing, setBilling]               = useState<'monthly' | 'yearly'>(defaultBilling as any || 'monthly');
   const [loading, setLoading]               = useState(false);
+  const [checkoutError, setCheckoutError]   = useState('');
   const [userEmail, setUserEmail]           = useState('');
   const [userId, setUserId]                 = useState('');
 
@@ -57,7 +58,7 @@ export default function PartnerCheckoutClient({
 
     try {
       const PaystackPop = (window as any).PaystackPop;
-      if (!PaystackPop) { alert('Payment system loading, please retry.'); setLoading(false); return; }
+      if (!PaystackPop) { setCheckoutError('Payment system is loading, please wait a moment and try again.'); setLoading(false); return; }
 
       const handler = PaystackPop.setup({
         key:       paystackKey,
@@ -73,8 +74,8 @@ export default function PartnerCheckoutClient({
           is_trial:      true,
         },
         onSuccess: async (response: { reference: string }) => {
-          // Verify via partner webhook route
-          const res = await fetch('/api/payment/verify', {
+          // Use the partner-specific verify route which handles revenue split
+          const res = await fetch('/api/partner/payment/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -87,7 +88,12 @@ export default function PartnerCheckoutClient({
           if (res.ok) {
             router.push(`/p/${partner.subdomain}/dashboard?welcome=1`);
           } else {
-            alert('Payment received but activation failed. Contact support.');
+            const errData = await res.json().catch(() => ({}));
+            setCheckoutError(
+              errData.error ||
+              'Payment received but activation failed. Please contact support with your reference: ' +
+              response.reference
+            );
           }
           setLoading(false);
         },
@@ -214,7 +220,7 @@ export default function PartnerCheckoutClient({
           </div>
 
           {/* CTA */}
-          <button onClick={handleCheckout} disabled={loading}
+          <button onClick={() => { setCheckoutError(''); handleCheckout(); }} disabled={loading}
             style={{
               width: '100%', padding: '14px', borderRadius: 12,
               background: 'var(--accent)', color: '#000', border: 'none',
@@ -223,6 +229,26 @@ export default function PartnerCheckoutClient({
             }}>
             {loading ? 'Opening payment...' : `Start ${trialDays}-day free trial →`}
           </button>
+
+          {/* Inline error — replaces alert() */}
+          {checkoutError && (
+            <div style={{
+              marginTop: 12, padding: '10px 14px', borderRadius: 8,
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+              display: 'flex', alignItems: 'flex-start', gap: 8,
+            }}>
+              <span style={{ color: '#EF4444', fontSize: 13, lineHeight: 1.5, flex: 1 }}>
+                {checkoutError}
+              </span>
+              <button
+                onClick={() => setCheckoutError('')}
+                style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0 }}
+                aria-label="Dismiss error"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
           <p style={{ fontSize: 11, color: 'var(--text-dim)', textAlign: 'center', marginTop: 12 }}>
             Cancel anytime · Secure payment via Paystack

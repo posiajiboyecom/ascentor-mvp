@@ -90,10 +90,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Application failed. Please try again.' }, { status: 500 });
     }
 
-    // Notify founder
+    // Notify founder via email — with one-click approval link (no SQL required)
     try {
       const { data: userData } = await supabase.auth.admin.getUserById(user.id);
       const applicantEmail = userData?.user?.email || 'unknown';
+
+      // Build a signed approval URL pointing to the admin partners page
+      const adminApproveUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://ascentorbi.com'}/admin/partners?action=approve&id=${partner.id}`;
 
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -115,11 +118,15 @@ export async function POST(req: NextRequest) {
                 <tr><td style="padding: 8px 0; color: #666;">Niche</td><td style="padding: 8px 0;">${coaching_niche || '—'}</td></tr>
                 <tr><td style="padding: 8px 0; color: #666;">Bio</td><td style="padding: 8px 0;">${bio || '—'}</td></tr>
               </table>
-              <p style="margin-top: 24px;">
-                To approve:<br/>
-                <code style="background: #f4f4f4; padding: 8px 12px; display: block; margin-top: 8px; border-radius: 4px;">
-                  UPDATE partners SET status = 'active' WHERE id = '${partner.id}';
-                </code>
+              <div style="margin-top: 28px; display: flex; gap: 12px;">
+                <a href="${adminApproveUrl}"
+                   style="display: inline-block; padding: 12px 24px; background: #10B981; color: #fff;
+                          text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; margin-right: 10px;">
+                  ✓ Review &amp; Approve in Admin Panel
+                </a>
+              </div>
+              <p style="margin-top: 20px; color: #888; font-size: 12px;">
+                Log in to your admin account at ascentorbi.com/admin/partners to approve, reject, or adjust the revenue share.
               </p>
             </div>
           `,

@@ -12,8 +12,9 @@
 //   - Approval sends email to partner owner
 // ============================================================
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useSearchParams } from 'next/navigation';
 
 // ── Types ─────────────────────────────────────────────────
 type PartnerStatus = 'pending' | 'active' | 'suspended' | 'rejected';
@@ -295,8 +296,9 @@ function RevenueModal({
 }
 
 // ── Main page ─────────────────────────────────────────────
-export default function AdminPartnersPage() {
+function AdminPartnersPageInner() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
 
   const [partners,   setPartners]   = useState<Partner[]>([]);
   const [total,      setTotal]      = useState(0);
@@ -315,6 +317,31 @@ export default function AdminPartnersPage() {
   // Modals
   const [approveTarget, setApproveTarget] = useState<Partner | null>(null);
   const [revenueTarget, setRevenueTarget] = useState<Partner | null>(null);
+
+  // ── Deep-link: ?action=approve&id=xxx opens approve modal ──
+  // Triggered by the one-click link in the founder notification email
+  useEffect(() => {
+    const action = searchParams.get('action');
+    const id     = searchParams.get('id');
+    if (action === 'approve' && id) {
+      // Switch to pending tab and let the list load, then auto-find partner
+      setTab('pending');
+    }
+  }, [searchParams]);
+
+  // After partners load, check if we need to auto-open an approve modal
+  useEffect(() => {
+    const action = searchParams.get('action');
+    const id     = searchParams.get('id');
+    if (action === 'approve' && id && partners.length > 0) {
+      const target = partners.find(p => p.id === id);
+      if (target && target.status === 'pending') {
+        setApproveTarget(target);
+        // Clean up URL so refresh doesn't re-trigger
+        window.history.replaceState({}, '', '/admin/partners');
+      }
+    }
+  }, [partners, searchParams]);
 
   // Debounce search
   useEffect(() => {
@@ -603,5 +630,14 @@ export default function AdminPartnersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// Suspense boundary required for useSearchParams in Next.js App Router
+export default function AdminPartnersPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 32, color: 'var(--admin-text-faint)', fontSize: 13 }}>Loading partners...</div>}>
+      <AdminPartnersPageInner />
+    </Suspense>
   );
 }

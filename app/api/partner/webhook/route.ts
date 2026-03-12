@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { decryptSecret } from '@/lib/crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,7 +32,7 @@ function verifySignature(rawBody: string, signature: string, secret: string): bo
 async function getPartnerById(partnerId: string) {
   const { data } = await supabase
     .from('partners')
-    .select('id, name, owner_id, status, revenue_share_percent, paystack_subaccount_code, paystack_secret_key')
+    .select('id, name, owner_id, status, revenue_share_percent, paystack_subaccount_code, paystack_secret_key_enc')
     .eq('id', partnerId)
     .single();
   return data;
@@ -182,8 +183,16 @@ export async function POST(req: NextRequest) {
     const rawBody = await req.text();
     const signature = req.headers.get('x-paystack-signature') || '';
 
-    // Use partner's own Paystack secret key for verification
-    const partnerSecret = partner.paystack_secret_key || process.env.PAYSTACK_SECRET_KEY!;
+    // Use partner's own Paystack secret key for verification (decrypt from DB)
+    let partnerSecret = process.env.PAYSTACK_SECRET_KEY!;
+    if (partner.paystack_secret_key_enc) {
+      try {
+        partnerSecret = decryptSecret(partner.paystack_secret_key_enc);
+      } catch (decryptErr) {
+        console.error(`[PartnerWebhook] Failed to decrypt secret for partner ${partnerId}:`, decryptErr);
+        // Fall through to Ascentor's key
+      }
+    }
     if (!verifySignature(rawBody, signature, partnerSecret)) {
       console.error(`[PartnerWebhook] Invalid signature for partner ${partnerId}`);
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });

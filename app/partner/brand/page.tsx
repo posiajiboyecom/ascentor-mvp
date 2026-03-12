@@ -46,6 +46,7 @@ export default function BrandAdminPage() {
   const faviconInputRef = useRef<HTMLInputElement>(null);
 
   const [partnerId, setPartnerId] = useState<string | null>(null);
+  const [isPro, setIsPro]         = useState(false);
   const [brand, setBrand] = useState<PartnerBrand>({
     logo_url: null,
     logo_dark_url: null,
@@ -83,6 +84,7 @@ export default function BrandAdminPage() {
 
       if (partner) {
         setPartnerId(partner.id);
+        setIsPro((partner as any).plan_tier === 'pro');
         setBrand(partner.brand || brand);
       }
     };
@@ -301,24 +303,35 @@ export default function BrandAdminPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <p style={{ fontSize: 13, color: 'var(--text)' }}>Hide "Powered by Ascentor"</p>
-                <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                  Available on Partner Pro plan
+                <p style={{ fontSize: 11, color: isPro ? 'var(--success)' : 'var(--text-dim)' }}>
+                  {isPro ? 'Available on your Partner Pro plan' : 'Requires Partner Pro plan — contact us to upgrade'}
                 </p>
               </div>
-              <button
-                onClick={() => updateBrand('hide_ascentor_branding', !brand.hide_ascentor_branding)}
-                style={{
-                  width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
-                  background: brand.hide_ascentor_branding ? brand.primary_color : 'var(--bg-input)',
-                  transition: 'all 0.2s', position: 'relative',
+              {isPro ? (
+                <button
+                  onClick={() => updateBrand('hide_ascentor_branding', !brand.hide_ascentor_branding)}
+                  aria-label={brand.hide_ascentor_branding ? 'Branding hidden' : 'Branding visible'}
+                  style={{
+                    width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
+                    background: brand.hide_ascentor_branding ? brand.primary_color : 'var(--bg-input)',
+                    transition: 'all 0.2s', position: 'relative',
+                  }}>
+                  <div style={{
+                    width: 18, height: 18, borderRadius: '50%', position: 'absolute', top: 3,
+                    transition: 'all 0.2s',
+                    left: brand.hide_ascentor_branding ? 23 : 3,
+                    background: brand.hide_ascentor_branding ? '#000' : 'var(--text-dim)',
+                  }} />
+                </button>
+              ) : (
+                <span style={{
+                  fontSize: 10, fontWeight: 700, padding: '4px 10px', borderRadius: 20,
+                  background: 'rgba(232,160,32,0.08)', color: '#E8A020',
+                  border: '1px solid rgba(232,160,32,0.25)', whiteSpace: 'nowrap',
                 }}>
-                <div style={{
-                  width: 18, height: 18, borderRadius: '50%', position: 'absolute', top: 3,
-                  transition: 'all 0.2s',
-                  left: brand.hide_ascentor_branding ? 23 : 3,
-                  background: brand.hide_ascentor_branding ? '#000' : 'var(--text-dim)',
-                }} />
-              </button>
+                  Pro only
+                </span>
+              )}
             </div>
           </Section>
 

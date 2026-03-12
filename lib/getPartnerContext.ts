@@ -15,6 +15,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import type { Partner, PartnerBrand, PartnerContext } from '@/types/partner';
+import { cacheGet, cacheSet, cacheDel, cacheDelPattern } from '@/lib/partnerCache';
 
 export type { Partner, PartnerBrand, PartnerContext };
 
@@ -23,19 +24,19 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ── In-memory cache ───────────────────────────────────────
+// ── Cache key prefix ──────────────────────────────────────
 
-const cache = new Map<string, { ctx: PartnerContext; expires: number }>();
-const CACHE_TTL = 60_000; // 60 seconds
+const CACHE_PREFIX = 'pctx:';
 
-export function clearPartnerCache(subdomain?: string) {
+function cacheKey(host: string): string {
+  return `${CACHE_PREFIX}${host}`;
+}
+
+export async function clearPartnerCache(subdomain?: string): Promise<void> {
   if (subdomain) {
-    // Clear all entries that match this subdomain
-    for (const key of cache.keys()) {
-      if (key.includes(subdomain)) cache.delete(key);
-    }
+    await cacheDelPattern(subdomain);
   } else {
-    cache.clear();
+    await cacheDelPattern(CACHE_PREFIX);
   }
 }
 
@@ -102,10 +103,14 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
   // Strip port for local dev
   const host = hostname.replace(/:\d+$/, '');
 
-  // Check cache
-  const cached = cache.get(host);
-  if (cached && cached.expires > Date.now()) {
-    return cached.ctx;
+  // Check distributed cache
+  const cached = await cacheGet(cacheKey(host));
+  if (cached) {
+    try {
+      return JSON.parse(cached) as PartnerContext;
+    } catch {
+      // Corrupted cache entry — ignore and re-fetch
+    }
   }
 
   // Extract subdomain from *.ascentorbi.com
@@ -166,6 +171,6 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
     cssVars: buildCssVars(brand),
   };
 
-  cache.set(host, { ctx, expires: Date.now() + CACHE_TTL });
+  await cacheSet(cacheKey(host), JSON.stringify(ctx));
   return ctx;
 }

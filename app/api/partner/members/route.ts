@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
+import { createInviteToken } from '@/lib/inviteToken';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -137,7 +138,6 @@ export async function POST(req: NextRequest) {
     }
 
     const emails = rawEmails.map(e => e.toLowerCase().trim()).filter(Boolean);
-    const inviteUrl = `https://${partner.subdomain}.ascentorbi.com/join?partner=${partner.id}`;
 
     // Fetch all existing auth users once for lookup
     const { data: authData } = await supabase.auth.admin.listUsers();
@@ -185,6 +185,10 @@ export async function POST(req: NextRequest) {
         // Send invite email (only for users who don't have an account yet)
         if (!existingUser) {
           try {
+            // Generate a signed, expiring, per-email invite token
+            const token     = createInviteToken(partner.id, email);
+            const inviteUrl = `https://${partner.subdomain}.ascentorbi.com/join?token=${encodeURIComponent(token)}`;
+
             await fetch('https://api.resend.com/emails', {
               method: 'POST',
               headers: {
@@ -292,7 +296,9 @@ export async function PATCH(req: NextRequest) {
       if (member.status !== 'invited') {
         return NextResponse.json({ error: 'Can only resend to pending invites' }, { status: 400 });
       }
-      const inviteUrl = `https://${partner.subdomain}.ascentorbi.com/join?partner=${partner.id}`;
+      // Generate a fresh signed token for the resend
+      const token     = createInviteToken(partner.id, member.email);
+      const inviteUrl = `https://${partner.subdomain}.ascentorbi.com/join?token=${encodeURIComponent(token)}`;
       try {
         await fetch('https://api.resend.com/emails', {
           method: 'POST',

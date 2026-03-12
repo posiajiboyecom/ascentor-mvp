@@ -51,13 +51,23 @@ export async function POST(req: NextRequest) {
     // Validate ownership — partner must belong to this user
     const { data: partner } = await supabase
       .from('partners')
-      .select('id, owner_id, subdomain, custom_domain, status')
+      .select('id, owner_id, subdomain, custom_domain, status, plan_tier')
       .eq('id', partnerId)
       .single();
 
     if (!partner) return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
     if (partner.owner_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (partner.status === 'suspended') return NextResponse.json({ error: 'Account suspended' }, { status: 403 });
+
+    // Plan gating: hide_ascentor_branding requires Partner Pro tier
+    // Pro is indicated by plan_tier = 'pro' on the partner record.
+    // Any partner without 'pro' tier cannot enable white-label branding removal.
+    if (brand.hide_ascentor_branding && partner.plan_tier !== 'pro') {
+      return NextResponse.json({
+        error: 'Removing "Powered by Ascentor" branding requires the Partner Pro plan. Please upgrade to unlock this feature.',
+        code:  'plan_upgrade_required',
+      }, { status: 403 });
+    }
 
     // Validate brand data
     const validationError = validateBrand(brand);
@@ -96,10 +106,10 @@ export async function POST(req: NextRequest) {
 
     // Bust in-memory cache for this partner's domains
     if (partner.subdomain) {
-      clearPartnerCache(`${partner.subdomain}.ascentorbi.com`);
+      await clearPartnerCache(`${partner.subdomain}.ascentorbi.com`);
     }
     if (partner.custom_domain) {
-      clearPartnerCache(partner.custom_domain);
+      await clearPartnerCache(partner.custom_domain);
     }
 
     // Audit log

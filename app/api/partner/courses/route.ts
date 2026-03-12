@@ -66,9 +66,36 @@ export async function GET(req: NextRequest) {
     const coursesWithCounts = (courses || []).map(c => ({
       ...c,
       enrollment_count: enrollmentMap[c.id] || 0,
+      source: 'partner', // distinguishes partner-owned vs Ascentor catalog
     }));
 
-    return NextResponse.json({ courses: coursesWithCounts });
+    // Optional: include Ascentor's global course catalog
+    // Partners can browse it and "link" courses to their platform
+    // by adding a partner_course_links record (not enrollments).
+    const includeCatalog = req.nextUrl.searchParams.get('include_catalog') === 'true';
+    let catalogCourses: any[] = [];
+
+    if (includeCatalog) {
+      const { data: globalCourses } = await supabase
+        .from('courses')               // main Ascentor courses table
+        .select('id, title, description, thumbnail_url, level, duration_minutes, is_published')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false });
+
+      // Mark which global courses this partner has already linked
+      const linkedIds = new Set((courses || []).map((c: any) => c.global_course_id).filter(Boolean));
+
+      catalogCourses = (globalCourses || []).map(c => ({
+        ...c,
+        source:  'ascentor_catalog',
+        linked:  linkedIds.has(c.id),
+      }));
+    }
+
+    return NextResponse.json({
+      courses:         coursesWithCounts,
+      catalog_courses: catalogCourses,
+    });
   } catch (err) {
     console.error('[Partner Courses GET]', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

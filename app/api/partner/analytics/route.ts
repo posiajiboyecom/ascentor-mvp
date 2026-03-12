@@ -31,7 +31,18 @@ export async function GET(req: NextRequest) {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString();
     const ninetyDaysAgo = new Date(now.getTime() - 90 * 86400000).toISOString();
 
-    // Run all queries in parallel
+    // First fetch member user_ids so we can filter coaching_sessions without a subquery
+    const { data: memberUserData } = await supabase
+      .from('partner_members')
+      .select('user_id, status, joined_at, created_at')
+      .eq('partner_id', partnerId)
+      .not('user_id', 'is', null);
+
+    const memberUserIds = (memberUserData || [])
+      .map((m: any) => m.user_id)
+      .filter(Boolean) as string[];
+
+    // Run all other queries in parallel (no await inside the array)
     const [
       membersRes,
       enrollmentsRes,
@@ -58,16 +69,13 @@ export async function GET(req: NextRequest) {
         .not('completed_at', 'is', null),
 
       // Coaching sessions by partner members (last 90 days)
-      supabase.from('coaching_sessions')
-        .select('user_id, created_at')
-        .in('user_id',
-          (await supabase.from('partner_members')
-            .select('user_id')
-            .eq('partner_id', partnerId)
-            .not('user_id', 'is', null)
-          ).data?.map((m: any) => m.user_id).filter(Boolean) || []
-        )
-        .gte('created_at', ninetyDaysAgo),
+      // Use pre-fetched memberUserIds — avoids await inside Promise.all
+      memberUserIds.length > 0
+        ? supabase.from('coaching_sessions')
+            .select('user_id, created_at')
+            .in('user_id', memberUserIds)
+            .gte('created_at', ninetyDaysAgo)
+        : Promise.resolve({ data: [], error: null }),
 
       // Revenue last 6 months
       supabase.from('partner_transactions')
