@@ -30,10 +30,12 @@ const supabaseService = createServiceClient(
 // Pages inside /p/[subdomain]/ that are always public —
 // the user must be able to reach these without being a member yet.
 const PUBLIC_PATHS = [
+  '/',               // landing page — always public
   '/login',
   '/signup',
   '/join',           // invite accept page
   '/access-denied',  // shown when blocked
+  '/checkout',       // pricing/checkout page — public so guests can see plans
 ];
 
 export default async function PartnerLayout({
@@ -61,12 +63,16 @@ export default async function PartnerLayout({
   // For direct /p/* access it contains the full path e.g. '/p/demo/login'.
   const partnerPathname = headersList.get('x-partner-pathname') || '';
   const isPublicPath =
-    PUBLIC_PATHS.some(p =>
-      partnerPathname === p ||
-      partnerPathname.startsWith(p + '?') ||
-      partnerPathname.endsWith(p) ||
-      partnerPathname.includes(p + '?')
-    );
+    PUBLIC_PATHS.some(p => {
+      if (p === '/') return partnerPathname === '/' || partnerPathname === '';
+      return (
+        partnerPathname === p ||
+        partnerPathname.startsWith(p + '?') ||
+        partnerPathname.startsWith(p + '/') ||
+        partnerPathname.endsWith(p) ||
+        partnerPathname.includes(p + '?')
+      );
+    });
 
   // ── 3. Whitelist check on protected pages ─────────────────
   let isOwner = false;
