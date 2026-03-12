@@ -36,7 +36,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
   };
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 20px 100px' }}>
+    <div style={{ maxWidth: 680, margin: '0 auto', padding: '24px 20px 40px' }}>
 
       {/* Greeting */}
       <div style={{ marginBottom: 28 }}>

@@ -173,7 +173,7 @@ export default function PartnerMemberShell({
       )}
 
       {/* ── Page content ────────────────────────────────────── */}
-      <main style={{ flex: 1, padding: '0 0 80px', overflowX: 'hidden' }}>
+      <main style={{ flex: 1, padding: '0', overflowX: 'hidden' }}>
         {children}
       </main>
 
@@ -207,7 +207,7 @@ export default function PartnerMemberShell({
       {/* ── Powered by footer ────────────────────────────────── */}
       {!brand.hide_ascentor_branding && (
         <div style={{
-          textAlign: 'center', paddingBottom: 70, fontSize: 10,
+          textAlign: 'center', paddingBottom: 16, fontSize: 10,
           color: 'var(--text-dim)', opacity: 0.5,
         }}>
           Powered by{' '}
