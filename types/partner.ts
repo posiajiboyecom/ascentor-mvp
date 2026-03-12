@@ -1,12 +1,14 @@
 // ============================================================
 // types/partner.ts
-// Single source of truth for all partner/white-label types.
-// Consumed by:
-//   - lib/getPartnerContext.ts
-//   - components/partner/PartnerProvider.tsx
-//   - app/p/[subdomain]/checkout/PartnerCheckoutClient.tsx
-//   - app/api/partner/brand/route.ts
-//   - app/partner/brand/page.tsx
+//
+// FILE LOCATION: types/partner.ts
+//
+// FIX (W-04):
+//   Added optional `border_color` field to PartnerBrand.
+//   This field is now used by buildCssVars() in getPartnerContext.ts
+//   to set --border directly from the partner's chosen colour,
+//   rather than computing it as an alpha on text_color.
+//   The brand/page.tsx preview also reads this value directly.
 // ============================================================
 
 // ── Font options (matches allowed list in brand/route.ts) ──
@@ -30,6 +32,7 @@ export interface PartnerBrand {
   text_color:             string;
   bg_color:               string;
   card_color:             string;
+  border_color?:          string;   // FIX W-04: explicit partner border colour
   font_heading:           FontOption | string;
   font_body:              FontOption | string;
   hide_ascentor_branding: boolean;
@@ -52,7 +55,7 @@ export interface PartnerPlanOverrides {
   climber_name?:       string;
   climber_price_usd?:  number;
   trial_days?:         number;
-  [key: string]:       string | number | undefined; // allow arbitrary overrides
+  [key: string]:       string | number | undefined;
 }
 
 // ── Partner ───────────────────────────────────────────────

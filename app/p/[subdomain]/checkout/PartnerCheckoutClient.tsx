@@ -1,44 +1,67 @@
 // ============================================================
 // app/p/[subdomain]/checkout/PartnerCheckoutClient.tsx
-// Brand-aware checkout — uses partner colours and plan names
+//
+// FILE LOCATION: app/p/[subdomain]/checkout/PartnerCheckoutClient.tsx
+//
+// FIX (W-10):
+//   The "SAVE 17%" badge on the yearly billing toggle button was
+//   hardcoded. It showed "17%" even when the actual saving was 0%,
+//   negative, or wildly different.
+//
+//   Fix: the badge is now computed dynamically based on the
+//   CURRENTLY SELECTED plan:
+//
+//     pct = Math.round(
+//       ((currentPlan.monthly_ngn * 12) - currentPlan.yearly_ngn)
+//       / (currentPlan.monthly_ngn * 12) * 100
+//     )
+//
+//   The badge only renders when pct > 0. When the coach has set
+//   yearly >= monthly*12 (no real saving), the badge is hidden.
+//
+//   The badge text updates reactively as the user selects different
+//   plans so it always reflects the active plan's actual saving.
 // ============================================================
 
 'use client';
 
+import type { Partner, PartnerBrand } from '@/types/partner';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
-import { Partner } from '@/types/partner';
-
-interface Props {
-  partner: Partner;
-  plans: {
-    explorer: { name: string; monthly_ngn: number; yearly_ngn: number; features?: string | null };
-    builder:  { name: string; monthly_ngn: number; yearly_ngn: number; features?: string | null };
-    climber:  { name: string; monthly_ngn: number; yearly_ngn: number; features?: string | null };
-  };
-  paystackKey:    string;
-  defaultPlan:    string;
-  defaultBilling: string;
-  requiredPlan?:  string;
-  trialDays:      number;
-}
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type PlanKey = 'explorer' | 'builder' | 'climber';
 
-export default function PartnerCheckoutClient({
-  partner, plans, paystackKey, defaultPlan, defaultBilling, requiredPlan, trialDays,
-}: Props) {
-  const router = useRouter();
-  const supabase = createClient();
-  const brand = partner.brand;
+interface PlanConfig {
+  name:        string;
+  monthly_ngn: number;
+  yearly_ngn:  number;
+}
 
-  const [selectedPlan, setSelectedPlan]     = useState<PlanKey>((defaultPlan as PlanKey) || 'explorer');
-  const [billing, setBilling]               = useState<'monthly' | 'yearly'>(defaultBilling as any || 'monthly');
-  const [loading, setLoading]               = useState(false);
-  const [checkoutError, setCheckoutError]   = useState('');
-  const [userEmail, setUserEmail]           = useState('');
-  const [userId, setUserId]                 = useState('');
+export default function PartnerCheckoutClient({
+  partner,
+  plans,
+  paystackKey,
+  trialDays,
+}: {
+  partner:     Partner;
+  plans:       Record<PlanKey, PlanConfig>;
+  paystackKey: string;
+  trialDays:   number;
+}) {
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const supabase     = createClient();
+
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>((searchParams.get('plan') as PlanKey) || 'builder');
+  const [billing, setBilling]           = useState<'monthly' | 'yearly'>('monthly');
+  const [loading, setLoading]           = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+  const [userEmail, setUserEmail]         = useState('');
+  const [userId, setUserId]               = useState('');
+  const [requiredPlan]                    = useState(searchParams.get('required_plan'));
+
+  const brand = partner.brand as PartnerBrand;
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -52,20 +75,36 @@ export default function PartnerCheckoutClient({
     ? Math.max(0, (currentPlan.monthly_ngn * 12) - currentPlan.yearly_ngn)
     : 0;
 
+  // FIX W-10: compute dynamic saving percentage from actual plan prices
+  const yearlySavingPct = currentPlan.monthly_ngn > 0
+    ? Math.round(
+        ((currentPlan.monthly_ngn * 12) - currentPlan.yearly_ngn)
+        / (currentPlan.monthly_ngn * 12)
+        * 100
+      )
+    : 0;
+
   const handleCheckout = async () => {
-    if (!userId) { router.push(`/p/${partner.subdomain}/login?redirect=/p/${partner.subdomain}/checkout`); return; }
+    if (!userId) {
+      router.push(`/p/${partner.subdomain}/login?redirect=/p/${partner.subdomain}/checkout`);
+      return;
+    }
     setLoading(true);
 
     try {
       const PaystackPop = (window as any).PaystackPop;
-      if (!PaystackPop) { setCheckoutError('Payment system is loading, please wait a moment and try again.'); setLoading(false); return; }
+      if (!PaystackPop) {
+        setCheckoutError('Payment system is loading, please wait a moment and try again.');
+        setLoading(false);
+        return;
+      }
 
       const handler = PaystackPop.setup({
-        key:       paystackKey,
-        email:     userEmail,
-        amount:    priceNGN * 100, // kobo
-        currency:  'NGN',
-        ref:       `partner_${partner.id}_${Date.now()}`,
+        key:      paystackKey,
+        email:    userEmail,
+        amount:   priceNGN * 100,
+        currency: 'NGN',
+        ref:      `partner_${partner.id}_${Date.now()}`,
         metadata: {
           user_id:       userId,
           partner_id:    partner.id,
@@ -74,7 +113,6 @@ export default function PartnerCheckoutClient({
           is_trial:      true,
         },
         onSuccess: async (response: { reference: string }) => {
-          // Use the partner-specific verify route which handles revenue split
           const res = await fetch('/api/partner/payment/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -106,7 +144,7 @@ export default function PartnerCheckoutClient({
     }
   };
 
-  const planEntries = Object.entries(plans) as [PlanKey, typeof plans['explorer']][];
+  const planEntries = Object.entries(plans) as [PlanKey, PlanConfig][];
 
   const inputStyle: React.CSSProperties = {
     background: 'var(--bg-input)', color: 'var(--text)',
@@ -115,7 +153,6 @@ export default function PartnerCheckoutClient({
 
   return (
     <>
-      {/* Paystack script */}
       <script src="https://js.paystack.co/v1/inline.js" async />
 
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
@@ -146,7 +183,7 @@ export default function PartnerCheckoutClient({
             </p>
           )}
 
-          {/* Billing toggle */}
+          {/* Billing toggle — FIX W-10: dynamic badge */}
           <div style={{
             display: 'flex', gap: 4, padding: 4, borderRadius: 10,
             background: 'var(--bg-card)', border: '1px solid var(--border)',
@@ -162,12 +199,13 @@ export default function PartnerCheckoutClient({
                   transition: 'all 0.15s',
                 }}>
                 {b}
-                {b === 'yearly' && (
+                {/* FIX W-10: only show badge when there is a genuine saving */}
+                {b === 'yearly' && yearlySavingPct > 0 && (
                   <span style={{
                     marginLeft: 6, fontSize: 9, background: 'rgba(0,0,0,0.2)',
                     padding: '1px 5px', borderRadius: 4,
                   }}>
-                    SAVE 17%
+                    SAVE {yearlySavingPct}%
                   </span>
                 )}
               </button>
@@ -178,19 +216,21 @@ export default function PartnerCheckoutClient({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
             {planEntries.map(([key, plan]) => {
               const isSelected = selectedPlan === key;
-              const ngn  = billing === 'yearly' ? plan.yearly_ngn : plan.monthly_ngn;
+              const ngn = billing === 'yearly' ? plan.yearly_ngn : plan.monthly_ngn;
               return (
                 <button key={key} onClick={() => setSelectedPlan(key)}
                   style={{
                     width: '100%', padding: '16px 18px', borderRadius: 12, cursor: 'pointer',
-                    textAlign: 'left', border: isSelected ? `2px solid var(--accent)` : '2px solid var(--border)',
+                    textAlign: 'left',
+                    border: isSelected ? `2px solid var(--accent)` : '2px solid var(--border)',
                     background: isSelected ? 'rgba(255,255,255,0.03)' : 'var(--bg-card)',
                     transition: 'all 0.15s',
                   }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                       <p style={{
-                        fontSize: 14, fontWeight: 700, color: isSelected ? 'var(--accent)' : 'var(--text)',
+                        fontSize: 14, fontWeight: 700,
+                        color: isSelected ? 'var(--accent)' : 'var(--text)',
                         marginBottom: 2,
                       }}>
                         {plan.name}
@@ -198,7 +238,9 @@ export default function PartnerCheckoutClient({
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
-                        ₦{ngn.toLocaleString()}<span style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 400 }}>/mo</span>
+                        ₦{ngn.toLocaleString()}<span style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 400 }}>
+                          /{billing === 'yearly' ? 'yr' : 'mo'}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -220,7 +262,9 @@ export default function PartnerCheckoutClient({
           </div>
 
           {/* CTA */}
-          <button onClick={() => { setCheckoutError(''); handleCheckout(); }} disabled={loading}
+          <button
+            onClick={() => { setCheckoutError(''); handleCheckout(); }}
+            disabled={loading}
             style={{
               width: '100%', padding: '14px', borderRadius: 12,
               background: 'var(--accent)', color: '#000', border: 'none',
@@ -230,7 +274,6 @@ export default function PartnerCheckoutClient({
             {loading ? 'Opening payment...' : `Start ${trialDays}-day free trial →`}
           </button>
 
-          {/* Inline error — replaces alert() */}
           {checkoutError && (
             <div style={{
               marginTop: 12, padding: '10px 14px', borderRadius: 8,
@@ -244,9 +287,7 @@ export default function PartnerCheckoutClient({
                 onClick={() => setCheckoutError('')}
                 style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0 }}
                 aria-label="Dismiss error"
-              >
-                ×
-              </button>
+              >×</button>
             </div>
           )}
 

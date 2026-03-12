@@ -1,129 +1,34 @@
 // ============================================================
-// app/api/partner/settings/route.ts
-// POST: Save partner platform settings
-// (custom domain, paystack key, features, plan overrides)
+// app/api/partner/revenue/route.ts
+//
+// FILE LOCATION: app/api/partner/revenue/route.ts
+//
+// FIX (W-14):
+//   The "Month vs Last" summary card always showed last_month_ngn
+//   regardless of which period the coach had selected (This Month /
+//   This Year / All Time). The fix adds two new fields:
+//
+//   - last_year_ngn: earnings from the same calendar year as
+//     last year (Jan 1 → Dec 31 of previous year). Shown on
+//     "This Year" view so the coach can compare YoY.
+//
+//   - avg_per_month_ngn: average monthly earnings across all
+//     transactions. Shown on "All Time" view as a meaningful
+//     summary stat instead of a misleading last-month figure.
+//
+//   The revenue page (see page.tsx fix) reads these fields and
+//   switches which stat it shows based on the active period.
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
-import { clearPartnerCache } from '@/lib/getPartnerContext';
-import { encryptSecret, isEncrypted } from '@/lib/crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Basic domain validation
-function isValidDomain(domain: string): boolean {
-  return /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/.test(domain);
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const authClient = await createAuthClient();
-    const { data: { user }, error } = await authClient.auth.getUser();
-    if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const body = await req.json();
-    const { partnerId, custom_domain, paystack_secret_key, features, plan_overrides } = body;
-
-    if (!partnerId) return NextResponse.json({ error: 'Missing partnerId' }, { status: 400 });
-
-    // Ownership check
-    const { data: partner } = await supabase
-      .from('partners')
-      .select('id, owner_id, subdomain, custom_domain, status')
-      .eq('id', partnerId)
-      .single();
-
-    if (!partner) return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
-    if (partner.owner_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
-    // Validate custom domain format
-    if (custom_domain && !isValidDomain(custom_domain)) {
-      return NextResponse.json({ error: 'Invalid domain format. Use: coaching.yourdomain.com' }, { status: 400 });
-    }
-
-    // Check domain not taken by another partner
-    if (custom_domain && custom_domain !== partner.custom_domain) {
-      const { data: existing } = await supabase
-        .from('partners')
-        .select('id')
-        .eq('custom_domain', custom_domain)
-        .neq('id', partnerId)
-        .single();
-      if (existing) return NextResponse.json({ error: 'That domain is already in use' }, { status: 400 });
-    }
-
-    // Load existing plan_overrides so we can MERGE (not replace)
-    // This prevents the Pricing page saving monthly_ngn from being wiped
-    // when Settings saves trial_days and plan names (and vice versa).
-    const { data: existingData } = await supabase
-      .from('partners')
-      .select('plan_overrides')
-      .eq('id', partnerId)
-      .single();
-
-    const existingOverrides: Record<string, any> = (existingData?.plan_overrides as Record<string, any>) || {};
-    const incomingOverrides: Record<string, any> = (plan_overrides as Record<string, any>) || {};
-
-    // Deep merge: incoming values win; existing values not in incoming are preserved
-    const mergedOverrides = { ...existingOverrides, ...incomingOverrides };
-
-    // Build update object
-    const update: Record<string, any> = {
-      custom_domain:  custom_domain || null,
-      features:       features || {},
-      plan_overrides: mergedOverrides,
-      updated_at:     new Date().toISOString(),
-    };
-
-    // Only update paystack key if provided (don't wipe existing on empty)
-    if (paystack_secret_key?.trim()) {
-      const raw = paystack_secret_key.trim();
-      // Encrypt before storage — never store plaintext Paystack keys
-      // isEncrypted guard prevents double-encrypting if somehow re-submitted
-      update.paystack_secret_key_enc = isEncrypted(raw) ? raw : encryptSecret(raw);
-      // Wipe any legacy plaintext column value for safety
-      update.paystack_secret_key = null;
-    }
-
-    const { error: updateError } = await supabase
-      .from('partners')
-      .update(update)
-      .eq('id', partnerId);
-
-    if (updateError) {
-      console.error('[Partner Settings]', updateError);
-      return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 });
-    }
-
-    // Bust cache for both old and new custom domain
-    if (partner.subdomain) await clearPartnerCache(`${partner.subdomain}.ascentorbi.com`);
-    if (partner.custom_domain) await clearPartnerCache(partner.custom_domain);
-    if (custom_domain) await clearPartnerCache(custom_domain);
-
-    // Audit log
-    await supabase.from('audit_logs').insert({
-      user_id:     user.id,
-      action:      'partner_settings_updated',
-      entity_type: 'partner',
-      entity_id:   partnerId,
-      details:     { custom_domain, features_updated: !!features },
-    });
-
-    return NextResponse.json({ success: true });
-
-  } catch (err: any) {
-    console.error('[Partner Settings API]', err);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  }
-}
-
-
-// ── GET: Return current settings (never expose secret key) ──
 export async function GET(req: NextRequest) {
   try {
     const authClient = await createAuthClient();
@@ -131,26 +36,106 @@ export async function GET(req: NextRequest) {
     if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: partner } = await supabase
-      .from('partners')
-      .select(
-        'id, subdomain, custom_domain, status, features, plan_overrides, revenue_share_percent, ' +
-        'paystack_secret_key_enc' // only used for has_paystack_key check — never returned
-      )
-      .eq('owner_id', user.id)
-      .single();
+      .from('partners').select('id').eq('owner_id', user.id).single();
+    if (!partner) return NextResponse.json({ error: 'No partner account' }, { status: 404 });
 
-    if (!partner) return NextResponse.json({ error: 'No partner account found' }, { status: 404 });
+    const { searchParams } = new URL(req.url);
+    const period = searchParams.get('period') || 'month';
 
-    // Return a boolean for key presence — never the key itself
-    const { paystack_secret_key_enc, ...safePartner } = partner as any;
+    const now = new Date();
+    let fromDate: Date | null = null;
+    if (period === 'month') {
+      fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (period === 'year') {
+      fromDate = new Date(now.getFullYear(), 0, 1);
+    }
+
+    // Fetch filtered transactions (for table display)
+    let query = supabase
+      .from('partner_transactions')
+      .select('*')
+      .eq('partner_id', partner.id)
+      .order('paid_at', { ascending: false });
+
+    if (fromDate) query = query.gte('paid_at', fromDate.toISOString());
+
+    const { data: transactions } = await query;
+    const txs = transactions || [];
+
+    const total_ngn          = txs.reduce((s, t) => s + Number(t.amount_ngn), 0);
+    const partner_total_ngn  = txs.reduce((s, t) => s + Number(t.partner_share_ngn), 0);
+    const ascentor_total_ngn = txs.reduce((s, t) => s + Number(t.ascentor_fee_ngn), 0);
+
+    // ── This month vs last month ──
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const { data: recentTx } = await supabase
+      .from('partner_transactions')
+      .select('partner_share_ngn, paid_at')
+      .eq('partner_id', partner.id)
+      .gte('paid_at', lastMonthStart.toISOString());
+
+    const recentTxs = recentTx || [];
+    const this_month_ngn = recentTxs
+      .filter(t => new Date(t.paid_at) >= thisMonthStart)
+      .reduce((s, t) => s + Number(t.partner_share_ngn), 0);
+    const last_month_ngn = recentTxs
+      .filter(t => new Date(t.paid_at) < thisMonthStart)
+      .reduce((s, t) => s + Number(t.partner_share_ngn), 0);
+
+    // FIX W-14: last_year_ngn — same year last year (for YoY on "This Year" view)
+    const lastYearStart = new Date(now.getFullYear() - 1, 0, 1);
+    const lastYearEnd   = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59);
+    const { data: lastYearTx } = await supabase
+      .from('partner_transactions')
+      .select('partner_share_ngn')
+      .eq('partner_id', partner.id)
+      .gte('paid_at', lastYearStart.toISOString())
+      .lte('paid_at', lastYearEnd.toISOString());
+
+    const last_year_ngn = (lastYearTx || []).reduce((s, t) => s + Number(t.partner_share_ngn), 0);
+
+    // FIX W-14: avg_per_month_ngn — for "All Time" view
+    // Compute from first transaction date to now
+    const { data: allTimeTx } = await supabase
+      .from('partner_transactions')
+      .select('partner_share_ngn, paid_at')
+      .eq('partner_id', partner.id)
+      .order('paid_at', { ascending: true })
+      .limit(1);
+
+    let avg_per_month_ngn = 0;
+    if (allTimeTx && allTimeTx.length > 0) {
+      const allTotal = (await supabase
+        .from('partner_transactions')
+        .select('partner_share_ngn')
+        .eq('partner_id', partner.id)).data || [];
+
+      const grandTotal = allTotal.reduce((s, t) => s + Number(t.partner_share_ngn), 0);
+      const firstDate  = new Date(allTimeTx[0].paid_at);
+      const monthsDiff = Math.max(1,
+        (now.getFullYear() - firstDate.getFullYear()) * 12 +
+        (now.getMonth() - firstDate.getMonth()) + 1
+      );
+      avg_per_month_ngn = Math.round(grandTotal / monthsDiff);
+    }
 
     return NextResponse.json({
-      partner: {
-        ...safePartner,
-        has_paystack_key: Boolean(paystack_secret_key_enc),
+      transactions: txs,
+      summary: {
+        total_ngn,
+        partner_total_ngn,
+        ascentor_total_ngn,
+        count: txs.length,
+        this_month_ngn,
+        last_month_ngn,
+        last_year_ngn,       // FIX W-14
+        avg_per_month_ngn,   // FIX W-14
       },
     });
-  } catch (err: any) {
+
+  } catch (err) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

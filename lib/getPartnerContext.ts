@@ -1,16 +1,20 @@
 // ============================================================
 // lib/getPartnerContext.ts
 //
-// Resolves a partner from the request hostname and returns
-// their full brand context + CSS variables.
+// FILE LOCATION: lib/getPartnerContext.ts
 //
-// Supports:
-//   - Subdomain:    demo.ascentorbi.com
-//   - Custom domain: coaching.acme.com
+// FIXES:
+//   W-04 — buildCssVars now reads brand.border_color when set and
+//           uses it directly as --border, rather than computing
+//           rgba(text_color, 10%) which gave wrong results in preview.
+//           Falls back to the rgba calculation only if border_color
+//           is not set (backwards-compatible with existing partners).
 //
-// Results are cached in-memory per hostname for 60s to avoid
-// a DB hit on every server render. Cache is busted when brand
-// or settings are saved via their respective API routes.
+//   W-21 — --bg-input was adjustBrightness(card_color, +8), which on
+//           default dark card (#141310) produced #1C1A13 — nearly
+//           identical to the card background. Text inputs were
+//           invisible. Changed to minimum +22 so the input bg is
+//           always perceptibly lighter than the card.
 // ============================================================
 
 import { createClient } from '@supabase/supabase-js';
@@ -53,6 +57,7 @@ const DEFAULT_BRAND: PartnerBrand = {
   text_color:             '#D4CFC3',
   bg_color:               '#0C0B08',
   card_color:             '#1E1C17',
+  border_color:           '#2A2720',  // FIX W-04: explicit border default
   font_heading:           'Cormorant Garamond',
   font_body:              'Syne',
   hide_ascentor_branding: false,
@@ -61,16 +66,22 @@ const DEFAULT_BRAND: PartnerBrand = {
 // ── CSS var builder ───────────────────────────────────────
 
 function buildCssVars(brand: PartnerBrand): Record<string, string> {
+  // FIX W-04: use explicit border_color when set; fallback to rgba computation
+  const borderValue = brand.border_color
+    ? brand.border_color
+    : `rgba(${hexToRgb(brand.text_color)}, 0.10)`;
+
   return {
     '--bg':           brand.bg_color,
     '--bg-card':      brand.card_color,
-    '--bg-input':     adjustBrightness(brand.card_color, 8),
+    // FIX W-21: minimum +22 brightness so inputs are always visible against card bg
+    '--bg-input':     adjustBrightness(brand.card_color, 22),
     '--text':         brand.text_color,
     '--text-muted':   adjustBrightness(brand.text_color, -30),
     '--text-dim':     adjustBrightness(brand.text_color, -50),
     '--accent':       brand.primary_color,
     '--accent-hover': brand.accent_color,
-    '--border':       `rgba(${hexToRgb(brand.text_color)}, 0.10)`,
+    '--border':       borderValue,
     '--font-heading': `'${brand.font_heading}', Georgia, serif`,
     '--font-body':    `'${brand.font_body}', system-ui, sans-serif`,
     '--success':      '#10B981',
@@ -144,7 +155,6 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
   }
 
   if (!partner) {
-    // Not a partner host — return a non-whitelabel context
     const ctx: PartnerContext = {
       isWhiteLabel: false,
       partner: {

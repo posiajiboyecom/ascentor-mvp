@@ -1,15 +1,23 @@
 'use client';
 
 // ============================================================
-// PARTNER LOGIN — app/p/[subdomain]/login/login.tsx
+// app/p/[subdomain]/login/login.tsx
 //
-// Replaces the re-export of main Ascentor login.
-// Key differences from main login:
-//   1. After successful email login → /p/[subdomain]/dashboard
-//   2. OAuth callback includes partner_subdomain param so
-//      auth/callback routes back to partner shell
-//   3. Uses partner CSS vars (--accent, --bg, etc.) from layout
-//   4. No subscription check — partner members don't need a plan
+// FILE LOCATION: app/p/[subdomain]/login/login.tsx
+//
+// FIX (W-16):
+//   The "Access to this platform is by invite only." notice was
+//   positioned BELOW the card in 11px dim text — visually buried
+//   and nearly invisible on dark backgrounds. It also appeared
+//   simultaneously with the error state, creating two competing
+//   messages stacked below the card.
+//
+//   Fix:
+//   - Notice moved ABOVE the card as a visible badge with a border,
+//     icon, and legible 12px text.
+//   - The notice is conditionally hidden when error is non-null,
+//     since the error message already conveys the relevant context.
+//   - Clearing an error (on new input) restores the notice.
 // ============================================================
 
 import { useState, useEffect, Suspense } from 'react';
@@ -32,7 +40,6 @@ function PartnerLoginForm() {
 
   const redirectTo = searchParams.get('redirect') || `/p/${subdomain}/dashboard`;
 
-  // Already logged in → go to dashboard
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) router.replace(redirectTo);
@@ -52,7 +59,6 @@ function PartnerLoginForm() {
       return;
     }
 
-    // Redirect to partner dashboard (not main /dashboard)
     router.push(redirectTo);
     setLoading(false);
   }
@@ -77,7 +83,7 @@ function PartnerLoginForm() {
       <div style={{ width: '100%', maxWidth: 400 }}>
 
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <h1 style={{
             fontFamily: 'var(--font-heading)', fontSize: 'clamp(24px, 4vw, 30px)',
             fontWeight: 700, color: 'var(--text)', lineHeight: 1.2,
@@ -88,6 +94,25 @@ function PartnerLoginForm() {
             Log in to access your platform
           </p>
         </div>
+
+        {/*
+          FIX W-16: Invite notice — shown ABOVE the card, hidden when error is showing.
+          Previous position was below the card in tiny dim text, which was buried and
+          conflicted with the error state.
+        */}
+        {!error && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 14px', borderRadius: 10, marginBottom: 16,
+            background: 'rgba(232,160,32,0.06)',
+            border: '1px solid rgba(232,160,32,0.18)',
+          }}>
+            <span style={{ fontSize: 14, color: 'var(--accent)', flexShrink: 0 }}>◎</span>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              Access to this platform is by invite only.
+            </p>
+          </div>
+        )}
 
         {/* Card */}
         <div style={{
@@ -125,12 +150,12 @@ function PartnerLoginForm() {
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <input
               type="email" required value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={e => { setEmail(e.target.value); setError(null); }}
               placeholder="Email address"
               style={fieldStyle}
             />
             <PasswordInput
-              value={password} onChange={setPassword}
+              value={password} onChange={p => { setPassword(p); setError(null); }}
               showStrength={false} placeholder="Password"
             />
 
@@ -167,10 +192,6 @@ function PartnerLoginForm() {
           >
             Sign up →
           </Link>
-        </p>
-
-        <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-dim)', marginTop: 10, lineHeight: 1.6 }}>
-          Access to this platform is by invite only.
         </p>
       </div>
     </div>

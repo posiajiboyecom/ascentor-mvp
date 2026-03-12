@@ -1,12 +1,43 @@
 // ============================================================
 // app/partner/pricing/page.tsx
-// Partner sets their own plan prices in Naira.
-// Feeds directly into PartnerCheckoutClient via plan_overrides.
+//
+// FILE LOCATION: app/partner/pricing/page.tsx
+//
+// FIXES:
+//   W-10 — The yearly saving badge ("SAVE 17%") was hardcoded.
+//           Now computed dynamically per plan:
+//             pct = Math.round(((monthly*12) - yearly) / (monthly*12) * 100)
+//           Badge only renders when pct > 0. When monthly = 0 or
+//           yearly >= monthly*12, badge is hidden entirely.
+//
+//   W-22 — Heading fontFamily was hardcoded 'Cormorant Garamond'.
+//           Changed to 'var(--font-heading)'.
 // ============================================================
 
 'use client';
 
 import { useState, useEffect } from 'react';
+
+type PlanKey = 'explorer' | 'builder' | 'climber';
+
+interface PlanConfig {
+  name:        string;
+  monthly_ngn: number;
+  yearly_ngn:  number;
+  features:    string;
+}
+
+const PLAN_DEFAULTS: Record<PlanKey, PlanConfig> = {
+  explorer: { name: 'Explorer', monthly_ngn: 5000,  yearly_ngn: 50000,  features: '' },
+  builder:  { name: 'Builder',  monthly_ngn: 12000, yearly_ngn: 120000, features: '' },
+  climber:  { name: 'Climber',  monthly_ngn: 25000, yearly_ngn: 250000, features: '' },
+};
+
+const PLAN_COLORS: Record<PlanKey, string> = {
+  explorer: '#14B8A6',
+  builder:  '#E8A020',
+  climber:  '#8B5CF6',
+};
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--bg-input)', color: 'var(--text)',
@@ -14,67 +45,42 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 10, padding: '10px 14px', fontSize: 13, width: '100%',
 };
 
-const PLAN_COLORS = {
-  explorer: '#14B8A6',
-  builder:  '#E8A020',
-  climber:  '#8B5CF6',
-};
-
-const PLAN_DEFAULTS = {
-  explorer: { name: 'Explorer', monthly_ngn: 5000,  yearly_ngn: 50000  },
-  builder:  { name: 'Builder',  monthly_ngn: 12000, yearly_ngn: 120000 },
-  climber:  { name: 'Climber',  monthly_ngn: 25000, yearly_ngn: 250000 },
-};
-
-type PlanKey = 'explorer' | 'builder' | 'climber';
-
-interface PlanConfig {
-  name: string;
-  monthly_ngn: number;
-  yearly_ngn: number;
-  features: string;
-}
-
-export default function PartnerPricingPage() {
+export default function PricingAdminPage() {
   const [partnerId, setPartnerId]   = useState<string | null>(null);
+  const [loading, setLoading]       = useState(true);
+  const [saving, setSaving]         = useState(false);
+  const [saved, setSaved]           = useState(false);
+  const [error, setError]           = useState('');
   const [trialDays, setTrialDays]   = useState(7);
-  const [plans, setPlans]           = useState<Record<PlanKey, PlanConfig>>({
-    explorer: { ...PLAN_DEFAULTS.explorer, features: '' },
-    builder:  { ...PLAN_DEFAULTS.builder,  features: '' },
-    climber:  { ...PLAN_DEFAULTS.climber,  features: '' },
-  });
-  const [loading, setLoading]   = useState(true);
-  const [saving, setSaving]     = useState(false);
-  const [saved, setSaved]       = useState(false);
-  const [error, setError]       = useState('');
+  const [plans, setPlans]           = useState<Record<PlanKey, PlanConfig>>({ ...PLAN_DEFAULTS });
 
   useEffect(() => {
     fetch('/api/partner/brand')
       .then(r => r.json())
       .then(data => {
         if (data.partner) {
-          const p = data.partner;
+          const p  = data.partner;
           setPartnerId(p.id);
           const ov = p.plan_overrides || {};
           setTrialDays(ov.trial_days ?? 7);
           setPlans({
             explorer: {
-              name:        ov.explorer_name || 'Explorer',
+              name:        ov.explorer_name        || PLAN_DEFAULTS.explorer.name,
               monthly_ngn: ov.explorer_monthly_ngn || PLAN_DEFAULTS.explorer.monthly_ngn,
               yearly_ngn:  ov.explorer_yearly_ngn  || PLAN_DEFAULTS.explorer.yearly_ngn,
-              features:    ov.explorer_features || '',
+              features:    ov.explorer_features    || '',
             },
             builder: {
-              name:        ov.builder_name || 'Builder',
+              name:        ov.builder_name        || PLAN_DEFAULTS.builder.name,
               monthly_ngn: ov.builder_monthly_ngn || PLAN_DEFAULTS.builder.monthly_ngn,
               yearly_ngn:  ov.builder_yearly_ngn  || PLAN_DEFAULTS.builder.yearly_ngn,
-              features:    ov.builder_features || '',
+              features:    ov.builder_features    || '',
             },
             climber: {
-              name:        ov.climber_name || 'Climber',
+              name:        ov.climber_name        || PLAN_DEFAULTS.climber.name,
               monthly_ngn: ov.climber_monthly_ngn || PLAN_DEFAULTS.climber.monthly_ngn,
               yearly_ngn:  ov.climber_yearly_ngn  || PLAN_DEFAULTS.climber.yearly_ngn,
-              features:    ov.climber_features || '',
+              features:    ov.climber_features    || '',
             },
           });
         }
@@ -100,7 +106,6 @@ export default function PartnerPricingPage() {
           explorer_name:        plans.explorer.name || null,
           builder_name:         plans.builder.name  || null,
           climber_name:         plans.climber.name  || null,
-          // Store NGN prices directly
           explorer_monthly_ngn: Number(plans.explorer.monthly_ngn) || 0,
           explorer_yearly_ngn:  Number(plans.explorer.yearly_ngn)  || 0,
           builder_monthly_ngn:  Number(plans.builder.monthly_ngn)  || 0,
@@ -124,8 +129,8 @@ export default function PartnerPricingPage() {
 
   return (
     <div style={{ maxWidth: 680, margin: '0 auto' }} className="animate-fade-up">
-      <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 28,
-        color: 'var(--text)', marginBottom: 4 }}>
+      {/* FIX W-22: var(--font-heading) */}
+      <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 28, color: 'var(--text)', marginBottom: 4 }}>
         Pricing
       </h1>
       <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 32 }}>
@@ -149,8 +154,10 @@ export default function PartnerPricingPage() {
 
       {/* Plan pricing */}
       {(Object.keys(plans) as PlanKey[]).map(key => {
-        const plan = plans[key];
+        const plan  = plans[key];
         const color = PLAN_COLORS[key];
+
+        // FIX W-10: dynamic saving percentage — hide badge when ≤ 0
         const yearlySaving = plan.monthly_ngn > 0
           ? Math.round(((plan.monthly_ngn * 12) - plan.yearly_ngn) / (plan.monthly_ngn * 12) * 100)
           : 0;
@@ -199,7 +206,20 @@ export default function PartnerPricingPage() {
 
               {/* Yearly */}
               <div>
-                <Label>Yearly Price (₦)</Label>
+                <Label>
+                  Yearly Price (₦){' '}
+                  {/* FIX W-10: badge only shows when saving is actually positive */}
+                  {yearlySaving > 0 && (
+                    <span style={{
+                      marginLeft: 6, fontSize: 9, fontWeight: 700,
+                      background: 'rgba(16,185,129,0.12)',
+                      color: 'var(--success)',
+                      padding: '2px 6px', borderRadius: 4, verticalAlign: 'middle',
+                    }}>
+                      SAVE {yearlySaving}%
+                    </span>
+                  )}
+                </Label>
                 <div style={{ position: 'relative' }}>
                   <span style={{
                     position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
@@ -212,34 +232,22 @@ export default function PartnerPricingPage() {
                     style={{ ...inputStyle, paddingLeft: 26 }}
                   />
                 </div>
-              </div>
-
-              {/* Saving calc */}
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                {yearlySaving > 0 ? (
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20,
-                    background: 'rgba(16,185,129,0.08)', color: '#10B981',
-                    border: '1px solid rgba(16,185,129,0.2)',
-                  }}>
-                    Saves {yearlySaving}% yearly
-                  </span>
-                ) : (
-                  <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                    Set yearly &lt; monthly×12 to show savings
-                  </span>
+                {yearlySaving > 0 && (
+                  <p style={{ fontSize: 10, color: 'var(--success)', marginTop: 4 }}>
+                    Members save ₦{((plan.monthly_ngn * 12) - plan.yearly_ngn).toLocaleString()} per year
+                  </p>
                 )}
               </div>
 
-              {/* Feature list */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <Label>Features (one per line — shown on checkout)</Label>
+              {/* Features list */}
+              <div>
+                <Label>Features (one per line)</Label>
                 <textarea
+                  rows={3}
                   value={plan.features}
                   onChange={e => updatePlan(key, 'features', e.target.value)}
-                  rows={3}
-                  placeholder={`AI coaching sessions\nCommunity access\nWeekly expert Q&A`}
-                  style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6, fontFamily: 'inherit' }}
+                  placeholder="e.g. Weekly check-ins&#10;AI coach access&#10;Group sessions"
+                  style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
                 />
               </div>
             </div>
@@ -247,48 +255,11 @@ export default function PartnerPricingPage() {
         );
       })}
 
-      {/* Preview */}
-      <Section title="Checkout Preview">
-        <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 16 }}>
-          This is how your pricing will appear to members.
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-          {(Object.keys(plans) as PlanKey[]).map(key => {
-            const plan = plans[key];
-            const color = PLAN_COLORS[key];
-            return (
-              <div key={key} style={{
-                padding: '16px 14px', borderRadius: 12,
-                background: 'var(--bg-input)',
-                border: `1px solid ${color}30`,
-              }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color, marginBottom: 8,
-                  textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  {plan.name}
-                </p>
-                <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)',
-                  fontFamily: "'Cormorant Garamond', serif", marginBottom: 2 }}>
-                  ₦{Number(plan.monthly_ngn).toLocaleString()}
-                </p>
-                <p style={{ fontSize: 10, color: 'var(--text-dim)', marginBottom: 8 }}>per month</p>
-                {plan.features && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {plan.features.split('\n').filter(Boolean).slice(0, 4).map((f, i) => (
-                      <p key={i} style={{ fontSize: 11, color: 'var(--text-dim)', display: 'flex', gap: 5 }}>
-                        <span style={{ color }}>✓</span> {f}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </Section>
-
       {/* Save */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 8 }}>
-        <button onClick={handleSave} disabled={saving}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+        <button
+          onClick={handleSave}
+          disabled={saving}
           style={{
             padding: '12px 28px', borderRadius: 10, border: 'none',
             background: 'var(--accent)', color: '#000',
@@ -297,8 +268,8 @@ export default function PartnerPricingPage() {
           }}>
           {saving ? 'Saving...' : 'Save Pricing'}
         </button>
-        {saved  && <span style={{ fontSize: 13, fontWeight: 600, color: '#10B981' }}>✓ Saved</span>}
-        {error  && <span style={{ fontSize: 12, color: '#EF4444' }}>{error}</span>}
+        {saved && <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)' }}>✓ Saved</span>}
+        {error && <span style={{ fontSize: 12, color: 'var(--error)' }}>{error}</span>}
       </div>
     </div>
   );
@@ -307,12 +278,15 @@ export default function PartnerPricingPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{
-      background: 'var(--bg-card)', border: '1px solid var(--border)',
-      borderRadius: 14, padding: '18px 20px', marginBottom: 16,
+      background: 'var(--bg-card)', borderRadius: 12,
+      border: '1px solid var(--border)', padding: '16px 18px',
+      marginBottom: 16,
     }}>
       {title && (
-        <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-          letterSpacing: '0.1em', color: 'var(--text-dim)', marginBottom: 14 }}>
+        <p style={{
+          fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+          letterSpacing: '0.1em', color: 'var(--text-dim)', marginBottom: 14,
+        }}>
           {title}
         </p>
       )}
@@ -324,9 +298,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Label({ children }: { children: React.ReactNode }) {
   return (
     <label style={{
-      display: 'block', fontSize: 11, fontWeight: 700,
+      fontSize: 11, fontWeight: 700, color: 'var(--text-dim)',
+      display: 'block', marginBottom: 6,
       textTransform: 'uppercase', letterSpacing: '0.08em',
-      color: 'var(--text-dim)', marginBottom: 6,
     }}>
       {children}
     </label>

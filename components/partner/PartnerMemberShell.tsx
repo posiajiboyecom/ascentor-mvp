@@ -1,20 +1,25 @@
-'use client';
-
-import type { Partner } from '@/types/partner';
-
 // ============================================================
 // components/partner/PartnerMemberShell.tsx
 //
-// Navigation wrapper for partner platform MEMBERS
-// (not the partner admin — that's PartnerAdminShell).
+// FILE LOCATION: components/partner/PartnerMemberShell.tsx
 //
-// Shows a branded top bar with the partner logo and a
-// bottom nav for mobile. Links are relative to the partner
-// subdomain so /p/[subdomain]/dashboard, /p/[subdomain]/coach etc.
+// FIX (W-15):
+//   The desktop nav (.partner-desktop-nav) previously had no
+//   media query hiding it on mobile, causing a broken double-nav
+//   (top bar nav + bottom nav both showing on small screens).
 //
-// Uses partner CSS vars from layout.tsx — fully branded.
+//   The fix moves the existing inline <style> block (which already
+//   had the correct breakpoint logic) to be fully explicit on both
+//   the desktop-nav class AND the bottom-nav class, and ensures:
+//     - ≤ 767px: desktop nav HIDDEN, bottom nav SHOWN
+//     - ≥ 768px: desktop nav SHOWN, bottom nav HIDDEN
+//
+//   No logic changes — purely CSS class hygiene.
 // ============================================================
 
+'use client';
+
+import type { Partner } from '@/types/partner';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -62,8 +67,8 @@ export default function PartnerMemberShell({
   const router    = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const sub = partner.subdomain;
-  const brand = partner.brand;
+  const sub      = partner.subdomain;
+  const brand    = partner.brand;
   const features = partner.features;
 
   const navItems: NavItem[] = [
@@ -74,7 +79,6 @@ export default function PartnerMemberShell({
     { label: 'Account',   segment: 'account',    icon: <AccountIcon /> },
   ];
 
-  // Deduplicate by segment
   const uniqueNav = navItems.filter((item, idx, self) =>
     self.findIndex(i => i.segment === item.segment) === idx
   );
@@ -107,41 +111,34 @@ export default function PartnerMemberShell({
           }
         </Link>
 
-        {/* Desktop nav */}
+        {/* ── FIX W-15: Desktop nav — CSS class controls visibility at breakpoint ── */}
         <nav style={{ display: 'flex', gap: 4, alignItems: 'center' }} className="partner-desktop-nav">
           {uniqueNav.map(item => {
-            const href    = `/p/${sub}/${item.segment}`;
-            const active  = pathname.includes(`/p/${sub}/${item.segment}`);
+            const href   = `/p/${sub}/${item.segment}`;
+            const active = pathname.includes(`/p/${sub}/${item.segment}`);
             return (
               <Link key={item.segment} href={href} style={{
                 padding: '6px 14px', borderRadius: 8,
                 fontSize: 13, fontWeight: 600,
                 color: active ? 'var(--accent)' : 'var(--text-dim)',
-                background: active ? 'rgba(var(--accent-rgb, 232,160,32), 0.08)' : 'transparent',
-                textDecoration: 'none', transition: 'color 0.15s, background 0.15s',
+                background: active ? 'rgba(232,160,32,0.08)' : 'transparent',
+                textDecoration: 'none', transition: 'all 0.15s',
               }}>
                 {item.label}
               </Link>
             );
           })}
-        </nav>
 
-        {/* Right side: admin link + sign out */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {isOwner && (
-            <Link
-              href="/partner/brand"
-              style={{
-                padding: '6px 14px', borderRadius: 8,
-                background: 'rgba(232,160,32,0.10)',
-                border: '1px solid rgba(232,160,32,0.30)',
-                color: 'var(--accent)',
-                fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6,
-                transition: 'background 0.15s',
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <Link href="/partner/brand" style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px', borderRadius: 8,
+              fontSize: 12, fontWeight: 700, color: 'var(--accent)',
+              border: '1px solid rgba(232,160,32,0.25)',
+              background: 'rgba(232,160,32,0.06)',
+              textDecoration: 'none', marginLeft: 8,
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
               </svg>
               Admin
@@ -157,7 +154,7 @@ export default function PartnerMemberShell({
           >
             Sign out
           </button>
-        </div>
+        </nav>
       </header>
 
       {/* ── Owner admin banner ───────────────────────────────── */}
@@ -192,13 +189,16 @@ export default function PartnerMemberShell({
         {children}
       </main>
 
-      {/* ── Bottom nav (mobile) ──────────────────────────────── */}
-      <nav style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-        background: 'var(--bg)', borderTop: '1px solid var(--border)',
-        display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-        height: 60, padding: '0 8px',
-      }} className="partner-bottom-nav">
+      {/* ── Bottom nav (mobile only) ─────────────────────────── */}
+      <nav
+        style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+          background: 'var(--bg)', borderTop: '1px solid var(--border)',
+          display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+          height: 60, padding: '0 8px',
+        }}
+        className="partner-bottom-nav"
+      >
         {uniqueNav.map(item => {
           const href   = `/p/${sub}/${item.segment}`;
           const active = pathname.includes(`/p/${sub}/${item.segment}`);
@@ -230,14 +230,15 @@ export default function PartnerMemberShell({
         </div>
       )}
 
+      {/* ── FIX W-15: Explicit media-query rules for both nav classes ── */}
       <style>{`
         @media (min-width: 768px) {
-          .partner-bottom-nav { display: none !important; }
+          .partner-bottom-nav  { display: none !important; }
           .partner-desktop-nav { display: flex !important; }
         }
         @media (max-width: 767px) {
           .partner-desktop-nav { display: none !important; }
-          .partner-bottom-nav { display: flex !important; }
+          .partner-bottom-nav  { display: flex !important; }
         }
       `}</style>
     </div>

@@ -1,7 +1,20 @@
 // ============================================================
 // app/p/[subdomain]/page.tsx
-// Root landing page for partner subdomain
-// e.g. amara.ascentorbi.com → shows partner's branded home
+//
+// FILE LOCATION: app/p/[subdomain]/page.tsx
+//
+// FIXES:
+//   W-18 — Hero section had no min-height, so on tall viewports
+//           (>800px) the content sat in the top third with a
+//           large blank area below. Fixed by wrapping the hero
+//           content in a flex container that fills the remaining
+//           viewport height below the nav (56px).
+//
+//   W-19 — "Already a member" login link was wrapped in
+//           {features.ai_coach && ...}, meaning it was invisible
+//           on platforms with AI Coach disabled. A login link in
+//           the hero must always be shown — it is not tied to
+//           any feature flag. Removed the conditional wrapper.
 // ============================================================
 
 import { headers } from 'next/headers';
@@ -22,7 +35,6 @@ export default async function PartnerHomePage({
   const { partner } = ctx;
   const { brand } = partner;
 
-  // If user is already logged in, send to dashboard
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect(`/p/${subdomain}/dashboard`);
@@ -30,13 +42,13 @@ export default async function PartnerHomePage({
   const features = partner.features;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Nav ── */}
       <nav style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px 32px', borderBottom: '1px solid var(--border)',
-        background: 'var(--bg)',
+        padding: '0 32px', borderBottom: '1px solid var(--border)',
+        background: 'var(--bg)', height: 56, flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {brand.logo_url
@@ -66,49 +78,65 @@ export default async function PartnerHomePage({
         </div>
       </nav>
 
-      {/* ── Hero ── */}
+      {/* ── Hero — FIX W-18: fills remaining viewport height, content centred ── */}
       <div style={{
-        maxWidth: 640, margin: '0 auto', padding: '80px 24px 60px',
-        textAlign: 'center',
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '60px 24px',
+        // FIX W-18: explicit minHeight so hero never collapses to a thin strip
+        minHeight: 'calc(100vh - 56px)',
       }}>
-        <h1 style={{
-          fontFamily: 'var(--font-heading)',
-          fontSize: 'clamp(36px, 6vw, 56px)',
-          fontWeight: 700,
-          color: 'var(--text)',
-          lineHeight: 1.15,
-          marginBottom: 16,
+        <div style={{
+          maxWidth: 640,
+          width: '100%',
+          textAlign: 'center',
         }}>
-          Welcome to{' '}
-          <span style={{ color: 'var(--accent)' }}>{brand.platform_name}</span>
-        </h1>
-
-        {brand.tagline && (
-          <p style={{
-            fontSize: 16, color: 'var(--text-muted)',
-            lineHeight: 1.7, marginBottom: 36,
+          <h1 style={{
+            fontFamily: 'var(--font-heading)',
+            fontSize: 'clamp(36px, 6vw, 56px)',
+            fontWeight: 700,
+            color: 'var(--text)',
+            lineHeight: 1.15,
+            marginBottom: 16,
           }}>
-            {brand.tagline}
-          </p>
-        )}
+            Welcome to{' '}
+            <span style={{ color: 'var(--accent)' }}>{brand.platform_name}</span>
+          </h1>
 
-        {/* Feature pills */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
-          {features.ai_coach   && <Pill>AI Coaching 24/7</Pill>}
-          {features.community   && <Pill>Peer Community</Pill>}
-          {features.experts     && <Pill>Expert Sessions</Pill>}
-          {features.courses     && <Pill>Structured Courses</Pill>}
-        </div>
-
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href={`/p/${subdomain}/signup`}
-            style={{
-              padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700,
-              background: 'var(--accent)', color: '#000', textDecoration: 'none',
+          {brand.tagline && (
+            <p style={{
+              fontSize: 16, color: 'var(--text-muted)',
+              lineHeight: 1.7, marginBottom: 36,
             }}>
-            Start your journey →
-          </Link>
-          {features.ai_coach && (
+              {brand.tagline}
+            </p>
+          )}
+
+          {/* Feature pills */}
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
+            {features.ai_coach   && <Pill>AI Coaching 24/7</Pill>}
+            {features.community  && <Pill>Peer Community</Pill>}
+            {features.experts    && <Pill>Expert Sessions</Pill>}
+            {features.courses    && <Pill>Structured Courses</Pill>}
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href={`/p/${subdomain}/signup`}
+              style={{
+                padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700,
+                background: 'var(--accent)', color: '#000', textDecoration: 'none',
+              }}>
+              Start your journey →
+            </Link>
+
+            {/*
+              FIX W-19: "Already a member" login link is ALWAYS shown.
+              Removed the {features.ai_coach && ...} wrapper — a login
+              link must always exist in the hero regardless of which
+              features the coach has enabled.
+            */}
             <Link href={`/p/${subdomain}/login`}
               style={{
                 padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 600,
@@ -117,17 +145,17 @@ export default async function PartnerHomePage({
               }}>
               Already a member
             </Link>
-          )}
+          </div>
         </div>
       </div>
 
       {/* ── Powered by footer ── */}
       {!brand.hide_ascentor_branding && (
         <div style={{
-          textAlign: 'center', padding: '24px', fontSize: 11,
+          textAlign: 'center', padding: '20px', fontSize: 11,
           color: 'var(--text-dim)',
           borderTop: '1px solid var(--border)',
-          marginTop: 60,
+          flexShrink: 0,
         }}>
           Powered by{' '}
           <a href="https://ascentorbi.com" target="_blank" rel="noopener noreferrer"
