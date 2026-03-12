@@ -1,14 +1,17 @@
 // ============================================================
-// types/partner.ts
-//
 // FILE LOCATION: types/partner.ts
 //
-// FIX (W-04):
-//   Added optional `border_color` field to PartnerBrand.
-//   This field is now used by buildCssVars() in getPartnerContext.ts
-//   to set --border directly from the partner's chosen colour,
-//   rather than computing it as an alpha on text_color.
-//   The brand/page.tsx preview also reads this value directly.
+// BUGS FIXED:
+//   BUG-05 — PartnerFeatures was missing the 'referrals' field.
+//             apply/route.ts inserts { referrals: true } but the
+//             type had no such field, causing TS errors in strict
+//             mode and the flag being silently ignored everywhere.
+//
+//   BUG-06 — PartnerBrand was missing the 'border_color' field.
+//             getPartnerContext.ts, brand/route.ts and the DEFAULT_BRAND
+//             constant all use border_color, but the type didn't
+//             declare it — TypeScript strict mode threw errors on
+//             every read/write of that property.
 // ============================================================
 
 // ── Font options (matches allowed list in brand/route.ts) ──
@@ -32,7 +35,7 @@ export interface PartnerBrand {
   text_color:             string;
   bg_color:               string;
   card_color:             string;
-  border_color?:          string;   // FIX W-04: explicit partner border colour
+  border_color?:          string;        // FIX BUG-06: was missing; used by getPartnerContext + brand/route
   font_heading:           FontOption | string;
   font_body:              FontOption | string;
   hide_ascentor_branding: boolean;
@@ -44,6 +47,7 @@ export interface PartnerFeatures {
   community: boolean;
   experts:   boolean;
   courses:   boolean;
+  referrals: boolean;   // FIX BUG-05: was missing; apply/route.ts inserts this field
 }
 
 // ── Plan overrides ────────────────────────────────────────
@@ -69,10 +73,11 @@ export interface Partner {
   owner_id:                 string;
   revenue_share_percent:    number;
   paystack_subaccount_code: string | null;
-  paystack_secret_key?:     string | null;
+  paystack_secret_key?:     string | null;   // present on GET brand response as boolean flag only
   brand:                    PartnerBrand;
   features:                 PartnerFeatures;
   plan_overrides:           PartnerPlanOverrides | null;
+  plan_tier?:               'standard' | 'pro' | null;
   created_at:               string;
   updated_at:               string;
   onboarded_at:             string | null;

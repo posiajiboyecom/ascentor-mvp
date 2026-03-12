@@ -1,8 +1,16 @@
 // ============================================================
-// app/p/[subdomain]/checkout/page.tsx
-// Partner-branded checkout. Uses partner's plan_overrides for
-// pricing and their Paystack public key if configured.
-// Falls back to Ascentor defaults if not overridden.
+// FILE LOCATION: app/p/[subdomain]/checkout/page.tsx
+//
+// BUG FIXED:
+//   BUG-11 — Added extraction of the x-ascentor-api-base header
+//             that proxy.ts (FILE_09) injects on custom domain
+//             requests. The value is passed as the `apiBase` prop
+//             to PartnerCheckoutClient so the Paystack onSuccess
+//             verify fetch hits ascentorbi.com/api/... instead of
+//             customdomain.com/api/... (which would 404).
+//
+//             On *.ascentorbi.com subdomains the header is absent,
+//             apiBase is '' and relative URLs work unchanged.
 // ============================================================
 
 import { headers } from 'next/headers';
@@ -19,6 +27,14 @@ export default async function PartnerCheckoutPage({
   await params; // Next.js 15+ requires params to be awaited
   const headersList = await headers();
   const hostname = headersList.get('host') || '';
+
+  // BUG-11: on custom domains (coaching.johnadeyemi.com) the middleware
+  // injects x-ascentor-api-base = 'https://ascentorbi.com' so the client
+  // can prefix /api/... calls with the correct origin.
+  // On *.ascentorbi.com subdomains this header is absent and apiBase is '',
+  // which means relative URLs continue to work unchanged.
+  const apiBase = headersList.get('x-ascentor-api-base') || '';
+
   const ctx = await getPartnerContext(hostname);
   const { partner } = ctx;
 
@@ -66,6 +82,7 @@ export default async function PartnerCheckoutPage({
       defaultBilling={(searchParams.billing as string) || 'monthly'}
       requiredPlan={searchParams.required}
       trialDays={overrides?.trial_days ?? 7}
+      apiBase={apiBase}
     />
   );
 }

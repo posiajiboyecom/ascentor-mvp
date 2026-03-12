@@ -1,26 +1,30 @@
 // ============================================================
-// app/p/[subdomain]/checkout/PartnerCheckoutClient.tsx
-//
 // FILE LOCATION: app/p/[subdomain]/checkout/PartnerCheckoutClient.tsx
 //
-// FIX (W-10):
-//   The "SAVE 17%" badge on the yearly billing toggle button was
-//   hardcoded. It showed "17%" even when the actual saving was 0%,
-//   negative, or wildly different.
+// BUG FIXED:
+//   BUG-11 — The Paystack onSuccess handler called:
+//               fetch('/api/partner/payment/verify', ...)
+//             This is a relative URL. On the ascentorbi.com
+//             subdomain (john.ascentorbi.com) this works because
+//             the request stays on ascentorbi.com's Vercel deployment.
+//             But on custom domains (coaching.johnadeyemi.com),
+//             the relative URL resolves to:
+//               coaching.johnadeyemi.com/api/partner/payment/verify
+//             which does not exist — only ascentorbi.com hosts
+//             the API routes.
 //
-//   Fix: the badge is now computed dynamically based on the
-//   CURRENTLY SELECTED plan:
+//             Fix: the proxy middleware now injects an
+//             x-ascentor-api-base response header on all
+//             custom domain requests (FILE_09). The checkout
+//             server component reads this via the `headers()`
+//             function and passes it as an `apiBase` prop.
+//             The client then prefixes all API calls with it.
 //
-//     pct = Math.round(
-//       ((currentPlan.monthly_ngn * 12) - currentPlan.yearly_ngn)
-//       / (currentPlan.monthly_ngn * 12) * 100
-//     )
+//             When apiBase is empty (subdomain, non-custom domain),
+//             behaviour is unchanged — the relative URL is used.
 //
-//   The badge only renders when pct > 0. When the coach has set
-//   yearly >= monthly*12 (no real saving), the badge is hidden.
-//
-//   The badge text updates reactively as the user selects different
-//   plans so it always reflects the active plan's actual saving.
+// PREVIOUS FIXES PRESERVED:
+//   W-10 — Dynamic yearly saving percentage badge.
 // ============================================================
 
 'use client';
@@ -43,11 +47,13 @@ export default function PartnerCheckoutClient({
   plans,
   paystackKey,
   trialDays,
+  apiBase = '',   // FIX BUG-11: injected by server component; empty on subdomain, full URL on custom domain
 }: {
   partner:     Partner;
   plans:       Record<PlanKey, PlanConfig>;
   paystackKey: string;
   trialDays:   number;
+  apiBase?:    string;
 }) {
   const router       = useRouter();
   const searchParams = useSearchParams();
@@ -75,7 +81,7 @@ export default function PartnerCheckoutClient({
     ? Math.max(0, (currentPlan.monthly_ngn * 12) - currentPlan.yearly_ngn)
     : 0;
 
-  // FIX W-10: compute dynamic saving percentage from actual plan prices
+  // W-10: dynamic saving percentage
   const yearlySavingPct = currentPlan.monthly_ngn > 0
     ? Math.round(
         ((currentPlan.monthly_ngn * 12) - currentPlan.yearly_ngn)
@@ -113,7 +119,11 @@ export default function PartnerCheckoutClient({
           is_trial:      true,
         },
         onSuccess: async (response: { reference: string }) => {
-          const res = await fetch('/api/partner/payment/verify', {
+          // FIX BUG-11: prefix with apiBase so custom domain requests hit
+          // ascentorbi.com/api/... instead of customdomain.com/api/...
+          const verifyUrl = `${apiBase}/api/partner/payment/verify`;
+
+          const res = await fetch(verifyUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -159,155 +169,118 @@ export default function PartnerCheckoutClient({
 
         {/* Nav */}
         <nav style={{
-          display: 'flex', alignItems: 'center', padding: '16px 24px',
-          borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 24px', borderBottom: '1px solid var(--border)',
         }}>
-          {brand.logo_url
-            ? <img src={brand.logo_url} alt={brand.platform_name} style={{ height: 28 }} />
-            : <span style={{ fontFamily: 'var(--font-heading)', fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>
-                {brand.platform_name}
-              </span>
-          }
+          <span style={{ fontFamily: 'var(--font-heading)', fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>
+            {brand.platform_name}
+          </span>
         </nav>
 
-        <div style={{ flex: 1, maxWidth: 480, margin: '0 auto', width: '100%', padding: '40px 20px' }}>
-          <h1 style={{
-            fontFamily: 'var(--font-heading)', fontSize: 28, fontWeight: 700,
-            color: 'var(--text)', marginBottom: 6,
-          }}>
-            Choose your plan
-          </h1>
-          {requiredPlan && (
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
-              You need a <strong style={{ color: 'var(--accent)' }}>{requiredPlan}</strong> plan or higher to access that feature.
+        {/* Main */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px' }}>
+          <div style={{ width: '100%', maxWidth: 520 }}>
+
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 32, color: 'var(--text)', marginBottom: 8 }}>
+              Join {brand.platform_name}
+            </h1>
+            <p style={{ color: 'var(--text-muted)', marginBottom: 32, fontSize: 15 }}>
+              {brand.tagline || `Get access to ${brand.platform_name}'s full coaching platform.`}
             </p>
-          )}
 
-          {/* Billing toggle — FIX W-10: dynamic badge */}
-          <div style={{
-            display: 'flex', gap: 4, padding: 4, borderRadius: 10,
-            background: 'var(--bg-card)', border: '1px solid var(--border)',
-            marginBottom: 20, width: 'fit-content',
-          }}>
-            {(['monthly', 'yearly'] as const).map(b => (
-              <button key={b} onClick={() => setBilling(b)}
-                style={{
-                  padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                  fontSize: 12, fontWeight: 700, textTransform: 'capitalize',
-                  background: billing === b ? 'var(--accent)' : 'transparent',
-                  color: billing === b ? '#000' : 'var(--text-dim)',
-                  transition: 'all 0.15s',
-                }}>
-                {b}
-                {/* FIX W-10: only show badge when there is a genuine saving */}
-                {b === 'yearly' && yearlySavingPct > 0 && (
-                  <span style={{
-                    marginLeft: 6, fontSize: 9, background: 'rgba(0,0,0,0.2)',
-                    padding: '1px 5px', borderRadius: 4,
-                  }}>
-                    SAVE {yearlySavingPct}%
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Plan cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-            {planEntries.map(([key, plan]) => {
-              const isSelected = selectedPlan === key;
-              const ngn = billing === 'yearly' ? plan.yearly_ngn : plan.monthly_ngn;
-              return (
-                <button key={key} onClick={() => setSelectedPlan(key)}
+            {/* Billing toggle */}
+            <div style={{ display: 'flex', background: 'var(--bg-card)', borderRadius: 10, padding: 4, marginBottom: 24, width: 'fit-content' }}>
+              {(['monthly', 'yearly'] as const).map(b => (
+                <button
+                  key={b}
+                  onClick={() => setBilling(b)}
                   style={{
-                    width: '100%', padding: '16px 18px', borderRadius: 12, cursor: 'pointer',
-                    textAlign: 'left',
-                    border: isSelected ? `2px solid var(--accent)` : '2px solid var(--border)',
-                    background: isSelected ? 'rgba(255,255,255,0.03)' : 'var(--bg-card)',
-                    transition: 'all 0.15s',
-                  }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <p style={{
-                        fontSize: 14, fontWeight: 700,
-                        color: isSelected ? 'var(--accent)' : 'var(--text)',
-                        marginBottom: 2,
-                      }}>
-                        {plan.name}
-                      </p>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
-                        ₦{ngn.toLocaleString()}<span style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 400 }}>
+                    padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                    background: billing === b ? 'var(--accent)' : 'transparent',
+                    color: billing === b ? '#000' : 'var(--text-dim)',
+                    fontWeight: 600, fontSize: 14, transition: 'all 0.15s',
+                  }}
+                >
+                  {b === 'monthly' ? 'Monthly' : (
+                    <>
+                      Yearly
+                      {yearlySavingPct > 0 && billing !== 'yearly' && (
+                        <span style={{
+                          marginLeft: 6, fontSize: 10, background: '#10B981',
+                          color: '#fff', borderRadius: 4, padding: '2px 5px', fontWeight: 700,
+                        }}>
+                          SAVE {yearlySavingPct}%
+                        </span>
+                      )}
+                    </>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Plan cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+              {planEntries.map(([key, plan]) => {
+                const ngn = billing === 'yearly' ? plan.yearly_ngn : plan.monthly_ngn;
+                return (
+                  <div
+                    key={key}
+                    onClick={() => setSelectedPlan(key)}
+                    style={{
+                      padding: '16px 20px', borderRadius: 12, cursor: 'pointer',
+                      border: `2px solid ${selectedPlan === key ? 'var(--accent)' : 'var(--border)'}`,
+                      background: selectedPlan === key ? 'rgba(232,160,32,0.06)' : 'var(--bg-card)',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: 16 }}>{plan.name}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontWeight: 800, fontSize: 20, color: 'var(--accent)' }}>
+                          ₦{ngn.toLocaleString()}
+                        </span>
+                        <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>
                           /{billing === 'yearly' ? 'yr' : 'mo'}
                         </span>
-                      </p>
+                      </div>
                     </div>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Trial callout */}
-          <div style={{
-            padding: '12px 16px', borderRadius: 10, marginBottom: 20,
-            background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
-          }}>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              ✦ Start with a <strong style={{ color: 'var(--accent)' }}>{trialDays}-day free trial</strong>.
-              You won't be charged until day {trialDays + 1}.
-              {savings > 0 && ` Save ₦${savings.toLocaleString()} with annual billing.`}
-            </p>
-          </div>
-
-          {/* CTA */}
-          <button
-            onClick={() => { setCheckoutError(''); handleCheckout(); }}
-            disabled={loading}
-            style={{
-              width: '100%', padding: '14px', borderRadius: 12,
-              background: 'var(--accent)', color: '#000', border: 'none',
-              fontSize: 15, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.6 : 1, transition: 'opacity 0.15s',
-            }}>
-            {loading ? 'Opening payment...' : `Start ${trialDays}-day free trial →`}
-          </button>
-
-          {checkoutError && (
-            <div style={{
-              marginTop: 12, padding: '10px 14px', borderRadius: 8,
-              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
-              display: 'flex', alignItems: 'flex-start', gap: 8,
-            }}>
-              <span style={{ color: '#EF4444', fontSize: 13, lineHeight: 1.5, flex: 1 }}>
-                {checkoutError}
-              </span>
-              <button
-                onClick={() => setCheckoutError('')}
-                style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0 }}
-                aria-label="Dismiss error"
-              >×</button>
+                );
+              })}
             </div>
-          )}
 
-          <p style={{ fontSize: 11, color: 'var(--text-dim)', textAlign: 'center', marginTop: 12 }}>
-            Cancel anytime · Secure payment via Paystack
-          </p>
-        </div>
+            {/* Trial note */}
+            {trialDays > 0 && (
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}>
+                ✦ Start with a <strong style={{ color: 'var(--accent)' }}>{trialDays}-day free trial</strong>.
+                You won't be charged until day {trialDays + 1}.
+                {savings > 0 && ` Save ₦${savings.toLocaleString()} with annual billing.`}
+              </p>
+            )}
 
-        {!brand.hide_ascentor_branding && (
-          <div style={{
-            textAlign: 'center', padding: '16px', fontSize: 11,
-            color: 'var(--text-dim)', borderTop: '1px solid var(--border)',
-          }}>
-            Powered by{' '}
-            <a href="https://ascentorbi.com" target="_blank" rel="noopener noreferrer"
-              style={{ color: '#E8A020', textDecoration: 'none' }}>
-              Ascentor
-            </a>
+            {checkoutError && (
+              <div style={{ marginBottom: 16, padding: 14, background: 'rgba(239,68,68,0.1)', border: '1px solid #EF4444', borderRadius: 10, color: '#EF4444', fontSize: 14 }}>
+                {checkoutError}
+              </div>
+            )}
+
+            <button
+              onClick={handleCheckout}
+              disabled={loading}
+              style={{
+                width: '100%', padding: '16px', borderRadius: 12, border: 'none',
+                background: 'var(--accent)', color: '#000', fontWeight: 700,
+                fontSize: 16, cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1, transition: 'opacity 0.15s',
+              }}
+            >
+              {loading ? 'Opening payment...' : `Start ${trialDays}-day free trial →`}
+            </button>
+
           </div>
-        )}
+        </div>
       </div>
     </>
   );

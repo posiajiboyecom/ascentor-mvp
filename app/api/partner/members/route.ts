@@ -1,9 +1,26 @@
 // ============================================================
-// PARTNER MEMBERS API — /api/partner/members
+// FILE LOCATION: app/api/partner/members/route.ts
 //
-// GET    — paginated member list, with search + status filter
-// POST   — invite single member OR bulk invite (array of emails)
-// PATCH  — update member status: suspend | remove | reinstate
+// BUG FIXED:
+//   BUG-08 — The GET handler applied the search filter client-side
+//             AFTER the paginated DB query. This meant:
+//               - Page 1 returned up to 50 records, then filtered
+//                 down to matching emails/names within those 50.
+//               - Page 2+ returned records 51-100, filtered within
+//                 that window — a search for "alice" on page 2
+//                 would miss all "alice" entries on page 1.
+//               - The 'total' and 'pages' counts came from the
+//                 unfiltered DB count, making pagination controls
+//                 show the wrong number of pages.
+//
+//             Fix: when a search term is present, do a single
+//             un-paginated query on the email column (which is
+//             stored on partner_members directly). full_name lives
+//             on the joined profiles table so we do a second query
+//             to get user_ids matching the name, then OR both sets.
+//             Results are then paginated in-process on the already-
+//             filtered set. This keeps Supabase free-tier compatible
+//             (no ilike on joined columns) while fixing correctness.
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -26,11 +43,6 @@ async function getPartnerForUser(userId: string) {
 }
 
 // ── GET: List members ─────────────────────────────────────
-// Query params:
-//   page    (default 1)
-//   limit   (default 50, max 100)
-//   search  (email or full_name substring)
-//   status  (active | invited | suspended | removed | all)
 export async function GET(req: NextRequest) {
   try {
     const authClient = await createAuthClient();
@@ -47,6 +59,75 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status') || 'all';
     const offset = (page - 1) * limit;
 
+    // FIX BUG-08: When searching, fetch all matching members first,
+    // then paginate. When not searching, use DB-level pagination.
+    if (search) {
+      // Step 1: find user_ids whose full_name matches the search term
+      const { data: profileMatches } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('full_name', `%${search}%`);
+
+      const matchingUserIds = (profileMatches || []).map(p => p.id);
+
+      // Step 2: fetch all members matching by email OR by user_id (name match)
+      let allQuery = supabase
+        .from('partner_members')
+        .select(`
+          id, email, role, status, invited_at, joined_at,
+          profiles (
+            full_name, subscription_plan, subscription_status,
+            subscription_end, avatar_url, last_sign_in_at
+          )
+        `)
+        .eq('partner_id', partner.id);
+
+      if (status === 'all') {
+        allQuery = allQuery.neq('status', 'removed');
+      } else if (status !== 'any') {
+        allQuery = allQuery.eq('status', status);
+      }
+
+      // Build OR filter: email match OR user_id in name-match set
+      const emailFilter = `email.ilike.%${search}%`;
+      const userIdFilter = matchingUserIds.length > 0
+        ? `,user_id.in.(${matchingUserIds.join(',')})`
+        : '';
+
+      allQuery = allQuery.or(`${emailFilter}${userIdFilter}`);
+      allQuery = allQuery.order('invited_at', { ascending: false });
+
+      const { data: allMembers, error: queryError } = await allQuery;
+
+      if (queryError) {
+        console.error('[Members GET search]', queryError);
+        return NextResponse.json({ error: 'Failed to load members' }, { status: 500 });
+      }
+
+      const total    = (allMembers || []).length;
+      const paginated = (allMembers || []).slice(offset, offset + limit);
+
+      // Stats breakdown (always from full unfiltered set)
+      const { data: stats } = await supabase
+        .from('partner_members')
+        .select('status')
+        .eq('partner_id', partner.id);
+
+      const breakdown = (stats || []).reduce((acc: Record<string, number>, m) => {
+        acc[m.status] = (acc[m.status] || 0) + 1;
+        return acc;
+      }, {});
+
+      return NextResponse.json({
+        members:   paginated,
+        total,
+        page,
+        pages:     Math.ceil(total / limit),
+        breakdown,
+      });
+    }
+
+    // ── No search — use DB-level pagination (original path) ──
     let query = supabase
       .from('partner_members')
       .select(`
@@ -60,7 +141,6 @@ export async function GET(req: NextRequest) {
       .order('invited_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    // Status filter — default excludes 'removed' unless explicitly requested
     if (status === 'all') {
       query = query.neq('status', 'removed');
     } else if (status !== 'any') {
@@ -74,15 +154,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to load members' }, { status: 500 });
     }
 
-    // Client-side search filter (Supabase free tier doesn't support joined column filtering)
-    const filtered = search
-      ? (members || []).filter(m =>
-          m.email.toLowerCase().includes(search.toLowerCase()) ||
-          ((m.profiles as any)?.full_name || '').toLowerCase().includes(search.toLowerCase())
-        )
-      : (members || []);
-
-    // Stats breakdown
     const { data: stats } = await supabase
       .from('partner_members')
       .select('status')
@@ -94,10 +165,10 @@ export async function GET(req: NextRequest) {
     }, {});
 
     return NextResponse.json({
-      members: filtered,
-      total: count || 0,
+      members: members || [],
+      total:   count || 0,
       page,
-      pages: Math.ceil((count || 0) / limit),
+      pages:   Math.ceil((count || 0) / limit),
       breakdown,
     });
 
@@ -108,8 +179,6 @@ export async function GET(req: NextRequest) {
 }
 
 // ── POST: Invite member(s) ────────────────────────────────
-// Body: { email: string, role?: string }
-//    OR { emails: string[], role?: string }  ← bulk
 export async function POST(req: NextRequest) {
   try {
     const authClient = await createAuthClient();
@@ -123,7 +192,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const role = body.role || 'member';
 
-    // Normalize to array — supports single or bulk
     const rawEmails: string[] = body.emails
       ? body.emails
       : body.email
@@ -139,7 +207,6 @@ export async function POST(req: NextRequest) {
 
     const emails = rawEmails.map(e => e.toLowerCase().trim()).filter(Boolean);
 
-    // Fetch all existing auth users once for lookup
     const { data: authData } = await supabase.auth.admin.listUsers();
     const authUsers = authData?.users || [];
 
@@ -147,7 +214,6 @@ export async function POST(req: NextRequest) {
 
     for (const email of emails) {
       try {
-        // Check if already a member (non-removed)
         const { data: existing } = await supabase
           .from('partner_members')
           .select('id, status')
@@ -161,8 +227,8 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        const existingUser = authUsers.find(u => u.email === email);
-        const memberStatus = existingUser ? 'active' : 'invited';
+        const existingUser  = authUsers.find(u => u.email === email);
+        const memberStatus  = existingUser ? 'active' : 'invited';
 
         const { error: insertError } = await supabase
           .from('partner_members')
@@ -182,10 +248,8 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // Send invite email (only for users who don't have an account yet)
         if (!existingUser) {
           try {
-            // Generate a signed, expiring, per-email invite token
             const token     = createInviteToken(partner.id, email);
             const inviteUrl = `https://${partner.subdomain}.ascentorbi.com/join?token=${encodeURIComponent(token)}`;
 
@@ -230,8 +294,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Audit log
-    const invited = results.filter(r => r.status === 'invited' || r.status === 'active');
+    const invited      = results.filter(r => r.status === 'invited' || r.status === 'active');
+    const successCount = invited.length;
+    const skippedCount = results.filter(r => r.status === 'already_member').length;
+    const errorCount   = results.filter(r => r.status === 'error').length;
+
     if (invited.length > 0) {
       try {
         await supabase.from('audit_logs').insert({
@@ -243,10 +310,6 @@ export async function POST(req: NextRequest) {
         });
       } catch { /* non-critical */ }
     }
-
-    const successCount = results.filter(r => r.status === 'invited' || r.status === 'active').length;
-    const skippedCount = results.filter(r => r.status === 'already_member').length;
-    const errorCount   = results.filter(r => r.status === 'error').length;
 
     return NextResponse.json({
       success: true,
@@ -261,7 +324,6 @@ export async function POST(req: NextRequest) {
 }
 
 // ── PATCH: Update member status ───────────────────────────
-// Body: { memberId: string, action: 'suspend' | 'remove' | 'reinstate' | 'resend_invite' }
 export async function PATCH(req: NextRequest) {
   try {
     const authClient = await createAuthClient();
@@ -276,7 +338,6 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'memberId and action required' }, { status: 400 });
     }
 
-    // Confirm this member belongs to this partner
     const { data: member } = await supabase
       .from('partner_members')
       .select('id, email, status, user_id')
@@ -287,8 +348,8 @@ export async function PATCH(req: NextRequest) {
     if (!member) return NextResponse.json({ error: 'Member not found' }, { status: 404 });
 
     const STATUS_MAP: Record<string, string> = {
-      suspend:  'suspended',
-      remove:   'removed',
+      suspend:   'suspended',
+      remove:    'removed',
       reinstate: member.status === 'invited' ? 'invited' : 'active',
     };
 
@@ -296,7 +357,6 @@ export async function PATCH(req: NextRequest) {
       if (member.status !== 'invited') {
         return NextResponse.json({ error: 'Can only resend to pending invites' }, { status: 400 });
       }
-      // Generate a fresh signed token for the resend
       const token     = createInviteToken(partner.id, member.email);
       const inviteUrl = `https://${partner.subdomain}.ascentorbi.com/join?token=${encodeURIComponent(token)}`;
       try {
@@ -325,7 +385,6 @@ export async function PATCH(req: NextRequest) {
         console.warn('[Members PATCH] Resend email failed:', emailErr);
       }
 
-      // Update invited_at so they go back to top of list
       await supabase
         .from('partner_members')
         .update({ invited_at: new Date().toISOString() })
@@ -349,7 +408,6 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Update failed' }, { status: 500 });
     }
 
-    // Audit log
     try {
       await supabase.from('audit_logs').insert({
         user_id:     user.id,

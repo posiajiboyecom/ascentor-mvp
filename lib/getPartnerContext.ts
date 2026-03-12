@@ -1,25 +1,29 @@
 // ============================================================
-// lib/getPartnerContext.ts
-//
 // FILE LOCATION: lib/getPartnerContext.ts
 //
-// FIXES:
-//   W-04 — buildCssVars now reads brand.border_color when set and
-//           uses it directly as --border, rather than computing
-//           rgba(text_color, 10%) which gave wrong results in preview.
-//           Falls back to the rgba calculation only if border_color
-//           is not set (backwards-compatible with existing partners).
+// BUG FIXED:
+//   BUG-04 — The fallback PartnerContext (isWhiteLabel: false) was
+//             being written to the Redis/local cache with the same
+//             key as a real partner lookup. On Vercel cold-start,
+//             the DB query for a valid partner subdomain can take
+//             200–400ms and occasionally times out, returning null.
+//             That null result was cached, so every subsequent
+//             request for that subdomain (up to 60s) got a blank
+//             white-label context — the platform appeared broken.
 //
-//   W-21 — --bg-input was adjustBrightness(card_color, +8), which on
-//           default dark card (#141310) produced #1C1A13 — nearly
-//           identical to the card background. Text inputs were
-//           invisible. Changed to minimum +22 so the input bg is
-//           always perceptibly lighter than the card.
+//             Fix: ONLY cache when a real active partner is found.
+//             The fallback path now returns immediately without
+//             writing to the cache, so the next request will
+//             attempt a fresh DB lookup.
+//
+// PREVIOUS FIXES PRESERVED:
+//   W-04 — buildCssVars reads brand.border_color when set.
+//   W-21 — --bg-input minimum +22 brightness adjustment.
 // ============================================================
 
 import { createClient } from '@supabase/supabase-js';
 import type { Partner, PartnerBrand, PartnerContext } from '@/types/partner';
-import { cacheGet, cacheSet, cacheDel, cacheDelPattern } from '@/lib/partnerCache';
+import { cacheGet, cacheSet, cacheDelPattern } from '@/lib/partnerCache';
 
 export type { Partner, PartnerBrand, PartnerContext };
 
@@ -57,7 +61,7 @@ const DEFAULT_BRAND: PartnerBrand = {
   text_color:             '#D4CFC3',
   bg_color:               '#0C0B08',
   card_color:             '#1E1C17',
-  border_color:           '#2A2720',  // FIX W-04: explicit border default
+  border_color:           '#2A2720',
   font_heading:           'Cormorant Garamond',
   font_body:              'Syne',
   hide_ascentor_branding: false,
@@ -66,7 +70,6 @@ const DEFAULT_BRAND: PartnerBrand = {
 // ── CSS var builder ───────────────────────────────────────
 
 function buildCssVars(brand: PartnerBrand): Record<string, string> {
-  // FIX W-04: use explicit border_color when set; fallback to rgba computation
   const borderValue = brand.border_color
     ? brand.border_color
     : `rgba(${hexToRgb(brand.text_color)}, 0.10)`;
@@ -74,7 +77,6 @@ function buildCssVars(brand: PartnerBrand): Record<string, string> {
   return {
     '--bg':           brand.bg_color,
     '--bg-card':      brand.card_color,
-    // FIX W-21: minimum +22 brightness so inputs are always visible against card bg
     '--bg-input':     adjustBrightness(brand.card_color, 22),
     '--text':         brand.text_color,
     '--text-muted':   adjustBrightness(brand.text_color, -30),
@@ -129,12 +131,14 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
   const subdomain = subdomainMatch?.[1];
 
   // Skip non-partner hosts
-  const isMainDomain = host === 'ascentorbi.com' || host === 'www.ascentorbi.com' || host === 'localhost';
+  const isMainDomain =
+    host === 'ascentorbi.com' ||
+    host === 'www.ascentorbi.com' ||
+    host === 'localhost';
 
   let partner: Partner | null = null;
 
   if (!isMainDomain) {
-    // Try subdomain first, then custom domain
     const { data } = await supabase
       .from('partners')
       .select(`
@@ -154,6 +158,11 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
     partner = data as Partner | null;
   }
 
+  // ── FIX BUG-04: Do NOT cache the fallback/null context ──────────────
+  // Previously this block wrote the empty context to cache, which meant
+  // a transient DB miss (cold-start, brief timeout) would "poison" the
+  // cache for up to 60s and make a real partner's subdomain look blank.
+  // Now we only return the fallback inline — the next request will retry.
   if (!partner) {
     const ctx: PartnerContext = {
       isWhiteLabel: false,
@@ -163,12 +172,13 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
         revenue_share_percent: 0,
         paystack_subaccount_code: null,
         brand: DEFAULT_BRAND,
-        features: { ai_coach: true, community: true, experts: true, courses: true },
+        features: { ai_coach: true, community: true, experts: true, courses: true, referrals: false },
         plan_overrides: null,
         created_at: '', updated_at: '', onboarded_at: null,
       },
       cssVars: buildCssVars(DEFAULT_BRAND),
     };
+    // ⚠️  Do NOT call cacheSet here — fallback must never be cached
     return ctx;
   }
 
@@ -181,6 +191,7 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
     cssVars: buildCssVars(brand),
   };
 
+  // Only cache a confirmed active partner context
   await cacheSet(cacheKey(host), JSON.stringify(ctx));
   return ctx;
 }

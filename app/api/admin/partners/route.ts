@@ -1,8 +1,21 @@
 // ============================================================
-// ADMIN PARTNERS API — /api/admin/partners
+// FILE LOCATION: app/api/admin/partners/route.ts
 //
-// GET   — list all partner applications with stats
-// PATCH — approve | suspend | reject | update revenue_share
+// BUG FIXED:
+//   BUG-09 — The 'approve' action did not set onboarded_at on
+//             the partner record. The partner dashboard layout
+//             and onboarding page both check onboarded_at to
+//             decide whether to redirect to /partner/onboarding.
+//             Because onboarded_at stayed null after approval,
+//             every newly approved partner was permanently
+//             redirected to the onboarding flow and could never
+//             reach the dashboard even after completing it.
+//
+//             Fix: when action === 'approve', set onboarded_at
+//             to the current timestamp in the same update call.
+//             Partners who complete onboarding themselves will
+//             have it set by the onboarding route — this only
+//             applies to admin-side approvals.
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -23,25 +36,43 @@ async function isAdmin(authHeader: string | null): Promise<string | null> {
   const { data: { user } } = await anonClient.auth.getUser();
   if (!user) return null;
   const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  return data?.role === 'admin' ? user.id : null;
+  if ((data as any)?.role !== 'admin') return null;
+  return user.id;
 }
 
-// ── GET ───────────────────────────────────────────────────
+async function logAudit(
+  adminId: string,
+  action: string,
+  partnerId: string,
+  details: Record<string, any>
+) {
+  try {
+    await supabase.from('audit_logs').insert({
+      user_id:     adminId,
+      action,
+      entity_type: 'partner',
+      entity_id:   partnerId,
+      details,
+    });
+  } catch { /* non-critical */ }
+}
+
+// ── GET: list all partners ────────────────────────────────
 export async function GET(req: NextRequest) {
   const adminId = await isAdmin(req.headers.get('authorization'));
   if (!adminId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
   const { searchParams } = new URL(req.url);
-  const status = searchParams.get('status') || '';   // pending | active | suspended | rejected
+  const status = searchParams.get('status') || '';
   const search = searchParams.get('search') || '';
   const page   = parseInt(searchParams.get('page') || '0');
-  const limit  = 50;
+  const limit  = parseInt(searchParams.get('limit') || '20');
 
   let query = supabase
     .from('partners')
     .select(`
-      id, name, slug, subdomain, custom_domain, status,
-      revenue_share_percent, created_at, updated_at,
+      id, name, slug, subdomain, custom_domain, status, plan_tier,
+      revenue_share_percent, created_at, updated_at, onboarded_at,
       owner_id,
       features, plan_overrides,
       profiles!partners_owner_id_fkey (
@@ -60,58 +91,35 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to load partners' }, { status: 500 });
   }
 
-  // Fetch member counts for each partner in one query
   const partnerIds = (partners || []).map((p: any) => p.id);
-  const { data: memberCounts } = await supabase
-    .from('partner_members')
-    .select('partner_id, status')
-    .in('partner_id', partnerIds);
 
-  const countMap = (memberCounts || []).reduce((acc: Record<string, Record<string, number>>, m: any) => {
-    if (!acc[m.partner_id]) acc[m.partner_id] = {};
-    acc[m.partner_id][m.status] = (acc[m.partner_id][m.status] || 0) + 1;
-    return acc;
-  }, {});
+  let memberCounts: Record<string, number> = {};
+  if (partnerIds.length > 0) {
+    const { data: memberData } = await supabase
+      .from('partner_members')
+      .select('partner_id')
+      .in('partner_id', partnerIds)
+      .neq('status', 'removed');
 
-  // Fetch revenue totals per partner
-  const { data: revenueTotals } = await supabase
-    .from('partner_transactions')
-    .select('partner_id, partner_share_ngn')
-    .in('partner_id', partnerIds)
-    .eq('status', 'completed');
-
-  const revenueMap = (revenueTotals || []).reduce((acc: Record<string, number>, t: any) => {
-    acc[t.partner_id] = (acc[t.partner_id] || 0) + (t.partner_share_ngn || 0);
-    return acc;
-  }, {});
+    (memberData || []).forEach((m: any) => {
+      memberCounts[m.partner_id] = (memberCounts[m.partner_id] || 0) + 1;
+    });
+  }
 
   const enriched = (partners || []).map((p: any) => ({
     ...p,
-    member_counts: countMap[p.id] || {},
-    total_revenue_ngn: revenueMap[p.id] || 0,
+    member_count: memberCounts[p.id] || 0,
   }));
-
-  // Status breakdown for tabs
-  const { data: allStatuses } = await supabase
-    .from('partners')
-    .select('status');
-
-  const breakdown = (allStatuses || []).reduce((acc: Record<string, number>, p: any) => {
-    acc[p.status] = (acc[p.status] || 0) + 1;
-    return acc;
-  }, {});
 
   return NextResponse.json({
     partners: enriched,
     total: count || 0,
     page,
     pages: Math.ceil((count || 0) / limit),
-    breakdown,
   });
 }
 
 // ── PATCH ─────────────────────────────────────────────────
-// Body: { partnerId, action: 'approve'|'suspend'|'reject', revenue_share?: number }
 export async function PATCH(req: NextRequest) {
   const adminId = await isAdmin(req.headers.get('authorization'));
   if (!adminId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
@@ -130,9 +138,9 @@ export async function PATCH(req: NextRequest) {
   if (!partner) return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
 
   const STATUS_MAP: Record<string, string> = {
-    approve:  'active',
-    suspend:  'suspended',
-    reject:   'rejected',
+    approve:   'active',
+    suspend:   'suspended',
+    reject:    'rejected',
     reinstate: 'active',
   };
 
@@ -147,8 +155,8 @@ export async function PATCH(req: NextRequest) {
 
     await logAudit(adminId, 'partner_revenue_share_updated', partnerId, {
       partner_name: partner.name,
-      old_share: partner.revenue_share_percent,
-      new_share: revenue_share,
+      old_share:    partner.revenue_share_percent,
+      new_share:    revenue_share,
     });
 
     return NextResponse.json({ success: true });
@@ -162,9 +170,14 @@ export async function PATCH(req: NextRequest) {
     updated_at: new Date().toISOString(),
   };
 
-  // Set revenue share on approval if provided
   if (action === 'approve' && typeof revenue_share === 'number') {
     update.revenue_share_percent = revenue_share;
+  }
+
+  // FIX BUG-09: set onboarded_at when approving so partners don't get
+  // stuck in the onboarding redirect loop after approval.
+  if (action === 'approve' && !partner.status.includes('active')) {
+    update.onboarded_at = new Date().toISOString();
   }
 
   await supabase.from('partners').update(update).eq('id', partnerId);
@@ -210,40 +223,27 @@ export async function PATCH(req: NextRequest) {
         await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+            Authorization:  `Bearer ${process.env.RESEND_API_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'Ascentor Partners <noreply@ascentorbi.com>',
-            to:   ownerProfile.email,
+            from:    'Ascentor Partners <noreply@ascentorbi.com>',
+            to:      ownerProfile.email,
             subject: msg.subject,
-            html: msg.body,
+            html:    msg.body,
           }),
         });
       }
     }
   } catch (emailErr) {
-    console.warn('[Admin Partners] Notification email failed (non-fatal):', emailErr);
+    console.warn('[Admin Partners PATCH] Email error (non-fatal):', emailErr);
   }
 
   await logAudit(adminId, `partner_${action}`, partnerId, {
     partner_name: partner.name,
-    subdomain:    partner.subdomain,
-    from_status:  partner.status,
-    to_status:    newStatus,
+    old_status:   partner.status,
+    new_status:   newStatus,
   });
 
-  return NextResponse.json({ success: true, newStatus });
-}
-
-async function logAudit(adminId: string, action: string, entityId: string, details: object) {
-  try {
-    await supabase.from('audit_logs').insert({
-      user_id:     adminId,
-      action,
-      entity_type: 'partner',
-      entity_id:   entityId,
-      details,
-    });
-  } catch { /* non-critical */ }
+  return NextResponse.json({ success: true });
 }

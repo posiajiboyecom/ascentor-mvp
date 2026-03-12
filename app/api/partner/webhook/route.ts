@@ -1,16 +1,23 @@
 // ============================================================
-// PARTNER PAYSTACK WEBHOOK — /api/partner/webhook
+// FILE LOCATION: app/api/partner/webhook/route.ts
 //
-// Separate from the main Ascentor webhook.
-// Each partner registers THIS URL in their own Paystack account.
-// Paystack signs with THEIR secret — we look it up per-partner.
+// BUG FIXED:
+//   BUG-07 — No idempotency check on charge.success handler.
+//             Paystack's documentation states webhooks may be
+//             delivered more than once (retries on non-200, or
+//             duplicate delivery during failover). Without a
+//             duplicate check, every retry would:
+//               1. Insert a second partner_transactions row
+//                  (double revenue credit to partner)
+//               2. Reset subscription_end to a new future date
+//                  (subscription extended incorrectly)
+//               3. Send duplicate "Welcome!" notifications to
+//                  both the member and the partner owner.
 //
-// Revenue flow:
-//   Member pays → Partner's Paystack subaccount receives revenue_share%
-//   → Ascentor's subaccount receives platform_fee%
-//   → This webhook records and credits correctly
-//
-// Partners register: https://ascentorbi.com/api/partner/webhook?partner_id=xxx
+//             Fix: before processing charge.success, check
+//             partner_transactions for an existing row with the
+//             same paystack_reference. If found, return 200
+//             immediately (Paystack stops retrying on 200).
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -23,7 +30,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Verify signature using PARTNER'S Paystack secret (not Ascentor's)
 function verifySignature(rawBody: string, signature: string, secret: string): boolean {
   const hash = crypto.createHmac('sha512', secret).update(rawBody).digest('hex');
   return hash === signature;
@@ -39,7 +45,6 @@ async function getPartnerById(partnerId: string) {
 }
 
 async function getMemberByEmail(email: string, partnerId: string) {
-  // Member must be associated with this partner
   const { data } = await supabase
     .from('partner_members')
     .select('user_id, profiles(subscription_plan, subscription_status, subscription_end)')
@@ -49,15 +54,27 @@ async function getMemberByEmail(email: string, partnerId: string) {
   return data;
 }
 
-// ── charge.success — member payment confirmed ─────────────
+// ── charge.success ────────────────────────────────────────
 async function handleChargeSuccess(data: any, partner: any) {
-  const email = data.customer?.email;
-  const plan = data.metadata?.plan || 'explorer';
+  const email   = data.customer?.email;
+  const plan    = data.metadata?.plan || 'explorer';
   const billing = data.metadata?.billing_cycle || 'monthly';
+  const ref     = data.reference;
 
   if (!email) return;
 
-  // Find this member in the partner's community
+  // FIX BUG-07: idempotency guard — exit early if already processed
+  const { data: existingTx } = await supabase
+    .from('partner_transactions')
+    .select('id')
+    .eq('paystack_reference', ref)
+    .maybeSingle();
+
+  if (existingTx) {
+    console.log(`[PartnerWebhook] Duplicate event for ref ${ref} — skipping`);
+    return;
+  }
+
   const member = await getMemberByEmail(email, partner.id);
   if (!member) {
     console.warn(`[PartnerWebhook] No member found: ${email} for partner ${partner.id}`);
@@ -66,7 +83,6 @@ async function handleChargeSuccess(data: any, partner: any) {
 
   const userId = member.user_id;
 
-  // Calculate subscription period
   const paidAt = data.paid_at ? new Date(data.paid_at) : new Date();
   const subscriptionEnd = new Date(paidAt);
   if (billing === 'yearly') {
@@ -75,7 +91,6 @@ async function handleChargeSuccess(data: any, partner: any) {
     subscriptionEnd.setDate(subscriptionEnd.getDate() + 30);
   }
 
-  // Activate member's subscription
   await supabase.from('profiles').update({
     subscription_plan:   plan,
     subscription_status: 'active',
@@ -85,8 +100,7 @@ async function handleChargeSuccess(data: any, partner: any) {
     updated_at:          new Date().toISOString(),
   }).eq('id', userId);
 
-  // Record partner revenue transaction
-  const amountNGN = (data.amount || 0) / 100; // Paystack uses kobo
+  const amountNGN    = (data.amount || 0) / 100;
   const partnerShare = Math.round(amountNGN * (partner.revenue_share_percent / 100));
   const ascentorFee  = amountNGN - partnerShare;
 
@@ -99,12 +113,11 @@ async function handleChargeSuccess(data: any, partner: any) {
     revenue_share_pct:   partner.revenue_share_percent,
     plan,
     billing_cycle:       billing,
-    paystack_reference:  data.reference,
+    paystack_reference:  ref,
     status:              'completed',
     paid_at:             paidAt.toISOString(),
   });
 
-  // Notify member
   await supabase.from('notifications').insert({
     user_id: userId,
     type:    'success',
@@ -113,7 +126,6 @@ async function handleChargeSuccess(data: any, partner: any) {
     link:    '/dashboard',
   });
 
-  // Notify partner owner
   await supabase.from('notifications').insert({
     user_id: partner.owner_id,
     type:    'success',
@@ -164,7 +176,6 @@ async function handleSubscriptionDisable(data: any, partner: any) {
 // ── Main handler ──────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    // Partner ID passed as query param: /api/partner/webhook?partner_id=xxx
     const { searchParams } = new URL(req.url);
     const partnerId = searchParams.get('partner_id');
 
@@ -180,19 +191,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Partner not active' }, { status: 403 });
     }
 
-    const rawBody = await req.text();
+    const rawBody  = await req.text();
     const signature = req.headers.get('x-paystack-signature') || '';
 
-    // Use partner's own Paystack secret key for verification (decrypt from DB)
     let partnerSecret = process.env.PAYSTACK_SECRET_KEY!;
-    if (partner.paystack_secret_key_enc) {
+    if ((partner as any).paystack_secret_key_enc) {
       try {
-        partnerSecret = decryptSecret(partner.paystack_secret_key_enc);
+        partnerSecret = decryptSecret((partner as any).paystack_secret_key_enc);
       } catch (decryptErr) {
         console.error(`[PartnerWebhook] Failed to decrypt secret for partner ${partnerId}:`, decryptErr);
-        // Fall through to Ascentor's key
       }
     }
+
     if (!verifySignature(rawBody, signature, partnerSecret)) {
       console.error(`[PartnerWebhook] Invalid signature for partner ${partnerId}`);
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
