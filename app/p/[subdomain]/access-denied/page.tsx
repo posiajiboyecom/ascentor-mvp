@@ -51,7 +51,7 @@ function AccessDeniedContent() {
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    router.push(`/p/${subdomain}/login`);
+    router.push('/login');
   }
 
   return (
@@ -105,7 +105,7 @@ function AccessDeniedContent() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
           {reason === 'not_invited' && (
             <Link
-              href={`/p/${subdomain}/login`}
+              href="/login"
               style={{
                 padding: '12px 28px', borderRadius: 10,
                 background: 'var(--accent)', color: '#000',
@@ -135,7 +135,7 @@ function AccessDeniedContent() {
         {/* Partner home link */}
         <div style={{ marginTop: 40 }}>
           <Link
-            href={`/p/${subdomain}`}
+            href="/"
             style={{
               fontSize: 12,
               color: 'var(--text-dim)',

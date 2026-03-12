@@ -83,7 +83,7 @@ export default async function PartnerLayout({
 
     if (!user) {
       // Not logged in — redirect to partner login
-      redirect(`/p/${subdomain}/login?redirect=${encodeURIComponent(partnerPathname || `/p/${subdomain}/dashboard`)}`);
+      redirect(`/login?redirect=${encodeURIComponent(partnerPathname || '/dashboard')}`);
     }
 
     // Detect if this user is the partner owner
@@ -100,15 +100,15 @@ export default async function PartnerLayout({
     if (!membership) {
       // Owner always has access even if not explicitly in partner_members
       if (!isOwner) {
-        redirect(`/p/${subdomain}/access-denied?reason=not_invited`);
+        redirect('/access-denied?reason=not_invited');
       }
     } else {
       if (membership.status === 'suspended' && !isOwner) {
-        redirect(`/p/${subdomain}/access-denied?reason=suspended`);
+        redirect('/access-denied?reason=suspended');
       }
 
       if (membership.status === 'removed' && !isOwner) {
-        redirect(`/p/${subdomain}/access-denied?reason=removed`);
+        redirect('/access-denied?reason=removed');
       }
 
       // Auto-activate 'invited' members who have now logged in

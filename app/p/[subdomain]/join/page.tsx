@@ -110,12 +110,12 @@ export default async function JoinPage({
       .eq('id', membership.id);
 
     // Redirect to partner dashboard
-    redirect(`/p/${subdomain}/dashboard?joined=1`);
+    redirect('/dashboard?joined=1');
   }
 
   // ── 6. Not logged in — redirect to signup with context ────
   // Pass email as a hint so the signup form can pre-fill it
-  const signupUrl = `/p/${subdomain}/signup?` + new URLSearchParams({
+  const signupUrl = `/signup?` + new URLSearchParams({
     invite: token,
     email:  payload.email,
   }).toString();
@@ -171,7 +171,7 @@ function JoinError({
         </p>
 
         <Link
-          href={`/p/${subdomain}/login`}
+          href="/login"
           style={{
             display: 'inline-block', padding: '12px 28px',
             background: 'var(--accent)', color: '#000',

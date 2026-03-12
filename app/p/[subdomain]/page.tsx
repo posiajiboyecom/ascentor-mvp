@@ -37,7 +37,7 @@ export default async function PartnerHomePage({
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect(`/p/${subdomain}/dashboard`);
+  if (user) redirect('/dashboard');
 
   const features = partner.features;
 
@@ -59,7 +59,7 @@ export default async function PartnerHomePage({
           }
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Link href={`/p/${subdomain}/login`}
+          <Link href="/login"
             style={{
               padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
               color: 'var(--text)', border: '1px solid var(--border)',
@@ -67,7 +67,7 @@ export default async function PartnerHomePage({
             }}>
             Log in
           </Link>
-          <Link href={`/p/${subdomain}/signup`}
+          <Link href="/signup"
             style={{
               padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700,
               background: 'var(--accent)', color: '#000',
@@ -123,7 +123,7 @@ export default async function PartnerHomePage({
           </div>
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href={`/p/${subdomain}/signup`}
+            <Link href="/signup"
               style={{
                 padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700,
                 background: 'var(--accent)', color: '#000', textDecoration: 'none',
@@ -137,7 +137,7 @@ export default async function PartnerHomePage({
               link must always exist in the hero regardless of which
               features the coach has enabled.
             */}
-            <Link href={`/p/${subdomain}/login`}
+            <Link href="/login"
               style={{
                 padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 600,
                 color: 'var(--text)', border: '1px solid var(--border)',

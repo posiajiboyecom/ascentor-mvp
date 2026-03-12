@@ -38,7 +38,7 @@ function PartnerLoginForm() {
   const [error,    setError]    = useState<string | null>(null);
   const [loading,  setLoading]  = useState(false);
 
-  const redirectTo = searchParams.get('redirect') || `/p/${subdomain}/dashboard`;
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -187,7 +187,7 @@ function PartnerLoginForm() {
         <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-dim)', marginTop: 20 }}>
           Don't have an account?{' '}
           <Link
-            href={`/p/${subdomain}/signup`}
+            href="/signup"
             style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}
           >
             Sign up →

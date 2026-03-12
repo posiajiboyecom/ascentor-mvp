@@ -7,17 +7,17 @@ import { useParams } from 'next/navigation';
 
 // ── Icons ─────────────────────────────────────────────────
 const FireIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M8.5 14.5A4.5 4.5 0 0 0 17 12c0-4-3.5-6.5-4-9-.5 2.5-3.5 5-3.5 5-1.5-2-2-4-2-4-1 2.5-2 5-2 7a6 6 0 0 0 6 6 4.5 4.5 0 0 0 4.5-4.5c0-1.5-.5-3-1.5-4z"/>
   </svg>
 );
 const ChatIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
   </svg>
 );
 const TargetIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
   </svg>
 );
@@ -38,7 +38,7 @@ const ArrowRight = () => (
   </svg>
 );
 const GoalIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
   </svg>
 );
@@ -54,20 +54,20 @@ function StatCard({ icon, value, label, color }: {
     <div style={{
       background: 'var(--bg-card)',
       border: '1px solid var(--border)',
-      borderRadius: 16,
-      padding: '20px 16px',
+      borderRadius: 14,
+      padding: '18px 12px',
       textAlign: 'center',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      gap: 8,
+      gap: 6,
     }}>
-      <div style={{ color: 'var(--text-dim)', opacity: 0.7 }}>{icon}</div>
+      <div style={{ color: 'var(--text-dim)', opacity: 0.8 }}>{icon}</div>
       <div style={{
-        fontSize: 32,
+        fontSize: 28,
         fontWeight: 700,
         color,
-        fontFamily: 'var(--font-heading)',
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
         lineHeight: 1,
       }}>
         {value}
@@ -75,7 +75,7 @@ function StatCard({ icon, value, label, color }: {
       <div style={{
         fontSize: 9,
         fontWeight: 700,
-        letterSpacing: '0.12em',
+        letterSpacing: '0.1em',
         textTransform: 'uppercase',
         color: 'var(--text-dim)',
       }}>
@@ -104,31 +104,31 @@ function ActionCard({ href, icon, title, subtitle, accent = false }: {
           border: `1px solid ${accent
             ? hovered ? 'rgba(232,160,32,0.5)' : 'rgba(232,160,32,0.2)'
             : hovered ? 'rgba(255,255,255,0.15)' : 'var(--border)'}`,
-          borderRadius: 16,
-          padding: '22px 20px',
+          borderRadius: 14,
+          padding: '18px 18px',
           cursor: 'pointer',
           transition: 'border-color 0.18s, transform 0.15s',
           transform: hovered ? 'translateY(-2px)' : 'none',
           display: 'flex',
           flexDirection: 'column',
-          gap: 12,
+          gap: 10,
           height: '100%',
         }}
       >
         <div style={{
           color: accent ? 'var(--accent)' : 'var(--text-dim)',
-          width: 42, height: 42,
+          width: 38, height: 38,
           background: accent ? 'rgba(232,160,32,0.10)' : 'rgba(255,255,255,0.04)',
-          borderRadius: 12,
+          borderRadius: 10,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {icon}
         </div>
         <div>
           <p style={{
-            fontSize: 15, fontWeight: 700,
+            fontSize: 14, fontWeight: 700,
             color: accent ? 'var(--accent)' : 'var(--text)',
-            marginBottom: 4,
+            marginBottom: 3,
           }}>
             {title}
           </p>
@@ -138,7 +138,7 @@ function ActionCard({ href, icon, title, subtitle, accent = false }: {
           display: 'flex', alignItems: 'center', gap: 4,
           color: accent ? 'var(--accent)' : 'var(--text-dim)',
           fontSize: 11, fontWeight: 600,
-          opacity: hovered ? 1 : 0.45,
+          opacity: hovered ? 1 : 0.4,
           transition: 'opacity 0.15s',
           marginTop: 'auto',
         }}>
@@ -166,8 +166,8 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
   const goalProgress = goal?.progress || 0;
   const doneCount = localCommitments.filter((c: any) => c.completed).length;
 
-  // Build nav href — works for both /p/[subdomain]/* and top-level /*
-  const navHref = (segment: string) => sub ? `/p/${sub}/${segment}` : `/${segment}`;
+  // Always use clean paths — the proxy rewrite handles routing transparently
+  const navHref = (segment: string) => `/${segment}`;
 
   const toggleCommitment = async (id: string, done: boolean) => {
     setLocalCommitments((prev: any[]) =>
@@ -194,32 +194,32 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
   };
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto', padding: '40px 20px 100px' }}>
+    <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 20px 100px' }}>
 
       {/* ── Greeting ──────────────────────────────────── */}
-      <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 28 }}>
         <h1 style={{
-          fontFamily: 'var(--font-heading)',
-          fontSize: 38,
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: 34,
           fontWeight: 700,
           color: 'var(--text)',
-          marginBottom: 6,
+          marginBottom: 4,
           lineHeight: 1.1,
         }}>
-          Welcome, {firstName}
+          Welcome back, {firstName}
         </h1>
         {(profile?.current_role || profile?.goal_role) && (
           <p style={{
-            fontSize: 14,
+            fontSize: 13,
             color: 'var(--text-dim)',
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
+            gap: 6,
             flexWrap: 'wrap',
           }}>
             {profile?.current_role && <span>{profile.current_role}</span>}
             {profile?.current_role && profile?.goal_role && (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             )}
@@ -234,8 +234,8 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 12,
-        marginBottom: 24,
+        gap: 10,
+        marginBottom: 22,
       }}>
         <StatCard
           icon={<FireIcon />}
@@ -246,14 +246,14 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
         <StatCard
           icon={<ChatIcon />}
           value={String(sessionsThisWeek || 0)}
-          label="Sessions / Week"
+          label="Sessions"
           color="#10B981"
         />
         <StatCard
           icon={<TargetIcon />}
           value={`${goalProgress}%`}
           label="90-Day Goal"
-          color="#3B82F6"
+          color="#8B5CF6"
         />
       </div>
 
@@ -262,15 +262,15 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
         <div style={{
           background: 'var(--bg-card)',
           border: '1px dashed rgba(232,160,32,0.3)',
-          borderRadius: 16,
-          padding: '20px 22px',
-          marginBottom: 22,
+          borderRadius: 14,
+          padding: '18px 20px',
+          marginBottom: 20,
         }}>
           {!showGoalInput ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{
-                  width: 42, height: 42, borderRadius: 12, flexShrink: 0,
+                  width: 38, height: 38, borderRadius: 10, flexShrink: 0,
                   background: 'rgba(232,160,32,0.10)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'var(--accent)',
@@ -278,10 +278,10 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
                   <GoalIcon />
                 </div>
                 <div>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>
                     Set your 90-day goal
                   </p>
-                  <p style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                  <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>
                     Your mentor works best when it knows where you are headed.
                   </p>
                 </div>
@@ -289,9 +289,9 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
               <button
                 onClick={() => setShowGoalInput(true)}
                 style={{
-                  padding: '10px 20px', borderRadius: 10,
+                  padding: '8px 16px', borderRadius: 9,
                   background: 'var(--accent)', color: '#000',
-                  border: 'none', fontSize: 13, fontWeight: 700,
+                  border: 'none', fontSize: 12, fontWeight: 700,
                   cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                 }}
               >
@@ -356,9 +356,9 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
           borderLeft: '3px solid var(--accent)',
-          borderRadius: 16,
-          padding: '20px 22px',
-          marginBottom: 22,
+          borderRadius: 14,
+          padding: '18px 20px',
+          marginBottom: 20,
         }}>
           <p style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
@@ -395,8 +395,8 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gap: 12,
-        marginBottom: 24,
+        gap: 10,
+        marginBottom: 22,
       }}>
         <ActionCard
           href={navHref('coach')}
@@ -419,24 +419,24 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
       <div style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--border)',
-        borderRadius: 16,
-        padding: '20px 22px',
-        marginBottom: 22,
+        borderRadius: 14,
+        padding: '18px 20px',
+        marginBottom: 20,
       }}>
         <div style={{
           display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', marginBottom: 16,
+          justifyContent: 'space-between', marginBottom: 14,
         }}>
           <span style={{
-            fontSize: 14, fontWeight: 700, color: 'var(--text)',
-            display: 'flex', alignItems: 'center', gap: 8,
+            fontSize: 13, fontWeight: 700, color: 'var(--text)',
+            display: 'flex', alignItems: 'center', gap: 7,
           }}>
             <ClipboardIcon />
             Weekly Commitments
           </span>
           {localCommitments.length > 0 && (
             <span style={{
-              padding: '3px 10px', borderRadius: 20,
+              padding: '2px 10px', borderRadius: 20,
               fontSize: 11, fontWeight: 700,
               background: 'rgba(16,185,129,0.08)',
               color: '#10B981',
@@ -460,14 +460,14 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
             {localCommitments.map((c: any, i: number) => (
               <div key={c.id} style={{
                 display: 'flex', alignItems: 'center', gap: 12,
-                padding: '11px 0',
+                padding: '10px 0',
                 borderBottom: i < localCommitments.length - 1
                   ? '1px solid var(--border)' : 'none',
               }}>
                 <button
                   onClick={() => toggleCommitment(c.id, !c.completed)}
                   style={{
-                    width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                    width: 20, height: 20, borderRadius: 6, flexShrink: 0,
                     border: `1.5px solid ${c.completed ? '#10B981' : 'var(--border)'}`,
                     background: c.completed ? '#10B981' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -504,18 +504,18 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
           <div style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--border)',
-            borderLeft: '3px solid #3B82F6',
-            borderRadius: 16,
-            padding: '18px 22px',
+            borderLeft: '3px solid #8B5CF6',
+            borderRadius: 14,
+            padding: '16px 20px',
             cursor: 'pointer',
           }}>
             <span style={{
               display: 'inline-block',
               padding: '2px 10px', borderRadius: 20,
               fontSize: 10, fontWeight: 700,
-              background: 'rgba(59,130,246,0.08)',
-              color: '#3B82F6',
-              border: '1px solid rgba(59,130,246,0.18)',
+              background: 'rgba(139,92,246,0.08)',
+              color: '#8B5CF6',
+              border: '1px solid rgba(139,92,246,0.18)',
               marginBottom: 8,
               textTransform: 'uppercase', letterSpacing: '0.08em',
             }}>

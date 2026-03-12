@@ -87,7 +87,7 @@ export default function PartnerMemberShell({
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    router.push(`/p/${sub}/login`);
+    router.push('/login');
   }
 
   return (
@@ -101,7 +101,7 @@ export default function PartnerMemberShell({
         padding: '0 20px', height: 56,
       }}>
         {/* Logo / platform name */}
-        <Link href={`/p/${sub}/dashboard`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Link href="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
           {brand.logo_url
             ? <img src={brand.logo_url} alt={brand.platform_name} style={{ height: 28, width: 'auto' }} />
             : <span style={{
@@ -116,8 +116,8 @@ export default function PartnerMemberShell({
         {/* ── FIX W-15: Desktop nav — CSS class controls visibility at breakpoint ── */}
         <nav style={{ display: 'flex', gap: 4, alignItems: 'center' }} className="partner-desktop-nav">
           {uniqueNav.map(item => {
-            const href   = `/p/${sub}/${item.segment}`;
-            const active = pathname.includes(`/p/${sub}/${item.segment}`);
+            const href   = `/${item.segment}`;
+            const active = pathname.includes(`/${item.segment}`);
             return (
               <Link key={item.segment} href={href} style={{
                 padding: '6px 14px', borderRadius: 8,
@@ -202,8 +202,8 @@ export default function PartnerMemberShell({
         className="partner-bottom-nav"
       >
         {uniqueNav.map(item => {
-          const href   = `/p/${sub}/${item.segment}`;
-          const active = pathname.includes(`/p/${sub}/${item.segment}`);
+          const href   = `/${item.segment}`;
+          const active = pathname.includes(`/${item.segment}`);
           return (
             <Link key={item.segment} href={href} style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',

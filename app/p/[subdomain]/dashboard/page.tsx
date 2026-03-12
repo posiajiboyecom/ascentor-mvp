@@ -10,7 +10,7 @@ export default async function DashboardPage({
   const { subdomain } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/p/${subdomain}/login`);
+  if (!user) redirect('/login');
 
   const [profileRes, goalRes, sessionsRes, commitmentsRes, expertRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),

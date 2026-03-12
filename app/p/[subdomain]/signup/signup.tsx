@@ -38,7 +38,7 @@ function PartnerSignupForm() {
   const [loading,  setLoading]  = useState(false);
 
   const invitePartner = searchParams.get('partner');
-  const redirectTo    = searchParams.get('redirect') || `/p/${subdomain}/dashboard`;
+  const redirectTo    = searchParams.get('redirect') || '/dashboard';
 
   // Already logged in → go to dashboard
   useEffect(() => {
@@ -232,7 +232,7 @@ function PartnerSignupForm() {
         <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-dim)', marginTop: 20 }}>
           Already have an account?{' '}
           <Link
-            href={`/p/${subdomain}/login`}
+            href="/login"
             style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}
           >
             Log in →
