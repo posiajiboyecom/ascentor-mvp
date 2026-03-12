@@ -286,7 +286,7 @@ export async function POST(req: NextRequest) {
         reference,
         partner_name:      partner.name,
       },
-    }).then(() => {}).catch(() => {}); // non-critical
+    }).then(() => Promise.resolve()).catch(() => {}); // non-critical
 
     return NextResponse.json({
       success:          true,
