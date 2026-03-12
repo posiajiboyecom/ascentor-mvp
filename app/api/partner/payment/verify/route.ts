@@ -93,7 +93,20 @@ export async function POST(req: NextRequest) {
         'paystack_subaccount_code, paystack_secret_key_enc, subdomain, plan_overrides'
       )
       .eq('id', partner_id)
-      .single();
+      .single() as {
+        data: {
+          id: string;
+          name: string;
+          owner_id: string;
+          status: string;
+          revenue_share_percent: number;
+          paystack_subaccount_code: string | null;
+          paystack_secret_key_enc: string | null;
+          subdomain: string;
+          plan_overrides: Record<string, any> | null;
+        } | null;
+        error: any;
+      };
 
     if (partnerErr || !partner) {
       return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
