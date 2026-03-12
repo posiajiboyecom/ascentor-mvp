@@ -91,14 +91,25 @@ export default function PartnerOnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: partner } = await supabase
+      const { data: partner } = (await supabase
         .from('partners')
         .select(
           'id, name, subdomain, onboarded_at, brand, plan_overrides, ' +
           'paystack_secret_key'
         )
         .eq('owner_id', user.id)
-        .single();
+        .single()) as {
+          data: {
+            id: string;
+            name: string;
+            subdomain: string;
+            onboarded_at: string | null;
+            brand: Record<string, any>;
+            plan_overrides: Record<string, any>;
+            paystack_secret_key: string | null;
+          } | null;
+          error: any;
+        };
 
       if (!partner) { setLoading(false); return; }
 
