@@ -273,20 +273,22 @@ export async function POST(req: NextRequest) {
     ]);
 
     // ── 12. Audit log ─────────────────────────────────────────
-    await supabase.from('audit_logs').insert({
-      user_id:     userId,
-      action:      'partner_payment_verified',
-      entity_type: 'partner',
-      entity_id:   partner.id,
-      details: {
-        plan,
-        billing,
-        amount_ngn:        amountNGN,
-        partner_share_ngn: partnerShare,
-        reference,
-        partner_name:      partner.name,
-      },
-    }).then(() => Promise.resolve()).catch(() => {}); // non-critical
+    try {
+      await supabase.from('audit_logs').insert({
+        user_id:     userId,
+        action:      'partner_payment_verified',
+        entity_type: 'partner',
+        entity_id:   partner.id,
+        details: {
+          plan,
+          billing,
+          amount_ngn:        amountNGN,
+          partner_share_ngn: partnerShare,
+          reference,
+          partner_name:      partner.name,
+        },
+      });
+    } catch (_) {} // non-critical
 
     return NextResponse.json({
       success:          true,
