@@ -1,182 +1,87 @@
-// ============================================================
 // app/p/[subdomain]/page.tsx
+// ─────────────────────────────────────────────────────────────────────────────
+// ROOT PAGE for a white-label tenant subdomain
+// e.g. acme.ascentor.co → this page
 //
-// FILE LOCATION: app/p/[subdomain]/page.tsx
-//
-// FIXES:
-//   W-18 — Hero section had no min-height, so on tall viewports
-//           (>800px) the content sat in the top third with a
-//           large blank area below. Fixed by wrapping the hero
-//           content in a flex container that fills the remaining
-//           viewport height below the nav (56px).
-//
-//   W-19 — "Already a member" login link was wrapped in
-//           {features.ai_coach && ...}, meaning it was invisible
-//           on platforms with AI Coach disabled. A login link in
-//           the hero must always be shown — it is not tied to
-//           any feature flag. Removed the conditional wrapper.
-// ============================================================
+// Behaviour:
+//  - If user is logged in → redirect to /p/[subdomain]/dashboard
+//  - If user is not logged in → show tenant-branded landing page
+// ─────────────────────────────────────────────────────────────────────────────
 
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { getPartnerContext } from '@/lib/getPartnerContext';
 import Link from 'next/link';
 
-export default async function PartnerHomePage({
+export default async function SubdomainHomePage({
   params,
 }: {
   params: Promise<{ subdomain: string }>;
 }) {
   const { subdomain } = await params;
-  const headersList = await headers();
-  const hostname = headersList.get('host') || '';
-  const ctx = await getPartnerContext(hostname);
-  const { partner } = ctx;
-  const { brand } = partner;
-
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect('/dashboard');
 
-  const features = partner.features;
+  // Check auth
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    redirect(`/p/${subdomain}/dashboard`);
+  }
+
+  // Fetch tenant name for landing copy (already validated in layout.tsx)
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('name, accent_color')
+    .eq('subdomain', subdomain)
+    .single();
+
+  const tenantName = tenant?.name || subdomain;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+    <div
+      className="min-h-screen flex items-center justify-center px-6"
+      style={{ background: 'var(--bg)' }}
+    >
+      <div className="max-w-lg text-center animate-fade-up">
+        <div className="text-5xl mb-5">⬆</div>
 
-      {/* ── Nav ── */}
-      <nav style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 32px', borderBottom: '1px solid var(--border)',
-        background: 'var(--bg)', height: 56, flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {brand.logo_url
-            ? <img src={brand.logo_url} alt={brand.platform_name} style={{ height: 32, width: 'auto' }} />
-            : <span style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 700, color: 'var(--accent)' }}>
-                {brand.platform_name}
-              </span>
-          }
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <Link href="/login"
-            style={{
-              padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-              color: 'var(--text)', border: '1px solid var(--border)',
-              textDecoration: 'none', background: 'transparent',
-            }}>
-            Log in
-          </Link>
-          <Link href="/signup"
-            style={{
-              padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700,
-              background: 'var(--accent)', color: '#000',
-              textDecoration: 'none', border: 'none',
-            }}>
-            Get started
-          </Link>
-        </div>
-      </nav>
-
-      {/* ── Hero — FIX W-18: fills remaining viewport height, content centred ── */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '60px 24px',
-        // FIX W-18: explicit minHeight so hero never collapses to a thin strip
-        minHeight: 'calc(100vh - 56px)',
-      }}>
-        <div style={{
-          maxWidth: 640,
-          width: '100%',
-          textAlign: 'center',
-        }}>
-          <h1 style={{
-            fontFamily: 'var(--font-heading)',
-            fontSize: 'clamp(36px, 6vw, 56px)',
-            fontWeight: 700,
+        <h1
+          className="text-4xl md:text-5xl font-semibold mb-3"
+          style={{
+            fontFamily: "'Playfair Display', serif",
             color: 'var(--text)',
             lineHeight: 1.15,
-            marginBottom: 16,
-          }}>
-            Welcome to{' '}
-            <span style={{ color: 'var(--accent)' }}>{brand.platform_name}</span>
-          </h1>
+          }}
+        >
+          Welcome to{' '}
+          <span style={{ color: 'var(--accent)' }}>{tenantName}</span>
+        </h1>
 
-          {brand.tagline && (
-            <p style={{
-              fontSize: 16, color: 'var(--text-muted)',
-              lineHeight: 1.7, marginBottom: 36,
-            }}>
-              {brand.tagline}
-            </p>
-          )}
+        <p
+          className="text-base mb-8 max-w-md mx-auto"
+          style={{ color: 'var(--text-muted)', lineHeight: 1.7 }}
+        >
+          Your AI-powered coaching platform. Sign in to continue your journey.
+        </p>
 
-          {/* Feature pills */}
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
-            {features.ai_coach   && <Pill>AI Coaching 24/7</Pill>}
-            {features.community  && <Pill>Peer Community</Pill>}
-            {features.experts    && <Pill>Expert Sessions</Pill>}
-            {features.courses    && <Pill>Structured Courses</Pill>}
-          </div>
-
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/signup"
-              style={{
-                padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700,
-                background: 'var(--accent)', color: '#000', textDecoration: 'none',
-              }}>
-              Start your journey →
-            </Link>
-
-            {/*
-              FIX W-19: "Already a member" login link is ALWAYS shown.
-              Removed the {features.ai_coach && ...} wrapper — a login
-              link must always exist in the hero regardless of which
-              features the coach has enabled.
-            */}
-            <Link href="/login"
-              style={{
-                padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 600,
-                color: 'var(--text)', border: '1px solid var(--border)',
-                textDecoration: 'none', background: 'transparent',
-              }}>
-              Already a member
-            </Link>
-          </div>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            href={`/p/${subdomain}/signup`}
+            className="px-8 py-3.5 rounded-lg font-semibold text-sm transition-colors text-center"
+            style={{ background: 'var(--accent)', color: 'var(--accent-text)' }}
+          >
+            Get Started →
+          </Link>
+          <Link
+            href={`/p/${subdomain}/login`}
+            className="px-8 py-3.5 rounded-lg font-semibold text-sm transition-colors text-center"
+            style={{ border: '1px solid var(--border)', color: 'var(--text)' }}
+          >
+            Log In
+          </Link>
         </div>
       </div>
-
-      {/* ── Powered by footer ── */}
-      {!brand.hide_ascentor_branding && (
-        <div style={{
-          textAlign: 'center', padding: '20px', fontSize: 11,
-          color: 'var(--text-dim)',
-          borderTop: '1px solid var(--border)',
-          flexShrink: 0,
-        }}>
-          Powered by{' '}
-          <a href="https://ascentorbi.com" target="_blank" rel="noopener noreferrer"
-            style={{ color: '#E8A020', textDecoration: 'none' }}>
-            Ascentor
-          </a>
-        </div>
-      )}
     </div>
-  );
-}
-
-function Pill({ children }: { children: React.ReactNode }) {
-  return (
-    <span style={{
-      padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-      background: 'rgba(255,255,255,0.05)',
-      color: 'var(--text-muted)',
-      border: '1px solid var(--border)',
-    }}>
-      {children}
-    </span>
   );
 }

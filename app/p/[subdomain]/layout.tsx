@@ -1,27 +1,81 @@
-// ============================================================
-// app/p/[subdomain]/admin/layout.tsx
+// app/p/[subdomain]/layout.tsx
+// ─────────────────────────────────────────────────────────────────────────────
+// WHITE-LABEL TENANT LAYOUT
+// Loaded for every request on a partner subdomain: acme.ascentor.co/*
 //
-// Partner admin portal — scoped inside the whitelabel shell.
-// Mirrors app/partner/layout.tsx but:
-//   - Lives at /p/[subdomain]/admin/* so it inherits the
-//     whitelabel layout's Tailwind + CSS var scope
-//   - Redirects use subdomain-aware paths
-//   - Passes basePath to PartnerAdminShell so all nav links
-//     and the "Back to platform" link are subdomain-correct
-// ============================================================
+// Responsibilities:
+//  1. Read the [subdomain] param from the URL
+//  2. Fetch the tenant config from Supabase
+//  3. Inject CSS variables for the tenant's branding
+//  4. Render a 404-style page if the tenant doesn't exist
+// ─────────────────────────────────────────────────────────────────────────────
 
-import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createServiceClient } from '@supabase/supabase-js';
-import PartnerAdminShell from '@/components/partner/PartnerAdminShell';
+import type { Metadata } from 'next';
 
-const supabaseService = createServiceClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// ── Types ───────────────────────────────────────────────────────────────────
 
-export default async function WhitelabelAdminLayout({
+interface TenantConfig {
+  id: string;
+  subdomain: string;
+  name: string;
+  logo_url: string | null;
+  favicon_url: string | null;
+  accent_color: string;      // hex e.g. "#14b8a6"
+  accent_hover: string;      // hex e.g. "#0f9488"
+  accent_text: string;       // hex e.g. "#000000" (text on accent bg)
+  bg_color: string;          // e.g. "#0f172a"
+  surface_color: string;     // e.g. "#1e293b"
+  text_color: string;        // e.g. "#f8fafc"
+  text_muted: string;        // e.g. "#94a3b8"
+  ai_persona_prompt: string;
+  is_active: boolean;
+}
+
+// ── Data Fetching ────────────────────────────────────────────────────────────
+
+async function getTenant(subdomain: string): Promise<TenantConfig | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('subdomain', subdomain.toLowerCase())
+    .eq('is_active', true)
+    .single();
+
+  if (error || !data) return null;
+  return data as TenantConfig;
+}
+
+// ── Metadata ─────────────────────────────────────────────────────────────────
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ subdomain: string }>;
+}): Promise<Metadata> {
+  const { subdomain } = await params;
+  const tenant = await getTenant(subdomain);
+
+  if (!tenant) {
+    return { title: 'Not Found' };
+  }
+
+  return {
+    title: {
+      default: tenant.name,
+      template: `%s | ${tenant.name}`,
+    },
+    description: `AI-powered coaching platform by ${tenant.name}`,
+    icons: tenant.favicon_url ? { icon: tenant.favicon_url } : undefined,
+  };
+}
+
+// ── Layout ───────────────────────────────────────────────────────────────────
+
+export default async function SubdomainLayout({
   children,
   params,
 }: {
@@ -29,44 +83,43 @@ export default async function WhitelabelAdminLayout({
   params: Promise<{ subdomain: string }>;
 }) {
   const { subdomain } = await params;
-  const base = '/admin';
+  const tenant = await getTenant(subdomain);
 
-  // ── 1. Auth check ─────────────────────────────────────────
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) redirect(`/p/${subdomain}/login?redirect=${base}`);
-
-  // ── 2. Partner ownership check ────────────────────────────
-  const { data: partner } = await supabaseService
-    .from('partners')
-    .select('id, name, subdomain, status, brand, revenue_share_percent, onboarded_at')
-    .eq('owner_id', user.id)
-    .single();
-
-  if (!partner) redirect('/dashboard');
-
-  // ── 3. Suspended / pending check ──────────────────────────
-  if (partner.status === 'suspended') {
-    redirect('/dashboard?error=partner_suspended');
-  }
-  if (partner.status === 'pending') {
-    redirect('/dashboard?info=partner_pending');
+  // Hard 404 if subdomain not registered
+  if (!tenant) {
+    notFound();
   }
 
-  // ── 4. Onboarding gate ────────────────────────────────────
-  // Use x-partner-pathname (set by proxy) to detect the current page.
-  // Fall back to x-invoke-path for safety. Both are proxy-relative paths.
-  const headersList = await headers();
-  const partnerPathname = headersList.get('x-partner-pathname') || headersList.get('x-invoke-path') || '';
-  const isOnOnboarding = partnerPathname.includes('/onboarding');
-
-  if (!partner.onboarded_at && !isOnOnboarding) {
-    redirect('/admin/onboarding');
-  }
+  // Build CSS variables from tenant config
+  // These override the default Ascentor theme throughout the subtree
+  const cssVars = `
+    :root {
+      --accent: ${tenant.accent_color};
+      --accent-hover: ${tenant.accent_hover};
+      --accent-text: ${tenant.accent_text};
+      --bg: ${tenant.bg_color};
+      --surface: ${tenant.surface_color};
+      --text: ${tenant.text_color};
+      --text-muted: ${tenant.text_muted};
+      --teal: ${tenant.accent_color};
+      --border: rgba(255,255,255,0.1);
+    }
+  `.trim();
 
   return (
-    <PartnerAdminShell partner={partner} userId={user.id} basePath={base}>
-      {children}
-    </PartnerAdminShell>
+    <>
+      {/* Inject tenant theme variables */}
+      <style dangerouslySetInnerHTML={{ __html: cssVars }} />
+
+      {/* Pass tenant context to all child server/client components via a data attr */}
+      {/* Client components can read this via document.documentElement.dataset.tenant */}
+      <div
+        data-tenant={tenant.id}
+        data-tenant-name={tenant.name}
+        style={{ minHeight: '100vh' }}
+      >
+        {children}
+      </div>
+    </>
   );
 }
