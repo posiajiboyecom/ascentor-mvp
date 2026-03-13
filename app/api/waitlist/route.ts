@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
 
     // Send confirmation email — non-blocking (failure does not break the response)
     const { error: emailError } = await resend.emails.send({
-      from:    'Ascentor <hello@ascentor.co>',
+      from:    'Ascentor <hello@ascentorbi.com>',
       to:      body.email,
       subject: `You're on the Ascentor waitlist — position #${data.position} 🎉`,
       html:    buildConfirmationEmailHtml({

@@ -12,14 +12,14 @@ export default function PartnerPricingPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/partner/config')
+    fetch('/api/partner/brand')
       .then((r) => r.json())
       .then((data) => {
-        const codes = data.paystack_plan_codes || {};
+        const overrides = data.plan_overrides || {};
         setPlans({
-          monthly: codes.monthly || '',
-          annual: codes.annual || '',
-          enterprise: codes.enterprise || '',
+          monthly: overrides.monthly_plan_code || '',
+          annual: overrides.annual_plan_code || '',
+          enterprise: overrides.enterprise_plan_code || '',
         });
         setLoading(false);
       })
@@ -29,11 +29,18 @@ export default function PartnerPricingPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch('/api/partner/config', {
+      const res = await fetch('/api/partner/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paystack_plan_codes: plans }),
+        body: JSON.stringify({
+          plan_overrides: {
+            monthly_plan_code:    plans.monthly    || null,
+            annual_plan_code:     plans.annual     || null,
+            enterprise_plan_code: plans.enterprise || null,
+          }
+        }),
       });
+      if (!res.ok) { const err = await res.json(); alert(err.error || 'Failed to save.'); return; }
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch {

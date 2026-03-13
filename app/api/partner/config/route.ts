@@ -50,6 +50,8 @@ export async function PATCH(req: NextRequest) {
     'text_color',
     'text_muted',
     'ai_persona_prompt',
+    'subdomain',           // FIX WL-10: was missing, silently rejected subdomain saves
+    'paystack_plan_codes', // FIX WL-10: pricing page needs this
   ];
 
   const updates: Record<string, unknown> = {};
@@ -61,6 +63,17 @@ export async function PATCH(req: NextRequest) {
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+  }
+
+  // Validate subdomain format if being changed
+  if (updates.subdomain !== undefined) {
+    const sub = String(updates.subdomain);
+    if (!/^[a-z0-9-]{3,30}$/.test(sub)) {
+      return NextResponse.json(
+        { error: 'Subdomain must be 3–30 lowercase alphanumeric characters or hyphens.' },
+        { status: 400 }
+      );
+    }
   }
 
   updates.updated_at = new Date().toISOString();

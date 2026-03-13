@@ -12,11 +12,15 @@ export default async function PartnerOnboardingPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
+  // FIX WL-13: Query partners table (not the old tenants table)
   const { data: tenant } = await supabase
-    .from('tenants')
-    .select('*')
+    .from('partners')
+    .select('id, name, subdomain, status, brand, plan_overrides, onboarded_at')
     .eq('owner_id', user.id)
     .single();
+
+  const brand        = (tenant as any)?.brand        || {};
+  const planOverrides = (tenant as any)?.plan_overrides || {};
 
   const steps = [
     {
@@ -24,15 +28,15 @@ export default async function PartnerOnboardingPage() {
       title: 'Set your brand',
       description: 'Upload your logo, set your platform name and colour palette.',
       href: '/partner/brand',
-      done: !!(tenant?.logo_url && tenant?.name),
+      done: !!(brand.logo_url && tenant?.name),
       action: 'Configure branding',
     },
     {
       num: 2,
       title: 'Configure your AI coach persona',
       description: 'Define how your AI coach speaks, what market it serves, and its coaching style.',
-      href: '/partner/ai-persona',
-      done: !!(tenant?.ai_persona_prompt && tenant.ai_persona_prompt.length > 50),
+      href: '/partner/ai/persona',
+      done: !!(brand.ai_persona_prompt && brand.ai_persona_prompt.length > 50),
       action: 'Set AI persona',
     },
     {
@@ -40,7 +44,7 @@ export default async function PartnerOnboardingPage() {
       title: 'Set your pricing',
       description: 'Connect your Paystack plan codes so your users can subscribe.',
       href: '/partner/pricing',
-      done: !!(tenant?.paystack_plan_codes && Object.keys(tenant.paystack_plan_codes || {}).length > 0),
+      done: !!(planOverrides.monthly_plan_code || planOverrides.annual_plan_code),
       action: 'Configure pricing',
     },
     {
@@ -54,9 +58,9 @@ export default async function PartnerOnboardingPage() {
     {
       num: 5,
       title: 'Go live',
-      description: `Your platform is live at ${tenant?.subdomain ? `${tenant.subdomain}.ascentor.co` : 'yourname.ascentor.co'}`,
-      href: tenant?.subdomain ? `https://${tenant.subdomain}.ascentor.co` : '#',
-      done: !!(tenant?.is_active),
+      description: `Your platform is live at ${tenant?.subdomain ? `${tenant.subdomain}.ascentorbi.com` : 'yourname.ascentorbi.com'}`,
+      href: tenant?.subdomain ? `https://${tenant.subdomain}.ascentorbi.com` : '#',
+      done: tenant?.status === 'active',
       action: 'View live site ↗',
       external: true,
     },

@@ -504,7 +504,7 @@ function SignUpForm() {
                 letterSpacing: '0.06em',
                 textTransform: 'uppercase' as const,
               }}>
-                BUILT FOR AFRICA · © 2026 ASCENTOR INC. · ascentor.co
+                BUILT FOR AFRICA · © 2026 ASCENTOR INC. · ascentorbi.com
               </span>
             </div>
 

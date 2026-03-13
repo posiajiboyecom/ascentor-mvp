@@ -695,7 +695,7 @@ export default function AboutPage() {
               { label: 'Careers', href: '/careers' },
               { label: 'Privacy', href: '/privacy' },
               { label: 'Terms', href: '/terms' },
-              { label: 'Contact', href: 'mailto:hello@ascentor.co' },
+              { label: 'Contact', href: 'mailto:hello@ascentorbi.com' },
             ].map(l => (
               <Link key={l.label} href={l.href} style={{
                 fontFamily: "'DM Mono', monospace", fontSize: 10,

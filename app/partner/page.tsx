@@ -48,22 +48,22 @@ export default async function PartnerOverviewPage() {
     {
       done: !!(tenant?.logo_url),
       label: 'Upload your logo',
-      href: '/partner/branding',
+      href: '/partner/brand',
     },
     {
       done: !!(tenant?.accent_color && tenant.accent_color !== '#14b8a6'),
       label: 'Set your brand colours',
-      href: '/partner/branding',
+      href: '/partner/brand',
     },
     {
       done: !!(tenant?.ai_persona_prompt && tenant.ai_persona_prompt.length > 100),
       label: 'Configure AI coach persona',
-      href: '/partner/ai-persona',
+      href: '/partner/ai/persona',
     },
     {
       done: stats.users > 0,
       label: 'Invite your first user',
-      href: '/partner/users',
+      href: '/partner/members',
     },
   ];
 
@@ -78,7 +78,7 @@ export default async function PartnerOverviewPage() {
       </h1>
       <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '32px' }}>
         {tenant
-          ? `Your platform is live at ${tenant.subdomain}.ascentor.co`
+          ? `Your platform is live at ${tenant.subdomain}.ascentorbi.com`
           : 'Complete setup to launch your platform'}
       </p>
 
@@ -209,7 +209,7 @@ export default async function PartnerOverviewPage() {
       {/* Quick links */}
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <Link
-          href="/partner/branding"
+          href="/partner/brand"
           style={{
             padding: '10px 18px',
             background: 'rgba(20,184,166,0.15)',
@@ -224,7 +224,7 @@ export default async function PartnerOverviewPage() {
           Edit branding →
         </Link>
         <Link
-          href="/partner/ai-persona"
+          href="/partner/ai/persona"
           style={{
             padding: '10px 18px',
             background: 'rgba(255,255,255,0.04)',

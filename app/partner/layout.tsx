@@ -3,7 +3,7 @@
 
 export const dynamic = 'force-dynamic';
 // PARTNER PORTAL LAYOUT
-// Accessible at: ascentor.co/partner
+// Accessible at: ascentorbi.com/partner
 //
 // This is the admin/settings portal for white-label partners (licensees).
 // It is completely separate from the main app and the tenant subdomain system.
@@ -108,7 +108,7 @@ export default async function PartnerLayout({
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {tenant && (
             <a
-              href={`https://${tenant.subdomain}.ascentor.co`}
+              href={`https://${tenant.subdomain}.ascentorbi.com`}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -139,10 +139,10 @@ export default async function PartnerLayout({
         >
           {[
             { href: '/partner', label: 'Overview', icon: '◻' },
-            { href: '/partner/branding', label: 'Branding', icon: '🎨' },
-            { href: '/partner/ai-persona', label: 'AI Persona', icon: '🤖' },
-            { href: '/partner/users', label: 'Users', icon: '👥' },
-            { href: '/partner/billing', label: 'Billing', icon: '💳' },
+            { href: '/partner/brand', label: 'Branding', icon: '🎨' },
+            { href: '/partner/ai/persona', label: 'AI Persona', icon: '🤖' },
+            { href: '/partner/members', label: 'Members', icon: '👥' },
+            { href: '/partner/pricing', label: 'Pricing', icon: '💳' },
             { href: '/partner/settings', label: 'Settings', icon: '⚙' },
           ].map(({ href, label, icon }) => (
             <Link

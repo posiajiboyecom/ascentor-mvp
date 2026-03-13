@@ -19,7 +19,7 @@ function initVapid(): boolean {
 
   const pub  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const priv = process.env.VAPID_PRIVATE_KEY;
-  const mail = process.env.VAPID_CONTACT_EMAIL || 'hello@ascentor.co';
+  const mail = process.env.VAPID_CONTACT_EMAIL || 'hello@ascentorbi.com';
 
   if (!pub || !priv) {
     console.warn('[push] VAPID keys not set — push notifications disabled');

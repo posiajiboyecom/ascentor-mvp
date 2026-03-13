@@ -46,10 +46,11 @@ export default function AIPersonaPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/partner/config')
+    fetch('/api/partner/brand')
       .then((r) => r.json())
       .then((data) => {
-        setPrompt(data.ai_persona_prompt || DEFAULT_PERSONA);
+        const brand = data.brand || {};
+        setPrompt(brand.ai_persona_prompt || data.ai_persona_prompt || DEFAULT_PERSONA);
         setLoading(false);
       })
       .catch(() => {
@@ -61,7 +62,7 @@ export default function AIPersonaPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch('/api/partner/config', {
+      await fetch('/api/partner/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ai_persona_prompt: prompt }),

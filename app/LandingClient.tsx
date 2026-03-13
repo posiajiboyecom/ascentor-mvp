@@ -473,7 +473,7 @@ export default function LandingClient() {
             <div>
               <p className="text-xs font-semibold mb-3" style={{ color: '#9CA3AF' }}>Connect</p>
               <div className="flex flex-col gap-2">
-                <a href="mailto:hello@ascentor.co" className="text-xs" style={{ color: '#6B7280' }}>hello@ascentor.co</a>
+                <a href="mailto:hello@ascentorbi.com" className="text-xs" style={{ color: '#6B7280' }}>hello@ascentorbi.com</a>
                 <a href="https://twitter.com/ascentor" className="text-xs" style={{ color: '#6B7280' }}>Twitter/X</a>
                 <a href="https://linkedin.com/company/ascentor" className="text-xs" style={{ color: '#6B7280' }}>LinkedIn</a>
               </div>
