@@ -29,7 +29,7 @@ export default async function WhitelabelAdminLayout({
   params: Promise<{ subdomain: string }>;
 }) {
   const { subdomain } = await params;
-  const base = `/p/${subdomain}/admin`;
+  const base = '/admin';
 
   // ── 1. Auth check ─────────────────────────────────────────
   const supabase = await createClient();
@@ -43,14 +43,14 @@ export default async function WhitelabelAdminLayout({
     .eq('owner_id', user.id)
     .single();
 
-  if (!partner) redirect(`/p/${subdomain}/dashboard`);
+  if (!partner) redirect('/dashboard');
 
   // ── 3. Suspended / pending check ──────────────────────────
   if (partner.status === 'suspended') {
-    redirect(`/p/${subdomain}/dashboard?error=partner_suspended`);
+    redirect('/dashboard?error=partner_suspended');
   }
   if (partner.status === 'pending') {
-    redirect(`/p/${subdomain}/dashboard?info=partner_pending`);
+    redirect('/dashboard?info=partner_pending');
   }
 
   // ── 4. Onboarding gate ────────────────────────────────────
@@ -59,7 +59,7 @@ export default async function WhitelabelAdminLayout({
   const isOnOnboarding = pathname.includes('/onboarding');
 
   if (!partner.onboarded_at && !isOnOnboarding) {
-    redirect(`${base}/onboarding`);
+    redirect('/admin/onboarding');
   }
 
   return (

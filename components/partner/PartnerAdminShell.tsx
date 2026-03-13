@@ -157,7 +157,7 @@ export default function PartnerAdminShell({
         {/* Back to platform */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <Link
-            href={basePath.startsWith("/p/") ? basePath.replace(/\/admin.*/, "/dashboard") : "/dashboard"}
+            href="/dashboard"
             style={{
               fontSize: 11, fontWeight: 700, color: 'var(--text-dim)',
               textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6,
