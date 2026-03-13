@@ -38,7 +38,7 @@ export default function MembersAdminPage() {
   const [inviting,   setInviting]   = useState(false);
   const [inviteMsg,  setInviteMsg]  = useState('');
   const [actionId,   setActionId]   = useState<string | null>(null);
-  const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     clearTimeout(searchTimeout.current);
