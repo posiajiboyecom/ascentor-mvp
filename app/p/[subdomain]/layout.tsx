@@ -1,18 +1,28 @@
 // app/p/[subdomain]/layout.tsx
+// ─────────────────────────────────────────────────────────────────────────────
+// CRITICAL FIX: Replaced getTenant() (old "tenants" table) with
+// getPartnerContext(hostname). Partners live in the "partners" table —
+// any partner not in "tenants" caused notFound() on every page.
 //
-// FIX WL-08: Replaced the old getTenant() query against the "tenants" table
-//            with getPartnerContext(hostname). This ensures both the member
-//            layout and the admin layout read from the same "partners" table
-//            via the same cache-backed function.
+// HOW PROXY ROUTING WORKS (proxy.ts at project root):
+//   User visits: demo.ascentorbi.com/coach
+//   Proxy sees:  host = demo.ascentorbi.com → subdomain = "demo"
+//   Rewrites to: /p/demo/coach  (internal, browser URL unchanged)
+//   Sets header: x-partner-pathname = /coach
+//   Sets header: x-partner-subdomain = demo
 //
-//            The proxy.ts rewrites demo.ascentorbi.com/dashboard
-//            → /p/demo/dashboard, keeping the browser URL unchanged.
-//            This layout sets partner CSS vars + wraps public/member pages
-//            in PartnerMemberShell. Admin pages use admin/layout.tsx instead.
+// This layout receives the rewritten request at /p/[subdomain]/coach.
+// getPartnerContext(hostname) uses the ORIGINAL host header (demo.ascentorbi.com)
+// to look up the partner — the regex /^([^.]+)\.ascentorbi\.com$/ matches correctly.
+//
+// Nav links in PartnerMemberShell stay as root-relative (/dashboard, /coach,
+// /admin/brand etc.) — the proxy rewrites them on each navigation. Do NOT
+// prefix them with /p/${sub}/ — the proxy handles that transparently.
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const dynamic = 'force-dynamic';
 
-import { headers }     from 'next/headers';
+import { headers }   from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
@@ -39,14 +49,55 @@ export default async function SubdomainLayout({
   const headersList   = await headers();
   const hostname      = headersList.get('host') || '';
 
-  // 1. Resolve partner via getPartnerContext (uses partners table + cache)
-  const ctx = await getPartnerContext(hostname);
-  if (!ctx.isWhiteLabel) notFound();
+  // ── 1. Resolve partner ────────────────────────────────────
+  // Primary: use hostname (works when proxy rewrites *.ascentorbi.com)
+  let ctx = await getPartnerContext(hostname);
+
+  // Fallback: if hostname didn't resolve (local dev, missing host header),
+  // try a direct lookup by subdomain param
+  if (!ctx.isWhiteLabel) {
+    const { data: partnerRow } = await supabaseService
+      .from('partners')
+      .select(`
+        id, name, slug, subdomain, custom_domain, status, owner_id,
+        revenue_share_percent, paystack_subaccount_code,
+        brand, features, plan_overrides,
+        created_at, updated_at, onboarded_at
+      `)
+      .eq('subdomain', subdomain.toLowerCase())
+      .eq('status', 'active')
+      .single();
+
+    if (!partnerRow) notFound();
+
+    // Build ctx from the direct DB hit
+    const { getPartnerContext: _gcpc, ...ctxModule } = await import('@/lib/getPartnerContext');
+    // Re-use exported clearPartnerCache type — we only need cssVars here
+    const DEFAULT_BRAND = {
+      platform_name: 'Partner Platform', tagline: null,
+      logo_url: null, logo_dark_url: null, favicon_url: null,
+      primary_color: '#E8A020', accent_color: '#C87820',
+      text_color: '#D4CFC3', bg_color: '#0C0B08', card_color: '#1E1C17',
+      border_color: '#2A2720', font_heading: 'Cormorant Garamond',
+      font_body: 'Syne', hide_ascentor_branding: false,
+    };
+    const brand = { ...DEFAULT_BRAND, ...(partnerRow.brand || {}) };
+    const cssVars: Record<string, string> = {
+      '--bg': brand.bg_color, '--bg-card': brand.card_color,
+      '--text': brand.text_color, '--accent': brand.primary_color,
+      '--accent-hover': brand.accent_color,
+      '--border': brand.border_color || `rgba(212,207,195,0.10)`,
+      '--text-dim': brand.text_color, '--font-heading': `'${brand.font_heading}', Georgia, serif`,
+      '--font-body': `'${brand.font_body}', system-ui, sans-serif`,
+    };
+    ctx = { isWhiteLabel: true, partner: { ...partnerRow, brand } as any, cssVars };
+  }
 
   const { partner, cssVars } = ctx;
   const brand = partner.brand;
 
-  // 2. Determine current path from proxy header
+  // ── 2. Current pathname ──────────────────────────────────
+  // Proxy injects x-partner-pathname with the original path before rewrite
   const partnerPathname = headersList.get('x-partner-pathname') || '';
   const isPublicPath = PUBLIC_PATHS.some(p =>
     partnerPathname === p ||
@@ -54,7 +105,7 @@ export default async function SubdomainLayout({
     partnerPathname.endsWith(p)
   );
 
-  // 3. Auth + membership check for protected paths
+  // ── 3. Auth + membership ─────────────────────────────────
   let isOwner = false;
 
   if (!isPublicPath) {
@@ -62,7 +113,8 @@ export default async function SubdomainLayout({
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      redirect(`/p/${subdomain}/login?redirect=${encodeURIComponent(partnerPathname || `/p/${subdomain}/dashboard`)}`);
+      // Redirect to partner login (proxy will rewrite /login → /p/${sub}/login)
+      redirect(`/login?redirect=${encodeURIComponent(partnerPathname || '/dashboard')}`);
     }
 
     isOwner = partner.owner_id === user.id;
@@ -75,17 +127,12 @@ export default async function SubdomainLayout({
       .maybeSingle();
 
     if (!membership && !isOwner) {
-      redirect(`/p/${subdomain}/access-denied?reason=not_invited`);
+      redirect(`/access-denied?reason=not_invited`);
     }
 
     if (membership) {
-      if (membership.status === 'suspended' && !isOwner) {
-        redirect(`/p/${subdomain}/access-denied?reason=suspended`);
-      }
-      if (membership.status === 'removed' && !isOwner) {
-        redirect(`/p/${subdomain}/access-denied?reason=removed`);
-      }
-      // Auto-activate on first login
+      if (membership.status === 'suspended' && !isOwner) redirect(`/access-denied?reason=suspended`);
+      if (membership.status === 'removed'    && !isOwner) redirect(`/access-denied?reason=removed`);
       if (membership.status === 'invited') {
         await supabaseService
           .from('partner_members')
@@ -95,7 +142,7 @@ export default async function SubdomainLayout({
     }
   }
 
-  // 4. Build CSS vars + partner fonts
+  // ── 4. CSS vars + fonts ──────────────────────────────────
   const cssVarObject = Object.fromEntries(Object.entries(cssVars)) as React.CSSProperties;
   const fontsNeeded  = [...new Set([brand.font_heading, brand.font_body])];
   const fontFamilies = fontsNeeded
@@ -124,13 +171,11 @@ export async function generateMetadata({
 }: {
   params: Promise<{ subdomain: string }>;
 }): Promise<Metadata> {
-  await params;
+  const { subdomain } = await params;
   const headersList = await headers();
   const hostname    = headersList.get('host') || '';
   const ctx         = await getPartnerContext(hostname);
-
   if (!ctx.isWhiteLabel) return { title: 'Not Found' };
-
   const { brand } = ctx.partner;
   return {
     title:       { default: brand.platform_name, template: `%s | ${brand.platform_name}` },
