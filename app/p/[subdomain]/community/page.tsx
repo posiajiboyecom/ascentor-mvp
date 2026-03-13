@@ -8,6 +8,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 interface Post {
@@ -53,6 +54,8 @@ function Avatar({ name }: { name: string }) {
 
 export default function PartnerCommunityPage() {
   const supabase = createClient();
+  const params    = useParams();
+  const subdomain = Array.isArray(params?.subdomain) ? params.subdomain[0] : (params?.subdomain as string);
   const [posts, setPosts]         = useState<Post[]>([]);
   const [loading, setLoading]     = useState(true);
   const [body, setBody]           = useState('');
@@ -62,8 +65,6 @@ export default function PartnerCommunityPage() {
   const [error, setError]         = useState('');
 
   useEffect(() => {
-    const subdomain = window.location.pathname.split('/')[2];
-
     supabase.auth.getUser().then(async ({ data: { user: u } }) => {
       if (!u) return;
 

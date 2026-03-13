@@ -38,6 +38,7 @@ function CoachIcon()     { return <svg width="20" height="20" viewBox="0 0 24 24
 function ExpertsIcon()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>; }
 function CommunityIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/><path d="M18 14a3 3 0 0 1 3 3v1"/></svg>; }
 function AccountIcon()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20v-1a8 8 0 0 1 16 0v1"/></svg>; }
+function CoursesIcon()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>; }
 
 export default function PartnerMemberShell({
   children,
@@ -75,7 +76,8 @@ export default function PartnerMemberShell({
     { label: 'Home',      segment: 'dashboard',  icon: <HomeIcon /> },
     ...(features.ai_coach  ? [{ label: 'Mentor',    segment: 'coach',      icon: <CoachIcon /> }]     : []),
     ...(features.community ? [{ label: 'Circle',    segment: 'community',  icon: <CommunityIcon /> }] : []),
-    ...(features.experts   ? [{ label: 'Sessions',  segment: 'sessions',   icon: <ExpertsIcon /> }]   : []),
+    ...(features.experts   ? [{ label: 'Sessions',  segment: 'experts',    icon: <ExpertsIcon /> }]   : []),
+    ...(features.courses   ? [{ label: 'Learn',     segment: 'courses',    icon: <CoursesIcon /> }]   : []),
     { label: 'Account',   segment: 'account',    icon: <AccountIcon /> },
   ];
 

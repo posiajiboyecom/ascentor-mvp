@@ -1,0 +1,183 @@
+'use client';
+
+// ============================================================
+// app/p/[subdomain]/experts/page.tsx
+// Whitelabel mentor sessions page.
+// Adapted from nav/experts/page.tsx with:
+//   - useParams() for subdomain (not window.location)
+//   - Sessions scoped to this partner via partner_id
+//   - Falls back to global expert_sessions if partner has none
+// ============================================================
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+
+const FALLBACK_EXPERTS = [
+  { id: '1', title: "Breaking Through — A Mentor's Playbook", expert_name: 'Amara Obi', expert_bio: '15+ years mentoring professionals and scaling teams', scheduled_at: new Date(Date.now() + 6 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
+  { id: '2', title: 'From IC to Senior Leader: What No One Tells You', expert_name: 'Kwame Asante', expert_bio: 'Serial founder. 3 exits. Now mentoring the next generation of builders.', scheduled_at: new Date(Date.now() + 13 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
+  { id: '3', title: 'Navigating Workplace Politics — With Your Integrity Intact', expert_name: 'Fatima Hassan', expert_bio: 'Led large-scale operations across 7 countries. Now mentoring leaders navigating complex organisations.', scheduled_at: new Date(Date.now() + 20 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
+];
+
+const PAST_RECORDINGS = [
+  { title: 'Building Executive Presence — A Framework', speaker: 'Ngozi Adeola', views: 234 },
+  { title: 'Managing Up Without Losing Yourself', speaker: 'Samuel Mensah', views: 187 },
+];
+
+export default function PartnerExpertsPage() {
+  const params   = useParams();
+  const subdomain = Array.isArray(params?.subdomain) ? params.subdomain[0] : (params?.subdomain as string);
+  const supabase = createClient();
+
+  const [sessions,   setSessions]   = useState<any[]>([]);
+  const [registered, setRegistered] = useState<Set<string>>(new Set());
+  const [loading,    setLoading]    = useState(true);
+
+  useEffect(() => {
+    if (!subdomain) return;
+    loadSessions();
+  }, [subdomain]);
+
+  async function loadSessions() {
+    setLoading(true);
+
+    // Try partner-scoped sessions first
+    const { data: partnerData } = await supabase
+      .from('partners')
+      .select('id')
+      .eq('subdomain', subdomain)
+      .single();
+
+    if (partnerData?.id) {
+      const { data: partnerSessions } = await supabase
+        .from('expert_sessions')
+        .select('*')
+        .eq('partner_id', partnerData.id)
+        .eq('status', 'scheduled')
+        .gte('scheduled_at', new Date().toISOString())
+        .order('scheduled_at');
+
+      if (partnerSessions?.length) {
+        setSessions(partnerSessions);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Fall back to global expert sessions
+    const { data: global } = await supabase
+      .from('expert_sessions')
+      .select('*')
+      .eq('status', 'scheduled')
+      .gte('scheduled_at', new Date().toISOString())
+      .order('scheduled_at');
+
+    setSessions(global?.length ? global : FALLBACK_EXPERTS);
+    setLoading(false);
+  }
+
+  const toggleRegister = (sessionId: string) => {
+    setRegistered(prev => {
+      const next = new Set(prev);
+      next.has(sessionId) ? next.delete(sessionId) : next.add(sessionId);
+      return next;
+    });
+  };
+
+  if (loading) return (
+    <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-dim)', fontSize: 13 }}>
+      Loading sessions...
+    </div>
+  );
+
+  return (
+    <div className="animate-fade-up py-6">
+      <h2 className="text-2xl font-semibold mb-1"
+        style={{ fontFamily: "var(--font-heading)", color: 'var(--text)' }}>
+        Mentor Sessions
+      </h2>
+      <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+        Live sessions with expert mentors
+      </p>
+
+      <div className="flex flex-col gap-4">
+        {sessions.map((session, i) => {
+          const date        = new Date(session.scheduled_at);
+          const initials    = session.expert_name.split(' ').map((n: string) => n[0]).join('');
+          const isRegistered = registered.has(session.id);
+          const spotsUsed   = Math.floor(Math.random() * 30) + 10;
+
+          return (
+            <div key={session.id}
+              className="rounded-xl p-5 animate-fade-up"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', animationDelay: `${i * 0.1}s` }}>
+              <div className="flex gap-4">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(139,92,246,0.13), rgba(139,92,246,0.27))',
+                    border: '1.5px solid rgba(139,92,246,0.33)',
+                    color: 'var(--purple, #8B5CF6)',
+                  }}>
+                  {initials}
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-start gap-2 flex-wrap">
+                    <div>
+                      <h3 className="text-base font-semibold" style={{ color: 'var(--text)' }}>{session.title}</h3>
+                      <p className="text-[13px]" style={{ color: 'var(--accent)' }}>{session.expert_name}</p>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+                      style={{
+                        background: i === 0 ? 'rgba(16,185,129,0.09)' : 'rgba(59,130,246,0.09)',
+                        color: i === 0 ? 'var(--success)' : 'var(--blue, #3B82F6)',
+                        border: `1px solid ${i === 0 ? 'rgba(16,185,129,0.19)' : 'rgba(59,130,246,0.19)'}`,
+                      }}>
+                      {i === 0 ? 'This Week' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                  <p className="text-[13px] mt-2" style={{ color: 'var(--text-muted)' }}>{session.expert_bio}</p>
+                  <div className="flex justify-between items-center mt-3.5">
+                    <div className="text-xs" style={{ color: 'var(--text-dim)' }}>
+                      📅 {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · 👥 {session.max_participants - spotsUsed} spots left
+                    </div>
+                    <button
+                      onClick={() => toggleRegister(session.id)}
+                      className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                      style={{
+                        background: isRegistered ? 'transparent' : 'var(--accent)',
+                        color: isRegistered ? 'var(--text)' : '#000',
+                        border: isRegistered ? '1px solid var(--border)' : 'none',
+                        cursor: 'pointer',
+                      }}>
+                      {isRegistered ? '✓ Reserved' : 'Reserve Spot'}
+                    </button>
+                  </div>
+                  <div className="w-full h-0.5 rounded-full mt-2.5 overflow-hidden" style={{ background: 'var(--bg-input)' }}>
+                    <div className="h-full rounded-full" style={{ width: `${(spotsUsed / session.max_participants) * 100}%`, background: 'var(--purple, #8B5CF6)' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Past Recordings */}
+      <h3 className="text-base font-semibold mt-8 mb-3.5" style={{ color: 'var(--text)' }}>Past Recordings</h3>
+      {PAST_RECORDINGS.map((r, i) => (
+        <div key={i} className="rounded-xl p-3.5 mb-2.5"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{r.title}</p>
+              <p className="text-xs" style={{ color: 'var(--text-dim)' }}>by {r.speaker} · {r.views} views</p>
+            </div>
+            <button className="text-xs px-3 py-1.5 rounded-lg" style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>
+              Watch →
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

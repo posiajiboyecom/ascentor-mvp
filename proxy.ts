@@ -103,11 +103,6 @@ export default async function proxy(request: NextRequest) {
     const subdomain = host.replace(`.${MAIN_DOMAIN}`, '');
 
     if (subdomain && !RESERVED_SUBDOMAINS.includes(subdomain)) {
-      // /partner/* paths must NOT be rewritten — they are main-app admin routes
-      if (pathname.startsWith('/partner')) {
-        return NextResponse.next();
-      }
-
       const rewrittenUrl = request.nextUrl.clone();
       rewrittenUrl.pathname = `/p/${subdomain}${pathname}`;
 
@@ -146,6 +141,7 @@ export default async function proxy(request: NextRequest) {
     if (customDomainRewrite) {
       const res = NextResponse.rewrite(customDomainRewrite);
       res.headers.set('x-partner-custom-domain', host);
+      res.headers.set('x-partner-pathname', pathname);
       res.headers.set('x-ascentor-api-base', MAIN_APP_URL); // BUG-11
       return res;
     }
@@ -226,6 +222,7 @@ export default async function proxy(request: NextRequest) {
   if (customDomainRewrite) {
     // Clone response cookies into new rewrite response
     const rewriteRes = NextResponse.rewrite(customDomainRewrite);
+    rewriteRes.headers.set('x-partner-pathname', pathname);
     rewriteRes.headers.set('x-partner-custom-domain', host);
     rewriteRes.headers.set('x-ascentor-api-base', MAIN_APP_URL); // BUG-11
     // Propagate any session cookies set during auth check

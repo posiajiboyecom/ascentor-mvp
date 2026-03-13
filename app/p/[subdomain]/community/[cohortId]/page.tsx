@@ -47,6 +47,7 @@ type Post = {
 export default function CohortFeedPage() {
   const params    = useParams();
   const cohortId  = Array.isArray(params.cohortId) ? params.cohortId[0] : (params.cohortId as string);
+  const subdomain = Array.isArray(params?.subdomain) ? params.subdomain[0] : (params?.subdomain as string);
   const router    = useRouter();
   const supabaseRef = useRef(createClient());
   const supabase    = supabaseRef.current;
@@ -373,7 +374,7 @@ export default function CohortFeedPage() {
           type:    'community',
           title:   replyTitle,
           message: replyMessage,
-          link:    `/community/${cohortId}`,
+          link:    `/p/${subdomain}/community/${cohortId}`,
         })).catch(() => {});
         triggerPush(targetPost.user_id, replyTitle, replyMessage, `/community/${cohortId}`);
       }
@@ -437,7 +438,7 @@ export default function CohortFeedPage() {
           const message = `${myName} liked your post${newTotal > 1 ? ` (${newTotal} likes total)` : ''}`;
           void Promise.resolve(supabase.from('notifications').insert({
             user_id: post.user_id, type: 'community', title, message,
-            link: `/community/${cohortId}`,
+            link: `/p/${subdomain}/community/${cohortId}`,
           })).catch(() => {});
           triggerPush(post.user_id, title, message, `/community/${cohortId}`);
         }
@@ -487,7 +488,7 @@ export default function CohortFeedPage() {
           const message = `${myName} liked your reply${newTotal > 1 ? ` (${newTotal} likes total)` : ''}`;
           void Promise.resolve(supabase.from('notifications').insert({
             user_id: reply.user_id, type: 'community', title, message,
-            link: `/community/${cohortId}`,
+            link: `/p/${subdomain}/community/${cohortId}`,
           })).catch(() => {});
           triggerPush(reply.user_id, title, message, `/community/${cohortId}`);
         }

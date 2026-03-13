@@ -6,6 +6,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 interface Course {
@@ -29,13 +30,14 @@ const DIFF_COLOR: Record<string, string> = {
 
 export default function PartnerCoursesPage() {
   const supabase = createClient();
+  const params    = useParams();
+  const subdomain = Array.isArray(params?.subdomain) ? params.subdomain[0] : (params?.subdomain as string);
   const [courses, setCourses]   = useState<Course[]>([]);
   const [loading, setLoading]   = useState(true);
   const [playing, setPlaying]   = useState<string | null>(null);
   const [partnerId, setPartnerId] = useState<string | null>(null);
 
   useEffect(() => {
-    const subdomain = window.location.pathname.split('/')[2];
     supabase.from('partners').select('id').eq('subdomain', subdomain).single()
       .then(async ({ data }) => {
         if (!data) { setLoading(false); return; }
