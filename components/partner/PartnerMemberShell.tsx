@@ -37,7 +37,6 @@ function HomeIcon()      { return <svg width="20" height="20" viewBox="0 0 24 24
 function CoachIcon()     { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 function ExpertsIcon()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>; }
 function CommunityIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/><path d="M18 14a3 3 0 0 1 3 3v1"/></svg>; }
-function LearnIcon()     { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>; }
 function AccountIcon()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20v-1a8 8 0 0 1 16 0v1"/></svg>; }
 
 export default function PartnerMemberShell({
@@ -76,8 +75,7 @@ export default function PartnerMemberShell({
     { label: 'Home',      segment: 'dashboard',  icon: <HomeIcon /> },
     ...(features.ai_coach  ? [{ label: 'Mentor',    segment: 'coach',      icon: <CoachIcon /> }]     : []),
     ...(features.community ? [{ label: 'Circle',    segment: 'community',  icon: <CommunityIcon /> }] : []),
-    ...(features.experts   ? [{ label: 'Sessions',  segment: 'experts',    icon: <ExpertsIcon /> }]   : []),
-    ...(features.courses   ? [{ label: 'Learn',     segment: 'courses',    icon: <LearnIcon /> }]     : []),
+    ...(features.experts   ? [{ label: 'Sessions',  segment: 'sessions',   icon: <ExpertsIcon /> }]   : []),
     { label: 'Account',   segment: 'account',    icon: <AccountIcon /> },
   ];
 
@@ -87,7 +85,7 @@ export default function PartnerMemberShell({
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    router.push('/login');
+    router.push(`/p/${sub}/login`);
   }
 
   return (
@@ -101,7 +99,7 @@ export default function PartnerMemberShell({
         padding: '0 20px', height: 56,
       }}>
         {/* Logo / platform name */}
-        <Link href="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Link href={`/p/${sub}/dashboard`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
           {brand.logo_url
             ? <img src={brand.logo_url} alt={brand.platform_name} style={{ height: 28, width: 'auto' }} />
             : <span style={{
@@ -116,8 +114,8 @@ export default function PartnerMemberShell({
         {/* ── FIX W-15: Desktop nav — CSS class controls visibility at breakpoint ── */}
         <nav style={{ display: 'flex', gap: 4, alignItems: 'center' }} className="partner-desktop-nav">
           {uniqueNav.map(item => {
-            const href   = `/${item.segment}`;
-            const active = pathname.includes(`/${item.segment}`);
+            const href   = `/p/${sub}/${item.segment}`;
+            const active = pathname.includes(`/p/${sub}/${item.segment}`);
             return (
               <Link key={item.segment} href={href} style={{
                 padding: '6px 14px', borderRadius: 8,
@@ -132,7 +130,7 @@ export default function PartnerMemberShell({
           })}
 
           {isOwner && (
-            <Link href="/partner/brand" style={{
+            <Link href="https://ascentorbi.com/partner/brand" style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '6px 14px', borderRadius: 8,
               fontSize: 12, fontWeight: 700, color: 'var(--accent)',
@@ -165,17 +163,31 @@ export default function PartnerMemberShell({
           background: 'rgba(232,160,32,0.06)',
           borderBottom: '1px solid rgba(232,160,32,0.15)',
           padding: '8px 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 12,
         }}>
           <p style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600 }}>
             You are viewing your platform as a member.
           </p>
+          <Link
+            href="https://ascentorbi.com/partner/brand"
+            style={{
+              fontSize: 11, fontWeight: 700, color: 'var(--accent)',
+              textDecoration: 'none', whiteSpace: 'nowrap',
+              padding: '4px 12px', borderRadius: 6,
+              border: '1px solid rgba(232,160,32,0.30)',
+              background: 'rgba(232,160,32,0.08)',
+            }}
+          >
+            Go to Admin Panel →
+          </Link>
         </div>
       )}
 
       {/* ── Page content ────────────────────────────────────── */}
-      <main style={{ flex: 1, padding: '0', overflowX: 'hidden' }}>
+      <main style={{ flex: 1 }}><div style={{ maxWidth: 672, margin: '0 auto', padding: '0 20px 96px' }}>
         {children}
-      </main>
+      </div></main>
 
       {/* ── Bottom nav (mobile only) ─────────────────────────── */}
       <nav
@@ -188,8 +200,8 @@ export default function PartnerMemberShell({
         className="partner-bottom-nav"
       >
         {uniqueNav.map(item => {
-          const href   = `/${item.segment}`;
-          const active = pathname.includes(`/${item.segment}`);
+          const href   = `/p/${sub}/${item.segment}`;
+          const active = pathname.includes(`/p/${sub}/${item.segment}`);
           return (
             <Link key={item.segment} href={href} style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -207,7 +219,7 @@ export default function PartnerMemberShell({
       {/* ── Powered by footer ────────────────────────────────── */}
       {!brand.hide_ascentor_branding && (
         <div style={{
-          textAlign: 'center', paddingBottom: 16, fontSize: 10,
+          textAlign: 'center', paddingBottom: 70, fontSize: 10,
           color: 'var(--text-dim)', opacity: 0.5,
         }}>
           Powered by{' '}
