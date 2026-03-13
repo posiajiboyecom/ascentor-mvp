@@ -11,6 +11,18 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: false, // set to true ONLY as a temporary unblock
   },
 
+  // ─── Prevent build hangs ─────────────────────────────────────────────────────
+  // Exclude the bloated icon folders from Vercel's file tracing.
+  // The "Ascentor — AI Leadership Coach..." folder alone has 17 downloaded web
+  // assets that should never be in the repo — they slow tracing to a crawl.
+  outputFileTracingExcludes: {
+    '*': [
+      'public/icon/AppImages/**',
+      'public/icon/AppImages (1)/**',
+      'public/icon/Ascentor*/**',
+    ],
+  },
+
   // ─── Image domains ──────────────────────────────────────────────────────────
   images: {
     remotePatterns: [

@@ -1,5 +1,7 @@
 // app/p/[subdomain]/page.tsx
 // ─────────────────────────────────────────────────────────────────────────────
+
+export const dynamic = 'force-dynamic';
 // ROOT PAGE for a white-label tenant subdomain
 // e.g. acme.ascentor.co → this page
 //

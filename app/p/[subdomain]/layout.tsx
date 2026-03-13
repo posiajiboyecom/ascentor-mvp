@@ -1,5 +1,9 @@
 // app/p/[subdomain]/layout.tsx
 // ─────────────────────────────────────────────────────────────────────────────
+
+// CRITICAL: Prevent build-time static pre-rendering — this layout fetches
+// tenant config from Supabase and must only run at request time, not build time.
+export const dynamic = 'force-dynamic';
 // WHITE-LABEL TENANT LAYOUT
 // Loaded for every request on a partner subdomain: acme.ascentor.co/*
 //

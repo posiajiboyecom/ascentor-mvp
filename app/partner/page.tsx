@@ -1,6 +1,8 @@
 // app/partner/page.tsx
 // Partner portal overview — shows key stats and quick actions
 
+export const dynamic = 'force-dynamic';
+
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import type { Metadata } from 'next';

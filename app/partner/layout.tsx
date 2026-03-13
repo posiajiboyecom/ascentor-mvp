@@ -1,5 +1,7 @@
 // app/partner/layout.tsx
 // ─────────────────────────────────────────────────────────────────────────────
+
+export const dynamic = 'force-dynamic';
 // PARTNER PORTAL LAYOUT
 // Accessible at: ascentor.co/partner
 //
