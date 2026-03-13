@@ -3,13 +3,7 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // ─── Required for Vercel build to pass ──────────────────────────────────────
   // Ignore TypeScript errors during build (remove once all types are clean)
-  typescript: {
-    ignoreBuildErrors: false, // set to true ONLY as a temporary unblock
-  },
-  // Ignore ESLint errors during build
-  eslint: {
-    ignoreDuringBuilds: false, // set to true ONLY as a temporary unblock
-  },
+  
 
   // ─── Prevent build hangs ─────────────────────────────────────────────────────
   // Exclude the bloated icon folders from Vercel's file tracing.
