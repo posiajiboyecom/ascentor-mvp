@@ -25,25 +25,30 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const navItems = [
-  { href: '/partner/onboarding', label: 'Setup',    icon: '◎', desc: 'Onboarding checklist' },
-  { href: '/partner/brand',      label: 'Brand',    icon: '✦', desc: 'Logo, colours, fonts'  },
-  { href: '/partner/members',    label: 'Members',  icon: '⬡', desc: 'Invite & manage'       },
-  { href: '/partner/revenue',    label: 'Revenue',  icon: '◈', desc: 'Earnings & splits'     },
-  { href: '/partner/pricing',    label: 'Pricing',  icon: '◇', desc: 'Plan prices'           },
-  { href: '/partner/settings',   label: 'Settings', icon: '⚙', desc: 'Domain & plan config'  },
-];
+function getNavItems(base: string) {
+  return [
+    { href: `${base}/onboarding`, label: 'Setup',    icon: '◎', desc: 'Onboarding checklist' },
+    { href: `${base}/brand`,      label: 'Brand',    icon: '✦', desc: 'Logo, colours, fonts'  },
+    { href: `${base}/members`,    label: 'Members',  icon: '⬡', desc: 'Invite & manage'       },
+    { href: `${base}/revenue`,    label: 'Revenue',  icon: '◈', desc: 'Earnings & splits'     },
+    { href: `${base}/pricing`,    label: 'Pricing',  icon: '◇', desc: 'Plan prices'           },
+    { href: `${base}/settings`,   label: 'Settings', icon: '⚙', desc: 'Domain & plan config'  },
+  ];
+}
 
 // ── Shared nav list — used by both desktop sidebar and mobile drawer ──
 function NavList({
   pathname,
   revenueSharePercent,
   onNavClick,
+  basePath,
 }: {
   pathname: string;
   revenueSharePercent: number;
   onNavClick?: () => void;
+  basePath: string;
 }) {
+  const navItems = getNavItems(basePath);
   return (
     <>
       {navItems.map(item => {
@@ -111,10 +116,12 @@ export default function PartnerAdminShell({
   children,
   partner,
   userId,
+  basePath = '/partner',
 }: {
   children: React.ReactNode;
   partner: any;
   userId: string;
+  basePath?: string;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -150,7 +157,7 @@ export default function PartnerAdminShell({
         {/* Back to platform */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <Link
-            href="/dashboard"
+            href={basePath.startsWith("/p/") ? basePath.replace(/\/admin.*/, "/dashboard") : "/dashboard"}
             style={{
               fontSize: 11, fontWeight: 700, color: 'var(--text-dim)',
               textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6,
@@ -217,6 +224,7 @@ export default function PartnerAdminShell({
           <NavList
             pathname={pathname}
             revenueSharePercent={partner.revenue_share_percent}
+            basePath={basePath}
           />
         </aside>
 
@@ -250,6 +258,7 @@ export default function PartnerAdminShell({
                 pathname={pathname}
                 revenueSharePercent={partner.revenue_share_percent}
                 onNavClick={() => setMobileOpen(false)}
+                basePath={basePath}
               />
             </div>
           </>

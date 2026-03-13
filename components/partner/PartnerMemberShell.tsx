@@ -130,7 +130,7 @@ export default function PartnerMemberShell({
           })}
 
           {isOwner && (
-            <Link href="https://ascentorbi.com/partner/brand" style={{
+            <Link href={`/p/${sub}/admin/brand`} style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '6px 14px', borderRadius: 8,
               fontSize: 12, fontWeight: 700, color: 'var(--accent)',
@@ -170,7 +170,7 @@ export default function PartnerMemberShell({
             You are viewing your platform as a member.
           </p>
           <Link
-            href="https://ascentorbi.com/partner/brand"
+            href={`/p/${sub}/admin/brand`}
             style={{
               fontSize: 11, fontWeight: 700, color: 'var(--accent)',
               textDecoration: 'none', whiteSpace: 'nowrap',
