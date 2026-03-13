@@ -1,317 +1,165 @@
 // ============================================================
-// app/partner/revenue/page.tsx
+// app/partner/members/page.tsx  (also used via re-export at
+// app/p/[subdomain]/admin/members/page.tsx)
 //
-// FILE LOCATION: app/partner/revenue/page.tsx
-//
-// FIXES:
-//   W-14 — "Month vs Last" summary card now adapts to the selected
-//           period selector:
-//             - "This Month"  → shows this_month_ngn vs last_month_ngn (unchanged)
-//             - "This Year"   → shows this_year_ngn vs last_year_ngn (YoY)
-//             - "All Time"    → shows avg_per_month_ngn (monthly average)
-//           The card label and sub-label update accordingly.
-//
-//   W-13 — Transaction reference: full ref shown in `title` tooltip.
-//           Clipboard copy button added next to the truncated ref.
-//           Copy button shows a ✓ tick for 1.5s after copying.
-//
-//   W-22 — Hardcoded 'Cormorant Garamond' replaced with
-//           var(--font-heading) throughout (h1, SummaryCard value).
+// Partner member management — invite, search, status management.
+// Calls /api/partner/members (GET, POST, PATCH, DELETE).
 // ============================================================
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-type Transaction = {
+interface Member {
   id: string;
-  amount_ngn: number;
-  partner_share_ngn: number;
-  ascentor_fee_ngn: number;
-  revenue_share_pct: number;
-  plan: string;
-  billing_cycle: string;
-  paystack_reference: string;
-  status: string;
-  paid_at: string;
-};
-
-type Summary = {
-  total_ngn: number;
-  partner_total_ngn: number;
-  ascentor_total_ngn: number;
-  count: number;
-  this_month_ngn: number;
-  last_month_ngn: number;
-  last_year_ngn: number;       // FIX W-14
-  avg_per_month_ngn: number;   // FIX W-14
-};
-
-const PLAN_COLORS: Record<string, string> = {
-  explorer: '#14B8A6', builder: '#E8A020', climber: '#8B5CF6',
-};
-
-// FIX W-13: copy-to-clipboard button for references
-function CopyRefButton({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  };
-  return (
-    <button
-      onClick={handleCopy}
-      title={copied ? 'Copied!' : 'Copy full reference'}
-      style={{
-        background: 'none', border: 'none', cursor: 'pointer',
-        padding: '0 4px', color: copied ? 'var(--success)' : 'var(--text-dim)',
-        fontSize: 11, lineHeight: 1,
-      }}
-    >
-      {copied ? '✓' : '⧉'}
-    </button>
-  );
+  email: string;
+  full_name: string | null;
+  status: 'invited' | 'active' | 'suspended' | 'removed';
+  joined_at: string | null;
+  created_at: string;
 }
 
-export default function RevenueAdminPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [summary, setSummary]           = useState<Summary | null>(null);
-  const [loading, setLoading]           = useState(true);
-  const [period, setPeriod]             = useState<'all' | 'month' | 'year'>('month');
+const STATUS_COLORS: Record<string, { bg: string; color: string; border: string }> = {
+  active:    { bg: 'rgba(16,185,129,0.09)',  color: '#10B981', border: 'rgba(16,185,129,0.2)'  },
+  invited:   { bg: 'rgba(232,160,32,0.09)',  color: '#E8A020', border: 'rgba(232,160,32,0.2)'  },
+  suspended: { bg: 'rgba(239,68,68,0.09)',   color: '#EF4444', border: 'rgba(239,68,68,0.2)'   },
+  removed:   { bg: 'rgba(100,100,100,0.09)', color: '#6B7280', border: 'rgba(100,100,100,0.2)' },
+};
+
+export default function MembersAdminPage() {
+  const [members,    setMembers]    = useState<Member[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [search,     setSearch]     = useState('');
+  const [statusFilter, setStatus]   = useState('all');
+  const [page,       setPage]       = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total,      setTotal]      = useState(0);
+  const [inviteEmail, setInvite]    = useState('');
+  const [inviting,   setInviting]   = useState(false);
+  const [inviteMsg,  setInviteMsg]  = useState('');
+  const [actionId,   setActionId]   = useState<string | null>(null);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const res = await fetch(`/api/partner/revenue?period=${period}`);
-      if (res.ok) {
-        const data = await res.json();
-        setTransactions(data.transactions);
-        setSummary(data.summary);
-      }
-      setLoading(false);
-    };
-    load();
-  }, [period]);
+    clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => { setPage(1); fetchMembers(1); }, 350);
+  }, [search, statusFilter]);
 
-  const fmt = (n: number) => `₦${Number(n).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`;
+  useEffect(() => { fetchMembers(page); }, [page]);
 
-  // FIX W-14: third card config driven by active period
-  const thirdCard = (() => {
-    if (!summary) return null;
-    if (period === 'month') return {
-      label: 'Month vs Last',
-      value: fmt(summary.this_month_ngn),
-      sub:   `Last month: ${fmt(summary.last_month_ngn)}`,
-    };
-    if (period === 'year') return {
-      label: 'This Year vs Last',
-      value: fmt(summary.partner_total_ngn),
-      sub:   `Last year: ${fmt(summary.last_year_ngn)}`,
-    };
-    // All Time
-    return {
-      label: 'Avg / Month',
-      value: fmt(summary.avg_per_month_ngn),
-      sub:   'Across all time',
-    };
-  })();
+  async function fetchMembers(p = 1) {
+    setLoading(true);
+    const params = new URLSearchParams({
+      page: String(p), limit: '20',
+      ...(search ? { search } : {}),
+      ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
+    });
+    const res  = await fetch(`/api/partner/members?${params}`);
+    const data = await res.json();
+    setMembers(data.members || []);
+    setTotal(data.total || 0);
+    setTotalPages(data.pages || 1);
+    setLoading(false);
+  }
+
+  async function handleInvite() {
+    if (!inviteEmail.trim()) return;
+    setInviting(true); setInviteMsg('');
+    const res  = await fetch('/api/partner/members', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: inviteEmail.trim() }),
+    });
+    const data = await res.json();
+    if (res.ok) { setInviteMsg(`✓ Invite sent to ${inviteEmail}`); setInvite(''); fetchMembers(1); }
+    else { setInviteMsg(`Error: ${data.error || 'Failed to invite'}`); }
+    setInviting(false);
+  }
+
+  async function handleAction(memberId: string, action: 'suspend' | 'reactivate' | 'remove') {
+    setActionId(memberId);
+    await fetch('/api/partner/members', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member_id: memberId, action }),
+    });
+    setActionId(null);
+    fetchMembers(page);
+  }
+
+  const card: React.CSSProperties = {
+    background: 'var(--bg-card)', border: '1px solid var(--border)',
+    borderRadius: 12, padding: '16px 20px', marginBottom: 10,
+  };
+  const inp: React.CSSProperties = {
+    background: 'var(--bg-input)', border: '1px solid var(--border)',
+    color: 'var(--text)', borderRadius: 8, padding: '8px 12px', fontSize: 13, outline: 'none',
+  };
+  const btn = (accent = false): React.CSSProperties => ({
+    padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+    border: 'none', background: accent ? 'var(--accent)' : 'var(--bg-input)',
+    color: accent ? '#000' : 'var(--text-dim)',
+  });
 
   return (
-    <div className="animate-fade-up" style={{ maxWidth: 760 }}>
-      {/* FIX W-22: var(--font-heading) */}
-      <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 26, color: 'var(--text)', marginBottom: 4 }}>
-        Revenue
-      </h1>
-      <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 28 }}>
-        Your earnings from member subscriptions
-      </p>
+    <div style={{ maxWidth: 760 }}>
+      <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 28, color: 'var(--text)', marginBottom: 4 }}>Members</h1>
+      <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 24 }}>Invite and manage your platform members</p>
 
-      {/* ── Period selector ── */}
-      <div style={{
-        display: 'flex', gap: 4, padding: 4, borderRadius: 10,
-        background: 'var(--bg-card)', border: '1px solid var(--border)',
-        marginBottom: 24, width: 'fit-content',
-      }}>
-        {([['month', 'This Month'], ['year', 'This Year'], ['all', 'All Time']] as const).map(([val, label]) => (
-          <button key={val} onClick={() => setPeriod(val)}
-            style={{
-              padding: '7px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
-              fontSize: 12, fontWeight: 600,
-              background: period === val ? 'var(--accent)' : 'transparent',
-              color: period === val ? '#000' : 'var(--text-dim)',
-              transition: 'all 0.15s',
-            }}>
-            {label}
-          </button>
-        ))}
+      <div style={{ ...card, display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20 }}>
+        <input style={{ ...inp, flex: 1 }} placeholder="email@example.com" value={inviteEmail}
+          onChange={e => setInvite(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleInvite()} />
+        <button style={btn(true)} onClick={handleInvite} disabled={inviting}>{inviting ? 'Sending…' : 'Send Invite'}</button>
+      </div>
+      {inviteMsg && <p style={{ fontSize: 12, marginBottom: 16, color: inviteMsg.startsWith('✓') ? 'var(--success)' : 'var(--error)' }}>{inviteMsg}</p>}
+
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+        <input style={{ ...inp, width: 220 }} placeholder="Search name or email…" value={search} onChange={e => setSearch(e.target.value)} />
+        <select style={inp} value={statusFilter} onChange={e => setStatus(e.target.value)}>
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="invited">Invited</option>
+          <option value="suspended">Suspended</option>
+          <option value="removed">Removed</option>
+        </select>
+        <span style={{ fontSize: 12, color: 'var(--text-dim)', alignSelf: 'center' }}>{total} member{total !== 1 ? 's' : ''}</span>
       </div>
 
-      {/* ── Summary cards — FIX W-14 ── */}
-      {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 28 }}>
-          <SummaryCard
-            label="Your Earnings"
-            value={fmt(summary.partner_total_ngn)}
-            sub={`${summary.count} payment${summary.count !== 1 ? 's' : ''}`}
-            accent
-          />
-          <SummaryCard
-            label="Gross Revenue"
-            value={fmt(summary.total_ngn)}
-            sub="Total collected"
-          />
-          {/* FIX W-14: third card changes with period */}
-          {thirdCard && (
-            <SummaryCard
-              label={thirdCard.label}
-              value={thirdCard.value}
-              sub={thirdCard.sub}
-            />
-          )}
+      {loading ? (
+        <p style={{ fontSize: 13, color: 'var(--text-dim)', padding: '20px 0' }}>Loading…</p>
+      ) : members.length === 0 ? (
+        <div style={{ ...card, textAlign: 'center', padding: '40px 20px' }}>
+          <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>{search ? 'No members match your search.' : 'No members yet. Send your first invite above.'}</p>
         </div>
-      )}
-
-      {/* ── Revenue split ── */}
-      {summary && summary.count > 0 && (
-        <div style={{
-          background: 'var(--bg-card)', border: '1px solid var(--border)',
-          borderRadius: 12, padding: '14px 18px', marginBottom: 24,
-          display: 'flex', alignItems: 'center', gap: 16,
-        }}>
-          <div style={{ flex: 1 }}>
-            <p style={{
-              fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.08em', color: 'var(--text-dim)', marginBottom: 8,
-            }}>
-              Revenue Split
-            </p>
-            <div style={{ height: 8, borderRadius: 4, background: 'var(--bg-input)', overflow: 'hidden' }}>
-              <div style={{
-                height: '100%', borderRadius: 4,
-                background: 'var(--accent)',
-                width: `${summary.partner_total_ngn / summary.total_ngn * 100}%`,
-                transition: 'width 0.5s',
-              }} />
+      ) : members.map(m => {
+        const sc = STATUS_COLORS[m.status] || STATUS_COLORS.active;
+        return (
+          <div key={m.id} style={{ ...card, display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: 'rgba(232,160,32,0.1)', border: '1.5px solid rgba(232,160,32,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
+              {(m.full_name || m.email)[0].toUpperCase()}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-              <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>
-                You: {fmt(summary.partner_total_ngn)}
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                Platform: {fmt(summary.ascentor_total_ngn)}
-              </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{m.full_name || '—'}</p>
+              <p style={{ fontSize: 12, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.email}</p>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Transaction table ── */}
-      <div style={{
-        background: 'var(--bg-card)', border: '1px solid var(--border)',
-        borderRadius: 12, overflow: 'hidden',
-      }}>
-        <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 80px 100px 100px 80px',
-          padding: '10px 18px', borderBottom: '1px solid var(--border)',
-        }}>
-          {['Date / Ref', 'Plan', 'Gross', 'Your Share', 'Status'].map(h => (
-            <span key={h} style={{
-              fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.08em', color: 'var(--text-dim)',
-            }}>
-              {h}
+            <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>{m.status}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-dim)', flexShrink: 0, minWidth: 70, textAlign: 'right' }}>
+              {m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : 'Pending'}
             </span>
-          ))}
-        </div>
-
-        {loading ? (
-          <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-dim)', fontSize: 13 }}>
-            Loading...
-          </div>
-        ) : transactions.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center' }}>
-            <p style={{ fontSize: 28, marginBottom: 8 }}>◈</p>
-            <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>
-              No transactions yet. Once members subscribe, payments will appear here.
-            </p>
-          </div>
-        ) : (
-          transactions.map((tx, i) => (
-            <div key={tx.id}
-              style={{
-                display: 'grid', gridTemplateColumns: '1fr 80px 100px 100px 80px',
-                padding: '12px 18px', alignItems: 'center',
-                borderBottom: i < transactions.length - 1 ? '1px solid var(--border)' : 'none',
-              }}>
-              {/* Date + reference — FIX W-13 */}
-              <div>
-                <p style={{ fontSize: 12, color: 'var(--text)', fontWeight: 500 }}>
-                  {new Date(tx.paid_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <p
-                    title={tx.paystack_reference}  // FIX W-13: full ref on hover
-                    style={{
-                      fontSize: 10, color: 'var(--text-dim)', fontFamily: 'monospace',
-                      cursor: 'default',
-                    }}
-                  >
-                    {tx.paystack_reference.slice(0, 16)}…
-                  </p>
-                  {/* FIX W-13: copy button */}
-                  <CopyRefButton value={tx.paystack_reference} />
-                </div>
-              </div>
-
-              <span style={{
-                fontSize: 11, fontWeight: 700, textTransform: 'capitalize',
-                color: PLAN_COLORS[tx.plan] || 'var(--text-dim)',
-              }}>
-                {tx.plan}
-              </span>
-
-              <span style={{ fontSize: 12, color: 'var(--text)' }}>{fmt(tx.amount_ngn)}</span>
-
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
-                {fmt(tx.partner_share_ngn)}
-              </span>
-
-              <span style={{
-                fontSize: 10, fontWeight: 700, textTransform: 'capitalize',
-                color: tx.status === 'completed' ? 'var(--success)' : 'var(--error)',
-              }}>
-                {tx.status}
-              </span>
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              {m.status === 'active'    && <button style={btn()} onClick={() => handleAction(m.id, 'suspend')}    disabled={actionId === m.id}>Suspend</button>}
+              {m.status === 'suspended' && <button style={btn()} onClick={() => handleAction(m.id, 'reactivate')} disabled={actionId === m.id}>Reactivate</button>}
+              {m.status !== 'removed'   && <button style={{ ...btn(), color: 'var(--error)' }} onClick={() => handleAction(m.id, 'remove')} disabled={actionId === m.id}>Remove</button>}
             </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
+          </div>
+        );
+      })}
 
-function SummaryCard({ label, value, sub, accent }: {
-  label: string; value: string; sub: string; accent?: boolean;
-}) {
-  return (
-    <div style={{
-      background: accent ? 'rgba(245,158,11,0.04)' : 'var(--bg-card)',
-      border: `1px solid ${accent ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`,
-      borderRadius: 12, padding: '16px 18px',
-    }}>
-      <p style={{
-        fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-        letterSpacing: '0.08em', color: 'var(--text-dim)', marginBottom: 8,
-      }}>
-        {label}
-      </p>
-      {/* FIX W-22: var(--font-heading) not hardcoded Cormorant Garamond */}
-      <p style={{ fontSize: 22, fontWeight: 700, color: accent ? 'var(--accent)' : 'var(--text)', fontFamily: 'var(--font-heading)' }}>
-        {value}
-      </p>
-      <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>{sub}</p>
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 20 }}>
+          <button style={btn()} onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>← Prev</button>
+          <span style={{ fontSize: 12, color: 'var(--text-dim)', alignSelf: 'center' }}>{page} / {totalPages}</span>
+          <button style={btn()} onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next →</button>
+        </div>
+      )}
     </div>
   );
 }
