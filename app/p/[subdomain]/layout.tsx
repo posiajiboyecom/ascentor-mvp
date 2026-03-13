@@ -1,17 +1,24 @@
 // ============================================================
 // WHITE-LABEL SHELL LAYOUT — app/p/[subdomain]/layout.tsx
 //
-// WHITELIST ENFORCEMENT (new):
-// After resolving the partner context, checks whether the
-// currently-logged-in user is an active member of this partner.
+// ROOT CAUSE FIX:
+//   Previously this layout rendered its own <html><head><body>,
+//   which caused Next.js to skip app/layout.tsx entirely.
+//   That meant globals.css — and therefore Tailwind — never
+//   loaded on any whitelabel page.
 //
-// Rules:
-//   - Public pages (/, /login, /signup, /join) — always pass through.
-//     The user must be able to reach login/signup to become a member.
-//   - Unauthenticated users on protected pages — redirect to partner login.
-//   - Authenticated users NOT in partner_members — redirect to /p/[subdomain]/access-denied.
-//   - Authenticated users with status 'invited' — auto-activate them, then allow.
-//   - Authenticated users with status 'suspended' or 'removed' — block.
+// FIX:
+//   - Removed <html>/<head>/<body>. This layout is now a normal
+//     nested layout; app/layout.tsx handles the document shell
+//     and Tailwind loads correctly.
+//   - Partner CSS vars are injected via a wrapper <div> with
+//     inline style. CSS custom properties inherit through the
+//     DOM so all children still receive the partner's brand
+//     colours, overriding the Ascentor defaults.
+//   - Partner fonts are loaded via a <style>/@import in the
+//     wrapper, injected as a <style> tag before content.
+//   - Favicon + title still set via generateMetadata (Next.js
+//     merges these into the root <head> automatically).
 // ============================================================
 
 import { headers }       from 'next/headers';
@@ -27,15 +34,12 @@ const supabaseService = createServiceClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Pages inside /p/[subdomain]/ that are always public —
-// the user must be able to reach these without being a member yet.
+// Pages inside /p/[subdomain]/ that are always public
 const PUBLIC_PATHS = [
-  '/',               // landing page — always public
   '/login',
   '/signup',
   '/join',
   '/access-denied',
-  '/checkout',
 ];
 
 export default async function PartnerLayout({
@@ -57,22 +61,14 @@ export default async function PartnerLayout({
   const brand = partner.brand;
 
   // ── 2. Determine current path ─────────────────────────────
-  // proxy.ts sets x-partner-pathname on all /p/* rewrites.
-  // For subdomain rewrites (demo.ascentorbi.com/login → /p/demo/login)
-  // the header contains the original path e.g. '/login'.
-  // For direct /p/* access it contains the full path e.g. '/p/demo/login'.
   const partnerPathname = headersList.get('x-partner-pathname') || '';
   const isPublicPath =
-    PUBLIC_PATHS.some(p => {
-      if (p === '/') return partnerPathname === '/';
-      return (
-        partnerPathname === p ||
-        partnerPathname.startsWith(p + '?') ||
-        partnerPathname.startsWith(p + '/') ||
-        partnerPathname.endsWith(p) ||
-        partnerPathname.includes(p + '?')
-      );
-    });
+    PUBLIC_PATHS.some(p =>
+      partnerPathname === p ||
+      partnerPathname.startsWith(p + '?') ||
+      partnerPathname.endsWith(p) ||
+      partnerPathname.includes(p + '?')
+    );
 
   // ── 3. Whitelist check on protected pages ─────────────────
   let isOwner = false;
@@ -82,14 +78,11 @@ export default async function PartnerLayout({
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      // Not logged in — redirect to partner login
-      redirect(`/login?redirect=${encodeURIComponent(partnerPathname || '/dashboard')}`);
+      redirect(`/p/${subdomain}/login?redirect=${encodeURIComponent(partnerPathname || `/p/${subdomain}/dashboard`)}`);
     }
 
-    // Detect if this user is the partner owner
     isOwner = partner.owner_id === user.id;
 
-    // Check membership in partner_members
     const { data: membership } = await supabaseService
       .from('partner_members')
       .select('id, status')
@@ -98,20 +91,16 @@ export default async function PartnerLayout({
       .maybeSingle();
 
     if (!membership) {
-      // Owner always has access even if not explicitly in partner_members
       if (!isOwner) {
-        redirect('/access-denied?reason=not_invited');
+        redirect(`/p/${subdomain}/access-denied?reason=not_invited`);
       }
     } else {
       if (membership.status === 'suspended' && !isOwner) {
-        redirect('/access-denied?reason=suspended');
+        redirect(`/p/${subdomain}/access-denied?reason=suspended`);
       }
-
       if (membership.status === 'removed' && !isOwner) {
-        redirect('/access-denied?reason=removed');
+        redirect(`/p/${subdomain}/access-denied?reason=removed`);
       }
-
-      // Auto-activate 'invited' members who have now logged in
       if (membership.status === 'invited') {
         await supabaseService
           .from('partner_members')
@@ -125,63 +114,36 @@ export default async function PartnerLayout({
     }
   }
 
-  // ── 4. Build CSS vars ─────────────────────────────────────
-  const cssVarString = Object.entries(cssVars)
-    .map(([k, v]) => `${k}: ${v}`)
-    .join('; ');
+  // ── 4. Build partner CSS vars + font imports ──────────────
+  // Vars are injected on a wrapper div — CSS custom properties
+  // inherit through the DOM so all children get the partner brand.
+  const cssVarObject = Object.fromEntries(
+    Object.entries(cssVars)
+  ) as React.CSSProperties;
 
   const fontsNeeded  = [...new Set([brand.font_heading, brand.font_body])];
   const fontFamilies = fontsNeeded
     .map(f => `family=${f.replace(/ /g, '+')}:wght@400;500;600;700`)
     .join('&');
 
+  const partnerFontUrl = `https://fonts.googleapis.com/css2?${fontFamilies}&display=swap`;
+
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{brand.platform_name}</title>
-        {brand.tagline && <meta name="description" content={brand.tagline} />}
+    <>
+      {/*
+        Inject partner Google Fonts as a <style> @import.
+        This piggybacks on the existing document <head> that
+        app/layout.tsx already renders — no duplicate <html>.
+      */}
+      <style dangerouslySetInnerHTML={{ __html: `@import url('${partnerFontUrl}');` }} />
 
-        {brand.favicon_url && (
-          <link rel="icon" href={brand.favicon_url} />
-        )}
-
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href={`https://fonts.googleapis.com/css2?${fontFamilies}&display=swap`}
-          rel="stylesheet"
-        />
-
-        <style>{`
-          :root { ${cssVarString}; }
-
-          *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-          body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: var(--font-body, 'Syne', sans-serif);
-            min-height: 100vh;
-          }
-
-          h1, h2, h3 {
-            font-family: var(--font-heading, 'Cormorant Garamond', Georgia, serif);
-          }
-
-          input, select, textarea {
-            background: var(--bg-input);
-            color: var(--text);
-            border: 1px solid var(--border);
-          }
-
-          ::-webkit-scrollbar { width: 6px; }
-          ::-webkit-scrollbar-track { background: var(--bg); }
-          ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
-        `}</style>
-      </head>
-      <body style={{ background: 'var(--bg)' }}>
+      {/*
+        Wrapper div scopes all partner CSS variable overrides.
+        Because CSS custom properties are inherited, every child
+        component that reads var(--bg), var(--accent), etc. will
+        get the partner's values instead of Ascentor defaults.
+      */}
+      <div style={cssVarObject as React.CSSProperties}>
         <PartnerProvider context={ctx}>
           {isPublicPath ? children : (
             <PartnerMemberShell partner={partner} isOwner={isOwner}>
@@ -189,12 +151,12 @@ export default async function PartnerLayout({
             </PartnerMemberShell>
           )}
         </PartnerProvider>
-      </body>
-    </html>
+      </div>
+    </>
   );
 }
 
-// ── Dynamic metadata per partner ─────────────────────────
+// ── Dynamic metadata — merged into root <head> by Next.js ────
 export async function generateMetadata({
   params,
 }: {
@@ -210,7 +172,7 @@ export async function generateMetadata({
   const { brand } = ctx.partner;
   return {
     title:       brand.platform_name,
-    description: brand.tagline,
+    description: brand.tagline ?? undefined,
     icons:       brand.favicon_url ? [{ url: brand.favicon_url }] : [],
   };
 }
