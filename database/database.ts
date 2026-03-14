@@ -507,7 +507,7 @@ export interface SessionLocation {
 
 export type PartnerStatus = 'pending' | 'active' | 'suspended' | 'rejected';
 export type PartnerMemberStatus = 'invited' | 'active' | 'suspended' | 'removed';
-export type PartnerTier = 'standard' | 'pro' | null;
+export type PartnerTier = 'starter' | 'growth' | 'pro' | null;
 
 export interface PartnerRow {
   id:                       string;
@@ -525,6 +525,7 @@ export interface PartnerRow {
   ai_config:                Record<string, unknown> | null;  // AI persona + knowledge config
   plan_overrides:           Record<string, unknown> | null;
   plan_tier:                PartnerTier;
+  active_member_count:      number;
   created_at:               string;
   updated_at:               string;
   onboarded_at:             string | null;
@@ -556,6 +557,65 @@ export interface PartnerTransaction {
   paid_at:             string;
 }
 
+export interface PartnerSubscription {
+  id:                   string;
+  partner_id:           string;
+  plan_tier:            PartnerTier;
+  billing_cycle:        'monthly' | 'annual';
+  amount_ngn:           number;
+  status:               'active' | 'cancelled' | 'past_due' | 'trial';
+  paystack_reference:   string | null;
+  current_period_start: string;
+  current_period_end:   string;
+  cancelled_at:         string | null;
+  cancel_reason:        string | null;
+  created_at:           string;
+  updated_at:           string;
+}
+
+export interface PartnerEvent {
+  id:                string;
+  partner_id:        string;
+  title:             string;
+  description:       string | null;
+  expert_name:       string;
+  expert_bio:        string | null;
+  expert_avatar:     string | null;
+  scheduled_at:      string;
+  duration_minutes:  number;
+  max_attendees:     number | null;
+  meeting_url:       string | null;
+  recording_url:     string | null;
+  topic:             string | null;
+  status:            'draft' | 'published' | 'cancelled' | 'completed';
+  current_attendees: number;
+  created_at:        string;
+  updated_at:        string;
+}
+
+export interface PartnerCourse {
+  id:            string;
+  partner_id:    string;
+  title:         string;
+  description:   string | null;
+  youtube_id:    string;
+  thumbnail_url: string | null;
+  category:      string | null;
+  difficulty:    'beginner' | 'intermediate' | 'advanced' | null;
+  duration:      string | null;
+  access_tier:   string | null;
+  is_published:  boolean;
+  sort_order:    number;
+  created_at:    string;
+  updated_at:    string;
+}
+
+export interface PartnerEventRegistration {
+  id:            string;
+  event_id:      string;
+  user_id:       string;
+  registered_at: string;
+}
 
 
 type TableMap = {
@@ -596,6 +656,11 @@ type TableMap = {
   session_locations:        SessionLocation;
   // ── Partner / White-label ─────────────────────────────
   partners:                 PartnerRow;
-  partner_members:          PartnerMemberRow;
-  partner_transactions:     PartnerTransaction;
+  partner_members:              PartnerMemberRow;
+  partner_transactions:         PartnerTransaction;
+  partner_subscriptions:        PartnerSubscription;
+  partner_events:               PartnerEvent;
+  partner_event_registrations:  PartnerEventRegistration;
+  partner_courses:              PartnerCourse;
+  partner_course_enrollments:   Record<string, unknown>;
 };

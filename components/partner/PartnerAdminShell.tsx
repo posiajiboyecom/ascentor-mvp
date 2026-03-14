@@ -27,12 +27,17 @@ import { usePathname } from 'next/navigation';
 
 function getNavItems(base: string) {
   return [
-    { href: `${base}/onboarding`, label: 'Setup',    icon: '◎', desc: 'Onboarding checklist' },
-    { href: `${base}/brand`,      label: 'Brand',    icon: '✦', desc: 'Logo, colours, fonts'  },
-    { href: `${base}/members`,    label: 'Members',  icon: '⬡', desc: 'Invite & manage'       },
-    { href: `${base}/revenue`,    label: 'Revenue',  icon: '◈', desc: 'Earnings & splits'     },
-    { href: `${base}/pricing`,    label: 'Pricing',  icon: '◇', desc: 'Plan prices'           },
-    { href: `${base}/settings`,   label: 'Settings', icon: '⚙', desc: 'Domain & plan config'  },
+    { href: `${base}/onboarding`,   label: 'Setup',        icon: '◎', desc: 'Onboarding checklist'  },
+    { href: `${base}/brand`,        label: 'Brand',        icon: '✦', desc: 'Logo, colours, fonts'  },
+    { href: `${base}/ai/persona`,   label: 'AI Persona',   icon: '◬', desc: 'Coach voice & style'   },
+    { href: `${base}/members`,      label: 'Members',      icon: '⬡', desc: 'Invite & manage'        },
+    { href: `${base}/courses`,      label: 'Courses',      icon: '▣', desc: 'Your course library'    },
+    { href: `${base}/events`,       label: 'Events',       icon: '◷', desc: 'Expert sessions'        },
+    { href: `${base}/pricing`,      label: 'Pricing',      icon: '◇', desc: 'Member plan prices'     },
+    { href: `${base}/revenue`,      label: 'Revenue',      icon: '◈', desc: 'Earnings & splits'      },
+    { href: `${base}/analytics`,    label: 'Analytics',    icon: '◫', desc: 'Engagement data'        },
+    { href: `${base}/subscription`, label: 'Subscription', icon: '◉', desc: 'Your Ascentor plan'     },
+    { href: `${base}/settings`,     label: 'Settings',     icon: '⚙', desc: 'Domain & config'        },
   ];
 }
 

@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
+import { canAddCourse, getTierConfig, hasFeature } from '@/lib/partnerTier';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,7 +24,7 @@ async function getPartner(req: NextRequest) {
 
   const { data: partner } = await supabase
     .from('partners')
-    .select('id, owner_id, status')
+    .select('id, owner_id, status, plan_tier')
     .eq('owner_id', user.id)
     .single();
 
@@ -108,6 +109,32 @@ export async function POST(req: NextRequest) {
     const result = await getPartner(req);
     if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
     const { partner } = result;
+
+    // ── Tier gate ─────────────────────────────────────────
+    if (!hasFeature(partner.plan_tier, 'ownCourses')) {
+      return NextResponse.json({
+        error: 'Creating your own courses requires the Growth plan or above.',
+        upgrade_required: true,
+        current_tier: partner.plan_tier,
+      }, { status: 403 });
+    }
+
+    // Check course count against plan limit
+    const { count: courseCount } = await supabase
+      .from('partner_courses')
+      .select('id', { count: 'exact', head: true })
+      .eq('partner_id', partner.id);
+
+    if (!canAddCourse(partner.plan_tier, courseCount ?? 0)) {
+      const cfg = getTierConfig(partner.plan_tier);
+      return NextResponse.json({
+        error: `You have reached the ${cfg.maxCourses}-course limit on the ${cfg.name} plan.`,
+        upgrade_required: true,
+        current_tier: partner.plan_tier,
+        current_count: courseCount,
+        max_courses: cfg.maxCourses,
+      }, { status: 403 });
+    }
 
     const body = await req.json();
     const { title, description, youtube_id, category, difficulty, duration, thumbnail_url } = body;

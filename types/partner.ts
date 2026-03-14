@@ -43,11 +43,13 @@ export interface PartnerBrand {
 
 // ── Features ──────────────────────────────────────────────
 export interface PartnerFeatures {
-  ai_coach:  boolean;
-  community: boolean;
-  experts:   boolean;
-  courses:   boolean;
-  referrals: boolean;   // FIX BUG-05: was missing; apply/route.ts inserts this field
+  ai_coach:   boolean;
+  community:  boolean;
+  experts:    boolean;
+  courses:    boolean;
+  referrals:  boolean;   // FIX BUG-05: was missing; apply/route.ts inserts this field
+  own_courses: boolean;  // partner can create their own courses (Growth+)
+  own_events:  boolean;  // partner can schedule their own expert events (Growth+)
 }
 
 // ── Plan overrides ────────────────────────────────────────
@@ -77,7 +79,7 @@ export interface Partner {
   brand:                    PartnerBrand;
   features:                 PartnerFeatures;
   plan_overrides:           PartnerPlanOverrides | null;
-  plan_tier?:               'standard' | 'pro' | null;
+  plan_tier?:               'starter' | 'growth' | 'pro' | null;
   created_at:               string;
   updated_at:               string;
   onboarded_at:             string | null;

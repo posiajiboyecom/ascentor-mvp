@@ -174,6 +174,16 @@ export async function PATCH(req: NextRequest) {
     update.revenue_share_percent = revenue_share;
   }
 
+  // Set plan_tier on approval — default to 'starter' if not provided
+  if (action === 'approve') {
+    const tier = body.plan_tier && ['starter','growth','pro'].includes(body.plan_tier)
+      ? body.plan_tier : 'starter';
+    update.plan_tier = tier;
+    if (typeof revenue_share !== 'number') {
+      update.revenue_share_percent = tier === 'pro' ? 80 : tier === 'growth' ? 70 : 65;
+    }
+  }
+
   // FIX BUG-09: set onboarded_at when approving so partners don't get
   // stuck in the onboarding redirect loop after approval.
   if (action === 'approve' && !partner.status.includes('active')) {
@@ -181,6 +191,21 @@ export async function PATCH(req: NextRequest) {
   }
 
   await supabase.from('partners').update(update).eq('id', partnerId);
+
+  // Create initial subscription row on approval
+  if (action === 'approve') {
+    const tier      = update.plan_tier || 'starter';
+    const amountMap: Record<string, number> = { starter: 10000, growth: 30000, pro: 70000 };
+    supabase.from('partner_subscriptions').insert({
+      partner_id:           partnerId,
+      plan_tier:            tier,
+      billing_cycle:        'monthly',
+      amount_ngn:           amountMap[tier] ?? 10000,
+      status:               'active',
+      current_period_start: new Date().toISOString(),
+      current_period_end:   new Date(Date.now() + 30 * 86400000).toISOString(),
+    }).then(() => {}).catch(() => {});
+  }
 
   // Notify partner owner
   try {
