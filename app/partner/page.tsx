@@ -21,7 +21,7 @@ export default async function PartnerOverviewPage() {
   // FIX: was querying dead `tenants` table with flat columns. Migrated to `partners`.
   const { data: tenant } = await supabase
     .from('partners')
-    .select('id, name, brand, ai_config, plan_overrides, status')
+    .select('id, name, subdomain, brand, ai_config, plan_overrides, status')
     .eq('owner_id', user.id)
     .single();
 
