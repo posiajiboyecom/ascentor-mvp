@@ -147,6 +147,8 @@ export default function PartnerAnalyticsPage() {
   const [error, setError]     = useState('');
 
   useEffect(() => {
+    setError('');
+    setLoading(true);
     fetch(`${apiBase}/api/partner/analytics`)
       .then(r => r.json())
       .then(d => {
