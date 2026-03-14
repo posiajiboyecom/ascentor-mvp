@@ -196,15 +196,17 @@ export async function PATCH(req: NextRequest) {
   if (action === 'approve') {
     const tier      = update.plan_tier || 'starter';
     const amountMap: Record<string, number> = { starter: 10000, growth: 30000, pro: 70000 };
-    supabase.from('partner_subscriptions').insert({
-      partner_id:           partnerId,
-      plan_tier:            tier,
-      billing_cycle:        'monthly',
-      amount_ngn:           amountMap[tier] ?? 10000,
-      status:               'active',
-      current_period_start: new Date().toISOString(),
-      current_period_end:   new Date(Date.now() + 30 * 86400000).toISOString(),
-    }).then(() => {}).catch(() => {});
+    void Promise.resolve(
+      supabase.from('partner_subscriptions').insert({
+        partner_id:           partnerId,
+        plan_tier:            tier,
+        billing_cycle:        'monthly',
+        amount_ngn:           amountMap[tier] ?? 10000,
+        status:               'active',
+        current_period_start: new Date().toISOString(),
+        current_period_end:   new Date(Date.now() + 30 * 86400000).toISOString(),
+      })
+    ).catch(() => {});
   }
 
   // Notify partner owner
