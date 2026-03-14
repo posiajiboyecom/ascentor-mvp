@@ -161,7 +161,12 @@ export default function PartnerAdminShell({
       }}>
         {/* Back to platform */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <Link
+          {/* Use <a> (full page nav) not Next.js <Link> (client nav).
+              The partner layout computes isAdminPath server-side from the
+              x-partner-pathname header. Client-side nav skips that re-evaluation,
+              so isAdminPath stays true and PartnerMemberShell never wraps the
+              dashboard — resulting in an unstyled, shell-less page until hard reload. */}
+          <a
             href="/dashboard"
             style={{
               fontSize: 11, fontWeight: 700, color: 'var(--text-dim)',
@@ -169,7 +174,7 @@ export default function PartnerAdminShell({
             }}
           >
             ← Back to platform
-          </Link>
+          </a>
           <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
           <span style={{
             fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
