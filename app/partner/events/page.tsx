@@ -2,7 +2,7 @@
 // app/partner/events/page.tsx — partner expert event scheduler with tier gating
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from 'react';
-
+import { useApiBase } from '@/lib/useApiBase';
 const S: Record<string,React.CSSProperties> = {
   card:  { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', padding:'20px' },
   label: { fontSize:'11px', fontWeight:700, textTransform:'uppercase' as const, letterSpacing:'0.06em', color:'rgba(255,255,255,0.35)', marginBottom:'6px', display:'block' },
@@ -25,6 +25,7 @@ function formatDate(iso: string) {
 }
 
 export default function PartnerEventsPage() {
+  const apiBase = useApiBase();
   const [events,   setEvents]   = useState<Event[]>([]);
   const [tier,     setTier]     = useState<TierInfo|null>(null);
   const [loading,  setLoading]  = useState(true);
@@ -40,8 +41,8 @@ export default function PartnerEventsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const [eRes, sRes] = await Promise.all([
-      fetch(`/api/partner/events?view=${view}`),
-      fetch('/api/partner/subscription'),
+      fetch(`${apiBase}/api/partner/events?view=${view}`),
+      fetch(`${apiBase}/api/partner/subscription`),
     ]);
     const [eData, sData] = await Promise.all([eRes.json(), sRes.json()]);
     if (!eRes.ok) { setError(eData.error||'Failed to load'); setLoading(false); return; }
@@ -54,7 +55,7 @@ export default function PartnerEventsPage() {
       canCreate:      eData.tier?.canCreate   ?? false,
     });
     setLoading(false);
-  }, [view]);
+  }, [view, apiBase]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -63,7 +64,7 @@ export default function PartnerEventsPage() {
     if (!form.expert_name.trim()) { setError('Expert name is required.'); return; }
     if (!form.scheduled_at)       { setError('Scheduled date is required.'); return; }
     setSaving(true); setError('');
-    const res  = await fetch('/api/partner/events', {
+    const res  = await fetch(`${apiBase}/api/partner/events`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ ...form, duration_minutes: Number(form.duration_minutes)||60, max_attendees: form.max_attendees ? Number(form.max_attendees) : null }),
     });
@@ -76,13 +77,13 @@ export default function PartnerEventsPage() {
 
   const setStatus = async (id:string, status:string) => {
     if (status==='cancelled' && !confirm('Cancel this event? Registered attendees will not be automatically notified.')) return;
-    await fetch('/api/partner/events', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ eventId:id, status }) });
+    await fetch(`${apiBase}/api/partner/events`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ eventId:id, status }) });
     await load();
   };
 
   const deleteEvent = async (id:string) => {
     if (!confirm('Delete this draft event?')) return;
-    await fetch(`/api/partner/events?eventId=${id}`, { method:'DELETE' });
+    await fetch(`${apiBase}/api/partner/events?eventId=${id}`, { method:'DELETE' });
     await load();
   };
 
@@ -101,7 +102,7 @@ export default function PartnerEventsPage() {
         <p style={{ fontSize:'13px', color:'rgba(255,255,255,0.45)', marginBottom:'24px', lineHeight:1.6 }}>
           Schedule your own live sessions and masterclasses. Growth partners get 10 events per month. Pro partners get unlimited.
         </p>
-        <a href="/partner/subscription" style={{ ...S.btn, background:'#E8A020', color:'#0C0B08', textDecoration:'none', display:'inline-block' }}>Upgrade to Growth →</a>
+        <a href="/admin/subscription" style={{ ...S.btn, background:'#E8A020', color:'#0C0B08', textDecoration:'none', display:'inline-block' }}>Upgrade to Growth →</a>
       </div>
     </div>
   );
@@ -118,7 +119,7 @@ export default function PartnerEventsPage() {
         </div>
         {!atLimit && !showForm
           ? <button onClick={() => setShowForm(true)} style={{ ...S.btn, background:'#E8A020', color:'#0C0B08' }}>+ Schedule event</button>
-          : atLimit && <a href="/partner/subscription" style={{ ...S.btn, background:'rgba(255,255,255,0.05)', color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.1)', textDecoration:'none', display:'inline-block', fontSize:'12px' }}>Upgrade for unlimited</a>
+          : atLimit && <a href="/admin/subscription" style={{ ...S.btn, background:'rgba(255,255,255,0.05)', color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.1)', textDecoration:'none', display:'inline-block', fontSize:'12px' }}>Upgrade for unlimited</a>
         }
       </div>
 

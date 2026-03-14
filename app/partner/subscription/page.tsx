@@ -4,6 +4,7 @@
 // and upgrade/downgrade request form.
 export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
+import { useApiBase } from '@/lib/useApiBase';
 
 const S: Record<string,React.CSSProperties> = {
   card:  { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', padding:'20px', marginBottom:'16px' },
@@ -40,6 +41,7 @@ const FEATURE_LABELS: Record<string,string> = {
 };
 
 export default function PartnerSubscriptionPage() {
+  const apiBase = useApiBase();
   const [data,        setData]        = useState<any>(null);
   const [loading,     setLoading]     = useState(true);
   const [requesting,  setRequesting]  = useState(false);
@@ -49,7 +51,7 @@ export default function PartnerSubscriptionPage() {
   const [targetTier,  setTargetTier]  = useState<string>('');
 
   useEffect(() => {
-    fetch('/api/partner/subscription')
+    fetch(`${apiBase}/api/partner/subscription`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
@@ -58,7 +60,7 @@ export default function PartnerSubscriptionPage() {
   const handleUpgrade = async () => {
     if (!targetTier) return;
     setRequesting(true);
-    const res  = await fetch('/api/partner/subscription', {
+    const res  = await fetch(`${apiBase}/api/partner/subscription`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ requested_tier: targetTier, billing_cycle: cycle }),
     });

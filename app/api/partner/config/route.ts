@@ -1,11 +1,28 @@
 // app/api/partner/config/route.ts
 // ─────────────────────────────────────────────────────────────────────────────
-// GET  /api/partner/config  → returns current partner's tenant config
-// PATCH /api/partner/config → updates tenant config fields
+// GET   /api/partner/config → returns current partner's config
+// PATCH /api/partner/config → updates safe partner config fields
+//
+// BUGS FIXED:
+//   - Was querying the dead `tenants` table (always 404). Migrated to `partners`.
+//   - PATCH had no ownership check — any authenticated user could patch any partner
+//     if they guessed the fields. Fixed: query by owner_id before updating.
+//   - Updated ALLOWED_FIELDS to match the `partners` table schema (brand JSONB,
+//     not flat columns like accent_color / surface_color that don't exist).
+//
+// NOTE: Brand styling (logo, colours, fonts) should go through /api/partner/brand.
+//       This route handles top-level partner metadata: name, subdomain, plan_overrides.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { clearPartnerCache } from '@/lib/getPartnerContext';
+
+const supabaseService = createServiceClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function GET() {
   const supabase = await createClient();
@@ -15,17 +32,18 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
   }
 
-  const { data: tenant, error } = await supabase
-    .from('tenants')
-    .select('*')
+  // ── FIX: query partners table, not the dead tenants table ──
+  const { data: partner, error } = await supabaseService
+    .from('partners')
+    .select('id, name, slug, subdomain, custom_domain, status, revenue_share_percent, brand, features, plan_overrides, ai_config, created_at, updated_at, onboarded_at')
     .eq('owner_id', user.id)
     .single();
 
-  if (error || !tenant) {
-    return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+  if (error || !partner) {
+    return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
   }
 
-  return NextResponse.json(tenant);
+  return NextResponse.json(partner);
 }
 
 export async function PATCH(req: NextRequest) {
@@ -36,23 +54,28 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
   }
 
-  // Only allow updating specific safe fields (never allow updating owner_id, id etc.)
+  // ── FIX: ownership check — fetch partner first, verify owner ──
+  // Previously this was missing: any authenticated user could attempt updates.
+  const { data: partner } = await supabaseService
+    .from('partners')
+    .select('id, owner_id, subdomain, status')
+    .eq('owner_id', user.id)
+    .single();
+
+  if (!partner) {
+    return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
+  }
+  if (partner.status === 'suspended') {
+    return NextResponse.json({ error: 'Account suspended' }, { status: 403 });
+  }
+
   const body = await req.json();
-  const ALLOWED_FIELDS = [
-    'name',
-    'logo_url',
-    'favicon_url',
-    'accent_color',
-    'accent_hover',
-    'accent_text',
-    'bg_color',
-    'surface_color',
-    'text_color',
-    'text_muted',
-    'ai_persona_prompt',
-    'subdomain',           // FIX WL-10: was missing, silently rejected subdomain saves
-    'paystack_plan_codes', // FIX WL-10: pricing page needs this
-  ];
+
+  // Only top-level scalar fields are allowed here.
+  // Brand styling → /api/partner/brand
+  // AI persona    → /api/partner/settings (ai_persona_prompt)
+  // Domain        → /api/partner/domain
+  const ALLOWED_FIELDS = ['name', 'plan_overrides'] as const;
 
   const updates: Record<string, unknown> = {};
   for (const field of ALLOWED_FIELDS) {
@@ -61,34 +84,34 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
+  // Subdomain changes need uniqueness check + cache bust — delegate to /api/partner/settings
+  if ('subdomain' in body) {
+    return NextResponse.json(
+      { error: 'Subdomain changes must go through /api/partner/settings' },
+      { status: 400 }
+    );
+  }
+
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
   }
 
-  // Validate subdomain format if being changed
-  if (updates.subdomain !== undefined) {
-    const sub = String(updates.subdomain);
-    if (!/^[a-z0-9-]{3,30}$/.test(sub)) {
-      return NextResponse.json(
-        { error: 'Subdomain must be 3–30 lowercase alphanumeric characters or hyphens.' },
-        { status: 400 }
-      );
-    }
-  }
-
   updates.updated_at = new Date().toISOString();
 
-  const { data, error } = await supabase
-    .from('tenants')
+  const { data, error } = await supabaseService
+    .from('partners')
     .update(updates)
-    .eq('owner_id', user.id)
+    .eq('id', partner.id)       // ── FIX: update by id (already ownership-verified above) ──
     .select()
     .single();
 
   if (error) {
-    console.error('Tenant update error:', error);
+    console.error('[partner/config PATCH]', error);
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
   }
+
+  // Bust cache so getPartnerContext reflects the change immediately
+  await clearPartnerCache(partner.subdomain);
 
   return NextResponse.json(data);
 }

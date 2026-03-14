@@ -320,3 +320,25 @@ select:focus {
 [data-app-theme="light"] ::-webkit-scrollbar-track { background: #E8E3D8; }
 [data-app-theme="light"] ::-webkit-scrollbar-thumb { background: #C8BFB0; border-radius: 4px; }
 [data-app-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #A89E90; }
+
+/* ── Partner CSS variable isolation ──────────────────────────────────────────
+   Partner brand vars are scoped to [data-partner="subdomain"] in the
+   whitelabel layout. This block ensures that if any partner var ever leaks
+   to :root through client-side navigation, the main app immediately
+   re-asserts its canonical values for every page that doesn't carry the
+   data-partner attribute. */
+:root:not([data-partner]) {
+  --accent:       #E8A020;
+  --accent-hover: #C87820;
+  --bg:           #0C0B08;
+  --bg-card:      #1E1C17;
+  --bg-input:     #1E1C17;
+  --text:         #F7F6F3;
+  --text-muted:   #C8C3B8;
+  --text-dim:     #8A8272;
+  --border:       rgba(212,207,195,0.14);
+  --success:      #10B981;
+  --error:        #EF4444;
+  --font-heading: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Syne', system-ui, sans-serif;
+}

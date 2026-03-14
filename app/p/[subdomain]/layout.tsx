@@ -165,7 +165,6 @@ export default async function SubdomainLayout({
   }
 
   // ── 4. CSS vars + fonts ──────────────────────────────────
-  const cssVarObject = Object.fromEntries(Object.entries(cssVars)) as React.CSSProperties;
   const fontsNeeded  = [...new Set([brand.font_heading, brand.font_body])];
   const fontFamilies = fontsNeeded
     .map(f => `family=${f.replace(/ /g, '+')}:wght@400;500;600;700`)
@@ -174,8 +173,13 @@ export default async function SubdomainLayout({
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: `@import url('${partnerFontUrl}');` }} />
-      <div style={cssVarObject as React.CSSProperties}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @import url('${partnerFontUrl}');
+        [data-partner="${partner.subdomain}"] {
+          ${Object.entries(cssVars).map(([k, v]) => `${k}: ${v};`).join('\n          ')}
+        }
+      ` }} />
+      <div data-partner={partner.subdomain}>
         <PartnerProvider context={ctx}>
           {isPublicPath || isAdminPath ? children : (
             <PartnerMemberShell partner={partner} isOwner={isOwner}>

@@ -2,6 +2,7 @@
 // app/partner/courses/page.tsx — full partner course manager with tier gating
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from 'react';
+import { useApiBase } from '@/lib/useApiBase';
 
 const DIFF_OPTS = ['beginner','intermediate','advanced'];
 const CAT_OPTS  = ['Leadership','Career Development','Tech Skills','Soft Skills','Finance','Entrepreneurship','Other'];
@@ -17,6 +18,7 @@ interface Course { id:string; title:string; description:string|null; youtube_id:
 interface TierInfo { name:string; maxCourses:number; featureEnabled:boolean; courseCount:number; }
 
 export default function PartnerCoursesPage() {
+  const apiBase = useApiBase();
   const [courses,  setCourses]  = useState<Course[]>([]);
   const [tier,     setTier]     = useState<TierInfo|null>(null);
   const [loading,  setLoading]  = useState(true);
@@ -27,7 +29,10 @@ export default function PartnerCoursesPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [cRes, sRes] = await Promise.all([fetch('/api/partner/courses'), fetch('/api/partner/subscription')]);
+    const [cRes, sRes] = await Promise.all([
+      fetch(`${apiBase}/api/partner/courses`),
+      fetch(`${apiBase}/api/partner/subscription`),
+    ]);
     const [cData, sData] = await Promise.all([cRes.json(), sRes.json()]);
     if (!cRes.ok) { setError(cData.error||'Failed to load'); setLoading(false); return; }
     setCourses(cData.courses || []);
@@ -37,14 +42,14 @@ export default function PartnerCoursesPage() {
       setTier({ name: sData.plan?.name, maxCourses: cfg?.maxCourses ?? 0, featureEnabled: sData.plan?.features?.ownCourses ?? false, courseCount: sData.usage?.courses?.current ?? 0 });
     }
     setLoading(false);
-  }, []);
+  }, [apiBase]);
 
   useEffect(() => { load(); }, [load]);
 
   const handleCreate = async () => {
     if (!form.title.trim() || !form.youtube_id.trim()) { setError('Title and YouTube URL are required.'); return; }
     setSaving(true); setError('');
-    const res = await fetch('/api/partner/courses', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form) });
+    const res = await fetch(`${apiBase}/api/partner/courses`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form) });
     const data = await res.json();
     if (!res.ok) { setError(data.error||'Failed to create.'); setSaving(false); return; }
     setShowForm(false);
@@ -53,13 +58,13 @@ export default function PartnerCoursesPage() {
   };
 
   const togglePublish = async (c: Course) => {
-    await fetch('/api/partner/courses', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ courseId:c.id, is_published:!c.is_published }) });
+    await fetch(`${apiBase}/api/partner/courses`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ courseId:c.id, is_published:!c.is_published }) });
     await load();
   };
 
   const deleteCourse = async (id: string) => {
     if (!confirm('Delete this course?')) return;
-    await fetch(`/api/partner/courses?courseId=${id}`, { method:'DELETE' });
+    await fetch(`${apiBase}/api/partner/courses?courseId=${id}`, { method:'DELETE' });
     await load();
   };
 
@@ -73,7 +78,7 @@ export default function PartnerCoursesPage() {
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#E8A020" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin:'0 auto 12px', display:'block' }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <p style={{ fontSize:'16px', fontWeight:600, color:'#f8fafc', marginBottom:'8px' }}>Available on Growth &amp; Pro</p>
         <p style={{ fontSize:'13px', color:'rgba(255,255,255,0.45)', marginBottom:'24px', lineHeight:1.6 }}>Create your own branded course library with YouTube videos, difficulty levels, and categories.</p>
-        <a href="/partner/subscription" style={{ ...S.btn, background:'#E8A020', color:'#0C0B08', textDecoration:'none', display:'inline-block' }}>Upgrade to Growth →</a>
+        <a href="/admin/subscription" style={{ ...S.btn, background:'#E8A020', color:'#0C0B08', textDecoration:'none', display:'inline-block' }}>Upgrade to Growth →</a>
       </div>
     </div>
   );
@@ -92,7 +97,7 @@ export default function PartnerCoursesPage() {
         </div>
         {!atLimit && !showForm
           ? <button onClick={() => setShowForm(true)} style={{ ...S.btn, background:'#E8A020', color:'#0C0B08' }}>+ Add course</button>
-          : atLimit && <a href="/partner/subscription" style={{ ...S.btn, background:'rgba(255,255,255,0.05)', color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.1)', textDecoration:'none', display:'inline-block', fontSize:'12px' }}>Upgrade for more</a>
+          : atLimit && <a href="/admin/subscription" style={{ ...S.btn, background:'rgba(255,255,255,0.05)', color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.1)', textDecoration:'none', display:'inline-block', fontSize:'12px' }}>Upgrade for more</a>
         }
       </div>
 
