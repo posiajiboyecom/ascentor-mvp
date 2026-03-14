@@ -150,19 +150,21 @@ export async function POST(req: NextRequest) {
     const amount = billing_cycle === 'annual' ? cfg.annualNgn : cfg.monthlyNgn;
 
     // Log upgrade request as audit entry
-    await supabase.from('audit_logs').insert({
-      user_id:     user.id,
-      action:      'partner_plan_change_requested',
-      entity_type: 'partner',
-      entity_id:   partner.id,
-      details: {
-        from_tier:      currentTier,
-        to_tier:        requested_tier,
-        billing_cycle:  billing_cycle || 'monthly',
-        amount_ngn:     amount,
-        partner_name:   partner.name,
-      },
-    }).catch(() => {}); // non-critical
+    await Promise.resolve(
+      supabase.from('audit_logs').insert({
+        user_id:     user.id,
+        action:      'partner_plan_change_requested',
+        entity_type: 'partner',
+        entity_id:   partner.id,
+        details: {
+          from_tier:      currentTier,
+          to_tier:        requested_tier,
+          billing_cycle:  billing_cycle || 'monthly',
+          amount_ngn:     amount,
+          partner_name:   partner.name,
+        },
+      })
+    ).catch(() => {}); // non-critical
 
     return NextResponse.json({
       success: true,
