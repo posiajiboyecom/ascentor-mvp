@@ -140,7 +140,7 @@ export default async function PartnerLayout({
             </a>
           )}
           <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
-            {profile.full_name || user.email}
+            {profile?.full_name || user.email}
           </span>
         </div>
       </header>
