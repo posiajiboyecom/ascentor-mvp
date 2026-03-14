@@ -119,6 +119,18 @@ export default async function SubdomainLayout({
 
     isOwner = partner.owner_id === user.id;
 
+    // ── FIX: partner-level suspension cascade ──────────────────────────────
+    // Previously, suspending a partner only blocked the settings API route.
+    // Members could still log in because only membership.status was checked.
+    // Fix: if the partner itself is suspended, redirect ALL users — including
+    // the owner — so the platform is fully locked down immediately.
+    if (partner.status === 'suspended') {
+      redirect(isOwner
+        ? `/access-denied?reason=partner_suspended`
+        : `/access-denied?reason=platform_unavailable`
+      );
+    }
+
     const { data: membership } = await supabaseService
       .from('partner_members')
       .select('id, status')

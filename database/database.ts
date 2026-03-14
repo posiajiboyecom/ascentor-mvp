@@ -500,10 +500,63 @@ export interface SessionLocation {
   created_at: string;
 }
 
-// ── Convenience helper ────────────────────────────────────────
-// Use this to type any Supabase .from('table') result:
-//   const profile: Tables<'profiles'> = data;
-export type Tables<T extends keyof TableMap> = TableMap[T];
+// ── Partner / White-label ─────────────────────────────────────────────────────
+// These were missing from the original database.ts, causing every Supabase
+// query on partners / partner_members to return `any` and silently bypass
+// TypeScript. Added here to restore type safety across the whitelabel system.
+
+export type PartnerStatus = 'pending' | 'active' | 'suspended' | 'rejected';
+export type PartnerMemberStatus = 'invited' | 'active' | 'suspended' | 'removed';
+export type PartnerTier = 'standard' | 'pro' | null;
+
+export interface PartnerRow {
+  id:                       string;
+  name:                     string;
+  slug:                     string;
+  subdomain:                string;
+  custom_domain:            string | null;
+  status:                   PartnerStatus;
+  owner_id:                 string;
+  revenue_share_percent:    number;
+  paystack_subaccount_code: string | null;
+  paystack_secret_key_enc:  string | null;  // encrypted at rest — never return raw
+  brand:                    Record<string, unknown>;  // see types/partner.ts PartnerBrand
+  features:                 Record<string, boolean>;  // see types/partner.ts PartnerFeatures
+  ai_config:                Record<string, unknown> | null;  // AI persona + knowledge config
+  plan_overrides:           Record<string, unknown> | null;
+  plan_tier:                PartnerTier;
+  created_at:               string;
+  updated_at:               string;
+  onboarded_at:             string | null;
+}
+
+export interface PartnerMemberRow {
+  id:          string;
+  partner_id:  string;
+  email:       string;
+  role:        string;      // 'member' | 'moderator' | 'admin'
+  status:      PartnerMemberStatus;
+  invited_at:  string;
+  joined_at:   string | null;
+  invited_by:  string | null;
+}
+
+export interface PartnerTransaction {
+  id:                  string;
+  partner_id:          string;
+  user_id:             string;
+  amount_ngn:          number;
+  partner_share_ngn:   number;
+  ascentor_fee_ngn:    number;
+  revenue_share_pct:   number;
+  plan:                string;
+  billing_cycle:       string;   // 'monthly' | 'annual'
+  paystack_reference:  string | null;
+  status:              string;   // 'completed' | 'refunded' | 'disputed'
+  paid_at:             string;
+}
+
+
 
 type TableMap = {
   profiles:                 Profile;
@@ -541,4 +594,8 @@ type TableMap = {
   lead_magnets:             LeadMagnet;
   sent_newsletters:         SentNewsletter;
   session_locations:        SessionLocation;
+  // ── Partner / White-label ─────────────────────────────
+  partners:                 PartnerRow;
+  partner_members:          PartnerMemberRow;
+  partner_transactions:     PartnerTransaction;
 };

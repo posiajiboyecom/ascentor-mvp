@@ -98,7 +98,8 @@ export default function PartnerCheckoutClient({
 
   const handleCheckout = async () => {
     if (!userId) {
-      router.push(`/p/${partner.subdomain}/login?redirect=/p/${partner.subdomain}/checkout`);
+      // Root-relative paths — proxy rewrites them to the partner domain transparently.
+      router.push('/login?redirect=/checkout');
       return;
     }
     setLoading(true);

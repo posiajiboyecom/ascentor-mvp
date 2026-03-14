@@ -76,8 +76,9 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
   const goalProgress = goal?.progress || 0;
 
-  // Only whitelabel-specific addition: route links through subdomain prefix
-  const navHref = (segment: string) => sub ? `/p/${sub}/${segment}` : `/${segment}`;
+  // Root-relative paths — the proxy (proxy.ts) rewrites them transparently.
+  // NEVER prefix with /p/${sub}/: that exposes the internal rewrite path → 404.
+  const navHref = (segment: string) => `/${segment}`;
 
   const toggleCommitment = async (id: string, done: boolean) => {
     setLocalCommitments((prev: any[]) =>

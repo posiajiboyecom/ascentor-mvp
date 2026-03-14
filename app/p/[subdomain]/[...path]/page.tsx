@@ -8,10 +8,12 @@ export const dynamic = 'force-dynamic';
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
-async function requireAuth(subdomain: string) {
+async function requireAuth() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/p/${subdomain}/login`);
+  // Root-relative /login — proxy rewrites it to the partner login page transparently.
+  // NEVER use /p/${subdomain}/login — that exposes the internal path → 404.
+  if (!user) redirect('/login');
   return user;
 }
 
@@ -38,7 +40,7 @@ export default async function TenantSubPage({
   }
 
   // ── Protected routes ───────────────────────────────────────────────────────
-  await requireAuth(subdomain);
+  await requireAuth();
 
   if (route === '' || route === 'dashboard') {
     const { default: DashboardPage } = await import('@/app/(app)/dashboard/page');
