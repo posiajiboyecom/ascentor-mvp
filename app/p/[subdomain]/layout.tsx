@@ -36,7 +36,12 @@ const supabaseService = createServiceClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const PUBLIC_PATHS = ['/login', '/signup', '/join', '/access-denied'];
+// Paths that skip the PartnerMemberShell wrapper entirely.
+// /admin is here because it has its own PartnerAdminShell layout — wrapping it
+// in PartnerMemberShell too causes the "viewing as member" banner to appear on
+// every admin page, and double-wraps the shell UI.
+const PUBLIC_PATHS  = ['/login', '/signup', '/join', '/access-denied'];
+const ADMIN_PATHS   = ['/admin'];
 
 export default async function SubdomainLayout({
   children,
@@ -105,6 +110,11 @@ export default async function SubdomainLayout({
     partnerPathname.endsWith(p)
   );
 
+  // Admin routes have their own PartnerAdminShell — bypass the member shell entirely
+  const isAdminPath = ADMIN_PATHS.some(p =>
+    partnerPathname === p || partnerPathname.startsWith(p + '/')
+  );
+
   // ── 3. Auth + membership ─────────────────────────────────
   let isOwner = false;
 
@@ -167,7 +177,7 @@ export default async function SubdomainLayout({
       <style dangerouslySetInnerHTML={{ __html: `@import url('${partnerFontUrl}');` }} />
       <div style={cssVarObject as React.CSSProperties}>
         <PartnerProvider context={ctx}>
-          {isPublicPath ? children : (
+          {isPublicPath || isAdminPath ? children : (
             <PartnerMemberShell partner={partner} isOwner={isOwner}>
               {children}
             </PartnerMemberShell>

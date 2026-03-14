@@ -9,7 +9,7 @@
 //            Added platform_name, font_heading, font_body fields.
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,12 +22,166 @@ const FONT_OPTIONS = [
   'DM Sans',
 ];
 
+// ── ImageUpload component ─────────────────────────────────────────────────────
+// Replaces raw URL text inputs for logo and favicon.
+// Shows a preview of the current image, a drag-and-drop/click upload zone,
+// and a fallback URL input for partners who already have a hosted image.
+
+function ImageUpload({
+  label,
+  assetType,
+  currentUrl,
+  onUploaded,
+  hint,
+}: {
+  label:      string;
+  assetType:  'logo' | 'logo_dark' | 'favicon';
+  currentUrl: string;
+  onUploaded: (url: string) => void;
+  hint?:      string;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlValue, setUrlValue] = useState(currentUrl);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Keep URL input in sync when parent updates (e.g. on load)
+  useEffect(() => { setUrlValue(currentUrl); }, [currentUrl]);
+
+  const upload = useCallback(async (file: File) => {
+    setUploading(true);
+    setUploadError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('type', assetType);
+      const res  = await fetch('/api/partner/storage/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) { setUploadError(data.error || 'Upload failed.'); return; }
+      onUploaded(data.url);
+    } catch {
+      setUploadError('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  }, [assetType, onUploaded]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) upload(file);
+  }, [upload]);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) upload(file);
+  };
+
+  const isSquare = assetType === 'favicon';
+
+  return (
+    <div style={{ marginBottom: '18px' }}>
+      <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-dim)', marginBottom: '8px' }}>
+        {label}
+      </p>
+
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+        {/* Preview */}
+        <div style={{
+          width: isSquare ? 48 : 80, height: 48, borderRadius: isSquare ? 8 : 6,
+          border: '1px solid var(--border)', background: 'var(--bg-card)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden', flexShrink: 0,
+        }}>
+          {currentUrl ? (
+            <img src={currentUrl} alt={label} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+          )}
+        </div>
+
+        {/* Drop zone */}
+        <div
+          onDragOver={e => e.preventDefault()}
+          onDrop={handleDrop}
+          onClick={() => inputRef.current?.click()}
+          style={{
+            flex: 1, border: `1px dashed ${uploading ? 'var(--accent)' : 'var(--border)'}`,
+            borderRadius: 8, padding: '10px 14px',
+            background: uploading ? 'rgba(232,160,32,0.04)' : 'var(--bg-card)',
+            cursor: uploading ? 'not-allowed' : 'pointer',
+            display: 'flex', alignItems: 'center', gap: 8, transition: 'border-color 0.15s',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
+            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+          </svg>
+          <span style={{ fontSize: '12px', color: uploading ? 'var(--accent)' : 'var(--text-dim)' }}>
+            {uploading ? 'Uploading…' : 'Click or drag to upload'}
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--text-dim)', marginLeft: 'auto', opacity: 0.6 }}>
+            PNG, SVG, JPG · max 2 MB
+          </span>
+        </div>
+      </div>
+
+      <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
+
+      {uploadError && (
+        <p style={{ fontSize: '11px', color: '#EF4444', marginTop: '5px' }}>{uploadError}</p>
+      )}
+
+      {/* Optional URL fallback */}
+      <div style={{ marginTop: '6px' }}>
+        <button
+          onClick={() => setShowUrlInput(v => !v)}
+          style={{ fontSize: '11px', color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+        >
+          {showUrlInput ? 'Hide URL input' : 'Or paste an image URL'}
+        </button>
+        {showUrlInput && (
+          <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+            <input
+              value={urlValue}
+              onChange={e => setUrlValue(e.target.value)}
+              placeholder="https://..."
+              style={{
+                flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)',
+                borderRadius: 7, padding: '7px 12px', color: 'var(--text)', fontSize: '12px', outline: 'none',
+              }}
+            />
+            <button
+              onClick={() => onUploaded(urlValue)}
+              style={{
+                padding: '7px 14px', background: 'var(--accent)', color: '#0C0B08',
+                borderRadius: 7, border: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              Use URL
+            </button>
+          </div>
+        )}
+      </div>
+
+      {hint && <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '5px', opacity: 0.7 }}>{hint}</p>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function PartnerBrandPage() {
   const [partnerId, setPartnerId] = useState('');
   const [planTier, setPlanTier] = useState<'standard' | 'pro' | null>(null);
   const [form, setForm] = useState({
     platform_name: '',
     logo_url: '',
+    logo_dark_url: '',
     favicon_url: '',
     primary_color: '#E8A020',
     accent_color: '#C8851A',
@@ -57,6 +211,7 @@ export default function PartnerBrandPage() {
         setForm({
           platform_name:          brand.platform_name          || '',
           logo_url:               brand.logo_url               || '',
+          logo_dark_url:          brand.logo_dark_url          || '',
           favicon_url:            brand.favicon_url            || '',
           primary_color:          brand.primary_color          || '#E8A020',
           accent_color:           brand.accent_color           || '#C8851A',
@@ -142,8 +297,27 @@ export default function PartnerBrandPage() {
       <section style={{ marginBottom: '28px' }}>
         <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-dim)', marginBottom: '16px' }}>Identity</p>
         {field('Platform name', 'platform_name')}
-        {field('Logo URL', 'logo_url')}
-        {field('Favicon URL', 'favicon_url')}
+        <ImageUpload
+          label="Logo (light background)"
+          assetType="logo"
+          currentUrl={form.logo_url}
+          onUploaded={url => setForm(f => ({ ...f, logo_url: url }))}
+          hint="Shown in the top nav. Recommended: SVG or PNG with transparent background, max 400×120px."
+        />
+        <ImageUpload
+          label="Logo (dark background)"
+          assetType="logo_dark"
+          currentUrl={form.logo_dark_url}
+          onUploaded={url => setForm(f => ({ ...f, logo_dark_url: url }))}
+          hint="Optional. Used when your platform background is dark."
+        />
+        <ImageUpload
+          label="Favicon"
+          assetType="favicon"
+          currentUrl={form.favicon_url}
+          onUploaded={url => setForm(f => ({ ...f, favicon_url: url }))}
+          hint="Browser tab icon. Use a square PNG or SVG, ideally 32×32px or 64×64px."
+        />
       </section>
 
       {/* Colours */}
