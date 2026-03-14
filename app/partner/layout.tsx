@@ -49,15 +49,32 @@ export default async function PartnerLayout({
     redirect('/login?next=/partner');
   }
 
-  // 2. Role check — must be a partner
+  // 2. Partner access check — user must own a row in the partners table.
+  // Previously this checked profiles.role = 'partner', which is fragile:
+  //   - The role field must be manually set and kept in sync
+  //   - An admin visiting /partner would pass the check but have no partner row
+  //   - A pending/rejected applicant with role='partner' would get access
+  // Fix: the canonical source of truth is the partners table itself.
+  // Ascentor admin (profiles.role = 'admin') retains full access for support.
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, full_name')
     .eq('id', user.id)
     .single();
 
-  if (!profile || !['partner', 'admin'].includes(profile.role || '')) {
-    // Not a partner — redirect to main app
+  const isAscentorAdmin = profile?.role === 'admin';
+
+  // Check if user owns an active or pending partner account
+  const { data: partnerCheck } = await supabase
+    .from('partners')
+    .select('id, status')
+    .eq('owner_id', user.id)
+    .single();
+
+  const isPartnerOwner = !!partnerCheck;
+
+  if (!isAscentorAdmin && !isPartnerOwner) {
+    // Not a partner owner and not Ascentor admin — redirect to main app
     redirect('/dashboard');
   }
 

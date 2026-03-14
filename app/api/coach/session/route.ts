@@ -136,12 +136,11 @@ ${commitmentsRes.data?.map((c: any) => `- ${c.commitment_text}`).join('\n') || '
       (response.usage.input_tokens / 1_000_000) * 3 +
       (response.usage.output_tokens / 1_000_000) * 15;
 
-    // 9. Save Session — includes tenant_id for data isolation
+    // 9. Save Session
     const { data: session, error: dbError } = await supabase
       .from('coaching_sessions')
       .insert({
         user_id: user.id,
-        tenant_id: tenantId, // ← NEW: tenant isolation
         session_type: sessionType,
         user_input: userInput,
         ai_response: parsed,

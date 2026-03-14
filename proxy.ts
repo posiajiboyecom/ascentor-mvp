@@ -99,22 +99,22 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ── 2. White-label subdomain routing ─────────────────────
+  // Store rewrite intent; fall through to auth/subscription checks.
+  // The previous early-return meant unauthenticated visitors on
+  // demo.ascentorbi.com/dashboard were rewritten directly to the
+  // protected server component — auth ran inside the component, not
+  // at the middleware layer where it belongs (same fix as BUG-10).
+  let subdomainRewrite: URL | null = null;
+  let partnerSubdomain: string | null = null;
+
   if (host.endsWith(`.${MAIN_DOMAIN}`)) {
     const subdomain = host.replace(`.${MAIN_DOMAIN}`, '');
 
     if (subdomain && !RESERVED_SUBDOMAINS.includes(subdomain)) {
-      const rewrittenUrl = request.nextUrl.clone();
-      rewrittenUrl.pathname = `/p/${subdomain}${pathname}`;
-
-      const response = NextResponse.rewrite(rewrittenUrl);
-      response.headers.set('x-partner-subdomain', subdomain);
-      response.headers.set('x-partner-pathname', pathname);
-      // BUG-11 header: checkout needs the canonical API base
-      response.headers.set('x-ascentor-api-base', MAIN_APP_URL);
-      return response;
-      // NOTE: subdomain rewrites still early-return — they ARE on *.ascentorbi.com
-      // so Vercel handles auth at the edge via the *.ascentorbi.com rewrite.
-      // Custom domains below do NOT early-return (see BUG-10 fix).
+      subdomainRewrite = request.nextUrl.clone();
+      subdomainRewrite.pathname = `/p/${subdomain}${pathname}`;
+      partnerSubdomain = subdomain;
+      // Do NOT return — fall through to steps 4-8
     }
   }
 
@@ -138,11 +138,18 @@ export default async function proxy(request: NextRequest) {
 
   // ── 4. Public routes ──────────────────────────────────────
   if (PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
+    if (subdomainRewrite) {
+      const res = NextResponse.rewrite(subdomainRewrite);
+      res.headers.set('x-partner-subdomain', partnerSubdomain!);
+      res.headers.set('x-partner-pathname', pathname);
+      res.headers.set('x-ascentor-api-base', MAIN_APP_URL);
+      return res;
+    }
     if (customDomainRewrite) {
       const res = NextResponse.rewrite(customDomainRewrite);
       res.headers.set('x-partner-custom-domain', host);
       res.headers.set('x-partner-pathname', pathname);
-      res.headers.set('x-ascentor-api-base', MAIN_APP_URL); // BUG-11
+      res.headers.set('x-ascentor-api-base', MAIN_APP_URL);
       return res;
     }
     return NextResponse.next();
@@ -181,7 +188,13 @@ export default async function proxy(request: NextRequest) {
 
   // ── 7. Protect page routes ────────────────────────────────
   if (!user && AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
-    // For custom domains, redirect to the partner's login page on its own domain
+    // Subdomain partners: redirect to /login (proxy rewrites it to partner login)
+    if (subdomainRewrite) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    // Custom domains: redirect to the partner's login page on its own domain
     if (customDomainRewrite) {
       const loginUrl = new URL(`https://${host}/login`);
       loginUrl.searchParams.set('redirect', pathname);
@@ -210,6 +223,7 @@ export default async function proxy(request: NextRequest) {
           customDomainRewrite ? `https://${host}/checkout` : '/checkout',
           request.url
         );
+        // subdomainRewrite: /checkout stays root-relative (proxy rewrites it)
         checkoutUrl.searchParams.set('reason', 'subscription_required');
         checkoutUrl.searchParams.set('from', pathname);
         checkoutUrl.searchParams.set('required', matchedTier.minPlan);
@@ -218,7 +232,18 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  // ── 9. Apply custom domain rewrite (with auth passed) ─────
+  // ── 9. Apply rewrites (auth passed) ──────────────────────
+  if (subdomainRewrite) {
+    const rewriteRes = NextResponse.rewrite(subdomainRewrite);
+    rewriteRes.headers.set('x-partner-subdomain', partnerSubdomain!);
+    rewriteRes.headers.set('x-partner-pathname', pathname);
+    rewriteRes.headers.set('x-ascentor-api-base', MAIN_APP_URL);
+    response.cookies.getAll().forEach(({ name, value, ...opts }) => {
+      rewriteRes.cookies.set(name, value, opts);
+    });
+    return rewriteRes;
+  }
+
   if (customDomainRewrite) {
     // Clone response cookies into new rewrite response
     const rewriteRes = NextResponse.rewrite(customDomainRewrite);

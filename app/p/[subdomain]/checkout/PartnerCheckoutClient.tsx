@@ -48,6 +48,7 @@ export default function PartnerCheckoutClient({
   paystackKey,
   trialDays,
   apiBase = '',   // FIX BUG-11: injected by server component; empty on subdomain, full URL on custom domain
+  currency = 'NGN', // configurable per partner via plan_overrides.currency
   defaultPlan,
   defaultBilling,
   requiredPlan: requiredPlanProp,
@@ -57,6 +58,7 @@ export default function PartnerCheckoutClient({
   paystackKey:   string;
   trialDays:     number;
   apiBase?:      string;
+  currency?:     string;
   defaultPlan?:  string;
   defaultBilling?: string;
   requiredPlan?: string;
@@ -116,7 +118,7 @@ export default function PartnerCheckoutClient({
         key:      paystackKey,
         email:    userEmail,
         amount:   priceNGN * 100,
-        currency: 'NGN',
+        currency: currency,
         ref:      `partner_${partner.id}_${Date.now()}`,
         metadata: {
           user_id:       userId,

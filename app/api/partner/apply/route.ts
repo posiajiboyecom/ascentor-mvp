@@ -79,7 +79,10 @@ export async function POST(req: NextRequest) {
         revenue_share_percent: 70, // default — can be adjusted per partner
         features: {
           ai_coach: true, community: true, experts: false,
-          courses: true, referrals: true,
+          courses: true,
+          // referrals: false by default — no partner-facing referral UI exists yet.
+          // Enable manually per partner once the UI ships.
+          referrals: false,
         },
       })
       .select()

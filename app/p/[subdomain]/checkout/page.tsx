@@ -46,12 +46,22 @@ export default async function PartnerCheckoutPage({
     (partner as any).paystack_public_key ||
     process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!;
 
-  // NGN_RATE for USD fallback (partners setting NGN directly won't need this)
-  const NGN_RATE = 1600;
+  // NGN exchange rate — read from env first, then plan_overrides, then safe default.
+  // Set PAYSTACK_NGN_RATE in Vercel env to update without a code deploy.
+  // Partners can also override per-platform via plan_overrides.ngn_rate.
+  // NEVER hardcode this — the Naira rate changes regularly.
+  const NGN_RATE = Number(
+    overrides?.ngn_rate ||                      // partner-specific override
+    process.env.PAYSTACK_NGN_RATE ||            // global env var (update without deploy)
+    1600                                         // last-resort fallback
+  );
 
-  // Build plan pricing — prefer NGN overrides, fall back to USD * rate, then defaults
+  // Determine currency — default NGN for Nigerian partners, configurable per partner
+  const currency = String(overrides?.currency || 'NGN').toUpperCase();
+
+  // Build plan pricing — prefer explicit NGN overrides, fall back to USD * rate, then defaults.
   // All numeric fields explicitly cast with Number() to satisfy TypeScript
-  // (plan_overrides is JSONB so Supabase types fields as string | number)
+  // (plan_overrides is JSONB so Supabase types fields as string | number).
   const plans = {
     explorer: {
       name:        String(overrides?.explorer_name     || 'Explorer'),
@@ -82,6 +92,7 @@ export default async function PartnerCheckoutPage({
       defaultBilling={(searchParams.billing as string) || 'monthly'}
       requiredPlan={searchParams.required}
       trialDays={overrides?.trial_days ?? 7}
+      currency={currency}
       apiBase={apiBase}
     />
   );

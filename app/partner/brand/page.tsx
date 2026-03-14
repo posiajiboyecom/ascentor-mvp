@@ -24,6 +24,7 @@ const FONT_OPTIONS = [
 
 export default function PartnerBrandPage() {
   const [partnerId, setPartnerId] = useState('');
+  const [planTier, setPlanTier] = useState<'standard' | 'pro' | null>(null);
   const [form, setForm] = useState({
     platform_name: '',
     logo_url: '',
@@ -43,11 +44,15 @@ export default function PartnerBrandPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const isProPlan = planTier === 'pro';
+
   useEffect(() => {
     fetch('/api/partner/brand')
       .then((r) => r.json())
       .then((data) => {
         setPartnerId(data.id || '');
+        // plan_tier is returned by /api/partner/brand GET (see brand/route.ts)
+        setPlanTier(data.plan_tier || null);
         const brand = data.brand || {};
         setForm({
           platform_name:          brand.platform_name          || '',
@@ -180,17 +185,40 @@ export default function PartnerBrandPage() {
       {/* Branding */}
       <section style={{ marginBottom: '28px' }}>
         <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-dim)', marginBottom: '16px' }}>White-label</p>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={form.hide_ascentor_branding}
-            onChange={(e) => setForm({ ...form, hide_ascentor_branding: e.target.checked })}
-          />
-          <span style={{ fontSize: '13px', color: 'var(--text)' }}>
-            Hide "Powered by Ascentor" branding
-            <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block' }}>Requires Partner Pro plan</span>
-          </span>
-        </label>
+
+        {isProPlan ? (
+          /* Pro plan — toggle is functional */
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={form.hide_ascentor_branding}
+              onChange={(e) => setForm({ ...form, hide_ascentor_branding: e.target.checked })}
+            />
+            <span style={{ fontSize: '13px', color: 'var(--text)' }}>
+              Hide &ldquo;Powered by Ascentor&rdquo; branding
+              <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block' }}>Remove the Ascentor attribution from your platform footer</span>
+            </span>
+          </label>
+        ) : (
+          /* Standard plan — locked with upgrade prompt */
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', opacity: 0.6, cursor: 'not-allowed' }}>
+            <input type="checkbox" disabled checked={false} style={{ marginTop: '2px' }} />
+            <span style={{ fontSize: '13px', color: 'var(--text)' }}>
+              Hide &ldquo;Powered by Ascentor&rdquo; branding
+              <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginTop: '2px' }}>
+                Available on{' '}
+                <span style={{
+                  display: 'inline-block', padding: '1px 7px', borderRadius: '20px', fontSize: '10px',
+                  fontWeight: 700, letterSpacing: '0.04em',
+                  background: 'rgba(232,160,32,0.15)', color: '#E8A020', border: '1px solid rgba(232,160,32,0.3)',
+                }}>
+                  Partner Pro
+                </span>
+                {' '}— contact support to upgrade
+              </span>
+            </span>
+          </div>
+        )}
       </section>
 
       {error && (
