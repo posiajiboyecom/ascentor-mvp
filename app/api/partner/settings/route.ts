@@ -76,7 +76,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (ai_persona_prompt !== undefined) {
-      // ai_persona_prompt lives in ai_config (brand was legacy — /api/partner/config reads ai_config)
+      // ai_persona_prompt lives in ai_config — /api/partner/config reads from here, not brand
       const { data: current } = await supabase
         .from('partners')
         .select('ai_config')
