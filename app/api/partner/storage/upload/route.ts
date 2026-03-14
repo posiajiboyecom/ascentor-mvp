@@ -79,21 +79,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── 4. Ensure public bucket exists ───────────────────────
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const bucketExists = (buckets || []).some(b => b.name === BUCKET);
+    // ── 4. Verify bucket exists (created by storage-migration.sql) ───────────
+    // We do NOT attempt to create the bucket at runtime — that approach is
+    // unreliable because the bucket also needs storage policies, which cannot
+    // be set via the JS client. The bucket must be created via the SQL migration
+    // in scripts/storage-migration.sql before this route is used.
+    const { data: buckets, error: listErr } = await supabase.storage.listBuckets();
+    if (listErr) {
+      console.error('[Upload] listBuckets error:', listErr);
+      return NextResponse.json({ error: 'Storage check failed' }, { status: 500 });
+    }
 
+    const bucketExists = (buckets || []).some(b => b.name === BUCKET);
     if (!bucketExists) {
-      const { error: createErr } = await supabase.storage.createBucket(BUCKET, {
-        public: true,
-        allowedMimeTypes: ALLOWED_TYPES,
-        fileSizeLimit: MAX_SIZE_BYTES,
-      });
-      // Ignore "already exists" race condition
-      if (createErr && !createErr.message?.includes('already exists')) {
-        console.error('[Upload] createBucket error:', createErr);
-        return NextResponse.json({ error: 'Storage unavailable' }, { status: 500 });
-      }
+      console.error('[Upload] Bucket not found:', BUCKET,
+        '— run scripts/storage-migration.sql in Supabase dashboard');
+      return NextResponse.json({
+        error: 'Storage not configured. Please contact support.',
+      }, { status: 503 });
     }
 
     // ── 5. Build storage path ────────────────────────────────
@@ -113,8 +116,10 @@ export async function POST(req: NextRequest) {
       });
 
     if (uploadErr) {
-      console.error('[Upload] upload error:', uploadErr);
-      return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+      console.error('[Upload] upload error:', uploadErr.message, '| path:', filePath);
+      return NextResponse.json({
+        error: `Upload failed: ${uploadErr.message}`,
+      }, { status: 500 });
     }
 
     // ── 7. Get public URL ────────────────────────────────────
