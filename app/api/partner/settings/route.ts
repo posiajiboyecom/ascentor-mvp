@@ -76,13 +76,13 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (ai_persona_prompt !== undefined) {
-      // ai_persona_prompt lives in the brand JSONB
+      // ai_persona_prompt lives in ai_config (brand was legacy — /api/partner/config reads ai_config)
       const { data: current } = await supabase
         .from('partners')
-        .select('brand')
+        .select('ai_config')
         .eq('id', partner.id)
         .single();
-      updates.brand = { ...(current?.brand || {}), ai_persona_prompt };
+      updates.ai_config = { ...(current?.ai_config || {}), ai_persona_prompt };
     }
 
     if (Object.keys(updates).length <= 1) {
