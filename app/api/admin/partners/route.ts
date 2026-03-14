@@ -124,7 +124,7 @@ export async function PATCH(req: NextRequest) {
   const adminId = await isAdmin(req.headers.get('authorization'));
   if (!adminId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
-  const { partnerId, action, revenue_share } = await req.json();
+  const { partnerId, action, revenue_share, plan_tier: requestedTier } = await req.json();
   if (!partnerId || !action) {
     return NextResponse.json({ error: 'partnerId and action required' }, { status: 400 });
   }
@@ -176,8 +176,8 @@ export async function PATCH(req: NextRequest) {
 
   // Set plan_tier on approval — default to 'starter' if not provided
   if (action === 'approve') {
-    const tier = body.plan_tier && ['starter','growth','pro'].includes(body.plan_tier)
-      ? body.plan_tier : 'starter';
+    const tier = requestedTier && ['starter','growth','pro'].includes(requestedTier)
+      ? requestedTier : 'starter';
     update.plan_tier = tier;
     if (typeof revenue_share !== 'number') {
       update.revenue_share_percent = tier === 'pro' ? 80 : tier === 'growth' ? 70 : 65;
