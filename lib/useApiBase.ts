@@ -1,9 +1,14 @@
 // lib/useApiBase.ts
 //
 // Returns the base URL to prefix /api/... calls with.
-// On ascentorbi.com: returns '' so relative URLs work unchanged.
-// On partner subdomains (demo.ascentorbi.com) or custom domains:
-// returns 'https://ascentorbi.com' so API calls route correctly.
+//
+// The partner admin layout (app/p/[subdomain]/admin/layout.tsx) injects a
+// <meta name="x-ascentor-api-base"> tag whose content is the
+// x-ascentor-api-base response header set by proxy.ts on every
+// partner subdomain / custom domain request.
+//
+// Value is 'https://ascentorbi.com' on partner subdomains and custom domains.
+// Value is '' on ascentorbi.com itself (relative URLs work fine there).
 //
 // Usage:
 //   const apiBase = useApiBase();
@@ -13,20 +18,18 @@
 import { useState } from 'react';
 
 function getApiBase(): string {
-  if (typeof window === 'undefined') return '';
-  const host = window.location.hostname;
-  if (host === 'ascentorbi.com' || host === 'localhost' || host === '127.0.0.1') {
-    return '';
-  }
-  // Partner subdomain or custom domain — must prefix with main app origin
-  return 'https://ascentorbi.com';
+  if (typeof document === 'undefined') return '';
+  const meta = document.querySelector<HTMLMetaElement>(
+    'meta[name="x-ascentor-api-base"]'
+  );
+  return meta?.content || '';
 }
 
 export function useApiBase(): string {
-  // Initialise synchronously so the value is correct on the very first render.
-  // Previously this used useState('') + useEffect, which meant the first render
-  // always had base='' — on partner subdomains the first fetch would hit the wrong
-  // host, fail, and set the error state before the correct base was available.
+  // Reads synchronously from the <meta> tag injected by the server layout.
+  // useState(getApiBase) runs the initialiser once on first render — the meta
+  // tag is already in the DOM at that point so the value is always correct
+  // and no useEffect / re-render is needed.
   const [base] = useState<string>(getApiBase);
   return base;
 }
