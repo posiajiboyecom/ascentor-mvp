@@ -172,7 +172,7 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
         revenue_share_percent: 0,
         paystack_subaccount_code: null,
         brand: DEFAULT_BRAND,
-        features: { ai_coach: true, community: true, experts: true, courses: true, referrals: false },
+        features: { ai_coach: true, community: true, experts: true, courses: true, referrals: false, own_courses: false, own_events: false },
         plan_overrides: null,
         created_at: '', updated_at: '', onboarded_at: null,
       },

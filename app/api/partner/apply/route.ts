@@ -83,6 +83,10 @@ export async function POST(req: NextRequest) {
           // referrals: false by default — no partner-facing referral UI exists yet.
           // Enable manually per partner once the UI ships.
           referrals: false,
+          // own_courses / own_events gated by plan_tier — false at apply time,
+          // enabled automatically once partner upgrades to Growth or Pro.
+          own_courses: false,
+          own_events:  false,
         },
       })
       .select()
