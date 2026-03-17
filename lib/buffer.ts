@@ -1,154 +1,123 @@
-/**
- * Buffer API Integration for Ascentor
- * Docs: https://buffer.com/developers/api
- *
- * Usage:
- *   - Schedule posts to Instagram, TikTok, LinkedIn from one place
- *   - Used by the Ascentor admin content scheduler
- */
+// ═══════════════════════════════════════════════════════════
+// Buffer API Helper
+// Handles scheduling posts to Buffer via the Publish API v1
+// Docs: https://buffer.com/developers/api
+// ═══════════════════════════════════════════════════════════
 
-const BUFFER_API = 'https://api.bufferapp.com/1'
-const ACCESS_TOKEN = process.env.BUFFER_ACCESS_TOKEN!
+const BUFFER_API_BASE = "https://api.bufferapp.com/1";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export type BufferProfile = {
-  id: string
-  service: 'instagram' | 'tiktok' | 'linkedin' | 'twitter' | string
-  service_username: string
-  avatar: string
-  formatted_username: string
+export interface BufferProfile {
+  id: string;
+  service: string; // "twitter", "linkedin", "facebook", "instagram"
+  service_username: string;
+  formatted_username: string;
 }
 
-export type SchedulePostParams = {
-  profileIds: string[]        // Buffer profile IDs to post to
-  text: string                // Caption / post body
-  mediaUrls?: string[]        // Public image/video URLs (must be publicly accessible)
-  scheduledAt?: Date          // If omitted, adds to Buffer queue
-  hashtags?: string[]         // Will be appended to text
+export interface BufferUpdatePayload {
+  profile_ids: string[];
+  text: string;
+  scheduled_at?: string; // ISO 8601 — if omitted, adds to queue
+  now?: boolean;         // post immediately
+  shorten?: boolean;     // shorten URLs
+  top?: boolean;         // add to top of queue
 }
 
-export type BufferPost = {
-  id: string
-  status: 'buffer' | 'sent' | 'failed'
-  text: string
-  scheduled_at: number        // Unix timestamp
-  profile_id: string
-  service_type: string
+export interface BufferResult {
+  success: boolean;
+  update_id?: string;
+  profile_id?: string;
+  error?: string;
 }
 
-// ─── Core helpers ─────────────────────────────────────────────────────────────
+// ── Get all connected profiles ────────────────────────────
+export async function getBufferProfiles(): Promise<BufferProfile[]> {
+  const token = process.env.BUFFER_ACCESS_TOKEN;
+  if (!token) throw new Error("BUFFER_ACCESS_TOKEN is not set");
 
-async function bufferFetch<T>(
-  endpoint: string,
-  method: 'GET' | 'POST' = 'GET',
-  body?: Record<string, unknown>
-): Promise<T> {
-  const url = `${BUFFER_API}${endpoint}.json`
+  const res = await fetch(`${BUFFER_API_BASE}/profiles.json?access_token=${token}`);
+  if (!res.ok) throw new Error(`Buffer profiles error: ${res.status} ${await res.text()}`);
 
-  const formBody = body
-    ? new URLSearchParams({
-        access_token: ACCESS_TOKEN,
-        ...Object.fromEntries(
-          Object.entries(body).map(([k, v]) => [
-            k,
-            typeof v === 'object' ? JSON.stringify(v) : String(v),
-          ])
-        ),
-      }).toString()
-    : `access_token=${ACCESS_TOKEN}`
+  const data = await res.json();
+  return data.map((p: any) => ({
+    id: p.id,
+    service: p.service,
+    service_username: p.service_username,
+    formatted_username: p.formatted_username,
+  }));
+}
 
-  const res = await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: method === 'POST' ? formBody : undefined,
-    cache: 'no-store',
-  })
+// ── Schedule a single post to Buffer ─────────────────────
+export async function scheduleBufferPost(
+  payload: BufferUpdatePayload
+): Promise<BufferResult[]> {
+  const token = process.env.BUFFER_ACCESS_TOKEN;
+  if (!token) throw new Error("BUFFER_ACCESS_TOKEN is not set");
 
-  if (!res.ok) {
-    const error = await res.text()
-    throw new Error(`Buffer API error ${res.status}: ${error}`)
+  const results: BufferResult[] = [];
+
+  // Buffer API requires one profile per request for scheduled_at
+  for (const profileId of payload.profile_ids) {
+    const body = new URLSearchParams();
+    body.append("access_token", token);
+    body.append("profile_ids[]", profileId);
+    body.append("text", payload.text);
+
+    if (payload.scheduled_at) {
+      // Convert ISO string to Unix timestamp (Buffer requires this)
+      const unixTime = Math.floor(new Date(payload.scheduled_at).getTime() / 1000);
+      body.append("scheduled_at", unixTime.toString());
+    }
+
+    if (payload.now) body.append("now", "true");
+    if (payload.shorten !== false) body.append("shorten", "true");
+    if (payload.top) body.append("top", "true");
+
+    const res = await fetch(`${BUFFER_API_BASE}/updates/create.json`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.success === false) {
+      results.push({
+        success: false,
+        profile_id: profileId,
+        error: data.message || data.error || `HTTP ${res.status}`,
+      });
+    } else {
+      results.push({
+        success: true,
+        update_id: data.update?.id || data.updates?.[0]?.id,
+        profile_id: profileId,
+      });
+    }
   }
 
-  return res.json() as Promise<T>
+  return results;
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
-
-/**
- * Get all connected social profiles on your Buffer account
- */
-export async function getProfiles(): Promise<BufferProfile[]> {
-  const data = await bufferFetch<{ profiles: BufferProfile[] }>('/profiles')
-  return data.profiles ?? []
+// ── Map Ascentor platform name → Buffer service name ─────
+export function platformToBufferService(platform: string): string {
+  const map: Record<string, string> = {
+    "LinkedIn":   "linkedin",
+    "Twitter/X":  "twitter",
+    "Twitter":    "twitter",
+    "X":          "twitter",
+    "Instagram":  "instagram",
+    "Facebook":   "facebook",
+  };
+  return map[platform] || platform.toLowerCase();
 }
 
-/**
- * Schedule or queue a post to one or more profiles
- *
- * @example
- * await schedulePost({
- *   profileIds: ['instagram_profile_id'],
- *   text: 'Nobody told you that landing the big job was only the beginning.',
- *   mediaUrls: ['https://ascentorbi.com/assets/post-image.jpg'],
- *   scheduledAt: new Date('2026-03-18T07:30:00+01:00'),
- *   hashtags: ['#AfricanProfessionals', '#NigerianCareer', '#AICoaching'],
- * })
- */
-export async function schedulePost(params: SchedulePostParams): Promise<BufferPost[]> {
-  const { profileIds, text, mediaUrls, scheduledAt, hashtags } = params
-
-  const fullText = hashtags?.length
-    ? `${text}\n\n${hashtags.join(' ')}`
-    : text
-
-  const body: Record<string, unknown> = {
-    text: fullText,
-    profile_ids: profileIds,
-    shorten: false,
-  }
-
-  if (scheduledAt) {
-    body.scheduled_at = scheduledAt.toISOString()
-  }
-
-  if (mediaUrls?.length) {
-    body.media = { photo: mediaUrls[0] }   // Buffer accepts one media per post
-  }
-
-  const data = await bufferFetch<{ updates: BufferPost[] }>(
-    '/updates/create',
-    'POST',
-    body
-  )
-
-  return data.updates ?? []
-}
-
-/**
- * Get scheduled / queued posts for a profile
- */
-export async function getPendingPosts(profileId: string): Promise<BufferPost[]> {
-  const data = await bufferFetch<{ updates: BufferPost[] }>(
-    `/profiles/${profileId}/updates/pending`
-  )
-  return data.updates ?? []
-}
-
-/**
- * Delete a scheduled post by its Buffer update ID
- */
-export async function deletePost(updateId: string): Promise<boolean> {
-  const data = await bufferFetch<{ success: boolean }>(
-    `/updates/${updateId}/destroy`,
-    'POST'
-  )
-  return data.success ?? false
-}
-
-/**
- * Get the posting schedule/times for a profile
- */
-export async function getPostingSchedule(profileId: string) {
-  return bufferFetch(`/profiles/${profileId}/schedules`)
+// ── Get profile IDs for a specific platform ───────────────
+export async function getProfileIdsForPlatform(
+  platform: string,
+  profiles: BufferProfile[]
+): Promise<string[]> {
+  const service = platformToBufferService(platform);
+  return profiles
+    .filter(p => p.service === service)
+    .map(p => p.id);
 }

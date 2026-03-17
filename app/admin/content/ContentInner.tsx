@@ -155,6 +155,23 @@ export default function AdminContentPage() {
       } else {
         showToast('✓ Approved → Blog draft created. Publish from /admin/blog');
       }
+    } else if (selectedItem.type === 'Email Newsletter') {
+      // Queue newsletter — goes to /admin/newsletter for final send
+      const d = (selectedItem.content_data || {}) as any;
+      const { error } = await supabase.from('newsletter_queue').insert({
+        subject:              d.subject || selectedItem.title,
+        preview_text:         d.preview_text || '',
+        body:                 d.body || '',
+        pillar:               selectedItem.pillar,
+        content_calendar_id:  selectedItem.id,
+        status:               'queued',
+        queued_at:            new Date().toISOString(),
+      });
+      if (error) {
+        showToast('Approved but newsletter queue failed: ' + error.message, false);
+      } else {
+        showToast('✓ Approved → Newsletter queued. Send from /admin/newsletter');
+      }
     } else {
       showToast('✓ Approved — moved to Approved queue');
     }
@@ -202,23 +219,35 @@ export default function AdminContentPage() {
     setSaving(false);
   }
 
-  async function handleQueueSocial(item: CalItem, scheduledFor?: string) {
+  async function handleQueueSocial(item: CalItem, scheduledFor?: string, imageUrl?: string) {
     if (saving) return;
     setSaving(true);
     const d = item.content_data || {};
-    let content = '';
-    if (item.type === 'LinkedIn Post')    content = d.content || d.hook || item.title;
-    if (item.type === 'Twitter Thread')   content = [d.opener, ...(d.tweets ?? []), d.cta].filter(Boolean).join('\n\n---\n\n');
-    if (item.type === 'Email Newsletter') content = 'Subject: ' + (d.subject || item.title) + '\n\n' + (d.body || '');
-    const platform = item.type === 'LinkedIn Post' ? 'linkedin' : item.type === 'Twitter Thread' ? 'twitter' : item.type === 'Email Newsletter' ? 'email' : 'other';
+    let postContent = '';
+    if (item.type === 'LinkedIn Post')    postContent = d.content || d.hook || item.title;
+    if (item.type === 'Twitter Thread')   postContent = [d.opener, ...(d.tweets ?? []), d.cta].filter(Boolean).join('\n\n---\n\n');
+    if (item.type === 'Email Newsletter') postContent = 'Subject: ' + (d.subject || item.title) + '\n\n' + (d.body || '');
+    if (!postContent) postContent = d.caption || d.content || item.title;
+
+    const platform =
+      item.type === 'LinkedIn Post'     ? 'LinkedIn' :
+      item.type === 'Twitter Thread'    ? 'Twitter/X' :
+      item.type === 'Email Newsletter'  ? 'Email' :
+      (item.type?.startsWith('Instagram') || item.platform === 'Instagram') ? 'Instagram' :
+      item.platform || 'other';
+
     const { error } = await supabase.from('social_queue').insert({
-      platform, content, pillar: item.pillar,
+      platform,
+      content: postContent,
+      pillar: item.pillar,
+      image_url: imageUrl || null,
       scheduled_for: scheduledFor ?? item.scheduled_date ?? null,
-      status: 'pending', content_calendar_id: item.id,
+      status: 'pending',
+      content_calendar_id: item.id,
     });
     if (error) { showToast('Queue error: ' + error.message, false); setSaving(false); return; }
     await setStatus(item.id, 'published', { published_at: new Date().toISOString() });
-    showToast('✓ Added to social queue');
+    showToast('✓ Queued for ' + platform);
     setPendingFilter('published');
     setSelectedItem(null);
     setSaving(false);
@@ -391,11 +420,27 @@ export default function AdminContentPage() {
                     {post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Unscheduled'}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <span className="cp-muted">{(post.platform || '').toUpperCase()}</span>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, padding: '2px 8px', borderRadius: 4, background: post.status === 'posted' ? 'rgba(16,185,129,0.1)' : 'rgba(232,160,32,0.08)', color: post.status === 'posted' ? '#10B981' : '#E8A020' }}>{post.status}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.08em', color: 'var(--admin-text-faint)' }}>{(post.platform || '').toUpperCase()}</span>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, padding: '2px 8px', borderRadius: 4, background: post.status === 'posted' || post.status === 'scheduled_buffer' ? 'rgba(16,185,129,0.1)' : 'rgba(232,160,32,0.08)', color: post.status === 'posted' || post.status === 'scheduled_buffer' ? '#10B981' : '#E8A020' }}>{post.status}</span>
+                      {post.buffer_update_id && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#10B981' }}>Buffer ✓</span>}
                     </div>
+                    {post.image_url && (
+                      <img src={post.image_url} alt="Post image" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 6, marginBottom: 8, border: '1px solid var(--admin-bg-input)' }} />
+                    )}
                     <div className="cp-qtext">{(post.content || '').substring(0, 220)}{(post.content || '').length > 220 ? '…' : ''}</div>
+                    {post.status === 'pending' && !post.buffer_update_id && (
+                      <button
+                        onClick={async () => {
+                          const res = await fetch('/api/admin/buffer-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ queueId: post.id }) });
+                          const data = await res.json();
+                          if (data.success) { showToast('Sent to Buffer'); loadAll(); }
+                          else showToast('Buffer error: ' + data.error, false);
+                        }}
+                        style={{ marginTop: 8, padding: '5px 14px', borderRadius: 6, border: '1px solid rgba(232,160,32,0.3)', background: 'rgba(232,160,32,0.08)', color: '#E8A020', fontFamily: "'DM Mono', monospace", fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em' }}>
+                        Send to Buffer
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -446,13 +491,29 @@ function DetailPanel({ item, saving, onApprove, onSchedule, onPublishBlog, onQue
   onApprove: () => void;
   onSchedule: (date: string) => void;
   onPublishBlog: (item: CalItem) => void;
-  onQueueSocial: (item: CalItem, scheduledFor?: string) => void;
+  onQueueSocial: (item: CalItem, scheduledFor?: string, imageUrl?: string) => void;
   onReject: (id: string) => void;
   onCopy: (text: string) => void;
   onSaveNotes: (id: string, notes: string) => void;
 }) {
-  const [schedDate, setSchedDate] = useState(item.scheduled_date ?? '');
-  const [notes, setNotes]         = useState(item.publish_notes ?? '');
+  const [schedDate,   setSchedDate]   = useState(item.scheduled_date ?? '');
+  const [notes,       setNotes]       = useState(item.publish_notes ?? '');
+  const [uploadedImg, setUploadedImg] = useState<string>('');
+  const [uploading,   setUploading]   = useState(false);
+
+  async function handleImgUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('folder', 'social');
+    const res  = await fetch('/api/admin/upload-media', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.url) setUploadedImg(data.url);
+    e.target.value = '';
+    setUploading(false);
+  }
   const d = item.content_data ?? {};
   const meta     = TYPE_META[item.type] ?? TYPE_META['Blog Post'];
   const sc       = STATUS_COLOR[item.status] ?? '#6B7280';
@@ -523,13 +584,59 @@ function DetailPanel({ item, saving, onApprove, onSchedule, onPublishBlog, onQue
           )}
 
           {!isDraft && !isDone && (
-            <div className="cp-action-row">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {isBlog ? (
                 <a href="/admin/blog" className="cp-btn-pub cp-btn-green" style={{ textDecoration: 'none', textAlign: 'center' }}>✍ View in Blog Admin</a>
+              ) : item.type === 'Email Newsletter' ? (
+                <a href="/admin/newsletter" className="cp-btn-pub cp-btn-green" style={{ textDecoration: 'none', textAlign: 'center' }}>✉ View in Newsletter Admin</a>
               ) : (
-                <button className="cp-btn-pub cp-btn-green" onClick={() => onQueueSocial(item, schedDate || undefined)} disabled={saving}>↑ Push to Social Queue</button>
+                <>
+                  {/* Image upload for social posts */}
+                  <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(232,160,32,0.05)', border: '1px solid rgba(232,160,32,0.15)' }}>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E8A020', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 8 }}>Attach Image (optional)</p>
+                    {uploadedImg ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <img src={uploadedImg} alt="Attached" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(232,160,32,0.3)' }} />
+                        <button onClick={() => setUploadedImg('')} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 10 }}>✕ Remove</button>
+                      </div>
+                    ) : (
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, border: '1px solid var(--admin-bg-input)', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)' }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        {uploading ? 'Uploading…' : 'Upload image'}
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImgUpload} disabled={uploading} />
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Per-platform send buttons */}
+                  {item.type === 'LinkedIn Post' && (
+                    <button className="cp-btn-pub" style={{ background: 'rgba(10,102,194,0.12)', color: '#0A66C2', border: '1px solid rgba(10,102,194,0.25)' }} onClick={() => onQueueSocial(item, schedDate || undefined, uploadedImg || undefined)} disabled={saving}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+                      Send to LinkedIn
+                    </button>
+                  )}
+
+                  {item.type === 'Twitter Thread' && (
+                    <button className="cp-btn-pub" style={{ background: 'rgba(180,180,180,0.08)', color: '#ccc', border: '1px solid rgba(200,200,200,0.2)' }} onClick={() => onQueueSocial(item, schedDate || undefined, uploadedImg || undefined)} disabled={saving}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      Send to X / Twitter
+                    </button>
+                  )}
+
+                  {(item.type === 'Instagram Carousel' || item.type === 'Instagram Reel' || item.type === 'Instagram Engagement' || item.platform === 'Instagram') && (
+                    <button className="cp-btn-pub" style={{ background: 'rgba(225,48,108,0.08)', color: '#E1306C', border: '1px solid rgba(225,48,108,0.2)' }} onClick={() => onQueueSocial(item, schedDate || undefined, uploadedImg || undefined)} disabled={saving}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                      Send to Instagram
+                    </button>
+                  )}
+
+                  {/* Fallback for any other platform */}
+                  {!['LinkedIn Post','Twitter Thread','Instagram Carousel','Instagram Reel','Instagram Engagement'].includes(item.type) && item.platform !== 'Instagram' && (
+                    <button className="cp-btn-pub cp-btn-green" onClick={() => onQueueSocial(item, schedDate || undefined, uploadedImg || undefined)} disabled={saving}>↑ Push to Social Queue</button>
+                  )}
+                </>
               )}
-              <button className="cp-btn-pub cp-btn-outline" onClick={() => onCopy(getCopyText())} style={{ flex: '0 0 auto', padding: '10px 14px' }}>⎘ Copy</button>
+              <button className="cp-btn-pub cp-btn-outline" onClick={() => onCopy(getCopyText())} style={{ padding: '10px 14px' }}>⎘ Copy</button>
             </div>
           )}
 

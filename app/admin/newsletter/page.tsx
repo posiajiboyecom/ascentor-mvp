@@ -23,20 +23,24 @@ export default function AdminNewsletterPage() {
   const [history, setHistory] = useState<any[]>([]);
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [subCount, setSubCount] = useState(0);
-  const [tab, setTab] = useState<'compose' | 'subscribers' | 'history'>('compose');
+  const [tab, setTab] = useState<'compose' | 'queue' | 'subscribers' | 'history'>('compose');
+  const [newsletterQueue, setNewsletterQueue] = useState<any[]>([]);
+  const [sendingQueue, setSendingQueue] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
 
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-    const [historyRes, subsRes] = await Promise.all([
+    const [historyRes, subsRes, queueRes] = await Promise.all([
       supabase.from('sent_newsletters').select('*').order('sent_at', { ascending: false }),
       supabase.from('newsletter_subscribers').select('*').order('subscribed_at', { ascending: false }),
+      supabase.from('newsletter_queue').select('*').eq('status', 'queued').order('queued_at', { ascending: true }),
     ]);
     setHistory(historyRes.data || []);
     setSubscribers(subsRes.data || []);
     setSubCount((subsRes.data || []).filter((s: any) => s.is_active).length);
+    setNewsletterQueue(queueRes.data || []);
   }
 
   const checkActiveFormats = useCallback(() => {
@@ -200,6 +204,69 @@ export default function AdminNewsletterPage() {
 </body></html>`;
   }
 
+  async function sendQueuedNewsletter(item: any) {
+    const confirmed = await confirm(`Send "${item.subject}" to ${subCount} active subscribers?`, 'Send Newsletter');
+    if (!confirmed) return;
+    setSendingQueue(item.id);
+
+    // Build email HTML from the queued newsletter data
+    const bodyContent = item.body
+      ? item.body.replace(/\\n/g, '<br>')
+      : '<p>No content</p>';
+
+    const emailHTML = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>
+  body{margin:0;padding:0;background:#0E0C0A;font-family:Georgia,'Times New Roman',serif;}
+  .wrapper{max-width:640px;margin:0 auto;background:#161210;}
+  .header{background:#0E0C0A;padding:32px 40px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08);}
+  .header-tag{font-family:monospace;font-size:10px;letter-spacing:0.15em;color:#E8A020;text-transform:uppercase;margin-bottom:12px;}
+  .header-title{font-family:Georgia,serif;font-size:36px;font-weight:700;color:#FEF9EC;margin:12px 0 8px;line-height:1.1;}
+  .content{padding:40px;color:#E8E0D5;font-size:16px;line-height:1.8;}
+  .content h2{font-family:Georgia,serif;font-size:24px;font-weight:700;color:#FEF9EC;margin:32px 0 12px;}
+  .content p{margin:0 0 16px;}
+  .content blockquote{border-left:3px solid #E8A020;margin:24px 0;padding:16px 24px;font-style:italic;background:rgba(232,160,32,0.05);}
+  .content a{color:#E8A020;}
+  .footer{background:#0E0C0A;padding:24px 40px;text-align:center;border-top:1px solid rgba(255,255,255,0.08);}
+  .footer-text{font-family:monospace;font-size:11px;color:#9A8F85;line-height:1.8;}
+  .footer a{color:#E8A020;text-decoration:none;}
+</style></head><body>
+<div class="wrapper">
+  <div class="header">
+    <div class="header-tag">The Rise Letter &middot; Ascentor &middot; For the Ambitious</div>
+    <div class="header-title">${item.subject || 'Untitled'}</div>
+    ${item.preview_text ? `<div style="font-family:monospace;font-size:12px;color:#9A8F85;">${item.preview_text}</div>` : ''}
+  </div>
+  <div class="content">${bodyContent}</div>
+  <div class="footer">
+    <div class="footer-text">Ascentor &middot; <a href="https://ascentorbi.com">ascentorbi.com</a></div>
+    <div class="footer-text" style="margin-top:12px;font-size:10px;">You received this because you subscribed to The Rise Letter.<br><a href="#" style="color:#9A8F85;">Unsubscribe</a></div>
+  </div>
+</div>
+</body></html>`;
+
+    try {
+      const res = await fetch('/api/newsletter/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: `The Rise Letter: ${item.subject}`, content: emailHTML }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Mark as sent in newsletter_queue
+        await supabase.from('newsletter_queue').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', item.id);
+        // Record in sent_newsletters
+        await supabase.from('sent_newsletters').insert({ subject: item.subject, content: emailHTML, sent_by: 'admin', subscriber_count: subCount, status: 'sent', trigger_run_id: data.runId || null });
+        loadData();
+      } else {
+        await alert('Send failed: ' + data.error, 'Error');
+      }
+    } catch (err: any) {
+      await alert('Error: ' + err.message, 'Error');
+    }
+    setSendingQueue(null);
+  }
+
   async function handleSend() {
     if (!subject.trim() || !editorRef.current?.innerHTML.trim()) return;
     const confirmed = await confirm(`Send this newsletter to ${subCount} active subscribers?`, 'Send Newsletter');
@@ -328,7 +395,7 @@ export default function AdminNewsletterPage() {
 
       {/* ─── Tab Bar ──────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: '2px', marginBottom: '24px', padding: '4px', background: 'var(--admin-bg-card)', borderRadius: '10px', border: '1px solid var(--admin-bg-input)' }}>
-        {(['compose', 'subscribers', 'history'] as const).map((t) => (
+        {(['compose', 'queue', 'subscribers', 'history'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -348,9 +415,14 @@ export default function AdminNewsletterPage() {
               cursor: 'pointer',
               transition: 'all 0.15s',
               whiteSpace: 'nowrap',
+              position: 'relative' as const,
             }}
           >
-            {t === 'compose' ? 'Compose' : t === 'subscribers' ? `Subs (${subscribers.length})` : `History (${history.length})`}
+            {t === 'compose' ? 'Compose' :
+             t === 'queue' ? (
+               <>Queue{newsletterQueue.length > 0 ? <span style={{ position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: '50%', background: '#E8A020' }} /> : null}</>
+             ) :
+             t === 'subscribers' ? `Subs (${subscribers.length})` : `History (${history.length})`}
           </button>
         ))}
       </div>
@@ -565,6 +637,54 @@ export default function AdminNewsletterPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ═══ QUEUE TAB ══════════════════════════════════════════════════════ */}
+      {tab === 'queue' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {newsletterQueue.length === 0 ? (
+            <div style={{ padding: '48px', textAlign: 'center' }}>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: 'var(--admin-text-faint)', letterSpacing: '0.08em' }}>No newsletters queued — approve an Email Newsletter from the Content Pipeline</p>
+            </div>
+          ) : newsletterQueue.map((item) => (
+            <div key={item.id} style={{ background: 'var(--admin-bg-deep)', border: '1px solid var(--admin-bg-input)', borderRadius: '14px', padding: '20px 22px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: '#E8A020', marginBottom: 6 }}>
+                    Queued {new Date(item.queued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {item.pillar && <span style={{ marginLeft: 10, color: 'var(--admin-text-faint)' }}>{item.pillar}</span>}
+                  </div>
+                  <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '20px', fontWeight: 700, color: '#FEF9EC', margin: '0 0 4px', lineHeight: 1.2 }}>{item.subject}</h3>
+                  {item.preview_text && <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: 'var(--admin-text-faint)', margin: 0 }}>{item.preview_text}</p>}
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button
+                    onClick={async () => {
+                      const confirmed = await confirm(`Discard "${item.subject}" from queue?`, 'Discard Newsletter');
+                      if (!confirmed) return;
+                      await supabase.from('newsletter_queue').update({ status: 'discarded' }).eq('id', item.id);
+                      loadData();
+                    }}
+                    style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.25)', background: 'transparent', color: '#EF4444', fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    Discard
+                  </button>
+                  <button
+                    onClick={() => sendQueuedNewsletter(item)}
+                    disabled={sendingQueue === item.id}
+                    style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#E8A020', color: '#0C0B08', fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, cursor: sendingQueue === item.id ? 'not-allowed' : 'pointer', opacity: sendingQueue === item.id ? 0.6 : 1 }}>
+                    {sendingQueue === item.id ? 'Sending…' : `Send to ${subCount} subscribers`}
+                  </button>
+                </div>
+              </div>
+              <details>
+                <summary style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--admin-text-faint)', cursor: 'pointer', userSelect: 'none' as const }}>Preview body</summary>
+                <div style={{ marginTop: 10, padding: '14px', borderRadius: 8, background: 'var(--admin-bg-card)', border: '1px solid var(--admin-bg-input)', fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text)', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: 300, overflowY: 'auto' as const }}>
+                  {item.body || 'No body content'}
+                </div>
+              </details>
+            </div>
+          ))}
         </div>
       )}
 

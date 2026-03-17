@@ -125,7 +125,7 @@ export default function OnboardingPage() {
       console.warn('Referral non-blocking error:', e);
     }
 
-    router.push('/dashboard');
+    router.push('/pricing');
   };
 
   const step1Valid = profile.full_name && profile.current_role && profile.industry && profile.goal_role;
