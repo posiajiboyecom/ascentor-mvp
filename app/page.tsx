@@ -102,13 +102,13 @@ export default function LandingPage() {
           color: var(--dark); text-decoration: none;
         }
         .lp-nav-logo span { color: var(--gold); }
-        .lp-nav-links { display: flex; align-items: center; gap: 22px; list-style: none; }
-        .lp-nav-links a { text-decoration: none; color: var(--mid); font-size: 15px; font-weight: 500; transition: color 0.2s; }
+        .lp-nav-links { display: flex; align-items: center; gap: 16px; list-style: none; }
+        .lp-nav-links a { text-decoration: none; color: var(--mid); font-size: 13px; font-weight: 500; transition: color 0.2s; }
         .lp-nav-links a:hover { color: var(--dark); }
         .lp-nav-cta {
           background: var(--gold) !important; color: var(--dark) !important;
-          padding: 10px 22px; border-radius: 8px;
-          font-weight: 600 !important; font-size: 14px !important;
+          padding: 8px 16px; border-radius: 8px;
+          font-weight: 600 !important; font-size: 13px !important;
           transition: background 0.2s, transform 0.15s !important;
         }
         .lp-nav-cta:hover { background: var(--gold-light) !important; transform: translateY(-1px); }
@@ -412,7 +412,7 @@ export default function LandingPage() {
         .lp-drawer-cta:hover { background: var(--gold-light); }
 
         /* ── RESPONSIVE ── */
-        @media (max-width: 900px) {
+        @media (max-width: 1100px) {
           .lp-nav { padding: 14px 20px; }
           .lp-nav-links { display: none; }
           .lp-hamburger { display: flex; }
@@ -506,12 +506,12 @@ export default function LandingPage() {
             had someone who believed in them.
           </h1>
           <p className="lp-hero-sub">
-            Ascentor is AI-powered mentorship platform — for <strong>every stage of your journey.</strong>{' '}
+            Ascentor is an AI-powered mentorship platform — for <strong>every stage of your journey.</strong>{' '}
             From figuring out your path to reaching the top of your career. AI-powered. Human-led. Built for you.
           </p>
           <div className="lp-hero-actions">
             <Link href="/signup" className="lp-btn-primary">Start Free — 7 Days →</Link>
-            <a href="#for-section" className="lp-btn-secondary">See if it's for you</a>
+            <Link href="/who-its-for" className="lp-btn-secondary">See who it's for</Link>
           </div>
           <p className="lp-hero-trust">No credit card required · Cancel anytime · 30-day money-back guarantee</p>
         </section>
