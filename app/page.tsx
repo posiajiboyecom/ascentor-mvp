@@ -105,11 +105,20 @@ export default function LandingPage() {
         .lp-nav-links { display: flex; align-items: center; gap: 16px; list-style: none; }
         .lp-nav-links a { text-decoration: none; color: var(--mid); font-size: 13px; font-weight: 500; transition: color 0.2s; }
         .lp-nav-links a:hover { color: var(--dark); }
+        .lp-nav-right {
+          display: flex; align-items: center; gap: 12px;
+        }
+        .lp-nav-login {
+          text-decoration: none; color: var(--mid); font-size: 13px; font-weight: 500;
+          transition: color 0.2s;
+        }
+        .lp-nav-login:hover { color: var(--dark); }
         .lp-nav-cta {
           background: var(--gold) !important; color: var(--dark) !important;
-          padding: 8px 16px; border-radius: 8px;
+          padding: 8px 18px; border-radius: 8px;
           font-weight: 600 !important; font-size: 13px !important;
           transition: background 0.2s, transform 0.15s !important;
+          white-space: nowrap;
         }
         .lp-nav-cta:hover { background: var(--gold-light) !important; transform: translateY(-1px); }
 
@@ -412,9 +421,10 @@ export default function LandingPage() {
         .lp-drawer-cta:hover { background: var(--gold-light); }
 
         /* ── RESPONSIVE ── */
-        @media (max-width: 1100px) {
+        @media (max-width: 860px) {
           .lp-nav { padding: 14px 20px; }
           .lp-nav-links { display: none; }
+          .lp-nav-right { display: none; }
           .lp-hamburger { display: flex; }
           .lp-stats-bar { flex-direction: column; gap: 32px; padding: 48px 24px; }
           .lp-stat-item { border-right: none; padding: 0; }
@@ -444,12 +454,13 @@ export default function LandingPage() {
             <li><Link href="/about">About</Link></li>
             <li><Link href="/who-its-for">Who It's For</Link></li>
             <li><Link href="/how-it-works">How It Works</Link></li>
-            <li><Link href="/products">Products</Link></li>
-            <li><Link href="/blog" style={{ color: 'var(--text)' }}>Blog</Link></li>
-            <li><Link href="/pricing" style={{ color: 'var(--text)' }}>Pricing</Link></li>
-            <li><Link href="/login" style={{ color: 'var(--text)' }}>Log In</Link></li>
-            <li><Link href="/signup" className="lp-nav-cta">Start Free →</Link></li>
+            <li><Link href="/pricing">Pricing</Link></li>
+            <li><Link href="/blog">Blog</Link></li>
           </ul>
+          <div className="lp-nav-right">
+            <Link href="/login" className="lp-nav-login">Log In</Link>
+            <Link href="/signup" className="lp-nav-cta">Start Free →</Link>
+          </div>
 
           {/* Hamburger (mobile) */}
           <button
