@@ -46,7 +46,7 @@ export default function NewsletterPage() {
           The Ascentor Weekly
         </h1>
         <p className="text-base mb-8" style={{ color: '#6B7280', lineHeight: 1.7 }}>
-          Every Tuesday, get one actionable leadership insight, one framework you can use immediately, and one story from an African leader who's been where you are.
+          Every Tuesday, get one actionable leadership insight, one framework you can use immediately, and one story from a leader who's been where you are.
         </p>
 
         {status === 'done' ? (

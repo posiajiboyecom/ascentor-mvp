@@ -25,17 +25,17 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
 
   title: {
-    default: 'Ascentor — AI Leadership Coaching for African Professionals',
+    default: 'Ascentor — AI Leadership Coaching for Ambitious Professionals',
     template: '%s | Ascentor',
   },
 
   description:
-    'AI-powered leadership coaching built for African professionals. Get personalized coaching, join expert-led communities, and accelerate your career growth.',
+    'AI-powered leadership coaching for ambitious professionals worldwide. Get personalized coaching, join expert-led communities, and accelerate your career growth.',
 
   keywords: [
-    'AI coaching', 'leadership coaching', 'African professionals',
+    'AI coaching', 'leadership coaching', 'ambitious professionals',
     'career development', 'executive coaching', 'AI mentor',
-    'professional development', 'leadership skills', 'African leaders',
+    'professional development', 'leadership skills', 'global leaders',
     'coaching platform', 'career growth', 'management skills',
   ],
 
@@ -49,9 +49,9 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: BASE_URL,
     siteName: 'Ascentor',
-    title: 'Ascentor — AI Leadership Coaching for African Professionals',
+    title: 'Ascentor — AI Leadership Coaching for Ambitious Professionals',
     description:
-      'Personalized AI coaching, expert-led communities, and courses designed to develop the next generation of African leaders.',
+      'Personalized AI coaching, expert-led communities, and courses designed to develop the next generation of global leaders.',
     images: [
       {
         url: `${BASE_URL}/og-image.png`,
@@ -66,9 +66,9 @@ export const metadata: Metadata = {
   // Twitter
   twitter: {
     card: 'summary_large_image',
-    title: 'Ascentor — AI Leadership Coaching for African Professionals',
+    title: 'Ascentor — AI Leadership Coaching for Ambitious Professionals',
     description:
-      'Personalized AI coaching built for African leaders. Start your 7-day free trial.',
+      'Personalized AI coaching for ambitious professionals worldwide. Start your 7-day free trial.',
     images: [`${BASE_URL}/og-image.png`],
     creator: '@ascentorbi',
   },
@@ -167,7 +167,7 @@ export function getOrganizationSchema() {
     name: 'Ascentor',
     url: BASE_URL,
     logo: `${BASE_URL}/logo.png`,
-    description: 'AI-powered leadership coaching for African professionals',
+    description: 'AI-powered leadership coaching for ambitious professionals',
     sameAs: [
       'https://twitter.com/ascentorbi',
       'https://linkedin.com/company/ascentor',

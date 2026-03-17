@@ -13,7 +13,7 @@ const TEAM = [
   {
     name: 'Gregory Cudjoe',
     role: 'Founder & CEO',
-    bio: 'Former strategy consultant turned builder. Gregory founded Ascentor after watching exceptional African professionals hit invisible ceilings — not for lack of talent, but for lack of the right guidance at the right moment.',
+    bio: 'Former strategy consultant turned builder. Gregory founded Ascentor after watching exceptional professionals hit invisible ceilings — not for lack of talent, but for lack of the right guidance at the right moment.',
     initials: 'GC',
   },
   {
@@ -31,15 +31,15 @@ const TEAM = [
   {
     name: 'Nadia Sall',
     role: 'Head of Partnerships',
-    bio: 'Former investment banker who now connects Ascentor with the organisations, employers, and investors shaping Africa\'s professional landscape.',
+    bio: 'Former investment banker who now connects Ascentor with the organisations, employers, and investors shaping the global professional landscape.',
     initials: 'NS',
   },
 ];
 
 const VALUES = [
   {
-    label: 'African by Design',
-    body: 'We are not a Western product adapted for Africa. Every prompt, every framework, every metaphor is built from the ground up with African professional contexts in mind.',
+    label: 'Built for Ambition',
+    body: 'We are not a generic tool. Every prompt, every framework, every metaphor is built from the ground up with real professional contexts in mind.',
   },
   {
     label: 'Radical Accessibility',
@@ -56,7 +56,7 @@ const VALUES = [
 ];
 
 const STATS = [
-  { value: '12,000+', label: 'Members across Africa' },
+  { value: '12,000+', label: 'Members worldwide' },
   { value: '47',      label: 'Countries represented' },
   { value: '94%',     label: 'Report a career shift in 90 days' },
   { value: '3×',      label: 'More likely to hit goals with Sage' },
@@ -399,7 +399,7 @@ export default function AboutPage() {
               color: '#FEF9EC', letterSpacing: '-2px',
               marginBottom: 28,
             }}>
-              The mentor Africa<br />
+              The mentor the world<br />
               <em style={{ color: '#E8A020', fontStyle: 'italic' }}>was never given.</em>
             </h1>
 
@@ -408,7 +408,7 @@ export default function AboutPage() {
               maxWidth: 520, margin: '0 auto 48px',
             }}>
               Ascentor exists because exceptional talent should not require exceptional luck.
-              We build AI-powered mentorship shaped entirely by African professional realities.
+              We build AI-powered mentorship shaped entirely by real professional realities.
             </p>
 
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -509,13 +509,13 @@ export default function AboutPage() {
                   to the candid, informed guidance that their peers in London or New York took for granted.
                 </p>
                 <p className="ab-body" style={{ marginBottom: 24 }}>
-                  Ascentor began as a question: what if every professional in Africa had a world-class
+                  Ascentor began as a question: what if every ambitious professional had a world-class
                   mentor in their pocket — one that understood their context, spoke their language, and
                   never ran out of time?
                 </p>
                 <p className="ab-body">
                   Sage, our AI mentor, is the answer we built. It is trained not on generic career advice,
-                  but on the specific dynamics of African professional life: how power works, how
+                  but on the specific dynamics of professional life: how power works, how
                   industries move, what ambition looks like here.
                 </p>
               </div>
@@ -543,7 +543,7 @@ export default function AboutPage() {
               lineHeight: 1.25, color: '#FEF9EC',
               letterSpacing: '-0.5px', margin: 0,
             }}>
-              "To make elite mentorship as accessible as a mobile connection — for every professional on the African continent."
+              "To make elite mentorship as accessible as a mobile connection — for every ambitious professional on the planet."
             </blockquote>
             <div style={{
               marginTop: 32, display: 'inline-flex', alignItems: 'center', gap: 12,
@@ -678,7 +678,7 @@ export default function AboutPage() {
             fontSize: 16, color: '#7A7260', lineHeight: 1.7,
             maxWidth: 420, margin: '0 auto 40px',
           }}>
-            Join 12,000 professionals across Africa who are navigating their careers with clarity.
+            Join 12,000 professionals worldwide who are navigating their careers with clarity.
           </p>
           <Link href="/login" className="ab-cta-btn">
             Start free today →

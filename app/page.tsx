@@ -90,7 +90,7 @@ export default function LandingPage() {
         .lp-nav {
           position: fixed; top: 0; left: 0; right: 0; z-index: 100;
           display: flex; align-items: center; justify-content: space-between;
-          padding: 18px 48px;
+          padding: 14px 32px;
           background: rgba(253,252,249,0.92);
           backdrop-filter: blur(12px);
           border-bottom: 1px solid rgba(232,160,32,0.12);
@@ -102,7 +102,7 @@ export default function LandingPage() {
           color: var(--dark); text-decoration: none;
         }
         .lp-nav-logo span { color: var(--gold); }
-        .lp-nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+        .lp-nav-links { display: flex; align-items: center; gap: 22px; list-style: none; }
         .lp-nav-links a { text-decoration: none; color: var(--mid); font-size: 15px; font-weight: 500; transition: color 0.2s; }
         .lp-nav-links a:hover { color: var(--dark); }
         .lp-nav-cta {
@@ -189,7 +189,8 @@ export default function LandingPage() {
           background: transparent; color: var(--text);
           font-family: 'Syne', system-ui, sans-serif; font-size: 15px; font-weight: 500;
           padding: 15px 28px; border-radius: 10px;
-          border: 1.5px solid rgba(42,40,32,0.15); cursor: pointer; text-decoration: none; transition: all 0.2s;
+          border: 1.5px solid rgba(42,40,32,0.25); cursor: pointer; text-decoration: none; transition: all 0.2s;
+          display: inline-flex; align-items: center;
         }
         .lp-btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
         .lp-hero-trust {
@@ -444,7 +445,8 @@ export default function LandingPage() {
             <li><Link href="/who-its-for">Who It's For</Link></li>
             <li><Link href="/how-it-works">How It Works</Link></li>
             <li><Link href="/products">Products</Link></li>
-            {hasBlogPosts && <li><Link href="/blog" style={{ color: 'var(--text)' }}>Blog</Link></li>}
+            <li><Link href="/blog" style={{ color: 'var(--text)' }}>Blog</Link></li>
+            <li><Link href="/pricing" style={{ color: 'var(--text)' }}>Pricing</Link></li>
             <li><Link href="/login" style={{ color: 'var(--text)' }}>Log In</Link></li>
             <li><Link href="/signup" className="lp-nav-cta">Start Free →</Link></li>
           </ul>
@@ -468,7 +470,8 @@ export default function LandingPage() {
             <Link href="/who-its-for" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Who It's For</Link>
             <Link href="/how-it-works" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>How It Works</Link>
             <Link href="/products" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Products</Link>
-            {hasBlogPosts && <Link href="/blog" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Blog</Link>}
+            <Link href="/blog" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Blog</Link>
+            <Link href="/pricing" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
             <div className="lp-drawer-divider" />
             <Link href="/login" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
             <Link href="/signup" className="lp-drawer-cta" onClick={() => setMobileMenuOpen(false)}>Start Free — 7 Days →</Link>
@@ -503,7 +506,7 @@ export default function LandingPage() {
             had someone who believed in them.
           </h1>
           <p className="lp-hero-sub">
-            Ascentor is Africa's mentorship platform — for <strong>every stage of your journey.</strong>{' '}
+            Ascentor is AI-powered mentorship platform — for <strong>every stage of your journey.</strong>{' '}
             From figuring out your path to reaching the top of your career. AI-powered. Human-led. Built for you.
           </p>
           <div className="lp-hero-actions">
@@ -531,7 +534,7 @@ export default function LandingPage() {
         {/* PROBLEM */}
         <section className="lp-problem-section">
           <div className="lp-section-label">The Problem We're Solving</div>
-          <h2 className="lp-section-headline">Talent is everywhere in Africa. Guidance isn't.</h2>
+          <h2 className="lp-section-headline">Talent is everywhere. Guidance isn't.</h2>
           <div className="lp-problem-grid">
             {[
               { quote: '"I have a degree, I have the drive — but I genuinely don\'t know what to do next. Nobody in my family has been where I\'m trying to go."', persona: '— Temi, 24. NYSC graduate, Lagos' },
@@ -560,7 +563,7 @@ export default function LandingPage() {
                 <li>AI-powered career discovery</li>
                 <li>Scholarship & opportunity board</li>
                 <li>Mentors who started where you are</li>
-                <li>Peer community of other young Africans</li>
+                <li>Peer community of ambitious professionals</li>
               </ul>
             </div>
             <div className="lp-for-card builder">
@@ -608,7 +611,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <div className="lp-pillar-title">Sage</div>
-              <p className="lp-pillar-desc">Your personal mentor, available at 2am before your big presentation. Trained on African business context, career frameworks, and life navigation.</p>
+              <p className="lp-pillar-desc">Your personal mentor, available at 2am before your big presentation. Trained on global career frameworks, business strategy, and life navigation.</p>
               <ul className="lp-pillar-features">
                 <li>Personalized to your stage and goals</li>
                 <li>Remembers your conversations</li>
@@ -625,7 +628,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <div className="lp-pillar-title">Human Mentors &amp; Live Sessions</div>
-              <p className="lp-pillar-desc">Live sessions with Africa's top professionals who've navigated the exact challenges you're facing. Real experience, not theory.</p>
+              <p className="lp-pillar-desc">Live sessions with seasoned professionals who've navigated the exact challenges you're facing. Real experience, not theory.</p>
               <ul className="lp-pillar-features">
                 <li>Monthly live mentor sessions</li>
                 <li>1-on-1 mentor booking</li>
@@ -687,7 +690,7 @@ export default function LandingPage() {
             {[
               { icon: 'lock',  title: 'Locked-in pricing', desc: 'Your founding rate is yours for life — never increases as the platform grows.' },
               { icon: 'mic',   title: 'Shape the roadmap', desc: 'Direct line to the founding team. Your feedback ships in weeks, not quarters.' },
-              { icon: 'globe', title: 'Founding community', desc: 'The first circle of African professionals building careers with intention.' },
+              { icon: 'globe', title: 'Founding community', desc: 'The first circle of ambitious professionals building careers with intention.' },
             ].map((card) => (
               <div key={card.title} style={{ background: 'var(--light)', borderRadius: '20px', padding: '32px 28px', border: '1px solid rgba(42,40,32,0.06)' }}>
                 <div style={{ width: 44, height: 44, background: 'rgba(232,160,32,0.12)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
@@ -725,13 +728,13 @@ export default function LandingPage() {
           <div className="lp-section-label">Founding Mentors</div>
           <h2 className="lp-section-headline">Learn from people who've been there</h2>
           <p className="lp-section-sub" style={{ color: 'var(--text-light)' }}>
-            Our founding mentors are experienced professionals who've navigated Africa's professional landscape — and are investing their time to help you do the same.
+            Our founding mentors are experienced professionals who've navigated complex career landscapes — and are investing their time to help you do the same.
           </p>
           <div className="lp-mentors-grid">
             {[
               { initials: 'TA', name: 'Tunde Adeyemi', title: 'VP Engineering · 12 years in fintech & telecoms across Nigeria and UK' },
               { initials: 'CN', name: 'Chioma Nwosu', title: 'Strategy Director · Former McKinsey · Now building her own firm in Lagos' },
-              { initials: 'EO', name: 'Emmanuel Osei', title: 'Startup Founder · 3 exits · Active angel investor across West Africa' },
+              { initials: 'EO', name: 'Emmanuel Osei', title: 'Startup Founder · 3 exits · Active angel investor across global markets' },
             ].map((m) => (
               <div key={m.initials} className="lp-mentor-card">
                 <div className="lp-mentor-avatar">{m.initials}</div>
@@ -754,7 +757,7 @@ export default function LandingPage() {
             Your next level is waiting.
           </h2>
           <p className="lp-cta-sub">
-            Join thousands of ambitious Africans who stopped waiting for permission and started building the career and life they deserve.
+            Join thousands of ambitious professionals who stopped waiting for permission and started building the career and life they deserve.
           </p>
           <div className="lp-cta-actions">
             <div className="lp-cta-buttons">
@@ -797,7 +800,7 @@ export default function LandingPage() {
         {featuredProducts.length > 0 && (
           <section className="lp-products-section">
             <div className="lp-section-label">From the Shop</div>
-            <h2 className="lp-section-headline">Resources built for African ambition</h2>
+            <h2 className="lp-section-headline">Resources built for ambitious professionals</h2>
             <p className="lp-section-sub">Playbooks, templates, and tools you can use today.</p>
             <div className="lp-products-grid">
               {featuredProducts.map(p => (
@@ -846,7 +849,7 @@ export default function LandingPage() {
                   alt="Ascentor"
                   style={{ height: '28px', width: 'auto', marginBottom: '12px' }}
                 />
-              <p className="lp-footer-tagline">Africa's mentorship platform — from figuring it out to making it happen.</p>
+              <p className="lp-footer-tagline">AI-powered mentorship — from figuring it out to making it happen.</p>
             </div>
             <div>
               <div className="lp-footer-col-title">Platform</div>
@@ -880,7 +883,7 @@ export default function LandingPage() {
           </div>
           <div className="lp-footer-bottom">
             <span>© 2026 Ascentor. All rights reserved.</span>
-            <span>Built with <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--gold)" stroke="none" style={{display:'inline',verticalAlign:'middle',margin:'0 2px'}}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> for Africa</span>
+            <span>Built with <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--gold)" stroke="none" style={{display:'inline',verticalAlign:'middle',margin:'0 2px'}}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> for you</span>
           </div>
         </footer>
 

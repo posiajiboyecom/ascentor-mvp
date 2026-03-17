@@ -252,10 +252,10 @@ export default function LandingClient() {
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-semibold mb-5 leading-tight"
             style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#FAF9F6' }}>
             Your AI leadership<br />
-            coach for <span style={{ color: '#E8A020' }}>Africa</span>
+            coach for <span style={{ color: '#E8A020' }}>ambitious professionals</span>
           </h1>
           <p className="text-base md:text-lg max-w-2xl mx-auto mb-8" style={{ color: '#D1CFC9', lineHeight: 1.7 }}>
-            Sage, live expert sessions, and peer accountability cohorts — built for ambitious African professionals who refuse to wait for permission to lead.
+            Sage, live expert sessions, and peer accountability cohorts — built for ambitious professionals who refuse to wait for permission to lead.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
             <Link href="/signup"
@@ -311,12 +311,12 @@ export default function LandingClient() {
             {[
               {
                 icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>', title: 'Sage', color: '#E8A020',
-                desc: 'A Socratic coach trained on leadership frameworks and African business context. Ask anything at 2am before your big meeting.',
-                features: ['Personalized to your career stage', 'GROW model + African context', 'Action items after every session'],
+                desc: 'A Socratic coach trained on global leadership frameworks and career strategy. Ask anything at 2am before your big meeting.',
+                features: ['Personalized to your career stage', 'GROW model + real-world context', 'Action items after every session'],
               },
               {
                 icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>', title: 'Expert Sessions', color: '#8B5CF6',
-                desc: 'Live workshops with real African leaders who\'ve navigated the exact challenges you face. Not theory — lived experience.',
+                desc: 'Live workshops with real leaders who\'ve navigated the exact challenges you face. Not theory — lived experience.',
                 features: ['Monthly live workshops', 'Q&A with industry leaders', 'Recordings library access'],
               },
               {
@@ -384,7 +384,7 @@ export default function LandingClient() {
           <div className="grid md:grid-cols-3 gap-5">
             {[
               { quote: 'Sage helped me prepare for a promotion conversation I\'d been avoiding for months. I got the promotion.', name: 'Amara O.', role: 'Product Manager, Lagos' },
-              { quote: 'Having a cohort of peers in similar roles across Africa gave me perspectives I never would have found in my company alone.', name: 'David K.', role: 'Engineering Lead, Nairobi' },
+              { quote: 'Having a cohort of peers in similar roles across the world gave me perspectives I never would have found in my company alone.', name: 'David K.', role: 'Engineering Lead, Nairobi' },
               { quote: 'At $15/month, this replaces the $200/session executive coach I couldn\'t afford to keep. The AI is surprisingly nuanced.', name: 'Fatima H.', role: 'Strategy Consultant, Accra' },
             ].map((t) => (
               <div key={t.name} className="rounded-2xl p-6"
@@ -409,7 +409,7 @@ export default function LandingClient() {
             Ready to lead?
           </h2>
           <p className="text-base mb-8" style={{ color: '#9CA3AF' }}>
-            Join ambitious professionals across Africa who are investing in their leadership growth. Start your free trial today.
+            Join ambitious professionals worldwide who are investing in their leadership growth. Start your free trial today.
           </p>
           <Link href="/signup"
             className="inline-block px-10 py-4 rounded-xl text-base font-semibold transition-transform hover:scale-105"
@@ -453,7 +453,7 @@ export default function LandingClient() {
                 <span style={{ color: '#E8A020' }}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></span>
                 <span className="font-semibold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#F3F4F6' }}>Ascentor</span>
               </div>
-              <p className="text-xs" style={{ color: '#6B7280' }}>Leadership development for Africa's next generation.</p>
+              <p className="text-xs" style={{ color: '#6B7280' }}>Leadership development for the next generation.</p>
             </div>
             <div>
               <p className="text-xs font-semibold mb-3" style={{ color: '#9CA3AF' }}>Product</p>

@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Pricing — Ascentor',
-  description: 'Affordable mentorship for African professionals. Plans from $12/month with Sage, expert sessions, and peer circles.',
+  description: 'Affordable mentorship for ambitious professionals worldwide. Plans from $12/month with Sage, expert sessions, and peer circles.',
 };
 
 const TIERS = [
@@ -200,7 +200,7 @@ export default function PricingPage() {
             { q: 'Is there a free trial?', a: 'Yes! Every plan includes a 7-day free trial. No credit card required to start.' },
             { q: 'Can I switch plans?', a: 'Absolutely. Upgrade or downgrade anytime from your dashboard. Changes take effect on your next billing cycle.' },
             { q: 'What payment methods do you accept?', a: 'We accept cards via Paystack (including Nigerian cards), Selar, and international cards. Mobile money coming soon.' },
-            { q: 'How is Sage different from ChatGPT?', a: 'Sage is specifically trained on leadership frameworks, African business context, and career strategy. It uses a Socratic coaching model — asking the right questions rather than just giving answers.' },
+            { q: 'How is Sage different from ChatGPT?', a: 'Sage is specifically trained on leadership frameworks, real-world business context, and career strategy. It uses a Socratic coaching model — asking the right questions rather than just giving answers.' },
             { q: 'What\'s the refund policy?', a: 'Full refund within 30 days of your first payment, no questions asked. We want you to try risk-free.' },
           ].map((f) => (
             <details key={f.q} className="group mb-3 rounded-xl overflow-hidden"

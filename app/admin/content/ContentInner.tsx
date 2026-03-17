@@ -13,6 +13,7 @@ interface CalItem {
   id:             string;
   title:          string;
   type:           string;
+  platform:       string | null;
   pillar:         string;
   week:           number | null;
   status:         string;

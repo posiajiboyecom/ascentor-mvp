@@ -10,7 +10,7 @@ function SvgIcon({ html, className, style }: { html: string; className?: string;
 export const metadata: Metadata = {
   title: "Who It's For — Ascentor",
   description:
-    "Ascentor is built for every stage of the African professional journey — from students figuring out their path to executives scaling their impact.",
+    "Ascentor is built for every stage of the ambitious professional journey — from students figuring out their path to executives scaling their impact.",
 };
 
 /* ── Data ────────────────────────────────────────────────── */
@@ -38,7 +38,7 @@ const PERSONAS = [
     outcomes: [
       'Clarity on your career direction within 30 days',
       'A step-by-step roadmap from student to first job',
-      'Access to Africa-specific opportunities & scholarships',
+      'Access to global opportunities & scholarships',
       'Peer circles of driven young professionals like you',
     ],
     price:    12,
@@ -99,7 +99,7 @@ const PERSONAS = [
     outcomes: [
       'An executive peer cohort of equals who challenge you',
       'AI-powered strategic thinking partner — 24/7',
-      'Unlimited access to Africa\'s top senior mentors',
+      'Unlimited access to world-class senior mentors',
       'Legacy planning: building something that outlasts you',
     ],
     price:    39,
@@ -112,8 +112,8 @@ const ACROSS_AFRICA = [
   { flag: '🇳🇬', country: 'Nigeria',      desc: 'Our largest community — from Lagos tech to Abuja consulting' },
   { flag: '🇬🇭', country: 'Ghana',        desc: 'Growing fast in Accra\'s startup and finance scene' },
   { flag: '🇰🇪', country: 'Kenya',        desc: 'Nairobi\'s tech ecosystem and beyond' },
-  { flag: '🇿🇦', country: 'South Africa', desc: 'Johannesburg, Cape Town, and the diaspora bridge' },
-  { flag: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>', country: 'Diaspora',      desc: 'UK, US, Canada — African professionals building global careers' },
+  { flag: '🇿🇦', country: 'South Africa', desc: 'Johannesburg, Cape Town, and beyond' },
+  { flag: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>', country: 'Diaspora',      desc: 'UK, US, Canada — professionals building global careers' },
   { flag: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>', country: '15+ Countries', desc: 'And growing across the entire continent' },
 ];
 
@@ -168,7 +168,7 @@ export default function WhoItsForPage() {
           Wherever you are on<br className="hidden md:block" /> your journey — we&apos;re built for you.
         </h1>
         <p className="text-base max-w-2xl mx-auto mb-8" style={{ color: '#6B7280', lineHeight: 1.75 }}>
-          Ascentor serves every stage of the African professional journey.
+          Ascentor serves every stage of the ambitious professional journey.
           From the student figuring out what to do with their life, to the executive
           deciding what kind of legacy to leave.
         </p>
@@ -305,11 +305,11 @@ export default function WhoItsForPage() {
           </p>
           <h2 className="text-3xl font-semibold mb-3"
             style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
-            Built in Africa, for Africa.
+            Built for ambitious professionals, everywhere.
           </h2>
           <p className="text-sm max-w-xl mx-auto mb-10" style={{ color: '#6B7280', lineHeight: 1.7 }}>
             Our mentors, peer circles, and AI context are specifically calibrated
-            for the African professional experience — not a Western model transplanted here.
+            for real professional experience — not a generic tool adapted here.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {ACROSS_AFRICA.map(c => (
@@ -337,7 +337,7 @@ export default function WhoItsForPage() {
             Everyone who made it<br />had someone who believed in them.
           </h2>
           <p className="text-sm mb-8 max-w-lg mx-auto" style={{ color: '#9CA3AF', lineHeight: 1.75 }}>
-            Join 247+ African professionals already on the waitlist.
+            Join 247+ ambitious professionals already on the platform.
             Early members get <strong style={{ color: '#E8A020' }}>3 months free</strong> on launch.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
