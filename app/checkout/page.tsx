@@ -110,6 +110,9 @@ export default function CheckoutPage() {
   const [profile, setProfile]           = useState<any>(null);
   const [error, setError]               = useState('');
   const [success, setSuccess]           = useState('');
+  const [autoPromo, setAutoPromo]       = useState<{ code: string; discount: number; label: string; expires_at: string | null } | null>(null);
+  const [countdown, setCountdown]       = useState<string>('');
+  const [offerExpired, setOfferExpired] = useState(false);
 
   const router   = useRouter();
   const supabaseRef = useRef(createClient());
@@ -125,6 +128,57 @@ export default function CheckoutPage() {
     };
     loadUser();
   }, [supabase, router]);
+
+  // Fetch active auto-apply promo on page load
+  useEffect(() => {
+    const fetchAutoPromo = async () => {
+      const res  = await fetch('/api/payment/active-promo');
+      const data = await res.json();
+      if (data.promo) {
+        setAutoPromo(data.promo);
+        // Auto-apply it — pre-fill and apply
+        setPromoCode(data.promo.code);
+        setPromoApplied({ discount: data.promo.discount, label: data.promo.label });
+      }
+    };
+    fetchAutoPromo();
+  }, []); // eslint-disable-line
+
+  // Live countdown ticker
+  useEffect(() => {
+    if (!autoPromo?.expires_at) return;
+
+    const tick = () => {
+      const now  = Date.now();
+      const end  = new Date(autoPromo.expires_at!).getTime();
+      const diff = end - now;
+
+      if (diff <= 0) {
+        setOfferExpired(true);
+        setCountdown('00:00:00');
+        setPromoApplied(null);
+        setPromoCode('');
+        setAutoPromo(null);
+        return;
+      }
+
+      const days    = Math.floor(diff / 86400000);
+      const hours   = Math.floor((diff % 86400000) / 3600000);
+      const minutes = Math.floor((diff % 3600000)  / 60000);
+      const seconds = Math.floor((diff % 60000)    / 1000);
+
+      const pad = (n: number) => String(n).padStart(2, '0');
+      if (days > 0) {
+        setCountdown(`${days}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
+      } else {
+        setCountdown(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
+      }
+    };
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [autoPromo]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !document.getElementById('paystack-script')) {
@@ -460,6 +514,63 @@ export default function CheckoutPage() {
         }
 
         /* ── PROMO ── */
+        /* ── OFFER BANNER ── */
+        .co-offer-banner {
+          max-width: 880px; margin: 0 auto 28px; padding: 0 24px;
+          position: relative; z-index: 1;
+        }
+        .co-offer-inner {
+          background: linear-gradient(135deg, rgba(232,160,32,0.12) 0%, rgba(232,160,32,0.06) 100%);
+          border: 1.5px solid rgba(232,160,32,0.35);
+          border-radius: 16px; padding: 20px 24px;
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 16px; flex-wrap: wrap;
+          box-shadow: 0 0 32px rgba(232,160,32,0.08);
+          position: relative; overflow: hidden;
+        }
+        .co-offer-inner::before {
+          content: '';
+          position: absolute; inset: 0;
+          background: linear-gradient(90deg, rgba(232,160,32,0.04), transparent);
+          pointer-events: none;
+        }
+        .co-offer-left { display: flex; align-items: center; gap: 14px; }
+        .co-offer-badge {
+          background: #E8A020; color: #0C0B08;
+          font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700;
+          padding: 6px 14px; border-radius: 8px; letter-spacing: 0.06em;
+          white-space: nowrap; flex-shrink: 0;
+        }
+        .co-offer-text { flex: 1; }
+        .co-offer-label {
+          font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+          color: #FEF9EC; margin-bottom: 3px;
+        }
+        .co-offer-sub {
+          font-family: 'DM Mono', monospace; font-size: 10px;
+          color: #E8A020; letter-spacing: 0.08em; text-transform: uppercase;
+        }
+        .co-offer-code {
+          font-family: 'DM Mono', monospace; font-size: 11px;
+          color: rgba(232,160,32,0.7); letter-spacing: 0.1em;
+          margin-top: 2px;
+        }
+        .co-offer-countdown { text-align: right; flex-shrink: 0; }
+        .co-offer-timer-label {
+          font-family: 'DM Mono', monospace; font-size: 9px;
+          color: #4A4438; letter-spacing: 0.12em; text-transform: uppercase;
+          margin-bottom: 6px;
+        }
+        .co-offer-timer {
+          font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 700;
+          color: #E8A020; letter-spacing: 0.06em; line-height: 1;
+        }
+        .co-offer-timer.urgent { color: #EF4444; animation: co-pulse 1s ease infinite; }
+        @keyframes co-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .co-offer-expired {
+          max-width: 880px; margin: 0 auto 20px; padding: 0 24px;
+        }
+
         .co-promo-wrap {
           max-width: 440px; margin: 0 auto 28px; padding: 0 24px;
           position: relative; z-index: 1;
@@ -724,27 +835,65 @@ export default function CheckoutPage() {
           })}
         </div>
 
-        {/* PROMO */}
-        <div className="co-promo-wrap">
-          <div className="co-promo-card">
-            <p className="co-promo-label">Have a promo code?</p>
-            <div className="co-promo-row">
-              <input
-                type="text"
-                value={promoCode}
-                onChange={e => { setPromoCode(e.target.value); setPromoError(''); if (!e.target.value) setPromoApplied(null); }}
-                placeholder="ENTER CODE"
-                className="co-promo-input"
-                onKeyDown={e => e.key === 'Enter' && applyPromo()}
-              />
-              <button onClick={applyPromo} disabled={promoValidating} className="co-promo-btn">
-                {promoValidating ? '…' : 'Apply'}
-              </button>
+        {/* AUTO-APPLY OFFER BANNER */}
+        {autoPromo && !offerExpired && (
+          <div className="co-offer-banner">
+            <div className="co-offer-inner">
+              <div className="co-offer-left">
+                <div className="co-offer-badge">
+                  {Math.round(autoPromo.discount * 100)}% OFF
+                </div>
+                <div className="co-offer-text">
+                  <div className="co-offer-label">{autoPromo.label}</div>
+                  <div className="co-offer-sub">
+                    {autoPromo.expires_at ? 'Limited time offer — prices shown already discounted' : 'Special offer — prices shown already discounted'}
+                  </div>
+                  <div className="co-offer-code">Code: {autoPromo.code}</div>
+                </div>
+              </div>
+              {autoPromo.expires_at && countdown && (
+                <div className="co-offer-countdown">
+                  <div className="co-offer-timer-label">Offer expires in</div>
+                  <div className={`co-offer-timer${countdown.startsWith('00:0') ? ' urgent' : ''}`}>
+                    {countdown}
+                  </div>
+                </div>
+              )}
             </div>
-            {promoApplied && <p className="co-promo-success">✓ {promoApplied.label}</p>}
-            {promoError   && <p className="co-promo-error">✗ {promoError}</p>}
           </div>
-        </div>
+        )}
+
+        {offerExpired && (
+          <div className="co-offer-expired">
+            <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#EF4444', letterSpacing: '0.06em' }}>
+              ✗ This offer has expired — standard pricing applies
+            </div>
+          </div>
+        )}
+
+        {/* PROMO — manual code entry (hidden if auto-promo already applied) */}
+        {!autoPromo && (
+          <div className="co-promo-wrap">
+            <div className="co-promo-card">
+              <p className="co-promo-label">Have a promo code?</p>
+              <div className="co-promo-row">
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={e => { setPromoCode(e.target.value); setPromoError(''); if (!e.target.value) setPromoApplied(null); }}
+                  placeholder="ENTER CODE"
+                  className="co-promo-input"
+                  onKeyDown={e => e.key === 'Enter' && applyPromo()}
+                />
+                <button onClick={applyPromo} disabled={promoValidating} className="co-promo-btn">
+                  {promoValidating ? '…' : 'Apply'}
+                </button>
+              </div>
+              {promoApplied && <p className="co-promo-success">✓ {promoApplied.label}</p>}
+              {promoError   && <p className="co-promo-error">✗ {promoError}</p>}
+            </div>
+          </div>
+        )}
 
         {/* Alerts */}
         {error   && <div className="co-alert-wrap"><div className="co-alert-error">{error}</div></div>}

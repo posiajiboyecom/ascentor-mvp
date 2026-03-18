@@ -19,6 +19,7 @@ interface PromoCode {
   current_uses: number;
   expires_at: string | null;
   active: boolean;
+  auto_apply: boolean;
   created_at: string;
 }
 
@@ -112,6 +113,30 @@ export default function AdminPromoCodesPage() {
       body: JSON.stringify({ id, active: !active }),
     });
     fetchCodes();
+  };
+
+  const toggleAutoApply = async (id: string, current: boolean) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    // Only one code can be auto_apply at a time — clear others first
+    if (!current) {
+      // Turning ON: disable auto_apply on all others first
+      for (const c of codes) {
+        if (c.id !== id && c.auto_apply) {
+          await fetch('/api/admin/promo-codes', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session!.access_token}` },
+            body: JSON.stringify({ id: c.id, auto_apply: false }),
+          });
+        }
+      }
+    }
+    await fetch('/api/admin/promo-codes', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session!.access_token}` },
+      body: JSON.stringify({ id, auto_apply: !current }),
+    });
+    fetchCodes();
+    setMessage(!current ? '✓ Offer will now appear on checkout for all visitors' : 'Auto-apply removed');
   };
 
   const deleteCode = async (id: string) => {
@@ -434,56 +459,68 @@ export default function AdminPromoCodesPage() {
 
                     {/* Status */}
                     <td style={{ padding: '13px 16px' }}>
-                      <span style={{
-                        padding: '3px 10px',
-                        borderRadius: '100px',
-                        fontFamily: "'DM Mono', monospace",
-                        fontSize: '10px',
-                        fontWeight: 500,
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                        background: c.active ? 'rgba(20,184,166,0.1)' : 'var(--admin-border)',
-                        color: c.active ? '#14B8A6' : 'var(--admin-text-faint)',
-                      }}>
-                        {c.active ? 'Active' : 'Disabled'}
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <span style={{
+                          padding: '3px 10px', borderRadius: '100px',
+                          fontFamily: "'DM Mono', monospace", fontSize: '10px',
+                          fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase',
+                          background: c.active ? 'rgba(20,184,166,0.1)' : 'var(--admin-border)',
+                          color: c.active ? '#14B8A6' : 'var(--admin-text-faint)',
+                          display: 'inline-block', width: 'fit-content',
+                        }}>
+                          {c.active ? 'Active' : 'Disabled'}
+                        </span>
+                        {c.auto_apply && (
+                          <span style={{
+                            padding: '2px 8px', borderRadius: '100px',
+                            fontFamily: "'DM Mono', monospace", fontSize: '9px',
+                            fontWeight: 600, letterSpacing: '0.06em',
+                            background: 'rgba(232,160,32,0.1)', color: '#E8A020',
+                            border: '1px solid rgba(232,160,32,0.25)',
+                            display: 'inline-block', width: 'fit-content',
+                          }}>
+                            ★ ON CHECKOUT
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Actions */}
                     <td style={{ padding: '13px 16px' }}>
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {/* Auto-apply toggle — shows offer banner on checkout */}
+                        <button
+                          onClick={() => toggleAutoApply(c.id, c.auto_apply)}
+                          title={c.auto_apply ? 'Remove from checkout banner' : 'Show as offer on checkout page'}
+                          style={{
+                            padding: '5px 10px', borderRadius: '7px', cursor: 'pointer',
+                            fontFamily: "'DM Mono', sans-serif", fontSize: '10px', fontWeight: 600,
+                            border: c.auto_apply ? '1px solid rgba(232,160,32,0.4)' : '1px solid var(--admin-bg-input)',
+                            background: c.auto_apply ? 'rgba(232,160,32,0.1)' : 'transparent',
+                            color: c.auto_apply ? '#E8A020' : 'var(--admin-text-faint)',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {c.auto_apply ? '★ On Checkout' : '☆ Set as Offer'}
+                        </button>
                         <button
                           onClick={() => toggleCode(c.id, c.active)}
-                          className="asc-btn-ghost"
                           style={{
-                            padding: '5px 12px',
-                            borderRadius: '7px',
-                            border: '1px solid var(--admin-bg-input)',
-                            background: 'transparent',
-                            color: 'var(--admin-text-muted)',
-                            fontFamily: "'Syne', sans-serif",
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'border-color 0.15s, color 0.15s',
+                            padding: '5px 10px', borderRadius: '7px',
+                            border: '1px solid var(--admin-bg-input)', background: 'transparent',
+                            color: 'var(--admin-text-muted)', fontFamily: "'Syne', sans-serif",
+                            fontSize: '11px', fontWeight: 600, cursor: 'pointer',
                           }}
                         >
                           {c.active ? 'Disable' : 'Enable'}
                         </button>
                         <button
                           onClick={() => deleteCode(c.id)}
-                          className="asc-btn-danger"
                           style={{
-                            padding: '5px 12px',
-                            borderRadius: '7px',
-                            border: '1px solid rgba(239,68,68,0.25)',
-                            background: 'transparent',
-                            color: '#EF4444',
-                            fontFamily: "'Syne', sans-serif",
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'background 0.15s',
+                            padding: '5px 10px', borderRadius: '7px',
+                            border: '1px solid rgba(239,68,68,0.25)', background: 'transparent',
+                            color: '#EF4444', fontFamily: "'Syne', sans-serif",
+                            fontSize: '11px', fontWeight: 600, cursor: 'pointer',
                           }}
                         >
                           Delete
