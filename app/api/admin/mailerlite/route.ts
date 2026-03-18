@@ -188,7 +188,7 @@ export async function POST(req: Request) {
     for (const u of (appUsers || [])) {
       if (!u.email) continue;
       const key = u.email.trim().toLowerCase();
-      const existing = map.get(key) || { email: key, name: '', groups: [], source: 'app' };
+      const existing = map.get(key) || { email: key, name: '', groups: [] as string[], source: 'app' };
 
       // Add app user group
       if (GROUP_APP_USERS && !existing.groups.includes(GROUP_APP_USERS)) {
