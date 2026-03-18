@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // ─────────────────────────────────────────────────────────────────
@@ -287,6 +287,21 @@ const STYLES = `
   }
 `;
 
+// ── Inline theme toggle (no provider needed) ────────────────
+function useAdminTheme() {
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  useEffect(() => {
+    const stored = localStorage.getItem('asc-admin-theme') as 'dark' | 'light' | null;
+    if (stored) setTheme(stored);
+  }, []);
+  const toggle = () => setTheme(prev => {
+    const next = prev === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('asc-admin-theme', next);
+    return next;
+  });
+  return { theme, toggle, isDark: theme === 'dark' };
+}
+
 export default function AdminShell({
   children,
   name,
@@ -302,6 +317,7 @@ export default function AdminShell({
   const router    = useRouter();
   const supabase  = createClient();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { theme: adminTheme, toggle: toggleTheme, isDark: isDarkTheme } = useAdminTheme();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -310,6 +326,25 @@ export default function AdminShell({
 
   const isActive = (href: string) =>
     href === '/admin' ? pathname === '/admin' : pathname?.startsWith(href);
+
+  const ThemeToggleBtn = () => (
+    <button
+      onClick={toggleTheme}
+      title={isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
+      style={{
+        fontSize: '11px', padding: '5px 10px', borderRadius: '7px',
+        color: '#7A7260', border: '1px solid rgba(212,207,195,0.12)',
+        background: 'transparent', cursor: 'pointer',
+        fontFamily: "'Syne', sans-serif", display: 'inline-flex', alignItems: 'center', gap: 4,
+      }}
+    >
+      {isDarkTheme
+        ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      }
+      {isDarkTheme ? 'Light' : 'Dark'}
+    </button>
+  );
 
   const SidebarContent = ({ onNav }: { onNav?: () => void }) => (
     <>
@@ -392,7 +427,7 @@ export default function AdminShell({
             {name}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           <Link
             href="/dashboard"
             onClick={onNav}
@@ -416,13 +451,29 @@ export default function AdminShell({
           >
             Sign Out
           </button>
+          <ThemeToggleBtn />
         </div>
       </div>
     </>
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0C0B08', display: 'flex', flexDirection: 'column' }}>
+    <div
+      data-admin-theme={adminTheme}
+      style={{
+        minHeight: '100vh',
+        background: adminTheme === 'light' ? '#F5F4F1' : '#0C0B08',
+        display: 'flex', flexDirection: 'column',
+        '--admin-bg': adminTheme === 'light' ? '#F5F4F1' : '#0C0B08',
+        '--admin-bg-card': adminTheme === 'light' ? '#FFFFFF' : '#1E1C17',
+        '--admin-bg-deep': adminTheme === 'light' ? '#F0EEE9' : '#141210',
+        '--admin-bg-input': adminTheme === 'light' ? 'rgba(42,40,32,0.12)' : 'rgba(212,207,195,0.10)',
+        '--admin-text': adminTheme === 'light' ? '#2A2820' : '#D4CFC3',
+        '--admin-text-faint': adminTheme === 'light' ? '#6B6456' : '#4A4438',
+        '--admin-text-muted': adminTheme === 'light' ? '#4A4438' : '#7A7260',
+        '--admin-text-heading': adminTheme === 'light' ? '#0C0B08' : '#FEF9EC',
+      } as React.CSSProperties}
+    >
       <style>{STYLES}</style>
 
       {/* Mobile header */}

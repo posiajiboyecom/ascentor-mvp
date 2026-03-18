@@ -95,13 +95,13 @@ export default function AdminContentPage() {
 
   useEffect(() => { loadAll(); }, []); // eslint-disable-line
 
-  // Apply filter switch AFTER items state has updated from patchItem
+  // pendingFilter: used only for schedule/publish transitions where panel closes
   useEffect(() => {
     if (pendingFilter !== null) {
       setStatusFilter(pendingFilter);
       setPendingFilter(null);
     }
-  }, [pendingFilter, items]); // eslint-disable-line
+  }, [pendingFilter]); // eslint-disable-line
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -119,21 +119,44 @@ export default function AdminContentPage() {
   }
 
   function patchItem(id: string, patch: Partial<CalItem>) {
+    // Update both in the same render cycle to prevent flicker between states
     setItems(prev => prev.map(it => it.id === id ? { ...it, ...patch } : it));
-    setSelectedItem(prev => prev?.id === id ? { ...prev, ...patch } as CalItem : prev);
+    setSelectedItem(prev => {
+      if (!prev || prev.id !== id) return prev;
+      return { ...prev, ...patch } as CalItem;
+    });
   }
 
   async function setStatus(id: string, status: string, extra?: Partial<CalItem>) {
-    const { error } = await supabase.from('content_calendar').update({ status, ...extra }).eq('id', id);
-    if (error) { showToast('Error: ' + error.message, false); return; }
+    // Patch locally first for instant UI response
     patchItem(id, { status, ...extra });
+    const { error } = await supabase.from('content_calendar').update({ status, ...extra }).eq('id', id);
+    if (error) {
+      showToast('Error: ' + error.message, false);
+      // No revert here — minor operations, not worth complexity
+    }
   }
 
   async function handleApprove() {
     if (!selectedItem || saving || selectedItem.status !== 'draft') return;
     setSaving(true);
 
-    await setStatus(selectedItem.id, 'approved', { approved_at: new Date().toISOString() });
+    // Patch local state FIRST so the UI updates before filter switches
+    const approvedAt = new Date().toISOString();
+    patchItem(selectedItem.id, { status: 'approved', approved_at: approvedAt });
+
+    // Then write to DB (non-blocking for UI)
+    const { error: statusError } = await supabase
+      .from('content_calendar')
+      .update({ status: 'approved', approved_at: approvedAt })
+      .eq('id', selectedItem.id);
+    if (statusError) {
+      showToast('Error: ' + statusError.message, false);
+      // Revert local state
+      patchItem(selectedItem.id, { status: 'draft', approved_at: null });
+      setSaving(false);
+      return;
+    }
 
     // Auto-create blog draft when a Blog Post is approved
     if (selectedItem.type === 'Blog Post') {
@@ -177,9 +200,9 @@ export default function AdminContentPage() {
       showToast('✓ Approved — moved to Approved queue');
     }
 
-    // Switch filter to 'approved' — keep panel open so user sees send buttons immediately
-    setPendingFilter('approved');
-    // Don't close the panel — user needs to see the send buttons right after approving
+    // Switch filter immediately — patchItem already updated both items[] and selectedItem
+    // so the panel stays open and shows the new approved state with send buttons
+    setStatusFilter('approved');
     setSaving(false);
   }
 
@@ -285,6 +308,8 @@ export default function AdminContentPage() {
   };
 
   const filtered = items.filter(it => {
+    // Always show the currently selected item so panel never loses its content
+    if (selectedItem && it.id === selectedItem.id) return true;
     if (typeFilter !== 'all' && it.type !== typeFilter) return false;
     if (statusFilter !== 'all' && it.status !== statusFilter) return false;
     return true;
@@ -534,8 +559,10 @@ function DetailPanel({ item, saving, onApprove, onSchedule, onPublishBlog, onQue
           )}
 
           {isApprov && !isBlog && item.type !== 'Email Newsletter' && (
-            <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(232,160,32,0.08)', border: '1px solid rgba(232,160,32,0.2)', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', letterSpacing: '0.06em' }}>
-              ✓ Approved — upload an image below (optional), then hit the send button
+            <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(232,160,32,0.08)', border: '1px solid rgba(232,160,32,0.2)' }}>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', letterSpacing: '0.06em', margin: 0 }}>
+                ✓ Approved · Now: attach image (optional) → click send button → goes to Social Queue
+              </p>
             </div>
           )}
 
