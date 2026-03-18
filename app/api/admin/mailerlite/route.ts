@@ -331,30 +331,14 @@ export async function POST(req: Request) {
 }
 
 // ── MailerLite upsert helper ─────────────────────────────────
-async function mlUpsert(email: string, name: string, groups: string[]) {
+async function mlUpsert(ml: (path: string, method?: string, payload?: object) => Promise<any>, email: string, name: string, groups: string[]) {
   const validGroups = groups.filter(Boolean);
-  const body: Record<string, any> = {
+  const payload: Record<string, any> = {
     email: email.trim().toLowerCase(),
     fields: { name: name || '' },
     status: 'active',
     resubscribe: true,
   };
-  if (validGroups.length > 0) body.groups = validGroups;
-
-  const res = await fetch('https://connect.mailerlite.com/api/subscribers', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.MAILERLITE_API_KEY}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (res.status === 204 || res.status === 200 || res.status === 201) return;
-
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(json?.message || `MailerLite ${res.status}`);
-  }
+  if (validGroups.length > 0) payload.groups = validGroups;
+  await ml('/subscribers', 'POST', payload);
 }
