@@ -23,7 +23,9 @@ export default function AdminNewsletterPage() {
   const [history, setHistory] = useState<any[]>([]);
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [mlSyncing, setMlSyncing] = useState(false);
-  const [mlSyncResult, setMlSyncResult] = useState<{ synced: number; failed: number; total: number } | null>(null);
+  const [mlSyncResult, setMlSyncResult] = useState<{ synced: number; failed: number; total: number; groups?: Record<string,string>; errors?: string[] } | null>(null);
+  const [mlDiag, setMlDiag] = useState<{ groups: {id:string;name:string;total:number}[] } | null>(null);
+  const [mlDiagLoading, setMlDiagLoading] = useState(false);
   const [subCount, setSubCount] = useState(0);
   const [tab, setTab] = useState<'compose' | 'queue' | 'subscribers' | 'history'>('compose');
   const [newsletterQueue, setNewsletterQueue] = useState<any[]>([]);
@@ -44,13 +46,29 @@ export default function AdminNewsletterPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Sync failed');
-      setMlSyncResult({ synced: data.synced, failed: data.failed, total: data.total });
+      setMlSyncResult({ synced: data.synced, failed: data.failed, total: data.total, groups: data.groups, errors: data.errors });
+      // Refresh diag after sync
+      loadMlDiag();
     } catch (err: any) {
       setMlSyncResult({ synced: 0, failed: -1, total: 0 });
       console.error('[ML sync]', err.message);
     } finally {
       setMlSyncing(false);
     }
+  }
+
+  async function loadMlDiag() {
+    setMlDiagLoading(true);
+    try {
+      const res = await fetch('/api/admin/mailerlite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get-groups' }),
+      });
+      const data = await res.json();
+      if (res.ok) setMlDiag(data);
+    } catch {}
+    finally { setMlDiagLoading(false); }
   }
 
   async function loadData() {
@@ -718,46 +736,105 @@ export default function AdminNewsletterPage() {
           <div style={{
             background: 'var(--admin-bg-card)', border: '1px solid var(--admin-bg-input)',
             borderRadius: 12, padding: '20px 24px', marginBottom: 20,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            flexWrap: 'wrap', gap: 16,
           }}>
-            <div>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--admin-text-heading)', marginBottom: 4 }}>
-                Sync to MailerLite
-              </p>
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)', letterSpacing: '0.04em' }}>
-                Pushes all Supabase subscribers + app users into MailerLite groups (Newsletter, App Users, Paid/Free).
-                Safe to run multiple times — it upserts, never duplicates.
-              </p>
-              {mlSyncResult && mlSyncResult.failed === -1 && (
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#EF4444', marginTop: 6 }}>✗ Sync failed — check console for details</p>
-              )}
-              {mlSyncResult && mlSyncResult.failed !== -1 && (
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#14B8A6', marginTop: 6 }}>
-                  ✓ Synced {mlSyncResult.synced} of {mlSyncResult.total} contacts
-                  {mlSyncResult.failed > 0 ? ` · ${mlSyncResult.failed} failed` : ''}
+            {/* Top row */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 14 }}>
+              <div>
+                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--admin-text-heading)', marginBottom: 4 }}>
+                  MailerLite Sync
                 </p>
-              )}
+                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)', letterSpacing: '0.04em', maxWidth: 500 }}>
+                  Upserts all app users + newsletter subscribers into MailerLite.
+                  Auto-creates groups if env vars are missing. Safe to run anytime.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <button
+                  onClick={loadMlDiag}
+                  disabled={mlDiagLoading}
+                  style={{
+                    padding: '8px 14px', borderRadius: 8, cursor: 'pointer',
+                    background: 'transparent', border: '1px solid var(--admin-bg-input)',
+                    color: 'var(--admin-text-muted)', fontFamily: "'Syne', sans-serif",
+                    fontSize: 12, fontWeight: 600,
+                  }}
+                >
+                  {mlDiagLoading ? '…' : '⊙ Check ML'}
+                </button>
+                <button
+                  onClick={syncToMailerLite}
+                  disabled={mlSyncing}
+                  style={{
+                    padding: '8px 18px', borderRadius: 8, cursor: mlSyncing ? 'not-allowed' : 'pointer',
+                    background: mlSyncing ? 'rgba(232,160,32,0.3)' : '#E8A020',
+                    color: '#0C0B08', fontFamily: "'Syne', sans-serif",
+                    fontSize: 13, fontWeight: 700, border: 'none',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  {mlSyncing
+                    ? <><span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid #0C0B08', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />Syncing…</>
+                    : '↑ Sync All to MailerLite'}
+                </button>
+              </div>
             </div>
-            <button
-              onClick={syncToMailerLite}
-              disabled={mlSyncing}
-              style={{
-                padding: '10px 20px', borderRadius: 8, cursor: mlSyncing ? 'not-allowed' : 'pointer',
-                background: mlSyncing ? 'rgba(232,160,32,0.3)' : '#E8A020',
-                color: '#0C0B08', fontFamily: "'Syne', sans-serif",
-                fontSize: 13, fontWeight: 700, border: 'none',
-                display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
-                transition: 'background 0.15s',
-              }}
-            >
-              {mlSyncing ? (
-                <>
-                  <span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid #0C0B08', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  Syncing…
-                </>
-              ) : '↑ Sync to MailerLite'}
-            </button>
+
+            {/* Sync result */}
+            {mlSyncResult && mlSyncResult.failed === -1 && (
+              <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', marginBottom: 10 }}>
+                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#EF4444' }}>✗ Sync failed — check that MAILERLITE_API_KEY is set in Vercel environment variables</p>
+              </div>
+            )}
+            {mlSyncResult && mlSyncResult.failed !== -1 && (
+              <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(20,184,166,0.06)', border: '1px solid rgba(20,184,166,0.2)', marginBottom: 10 }}>
+                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#14B8A6', marginBottom: 4 }}>
+                  ✓ Synced {mlSyncResult.synced} of {mlSyncResult.total} contacts
+                  {mlSyncResult.failed > 0 ? ` · ${mlSyncResult.failed} failed` : ' · No errors'}
+                </p>
+                {mlSyncResult.groups && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                    {Object.entries(mlSyncResult.groups).map(([k,v]) => v ? (
+                      <span key={k} style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, padding: '2px 8px', borderRadius: 100, background: 'rgba(20,184,166,0.08)', color: '#14B8A6', letterSpacing: '0.06em' }}>
+                        {k}: {v}
+                      </span>
+                    ) : null)}
+                  </div>
+                )}
+                {mlSyncResult.errors && mlSyncResult.errors.length > 0 && (
+                  <details style={{ marginTop: 8 }}>
+                    <summary style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#EF4444', cursor: 'pointer' }}>{mlSyncResult.errors.length} errors (click to expand)</summary>
+                    <div style={{ marginTop: 4, maxHeight: 120, overflowY: 'auto' }}>
+                      {mlSyncResult.errors.map((e,i) => <p key={i} style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#EF4444' }}>{e}</p>)}
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
+
+            {/* ML Groups diagnostic */}
+            {mlDiag && (
+              <div style={{ marginTop: 4 }}>
+                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                  MailerLite Groups ({mlDiag.groups.length})
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {mlDiag.groups.length === 0
+                    ? <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#EF4444' }}>No groups found — run sync to auto-create them</span>
+                    : mlDiag.groups.map(g => (
+                      <span key={g.id} style={{
+                        fontFamily: "'DM Mono', monospace", fontSize: 9,
+                        padding: '3px 10px', borderRadius: 100,
+                        background: 'var(--admin-bg-input)', color: 'var(--admin-text-muted)',
+                        letterSpacing: '0.04em',
+                      }}>
+                        {g.name} · <strong style={{ color: 'var(--admin-text)' }}>{g.total || 0}</strong>
+                      </span>
+                    ))
+                  }
+                </div>
+              </div>
+            )}
           </div>
 
           {subscribers.length === 0 ? (

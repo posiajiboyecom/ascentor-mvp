@@ -108,9 +108,10 @@ export async function GET() {
 
 // ============================================================
 // POST /api/admin/mailerlite
-// Action: "sync" — pulls all Supabase subscribers + app users
-// and upserts them into MailerLite in batches of 50.
-// Action: "sync-user" — syncs a single email immediately.
+// action: "sync"         — sync all Supabase users → MailerLite
+// action: "sync-user"    — sync a single email
+// action: "get-groups"   — list all ML groups (for diagnostics)
+// action: "ensure-groups"— create missing groups, return IDs
 // ============================================================
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -127,27 +128,111 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  if (!process.env.MAILERLITE_API_KEY) {
-    return NextResponse.json({ error: 'MAILERLITE_API_KEY not set' }, { status: 500 });
+  const apiKey = process.env.MAILERLITE_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: 'MAILERLITE_API_KEY not set in Vercel env vars' }, { status: 500 });
   }
 
   const body = await req.json().catch(() => ({}));
   const action = body.action || 'sync';
 
-  // ── Single-user sync ─────────────────────────────────────
+  // ── Helper: raw ML fetch ────────────────────────────────────
+  async function ml(path: string, method = 'GET', payload?: object) {
+    const res = await fetch(`https://connect.mailerlite.com/api${path}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      ...(payload ? { body: JSON.stringify(payload) } : {}),
+    });
+    if (res.status === 204) return null;
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.message || `ML ${res.status} ${path}`);
+    return json;
+  }
+
+  // ── get-groups: return all ML groups ───────────────────────
+  if (action === 'get-groups') {
+    try {
+      const data = await ml('/groups?limit=100');
+      return NextResponse.json({ groups: data?.data || [] });
+    } catch (err: any) {
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+  }
+
+  // ── ensure-groups: create any missing groups, return ID map ─
+  async function ensureGroups(): Promise<Record<string, string>> {
+    const needed = [
+      { key: 'APP_USERS',  name: 'Ascentor — App Users',    env: 'MAILERLITE_GROUP_APP_USERS'  },
+      { key: 'FREE_USERS', name: 'Ascentor — Free Users',   env: 'MAILERLITE_GROUP_FREE_USERS' },
+      { key: 'PAID_USERS', name: 'Ascentor — Paid Users',   env: 'MAILERLITE_GROUP_PAID_USERS' },
+      { key: 'NEWSLETTER', name: 'Ascentor — Newsletter',   env: 'MAILERLITE_GROUP_NEWSLETTER' },
+    ];
+
+    // Check env vars first
+    const fromEnv: Record<string, string> = {};
+    let allSet = true;
+    for (const g of needed) {
+      const id = process.env[g.env];
+      if (id) {
+        fromEnv[g.key] = id;
+      } else {
+        allSet = false;
+      }
+    }
+    if (allSet) return fromEnv;
+
+    // Fetch existing groups from ML
+    const existing = await ml('/groups?limit=100');
+    const existingMap: Record<string, string> = {};
+    for (const g of (existing?.data || [])) {
+      existingMap[g.name] = g.id;
+    }
+
+    // Create any missing groups
+    const result: Record<string, string> = { ...fromEnv };
+    for (const g of needed) {
+      if (result[g.key]) continue; // already from env
+      if (existingMap[g.name]) {
+        result[g.key] = existingMap[g.name];
+      } else {
+        // Create it
+        try {
+          const created = await ml('/groups', 'POST', { name: g.name });
+          result[g.key] = created?.data?.id || '';
+        } catch {
+          result[g.key] = '';
+        }
+      }
+    }
+    return result;
+  }
+
+  if (action === 'ensure-groups') {
+    try {
+      const groups = await ensureGroups();
+      return NextResponse.json({ groups });
+    } catch (err: any) {
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+  }
+
+  // ── sync-user: single email ─────────────────────────────────
   if (action === 'sync-user') {
-    const { email, firstName, groups } = body;
+    const { email, firstName, groups: groupIds } = body;
     if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
     try {
-      await mlUpsert(email, firstName || '', groups || []);
+      await mlUpsert(ml, email, firstName || '', groupIds || []);
       return NextResponse.json({ ok: true, synced: 1 });
     } catch (err: any) {
       return NextResponse.json({ error: err.message }, { status: 500 });
     }
   }
 
-  // ── Full sync ─────────────────────────────────────────────
-  // Use service role for reading all users
+  // ── Full sync ───────────────────────────────────────────────
   const { createClient: createServiceClient } = await import('@supabase/supabase-js');
   const service = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -155,24 +240,17 @@ export async function POST(req: Request) {
   );
 
   try {
-    // 1. All newsletter_subscribers (active only)
-    const { data: nlSubs } = await service
-      .from('newsletter_subscribers')
-      .select('email, first_name, source')
-      .eq('is_active', true);
+    // Step 1: Ensure groups exist (creates them in ML if missing)
+    const groupIds = await ensureGroups();
 
-    // 2. All app users (profiles with email)
-    const { data: appUsers } = await service
-      .from('profiles')
-      .select('email: email, full_name, subscription_plan, subscription_status');
+    // Step 2: Fetch all subscribers from Supabase
+    const [{ data: nlSubs }, { data: appUsers }] = await Promise.all([
+      service.from('newsletter_subscribers').select('email, first_name, source').eq('is_active', true),
+      service.from('profiles').select('email, full_name, subscription_plan, subscription_status'),
+    ]);
 
-    // Merge and deduplicate by email
-    const map = new Map<string, { email: string; name: string; groups: string[]; source: string }>();
-
-    const GROUP_NEWSLETTER = process.env.MAILERLITE_GROUP_NEWSLETTER || '';
-    const GROUP_APP_USERS  = process.env.MAILERLITE_GROUP_APP_USERS  || '';
-    const GROUP_PAID       = process.env.MAILERLITE_GROUP_PAID_USERS || '';
-    const GROUP_FREE       = process.env.MAILERLITE_GROUP_FREE_USERS || '';
+    // Step 3: Merge and deduplicate by email
+    const map = new Map<string, { email: string; name: string; groups: string[] }>();
 
     for (const s of (nlSubs || [])) {
       if (!s.email) continue;
@@ -180,33 +258,34 @@ export async function POST(req: Request) {
       map.set(key, {
         email: key,
         name: s.first_name || '',
-        groups: [GROUP_NEWSLETTER].filter(Boolean),
-        source: s.source || 'newsletter',
+        groups: [groupIds.NEWSLETTER].filter(Boolean),
       });
     }
 
     for (const u of (appUsers || [])) {
       if (!u.email) continue;
       const key = u.email.trim().toLowerCase();
-      const existing = map.get(key) || { email: key, name: '', groups: [] as string[], source: 'app' };
+      const existing = map.get(key) || { email: key, name: '', groups: [] as string[] };
 
-      // Add app user group
-      if (GROUP_APP_USERS && !existing.groups.includes(GROUP_APP_USERS)) {
-        existing.groups.push(GROUP_APP_USERS);
+      if (groupIds.APP_USERS && !existing.groups.includes(groupIds.APP_USERS)) {
+        existing.groups.push(groupIds.APP_USERS);
       }
 
-      // Add paid/free group based on subscription
-      const isPaid = u.subscription_status === 'active' && u.subscription_plan && u.subscription_plan !== 'free';
-      if (isPaid && GROUP_PAID && !existing.groups.includes(GROUP_PAID)) {
-        existing.groups.push(GROUP_PAID);
-      } else if (!isPaid && GROUP_FREE && !existing.groups.includes(GROUP_FREE)) {
-        existing.groups.push(GROUP_FREE);
+      const isPaid = (u.subscription_status === 'active' || u.subscription_status === 'trialing')
+        && u.subscription_plan && u.subscription_plan !== 'free';
+
+      if (isPaid) {
+        if (groupIds.PAID_USERS && !existing.groups.includes(groupIds.PAID_USERS)) {
+          existing.groups.push(groupIds.PAID_USERS);
+        }
+      } else {
+        if (groupIds.FREE_USERS && !existing.groups.includes(groupIds.FREE_USERS)) {
+          existing.groups.push(groupIds.FREE_USERS);
+        }
       }
 
-      // Use full_name if no name yet
-      if (!existing.name && u.full_name) {
-        existing.name = u.full_name.split(' ')[0] || '';
-      }
+      const firstName = (u.full_name || '').split(' ')[0] || '';
+      if (!existing.name && firstName) existing.name = firstName;
 
       map.set(key, existing);
     }
@@ -216,14 +295,14 @@ export async function POST(req: Request) {
     let failed = 0;
     const errors: string[] = [];
 
-    // Upsert in batches of 50 — MailerLite rate limit is 60 req/min
-    const BATCH = 50;
+    // Step 4: Upsert in batches of 25
+    const BATCH = 25;
     for (let i = 0; i < records.length; i += BATCH) {
       const batch = records.slice(i, i + BATCH);
       await Promise.all(
         batch.map(async (r) => {
           try {
-            await mlUpsert(r.email, r.name, r.groups);
+            await mlUpsert(ml, r.email, r.name, r.groups);
             synced++;
           } catch (err: any) {
             failed++;
@@ -231,9 +310,8 @@ export async function POST(req: Request) {
           }
         })
       );
-      // Small delay between batches to respect rate limits
       if (i + BATCH < records.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1200));
       }
     }
 
@@ -242,7 +320,8 @@ export async function POST(req: Request) {
       total: records.length,
       synced,
       failed,
-      errors: errors.slice(0, 10), // cap error list
+      groups: groupIds,
+      errors: errors.slice(0, 20),
     });
 
   } catch (err: any) {
