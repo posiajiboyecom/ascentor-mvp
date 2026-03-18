@@ -35,8 +35,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="apple-touch-icon" sizes="180x180" href="/icon/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/icon/icon-192.png" />
-        
-        {/* 2. Add Plausible Analytics Script */}
+
+        {/* Theme initialiser — runs synchronously before paint to prevent flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('asc-theme');
+                  var theme = (stored === 'light' || stored === 'dark')
+                    ? stored
+                    : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                  document.documentElement.setAttribute('data-app-theme', theme);
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
+
+        {/* Plausible Analytics */}
         <Script
           defer
           data-domain="ascentor-mvp.vercel.app"

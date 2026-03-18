@@ -259,18 +259,18 @@ const STYLES = `
     font-family: 'DM Mono', monospace;
     font-size: 9px; font-weight: 500;
     letter-spacing: 0.14em; text-transform: uppercase;
-    color: #4A4438; padding: 0 10px; margin: 8px 0 4px;
+    color: var(--admin-text-faint, #4A4438); padding: 0 10px; margin: 8px 0 4px;
   }
   .admin-nav-link {
     display: flex; align-items: center; gap: 10px;
     padding: 9px 10px; border-radius: 8px; margin-bottom: 1px;
     font-family: 'Syne', system-ui, sans-serif;
     font-size: 13px; font-weight: 400;
-    color: #7A7260; text-decoration: none;
+    color: var(--admin-text-muted, #7A7260); text-decoration: none;
     transition: background 0.15s, color 0.15s;
     position: relative;
   }
-  .admin-nav-link:hover { background: rgba(232,160,32,0.07); color: #D4CFC3; }
+  .admin-nav-link:hover { background: rgba(232,160,32,0.07); color: var(--admin-text, #D4CFC3); }
   .admin-nav-link.active {
     background: rgba(232,160,32,0.12);
     color: #E8A020; font-weight: 600;
@@ -332,17 +332,18 @@ export default function AdminShell({
       onClick={toggleTheme}
       title={isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
       style={{
-        fontSize: '11px', padding: '5px 10px', borderRadius: '7px',
-        color: '#7A7260', border: '1px solid rgba(212,207,195,0.12)',
+        width: 28, height: 28, borderRadius: '7px',
+        color: 'var(--admin-text-muted)', border: '1px solid rgba(212,207,195,0.12)',
         background: 'transparent', cursor: 'pointer',
-        fontFamily: "'Syne', sans-serif", display: 'inline-flex', alignItems: 'center', gap: 4,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, padding: 0,
+        transition: 'color 0.15s, border-color 0.15s',
       }}
     >
       {isDarkTheme
-        ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-        : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       }
-      {isDarkTheme ? 'Light' : 'Dark'}
     </button>
   );
 
@@ -421,7 +422,7 @@ export default function AdminShell({
           </div>
           <p style={{
             fontFamily: "'Syne', sans-serif",
-            fontSize: '12px', fontWeight: 600, color: '#D4CFC3',
+            fontSize: '12px', fontWeight: 600, color: 'var(--admin-text)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
           }}>
             {name}
@@ -433,7 +434,7 @@ export default function AdminShell({
             onClick={onNav}
             style={{
               fontSize: '11px', padding: '5px 10px', borderRadius: '7px',
-              color: '#7A7260', border: '1px solid rgba(212,207,195,0.12)',
+              color: 'var(--admin-text-muted)', border: '1px solid rgba(212,207,195,0.12)',
               textDecoration: 'none', fontFamily: "'Syne', sans-serif",
               transition: 'color 0.15s',
             }}
@@ -482,12 +483,12 @@ export default function AdminShell({
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '12px 16px',
-          background: '#1E1C17',
-          borderBottom: '1px solid rgba(212,207,195,0.10)',
+          background: adminTheme === 'light' ? '#FFFFFF' : '#1E1C17',
+          borderBottom: adminTheme === 'light' ? '1px solid rgba(42,40,32,0.10)' : '1px solid rgba(212,207,195,0.10)',
           position: 'sticky', top: 0, zIndex: 40,
         }}
       >
-        <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: '24px', width: 'auto' }} />
+        <img src={isDarkTheme ? "/ascentor-color-for-dark-pages.svg" : "/ascentor-color-for-light-pages.svg"} alt="Ascentor" style={{ height: '24px', width: 'auto' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{
             fontFamily: "'DM Mono', monospace", fontSize: '9px', fontWeight: 500,
@@ -503,8 +504,8 @@ export default function AdminShell({
             style={{
               width: '34px', height: '34px', display: 'flex', alignItems: 'center',
               justifyContent: 'center', borderRadius: '8px',
-              background: '#2E2A22', border: '1px solid rgba(212,207,195,0.10)',
-              color: '#D4CFC3', cursor: 'pointer', fontSize: '14px',
+              background: adminTheme === 'light' ? '#F0EEE9' : '#2E2A22', border: '1px solid rgba(212,207,195,0.10)',
+              color: 'var(--admin-text)', cursor: 'pointer', fontSize: '14px',
             }}
           >
             {menuOpen ? '✕' : '☰'}
@@ -521,7 +522,7 @@ export default function AdminShell({
           <div
             style={{
               width: '240px', height: '100%', display: 'flex', flexDirection: 'column',
-              background: '#1E1C17',
+              background: adminTheme === 'light' ? '#FFFFFF' : '#1E1C17',
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -537,15 +538,15 @@ export default function AdminShell({
           style={{
             width: '220px', flexShrink: 0, display: 'flex', flexDirection: 'column',
             height: '100vh', position: 'sticky', top: 0,
-            background: '#1E1C17',
-            borderRight: '1px solid rgba(212,207,195,0.10)',
+            background: adminTheme === 'light' ? '#FFFFFF' : '#1E1C17',
+            borderRight: adminTheme === 'light' ? '1px solid rgba(42,40,32,0.08)' : '1px solid rgba(212,207,195,0.10)',
           }}
         >
           <SidebarContent />
         </aside>
 
         {/* Content */}
-        <main style={{ flex: 1, overflowX: 'hidden', background: '#0C0B08' }}>
+        <main style={{ flex: 1, overflowX: 'hidden', background: 'var(--admin-bg, #0C0B08)' }}>
           <div style={{ maxWidth: '1024px', margin: '0 auto', padding: '24px' }}>
             {children}
           </div>
