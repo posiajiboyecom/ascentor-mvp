@@ -161,23 +161,57 @@ export default function AdminContentPage() {
     // Auto-create blog draft when a Blog Post is approved
     if (selectedItem.type === 'Blog Post') {
       const d = (selectedItem.content_data || {}) as any;
-      const { error } = await supabase.from('blog_posts').insert({
-        title:             d.title || selectedItem.title,
-        slug:              slugify(d.title || selectedItem.title),
-        excerpt:           d.meta_description || d.excerpt || '',
-        content:           d.content || '',
-        category:          selectedItem.pillar
-                             ? selectedItem.pillar[0].toUpperCase() + selectedItem.pillar.slice(1)
-                             : 'General',
-        author_name:       'Ascentor',
-        read_time_minutes: Math.ceil(((d.content || '').split(' ').length || 400) / 200),
-        is_published:      false,
-        published_at:      null,
-      });
-      if (error) {
-        showToast('Approved but blog draft failed: ' + error.message, false);
+      const baseTitle = d.title || selectedItem.title;
+      const baseSlug  = slugify(baseTitle);
+
+      // Check if this blog post was already created (re-approval of same item)
+      const { data: existing } = await supabase
+        .from('blog_posts')
+        .select('id')
+        .eq('slug', baseSlug)
+        .maybeSingle();
+
+      if (existing) {
+        // Already exists — just navigate to blog admin, don't duplicate
+        showToast('✓ Approved — blog draft already exists. View in /admin/blog');
       } else {
-        showToast('✓ Approved → Blog draft created. Publish from /admin/blog');
+        const { error } = await supabase.from('blog_posts').insert({
+          title:             baseTitle,
+          slug:              baseSlug,
+          excerpt:           d.meta_description || d.excerpt || '',
+          content:           d.content || '',
+          category:          selectedItem.pillar
+                               ? selectedItem.pillar[0].toUpperCase() + selectedItem.pillar.slice(1)
+                               : 'General',
+          author_name:       'Ascentor',
+          read_time_minutes: Math.ceil(((d.content || '').split(' ').length || 400) / 200),
+          is_published:      false,
+          published_at:      null,
+        });
+        if (error) {
+          // Slug collision fallback — append short unique id
+          if (error.code === '23505') {
+            const uniqueSlug = baseSlug + '-' + selectedItem.id.slice(0, 6);
+            await supabase.from('blog_posts').insert({
+              title:             baseTitle,
+              slug:              uniqueSlug,
+              excerpt:           d.meta_description || d.excerpt || '',
+              content:           d.content || '',
+              category:          selectedItem.pillar
+                                   ? selectedItem.pillar[0].toUpperCase() + selectedItem.pillar.slice(1)
+                                   : 'General',
+              author_name:       'Ascentor',
+              read_time_minutes: Math.ceil(((d.content || '').split(' ').length || 400) / 200),
+              is_published:      false,
+              published_at:      null,
+            });
+            showToast('✓ Approved → Blog draft created. Publish from /admin/blog');
+          } else {
+            showToast('Approved but blog draft failed: ' + error.message, false);
+          }
+        } else {
+          showToast('✓ Approved → Blog draft created. Publish from /admin/blog');
+        }
       }
     } else if (selectedItem.type === 'Email Newsletter') {
       // Queue newsletter — goes to /admin/newsletter for final send
