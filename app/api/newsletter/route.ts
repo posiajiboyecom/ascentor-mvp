@@ -9,24 +9,25 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, firstName } = await req.json();
+    const body = await req.json();
+    const { email, firstName, source } = body;
 
     if (!email) {
       return NextResponse.json({ error: "Email required" }, { status: 400 });
     }
 
-    // 1. Save to Supabase (source of truth)
-    const { error } = await supabase.from("newsletter_subscribers").insert({
+    const resolvedSource = source || 'website';
+
+    // 1. Save to Supabase (upsert — safe for duplicates from any source)
+    const { error } = await supabase.from("newsletter_subscribers").upsert({
       email: email.trim().toLowerCase(),
       first_name: firstName || null,
-      source: "website",
+      source: resolvedSource,
       is_active: true,
-    });
+      subscribed_at: new Date().toISOString(),
+    }, { onConflict: 'email', ignoreDuplicates: false });
 
-    if (error) {
-      if (error.code === "23505") {
-        return NextResponse.json({ success: true, message: "Already subscribed" });
-      }
+    if (error && error.code !== "23505") {
       console.error("[newsletter] Supabase error:", error);
       return NextResponse.json({ error: "Newsletter request failed" }, { status: 500 });
     }
@@ -36,8 +37,8 @@ export async function POST(req: NextRequest) {
       await addOrUpdateSubscriber({
         email,
         firstName: firstName || undefined,
-        groups: [ML_GROUPS.NEWSLETTER],
-        fields: { source: "newsletter_signup" },
+        groups: [ML_GROUPS.NEWSLETTER].filter(Boolean),
+        fields: { source: resolvedSource },
       });
 
       // Trigger the 14-email nurture sequence if automation ID is configured

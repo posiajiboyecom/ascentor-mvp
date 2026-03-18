@@ -95,6 +95,22 @@ export default function OnboardingPage() {
     // Mark onboarding as complete on the profile. Without this, route.ts sees
     // onboarding_completed = false/null on every subsequent login and redirects
     // the user back here indefinitely.
+    // Sync full name + plan to MailerLite now that we have it
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        await fetch('/api/welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email,
+            name: profile.full_name || user.email.split('@')[0],
+            userId: user.id,
+          }),
+        });
+      }
+    } catch { /* non-fatal */ }
+
     const { error: profileError } = await supabase
       .from('profiles')
       .update({

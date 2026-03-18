@@ -22,6 +22,8 @@ export default function AdminNewsletterPage() {
   const [result, setResult] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [mlSyncing, setMlSyncing] = useState(false);
+  const [mlSyncResult, setMlSyncResult] = useState<{ synced: number; failed: number; total: number } | null>(null);
   const [subCount, setSubCount] = useState(0);
   const [tab, setTab] = useState<'compose' | 'queue' | 'subscribers' | 'history'>('compose');
   const [newsletterQueue, setNewsletterQueue] = useState<any[]>([]);
@@ -30,6 +32,26 @@ export default function AdminNewsletterPage() {
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
 
   useEffect(() => { loadData(); }, []);
+
+  async function syncToMailerLite() {
+    setMlSyncing(true);
+    setMlSyncResult(null);
+    try {
+      const res = await fetch('/api/admin/mailerlite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Sync failed');
+      setMlSyncResult({ synced: data.synced, failed: data.failed, total: data.total });
+    } catch (err: any) {
+      setMlSyncResult({ synced: 0, failed: -1, total: 0 });
+      console.error('[ML sync]', err.message);
+    } finally {
+      setMlSyncing(false);
+    }
+  }
 
   async function loadData() {
     const [historyRes, subsRes, queueRes] = await Promise.all([
@@ -354,6 +376,7 @@ export default function AdminNewsletterPage() {
     <div style={{ animation: 'asc-fade-up 0.35s ease both' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes asc-fade-up { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:translateY(0);} }
         @keyframes asc-spin    { to { transform:rotate(360deg);} }
         .asc-input:focus       { border-color: #E8A020 !important; }
@@ -691,6 +714,52 @@ export default function AdminNewsletterPage() {
       {/* ═══ SUBSCRIBERS TAB ═══════════════════════════════════════════════ */}
       {tab === 'subscribers' && (
         <>
+          {/* MailerLite Sync Panel */}
+          <div style={{
+            background: 'var(--admin-bg-card)', border: '1px solid var(--admin-bg-input)',
+            borderRadius: 12, padding: '20px 24px', marginBottom: 20,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            flexWrap: 'wrap', gap: 16,
+          }}>
+            <div>
+              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--admin-text-heading)', marginBottom: 4 }}>
+                Sync to MailerLite
+              </p>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)', letterSpacing: '0.04em' }}>
+                Pushes all Supabase subscribers + app users into MailerLite groups (Newsletter, App Users, Paid/Free).
+                Safe to run multiple times — it upserts, never duplicates.
+              </p>
+              {mlSyncResult && mlSyncResult.failed === -1 && (
+                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#EF4444', marginTop: 6 }}>✗ Sync failed — check console for details</p>
+              )}
+              {mlSyncResult && mlSyncResult.failed !== -1 && (
+                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#14B8A6', marginTop: 6 }}>
+                  ✓ Synced {mlSyncResult.synced} of {mlSyncResult.total} contacts
+                  {mlSyncResult.failed > 0 ? ` · ${mlSyncResult.failed} failed` : ''}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={syncToMailerLite}
+              disabled={mlSyncing}
+              style={{
+                padding: '10px 20px', borderRadius: 8, cursor: mlSyncing ? 'not-allowed' : 'pointer',
+                background: mlSyncing ? 'rgba(232,160,32,0.3)' : '#E8A020',
+                color: '#0C0B08', fontFamily: "'Syne', sans-serif",
+                fontSize: 13, fontWeight: 700, border: 'none',
+                display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+                transition: 'background 0.15s',
+              }}
+            >
+              {mlSyncing ? (
+                <>
+                  <span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid #0C0B08', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  Syncing…
+                </>
+              ) : '↑ Sync to MailerLite'}
+            </button>
+          </div>
+
           {subscribers.length === 0 ? (
             <div style={{ padding: '48px', textAlign: 'center' }}>
               <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', color: 'var(--admin-text-faint)' }}>No subscribers yet.</p>

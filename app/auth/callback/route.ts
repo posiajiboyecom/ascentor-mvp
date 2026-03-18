@@ -61,9 +61,39 @@ export async function GET(request: Request) {
   // ── MAIN ASCENTOR FLOW ────────────────────────────────────
   const { data: profile } = await supabase
     .from('profiles')
-    .select('onboarding_completed, subscription_status, subscription_plan')
+    .select('onboarding_completed, subscription_status, subscription_plan, full_name, email')
     .eq('id', user.id)
     .single();
+
+  // ── MAILERLITE SYNC — fire for every user on every login ──
+  // Upsert is idempotent — safe to call on every auth callback.
+  // This catches OAuth users (Google/LinkedIn) who bypass /signup.
+  try {
+    const userEmail = user.email || profile?.email;
+    if (userEmail) {
+      const { addOrUpdateSubscriber, ML_GROUPS } = await import('@/lib/mailerlite');
+      const isPaid =
+        profile?.subscription_status === 'active' ||
+        profile?.subscription_status === 'trialing';
+      const firstName = (profile?.full_name || user.email?.split('@')[0] || '').split(' ')[0];
+      await addOrUpdateSubscriber({
+        email: userEmail,
+        firstName,
+        groups: [
+          ML_GROUPS.APP_USERS,
+          isPaid ? ML_GROUPS.PAID_USERS : ML_GROUPS.FREE_USERS,
+        ].filter(Boolean),
+        fields: {
+          source: 'app_login',
+          plan: profile?.subscription_plan || 'free',
+        },
+        resubscribe: false, // don't resubscribe if they unsubscribed
+      });
+    }
+  } catch (mlErr: any) {
+    // Non-fatal — never block the redirect
+    console.error('[auth/callback] MailerLite sync error (non-fatal):', mlErr.message);
+  }
 
   // Case 1: Fully set up returning user
   if (profile?.onboarding_completed === true) {

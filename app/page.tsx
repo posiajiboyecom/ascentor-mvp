@@ -48,11 +48,23 @@ export default function LandingPage() {
     setSubLoading(false);
     if (error) {
       if (error.message.includes('duplicate') || error.code === '23505') {
+        // Already in Supabase — still try to sync to MailerLite in case they were missed
+        fetch('/api/newsletter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: trimmed, source: 'landing_page' }),
+        }).catch(() => {});
         setSubError("You're already subscribed!");
       } else {
         setSubError('Something went wrong. Please try again.');
       }
     } else {
+      // Sync to MailerLite via the newsletter API (handles ML + Supabase idempotently)
+      fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmed, source: 'landing_page' }),
+      }).catch(() => {});
       setSubscribed(true);
     }
   };
