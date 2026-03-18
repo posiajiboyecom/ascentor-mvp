@@ -243,15 +243,41 @@ export async function POST(req: Request) {
     // Step 1: Ensure groups exist (creates them in ML if missing)
     const groupIds = await ensureGroups();
 
-    // Step 2: Fetch all subscribers from Supabase
-    const [{ data: nlSubs }, { data: appUsers }] = await Promise.all([
+    // Step 2: Fetch all data from Supabase
+    // IMPORTANT: profiles.email is often null — auth.admin.listUsers() is the
+    // authoritative email source. profiles gives us name + subscription data.
+    const [
+      { data: nlSubs },
+      { data: profilesData },
+      authListResult,
+    ] = await Promise.all([
       service.from('newsletter_subscribers').select('email, first_name, source').eq('is_active', true),
-      service.from('profiles').select('email, full_name, subscription_plan, subscription_status'),
+      service.from('profiles').select('id, full_name, subscription_plan, subscription_status'),
+      service.auth.admin.listUsers({ perPage: 1000 }),
     ]);
+
+    // Build a map of auth user id → email from auth.users (the real source)
+    const authEmailMap = new Map<string, string>();
+    for (const authUser of (authListResult.data?.users || [])) {
+      if (authUser.email) {
+        authEmailMap.set(authUser.id, authUser.email.trim().toLowerCase());
+      }
+    }
+
+    // Build profile lookup by id → { full_name, subscription_plan, subscription_status }
+    const profileMap = new Map<string, { name: string; plan: string | null; status: string | null }>();
+    for (const p of (profilesData || [])) {
+      profileMap.set(p.id, {
+        name: (p.full_name || '').split(' ')[0] || '',
+        plan: p.subscription_plan || null,
+        status: p.subscription_status || null,
+      });
+    }
 
     // Step 3: Merge and deduplicate by email
     const map = new Map<string, { email: string; name: string; groups: string[] }>();
 
+    // Newsletter subscribers first
     for (const s of (nlSubs || [])) {
       if (!s.email) continue;
       const key = s.email.trim().toLowerCase();
@@ -262,17 +288,17 @@ export async function POST(req: Request) {
       });
     }
 
-    for (const u of (appUsers || [])) {
-      if (!u.email) continue;
-      const key = u.email.trim().toLowerCase();
-      const existing = map.get(key) || { email: key, name: '', groups: [] as string[] };
+    // All auth users (this is the complete list — 37 users, not 8)
+    for (const [userId, email] of authEmailMap) {
+      const profile = profileMap.get(userId);
+      const existing = map.get(email) || { email, name: '', groups: [] as string[] };
 
       if (groupIds.APP_USERS && !existing.groups.includes(groupIds.APP_USERS)) {
         existing.groups.push(groupIds.APP_USERS);
       }
 
-      const isPaid = (u.subscription_status === 'active' || u.subscription_status === 'trialing')
-        && u.subscription_plan && u.subscription_plan !== 'free';
+      const isPaid = (profile?.status === 'active' || profile?.status === 'trialing')
+        && profile?.plan && profile.plan !== 'free';
 
       if (isPaid) {
         if (groupIds.PAID_USERS && !existing.groups.includes(groupIds.PAID_USERS)) {
@@ -284,10 +310,8 @@ export async function POST(req: Request) {
         }
       }
 
-      const firstName = (u.full_name || '').split(' ')[0] || '';
-      if (!existing.name && firstName) existing.name = firstName;
-
-      map.set(key, existing);
+      if (!existing.name && profile?.name) existing.name = profile.name;
+      map.set(email, existing);
     }
 
     const records = Array.from(map.values());
