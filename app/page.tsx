@@ -89,7 +89,7 @@ export default function LandingPage() {
         /* ── NAV ── */
         .lp-nav {
           position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-          display: flex; align-items: center; justify-content: space-between;
+          display: flex; align-items: center; gap: 0;
           padding: 14px 32px;
           background: rgba(253,252,249,0.92);
           backdrop-filter: blur(12px);
@@ -102,11 +102,11 @@ export default function LandingPage() {
           color: var(--dark); text-decoration: none;
         }
         .lp-nav-logo span { color: var(--gold); }
-        .lp-nav-links { display: flex; align-items: center; gap: 16px; list-style: none; }
-        .lp-nav-links a { text-decoration: none; color: var(--mid); font-size: 13px; font-weight: 500; transition: color 0.2s; }
+        .lp-nav-links { display: flex; align-items: center; gap: 20px; list-style: none; flex: 1; justify-content: center; }
+        .lp-nav-links a { text-decoration: none; color: var(--mid); font-size: 13px; font-weight: 500; transition: color 0.2s; white-space: nowrap; letter-spacing: -0.01em; }
         .lp-nav-links a:hover { color: var(--dark); }
         .lp-nav-right {
-          display: flex; align-items: center; gap: 12px;
+          display: flex; align-items: center; gap: 12px; flex-shrink: 0;
         }
         .lp-nav-login {
           text-decoration: none; color: var(--mid); font-size: 13px; font-weight: 500;
@@ -388,8 +388,8 @@ export default function LandingPage() {
         .lp-drawer-panel {
           position: absolute; top: 0; right: 0; bottom: 0;
           width: min(300px, 88vw);
-          background: var(--white); padding: 20px 16px;
-          display: flex; flex-direction: column; gap: 4px;
+          background: #FDFCF9; padding: 24px 16px;
+          display: flex; flex-direction: column; gap: 2px;
           box-shadow: -20px 0 60px rgba(0,0,0,0.25);
           animation: lp-slideIn 0.22s ease;
           overflow-y: auto;
@@ -400,29 +400,29 @@ export default function LandingPage() {
         }
         .lp-drawer-close {
           align-self: flex-end; background: none; border: none;
-          font-size: 20px; cursor: pointer; color: var(--mid);
-          padding: 4px 8px; margin-bottom: 12px;
+          font-size: 20px; cursor: pointer; color: #5C5947 !important;
+          padding: 4px 8px; margin-bottom: 6px;
         }
         .lp-drawer-link {
-          display: block; padding: 13px 12px; border-radius: 8px;
+          display: block; padding: 12px 16px; border-radius: 8px;
           text-decoration: none; font-family: 'Syne', sans-serif;
-          font-size: 15px; font-weight: 500; color: var(--text);
+          font-size: 16px; font-weight: 600; color: #2A2820 !important;
           transition: background 0.15s, color 0.15s;
         }
-        .lp-drawer-link:hover { background: var(--gold-pale); color: var(--dark); }
+        .lp-drawer-link:hover { background: #FDF3E0; color: #0F0E0B !important; }
         .lp-drawer-divider { height: 1px; background: rgba(42,40,32,0.08); margin: 8px 0; }
         .lp-drawer-cta {
-          display: block; margin-top: 8px; text-align: center;
-          background: var(--gold); color: var(--dark) !important;
+          display: block; margin-top: 12px; text-align: center;
+          background: #E8A020; color: #0F0E0B !important;
           padding: 14px; border-radius: 10px;
           font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
           text-decoration: none; transition: background 0.2s;
         }
-        .lp-drawer-cta:hover { background: var(--gold-light); }
+        .lp-drawer-cta:hover { background: #F5C55A; }
 
         /* ── RESPONSIVE ── */
         @media (max-width: 860px) {
-          .lp-nav { padding: 14px 20px; }
+          .lp-nav { padding: 12px 16px; }
           .lp-nav-links { display: none; }
           .lp-nav-right { display: none; }
           .lp-hamburger { display: flex; }
@@ -454,6 +454,7 @@ export default function LandingPage() {
             <li><Link href="/about">About</Link></li>
             <li><Link href="/who-its-for">Who It's For</Link></li>
             <li><Link href="/how-it-works">How It Works</Link></li>
+            <li><Link href="/products">Products</Link></li>
             <li><Link href="/pricing">Pricing</Link></li>
             <li><Link href="/blog">Blog</Link></li>
           </ul>
