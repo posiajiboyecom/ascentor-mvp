@@ -331,9 +331,12 @@ export default function AdminPromoCodesPage() {
               </div>
             )}
             <div>
-              <label style={{ ...fieldLabel }}>Expires (optional)</label>
-              <input type="date" value={newExpiry} onChange={(e) => setNewExpiry(e.target.value)}
+              <label style={{ ...fieldLabel }}>Expires — date &amp; time (optional)</label>
+              <input type="datetime-local" value={newExpiry} onChange={(e) => setNewExpiry(e.target.value)}
                 className="asc-input" style={{ ...inputBase, colorScheme: 'dark' }} />
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
+                Set a future date + time for the countdown timer to show on checkout
+              </p>
             </div>
             <div>
               <label style={{ ...fieldLabel }}>Applies to</label>
@@ -452,9 +455,22 @@ export default function AdminPromoCodesPage() {
 
                     {/* Expires */}
                     <td style={{ padding: '13px 16px' }}>
-                      <span style={{ ...monoLabel, fontSize: '10px' }}>
-                        {c.expires_at ? new Date(c.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
-                      </span>
+                      {c.expires_at ? (() => {
+                        const exp     = new Date(c.expires_at);
+                        const isPast  = exp < new Date();
+                        const dateStr = exp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                        const timeStr = exp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                        return (
+                          <div>
+                            <span style={{ ...monoLabel, fontSize: '10px', color: isPast ? '#EF4444' : 'var(--admin-text-faint)' }}>
+                              {dateStr}
+                            </span>
+                            <span style={{ ...monoLabel, fontSize: '9px', color: isPast ? '#EF4444' : '#4A4438', display: 'block' }}>
+                              {timeStr} {isPast ? '· EXPIRED' : ''}
+                            </span>
+                          </div>
+                        );
+                      })() : <span style={{ ...monoLabel, fontSize: '10px' }}>—</span>}
                     </td>
 
                     {/* Status */}
