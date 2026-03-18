@@ -19,26 +19,49 @@ const supabase = createClient(
 const MAGNETS: Record<string, {
   name: string;
   groupEnvKey: string;
-  deliveryUrl: string;         // where we send them after subscribing
+  deliveryUrl: string;
   confirmationSubject: string;
 }> = {
-  'leadership-blueprint': {
-    name: 'The African Leadership Blueprint',
-    groupEnvKey: 'MAILERLITE_GROUP_LEAD_BLUEPRINT',
-    deliveryUrl: '/free/leadership-blueprint/download',
-    confirmationSubject: 'Your African Leadership Blueprint is ready 🎯',
+  // ── Lead Magnet 1: The 90-Day Leadership Playbook ──────────
+  'leadership-playbook': {
+    name: 'The 90-Day Leadership Playbook',
+    groupEnvKey: 'MAILERLITE_GROUP_LEAD_PLAYBOOK',
+    deliveryUrl: '/free/leadership-playbook/download',
+    confirmationSubject: 'Your 90-Day Leadership Playbook is ready',
   },
-  '30-day-challenge': {
-    name: 'Free 30-Day Leadership Challenge',
-    groupEnvKey: 'MAILERLITE_GROUP_LEAD_CHALLENGE',
-    deliveryUrl: '/free/30-day-challenge/confirmed',
-    confirmationSubject: 'Day 1 of your leadership challenge starts now 🚀',
+  // ── Lead Magnet 2: Why Talented People Don't Get Promoted ──
+  'promotion-blueprint': {
+    name: 'Why Talented People Don't Get Promoted',
+    groupEnvKey: 'MAILERLITE_GROUP_LEAD_PROMOTION',
+    deliveryUrl: '/free/promotion-blueprint/download',
+    confirmationSubject: 'Your guide: Why Talented People Don't Get Promoted',
+  },
+  // ── Lead Magnet 3: Salary Negotiation Script Pack ──────────
+  'salary-scripts': {
+    name: 'The Salary Negotiation Script Pack',
+    groupEnvKey: 'MAILERLITE_GROUP_LEAD_SALARY',
+    deliveryUrl: '/free/salary-scripts/download',
+    confirmationSubject: 'Your Salary Negotiation Scripts are ready',
+  },
+  // ── Lead Magnet 4: Career Clarity Audit (Phase 2) ──────────
+  'career-audit': {
+    name: 'The 10-Minute Career Clarity Audit',
+    groupEnvKey: 'MAILERLITE_GROUP_LEAD_AUDIT',
+    deliveryUrl: '/free/career-audit/results',
+    confirmationSubject: 'Your Career Clarity Audit results',
+  },
+  // ── Legacy IDs (backwards compatibility) ───────────────────
+  'leadership-blueprint': {
+    name: 'The 90-Day Leadership Playbook',
+    groupEnvKey: 'MAILERLITE_GROUP_LEAD_PLAYBOOK',
+    deliveryUrl: '/free/leadership-playbook/download',
+    confirmationSubject: 'Your 90-Day Leadership Playbook is ready',
   },
   'salary-toolkit': {
-    name: 'African Professional Salary Negotiation Toolkit',
+    name: 'The Salary Negotiation Script Pack',
     groupEnvKey: 'MAILERLITE_GROUP_LEAD_SALARY',
-    deliveryUrl: '/free/salary-toolkit/download',
-    confirmationSubject: 'Your Salary Negotiation Toolkit is here 💼',
+    deliveryUrl: '/free/salary-scripts/download',
+    confirmationSubject: 'Your Salary Negotiation Scripts are ready',
   },
 };
 

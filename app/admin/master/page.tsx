@@ -495,7 +495,7 @@ export default function MasterAdminPage() {
           {/* North Star */}
           <div style={{ ...card, padding: '24px', background: 'linear-gradient(135deg, var(--admin-bg-deep) 60%, rgba(232,160,32,0.05))', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #E8A020 40%, #E8A020 60%, transparent)' }} />
-            <p style={mono('<svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> North Star Metric', true)}><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> North Star Metric</p>
+            <p style={mono('★ North Star Metric', true)}>★ North Star Metric</p>
             <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 72, fontWeight: 700, color: '#E8A020', margin: '8px 0 4px', lineHeight: 1 }}>{kpi.wacu}</p>
             <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 600, color: 'var(--admin-text-heading)', margin: 0 }}>Weekly Active Coached Users (WACU)</p>
             <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)', marginTop: 6, letterSpacing: '0.08em' }}>Users with ≥1 coaching session this week · drives retention, word-of-mouth, conversion</p>
@@ -642,28 +642,34 @@ export default function MasterAdminPage() {
           {/* 14-email sequence tracker */}
           <div style={{ ...card, padding: 20 }}>
             <p style={mono('14-Email Welcome & Nurture Sequence', true, false)}>14-Email Welcome Sequence</p>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', marginTop: 4, marginBottom: 16 }}>Build once in MailerLite automation · runs forever · write all 14 with Claude</p>
+            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', marginTop: 4, marginBottom: 16 }}>Write once · load into MailerLite Automation · fires automatically for every new subscriber · 30-day nurture to conversion</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {[
-                { day: 0,  subject: 'Welcome + lead magnet delivery' },
-                { day: 1,  subject: 'Why I built Ascentor — founder story' },
-                { day: 3,  subject: 'The #1 leadership mistake ambitious professionals make' },
-                { day: 5,  subject: 'Meet Sage — your AI coach (demo)' },
-                { day: 7,  subject: 'Social proof — member transformation story' },
-                { day: 10, subject: 'The 3 pillars of Ascentor (soft product intro)' },
-                { day: 12, subject: 'Objection killer — is AI coaching real?' },
-                { day: 14, subject: 'Case study — specific member transformation' },
-                { day: 18, subject: 'Value — the 5-minute leadership habit' },
-                { day: 21, subject: 'Peer cohorts — you don\'t have to grow alone' },
-                { day: 24, subject: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A4.5 4.5 0 0 0 17 12c0-4-3.5-6.5-4-9-.5 2.5-3.5 5-3.5 5-1.5-2-2-4-2-4-1 2.5-2 5-2 7a6 6 0 0 0 6 6 4.5 4.5 0 0 0 4.5-4.5c0-1.5-.5-3-1.5-4z"/></svg> Founders Promo — 50% off (first CTA)' },
-                { day: 26, subject: 'FAQ — remove all friction to purchase' },
-                { day: 28, subject: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last chance — Founders Promo expires' },
-                { day: 30, subject: 'Re-engagement — if not now, when?' },
+                { day: 0,  tag: 'WELCOME',     subject: 'Your access to Ascentor is ready',                   goal: 'Deliver, orient, build trust immediately' },
+                { day: 1,  tag: 'STORY',       subject: 'The problem no one talks about in your career',       goal: 'Name the pain: talent without access to guidance' },
+                { day: 3,  tag: 'VALUE',       subject: 'What a mentor actually changes (it is not what you think)', goal: 'Reframe mentorship from networking to decision quality' },
+                { day: 5,  tag: 'PRODUCT',     subject: 'Meet Sage — a coach who never sleeps',               goal: 'Demo Sage. Show the 2am before-a-big-meeting moment' },
+                { day: 7,  tag: 'PROOF',       subject: '[Name] got promoted. Here is exactly what changed',  goal: 'Transformation story. Specific, real, relatable' },
+                { day: 10, tag: 'EDUCATION',   subject: 'The 3 decisions that determine every career outcome', goal: 'Pure value. No pitch. Build authority.' },
+                { day: 12, tag: 'OBJECTION',   subject: 'Can AI really coach me? (honest answer)',            goal: 'Handle the biggest objection head-on' },
+                { day: 14, tag: 'COMMUNITY',   subject: 'The people in your cohort are already moving',       goal: 'FOMO on peer community. You are missing it.' },
+                { day: 18, tag: 'VALUE',       subject: 'One question that changes how you show up at work',  goal: 'Practical, shareable insight. Re-engagement hook.' },
+                { day: 21, tag: 'CASE STUDY',  subject: 'From "not ready yet" to Director in 11 months',      goal: 'Detailed transformation. Obstacle → Ascentor → result' },
+                { day: 24, tag: '★ CTA',       subject: 'Founding Member offer — 50% off, this week only',    goal: 'First hard CTA. Urgency + exclusivity + discount' },
+                { day: 26, tag: 'FAQ',         subject: 'Your questions about Ascentor — answered',           goal: 'Remove every remaining friction point to purchase' },
+                { day: 28, tag: '⏱ URGENCY',  subject: 'Offer closes in 48 hours',                           goal: 'Final CTA. Countdown. Simple and direct.' },
+                { day: 30, tag: 'BREAKUP',     subject: 'Is this still relevant to you?',                     goal: 'Re-permission email. Either they convert or self-select out.' },
               ].map((email, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 12px', background: 'var(--admin-bg-card)', borderRadius: 8, border: '1px solid var(--admin-bg-input)' }}>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', width: 44, flexShrink: 0, letterSpacing: '0.06em' }}>Day {email.day}</span>
-                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', flex: 1 }}>{email.subject}</span>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-bg-input)' }}>#{i + 1}</span>
+                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 14px', background: 'var(--admin-bg-card)', borderRadius: 8, border: '1px solid var(--admin-bg-input)' }}>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', width: 44, flexShrink: 0, letterSpacing: '0.06em', paddingTop: 2 }}>Day {email.day}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, letterSpacing: '0.1em', padding: '2px 6px', borderRadius: 100, background: 'rgba(232,160,32,0.1)', color: '#E8A020', flexShrink: 0 }}>{email.tag}</span>
+                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, color: 'var(--admin-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email.subject}</span>
+                    </div>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)', margin: 0, letterSpacing: '0.02em' }}>{email.goal}</p>
+                  </div>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', flexShrink: 0, paddingTop: 2 }}>#{i + 1}</span>
                 </div>
               ))}
             </div>
@@ -963,18 +969,92 @@ export default function MasterAdminPage() {
             <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>Each magnet feeds a dedicated MailerLite automation sequence · A subscriber is 40× more likely to convert than a social follower</p>
           </div>
 
-          {/* Canonical 4 from the marketing doc */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+          {/* Lead magnets — Ascentor global platform */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
-              { name: 'The leadership Blueprint', type: 'PDF', desc: '10-page guide · 7 frameworks used by top CEOs · created with Claude in 2 hours' },
-              { name: 'Free 30-Day Leadership Challenge', type: 'Email Series', desc: 'Daily email · 1 leadership exercise per day · builds habit + proves value before payment' },
-              { name: 'Career Acceleration Audit', type: 'Quiz', desc: '10-question Typeform quiz · reveals leadership gaps · personalised email sequence trigger' },
-              { name: 'ambitious professional Salary Negotiation Toolkit', type: 'Template Pack', desc: 'Scripts, email templates, prep frameworks · high perceived value · viral LinkedIn potential' },
-            ].map(m => (
-              <div key={m.name} style={{ ...card, padding: 18 }}>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#E8A020', background: 'rgba(232,160,32,0.08)', border: '1px solid rgba(232,160,32,0.2)', borderRadius: 100, padding: '2px 8px' }}>{m.type}</span>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--admin-text-heading)', margin: '10px 0 6px', lineHeight: 1.3 }}>{m.name}</p>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', lineHeight: 1.6, margin: 0 }}>{m.desc}</p>
+              {
+                id: 'leadership-playbook',
+                name: 'The 90-Day Leadership Playbook',
+                type: 'PDF Guide',
+                status: 'BUILD NOW',
+                priority: '★ #1 PRIORITY',
+                persona: 'Builder · Climber',
+                problem: 'I want to grow but I don't know what to focus on',
+                desc: '12-page PDF: the exact framework Sage uses — how to set a 90-day leadership goal, make it specific, track it, and make your progress visible to the people who decide your future.',
+                mlGroup: 'MAILERLITE_GROUP_LEAD_PLAYBOOK',
+                url: '/free/leadership-playbook',
+                cta: 'Get the free playbook',
+                conversionPath: 'Download → 7-day email sequence → Founding Member offer on Day 5',
+              },
+              {
+                id: 'promotion-blueprint',
+                name: 'Why Talented People Don't Get Promoted',
+                type: 'PDF Guide',
+                status: 'BUILD NOW',
+                priority: '★ #2 PRIORITY',
+                persona: 'Builder',
+                problem: 'I work hard and deliver results but keep getting passed over',
+                desc: '8-page PDF: the 3 real reasons promotions go to less talented people, and the 5 specific moves that change the outcome. The core Ascentor thesis in a document.',
+                mlGroup: 'MAILERLITE_GROUP_LEAD_PROMOTION',
+                url: '/free/promotion-blueprint',
+                cta: 'Get the free guide',
+                conversionPath: 'Download → 5-day email sequence → cohort waitlist CTA on Day 3',
+              },
+              {
+                id: 'salary-scripts',
+                name: 'The Salary Negotiation Script Pack',
+                type: 'Template Pack',
+                status: 'BUILD NOW',
+                priority: '#3',
+                persona: 'Explorer · Builder',
+                problem: 'I don't know how to ask for what I'm worth without damaging the relationship',
+                desc: '5 word-for-word scripts: opening the conversation, responding to a low offer, countering, negotiating without an offer, following up after silence. Copy-paste ready.',
+                mlGroup: 'MAILERLITE_GROUP_LEAD_SALARY',
+                url: '/free/salary-scripts',
+                cta: 'Get the free scripts',
+                conversionPath: 'Download → 4-day email sequence → Sage demo on Day 2 → CTA on Day 4',
+              },
+              {
+                id: 'career-audit',
+                name: 'The 10-Minute Career Clarity Audit',
+                type: 'Interactive Quiz',
+                status: 'PHASE 2',
+                priority: '#4 — BUILD AFTER FIRST 3',
+                persona: 'All stages',
+                problem: 'I feel stuck but I can't pinpoint exactly why',
+                desc: '10 questions that identify exactly where you are stuck and why. Output: personalised action plan + routed into the right Ascentor plan (Explorer / Builder / Climber). This is the segmentation engine.',
+                mlGroup: 'MAILERLITE_GROUP_LEAD_AUDIT',
+                url: '/free/career-audit',
+                cta: 'Take the free audit',
+                conversionPath: 'Complete → tagged Explorer/Builder/Climber → routed into persona-specific email sequence → plan-matched CTA',
+              },
+            ].map((m, i) => (
+              <div key={m.id} style={{ ...card, padding: 18 }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' as const }}>
+                  {/* Left: metadata */}
+                  <div style={{ flex: '0 0 180px' }}>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' as const }}>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em', color: '#E8A020', background: 'rgba(232,160,32,0.08)', border: '1px solid rgba(232,160,32,0.2)', borderRadius: 100, padding: '2px 8px' }}>{m.type}</span>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.08em', color: m.status === 'BUILD NOW' ? '#14B8A6' : '#7A7260', background: m.status === 'BUILD NOW' ? 'rgba(20,184,166,0.08)' : 'var(--admin-bg-input)', borderRadius: 100, padding: '2px 8px' }}>{m.status}</span>
+                    </div>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E8A020', letterSpacing: '0.08em', margin: '0 0 4px' }}>{m.priority}</p>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', margin: '0 0 8px' }}>{m.persona}</p>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-muted)', margin: 0, wordBreak: 'break-all' as const }}>{m.mlGroup}</p>
+                  </div>
+                  {/* Centre: content */}
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 4px', lineHeight: 1.3 }}>{m.name}</p>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'rgba(232,160,32,0.7)', letterSpacing: '0.04em', margin: '0 0 8px', fontStyle: 'italic' }}>"{m.problem}"</p>
+                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', lineHeight: 1.6, margin: 0 }}>{m.desc}</p>
+                  </div>
+                  {/* Right: conversion path */}
+                  <div style={{ flex: '0 0 220px', borderLeft: '1px solid var(--admin-bg-input)', paddingLeft: 16 }}>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E8A020', letterSpacing: '0.1em', margin: '0 0 6px' }}>CONVERSION PATH</p>
+                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: 'var(--admin-text-muted)', lineHeight: 1.6, margin: '0 0 10px' }}>{m.conversionPath}</p>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', margin: '0 0 4px' }}>URL</p>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#14B8A6', margin: 0 }}>ascentorbi.com{m.url}</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

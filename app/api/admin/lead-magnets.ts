@@ -9,9 +9,10 @@ import { createClient } from '@supabase/supabase-js';
 // ============================================================
 
 const MAGNET_DEFS = [
-  { id: 'leadership-blueprint', name: 'The African Leadership Blueprint',   type: 'PDF',           url: '/free/leadership-blueprint' },
-  { id: '30-day-challenge',     name: 'Free 30-Day Leadership Challenge',    type: 'Email Series',  url: '/free/30-day-challenge' },
-  { id: 'salary-toolkit',       name: 'African Professional Salary Toolkit', type: 'Template Pack', url: '/free/salary-toolkit' },
+  { id: 'leadership-playbook',  name: 'The 90-Day Leadership Playbook',             type: 'PDF Guide',      url: '/free/leadership-playbook'  },
+  { id: 'promotion-blueprint',  name: 'Why Talented People Don't Get Promoted',     type: 'PDF Guide',      url: '/free/promotion-blueprint'  },
+  { id: 'salary-scripts',       name: 'The Salary Negotiation Script Pack',          type: 'Template Pack',  url: '/free/salary-scripts'       },
+  { id: 'career-audit',         name: 'The 10-Minute Career Clarity Audit',          type: 'Interactive Quiz', url: '/free/career-audit'         },
 ];
 
 export async function GET() {
