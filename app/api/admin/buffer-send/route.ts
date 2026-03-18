@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { queueId } = await req.json();
+    const { queueId, imageUrl: bodyImageUrl } = await req.json();
     if (!queueId) return NextResponse.json({ error: 'queueId required' }, { status: 400 });
 
     // Fetch the queue row
@@ -48,14 +48,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `No Buffer profile connected for platform: ${post.platform}` }, { status: 400 });
     }
 
-    // Build post text — append image URL as link if no native image support via API
+    // Use image from request body (freshly uploaded) or fall back to what's in DB
+    const imageUrl = bodyImageUrl || post.image_url || null;
     let text = post.content || '';
-    const media: any = {};
-    if (post.image_url) {
-      media.link = post.image_url;
-      media.picture = post.image_url;
-      media.thumbnail = post.image_url;
-    }
 
     const results = await scheduleBufferPost({
       profile_ids: profileIds,

@@ -177,10 +177,9 @@ export default function AdminContentPage() {
       showToast('✓ Approved — moved to Approved queue');
     }
 
-    // Switch filter to 'approved' so the item stays visible in its new state
-    // instead of disappearing from the 'draft' filter
+    // Switch filter to 'approved' — keep panel open so user sees send buttons immediately
     setPendingFilter('approved');
-    setSelectedItem(null);
+    // Don't close the panel — user needs to see the send buttons right after approving
     setSaving(false);
   }
 
@@ -248,7 +247,7 @@ export default function AdminContentPage() {
     });
     if (error) { showToast('Queue error: ' + error.message, false); setSaving(false); return; }
     await setStatus(item.id, 'published', { published_at: new Date().toISOString() });
-    showToast('✓ Queued for ' + platform);
+    showToast('✓ Queued for ' + platform + ' — check Social Queue tab');
     setPendingFilter('published');
     setSelectedItem(null);
     setSaving(false);
@@ -412,40 +411,7 @@ export default function AdminContentPage() {
         )}
 
         {!loading && tab === 'queue' && (
-          <div>
-            {queue.length === 0
-              ? <div className="cp-empty"><p className="cp-empty-text">Queue is empty — approve social posts to push them here</p></div>
-              : queue.map(post => (
-                <div key={post.id} className="cp-qitem">
-                  <div className="cp-qtime">
-                    {post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Unscheduled'}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.08em', color: 'var(--admin-text-faint)' }}>{(post.platform || '').toUpperCase()}</span>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, padding: '2px 8px', borderRadius: 4, background: post.status === 'posted' || post.status === 'scheduled_buffer' ? 'rgba(16,185,129,0.1)' : 'rgba(232,160,32,0.08)', color: post.status === 'posted' || post.status === 'scheduled_buffer' ? '#10B981' : '#E8A020' }}>{post.status}</span>
-                      {post.buffer_update_id && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#10B981' }}>Buffer ✓</span>}
-                    </div>
-                    {post.image_url && (
-                      <img src={post.image_url} alt="Post image" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 6, marginBottom: 8, border: '1px solid var(--admin-bg-input)' }} />
-                    )}
-                    <div className="cp-qtext">{(post.content || '').substring(0, 220)}{(post.content || '').length > 220 ? '…' : ''}</div>
-                    {post.status === 'pending' && !post.buffer_update_id && (
-                      <button
-                        onClick={async () => {
-                          const res = await fetch('/api/admin/buffer-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ queueId: post.id }) });
-                          const data = await res.json();
-                          if (data.success) { showToast('Sent to Buffer'); loadAll(); }
-                          else showToast('Buffer error: ' + data.error, false);
-                        }}
-                        style={{ marginTop: 8, padding: '5px 14px', borderRadius: 6, border: '1px solid rgba(232,160,32,0.3)', background: 'rgba(232,160,32,0.08)', color: '#E8A020', fontFamily: "'DM Mono', monospace", fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em' }}>
-                        Send to Buffer
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-          </div>
+          <SocialQueuePanel queue={queue} showToast={showToast} onRefresh={loadAll} />
         )}
       </div>
 
@@ -567,6 +533,12 @@ function DetailPanel({ item, saving, onApprove, onSchedule, onPublishBlog, onQue
             </>
           )}
 
+          {isApprov && !isBlog && item.type !== 'Email Newsletter' && (
+            <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(232,160,32,0.08)', border: '1px solid rgba(232,160,32,0.2)', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', letterSpacing: '0.06em' }}>
+              ✓ Approved — upload an image below (optional), then hit the send button
+            </div>
+          )}
+
           {(isApprov || isSchd) && (
             <>
               <div className="cp-schedule-row">
@@ -624,7 +596,7 @@ function DetailPanel({ item, saving, onApprove, onSchedule, onPublishBlog, onQue
                     </button>
                   )}
 
-                  {(item.type === 'Instagram Carousel' || item.type === 'Instagram Reel' || item.type === 'Instagram Engagement' || item.platform === 'Instagram') && (
+                  {(item.type?.startsWith('Instagram') || item.type?.toLowerCase().includes('instagram') || item.platform === 'Instagram' || item.platform === 'instagram') && (
                     <button className="cp-btn-pub" style={{ background: 'rgba(225,48,108,0.08)', color: '#E1306C', border: '1px solid rgba(225,48,108,0.2)' }} onClick={() => onQueueSocial(item, schedDate || undefined, uploadedImg || undefined)} disabled={saving}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
                       Send to Instagram
@@ -632,7 +604,7 @@ function DetailPanel({ item, saving, onApprove, onSchedule, onPublishBlog, onQue
                   )}
 
                   {/* Fallback for any other platform */}
-                  {!['LinkedIn Post','Twitter Thread','Instagram Carousel','Instagram Reel','Instagram Engagement'].includes(item.type) && item.platform !== 'Instagram' && (
+                  {!['LinkedIn Post','Twitter Thread'].includes(item.type) && !item.type?.startsWith('Instagram') && item.platform !== 'Instagram' && item.platform !== 'instagram' && (
                     <button className="cp-btn-pub cp-btn-green" onClick={() => onQueueSocial(item, schedDate || undefined, uploadedImg || undefined)} disabled={saving}>↑ Push to Social Queue</button>
                   )}
                 </>
@@ -836,3 +808,310 @@ const CSS = `
   .cp-btn-run:hover:not(:disabled){background:#F5C55A}
   .cp-btn-run:disabled{opacity:.5;cursor:not-allowed}
 `;
+
+// ═══════════════════════════════════════════════════════════
+// SOCIAL QUEUE PANEL
+// Groups posts by platform. Each post has:
+//   - Image upload (attaches to that specific post)
+//   - Individual Send to Buffer button
+//   - Status badge
+// ═══════════════════════════════════════════════════════════
+
+const PLATFORM_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
+  'LinkedIn': {
+    label: 'LinkedIn',
+    color: '#0A66C2',
+    bg: 'rgba(10,102,194,0.08)',
+    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>,
+  },
+  'Twitter/X': {
+    label: 'X / Twitter',
+    color: '#E2E8F0',
+    bg: 'rgba(226,232,240,0.06)',
+    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
+  },
+  'Instagram': {
+    label: 'Instagram',
+    color: '#E1306C',
+    bg: 'rgba(225,48,108,0.08)',
+    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>,
+  },
+  'Facebook': {
+    label: 'Facebook',
+    color: '#1877F2',
+    bg: 'rgba(24,119,242,0.08)',
+    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>,
+  },
+  'Email': {
+    label: 'Email / Newsletter',
+    color: '#14B8A6',
+    bg: 'rgba(20,184,166,0.08)',
+    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+  },
+};
+
+function SocialQueuePanel({ queue, showToast, onRefresh }: {
+  queue: any[];
+  showToast: (msg: string, ok?: boolean) => void;
+  onRefresh: () => void;
+}) {
+  const [postImages, setPostImages]     = useState<Record<string, string>>({});
+  const [uploading, setUploading]       = useState<string | null>(null);
+  const [sending, setSending]           = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'sent'>('all');
+
+  // Group posts by platform
+  const platforms = Object.keys(PLATFORM_CONFIG);
+  const otherPosts = queue.filter(p => !platforms.includes(p.platform));
+
+  const grouped: Record<string, any[]> = {};
+  platforms.forEach(p => {
+    const posts = queue.filter(post =>
+      post.platform === p ||
+      (p === 'Twitter/X' && (post.platform === 'Twitter' || post.platform === 'X'))
+    );
+    if (posts.length > 0) grouped[p] = posts;
+  });
+  if (otherPosts.length > 0) grouped['Other'] = otherPosts;
+
+  const filtered = (posts: any[]) => {
+    if (filterStatus === 'pending') return posts.filter(p => !p.buffer_update_id && p.status !== 'posted');
+    if (filterStatus === 'sent')    return posts.filter(p => p.buffer_update_id || p.status === 'posted' || p.status === 'scheduled_buffer');
+    return posts;
+  };
+
+  async function uploadImage(postId: string, file: File) {
+    setUploading(postId);
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('folder', 'social');
+    const res  = await fetch('/api/admin/upload-media', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.url) {
+      setPostImages(prev => ({ ...prev, [postId]: data.url }));
+      // Also persist the image URL to the queue row
+      const { createClient } = await import('@/lib/supabase/client');
+      await createClient().from('social_queue').update({ image_url: data.url }).eq('id', postId);
+      showToast('Image attached');
+    } else {
+      showToast('Upload failed: ' + data.error, false);
+    }
+    setUploading(null);
+  }
+
+  async function sendToBuffer(post: any) {
+    setSending(post.id);
+    const imageUrl = postImages[post.id] || post.image_url;
+
+    // If image was just attached locally, save it first
+    if (postImages[post.id] && !post.image_url) {
+      const { createClient } = await import('@/lib/supabase/client');
+      await createClient().from('social_queue').update({ image_url: postImages[post.id] }).eq('id', post.id);
+    }
+
+    const res  = await fetch('/api/admin/buffer-send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ queueId: post.id, imageUrl }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('✓ Sent to Buffer — post scheduled');
+      onRefresh();
+    } else {
+      showToast('Buffer error: ' + (data.error || 'Unknown error'), false);
+    }
+    setSending(null);
+  }
+
+  async function removeFromQueue(postId: string) {
+    const { createClient } = await import('@/lib/supabase/client');
+    await createClient().from('social_queue').delete().eq('id', postId);
+    showToast('Removed from queue');
+    onRefresh();
+  }
+
+  const totalPending = queue.filter(p => !p.buffer_update_id && p.status !== 'posted').length;
+  const totalSent    = queue.filter(p => p.buffer_update_id || p.status === 'posted' || p.status === 'scheduled_buffer').length;
+
+  return (
+    <div>
+      {/* Header + filter */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: 'var(--admin-text-faint)', textTransform: 'uppercase' as const }}>
+            {queue.length} posts total · {totalPending} pending · {totalSent} sent to Buffer
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 4, background: 'var(--admin-bg-card)', border: '1px solid var(--admin-bg-input)', borderRadius: 8, padding: 3 }}>
+          {(['all', 'pending', 'sent'] as const).map(s => (
+            <button key={s} onClick={() => setFilterStatus(s)} style={{
+              padding: '5px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
+              fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.08em',
+              background: filterStatus === s ? 'var(--admin-bg-input)' : 'transparent',
+              color: filterStatus === s ? '#E8A020' : 'var(--admin-text-faint)',
+              transition: 'all 0.15s',
+            }}>
+              {s === 'all' ? 'All' : s === 'pending' ? `Pending (${totalPending})` : `Sent (${totalSent})`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {queue.length === 0 ? (
+        <div className="cp-empty">
+          <p className="cp-empty-text">Queue is empty</p>
+          <p className="cp-muted" style={{ marginTop: 8 }}>Approve posts from the Content tab — they appear here by platform</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {Object.entries(grouped).map(([platform, posts]) => {
+            const cfg   = PLATFORM_CONFIG[platform] || { label: platform, color: '#E8A020', bg: 'rgba(232,160,32,0.08)', icon: null };
+            const shown = filtered(posts);
+            if (shown.length === 0) return null;
+
+            return (
+              <div key={platform}>
+                {/* Platform header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, paddingBottom: 10, borderBottom: `1px solid ${cfg.color}22` }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: cfg.bg, border: `1px solid ${cfg.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: cfg.color }}>
+                    {cfg.icon}
+                  </div>
+                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, color: cfg.color }}>
+                    {cfg.label}
+                  </span>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.08em', color: 'var(--admin-text-faint)', marginLeft: 4 }}>
+                    {shown.length} post{shown.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                {/* Posts in this platform */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {shown.map(post => {
+                    const isSent    = post.buffer_update_id || post.status === 'posted' || post.status === 'scheduled_buffer';
+                    const imgUrl    = postImages[post.id] || post.image_url;
+                    const isUploading = uploading === post.id;
+                    const isSending   = sending === post.id;
+
+                    return (
+                      <div key={post.id} style={{
+                        background: 'var(--admin-bg-card)',
+                        border: `1px solid ${isSent ? 'rgba(16,185,129,0.2)' : 'var(--admin-bg-input)'}`,
+                        borderRadius: 12,
+                        padding: '14px 16px',
+                        display: 'flex',
+                        gap: 14,
+                        opacity: isSent ? 0.75 : 1,
+                        transition: 'opacity 0.2s',
+                      }}>
+                        {/* Left: image slot */}
+                        <div style={{ flexShrink: 0 }}>
+                          {imgUrl ? (
+                            <div style={{ position: 'relative' as const }}>
+                              <img src={imgUrl} alt="Post" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: `1px solid ${cfg.color}30`, display: 'block' }} />
+                              {!isSent && (
+                                <button onClick={() => {
+                                  setPostImages(prev => { const n = {...prev}; delete n[post.id]; return n; });
+                                  // Clear from DB too
+                                  import('@/lib/supabase/client').then(({ createClient }) =>
+                                    createClient().from('social_queue').update({ image_url: null }).eq('id', post.id)
+                                  );
+                                }} style={{ position: 'absolute' as const, top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#EF4444', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                              )}
+                            </div>
+                          ) : (
+                            <label style={{
+                              width: 72, height: 72, borderRadius: 8,
+                              border: `1.5px dashed ${cfg.color}40`,
+                              background: cfg.bg,
+                              display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center',
+                              cursor: isSent ? 'not-allowed' : 'pointer',
+                              gap: 4,
+                            }}>
+                              {isUploading ? (
+                                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: cfg.color }}>…</span>
+                              ) : (
+                                <>
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={cfg.color} strokeWidth="2" style={{ opacity: 0.7 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 7, color: cfg.color, opacity: 0.8, textAlign: 'center' as const }}>ADD IMAGE</span>
+                                </>
+                              )}
+                              {!isSent && <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(post.id, f); e.target.value = ''; }} />}
+                            </label>
+                          )}
+                        </div>
+
+                        {/* Right: content + actions */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {/* Meta row */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' as const }}>
+                            {post.pillar && (
+                              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, letterSpacing: '0.1em', padding: '2px 7px', borderRadius: 4, background: 'var(--admin-bg-deep)', color: 'var(--admin-text-faint)', textTransform: 'uppercase' as const }}>
+                                {post.pillar}
+                              </span>
+                            )}
+                            {post.scheduled_for && (
+                              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: '#3B82F6', letterSpacing: '0.06em' }}>
+                                📅 {new Date(post.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                            {isSent ? (
+                              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, padding: '2px 8px', borderRadius: 4, background: 'rgba(16,185,129,0.1)', color: '#10B981', letterSpacing: '0.06em' }}>
+                                ✓ Sent to Buffer
+                              </span>
+                            ) : (
+                              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, padding: '2px 8px', borderRadius: 4, background: 'rgba(232,160,32,0.08)', color: '#E8A020', letterSpacing: '0.06em' }}>
+                                Pending
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Post content preview */}
+                          <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text)', lineHeight: 1.6, margin: '0 0 10px', whiteSpace: 'pre-wrap' as const }}>
+                            {(post.content || '').substring(0, 200)}{(post.content || '').length > 200 ? '…' : ''}
+                          </p>
+
+                          {/* Actions */}
+                          {!isSent && (
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' as const }}>
+                              <button
+                                onClick={() => sendToBuffer(post)}
+                                disabled={isSending}
+                                style={{
+                                  padding: '7px 16px', borderRadius: 8, border: 'none',
+                                  background: cfg.color, color: '#fff',
+                                  fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700,
+                                  cursor: isSending ? 'not-allowed' : 'pointer',
+                                  opacity: isSending ? 0.6 : 1,
+                                  display: 'flex', alignItems: 'center', gap: 6, transition: 'opacity 0.15s',
+                                }}>
+                                {isSending ? (
+                                  <>Sending…</>
+                                ) : (
+                                  <>{cfg.icon} Send to {cfg.label}</>
+                                )}
+                              </button>
+                              <button onClick={() => removeFromQueue(post.id)} style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.2)', background: 'transparent', color: '#EF4444', fontFamily: "'DM Mono', monospace", fontSize: 10, cursor: 'pointer' }}>
+                                Remove
+                              </button>
+                            </div>
+                          )}
+
+                          {isSent && post.buffer_update_id && (
+                            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#10B981', letterSpacing: '0.06em' }}>
+                              Buffer ID: {post.buffer_update_id}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
