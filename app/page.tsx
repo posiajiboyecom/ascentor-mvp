@@ -195,13 +195,13 @@ export default function LandingPage() {
         }
         .lp-btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(232,160,32,0.45); }
         .lp-btn-secondary {
-          background: transparent; color: var(--text);
-          font-family: 'Syne', system-ui, sans-serif; font-size: 15px; font-weight: 500;
+          background: transparent; color: #2A2820;
+          font-family: 'Syne', system-ui, sans-serif; font-size: 15px; font-weight: 600;
           padding: 15px 28px; border-radius: 10px;
-          border: 1.5px solid rgba(42,40,32,0.25); cursor: pointer; text-decoration: none; transition: all 0.2s;
-          display: inline-flex; align-items: center;
+          border: 1.5px solid rgba(42,40,32,0.35); cursor: pointer; text-decoration: none; transition: all 0.2s;
+          display: inline-flex; align-items: center; white-space: nowrap;
         }
-        .lp-btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+        .lp-btn-secondary:hover { border-color: var(--gold); color: var(--gold); background: rgba(232,160,32,0.04); }
         .lp-hero-trust {
           margin-top: 16px; font-size: 13px; color: var(--text-light);
           animation: lp-fadeUp 0.7s 0.55s ease both; position: relative; z-index: 1;
@@ -517,8 +517,7 @@ export default function LandingPage() {
             had someone who believed in them.
           </h1>
           <p className="lp-hero-sub">
-            Ascentor is an AI-powered mentorship platform — for <strong>every stage of your journey.</strong>{' '}
-            From figuring out your path to reaching the top of your career. AI-powered. Human-led. Built for you.
+            From figuring out your path to reaching the top of your career — Ascentor gives you an AI coach, expert mentors, and a peer circle. All in one place.
           </p>
           <div className="lp-hero-actions">
             <Link href="/signup" className="lp-btn-primary">Start Free — 7 Days →</Link>

@@ -35,6 +35,10 @@ export default function AdminPromoCodesPage() {
   const [newExpiry, setNewExpiry] = useState('');
   const [newPlans, setNewPlans] = useState(['basic', 'standard', 'premium']);
   const [creating, setCreating] = useState(false);
+  const [mode, setMode] = useState<'single' | 'event'>('single');
+  const [bulkCount, setBulkCount] = useState('50');
+  const [bulkPrefix, setBulkPrefix] = useState('');
+  const [bulkResult, setBulkResult] = useState<{ count: number; prefix: string } | null>(null);
 
   const supabase = createClient();
 
@@ -57,30 +61,46 @@ export default function AdminPromoCodesPage() {
   const createCode = async () => {
     setCreating(true);
     setMessage('');
+    setBulkResult(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const payload: any = {
+        discount: parseFloat(newDiscount) / 100,
+        label: newLabel || `${newDiscount}% Off`,
+        applies_to: newPlans,
+        expires_at: newExpiry || null,
+      };
+
+      if (mode === 'event') {
+        payload.bulk_count = parseInt(bulkCount) || 50;
+        payload.bulk_prefix = bulkPrefix || 'EVENT';
+        payload.max_uses = 1;
+      } else {
+        if (!newCode.trim()) { setMessage('Code is required'); setCreating(false); return; }
+        payload.code = newCode;
+        payload.max_uses = newMaxUses ? parseInt(newMaxUses) : null;
+      }
+
       const res = await fetch('/api/admin/promo-codes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session!.access_token}` },
-        body: JSON.stringify({
-          code: newCode,
-          discount: parseFloat(newDiscount) / 100,
-          label: newLabel || `${newDiscount}% Off`,
-          applies_to: newPlans,
-          max_uses: newMaxUses ? parseInt(newMaxUses) : null,
-          expires_at: newExpiry || null,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) {
-        setMessage('Promo code created.');
-        setShowCreate(false);
-        setNewCode(''); setNewDiscount('50'); setNewLabel(''); setNewMaxUses(''); setNewExpiry('');
+        if (mode === 'event') {
+          setBulkResult({ count: data.count, prefix: data.prefix });
+          setMessage(`✓ ${data.count} event codes generated with prefix "${data.prefix}"`);
+        } else {
+          setMessage('✓ Promo code created.');
+          setShowCreate(false);
+          setNewCode(''); setNewDiscount('50'); setNewLabel(''); setNewMaxUses(''); setNewExpiry('');
+        }
         fetchCodes();
       } else {
         setMessage(`Error: ${data.error}`);
       }
-    } catch { setMessage('Failed to create code'); }
+    } catch (e: any) { setMessage('Failed to create code: ' + e.message); }
     finally { setCreating(false); }
   };
 
@@ -216,87 +236,88 @@ export default function AdminPromoCodesPage() {
       {/* ─── Create Form ─────────────────────────────────────────────────── */}
       {showCreate && (
         <div style={{ ...card, padding: '24px', marginBottom: '20px' }}>
-          <h3 style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: '20px',
-            fontWeight: 700,
-            color: 'var(--admin-text-heading)',
-            margin: '0 0 20px',
-          }}>
-            Create Promo Code
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '20px', fontWeight: 700, color: 'var(--admin-text-heading)', margin: 0 }}>
+              Create Promo Code
+            </h3>
+            {/* Mode toggle */}
+            <div style={{ display: 'flex', gap: 2, background: 'var(--admin-bg-deep)', borderRadius: 8, padding: 3, border: '1px solid var(--admin-bg-input)' }}>
+              {(['single', 'event'] as const).map(m => (
+                <button key={m} onClick={() => setMode(m)} style={{
+                  padding: '5px 16px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                  fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.08em',
+                  background: mode === m ? '#E8A020' : 'transparent',
+                  color: mode === m ? '#0C0B08' : 'var(--admin-text-faint)',
+                  fontWeight: mode === m ? 700 : 400, transition: 'all 0.15s',
+                }}>
+                  {m === 'single' ? 'Single Code' : 'Event / Bulk'}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={{ ...fieldLabel }}>Code</label>
-              <input
-                value={newCode}
-                onChange={(e) => setNewCode(e.target.value.toUpperCase())}
-                placeholder="e.g. LAUNCH50"
-                className="asc-input"
-                style={{
-                  ...inputBase,
-                  fontFamily: "'DM Mono', monospace",
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                }}
-              />
-            </div>
+
+            {mode === 'single' ? (
+              <div>
+                <label style={{ ...fieldLabel }}>Code</label>
+                <input value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. LAUNCH50" className="asc-input"
+                  style={{ ...inputBase, fontFamily: "'DM Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase' }} />
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label style={{ ...fieldLabel }}>Code Prefix</label>
+                  <input value={bulkPrefix} onChange={(e) => setBulkPrefix(e.target.value.toUpperCase())}
+                    placeholder="e.g. SUMMIT" className="asc-input"
+                    style={{ ...inputBase, fontFamily: "'DM Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase' }} />
+                  <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
+                    Codes will be: SUMMIT<span style={{ color: '#E8A020' }}>A1B2C</span>, SUMMIT<span style={{ color: '#E8A020' }}>X9Y3Z</span>…
+                  </p>
+                </div>
+                <div>
+                  <label style={{ ...fieldLabel }}>Number of Codes</label>
+                  <input type="number" value={bulkCount} onChange={(e) => setBulkCount(e.target.value)}
+                    placeholder="50" min="1" max="1000" className="asc-input" style={{ ...inputBase }} />
+                  <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
+                    Each code is single-use · max 1000
+                  </p>
+                </div>
+              </>
+            )}
+
             <div>
               <label style={{ ...fieldLabel }}>Discount %</label>
-              <input
-                type="number"
-                value={newDiscount}
-                onChange={(e) => setNewDiscount(e.target.value)}
-                placeholder="50"
-                min="1"
-                max="100"
-                className="asc-input"
-                style={{ ...inputBase }}
-              />
+              <input type="number" value={newDiscount} onChange={(e) => setNewDiscount(e.target.value)}
+                placeholder="50" min="1" max="100" className="asc-input" style={{ ...inputBase }} />
             </div>
             <div>
-              <label style={{ ...fieldLabel }}>Label (optional)</label>
-              <input
-                value={newLabel}
-                onChange={(e) => setNewLabel(e.target.value)}
-                placeholder="e.g. Launch Week Special"
-                className="asc-input"
-                style={{ ...inputBase }}
-              />
+              <label style={{ ...fieldLabel }}>Label</label>
+              <input value={newLabel} onChange={(e) => setNewLabel(e.target.value)}
+                placeholder={mode === 'event' ? 'e.g. Summit 2025 Discount' : 'e.g. Launch Week Special'}
+                className="asc-input" style={{ ...inputBase }} />
             </div>
-            <div>
-              <label style={{ ...fieldLabel }}>Max Uses — blank for unlimited</label>
-              <input
-                type="number"
-                value={newMaxUses}
-                onChange={(e) => setNewMaxUses(e.target.value)}
-                placeholder="100"
-                className="asc-input"
-                style={{ ...inputBase }}
-              />
-            </div>
+            {mode === 'single' && (
+              <div>
+                <label style={{ ...fieldLabel }}>Max Uses — blank for unlimited</label>
+                <input type="number" value={newMaxUses} onChange={(e) => setNewMaxUses(e.target.value)}
+                  placeholder="100" className="asc-input" style={{ ...inputBase }} />
+              </div>
+            )}
             <div>
               <label style={{ ...fieldLabel }}>Expires (optional)</label>
-              <input
-                type="date"
-                value={newExpiry}
-                onChange={(e) => setNewExpiry(e.target.value)}
-                className="asc-input"
-                style={{ ...inputBase, colorScheme: 'dark' }}
-              />
+              <input type="date" value={newExpiry} onChange={(e) => setNewExpiry(e.target.value)}
+                className="asc-input" style={{ ...inputBase, colorScheme: 'dark' }} />
             </div>
             <div>
               <label style={{ ...fieldLabel }}>Applies to</label>
-              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '8px' }}>
-                {['basic', 'standard', 'premium'].map(p => (
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
+                {['explorer', 'builder', 'climber'].map(p => (
                   <label key={p} style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={newPlans.includes(p)}
+                    <input type="checkbox" checked={newPlans.includes(p)}
                       onChange={(e) => setNewPlans(e.target.checked ? [...newPlans, p] : newPlans.filter(x => x !== p))}
-                      className="asc-checkbox"
-                    />
+                      className="asc-checkbox" />
                     <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: 'var(--admin-text)', textTransform: 'capitalize' }}>{p}</span>
                   </label>
                 ))}
@@ -304,27 +325,22 @@ export default function AdminPromoCodesPage() {
             </div>
           </div>
 
-          <button
-            onClick={createCode}
-            disabled={creating || !newCode}
-            className="asc-btn-gold"
+          {bulkResult && (
+            <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 8, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#10B981' }}>
+                ✓ {bulkResult.count} codes generated with prefix "{bulkResult.prefix}" — all active and ready to share
+              </p>
+            </div>
+          )}
+
+          <button onClick={createCode} disabled={creating}
             style={{
-              marginTop: '20px',
-              padding: '11px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              background: '#E8A020',
-              color: 'var(--admin-bg)',
-              fontFamily: "'Syne', sans-serif",
-              fontWeight: 700,
-              fontSize: '13px',
-              cursor: creating || !newCode ? 'not-allowed' : 'pointer',
-              opacity: creating || !newCode ? 0.45 : 1,
-              transition: 'background 0.2s, opacity 0.2s',
-              letterSpacing: '0.02em',
-            }}
-          >
-            {creating ? 'Creating...' : 'Create Code'}
+              marginTop: '20px', padding: '11px 24px', borderRadius: '8px', border: 'none',
+              background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Syne', sans-serif",
+              fontWeight: 700, fontSize: '13px', cursor: creating ? 'not-allowed' : 'pointer',
+              opacity: creating ? 0.45 : 1, transition: 'background 0.2s, opacity 0.2s', letterSpacing: '0.02em',
+            }}>
+            {creating ? 'Creating...' : mode === 'event' ? `Generate ${bulkCount || '50'} Event Codes` : 'Create Code'}
           </button>
         </div>
       )}

@@ -142,16 +142,17 @@ export default function CheckoutPage() {
     if (!code) return;
     setPromoError(''); setPromoApplied(null); setPromoValidating(true);
     try {
+      // validate=true means: check the code and return discount info only
+      // — do NOT activate the account yet (that happens when user picks a plan)
       const res = await fetch('/api/payment/initialize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ promoCode: code }),
+        body: JSON.stringify({ promoCode: code, validateOnly: true }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
         setPromoError(data.error || 'Invalid promo code');
       } else {
-        // Server returns { success, discount, label, free }
         setPromoApplied({ discount: data.discount, label: data.label || 'Discount applied' });
       }
     } catch {
@@ -163,11 +164,14 @@ export default function CheckoutPage() {
 
   const getPrice = (plan: Plan) => {
     const base = billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
-    // promoApplied is set by server validation — apply discount to all plans
     if (promoApplied) {
       return Math.round(base * (1 - promoApplied.discount) * 100) / 100;
     }
     return base;
+  };
+
+  const getOriginalPrice = (plan: Plan) => {
+    return billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
   };
 
   const handleSelectPlan = async (planId: string) => {
@@ -599,31 +603,77 @@ export default function CheckoutPage() {
 
                 {/* Price */}
                 <div className="co-price-wrap">
+                  {/* Strikethrough original price when promo applied */}
+                  {hasPromo && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{
+                        fontFamily: "'DM Mono', monospace", fontSize: 13,
+                        color: '#4A4438', textDecoration: 'line-through', letterSpacing: '0.04em',
+                      }}>
+                        ${billing === 'monthly'
+                          ? getOriginalPrice(plan)
+                          : Math.round(getOriginalPrice(plan) / 12)}/mo
+                      </span>
+                      <span style={{
+                        fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700,
+                        padding: '2px 8px', borderRadius: 20,
+                        background: 'rgba(232,160,32,0.12)', color: '#E8A020',
+                        border: '1px solid rgba(232,160,32,0.25)', letterSpacing: '0.06em',
+                      }}>
+                        -{Math.round(promoApplied!.discount * 100)}% OFF
+                      </span>
+                    </div>
+                  )}
+
                   <div className="co-price-main">
                     <span className="co-price-dollar">$</span>
-                    <span className="co-price-num">{monthlyDisplay}</span>
+                    <span className="co-price-num" style={{ color: hasPromo ? '#E8A020' : undefined }}>
+                      {monthlyDisplay}
+                    </span>
                     <span className="co-price-per">/mo</span>
                   </div>
+
                   {billing === 'yearly' && (
                     <>
-                      <p className="co-price-note">${price} BILLED ANNUALLY</p>
-                      {/* U6: per-plan savings badge */}
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 5,
-                        marginTop: 6, padding: '3px 10px', borderRadius: 20,
-                        background: 'rgba(16,185,129,0.08)',
-                        border: '1px solid rgba(16,185,129,0.2)',
-                      }}>
-                        <span style={{ color: '#10B981', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "'DM Mono', monospace" }}>
-                          ✓ YOU SAVE ${yearlySavings(plan)}/YR
-                        </span>
-                      </div>
+                      <p className="co-price-note">
+                        {hasPromo ? (
+                          <>
+                            <span style={{ textDecoration: 'line-through', color: '#4A4438', marginRight: 6 }}>
+                              ${getOriginalPrice(plan)}
+                            </span>
+                            <span style={{ color: '#E8A020' }}>${price} BILLED ANNUALLY</span>
+                          </>
+                        ) : (
+                          <>${price} BILLED ANNUALLY</>
+                        )}
+                      </p>
+                      {!hasPromo && (
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          marginTop: 6, padding: '3px 10px', borderRadius: 20,
+                          background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
+                        }}>
+                          <span style={{ color: '#10B981', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "'DM Mono', monospace" }}>
+                            ✓ YOU SAVE ${yearlySavings(plan)}/YR
+                          </span>
+                        </div>
+                      )}
                     </>
                   )}
-                  {hasPromo && price < (billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice) && (
-                    <p className="co-price-promo" style={{ color: plan.stageColor, fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: '0.06em' }}>
-                      ✓ {promoApplied!.label}
-                    </p>
+
+                  {hasPromo && (
+                    <div style={{
+                      marginTop: 8, padding: '6px 10px', borderRadius: 8,
+                      background: 'rgba(232,160,32,0.06)', border: '1px solid rgba(232,160,32,0.15)',
+                      display: 'flex', alignItems: 'center', gap: 6,
+                    }}>
+                      <span style={{ color: '#E8A020', fontSize: 10, fontFamily: "'DM Mono', monospace", letterSpacing: '0.06em' }}>
+                        ✓ {promoApplied!.label}
+                      </span>
+                      <span style={{ color: '#E8A020', fontSize: 10, fontFamily: "'DM Mono', monospace", marginLeft: 'auto' }}>
+                        You save ${Math.round((getOriginalPrice(plan) - price) * (billing === 'yearly' ? 1 : 12) * 10) / 10}/yr
+                      </span>
+                    </div>
                   )}
                 </div>
 

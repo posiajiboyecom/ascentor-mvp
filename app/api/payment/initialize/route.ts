@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { addOrUpdateSubscriber, ML_GROUPS } from '@/lib/mailerlite';
-import { PROMO_CODES, lookupPromo } from '@/lib/promo-codes';
+// Promo codes now read from DB — lib/promo-codes.ts kept for fallback legacy codes only
 
 // Service role client — for writes that bypass RLS
 const supabase = createServiceClient(
@@ -39,13 +39,51 @@ export async function POST(req: NextRequest) {
     // ── 2. PARSE BODY ──────────────────────────────────────────────
     const body = await req.json();
     const promoCode: string | undefined = body.promoCode;
+    const validateOnly: boolean = body.validateOnly === true; // just validate, don't activate
 
     // ── 3. HANDLE PROMO CODE ───────────────────────────────────────
     if (promoCode) {
-      const promo = lookupPromo(promoCode);
+      const code = promoCode.trim().toUpperCase();
+
+      // Look up code in database first
+      const { data: dbPromo, error: promoErr } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .eq('code', code)
+        .eq('active', true)
+        .single();
+
+      // Build promo object — DB takes priority, then fallback to legacy hardcoded list
+      let promo: { discount: number; label: string } | null = null;
+
+      if (dbPromo && !promoErr) {
+        // Validate expiry
+        if (dbPromo.expires_at && new Date(dbPromo.expires_at) < new Date()) {
+          return NextResponse.json({ error: 'This promo code has expired' }, { status: 400 });
+        }
+        // Validate max uses
+        if (dbPromo.max_uses !== null && dbPromo.current_uses >= dbPromo.max_uses) {
+          return NextResponse.json({ error: 'This promo code has reached its usage limit' }, { status: 400 });
+        }
+        promo = { discount: dbPromo.discount, label: dbPromo.label };
+      } else {
+        // Fallback: check legacy hardcoded codes
+        const { lookupPromo } = await import('@/lib/promo-codes');
+        promo = lookupPromo(code);
+      }
 
       if (!promo) {
         return NextResponse.json({ error: 'Invalid promo code' }, { status: 400 });
+      }
+
+      // 100% discount — if validateOnly just confirm the code, don't activate yet
+      if (promo.discount >= 1.0 && validateOnly) {
+        return NextResponse.json({
+          success:  true,
+          free:     true,
+          discount: promo.discount,
+          label:    promo.label,
+        });
       }
 
       // 100% discount — activate immediately without payment
@@ -63,6 +101,15 @@ export async function POST(req: NextRequest) {
         if (updateError) {
           return NextResponse.json({ error: 'Failed to activate account' }, { status: 500 });
         }
+
+        // Increment usage count in DB
+        try {
+          if (dbPromo) {
+            await supabase.from('promo_codes')
+              .update({ current_uses: (dbPromo.current_uses || 0) + 1 })
+              .eq('id', dbPromo.id);
+          }
+        } catch {}
 
         // Audit log
         try {
@@ -113,7 +160,17 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Partial discount — return the discount amount so checkout can apply it
+      // Partial discount — only increment usage on actual payment (not validate-only check)
+      if (!validateOnly) {
+        try {
+          if (dbPromo) {
+            await supabase.from('promo_codes')
+              .update({ current_uses: (dbPromo.current_uses || 0) + 1 })
+              .eq('id', dbPromo.id);
+          }
+        } catch {}
+      }
+
       return NextResponse.json({
         success:  true,
         free:     false,
