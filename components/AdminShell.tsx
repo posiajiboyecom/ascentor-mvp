@@ -379,7 +379,7 @@ export default function AdminShell({
       <nav className="admin-sidebar-nav" style={{ flex: 1, overflowY: 'auto', padding: '12px 8px' }}>
         {(() => {
           // Use custom per-user permissions if set, otherwise fall back to role
-          const effectivePerms = (userPermissions as string[] | null);
+          const effectivePerms = (_userPermissions as string[] | null);
           const visibleItems = NAV.filter(item => {
             // No role restriction — always show
             if (!item.roles) return true;
