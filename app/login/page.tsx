@@ -31,7 +31,7 @@ const B = {
   goldBorder:  'rgba(232,160,32,0.25)',
   border:      'rgba(212,207,195,0.10)',
   error:       '#EF4444',
-  errorMuted:  'rgba(239,68,68,0.08)'
+  errorMuted:  'rgba(239,68,68,0.08)',
 };
 
 export default function LoginPage() {
