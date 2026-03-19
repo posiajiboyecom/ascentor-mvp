@@ -52,7 +52,7 @@ export type Permission =
   | 'payments.refund';
 
 // --- Permission Map ---
-const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: [
     // Admins can do everything
     'admin.access', 'admin.view_stats',
