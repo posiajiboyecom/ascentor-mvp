@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { PLAN_PRICING, MAX_YEARLY_SAVINGS } from '@/lib/pricing';
@@ -116,13 +116,9 @@ export default function CheckoutPage() {
   const [offerExpired, setOfferExpired] = useState(false);
 
   const router        = useRouter();
-  const searchParams  = useSearchParams ? useSearchParams() : null;
-  const upgradeReason = typeof window !== 'undefined'
-    ? new URLSearchParams(window.location.search).get('reason')
-    : null;
-  const fromPage      = typeof window !== 'undefined'
-    ? new URLSearchParams(window.location.search).get('from')
-    : null;
+  const searchParams  = useSearchParams();
+  const upgradeReason = searchParams.get('reason');
+  const fromPage      = searchParams.get('from');
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
