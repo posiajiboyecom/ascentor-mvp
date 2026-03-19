@@ -12,9 +12,9 @@ const INDUSTRIES = [
 ];
 
 const COUNTRIES = [
-  'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Ethiopia', 'Tanzania',
+  'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'United Kingdom', 'United States',
   'Rwanda', 'Senegal', 'Côte d\'Ivoire', 'Egypt', 'Morocco', 'Uganda',
-  'Cameroon', 'Zimbabwe', 'Zambia', 'Other African country', 'Diaspora (UK)',
+  'Canada', 'Australia', 'Germany', 'France', 'Other country',
   'Diaspora (US)', 'Diaspora (Canada)', 'Diaspora (Europe)', 'Other',
 ];
 
@@ -179,10 +179,10 @@ export default function MentorApplyPage() {
             <span className="ma-accent">Change a career.</span>
           </h1>
           <p className="ma-hero-sub">
-            Founding Mentors are the backbone of Ascentor. You've done the hard work of building a career in Africa — now help the next generation do the same. Limited spots. Serious applicants only.
+            Founding Mentors are the backbone of Ascentor. You've done the hard work of building a career worth sharing — now help the next generation do the same. Limited spots. Serious applicants only.
           </p>
           <div className="ma-hero-perks">
-            {['Recognized as a Founding Mentor', 'Shape the platform with your feedback', 'Connect with Africa\'s top professionals', 'Flexible — 2–4 hrs/month commitment'].map(p => (
+            {['Recognized as a Founding Mentor', 'Shape the platform with your feedback', 'Connect with ambitious professionals worldwide', 'Flexible — 2–4 hrs/month commitment'].map(p => (
               <div key={p} className="ma-perk"><span className="ma-perk-check">✓</span>{p}</div>
             ))}
           </div>
@@ -299,7 +299,7 @@ export default function MentorApplyPage() {
                 </div>
                 <div className="ma-field">
                   <Label required>Why do you want to mentor?</Label>
-                  <p className="ma-field-hint">What motivates you to invest time in the next generation of African professionals?</p>
+                  <p className="ma-field-hint">What motivates you to invest time in the next generation of ambitious professionals?</p>
                   <textarea className={inputClass} style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }}
                     placeholder="I remember how lost I felt when I was starting out..."
                     value={form.why_mentor} onChange={e => set('why_mentor', e.target.value)} />

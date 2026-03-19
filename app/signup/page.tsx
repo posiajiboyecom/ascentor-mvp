@@ -286,7 +286,7 @@ function SignUpForm() {
               lineHeight: 1.7,
               margin:     '0 0 36px',
             }}>
-              The professionals who make it in Africa rarely do it alone —
+              The professionals who make it rarely do it alone —
               they had the right mentor at the right time. We make that
               available to everyone.
             </p>
@@ -406,7 +406,7 @@ function SignUpForm() {
               margin:     '0 0 4px',
               lineHeight: 1.6,
             }}>
-              Africa's mentorship platform — from figuring it out to making it happen.
+              The professional mentorship platform — from figuring it out to making it happen.
             </p>
 
             {/* Gold rule */}

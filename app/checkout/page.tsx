@@ -100,6 +100,7 @@ function yearlySavings(plan: Plan): number {
 }
 
 export default function CheckoutPage() {
+  const [isDark, setIsDark]             = useState(true); // synced with app theme
   const [billing, setBilling]           = useState<BillingCycle>('monthly');
   const [promoCode, setPromoCode]       = useState('');
   const [promoApplied, setPromoApplied] = useState<{ discount: number; label: string } | null>(null);
@@ -117,6 +118,21 @@ export default function CheckoutPage() {
   const router   = useRouter();
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
+
+  // Sync theme with app-wide preference (same key as AppThemeProvider)
+  useEffect(() => {
+    const stored = localStorage.getItem('asc-theme');
+    const dark = stored ? stored === 'dark'
+      : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setIsDark(dark);
+
+    // Listen for theme changes from other tabs / the dashboard toggle
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'asc-theme') setIsDark(e.newValue === 'dark');
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -242,7 +258,7 @@ export default function CheckoutPage() {
           body: JSON.stringify({ promoCode: promoCode.trim().toUpperCase() }),
         });
         const data = await res.json();
-        if (data.free) { setSuccess('Account activated! Setting up your profile…'); setTimeout(() => router.push('/onboarding'), 2000); }
+        if (data.free) { setSuccess('Account activated! Taking you to your dashboard…'); setTimeout(() => router.push('/dashboard'), 2000); }
         else setError(data.error || 'Failed to activate promo');
       } catch { setError('Failed to process. Please try again.'); }
       setLoading(false); return;
@@ -268,7 +284,7 @@ export default function CheckoutPage() {
             body: JSON.stringify({ reference: transaction.reference, plan: planId, billing }),
             });
             const data = await res.json();
-            if (data.success) { setSuccess("Payment confirmed! Let's set up your profile."); setTimeout(() => router.push('/onboarding'), 2000); }
+            if (data.success) { setSuccess('Payment confirmed! Taking you to your dashboard…'); setTimeout(() => router.push('/dashboard'), 2000); }
             else setError('Payment received but verification failed. Contact support.');
           } catch { setError('Payment may have succeeded. Contact support if not reflected.'); }
           setLoading(false);
@@ -289,13 +305,72 @@ export default function CheckoutPage() {
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* ── THEME VARIABLES ── */
+        .co-root[data-co-theme="light"] {
+          --co-bg:        #FAF7F2;
+          --co-bg2:       #F2EDE4;
+          --co-card:      #FFFFFF;
+          --co-nav-bg:    rgba(250,247,242,0.94);
+          --co-nav-bord:  rgba(42,40,32,0.1);
+          --co-text:      #2A2820;
+          --co-text-mid:  #4A4438;
+          --co-text-muted:#6B6456;
+          --co-text-faint:#9A9080;
+          --co-bord:      rgba(42,40,32,0.1);
+          --co-bord-med:  rgba(42,40,32,0.18);
+          --co-input-bg:  #FAF7F2;
+          --co-input-text:#0C0B08;
+          --co-plan-bord: rgba(42,40,32,0.1);
+          --co-toggle-bg: #EDE9E0;
+          --co-save-bg:   rgba(12,11,8,0.25);
+          --co-save-col:  #0C0B08;
+          --co-trust-bord:rgba(42,40,32,0.08);
+          --co-promo-bg:  #FFFFFF;
+          --co-promo-bord:rgba(42,40,32,0.1);
+          --co-price-col: #0C0B08;
+          --co-heading:   #0C0B08;
+          --co-plan-name: #0C0B08;
+          --co-grid-line: rgba(232,160,32,0.04);
+          --co-glow:      rgba(232,160,32,0.08);
+          --co-shadow:    0 2px 16px rgba(42,40,32,0.04);
+        }
+        .co-root[data-co-theme="dark"] {
+          --co-bg:        #0C0B08;
+          --co-bg2:       #1E1C17;
+          --co-card:      #141310;
+          --co-nav-bg:    rgba(12,11,8,0.9);
+          --co-nav-bord:  #2E2A22;
+          --co-text:      #D4CFC3;
+          --co-text-mid:  #A09880;
+          --co-text-muted:#7A7260;
+          --co-text-faint:#4A4438;
+          --co-bord:      #2E2A22;
+          --co-bord-med:  #3E3A32;
+          --co-input-bg:  #1E1C17;
+          --co-input-text:#D4CFC3;
+          --co-plan-bord: rgba(255,255,255,0.06);
+          --co-toggle-bg: #1E1C17;
+          --co-save-bg:   rgba(12,11,8,0.25);
+          --co-save-col:  #0C0B08;
+          --co-trust-bord:#1E1C17;
+          --co-promo-bg:  #141310;
+          --co-promo-bord:#2E2A22;
+          --co-price-col: #FFFFFF;
+          --co-heading:   #FFFFFF;
+          --co-plan-name: #FFFFFF;
+          --co-grid-line: rgba(232,160,32,0.02);
+          --co-glow:      rgba(232,160,32,0.045);
+          --co-shadow:    none;
+        }
+
         .co-root {
           min-height: 100vh;
-          background: #FAF7F2;
+          background: var(--co-bg);
           font-family: 'Syne', sans-serif;
-          color: #2A2820;
+          color: var(--co-text);
           position: relative;
           overflow-x: hidden;
+          transition: background 0.2s, color 0.2s;
         }
 
         /* Ambient glow */
@@ -305,7 +380,7 @@ export default function CheckoutPage() {
           top: -200px; left: 50%;
           transform: translateX(-50%);
           width: 900px; height: 900px;
-          background: radial-gradient(circle, rgba(232,160,32,0.08) 0%, transparent 60%);
+          background: radial-gradient(circle, var(--co-glow) 0%, transparent 60%);
           pointer-events: none; z-index: 0;
         }
         /* Grid texture */
@@ -313,8 +388,8 @@ export default function CheckoutPage() {
           content: '';
           position: fixed; inset: 0;
           background-image:
-            linear-gradient(rgba(232,160,32,0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(232,160,32,0.04) 1px, transparent 1px);
+            linear-gradient(var(--co-grid-line) 1px, transparent 1px),
+            linear-gradient(90deg, var(--co-grid-line) 1px, transparent 1px);
           background-size: 48px 48px;
           pointer-events: none; z-index: 0;
         }
@@ -323,8 +398,8 @@ export default function CheckoutPage() {
         .co-nav {
           display: flex; align-items: center; justify-content: space-between;
           padding: 16px 32px;
-          border-bottom: 1px solid rgba(42,40,32,0.1);
-          background: rgba(250,247,242,0.94);
+          border-bottom: 1px solid var(--co-nav-bord);
+          background: var(--co-nav-bg);
           backdrop-filter: blur(16px);
           position: sticky; top: 0; z-index: 20;
         }
@@ -333,17 +408,17 @@ export default function CheckoutPage() {
         }
         .co-nav-logo-text {
           font-family: 'Cormorant Garamond', serif;
-          font-weight: 700; font-size: 20px; color: #0C0B08;
+          font-weight: 700; font-size: 20px; color: var(--co-heading);
         }
         .co-nav-back {
           font-family: 'DM Mono', monospace;
           font-size: 11px; letter-spacing: 0.08em;
-          color: #6B6456; text-decoration: none;
+          color: var(--co-text-muted); text-decoration: none;
           padding: 7px 14px; border-radius: 8px;
-          border: 1px solid rgba(42,40,32,0.15);
+          border: 1px solid var(--co-bord);
           transition: color 0.2s, border-color 0.2s;
         }
-        .co-nav-back:hover { color: #0C0B08; border-color: rgba(42,40,32,0.35); }
+        .co-nav-back:hover { color: var(--co-text); border-color: var(--co-bord-med); }
 
         /* ── HERO ── */
         .co-hero {
@@ -368,21 +443,21 @@ export default function CheckoutPage() {
           font-family: 'Cormorant Garamond', serif;
           font-weight: 700; font-size: clamp(36px, 6vw, 54px);
           line-height: 1.05; letter-spacing: -0.5px;
-          color: #0C0B08; margin-bottom: 16px;
+          color: var(--co-heading); margin-bottom: 16px;
         }
         .co-hero-heading em {
           font-style: italic; color: #E8A020;
         }
         .co-hero-sub {
-          font-size: 15px; color: #6B6456; line-height: 1.65;
+          font-size: 15px; color: var(--co-text-muted); line-height: 1.65;
           max-width: 460px; margin: 0 auto 40px;
         }
 
         /* ── BILLING TOGGLE ── */
         .co-billing {
           display: inline-flex;
-          background: #EDE9E0;
-          border: 1px solid rgba(42,40,32,0.12);
+          background: var(--co-toggle-bg);
+          border: 1px solid var(--co-bord);
           border-radius: 12px; padding: 4px;
           margin-bottom: 56px;
         }
@@ -396,7 +471,7 @@ export default function CheckoutPage() {
           background: #E8A020; color: #0C0B08;
         }
         .co-billing-btn.inactive {
-          background: transparent; color: #7A7260;
+          background: transparent; color: var(--co-text-muted);
         }
         .co-save-pill {
           display: inline-block;
@@ -422,14 +497,14 @@ export default function CheckoutPage() {
         }
 
         .co-plan {
-          background: #FFFFFF;
+          background: var(--co-card);
           border-radius: 20px;
-          border: 1px solid rgba(42,40,32,0.1);
+          border: 1px solid var(--co-plan-bord);
           padding: 32px 28px;
           display: flex; flex-direction: column;
           position: relative; overflow: hidden;
-          transition: transform 0.22s, box-shadow 0.22s;
-          box-shadow: 0 2px 16px rgba(42,40,32,0.04);
+          transition: transform 0.22s, box-shadow 0.22s, background 0.2s;
+          box-shadow: var(--co-shadow);
         }
         .co-plan:hover { transform: translateY(-4px); }
         .co-plan-highlighted {
@@ -461,10 +536,10 @@ export default function CheckoutPage() {
 
         .co-plan-name {
           font-family: 'Cormorant Garamond', serif;
-          font-weight: 700; font-size: 28px; color: #0C0B08;
+          font-weight: 700; font-size: 28px; color: var(--co-plan-name);
           letter-spacing: -0.3px; margin-bottom: 6px;
         }
-        .co-plan-desc { font-size: 13px; color: #6B6456; margin-bottom: 24px; line-height: 1.5; }
+        .co-plan-desc { font-size: 13px; color: var(--co-text-muted); margin-bottom: 24px; line-height: 1.5; }
 
         /* Price */
         .co-price-wrap { margin-bottom: 24px; }
@@ -478,11 +553,11 @@ export default function CheckoutPage() {
         }
         .co-price-num {
           font-family: 'Cormorant Garamond', serif;
-          font-size: 48px; font-weight: 700; color: #0C0B08;
+          font-size: 48px; font-weight: 700; color: var(--co-price-col);
           line-height: 1; letter-spacing: -1px;
         }
-        .co-price-per { font-size: 13px; color: #7A7260; align-self: flex-end; margin-bottom: 4px; }
-        .co-price-note { font-size: 11px; color: #9A9080; margin-top: 5px; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; }
+        .co-price-per { font-size: 13px; color: var(--co-text-muted); align-self: flex-end; margin-bottom: 4px; }
+        .co-price-note { font-size: 11px; color: var(--co-text-faint); margin-top: 5px; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; }
         .co-price-promo { font-size: 12px; margin-top: 6px; }
 
         /* Features */
@@ -493,7 +568,7 @@ export default function CheckoutPage() {
         }
         .co-feature {
           display: flex; align-items: flex-start; gap: 10px;
-          font-size: 13px; color: #4A4438; line-height: 1.5;
+          font-size: 13px; color: var(--co-text-mid); line-height: 1.5;
         }
         .co-feature-check {
           width: 17px; height: 17px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
@@ -546,7 +621,7 @@ export default function CheckoutPage() {
         .co-offer-text { flex: 1; }
         .co-offer-label {
           font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
-          color: #0C0B08; margin-bottom: 3px;
+          color: var(--co-heading); margin-bottom: 3px;
         }
         .co-offer-sub {
           font-family: 'DM Mono', monospace; font-size: 10px;
@@ -560,7 +635,7 @@ export default function CheckoutPage() {
         .co-offer-countdown { text-align: right; flex-shrink: 0; }
         .co-offer-timer-label {
           font-family: 'DM Mono', monospace; font-size: 9px;
-          color: #7A7260; letter-spacing: 0.12em; text-transform: uppercase;
+          color: var(--co-text-muted); letter-spacing: 0.12em; text-transform: uppercase;
           margin-bottom: 6px;
         }
         .co-offer-timer {
@@ -578,23 +653,23 @@ export default function CheckoutPage() {
           position: relative; z-index: 1;
         }
         .co-promo-card {
-          background: #FFFFFF; border: 1px solid rgba(42,40,32,0.1);
+          background: var(--co-promo-bg); border: 1px solid var(--co-promo-bord);
           border-radius: 14px; padding: 20px 22px;
         }
         .co-promo-label {
           font-family: 'DM Mono', monospace;
           font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
-          color: #9A9080; margin-bottom: 12px;
+          color: var(--co-text-faint); margin-bottom: 12px;
         }
         .co-promo-row { display: flex; gap: 8px; }
         .co-promo-input {
           flex: 1; padding: 11px 14px; border-radius: 9px;
-          border: 1px solid rgba(42,40,32,0.15); background: #FAF7F2;
-          color: #0C0B08; font-family: 'DM Mono', monospace;
+          border: 1px solid var(--co-bord); background: var(--co-input-bg);
+          color: var(--co-input-text); font-family: 'DM Mono', monospace;
           font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
           outline: none; transition: border-color 0.2s;
         }
-        .co-promo-input::placeholder { color: #B0A898; }
+        .co-promo-input::placeholder { color: var(--co-text-faint); }
         .co-promo-input:focus { border-color: rgba(232,160,32,0.5); }
         .co-promo-btn {
           padding: 11px 18px; border-radius: 9px; border: none;
@@ -617,7 +692,7 @@ export default function CheckoutPage() {
           max-width: 680px; margin: 0 auto;
           padding: 28px 24px 72px; text-align: center;
           position: relative; z-index: 1;
-          border-top: 1px solid rgba(42,40,32,0.08);
+          border-top: 1px solid var(--co-trust-bord);
         }
         .co-trust-items {
           display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 18px;
@@ -625,14 +700,14 @@ export default function CheckoutPage() {
         .co-trust-item {
           display: flex; align-items: center; gap: 7px;
           font-family: 'DM Mono', monospace;
-          font-size: 10px; letter-spacing: 0.06em; color: #7A7260;
+          font-size: 10px; letter-spacing: 0.06em; color: var(--co-text-muted);
         }
-        .co-trust-note { font-size: 12px; color: #7A7260; line-height: 1.65; }
+        .co-trust-note { font-size: 12px; color: var(--co-text-muted); line-height: 1.65; }
         .co-trust-link { color: #E8A020; text-decoration: none; }
         .co-trust-link:hover { color: #F5C55A; }
       `}</style>
 
-      <div className="co-root">
+      <div className="co-root" data-co-theme={isDark ? 'dark' : 'light'}>
 
         {/* NAV */}
         <nav className="co-nav">
@@ -643,7 +718,27 @@ export default function CheckoutPage() {
     style={{ height: '32px', width: 'auto' }}
   />
 </Link>
-          <a href="/dashboard" className="co-nav-back">← Dashboard</a>
+          <a href="/onboarding" className="co-nav-back">← Back</a>
+          <button
+            onClick={() => {
+              const next = isDark ? 'light' : 'dark';
+              setIsDark(!isDark);
+              localStorage.setItem('asc-theme', next);
+              document.documentElement.setAttribute('data-app-theme', next);
+            }}
+            aria-label="Toggle theme"
+            style={{
+              background: 'none', border: '1px solid var(--co-bord)',
+              borderRadius: 8, padding: '7px 10px', cursor: 'pointer',
+              color: 'var(--co-text-muted)', display: 'flex', alignItems: 'center',
+              transition: 'border-color 0.2s',
+            }}
+          >
+            {isDark
+              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            }
+          </button>
         </nav>
 
         {/* HERO */}

@@ -4,6 +4,21 @@ import { addOrUpdateSubscriber, triggerAutomation, ML_GROUPS, ML_AUTOMATIONS } f
 
 export async function POST(req: NextRequest) {
   try {
+    // Guard: only callable from within the app (payment/verify calls with service role)
+    // Accept either an internal secret header OR a valid Supabase session
+    const internalSecret = req.headers.get('x-internal-secret');
+    const isInternal = internalSecret && internalSecret === process.env.INTERNAL_API_SECRET;
+
+    if (!isInternal) {
+      // Fall back to session check for any other callers
+      const { createClient: createAuthClient } = await import('@/lib/supabase/server');
+      const authClient = await createAuthClient();
+      const { data: { user } } = await authClient.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const { email, name, userId } = await req.json();
     if (!email || !userId) {
       return NextResponse.json({ error: "Missing email or userId" }, { status: 400 });

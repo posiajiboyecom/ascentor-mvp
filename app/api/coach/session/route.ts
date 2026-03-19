@@ -10,15 +10,16 @@
 import { createClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
+import { retrieveContext } from '@/app/lib/rag';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 // ── Default persona (used when no tenant config or direct ascentor.co access) ─
 const DEFAULT_SYSTEM_PROMPT = `<role>
-You are an expert leadership coach for African professionals aged 20-40.
-Use the Socratic method. Max 150 words. Ask ONE question at a time.
-Be culturally aware of hierarchical cultures, ethnic/family networks,
-and that career decisions carry higher economic stakes.
+You are Sage, an expert leadership and career coach for ambitious professionals worldwide.
+Use the Socratic method — ask ONE powerful question at a time, maximum 150 words per response.
+Be aware that career decisions carry significant personal, financial, and relational stakes.
+Help users gain clarity on their situation, options, and next concrete action.
 </role>`;
 
 // ── Standard output format appended to every persona ────────────────────────
@@ -37,6 +38,31 @@ export async function POST(request: Request) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Not logged in' }, { status: 401 });
+    }
+
+    // 1b. Usage limit check — enforce free tier session cap
+    try {
+      const limitRes = await fetch(
+        `${process.env.NEXT_PUBLIC_SITE_URL || 'https://ascentorbi.com'}/api/usage/check`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', cookie: request.headers.get('cookie') || '' },
+          body: JSON.stringify({ feature: 'coachingSessions' }),
+        }
+      );
+      if (limitRes.ok) {
+        const limitData = await limitRes.json();
+        if (!limitData.allowed) {
+          return NextResponse.json({
+            error: 'Session limit reached',
+            message: limitData.message || 'You have used all your coaching sessions for today. Upgrade to continue.',
+            upgradeRequired: true,
+          }, { status: 429 });
+        }
+      }
+    } catch (limitErr) {
+      // Non-fatal — if limit check fails, allow the session
+      console.warn('[coach/session] Usage limit check failed (non-fatal):', limitErr);
     }
 
     // 2. Parse Input
@@ -91,7 +117,27 @@ export async function POST(request: Request) {
 
     const SYSTEM_PROMPT = roleSection + OUTPUT_FORMAT;
 
-    // 6. Build conversation context
+    // 6. Retrieve relevant knowledge from Pinecone (RAG)
+    // Determines the user's career stage to focus the namespace
+    const plan = profile?.subscription_plan || 'builder';
+    const stageNamespace = plan === 'explorer' ? 'career'
+      : plan === 'climber' ? 'leadership'
+      : 'promotion'; // builder default
+
+    let knowledgeBlock = '';
+    try {
+      const { contextBlock } = await retrieveContext(userInput, {
+        topK: 8,
+        topN: 3,
+        // Search across most relevant namespaces based on message content
+      });
+      knowledgeBlock = contextBlock;
+    } catch (ragErr) {
+      // Non-fatal — Sage still works without RAG context
+      console.warn('[coach/session] RAG retrieval failed (non-fatal):', ragErr);
+    }
+
+    // 6b. Build conversation context
     const recentHistory = sessionsRes.data?.map((s: any) =>
       `User: ${s.user_input}\nCoach: ${s.ai_response?.question || ''}`
     ).join('\n---\n') || 'None';
@@ -103,12 +149,14 @@ Role: ${profile?.current_role || 'Unknown'}
 Industry: ${profile?.industry || 'Unknown'}
 Goal: ${profile?.goal_role || 'Unknown'}
 Challenge: ${profile?.biggest_challenge || 'Not specified'}
+Plan: ${plan}
 </user_profile>
 <goal>${goal?.goal_text || 'Not set'}</goal>
 <pending_commitments>
 ${commitmentsRes.data?.map((c: any) => `- ${c.commitment_text}`).join('\n') || 'None'}
 </pending_commitments>
 <recent_history>${recentHistory}</recent_history>
+${knowledgeBlock ? `<knowledge_context>\nUse the following relevant frameworks and knowledge to inform your coaching. Do not quote them directly — use them to ask better questions.\n${knowledgeBlock}\n</knowledge_context>` : ''}
 <user_message>${userInput}</user_message>`;
 
     // 7. Call Claude (upgraded model)

@@ -392,7 +392,7 @@ function AdminCohortsInner() {
                 className="asc-field"
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g. Lagos Fintech Builders · Q1 2026"
+                placeholder="e.g. Product Leaders · Q2 2026"
               />
             </div>
 

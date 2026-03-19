@@ -257,13 +257,15 @@ export default function CoachPage() {
           i === m.length - 1 && b.streaming
             ? {
                 role:       'assistant',
-                reflection: "I'm here — your dedicated mentor for every step of your career journey.",
-                question:   "What's on your mind? Let's work through it together.",
+                reflection: "Something interrupted our session.",
+                question:   "Would you like to try again? Just resend your message.",
                 streaming:  false,
+                isError:    true,
               }
             : b
         )
       );
+      setError('Connection interrupted. Your message was not lost — try sending it again.');
     }
 
     setLoading(false);

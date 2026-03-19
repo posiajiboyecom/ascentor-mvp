@@ -147,7 +147,7 @@ export default function TermsPage() {
           </Section>
 
           <Section title="11. Governing Law">
-            <p>These Terms are governed by the laws of the Federal Republic of Nigeria. Disputes shall be resolved through arbitration in Lagos, Nigeria, under the Arbitration and Mediation Act 2023.</p>
+            <p>These Terms are governed by the laws of the jurisdiction in which you reside. Disputes shall first be attempted to be resolved through good-faith negotiation, followed by binding arbitration if necessary.</p>
           </Section>
 
           <Section title="12. Contact">
