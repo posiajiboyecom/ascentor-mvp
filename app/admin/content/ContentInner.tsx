@@ -293,7 +293,7 @@ export default function AdminContentPage() {
       (item.type?.startsWith('Instagram') || item.platform === 'Instagram') ? 'Instagram' :
       item.platform || 'other';
 
-    const { error } = await supabase.from('social_queue').insert({
+    const { data: queueRow, error } = await supabase.from('social_queue').insert({
       platform,
       content: postContent,
       pillar: item.pillar,
@@ -301,10 +301,29 @@ export default function AdminContentPage() {
       scheduled_for: scheduledFor ?? item.scheduled_date ?? null,
       status: 'pending',
       content_calendar_id: item.id,
-    });
+    }).select().single();
     if (error) { showToast('Queue error: ' + error.message, false); setSaving(false); return; }
+
+    // Immediately send to Buffer
+    if (queueRow) {
+      try {
+        const bufRes = await fetch('/api/admin/buffer-send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ queueId: queueRow.id, imageUrl: imageUrl || null }),
+        });
+        const bufData = await bufRes.json();
+        if (!bufRes.ok) {
+          showToast('Queued locally but Buffer error: ' + (bufData.error || 'unknown'), false);
+        } else {
+          showToast('✓ Sent to Buffer for ' + platform);
+        }
+      } catch (bufErr: any) {
+        showToast('Queued locally but Buffer unreachable: ' + bufErr.message, false);
+      }
+    }
+
     await setStatus(item.id, 'published', { published_at: new Date().toISOString() });
-    showToast('✓ Queued for ' + platform + ' — check Social Queue tab');
     setPendingFilter('published');
     setSelectedItem(null);
     setSaving(false);
