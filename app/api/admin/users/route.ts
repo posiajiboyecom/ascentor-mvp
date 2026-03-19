@@ -180,11 +180,99 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ success: true, message: `Plan updated to ${value}` });
       }
 
+      case 'delete': {
+        // Prevent deleting yourself
+        if (targetUserId === user.id) {
+          return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
+        }
+
+        // 1. Delete all user data from Supabase tables first
+        // (profiles has cascade but explicit cleanup is safer)
+        const cleanupTables = [
+          'coaching_sessions',
+          'cohort_members',
+          'cohort_posts',
+          'cohort_replies',
+          'cohort_votes',
+          'notifications',
+          'push_subscriptions',
+          'referrals',
+          'session_registrations',
+          'goal_entries',
+        ];
+
+        for (const table of cleanupTables) {
+          try {
+            await supabase.from(table).delete().eq('user_id', targetUserId);
+          } catch {
+            // Table may not exist or column may differ — continue
+          }
+        }
+
+        // 2. Delete the profile row
+        await supabase.from('profiles').delete().eq('id', targetUserId);
+
+        // 3. Delete from Supabase Auth — this is the critical step
+        const { error: deleteError } = await supabase.auth.admin.deleteUser(targetUserId);
+        if (deleteError) {
+          return NextResponse.json({ error: 'Failed to delete auth user: ' + deleteError.message }, { status: 500 });
+        }
+
+        // 4. Audit log
+        try {
+          await supabase.from('audit_logs').insert({
+            user_id: user.id,
+            action: 'user_deleted',
+            entity_type: 'user',
+            entity_id: targetUserId,
+            details: { deleted_by: user.email },
+          });
+        } catch { /* ignore */ }
+
+        return NextResponse.json({ success: true, message: 'User permanently deleted' });
+      }
+
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
   } catch (err: any) {
     console.error('Admin user action error:', err);
     return NextResponse.json({ error: 'Action failed' }, { status: 500 });
+  }
+}
+// POST /api/admin/users — find a single user by email (for permissions page)
+export async function POST(req: NextRequest) {
+  try {
+    const authHeader = req.headers.get('authorization') || '';
+    const { createClient: createAuthClient } = await import('@/lib/supabase/server');
+    const authClient = await createAuthClient();
+    const { data: { user: caller } } = await authClient.auth.getUser();
+    if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await isAdmin(caller.id))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const { email } = await req.json();
+    if (!email) return NextResponse.json({ error: 'Missing email' }, { status: 400 });
+
+    const target = email.trim().toLowerCase();
+
+    // Search auth.users — covers users whose profiles.email is null
+    const { data: authList } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+    const authUser = authList?.users?.find(u => u.email?.toLowerCase() === target);
+    if (!authUser) return NextResponse.json({ user: null });
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, role, permissions')
+      .eq('id', authUser.id)
+      .maybeSingle();
+
+    if (!profile) return NextResponse.json({ user: null });
+
+    return NextResponse.json({
+      user: { ...profile, email: profile.email || authUser.email }
+    });
+  } catch (err: any) {
+    console.error('[find-user]', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

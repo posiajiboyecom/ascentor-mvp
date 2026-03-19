@@ -64,7 +64,7 @@ export default function PermissionsPage() {
     setSearching(true);
     setFound(null);
     try {
-      const res = await fetch(`/api/admin/find-user?email=${encodeURIComponent(email.trim())}`);
+      const res = await fetch('/api/admin/users', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email: email.trim() }) });
       const d = await res.json();
       setFound(d.user ? d.user as Staff : 'none');
     } catch(err) {
