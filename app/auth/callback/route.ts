@@ -61,7 +61,7 @@ export async function GET(request: Request) {
   // ── MAIN ASCENTOR FLOW ────────────────────────────────────
   const { data: profile } = await supabase
     .from('profiles')
-    .select('onboarding_completed, subscription_status, subscription_plan, full_name, email')
+    .select('onboarding_completed, subscription_status, subscription_plan, full_name, email, current_role')
     .eq('id', user.id)
     .single();
 
