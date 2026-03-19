@@ -65,8 +65,29 @@ export default function PermissionsPage() {
     if(timer.current)clearTimeout(timer.current);
     if(v.includes('@'))timer.current=setTimeout(async()=>{
       setSearching(true);
-      const{data}=await sb.from('profiles').select('id,full_name,email,role,permissions').ilike('email',v.trim()).single();
-      setSearching(false);setFound(data as Staff||'none');
+      try {
+        // Try profiles.email first
+        const{data:byEmail}=await sb
+          .from('profiles')
+          .select('id,full_name,email,role,permissions')
+          .ilike('email',v.trim())
+          .maybeSingle();
+
+        if(byEmail){
+          setSearching(false);setFound(byEmail as Staff);return;
+        }
+
+        // Fallback: search by auth email via admin API route
+        const res=await fetch(`/api/admin/find-user?email=${encodeURIComponent(v.trim())}`);
+        if(res.ok){
+          const d=await res.json();
+          if(d.user){setSearching(false);setFound(d.user as Staff);return;}
+        }
+
+        setSearching(false);setFound('none');
+      } catch(e){
+        setSearching(false);setFound('none');
+      }
     },600);
   }
 
