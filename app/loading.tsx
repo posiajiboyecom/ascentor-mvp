@@ -1,20 +1,42 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
 export default function Loading() {
+  // Read theme synchronously to avoid flash — same pattern as AppThemeProvider
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    // Read from html attr (set by blocking script in layout.tsx) or localStorage
+    const attr = document.documentElement.getAttribute('data-app-theme');
+    if (attr === 'light' || attr === 'dark') {
+      setIsDark(attr === 'dark');
+    } else {
+      const stored = localStorage.getItem('asc-theme');
+      setIsDark(stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+  }, []);
+
+  const bg   = isDark ? '#0C0B08' : '#FAF7F2';
+  const ring = isDark ? 'rgba(232,160,32,0.15)' : 'rgba(232,160,32,0.25)';
+  const mid  = isDark ? 'rgba(232,160,32,0.25)' : 'rgba(232,160,32,0.4)';
+
   return (
     <div style={{
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#0C0B08',
+      background: bg,
+      transition: 'background 0.2s',
     }}>
-      {/* Sage-style pulsing orb — matches SageLoader brand */}
       <div style={{ position: 'relative', width: 56, height: 56 }}>
 
         {/* Outer ring */}
         <div style={{
           position: 'absolute', inset: 0,
           borderRadius: '50%',
-          border: '1px solid rgba(232,160,32,0.15)',
+          border: `1px solid ${ring}`,
           animation: 'pulse-ring 2s ease-out infinite',
         }} />
 
@@ -22,7 +44,7 @@ export default function Loading() {
         <div style={{
           position: 'absolute', inset: 8,
           borderRadius: '50%',
-          border: '1px solid rgba(232,160,32,0.25)',
+          border: `1px solid ${mid}`,
           animation: 'pulse-ring 2s ease-out infinite 0.4s',
         }} />
 

@@ -44,7 +44,7 @@ const PLANS: Plan[] = [
       'Goal tracking (3 active goals)',
       'Weekly reflection prompts',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Start Now',
   },
   {
     id: 'builder',
@@ -65,7 +65,7 @@ const PLANS: Plan[] = [
       'Analytics dashboard',
     ],
     highlighted: true,
-    cta: 'Start Free Trial',
+    cta: 'Start Now',
   },
   {
     id: 'climber',
@@ -85,7 +85,7 @@ const PLANS: Plan[] = [
       'Dedicated account manager',
       'Quarterly strategy reviews',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Start Now',
   },
 ];
 
@@ -745,14 +745,14 @@ export default function CheckoutPage() {
         <div className="co-hero">
           <div className="co-hero-badge">
             <div className="co-hero-badge-dot" />
-            7-day free trial — no charge until day 8
+            Start today — cancel anytime
           </div>
           <h1 className="co-hero-heading">
             Everyone who made it<br/>
             had <em>someone.</em>
           </h1>
           <p className="co-hero-sub">
-            Sage, expert sessions, and peer accountability — built for the African professional. Choose your stage.
+            Sage, expert sessions, and peer accountability — for ambitious professionals worldwide. Choose your stage.
           </p>
 
           {/* Billing toggle — U6: enhanced with savings callout */}
@@ -1000,7 +1000,7 @@ export default function CheckoutPage() {
         <div className="co-trust">
           <div className="co-trust-items">
             {[
-              { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>', text: '7-DAY FREE TRIAL' },
+              { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>', text: '7-DAY MONEY BACK' },
               { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>', text: 'PAYSTACK SECURED' },
               { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>', text: 'CANCEL ANYTIME' },
               { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>', text: 'CARD · BANK · USSD' },
@@ -1011,7 +1011,7 @@ export default function CheckoutPage() {
             ))}
           </div>
           <p className="co-trust-note">
-            Prices in USD · charged in NGN at current rate.{' '}
+            Prices in USD · charged in NGN at current rate · 7-day money-back guarantee.{' '}
             Questions?{' '}
             <a href="mailto:asamuel@ascentorbi.com" className="co-trust-link">hello@ascentorbi.com</a>
           </p>
