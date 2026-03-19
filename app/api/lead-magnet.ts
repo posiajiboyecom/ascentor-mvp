@@ -31,10 +31,10 @@ const MAGNETS: Record<string, {
   },
   // ── Lead Magnet 2: Why Talented People Don't Get Promoted ──
   'promotion-blueprint': {
-    name: 'Why Talented People Don't Get Promoted',
+    name: "Why Talented People Don't Get Promoted",
     groupEnvKey: 'MAILERLITE_GROUP_LEAD_PROMOTION',
     deliveryUrl: '/free/promotion-blueprint/download',
-    confirmationSubject: 'Your guide: Why Talented People Don't Get Promoted',
+    confirmationSubject: "Your guide: Why Talented People Don't Get Promoted",
   },
   // ── Lead Magnet 3: Salary Negotiation Script Pack ──────────
   'salary-scripts': {

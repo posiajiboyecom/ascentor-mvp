@@ -291,9 +291,9 @@ export default function CheckoutPage() {
 
         .co-root {
           min-height: 100vh;
-          background: #0C0B08;
+          background: #FAF7F2;
           font-family: 'Syne', sans-serif;
-          color: #D4CFC3;
+          color: #2A2820;
           position: relative;
           overflow-x: hidden;
         }
@@ -305,7 +305,7 @@ export default function CheckoutPage() {
           top: -200px; left: 50%;
           transform: translateX(-50%);
           width: 900px; height: 900px;
-          background: radial-gradient(circle, rgba(232,160,32,0.045) 0%, transparent 60%);
+          background: radial-gradient(circle, rgba(232,160,32,0.08) 0%, transparent 60%);
           pointer-events: none; z-index: 0;
         }
         /* Grid texture */
@@ -313,8 +313,8 @@ export default function CheckoutPage() {
           content: '';
           position: fixed; inset: 0;
           background-image:
-            linear-gradient(rgba(232,160,32,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(232,160,32,0.02) 1px, transparent 1px);
+            linear-gradient(rgba(232,160,32,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(232,160,32,0.04) 1px, transparent 1px);
           background-size: 48px 48px;
           pointer-events: none; z-index: 0;
         }
@@ -323,8 +323,8 @@ export default function CheckoutPage() {
         .co-nav {
           display: flex; align-items: center; justify-content: space-between;
           padding: 16px 32px;
-          border-bottom: 1px solid #2E2A22;
-          background: rgba(12,11,8,0.9);
+          border-bottom: 1px solid rgba(42,40,32,0.1);
+          background: rgba(250,247,242,0.94);
           backdrop-filter: blur(16px);
           position: sticky; top: 0; z-index: 20;
         }
@@ -333,17 +333,17 @@ export default function CheckoutPage() {
         }
         .co-nav-logo-text {
           font-family: 'Cormorant Garamond', serif;
-          font-weight: 700; font-size: 20px; color: #fff;
+          font-weight: 700; font-size: 20px; color: #0C0B08;
         }
         .co-nav-back {
           font-family: 'DM Mono', monospace;
           font-size: 11px; letter-spacing: 0.08em;
-          color: #4A4438; text-decoration: none;
+          color: #6B6456; text-decoration: none;
           padding: 7px 14px; border-radius: 8px;
-          border: 1px solid #2E2A22;
+          border: 1px solid rgba(42,40,32,0.15);
           transition: color 0.2s, border-color 0.2s;
         }
-        .co-nav-back:hover { color: #D4CFC3; border-color: #4A4438; }
+        .co-nav-back:hover { color: #0C0B08; border-color: rgba(42,40,32,0.35); }
 
         /* ── HERO ── */
         .co-hero {
@@ -368,21 +368,21 @@ export default function CheckoutPage() {
           font-family: 'Cormorant Garamond', serif;
           font-weight: 700; font-size: clamp(36px, 6vw, 54px);
           line-height: 1.05; letter-spacing: -0.5px;
-          color: #fff; margin-bottom: 16px;
+          color: #0C0B08; margin-bottom: 16px;
         }
         .co-hero-heading em {
           font-style: italic; color: #E8A020;
         }
         .co-hero-sub {
-          font-size: 15px; color: #7A7260; line-height: 1.65;
+          font-size: 15px; color: #6B6456; line-height: 1.65;
           max-width: 460px; margin: 0 auto 40px;
         }
 
         /* ── BILLING TOGGLE ── */
         .co-billing {
           display: inline-flex;
-          background: #1E1C17;
-          border: 1px solid #2E2A22;
+          background: #EDE9E0;
+          border: 1px solid rgba(42,40,32,0.12);
           border-radius: 12px; padding: 4px;
           margin-bottom: 56px;
         }
@@ -396,7 +396,7 @@ export default function CheckoutPage() {
           background: #E8A020; color: #0C0B08;
         }
         .co-billing-btn.inactive {
-          background: transparent; color: #4A4438;
+          background: transparent; color: #7A7260;
         }
         .co-save-pill {
           display: inline-block;
@@ -422,12 +422,14 @@ export default function CheckoutPage() {
         }
 
         .co-plan {
-          background: #141310;
+          background: #FFFFFF;
           border-radius: 20px;
+          border: 1px solid rgba(42,40,32,0.1);
           padding: 32px 28px;
           display: flex; flex-direction: column;
           position: relative; overflow: hidden;
           transition: transform 0.22s, box-shadow 0.22s;
+          box-shadow: 0 2px 16px rgba(42,40,32,0.04);
         }
         .co-plan:hover { transform: translateY(-4px); }
         .co-plan-highlighted {
@@ -459,10 +461,10 @@ export default function CheckoutPage() {
 
         .co-plan-name {
           font-family: 'Cormorant Garamond', serif;
-          font-weight: 700; font-size: 28px; color: #fff;
+          font-weight: 700; font-size: 28px; color: #0C0B08;
           letter-spacing: -0.3px; margin-bottom: 6px;
         }
-        .co-plan-desc { font-size: 13px; color: #7A7260; margin-bottom: 24px; line-height: 1.5; }
+        .co-plan-desc { font-size: 13px; color: #6B6456; margin-bottom: 24px; line-height: 1.5; }
 
         /* Price */
         .co-price-wrap { margin-bottom: 24px; }
@@ -476,11 +478,11 @@ export default function CheckoutPage() {
         }
         .co-price-num {
           font-family: 'Cormorant Garamond', serif;
-          font-size: 48px; font-weight: 700; color: #fff;
+          font-size: 48px; font-weight: 700; color: #0C0B08;
           line-height: 1; letter-spacing: -1px;
         }
-        .co-price-per { font-size: 13px; color: #4A4438; align-self: flex-end; margin-bottom: 4px; }
-        .co-price-note { font-size: 11px; color: #4A4438; margin-top: 5px; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; }
+        .co-price-per { font-size: 13px; color: #7A7260; align-self: flex-end; margin-bottom: 4px; }
+        .co-price-note { font-size: 11px; color: #9A9080; margin-top: 5px; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; }
         .co-price-promo { font-size: 12px; margin-top: 6px; }
 
         /* Features */
@@ -491,7 +493,7 @@ export default function CheckoutPage() {
         }
         .co-feature {
           display: flex; align-items: flex-start; gap: 10px;
-          font-size: 13px; color: #7A7260; line-height: 1.5;
+          font-size: 13px; color: #4A4438; line-height: 1.5;
         }
         .co-feature-check {
           width: 17px; height: 17px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
@@ -544,7 +546,7 @@ export default function CheckoutPage() {
         .co-offer-text { flex: 1; }
         .co-offer-label {
           font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
-          color: #FEF9EC; margin-bottom: 3px;
+          color: #0C0B08; margin-bottom: 3px;
         }
         .co-offer-sub {
           font-family: 'DM Mono', monospace; font-size: 10px;
@@ -558,7 +560,7 @@ export default function CheckoutPage() {
         .co-offer-countdown { text-align: right; flex-shrink: 0; }
         .co-offer-timer-label {
           font-family: 'DM Mono', monospace; font-size: 9px;
-          color: #4A4438; letter-spacing: 0.12em; text-transform: uppercase;
+          color: #7A7260; letter-spacing: 0.12em; text-transform: uppercase;
           margin-bottom: 6px;
         }
         .co-offer-timer {
@@ -576,24 +578,24 @@ export default function CheckoutPage() {
           position: relative; z-index: 1;
         }
         .co-promo-card {
-          background: #141310; border: 1px solid #2E2A22;
+          background: #FFFFFF; border: 1px solid rgba(42,40,32,0.1);
           border-radius: 14px; padding: 20px 22px;
         }
         .co-promo-label {
           font-family: 'DM Mono', monospace;
           font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
-          color: #4A4438; margin-bottom: 12px;
+          color: #9A9080; margin-bottom: 12px;
         }
         .co-promo-row { display: flex; gap: 8px; }
         .co-promo-input {
           flex: 1; padding: 11px 14px; border-radius: 9px;
-          border: 1px solid #2E2A22; background: #1E1C17;
-          color: #D4CFC3; font-family: 'DM Mono', monospace;
+          border: 1px solid rgba(42,40,32,0.15); background: #FAF7F2;
+          color: #0C0B08; font-family: 'DM Mono', monospace;
           font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
           outline: none; transition: border-color 0.2s;
         }
-        .co-promo-input::placeholder { color: #4A4438; }
-        .co-promo-input:focus { border-color: rgba(232,160,32,0.4); }
+        .co-promo-input::placeholder { color: #B0A898; }
+        .co-promo-input:focus { border-color: rgba(232,160,32,0.5); }
         .co-promo-btn {
           padding: 11px 18px; border-radius: 9px; border: none;
           background: #E8A020; color: #0C0B08;
@@ -615,7 +617,7 @@ export default function CheckoutPage() {
           max-width: 680px; margin: 0 auto;
           padding: 28px 24px 72px; text-align: center;
           position: relative; z-index: 1;
-          border-top: 1px solid #1E1C17;
+          border-top: 1px solid rgba(42,40,32,0.08);
         }
         .co-trust-items {
           display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 18px;
@@ -623,9 +625,9 @@ export default function CheckoutPage() {
         .co-trust-item {
           display: flex; align-items: center; gap: 7px;
           font-family: 'DM Mono', monospace;
-          font-size: 10px; letter-spacing: 0.06em; color: #4A4438;
+          font-size: 10px; letter-spacing: 0.06em; color: #7A7260;
         }
-        .co-trust-note { font-size: 12px; color: #4A4438; line-height: 1.65; }
+        .co-trust-note { font-size: 12px; color: #7A7260; line-height: 1.65; }
         .co-trust-link { color: #E8A020; text-decoration: none; }
         .co-trust-link:hover { color: #F5C55A; }
       `}</style>
@@ -636,7 +638,7 @@ export default function CheckoutPage() {
         <nav className="co-nav">
           <Link href="/" className="lp-nav-logo">
   <img
-    src="/ascentor-color-for-dark-pages.svg"
+    src="/ascentor-color-for-light-pages.svg"
     alt="Ascentor"
     style={{ height: '32px', width: 'auto' }}
   />

@@ -143,16 +143,16 @@ export default function LandingPage() {
         }
         .lp-hero-img {
           position: absolute; inset: 0;
-          background-image: url('/hero-bg.jpg');
+          background-image: url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1800&q=80&auto=format&fit=crop');
           background-size: cover;
-          background-position: center 40%;
-          opacity: 0.28;
+          background-position: center 35%;
+          opacity: 0.18;
           z-index: 0;
         }
         .lp-hero-bg {
           position: absolute; inset: 0; pointer-events: none; z-index: 1;
           background:
-            linear-gradient(to bottom, rgba(253,252,249,0.65) 0%, rgba(253,252,249,0.15) 40%, rgba(253,252,249,0.75) 100%),
+            linear-gradient(to bottom, rgba(253,252,249,0.72) 0%, rgba(253,252,249,0.25) 40%, rgba(253,252,249,0.82) 100%),
             radial-gradient(ellipse 60% 50% at 15% 80%, rgba(232,160,32,0.14) 0%, transparent 70%),
             radial-gradient(ellipse 40% 40% at 85% 20%, rgba(232,160,32,0.10) 0%, transparent 60%);
         }
@@ -376,7 +376,7 @@ export default function LandingPage() {
           background: rgba(232,160,32,0.08);
           border: 1.5px solid rgba(232,160,32,0.35);
           cursor: pointer; flex-direction: column; gap: 5px; padding: 10px;
-          transition: all 0.2s;
+          transition: all 0.2s; margin-left: auto;
         }
         .lp-hamburger:hover,
         .lp-hamburger.open { background: rgba(232,160,32,0.15); border-color: var(--gold); }
@@ -505,7 +505,7 @@ export default function LandingPage() {
         {/* HERO */}
         <section className="lp-hero">
           <img
-            src="/hero-bg.jpg"
+            src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1800&q=80&auto=format&fit=crop"
             alt=""
             aria-hidden="true"
             style={{
@@ -514,8 +514,8 @@ export default function LandingPage() {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              objectPosition: 'center 40%',
-              opacity: 0.3,
+              objectPosition: 'center 35%',
+              opacity: 0.18,
               zIndex: 0,
               pointerEvents: 'none',
             }}

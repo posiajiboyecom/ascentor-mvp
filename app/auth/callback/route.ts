@@ -95,23 +95,29 @@ export async function GET(request: Request) {
     console.error('[auth/callback] MailerLite sync error (non-fatal):', mlErr.message);
   }
 
-  // Case 1: Fully set up returning user
+  // Case 1: Fully set up paying user (onboarding_completed only set after payment)
   if (profile?.onboarding_completed === true) {
     return NextResponse.redirect(`${origin}${next}`);
   }
 
-  // Case 2: Paid but onboarding not done
+  // Case 2: Has profile data (name/role set) but no payment — send to checkout
+  const hasProfileData = !!(profile?.full_name && profile?.current_role);
   const hasPaid =
-    !!profile?.subscription_plan ||
     profile?.subscription_status === 'active' ||
     profile?.subscription_status === 'trialing';
 
-  if (hasPaid) {
-    return NextResponse.redirect(`${origin}/onboarding`);
+  if (hasPaid && !profile?.onboarding_completed) {
+    // Paid but onboarding flag not set — edge case, mark complete and send to dashboard
+    return NextResponse.redirect(`${origin}/dashboard`);
   }
 
-  // Case 3: No payment yet
-  return NextResponse.redirect(`${origin}/checkout`);
+  if (hasProfileData) {
+    // Completed onboarding steps 1+2 but not paid yet — resume at checkout
+    return NextResponse.redirect(`${origin}/checkout`);
+  }
+
+  // Case 3: Fresh user — start onboarding
+  return NextResponse.redirect(`${origin}/onboarding`);
 }
 
 // ── Partner callback handler ──────────────────────────────

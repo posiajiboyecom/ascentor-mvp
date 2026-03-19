@@ -10,7 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const MAGNET_DEFS = [
   { id: 'leadership-playbook',  name: 'The 90-Day Leadership Playbook',             type: 'PDF Guide',      url: '/free/leadership-playbook'  },
-  { id: 'promotion-blueprint',  name: 'Why Talented People Don't Get Promoted',     type: 'PDF Guide',      url: '/free/promotion-blueprint'  },
+  { id: 'promotion-blueprint',  name: "Why Talented People Don't Get Promoted",     type: 'PDF Guide',      url: '/free/promotion-blueprint'  },
   { id: 'salary-scripts',       name: 'The Salary Negotiation Script Pack',          type: 'Template Pack',  url: '/free/salary-scripts'       },
   { id: 'career-audit',         name: 'The 10-Minute Career Clarity Audit',          type: 'Interactive Quiz', url: '/free/career-audit'         },
 ];

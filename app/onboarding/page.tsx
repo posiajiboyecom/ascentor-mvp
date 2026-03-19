@@ -91,15 +91,14 @@ export default function OnboardingPage() {
 
     if (goalError) { alert(`Error: ${goalError.message}`); setSaving(false); return; }
 
-    // 2. ── THE FIX ──────────────────────────────────────────────────────────
-    // Mark onboarding as complete on the profile. Without this, route.ts sees
-    // onboarding_completed = false/null on every subsequent login and redirects
-    // the user back here indefinitely.
-    // Sync full name + plan to MailerLite now that we have it
+    // 2. Save profile name to ML (no welcome email yet — fires on payment)
+    // onboarding_completed is NOT set here — only set in /api/payment/verify
+    // so users who abandon at checkout are correctly identified as unpaid
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
-        await fetch('/api/welcome', {
+        // Tag as checkout-pending in ML for nurture targeting (fix 5)
+        await fetch('/api/checkout-pending', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -110,21 +109,6 @@ export default function OnboardingPage() {
         });
       }
     } catch { /* non-fatal */ }
-
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        onboarding_completed: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', user.id);
-
-    if (profileError) {
-      // Non-fatal — log it but don't block the user. They've completed the
-      // flow; worst case they see onboarding once more on next login.
-      console.error('[onboarding] Failed to set onboarding_completed:', profileError.message);
-    }
-    // ── END FIX ────────────────────────────────────────────────────────────
 
     // 3. Handle referral (non-blocking)
     try {
@@ -141,7 +125,7 @@ export default function OnboardingPage() {
       console.warn('Referral non-blocking error:', e);
     }
 
-    router.push('/pricing');
+    router.push('/checkout');
   };
 
   const step1Valid = profile.full_name && profile.current_role && profile.industry && profile.goal_role;
@@ -409,7 +393,8 @@ export default function OnboardingPage() {
           <div className="ob-steps">
             <div className={`ob-step-bar ${step >= 1 ? 'active' : ''}`} />
             <div className={`ob-step-bar ${step >= 2 ? 'active' : ''}`} />
-            <span className="ob-step-label">STEP {step} OF 2</span>
+            <div className={`ob-step-bar ${step >= 3 ? 'active' : ''}`} />
+            <span className="ob-step-label">STEP {step} OF 3</span>
           </div>
 
           {/* ─── STEP 1: Profile ─── */}

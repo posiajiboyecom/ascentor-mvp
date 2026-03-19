@@ -72,6 +72,7 @@ const PUBLIC_ROUTES = [
 
 const PUBLIC_API_ROUTES = [
   '/api/waitlist', '/api/newsletter', '/api/welcome', '/api/auth',
+  '/api/checkout-pending',
   '/api/subscription/webhook',
   '/api/partner/webhook',
 ];
@@ -196,20 +197,35 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // ── 8. Subscription tier gate ─────────────────────────────
+  // ── 8. Subscription tier gate + payment gate ─────────────
   if (user) {
+    const isDashboard = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
     const matchedTier = TIERED_ROUTES.find(r =>
       pathname === r.prefix || pathname.startsWith(r.prefix + '/')
     );
 
-    if (matchedTier) {
+    // Fetch profile once for both checks
+    if (isDashboard || matchedTier) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('subscription_plan, subscription_status, subscription_end')
+        .select('subscription_plan, subscription_status, subscription_end, onboarding_completed')
         .eq('id', user.id)
         .single();
 
-      if (!checkAccess(profile, matchedTier.minPlan)) {
+      // ── Payment gate: dashboard requires completed payment ──
+      if (isDashboard) {
+        const isPaid =
+          profile?.onboarding_completed === true ||
+          profile?.subscription_status === 'active' ||
+          profile?.subscription_status === 'trialing';
+
+        if (!isPaid) {
+          return NextResponse.redirect(new URL('/checkout', request.url));
+        }
+      }
+
+      // ── Tier gate: specific routes require minimum plan ─────
+      if (matchedTier && !checkAccess(profile, matchedTier.minPlan)) {
         const checkoutUrl = new URL(
           customDomainRewrite ? `https://${host}/checkout` : '/checkout',
           request.url

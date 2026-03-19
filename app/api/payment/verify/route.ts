@@ -194,11 +194,45 @@ export async function POST(req: NextRequest) {
       await supabase.from('notifications').insert({
         user_id: userId,
         type:    'payment',
-        title:   'Welcome to Ascentor! 🎉',
+        title:   'Welcome to Ascentor!',
         message: `Your 7-day free trial has started. You won't be charged until day 8.`,
         link:    '/dashboard',
       });
     } catch {} // Non-critical
+
+    // ── 9b. MARK ONBOARDING COMPLETE ─────────────────────────────
+    // Only set here — after payment confirmed — not in /onboarding
+    // This is the gate that controls dashboard access
+    try {
+      await supabase.from('profiles')
+        .update({
+          onboarding_completed: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', userId);
+    } catch (e) {
+      console.error('[payment/verify] Failed to mark onboarding complete:', e);
+    }
+
+    // ── 9c. SEND WELCOME EMAIL ────────────────────────────────────
+    // Fires only after payment is confirmed — not at onboarding step 2
+    try {
+      const { data: authData } = await supabase.auth.admin.getUserById(userId);
+      const userEmail = authData?.user?.email;
+      if (userEmail) {
+        const { data: profileData } = await supabase
+          .from('profiles').select('full_name').eq('id', userId).single();
+        const userName = profileData?.full_name || userEmail.split('@')[0];
+
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://ascentorbi.com'}/api/welcome`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: userEmail, name: userName, userId }),
+        });
+      }
+    } catch (e) {
+      console.error('[payment/verify] Welcome email error (non-fatal):', e);
+    }
 
     // ── 10. MAILERLITE — Upgrade to Paid Users group ───────────────
     try {
