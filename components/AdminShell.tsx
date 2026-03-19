@@ -378,9 +378,38 @@ export default function AdminShell({
       {/* Nav */}
       <nav className="admin-sidebar-nav" style={{ flex: 1, overflowY: 'auto', padding: '12px 8px' }}>
         {(() => {
-          const visibleItems = NAV.filter(item =>
-            !item.roles || item.roles.includes(role.toLowerCase())
-          );
+          // Use custom per-user permissions if set, otherwise fall back to role
+          const effectivePerms = (userPermissions as string[] | null);
+          const visibleItems = NAV.filter(item => {
+            // No role restriction — always show
+            if (!item.roles) return true;
+            // Admin always sees everything
+            if (role.toLowerCase() === 'admin') return item.roles.includes('admin');
+            // Moderator with custom permissions: check if they have a permission
+            // that maps to this page
+            if (effectivePerms && effectivePerms.length > 0) {
+              // They have custom permissions — check if any maps to this nav item
+              // Import PERMISSION_LABELS would cause circular dep so inline the check
+              const pagePermsMap: Record<string, string[]> = {
+                '/admin/master':      ['payments.view', 'admin.view_stats'],
+                '/admin/intel':       ['reports.generate'],
+                '/admin/users':       ['users.view'],
+                '/admin/permissions': ['admin.access'],
+                '/admin/promo-codes': ['payments.view'],
+                '/admin/careers':     ['content.blog.create'],
+                '/admin/content':     ['content.pipeline.view', 'content.pipeline.approve'],
+                '/admin/blog':        ['content.blog.create', 'content.blog.edit'],
+                '/admin/newsletter':  ['newsletter.compose', 'newsletter.send'],
+                '/admin/courses':     ['content.courses.create', 'content.courses.edit'],
+                '/admin/experts':     ['experts.create', 'experts.edit'],
+                '/admin/cohorts':     ['community.cohorts.create', 'community.cohorts.edit'],
+                '/admin/community':   ['community.posts.moderate', 'community.posts.delete'],
+              };
+              const needed = pagePermsMap[item.href];
+              if (needed) return needed.some(p => effectivePerms.includes(p));
+            }
+            return item.roles.includes(role.toLowerCase());
+          });
           const groups = Array.from(new Set(visibleItems.map(i => i.group)));
           return groups.map(group => (
             <div key={group}>

@@ -20,6 +20,7 @@ export default function ExpertsPage() {
   const [toggling,    setToggling]    = useState<string | null>(null); // sessionId being toggled
   const [userId,      setUserId]      = useState<string | null>(null);
   const [error,       setError]       = useState<string | null>(null);
+  const [isPaid,      setIsPaid]      = useState(false);
 
   useEffect(() => {
     loadAll();
@@ -29,10 +30,22 @@ export default function ExpertsPage() {
     setLoading(true);
     setError(null);
 
-    // 1. Get current user
+    // 1. Get current user + payment status
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
     setUserId(user.id);
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_status, onboarding_completed')
+      .eq('id', user.id)
+      .single();
+
+    const paid =
+      profile?.onboarding_completed === true ||
+      profile?.subscription_status === 'active' ||
+      profile?.subscription_status === 'trialing';
+    setIsPaid(paid);
 
     // 2. Fetch upcoming expert sessions from DB — no fallback data
     const { data: sessionsData, error: sessionsError } = await supabase
@@ -209,6 +222,9 @@ export default function ExpertsPage() {
             const isFull         = spotsLeft === 0 && !isRegistered;
             const isToggling     = toggling === expert.id;
             const fillPct        = Math.min(100, (spotsUsed / maxSpots) * 100);
+            // Free users can only join sessions marked is_free = true
+            const isFreeSession  = expert.is_free === true;
+            const canAccess      = isPaid || isFreeSession;
 
             return (
               <div key={expert.id}
@@ -262,7 +278,14 @@ export default function ExpertsPage() {
                           `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`
                         )}
                       </div>
-                      <button
+                      {!canAccess && (
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold"
+                          style={{ background: 'rgba(232,160,32,0.08)', border: '1px solid rgba(232,160,32,0.2)', color: 'var(--accent)', cursor: 'default' }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                          Premium only
+                        </div>
+                      )}
+                      {canAccess && <button
                         onClick={() => toggleRegister(expert.id)}
                         disabled={isToggling || (isFull)}
                         className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-40"
@@ -278,7 +301,7 @@ export default function ExpertsPage() {
                             : isFull
                               ? 'Full'
                               : 'Reserve Spot'}
-                      </button>
+                      </button>}
                     </div>
 
                     {/* Capacity bar — real data */}

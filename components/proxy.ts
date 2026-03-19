@@ -42,10 +42,13 @@ const RESERVED_SUBDOMAINS = ['www', 'app', 'api', 'admin', 'mail', 'cdn', 'stati
 const TIERED_ROUTES: { prefix: string; minPlan: 'explorer' | 'builder' | 'climber' }[] = [
   { prefix: '/learn',          minPlan: 'explorer' },
   { prefix: '/courses',        minPlan: 'explorer' },
-  { prefix: '/experts',        minPlan: 'explorer' },
   { prefix: '/analytics',      minPlan: 'builder'  },
   { prefix: '/group-coaching', minPlan: 'climber'  },
+  // /experts and /community handled with partial access logic below
 ];
+
+// Routes where unpaid (free) users get limited access — not full block
+const FREE_LIMITED_ROUTES = ['/experts', '/community'];
 
 const AUTH_ROUTES = [
   '/dashboard', '/coach', '/community', '/account',
@@ -234,6 +237,21 @@ export default async function proxy(request: NextRequest) {
         checkoutUrl.searchParams.set('from', pathname);
         checkoutUrl.searchParams.set('required', matchedTier.minPlan);
         return NextResponse.redirect(checkoutUrl);
+      }
+
+      // ── Free-limited routes: experts + community ──────────────
+      // Unpaid users can access these pages but see restricted content.
+      // The pages themselves handle what to show — proxy just injects
+      // a header so they know whether the user is paid or free.
+      const isFreeLimited = FREE_LIMITED_ROUTES.some(r =>
+        pathname === r || pathname.startsWith(r + '/')
+      );
+      if (isFreeLimited) {
+        const isPaid =
+          profile?.onboarding_completed === true ||
+          profile?.subscription_status === 'active' ||
+          profile?.subscription_status === 'trialing';
+        response.headers.set('x-user-plan', isPaid ? 'paid' : 'free');
       }
     }
   }
