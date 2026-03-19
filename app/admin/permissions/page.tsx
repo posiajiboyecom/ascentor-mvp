@@ -60,35 +60,26 @@ export default function PermissionsPage() {
 
   function pick(m:Staff){setSel(m);setSaved(false);setDraft(m.permissions?.length?[...m.permissions]:[...(ROLE_PERMISSIONS[m.role]||[])]);}
 
+  async function doSearch(email: string) {
+    setSearching(true);
+    setFound(null);
+    try {
+      const res = await fetch(`/api/admin/find-user?email=${encodeURIComponent(email.trim())}`);
+      const d = await res.json();
+      setFound(d.user ? d.user as Staff : 'none');
+    } catch(err) {
+      console.error('find-user error:', err);
+      setFound('none');
+    } finally {
+      setSearching(false);
+    }
+  }
+
   function onSearch(e:React.ChangeEvent<HTMLInputElement>){
     const v=e.target.value;setSearch(v);setFound(null);
     if(timer.current)clearTimeout(timer.current);
-    if(v.includes('@'))timer.current=setTimeout(async()=>{
-      setSearching(true);
-      try {
-        // Try profiles.email first
-        const{data:byEmail}=await sb
-          .from('profiles')
-          .select('id,full_name,email,role,permissions')
-          .ilike('email',v.trim())
-          .maybeSingle();
-
-        if(byEmail){
-          setSearching(false);setFound(byEmail as Staff);return;
-        }
-
-        // Fallback: search by auth email via admin API route
-        const res=await fetch(`/api/admin/find-user?email=${encodeURIComponent(v.trim())}`);
-        if(res.ok){
-          const d=await res.json();
-          if(d.user){setSearching(false);setFound(d.user as Staff);return;}
-        }
-
-        setSearching(false);setFound('none');
-      } catch(e){
-        setSearching(false);setFound('none');
-      }
-    },600);
+    if(v.includes('@') && v.length > 5)
+      timer.current=setTimeout(()=>doSearch(v), 700);
   }
 
   async function grant(m:Staff){
