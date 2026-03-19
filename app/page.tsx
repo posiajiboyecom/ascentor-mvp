@@ -143,7 +143,7 @@ export default function LandingPage() {
         }
         .lp-hero-img {
           position: absolute; inset: 0;
-          background-image: url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1800&q=80&auto=format&fit=crop');
+          background-image: url('/hero-community.jpg');
           background-size: cover;
           background-position: center 35%;
           opacity: 0.18;
@@ -322,6 +322,17 @@ export default function LandingPage() {
         .lp-mentor-badge { display: inline-block; background: rgba(232,160,32,0.12); color: #8B6010; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 12px; border-radius: 100px; }
 
         /* ── CTA ── */
+        /* ── FREE RESOURCES ── */
+        .lp-free-section { padding: 80px 48px; background: var(--gold-pale); border-top: 1px solid rgba(232,160,32,0.15); }
+        .lp-free-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; max-width: 1080px; margin: 40px auto 0; }
+        @media (max-width: 860px) { .lp-free-grid { grid-template-columns: 1fr; max-width: 440px; } }
+        .lp-free-card { background: var(--white); border-radius: 16px; padding: 28px; border: 1px solid rgba(232,160,32,0.15); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; text-decoration: none; }
+        .lp-free-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(42,40,32,0.08); }
+        .lp-free-type { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); background: rgba(232,160,32,0.1); border: 1px solid rgba(232,160,32,0.2); border-radius: 100px; padding: 3px 10px; width: fit-content; margin-bottom: 14px; }
+        .lp-free-title { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 20px; font-weight: 700; color: var(--dark); line-height: 1.25; margin-bottom: 10px; }
+        .lp-free-desc { font-size: 13px; color: var(--text-light); line-height: 1.6; flex: 1; margin-bottom: 20px; }
+        .lp-free-cta { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 6px; }
+
         .lp-cta-section { padding: 120px 48px; background: var(--white); display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; overflow: hidden; }
         .lp-cta-section::before { content: ''; position: absolute; width: 800px; height: 800px; border-radius: 50%; background: radial-gradient(circle, rgba(232,160,32,0.07) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); }
         .lp-cta-headline { font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(38px, 5vw, 64px); font-weight: 900; color: var(--dark); max-width: 680px; line-height: 1.1; position: relative; z-index: 1; }
@@ -505,7 +516,7 @@ export default function LandingPage() {
         {/* HERO */}
         <section className="lp-hero">
           <img
-            src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1800&q=80&auto=format&fit=crop"
+            src="/hero-community.jpg"
             alt=""
             aria-hidden="true"
             style={{
@@ -863,6 +874,47 @@ export default function LandingPage() {
           </section>
         )}
 
+        {/* FREE RESOURCES */}
+        <section className="lp-free-section">
+          <div style={{ maxWidth: '1080px', margin: '0 auto', textAlign: 'center' }}>
+            <div className="lp-section-label">Free Resources</div>
+            <h2 className="lp-section-headline">Start here — completely free</h2>
+            <p className="lp-section-sub" style={{ margin: '16px auto 0' }}>Three guides used by ambitious professionals to accelerate their careers. No sign-up required.</p>
+          </div>
+          <div className="lp-free-grid">
+            {[
+              {
+                type: 'PDF Guide · 12 pages',
+                title: 'The 90-Day Leadership Playbook',
+                desc: 'The exact framework Sage uses. Set one goal, follow 13 weekly actions, make your progress visible to the people who decide your future.',
+                href: '/free/leadership-playbook',
+                cta: 'Get free playbook',
+              },
+              {
+                type: 'PDF Guide · 8 pages',
+                title: "Why Talented People Don't Get Promoted",
+                desc: 'The 3 real reasons promotions go to less talented people — and the 5 specific moves that change the outcome.',
+                href: '/free/promotion-blueprint',
+                cta: 'Get free guide',
+              },
+              {
+                type: 'Template Pack · 5 scripts',
+                title: 'The Salary Negotiation Script Pack',
+                desc: '5 word-for-word scripts for every salary conversation — opening, responding to a low offer, countering, following up after silence.',
+                href: '/free/salary-scripts',
+                cta: 'Get free scripts',
+              },
+            ].map((r, i) => (
+              <Link key={i} href={r.href} className="lp-free-card">
+                <span className="lp-free-type">{r.type}</span>
+                <p className="lp-free-title">{r.title}</p>
+                <p className="lp-free-desc">{r.desc}</p>
+                <span className="lp-free-cta">{r.cta} →</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {/* FOOTER */}
         <footer className="lp-footer">
           <div className="lp-footer-top">
@@ -877,6 +929,9 @@ export default function LandingPage() {
             <div>
               <div className="lp-footer-col-title">Platform</div>
               <ul className="lp-footer-links">
+                <li><Link href="/free/leadership-playbook">Free Playbook</Link></li>
+                <li><Link href="/free/promotion-blueprint">Free Promo Guide</Link></li>
+                <li><Link href="/free/salary-scripts">Free Salary Scripts</Link></li>
                 <li><Link href="/products">Products</Link></li>
                 {hasBlogPosts && <li><Link href="/blog">Blog</Link></li>}
                 <li><Link href="https://ascentor.zohobookings.com/#/4738058000000052054">For Teams</Link></li>
