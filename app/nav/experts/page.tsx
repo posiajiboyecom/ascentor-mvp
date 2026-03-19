@@ -21,6 +21,7 @@ export default function ExpertsPage() {
   const [userId,      setUserId]      = useState<string | null>(null);
   const [error,       setError]       = useState<string | null>(null);
   const [isPaid,      setIsPaid]      = useState(false);
+  const [userPlan,    setUserPlan]    = useState<string>('free');
 
   useEffect(() => {
     loadAll();
@@ -37,7 +38,7 @@ export default function ExpertsPage() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('subscription_status, onboarding_completed')
+      .select('subscription_status, subscription_plan, onboarding_completed')
       .eq('id', user.id)
       .single();
 
@@ -46,6 +47,7 @@ export default function ExpertsPage() {
       profile?.subscription_status === 'active' ||
       profile?.subscription_status === 'trialing';
     setIsPaid(paid);
+    setUserPlan(profile?.subscription_plan || 'free');
 
     // 2. Fetch upcoming expert sessions from DB — no fallback data
     const { data: sessionsData, error: sessionsError } = await supabase
@@ -222,9 +224,20 @@ export default function ExpertsPage() {
             const isFull         = spotsLeft === 0 && !isRegistered;
             const isToggling     = toggling === expert.id;
             const fillPct        = Math.min(100, (spotsUsed / maxSpots) * 100);
-            // Free users can only join sessions marked is_free = true
-            const isFreeSession  = expert.is_free === true;
-            const canAccess      = isPaid || isFreeSession;
+            // Access control based on admin-set access_tier
+            const tier = expert.access_tier || (expert.is_free ? 'free' : 'paid');
+            const canAccess = (() => {
+              if (tier === 'free') return true; // everyone
+              if (!isPaid) return false;         // all paid tiers require payment
+              // Plan rank check for higher tiers
+              const planRank: Record<string,number> = { free:0, explorer:1, builder:2, climber:3, standard:2, tester:2, pro:3 };
+              const userRank = planRank[userPlan] ?? 0;
+              if (tier === 'paid') return userRank >= 1;
+              if (tier === 'explorer') return userRank >= 1;
+              if (tier === 'builder') return userRank >= 2;
+              if (tier === 'climber') return userRank >= 3;
+              return false;
+            })();
 
             return (
               <div key={expert.id}
@@ -282,7 +295,7 @@ export default function ExpertsPage() {
                         <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold"
                           style={{ background: 'rgba(232,160,32,0.08)', border: '1px solid rgba(232,160,32,0.2)', color: 'var(--accent)', cursor: 'default' }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                          Premium only
+                          {expert.access_tier === 'free' || expert.is_free ? 'Open' : `${(expert.access_tier || 'paid').charAt(0).toUpperCase() + (expert.access_tier || 'paid').slice(1)} plan`}
                         </div>
                       )}
                       {canAccess && <button

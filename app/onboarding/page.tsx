@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const industries = [
   'Technology', 'Finance & Banking', 'Consulting', 'Healthcare',
@@ -17,7 +17,9 @@ const timeOptions = [
 ];
 
 export default function OnboardingPage() {
-  const [step, setStep] = useState(1);
+  const searchParams = useSearchParams();
+  const initialStep = searchParams.get('step') === '2' ? 2 : 1;
+  const [step, setStep] = useState(initialStep);
   const [saving, setSaving] = useState(false);
   const router = useRouter();
   const supabase = createClient();

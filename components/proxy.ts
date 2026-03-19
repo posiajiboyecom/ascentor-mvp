@@ -207,8 +207,12 @@ export default async function proxy(request: NextRequest) {
       pathname === r.prefix || pathname.startsWith(r.prefix + '/')
     );
 
-    // Fetch profile once for both checks
-    if (isDashboard || matchedTier) {
+    // Fetch profile for all gated routes
+    const isFreeLimited = FREE_LIMITED_ROUTES.some(r =>
+      pathname === r || pathname.startsWith(r + '/')
+    );
+
+    if (isDashboard || matchedTier || isFreeLimited) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('subscription_plan, subscription_status, subscription_end, onboarding_completed')
@@ -229,23 +233,36 @@ export default async function proxy(request: NextRequest) {
 
       // ── Tier gate: specific routes require minimum plan ─────
       if (matchedTier && !checkAccess(profile, matchedTier.minPlan)) {
-        const checkoutUrl = new URL(
-          customDomainRewrite ? `https://${host}/checkout` : '/checkout',
-          request.url
-        );
-        checkoutUrl.searchParams.set('reason', 'subscription_required');
-        checkoutUrl.searchParams.set('from', pathname);
-        checkoutUrl.searchParams.set('required', matchedTier.minPlan);
-        return NextResponse.redirect(checkoutUrl);
+        // Check if user is onboarded but just on free plan
+        const isOnboarded = profile?.onboarding_completed === true;
+        const isPaid = profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing';
+
+        if (!isPaid) {
+          // Unpaid / free user — send to checkout with context
+          const upgradeUrl = new URL(
+            customDomainRewrite ? `https://${host}/checkout` : '/checkout',
+            request.url
+          );
+          upgradeUrl.searchParams.set('reason', 'upgrade_required');
+          upgradeUrl.searchParams.set('from', pathname);
+          return NextResponse.redirect(upgradeUrl);
+        } else {
+          // Paid but wrong tier — send to checkout to upgrade plan
+          const checkoutUrl = new URL(
+            customDomainRewrite ? `https://${host}/checkout` : '/checkout',
+            request.url
+          );
+          checkoutUrl.searchParams.set('reason', 'subscription_required');
+          checkoutUrl.searchParams.set('from', pathname);
+          checkoutUrl.searchParams.set('required', matchedTier.minPlan);
+          return NextResponse.redirect(checkoutUrl);
+        }
       }
 
       // ── Free-limited routes: experts + community ──────────────
       // Unpaid users can access these pages but see restricted content.
       // The pages themselves handle what to show — proxy just injects
       // a header so they know whether the user is paid or free.
-      const isFreeLimited = FREE_LIMITED_ROUTES.some(r =>
-        pathname === r || pathname.startsWith(r + '/')
-      );
       if (isFreeLimited) {
         const isPaid =
           profile?.onboarding_completed === true ||

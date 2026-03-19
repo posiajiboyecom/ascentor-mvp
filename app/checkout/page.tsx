@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef} from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
@@ -115,7 +115,14 @@ export default function CheckoutPage() {
   const [countdown, setCountdown]       = useState<string>('');
   const [offerExpired, setOfferExpired] = useState(false);
 
-  const router   = useRouter();
+  const router        = useRouter();
+  const searchParams  = useSearchParams ? useSearchParams() : null;
+  const upgradeReason = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('reason')
+    : null;
+  const fromPage      = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('from')
+    : null;
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
@@ -421,6 +428,19 @@ export default function CheckoutPage() {
         .co-nav-back:hover { color: var(--co-text); border-color: var(--co-bord-med); }
 
         /* ── HERO ── */
+        .co-upgrade-banner {
+          background: rgba(232,160,32,0.08);
+          border: 1px solid rgba(232,160,32,0.25);
+          border-radius: 12px;
+          padding: 14px 20px;
+          text-align: center;
+          margin-bottom: 24px;
+          font-family: 'DM Mono', monospace;
+          font-size: 12px;
+          color: var(--co-text-muted);
+          letter-spacing: 0.04em;
+        }
+        .co-upgrade-banner strong { color: var(--co-heading); }
         .co-hero {
           max-width: 680px; margin: 0 auto;
           padding: 64px 24px 0;
@@ -584,6 +604,24 @@ export default function CheckoutPage() {
           cursor: pointer; width: 100%; transition: all 0.2s;
         }
         .co-cta:disabled { opacity: 0.4; cursor: not-allowed; }
+        .co-trial-notice {
+          text-align: center;
+          padding: 14px 20px;
+          margin: 0 auto 20px;
+          max-width: 480px;
+          border-radius: 10px;
+          background: var(--co-toggle-bg);
+          border: 1px solid var(--co-bord);
+          font-family: 'DM Mono', monospace;
+          font-size: 11px;
+          letter-spacing: 0.06em;
+          color: var(--co-text-muted);
+          line-height: 1.6;
+        }
+        .co-trial-notice strong {
+          color: var(--co-heading);
+          font-weight: 600;
+        }
         .co-cta-note {
           font-family: 'DM Mono', monospace;
           font-size: 10px; letter-spacing: 0.06em; color: #4A4438;
@@ -743,6 +781,12 @@ export default function CheckoutPage() {
 
         {/* HERO */}
         <div className="co-hero">
+          {upgradeReason === 'upgrade_required' && (
+            <div className="co-upgrade-banner">
+              <strong>This feature requires a paid plan.</strong><br/>
+              Choose a plan below to continue. Your 7-day trial starts today — no charge until Day 8.
+            </div>
+          )}
           <div className="co-hero-badge">
             <div className="co-hero-badge-dot" />
             Start today — cancel anytime
@@ -897,7 +941,12 @@ export default function CheckoutPage() {
                   ))}
                 </ul>
 
-                {/* CTA */}
+                {/* Trial notice + CTA */}
+                <div className="co-trial-notice">
+                  <strong>Start today — explore free.</strong><br/>
+                  You will not be billed until your 7-day trial ends.<br/>
+                  Cancel any time before Day 7 and you will not be charged.
+                </div>
                 <button
                   className="co-cta"
                   onClick={() => handleSelectPlan(plan.id)}

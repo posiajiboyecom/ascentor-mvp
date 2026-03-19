@@ -23,6 +23,7 @@ export default function AdminExpertsPageInner() {
     title: '', description: '', expert_name: '', expert_bio: '',
     scheduled_at: '', duration_minutes: 60, max_participants: 50,
     status: 'scheduled' as string, join_url: '', registration_url: '',
+    access_tier: 'paid' as string, // 'free' | 'paid' | 'explorer' | 'builder' | 'climber'
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -43,6 +44,7 @@ export default function AdminExpertsPageInner() {
       max_participants: event.max_participants || 50,
       status: event.status || 'scheduled',
       join_url: event.join_url || '', registration_url: event.registration_url || '',
+      access_tier: event.access_tier || (event.is_free ? 'free' : 'paid'),
     });
     setEditing(event);
     setShowForm(true);
@@ -69,6 +71,8 @@ export default function AdminExpertsPageInner() {
       status: form.status,
       join_url: form.join_url || null,
       registration_url: form.registration_url || null,
+      access_tier: form.access_tier || 'paid',
+      is_free: form.access_tier === 'free',
     };
 
     let error;
@@ -179,6 +183,25 @@ export default function AdminExpertsPageInner() {
                 onChange={(e) => setForm({ ...form, join_url: e.target.value })}
                 placeholder="Meeting/webinar join link" />
             </div>
+            {/* Access tier — admin controls who can join this event */}
+            <div className="mt-3">
+              <label className="text-[11px] font-bold mb-1 block" style={{ color: 'var(--text-dim)' }}>
+                ACCESS — Who can register for this event?
+              </label>
+              <select
+                className="px-3.5 py-2.5 text-sm rounded-xl w-full"
+                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
+                value={form.access_tier}
+                onChange={(e) => setForm({ ...form, access_tier: e.target.value })}
+              >
+                <option value="free">Free — all users (including free plan)</option>
+                <option value="paid">Paid only — any active subscription</option>
+                <option value="explorer">Explorer plan and above</option>
+                <option value="builder">Builder plan and above</option>
+                <option value="climber">Climber plan only</option>
+              </select>
+            </div>
+
             <div className="flex gap-2 mt-2">
               <button onClick={handleSave}
                 disabled={saving || !form.title.trim() || !form.expert_name.trim() || !form.scheduled_at}
