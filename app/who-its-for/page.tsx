@@ -113,8 +113,8 @@ const ACROSS_AFRICA = [
   { flag: '🇬🇭', country: 'Ghana',        desc: 'Growing fast in Accra\'s startup and finance scene' },
   { flag: '🇰🇪', country: 'Kenya',        desc: 'Nairobi\'s tech ecosystem and beyond' },
   { flag: '🇬🇧', country: 'United Kingdom', desc: 'London, Manchester, and the broader diaspora' },
-  { flag: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>', country: 'Diaspora',      desc: 'UK, US, Canada — professionals building global careers' },
-  { flag: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>', country: '15+ Countries', desc: 'And growing across the entire continent' },
+  { flag: '🌐', country: 'Diaspora',      desc: 'UK, US, Canada — professionals building global careers' },
+  { flag: '🌍', country: '15+ Countries', desc: 'And growing across the entire continent' },
 ];
 
 /* ── Nav (identical to pricing page) ───────────────────── */
