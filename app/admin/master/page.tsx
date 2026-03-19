@@ -988,7 +988,7 @@ export default function MasterAdminPage() {
               },
               {
                 id: 'promotion-blueprint',
-                name: 'Why Talented People Don't Get Promoted',
+                name: "Why Talented People Don't Get Promoted",
                 type: 'PDF Guide',
                 status: 'BUILD NOW',
                 priority: '★ #2 PRIORITY',
