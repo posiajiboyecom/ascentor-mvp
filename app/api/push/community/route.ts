@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { sendPushToUser } from '@/lib/push';
+import { notify, NotifyTemplates } from '@/lib/notify';
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,12 +31,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, skipped: 'self' });
     }
 
-    await sendPushToUser(supabase, targetUserId, {
+    // Use unified notify — push if installed, email fallback otherwise
+    await notify(targetUserId, {
       title,
       body,
-      url:  url || '/community',
-      tag:  'community',
-      icon: '/icons/icon-192.png',
+      url:   url || '/community',
+      tag:   'community',
+      emailSubject: title,
     });
 
     return NextResponse.json({ ok: true });
