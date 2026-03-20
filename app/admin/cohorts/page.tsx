@@ -214,6 +214,7 @@ function AdminCohortsInner() {
   const [showForm, setShowForm] = useState(searchParams.get('action') === 'create');
   const [editing,  setEditing]  = useState<any>(null);
   const [saving,   setSaving]   = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   const emptyForm = { name: '', description: '', category: 'Technology', customCategory: '', icon: 'users', max_members: 1000, is_free: false, is_general: false };
   const [form, setForm] = useState(emptyForm);
@@ -222,8 +223,26 @@ function AdminCohortsInner() {
 
   async function loadCohorts() {
     setLoading(true);
-    const { data } = await supabase.from('cohorts').select('*').order('member_count', { ascending: false });
-    setCohorts(data || []);
+    setLoadError('');
+    // Use API route so service role bypasses RLS entirely
+    try {
+      const res = await fetch('/api/admin/cohorts');
+      if (res.ok) {
+        const json = await res.json();
+        setCohorts(json.cohorts || []);
+      } else {
+        const json = await res.json().catch(() => ({}));
+        // Fallback: try direct client query and log error
+        const { data, error } = await supabase.from('cohorts').select('*').order('member_count', { ascending: false });
+        if (error) setLoadError(error.message);
+        setCohorts(data || []);
+      }
+    } catch(e: any) {
+      // Fallback to direct query
+      const { data, error } = await supabase.from('cohorts').select('*').order('member_count', { ascending: false });
+      if (error) setLoadError(error.message);
+      setCohorts(data || []);
+    }
     setLoading(false);
   }
 
@@ -272,15 +291,27 @@ function AdminCohortsInner() {
       is_general:  form.is_general,
     };
 
-    let error;
-    if (editing) {
-      ({ error } = await supabase.from('cohorts').update(payload).eq('id', editing.id));
-    } else {
-      ({ error } = await supabase.from('cohorts').insert({ ...payload, member_count: 0 }));
-    }
+    let errorMsg = '';
+    try {
+      if (editing) {
+        const res = await fetch('/api/admin/cohorts', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editing.id, ...payload }),
+        });
+        if (!res.ok) { const d = await res.json(); errorMsg = d.error || 'Update failed'; }
+      } else {
+        const res = await fetch('/api/admin/cohorts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) { const d = await res.json(); errorMsg = d.error || 'Create failed'; }
+      }
+    } catch(e: any) { errorMsg = e.message; }
 
-    if (error) {
-      setSaveError(error.message);
+    if (errorMsg) {
+      setSaveError(errorMsg);
       setSaving(false);
       return;
     }
@@ -294,7 +325,11 @@ function AdminCohortsInner() {
   async function handleDelete(id: string, name: string) {
     // TODO: swap for useModal() when available in this subtree
     if (!window.confirm(`Delete "${name}"? This removes all posts and members inside it.`)) return;
-    await supabase.from('cohorts').delete().eq('id', id);
+    await fetch('/api/admin/cohorts', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
     loadCohorts();
   }
 
@@ -350,6 +385,16 @@ function AdminCohortsInner() {
           marginTop: '16px',
         }} />
       </div>
+
+      {/* Load error — shows exact DB error so we can diagnose */}
+      {loadError && (
+        <div style={{ padding: '12px 16px', borderRadius: 8, marginBottom: 16,
+          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+          <span style={{ fontFamily: B.fontMono, fontSize: 11, color: B.error }}>
+            DB error: {loadError}
+          </span>
+        </div>
+      )}
 
       {/* ── STAT CARDS ── */}
       {cohorts.length > 0 && (
