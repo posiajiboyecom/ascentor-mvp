@@ -398,8 +398,9 @@ export default function AdminSurveysInner() {
     page: { padding: '0' },
     topBar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', gap: '14px', flexWrap: 'wrap' as const },
     tabs: { display: 'flex', gap: '4px', background: 'var(--dark-800)', border: '1px solid var(--border)', borderRadius: '10px', padding: '4px' },
-    tabBtn: (active: boolean): React.CSSProperties => ({ padding: '8px 18px', background: active ? 'var(--bg-card)' : 'none', border: active ? '1px solid var(--border)' : '1px solid transparent', borderRadius: '7px', color: active ? 'var(--text)' : 'var(--text-dim)', fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s' }),
   };
+
+  const tabBtn = (active: boolean): React.CSSProperties => ({ padding: '8px 18px', background: active ? 'var(--bg-card)' : 'none', border: active ? '1px solid var(--border)' : '1px solid transparent', borderRadius: '7px', color: active ? 'var(--text)' : 'var(--text-dim)', fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s' });
 
   if (loading) return <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>Loading surveys...</div>;
 
@@ -488,8 +489,8 @@ export default function AdminSurveysInner() {
           {/* Tabs */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <div style={s.tabs}>
-              <button style={s.tabBtn(tab === 'builder')} onClick={() => setTab('builder')}>Builder</button>
-              <button style={s.tabBtn(tab === 'responses')} onClick={() => setTab('responses')}>
+              <button style={tabBtn(tab === 'builder')} onClick={() => setTab('builder')}>Builder</button>
+<button style={tabBtn(tab === 'responses')} onClick={() => setTab('responses')}>
                 Responses & Analysis
                 {(activeSurvey.response_count ?? 0) > 0 && (
                   <span style={{ marginLeft: '6px', background: 'var(--gold-muted)', border: '1px solid var(--gold-border)', color: 'var(--gold)', fontSize: '10px', fontFamily: 'var(--font-mono)', padding: '1px 6px', borderRadius: '999px' }}>
