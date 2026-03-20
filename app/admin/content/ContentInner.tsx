@@ -1310,7 +1310,7 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
   const [imgStyle,    setImgStyle]    = useState('dark_gold');
   const [imgPlatform, setImgPlatform] = useState('linkedin');
   const [imgLoading,  setImgLoading]  = useState<Record<number, boolean>>({});
-  const [imgResults,  setImgResults]  = useState<Record<number, { url: string; prompt: string }>>({});
+  const [imgResults,  setImgResults]  = useState<Record<number, { url: string; prompt: string; provider?: string }>>({});
   const [imgPrompt,   setImgPrompt]   = useState('');
   const [imgError,    setImgError]    = useState<Record<number, string>>({});
 
@@ -1335,7 +1335,7 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
       });
       const data = await res.json();
       if (data.storedUrl || data.imageUrl) {
-        setImgResults(prev => ({ ...prev, [idx]: { url: data.storedUrl || data.imageUrl, prompt: data.prompt } }));
+        setImgResults(prev => ({ ...prev, [idx]: { url: data.storedUrl || data.imageUrl, prompt: data.prompt, provider: data.provider } }));
       } else {
         setImgError(prev => ({ ...prev, [idx]: data.error || 'Generation failed' }));
       }
@@ -1479,6 +1479,17 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
                         style={{ padding: '5px 12px', borderRadius: 7, cursor: 'pointer', background: 'transparent', border: '1px solid var(--admin-border)', color: 'var(--admin-text-muted)', fontFamily: 'var(--admin-font-mono)', fontSize: 10 }}>
                         ↺ Regenerate
                       </button>
+                      {img.provider && (
+                        <span style={{
+                          fontFamily: 'var(--admin-font-mono)', fontSize: 9, padding: '2px 7px',
+                          borderRadius: 999, whiteSpace: 'nowrap',
+                          background: img.provider === 'huggingface' ? 'rgba(232,160,32,0.12)' : 'rgba(16,185,129,0.12)',
+                          color:      img.provider === 'huggingface' ? '#E8A020' : '#10B981',
+                          border:     `1px solid ${img.provider === 'huggingface' ? 'rgba(232,160,32,0.25)' : 'rgba(16,185,129,0.25)'}`,
+                        }}>
+                          {img.provider === 'huggingface' ? 'HF FLUX' : 'Pollinations'}
+                        </span>
+                      )}
                       <span style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 9, color: 'var(--admin-text-faint)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {img.prompt}
                       </span>
