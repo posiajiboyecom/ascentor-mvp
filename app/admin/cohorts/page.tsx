@@ -215,7 +215,7 @@ function AdminCohortsInner() {
   const [editing,  setEditing]  = useState<any>(null);
   const [saving,   setSaving]   = useState(false);
 
-  const emptyForm = { name: '', description: '', category: 'Technology', icon: 'users', max_members: 1000 };
+  const emptyForm = { name: '', description: '', category: 'Technology', customCategory: '', icon: 'users', max_members: 1000, is_free: false, is_general: false };
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => { loadCohorts(); }, []);
@@ -228,12 +228,16 @@ function AdminCohortsInner() {
   }
 
   function openEdit(cohort: any) {
+    const isBuiltin = CATEGORIES.includes(cohort.category || '');
     setForm({
-      name:        cohort.name,
-      description: cohort.description  || '',
-      category:    cohort.category     || 'Technology',
-      icon:        cohort.icon         || 'users',
-      max_members: cohort.max_members  || 1000,
+      name:           cohort.name,
+      description:    cohort.description  || '',
+      category:       isBuiltin ? (cohort.category || 'Technology') : 'custom',
+      customCategory: isBuiltin ? '' : (cohort.category || ''),
+      icon:           cohort.icon         || 'users',
+      max_members:    cohort.max_members  || 1000,
+      is_free:        cohort.is_free      || false,
+      is_general:     cohort.is_general   || false,
     });
     setEditing(cohort);
     setShowForm(true);
@@ -247,14 +251,38 @@ function AdminCohortsInner() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  const [saveError, setSaveError] = useState('');
+
   async function handleSave() {
     if (!form.name.trim()) return;
     setSaving(true);
+    setSaveError('');
 
+    const resolvedCategory = form.category === 'custom'
+      ? (form.customCategory.trim() || 'Other')
+      : form.category;
+
+    const payload = {
+      name:        form.name.trim(),
+      description: form.description.trim(),
+      category:    resolvedCategory,
+      icon:        form.icon,
+      max_members: form.max_members,
+      is_free:     form.is_free,
+      is_general:  form.is_general,
+    };
+
+    let error;
     if (editing) {
-      await supabase.from('cohorts').update(form).eq('id', editing.id);
+      ({ error } = await supabase.from('cohorts').update(payload).eq('id', editing.id));
     } else {
-      await supabase.from('cohorts').insert({ ...form, member_count: 0 });
+      ({ error } = await supabase.from('cohorts').insert({ ...payload, member_count: 0 }));
+    }
+
+    if (error) {
+      setSaveError(error.message);
+      setSaving(false);
+      return;
     }
 
     setSaving(false);
@@ -421,7 +449,17 @@ function AdminCohortsInner() {
                   onChange={e => setForm({ ...form, category: e.target.value })}
                 >
                   {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="custom">+ Custom category…</option>
                 </select>
+                {form.category === 'custom' && (
+                  <input
+                    className="asc-field"
+                    style={{ marginTop: 8 }}
+                    value={form.customCategory}
+                    onChange={e => setForm({ ...form, customCategory: e.target.value })}
+                    placeholder="Type your category name"
+                  />
+                )}
               </div>
               <div>
                 <FieldLabel>Max Members</FieldLabel>
@@ -453,6 +491,72 @@ function AdminCohortsInner() {
                 ))}
               </div>
             </div>
+
+            {/* Access toggles */}
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+              {/* is_free toggle */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                <div
+                  onClick={() => setForm({ ...form, is_free: !form.is_free })}
+                  style={{
+                    width: 40, height: 22, borderRadius: 11, position: 'relative', cursor: 'pointer',
+                    background: form.is_free ? B.gold : B.dark600,
+                    border: `1px solid ${form.is_free ? B.gold : B.border}`,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', top: 2,
+                    left: form.is_free ? 20 : 2,
+                    width: 16, height: 16, borderRadius: '50%',
+                    background: 'white', transition: 'left 0.15s',
+                  }} />
+                </div>
+                <div>
+                  <div style={{ fontFamily: B.fontUI, fontSize: 13, fontWeight: 600, color: B.dark200 }}>
+                    Free access
+                  </div>
+                  <div style={{ fontFamily: B.fontMono, fontSize: 10, color: B.dark500 }}>
+                    Free plan users can join this cohort
+                  </div>
+                </div>
+              </label>
+
+              {/* is_general toggle */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                <div
+                  onClick={() => setForm({ ...form, is_general: !form.is_general })}
+                  style={{
+                    width: 40, height: 22, borderRadius: 11, position: 'relative', cursor: 'pointer',
+                    background: form.is_general ? B.explorer : B.dark600,
+                    border: `1px solid ${form.is_general ? B.explorer : B.border}`,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', top: 2,
+                    left: form.is_general ? 20 : 2,
+                    width: 16, height: 16, borderRadius: '50%',
+                    background: 'white', transition: 'left 0.15s',
+                  }} />
+                </div>
+                <div>
+                  <div style={{ fontFamily: B.fontUI, fontSize: 13, fontWeight: 600, color: B.dark200 }}>
+                    General community
+                  </div>
+                  <div style={{ fontFamily: B.fontMono, fontSize: 10, color: B.dark500 }}>
+                    Default landing cohort for new users
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Save error */}
+            {saveError && (
+              <div style={{ padding: '10px 14px', borderRadius: 8, background: B.errorMuted, border: `1px solid ${B.error}30` }}>
+                <span style={{ fontFamily: B.fontMono, fontSize: 11, color: B.error }}>{saveError}</span>
+              </div>
+            )}
 
             {/* Actions */}
             <div style={{
@@ -547,6 +651,24 @@ function AdminCohortsInner() {
                       }}>
                         {c.category}
                       </span>
+                      {c.is_free && (
+                        <span style={{
+                          fontFamily: B.fontMono, fontSize: '9px', fontWeight: 500,
+                          letterSpacing: '0.06em', textTransform: 'uppercase' as const,
+                          padding: '2px 7px', borderRadius: '999px',
+                          background: `${B.success}12`, color: B.success,
+                          border: `1px solid ${B.success}30`, flexShrink: 0,
+                        }}>Free</span>
+                      )}
+                      {c.is_general && (
+                        <span style={{
+                          fontFamily: B.fontMono, fontSize: '9px', fontWeight: 500,
+                          letterSpacing: '0.06em', textTransform: 'uppercase' as const,
+                          padding: '2px 7px', borderRadius: '999px',
+                          background: `${B.explorer}12`, color: B.explorer,
+                          border: `1px solid ${B.explorer}30`, flexShrink: 0,
+                        }}>General</span>
+                      )}
                     </div>
 
                     {/* Member count + capacity bar */}
