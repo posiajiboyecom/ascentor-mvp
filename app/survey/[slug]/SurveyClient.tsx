@@ -328,17 +328,14 @@ export default function SurveyClient({ survey }: { survey: Survey }) {
             </span>
           </div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--gold)', background: 'var(--gold-muted)', border: '1px solid var(--gold-border)', padding: '5px 12px', borderRadius: '2px' }}>
-            Member Research · 2026
+            {survey.title}
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px,6vw,48px)', fontWeight: 700, lineHeight: 1.1, color: 'var(--text)' }}>
-            {survey.title.includes('—') ? (
-              <>
-                {survey.title.split('—')[0]}
-                <span style={{ color: 'var(--gold)', fontStyle: 'italic' }}>— {survey.title.split('—')[1]}</span>
-              </>
-            ) : (
-              <>Help us build what{' '}<span style={{ color: 'var(--gold)', fontStyle: 'italic' }}>you actually need</span></>
-            )}
+            {(() => {
+    const words = survey.title.trim().split(' ');
+    const last = words.pop();
+    return <>{words.join(' ')}{' '}<span style={{ color: 'var(--gold)', fontStyle: 'italic' }}>{last}</span></>;
+  })()}
           </h1>
           <p style={{ fontSize: '15px', color: 'var(--text-muted)', maxWidth: '460px', lineHeight: 1.65 }}>
             {survey.description ?? 'This takes about 5 minutes. Your answers shape everything we build next.'}

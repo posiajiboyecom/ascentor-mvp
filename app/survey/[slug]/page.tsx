@@ -15,22 +15,32 @@ async function fetchSurvey(slug: string): Promise<Survey | null> {
   const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  const url = `${supabaseUrl}/rest/v1/surveys?slug=eq.${encodeURIComponent(slug)}&is_published=eq.true&select=*&limit=1`;
+  // Fetch by slug only — check is_published in code after
+  // (is_published=eq.true in the query can silently return [] if RLS blocks it)
+  const url = `${supabaseUrl}/rest/v1/surveys?slug=eq.${encodeURIComponent(slug)}&select=*&limit=1`;
 
   const res = await fetch(url, {
     headers: {
-      apikey:        supabaseAnon,
-      Authorization: `Bearer ${supabaseAnon}`,
-      Accept:        'application/json',
+      apikey:         supabaseAnon,
+      Authorization:  `Bearer ${supabaseAnon}`,
+      Accept:         'application/json',
+      'Content-Type': 'application/json',
     },
-    // Always fetch fresh — don't serve a cached unpublished survey
     cache: 'no-store',
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    console.error('[SurveyPage] REST fetch failed:', res.status, await res.text());
+    return null;
+  }
 
   const rows: Survey[] = await res.json();
-  return rows[0] ?? null;
+  const survey = rows[0] ?? null;
+
+  // Only serve published surveys publicly
+  if (survey && !survey.is_published) return null;
+
+  return survey;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
