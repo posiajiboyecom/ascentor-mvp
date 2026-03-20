@@ -20,6 +20,8 @@ type NavItem = {
   roles?: string[];
 };
 
+
+
 const NAV: NavItem[] = [
   // ── Core ──────────────────────────────────────────────────────
   {
@@ -239,6 +241,7 @@ const NAV: NavItem[] = [
       </svg>
     ),
   },
+  
   {
     group: 'System',
     href: '/admin/permissions',
@@ -251,6 +254,18 @@ const NAV: NavItem[] = [
     ),
     roles: ['admin'],
   },
+
+  {
+  group: 'Core',
+  href: '/admin/surveys',
+  label: 'Surveys',
+  icon: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+    </svg>
+  ),
+},
+
 ];
 
 const STYLES = `
