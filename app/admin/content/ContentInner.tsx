@@ -1,4 +1,3 @@
-import React from 'react';
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -1308,12 +1307,12 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
   onCopy: (text: string, id: string) => void;
   onSaveToQueue: (post: any) => void;
 }) {
-  const [imgStyle,    setImgStyle]    = React.useState('dark_gold');
-  const [imgPlatform, setImgPlatform] = React.useState('linkedin');
-  const [imgLoading,  setImgLoading]  = React.useState<Record<number, boolean>>({});
-  const [imgResults,  setImgResults]  = React.useState<Record<number, { url: string; prompt: string }>>({});
-  const [imgPrompt,   setImgPrompt]   = React.useState('');
-  const [imgError,    setImgError]    = React.useState<Record<number, string>>({});
+  const [imgStyle,    setImgStyle]    = useState('dark_gold');
+  const [imgPlatform, setImgPlatform] = useState('linkedin');
+  const [imgLoading,  setImgLoading]  = useState<Record<number, boolean>>({});
+  const [imgResults,  setImgResults]  = useState<Record<number, { url: string; prompt: string }>>({});
+  const [imgPrompt,   setImgPrompt]   = useState('');
+  const [imgError,    setImgError]    = useState<Record<number, string>>({});
 
   const PILLAR_LABELS: Record<string, string> = {
     authority: 'Authority', career: 'Career Signal', insight: 'Insight',
