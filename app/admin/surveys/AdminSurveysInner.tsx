@@ -386,7 +386,7 @@ export default function AdminSurveysInner() {
     showToast(current.is_published ? 'Survey unpublished' : 'Survey published');
   }
 
-  async async function createNewSurvey() {
+  async function createNewSurvey() {
     const title = 'New Survey';
     const slug = `survey-${Date.now()}`;
     const res = await fetch('/api/admin/surveys', {
