@@ -68,12 +68,15 @@ const PUBLIC_ROUTES = [
   '/mentor-apply', '/offline',
   // Partner public pages
   '/join', '/access-denied',
+  // Public surveys
+  '/survey',
 ];
 
 const PUBLIC_API_ROUTES = [
   '/api/waitlist', '/api/newsletter', '/api/welcome', '/api/auth',
   '/api/subscription/webhook',
   '/api/partner/webhook',
+  '/api/survey',
 ];
 
 const PLAN_RANK: Record<string, number> = {
