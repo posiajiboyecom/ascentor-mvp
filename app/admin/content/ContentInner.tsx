@@ -1,3 +1,4 @@
+import React from 'react';
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 
 const supabase = createClient();
 
-type Tab           = 'content' | 'briefs' | 'queue';
+type Tab           = 'content' | 'briefs' | 'queue' | 'personal';
 type ContentFilter = 'all' | 'Blog Post' | 'LinkedIn Post' | 'Twitter Thread' | 'Email Newsletter';
 type StatusFilter  = 'all' | 'draft' | 'approved' | 'scheduled' | 'published';
 
@@ -77,6 +78,15 @@ export default function AdminContentPage() {
   const [runPillar,    setRunPillar]    = useState('');
   const [runAudience,  setRunAudience]  = useState('young_professional');
   const [running,      setRunning]      = useState(false);
+  // ── Personal Brand Mode ─────────────────────────────────────
+  const [pbModal,      setPbModal]      = useState(false);
+  const [pbTopic,      setPbTopic]      = useState('');
+  const [pbPillar,     setPbPillar]     = useState('authority');
+  const [pbPlatform,   setPbPlatform]   = useState('both');
+  const [pbIntent,     setPbIntent]     = useState('authority');
+  const [pbPosts,      setPbPosts]      = useState<any[]>([]);
+  const [pbLoading,    setPbLoading]    = useState(false);
+  const [pbCopied,     setPbCopied]     = useState<string | null>(null);
   // Used to switch filter AFTER patchItem state update completes
   const [pendingFilter, setPendingFilter] = useState<StatusFilter | null>(null);
 
@@ -400,9 +410,9 @@ export default function AdminContentPage() {
         </div>
 
         <div className="cp-tabs">
-          {(['content', 'briefs', 'queue'] as Tab[]).map(t => (
+          {(['content', 'briefs', 'queue', 'personal'] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)} className={"cp-tab " + (tab === t ? 'on' : 'off')}>
-              {t === 'content' ? ('Content' + (counts.draft > 0 ? ' (' + counts.draft + ')' : '')) : t === 'briefs' ? 'Research' : 'Social Queue'}
+              {t === 'content' ? ('Content' + (counts.draft > 0 ? ' (' + counts.draft + ')' : '')) : t === 'briefs' ? 'Research' : t === 'queue' ? 'Social Queue' : '⚡ Personal Brand'}
             </button>
           ))}
         </div>
@@ -491,7 +501,100 @@ export default function AdminContentPage() {
         {!loading && tab === 'queue' && (
           <SocialQueuePanel queue={queue} showToast={showToast} onRefresh={loadAll} />
         )}
+
+        {!loading && tab === 'personal' && (
+          <PersonalBrandPanel
+            posts={pbPosts}
+            loading={pbLoading}
+            copied={pbCopied}
+            onGenerate={() => setPbModal(true)}
+            onCopy={(text: string, id: string) => {
+              navigator.clipboard.writeText(text);
+              setPbCopied(id);
+              setTimeout(() => setPbCopied(null), 2000);
+            }}
+            onSaveToQueue={async (post: any) => {
+              const { error } = await supabase.from('social_queue').insert({
+                platform: post.platform === 'linkedin' ? 'LinkedIn' : 'Twitter/X',
+                content: post.content,
+                pillar: 'personal',
+                status: 'pending',
+                scheduled_for: null,
+              });
+              if (!error) showToast('Saved to Social Queue');
+              else showToast('Error: ' + error.message, false);
+            }}
+          />
+        )}
       </div>
+
+      {pbModal && (
+        <div className="cp-backdrop" onClick={(e: any) => e.target === e.currentTarget && setPbModal(false)}>
+          <div className="cp-modal" style={{ maxWidth: 520 }}>
+            <div className="cp-modal-title">⚡ Generate Personal Brand Post</div>
+            <p className="cp-modal-sub">Cybersecurity authority · Job-seeking signal · Your voice, your expertise</p>
+
+            <div className="cp-field">
+              <label className="cp-label">Content Pillar</label>
+              <select className="cp-select" value={pbPillar} onChange={e => setPbPillar(e.target.value)}>
+                <option value="authority">Authority — share expertise, educate, build credibility</option>
+                <option value="career">Career Signal — visibility to recruiters, job intent</option>
+                <option value="insight">Hot Take / Industry Insight — cybersecurity trends, opinions</option>
+                <option value="story">Story — personal experience, lessons from the field</option>
+                <option value="tool">Tool / Resource — share what actually works</option>
+                <option value="myth">Myth-busting — correct misconceptions in cybersecurity</option>
+              </select>
+            </div>
+
+            <div className="cp-field">
+              <label className="cp-label">Platform</label>
+              <select className="cp-select" value={pbPlatform} onChange={e => setPbPlatform(e.target.value)}>
+                <option value="both">Both — LinkedIn long-form + Twitter/X thread</option>
+                <option value="linkedin">LinkedIn only</option>
+                <option value="twitter">Twitter/X only</option>
+              </select>
+            </div>
+
+            <div className="cp-field">
+              <label className="cp-label">Topic or angle (optional)</label>
+              <input className="cp-input" placeholder="e.g. Why most companies fail their first pentest, Zero Trust myths, Security+ for career starters…"
+                value={pbTopic} onChange={e => setPbTopic(e.target.value)} />
+            </div>
+
+            <div className="cp-field">
+              <label className="cp-label">Primary goal for this post</label>
+              <select className="cp-select" value={pbIntent} onChange={e => setPbIntent(e.target.value)}>
+                <option value="authority">Build authority — attract followers + make recruiters notice</option>
+                <option value="apply">Support a job application — show depth before they see my CV</option>
+                <option value="inbound">Get inbound — make hiring managers reach out to me</option>
+                <option value="network">Build network — connect with peers and senior practitioners</option>
+              </select>
+            </div>
+
+            <div className="cp-modal-btns">
+              <button className="cp-btn-cancel" onClick={() => setPbModal(false)}>Cancel</button>
+              <button className="cp-btn-run" disabled={pbLoading} onClick={async () => {
+                setPbLoading(true);
+                setPbModal(false);
+                try {
+                  const res = await fetch('/api/admin/personal-brand', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pillar: pbPillar, platform: pbPlatform, topic: pbTopic.trim(), intent: pbIntent }),
+                  });
+                  const data = await res.json();
+                  if (data.posts) { setPbPosts(prev => [...data.posts, ...prev]); showToast('Posts generated'); }
+                  else showToast('Error: ' + (data.error || 'unknown'), false);
+                } catch(e: any) { showToast('Error: ' + e.message, false); }
+                setPbLoading(false);
+                setPbTopic('');
+              }}>
+                {pbLoading ? 'Generating…' : '⚡ Generate Posts'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {runModal && (
         <div className="cp-backdrop" onClick={(e: any) => e.target === e.currentTarget && setRunModal(false)}>
@@ -1192,6 +1295,202 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Personal Brand Panel ──────────────────────────────────────────────────
+function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSaveToQueue }: {
+  posts: any[];
+  loading: boolean;
+  copied: string | null;
+  onGenerate: () => void;
+  onCopy: (text: string, id: string) => void;
+  onSaveToQueue: (post: any) => void;
+}) {
+  const [imgStyle,    setImgStyle]    = React.useState('dark_gold');
+  const [imgPlatform, setImgPlatform] = React.useState('linkedin');
+  const [imgLoading,  setImgLoading]  = React.useState<Record<number, boolean>>({});
+  const [imgResults,  setImgResults]  = React.useState<Record<number, { url: string; prompt: string }>>({});
+  const [imgPrompt,   setImgPrompt]   = React.useState('');
+  const [imgError,    setImgError]    = React.useState<Record<number, string>>({});
+
+  const PILLAR_LABELS: Record<string, string> = {
+    authority: 'Authority', career: 'Career Signal', insight: 'Insight',
+    story: 'Story', tool: 'Tool / Resource', myth: 'Myth-bust',
+  };
+
+  async function generateImage(idx: number, postContent: string, platform: string) {
+    setImgLoading(prev => ({ ...prev, [idx]: true }));
+    setImgError(prev => ({ ...prev, [idx]: '' }));
+    try {
+      const res = await fetch('/api/admin/personal-brand/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postContent,
+          style: imgStyle,
+          platform: imgPlatform,
+          customPrompt: imgPrompt.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.storedUrl || data.imageUrl) {
+        setImgResults(prev => ({ ...prev, [idx]: { url: data.storedUrl || data.imageUrl, prompt: data.prompt } }));
+      } else {
+        setImgError(prev => ({ ...prev, [idx]: data.error || 'Generation failed' }));
+      }
+    } catch (e: any) {
+      setImgError(prev => ({ ...prev, [idx]: e.message }));
+    }
+    setImgLoading(prev => ({ ...prev, [idx]: false }));
+  }
+
+  return (
+    <div style={{ padding: '0 0 32px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <div style={{ fontFamily: 'var(--admin-font-display)', fontSize: 20, fontWeight: 700, color: 'var(--admin-text-heading)' }}>
+            Personal Brand
+          </div>
+          <div style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 2, letterSpacing: '0.04em' }}>
+            CYBERSECURITY · POSI AJIBOYE SAMUEL · LINKEDIN + TWITTER
+          </div>
+        </div>
+        <button onClick={onGenerate} disabled={loading} style={{
+          padding: '9px 18px', borderRadius: 10, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+          background: loading ? 'rgba(232,160,32,0.3)' : '#E8A020', color: '#0C0B08',
+          fontFamily: 'var(--admin-font-ui)', fontSize: 13, fontWeight: 700,
+        }}>
+          {loading ? 'Generating…' : '⚡ Generate Posts'}
+        </button>
+      </div>
+
+      {/* Strategy strip */}
+      <div style={{ padding: '14px 18px', borderRadius: 10, marginBottom: 20, background: 'var(--admin-bg-card)', border: '1px solid var(--admin-border)', borderLeft: '3px solid #E8A020' }}>
+        <div style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: '#E8A020', letterSpacing: '0.08em', marginBottom: 8 }}>
+          IMAGE SETTINGS — applies to all generated images
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div>
+            <label style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: 'var(--admin-text-muted)', display: 'block', marginBottom: 4 }}>VISUAL STYLE</label>
+            <select className="cp-select" value={imgStyle} onChange={e => setImgStyle(e.target.value)}>
+              <option value="dark_gold">Dark + Gold — near-black with gold accent (dark theme)</option>
+              <option value="light_warm">Light Warm — parchment &amp; cream with gold (light theme)</option>
+              <option value="dark_contrast">Dark Contrast — black + bold gold geometry</option>
+              <option value="light_editorial">Light Editorial — cream tones, magazine style</option>
+              <option value="gradient_brand">Brand Gradient — parchment to near-black</option>
+              <option value="terminal">Terminal — dark with gold glow, cyber feel</option>
+              <option value="abstract_gold">Abstract Gold — network nodes, black + cream + gold</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: 'var(--admin-text-muted)', display: 'block', marginBottom: 4 }}>IMAGE DIMENSIONS</label>
+            <select className="cp-select" value={imgPlatform} onChange={e => setImgPlatform(e.target.value)}>
+              <option value="linkedin">LinkedIn (1200×627)</option>
+              <option value="twitter">Twitter/X (1200×675)</option>
+              <option value="square">Square (1080×1080)</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: 'var(--admin-text-muted)', display: 'block', marginBottom: 4 }}>CUSTOM PROMPT (optional — overrides auto-generation)</label>
+          <input className="cp-input" placeholder="e.g. Close-up of a glowing server rack in a dark data centre, cinematic…" value={imgPrompt} onChange={e => setImgPrompt(e.target.value)} />
+        </div>
+      </div>
+
+      {/* Empty state */}
+      {posts.length === 0 && !loading && (
+        <div style={{ textAlign: 'center', padding: '60px 0' }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>⚡</div>
+          <div style={{ fontFamily: 'var(--admin-font-display)', fontSize: 22, color: 'var(--admin-text-muted)', marginBottom: 8 }}>No posts yet</div>
+          <div style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 11, color: 'var(--admin-text-faint)', letterSpacing: '0.04em' }}>Click "Generate Posts" to create LinkedIn and Twitter content</div>
+        </div>
+      )}
+
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '60px 0' }}>
+          <div style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 12, color: '#E8A020', letterSpacing: '0.06em' }}>WRITING YOUR POSTS…</div>
+        </div>
+      )}
+
+      {/* Post cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {posts.map((post, idx) => {
+          const id = `post-${idx}`;
+          const platformColor = post.platform === 'linkedin' ? '#0A66C2' : '#1D9BF0';
+          const platformLabel = post.platform === 'linkedin' ? 'LinkedIn' : 'Twitter/X';
+          const img = imgResults[idx];
+          const isImgLoading = imgLoading[idx];
+          const imgErr = imgError[idx];
+
+          return (
+            <div key={id} style={{ borderRadius: 12, background: 'var(--admin-bg-card)', border: '1px solid var(--admin-border)', borderTop: `3px solid ${platformColor}`, overflow: 'hidden' }}>
+
+              {/* Card header */}
+              <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--admin-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', padding: '2px 8px', borderRadius: 999, background: `${platformColor}18`, color: platformColor, border: `1px solid ${platformColor}30` }}>{platformLabel}</span>
+                  {post.pillar && <span style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: 'var(--admin-text-muted)' }}>{PILLAR_LABELS[post.pillar] || post.pillar}</span>}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => onCopy(post.content, id)} style={{ padding: '5px 12px', borderRadius: 7, cursor: 'pointer', background: copied === id ? 'rgba(16,185,129,0.12)' : 'transparent', border: `1px solid ${copied === id ? '#10B981' : 'var(--admin-border)'}`, color: copied === id ? '#10B981' : 'var(--admin-text-muted)', fontFamily: 'var(--admin-font-mono)', fontSize: 10 }}>
+                    {copied === id ? '✓ Copied' : 'Copy'}
+                  </button>
+                  <button onClick={() => onSaveToQueue(post)} style={{ padding: '5px 12px', borderRadius: 7, cursor: 'pointer', background: 'transparent', border: '1px solid var(--admin-border)', color: '#E8A020', fontFamily: 'var(--admin-font-mono)', fontSize: 10 }}>
+                    → Queue
+                  </button>
+                </div>
+              </div>
+
+              {/* Post content */}
+              <div style={{ padding: '16px', fontFamily: 'var(--admin-font-ui)', fontSize: 13, color: 'var(--admin-text)', lineHeight: 1.65, whiteSpace: 'pre-wrap', maxHeight: 280, overflowY: 'auto' }}>
+                {post.content}
+              </div>
+              {post.hashtags && (
+                <div style={{ padding: '4px 16px 12px', fontFamily: 'var(--admin-font-mono)', fontSize: 11, color: platformColor, opacity: 0.8 }}>
+                  {post.hashtags}
+                </div>
+              )}
+
+              {/* Image section */}
+              <div style={{ padding: '12px 16px 16px', borderTop: '1px solid var(--admin-border)' }}>
+                {!img && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button
+                      onClick={() => generateImage(idx, post.content, post.platform)}
+                      disabled={isImgLoading}
+                      style={{ padding: '7px 14px', borderRadius: 8, cursor: isImgLoading ? 'not-allowed' : 'pointer', background: 'transparent', border: '1px solid var(--admin-border)', color: isImgLoading ? 'var(--admin-text-faint)' : 'var(--admin-text-muted)', fontFamily: 'var(--admin-font-mono)', fontSize: 10 }}
+                    >
+                      {isImgLoading ? '🎨 Generating image…' : '🎨 Generate Image'}
+                    </button>
+                    {imgErr && <span style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: '#EF4444' }}>{imgErr}</span>}
+                  </div>
+                )}
+
+                {img && (
+                  <div>
+                    <img src={img.url} alt="Generated social image" style={{ width: '100%', borderRadius: 8, display: 'block', marginBottom: 8 }} />
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <a href={img.url} download="post-image.png" target="_blank" rel="noreferrer" style={{ padding: '5px 12px', borderRadius: 7, background: 'transparent', border: '1px solid var(--admin-border)', color: '#E8A020', fontFamily: 'var(--admin-font-mono)', fontSize: 10, textDecoration: 'none' }}>
+                        ↓ Download
+                      </a>
+                      <button onClick={() => { setImgResults(prev => { const n = {...prev}; delete n[idx]; return n; }); generateImage(idx, post.content, post.platform); }}
+                        style={{ padding: '5px 12px', borderRadius: 7, cursor: 'pointer', background: 'transparent', border: '1px solid var(--admin-border)', color: 'var(--admin-text-muted)', fontFamily: 'var(--admin-font-mono)', fontSize: 10 }}>
+                        ↺ Regenerate
+                      </button>
+                      <span style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 9, color: 'var(--admin-text-faint)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {img.prompt}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
