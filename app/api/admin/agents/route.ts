@@ -103,6 +103,28 @@ const AGENT_REGISTRY = [
     requiresPayload: true,
     payloadSchema: { subject: "Email subject line", content: "Full HTML email body", sentBy: "admin" },
   },
+  {
+    id: "10",
+    name: "Personal Brand Researcher",
+    triggerTaskId: "personal-brand-researcher-manual",
+    type: "scheduled",
+    description: "Researches recent global cybersecurity news (CVEs, breaches, GRC developments) → builds content brief → triggers Personal Brand Writer. 70% Pentest / 30% GRC mix.",
+    schedule: "Mon/Wed/Fri 05:00 UTC (06:00 WAT) — or trigger manually with a topic",
+    toolStack: "Claude web search + Supabase",
+    requiresPayload: false,
+    payloadSchema: { topic: "optional: override the auto-chosen topic", pillar: "optional: penetration_testing|offensive_security|vulnerability_research|red_team|exploit_technique|governance_risk_compliance|security_frameworks|compliance_regulation", intent: "optional: authority|career_signal|inbound_magnet" },
+  },
+  {
+    id: "11",
+    name: "Personal Brand Writer",
+    triggerTaskId: "personal-brand-writer",
+    type: "manual",
+    description: "Writes LinkedIn post + Twitter thread + single tweet for Posi's cybersecurity personal brand. Practitioner voice, job-seeking signal, authority-building. Saves to content_calendar with pillar=personal_brand.",
+    schedule: "Triggered automatically by Personal Brand Researcher",
+    toolStack: "Claude Sonnet + Supabase",
+    requiresPayload: true,
+    payloadSchema: { topic: "string", pillar: "string", intent: "authority|career_signal|inbound_magnet", weekNumber: "number", briefId: "string|null", hook_linkedin: "string", hook_twitter: "string", keyPoints: "string[]", practitionerInsight: "string", careerAngle: "string", recentReference: "string", callToAction: "string" },
+  },
 ];
 
 // ── Fetch recent runs from Trigger.dev Management API ─────────

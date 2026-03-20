@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 
 type Tab           = 'content' | 'briefs' | 'queue' | 'personal';
-type ContentFilter = 'all' | 'Blog Post' | 'LinkedIn Post' | 'Twitter Thread' | 'Email Newsletter';
+type ContentFilter = 'all' | 'Blog Post' | 'LinkedIn Post' | 'Twitter Thread' | 'Twitter Single' | 'Email Newsletter' | 'Personal Brand';
 type StatusFilter  = 'all' | 'draft' | 'approved' | 'scheduled' | 'published';
 
 interface CalItem {
@@ -30,11 +30,23 @@ const TYPE_META: Record<string, { icon: string; color: string; bg: string }> = {
   'LinkedIn Post':    { icon: 'in', color: '#0A66C2', bg: 'rgba(10,102,194,0.10)' },
   'Twitter Thread':   { icon: '𝕏',  color: '#aaa',   bg: 'rgba(180,180,180,0.10)' },
   'Email Newsletter': { icon: '✉',  color: '#14B8A6', bg: 'rgba(20,184,166,0.10)' },
+  'Twitter Single':   { icon: '𝕏',  color: '#1D9BF0', bg: 'rgba(29,155,240,0.10)' },
+  'Personal Brand':   { icon: '⚡', color: '#E8A020', bg: 'rgba(232,160,32,0.10)'  },
 };
 
 const PILLAR_COLOR: Record<string, string> = {
   leadership: '#E8A020', career: '#14B8A6', ai: '#8B5CF6',
   coaching: '#3B82F6',   community: '#EF4444',
+  // Personal brand pillars
+  personal_brand:            '#E8A020',
+  penetration_testing:       '#EF4444',
+  offensive_security:        '#EF4444',
+  vulnerability_research:    '#F97316',
+  red_team:                  '#DC2626',
+  exploit_technique:         '#F97316',
+  governance_risk_compliance:'#6366F1',
+  security_frameworks:       '#6366F1',
+  compliance_regulation:     '#8B5CF6',
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -372,7 +384,9 @@ export default function AdminContentPage() {
   const filtered = items.filter(it => {
     // Always show the currently selected item so panel never loses its content
     if (selectedItem && it.id === selectedItem.id) return true;
-    if (typeFilter !== 'all' && it.type !== typeFilter) return false;
+    if (typeFilter === 'Personal Brand') {
+      if (!it.content_data?.isPersonalBrand) return false;
+    } else if (typeFilter !== 'all' && it.type !== typeFilter) return false;
     if (statusFilter !== 'all' && it.status !== statusFilter) return false;
     return true;
   });
@@ -421,7 +435,7 @@ export default function AdminContentPage() {
         {!loading && tab === 'content' && (
           <>
             <div className="cp-filters">
-              {(['all', 'Blog Post', 'LinkedIn Post', 'Twitter Thread', 'Email Newsletter'] as ContentFilter[]).map(f => (
+              {(['all', 'Blog Post', 'LinkedIn Post', 'Twitter Thread', 'Twitter Single', 'Email Newsletter', 'Personal Brand'] as ContentFilter[]).map(f => (
                 <button key={f} onClick={() => setTypeFilter(f)} className={"cp-fbtn " + (typeFilter === f ? 'on' : '')}>
                   {f === 'all' ? 'All Types' : f}
                 </button>
