@@ -15,11 +15,16 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 
-const service = createServiceClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+// ── Lazy-initialised clients — never crash at module load ─────────────────
+function getService() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
+function getClaude() {
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+}
 
 // ── Dimensions ────────────────────────────────────────────────────────────
 const DIMENSIONS: Record<string, { width: number; height: number }> = {
@@ -47,7 +52,7 @@ async function refinePrompt(
   style: string,
   platform: string
 ): Promise<string> {
-  const msg = await claude.messages.create({
+  const msg = await getClaude().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 200,
     messages: [{
@@ -136,6 +141,7 @@ async function persistToSupabase(
   provider: string
 ): Promise<string | null> {
   try {
+    const service  = getService();
     const filename = `personal-brand/${Date.now()}-${platform}-${provider}.png`;
     const { error } = await service.storage
       .from('content-media')
@@ -160,7 +166,20 @@ function toDataUrl(buffer: ArrayBuffer): string {
 
 // ── Main handler ──────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  // ── Startup diagnostic — returns clear JSON errors instead of crashing ──
+  const missingVars: string[] = [];
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL)    missingVars.push('NEXT_PUBLIC_SUPABASE_URL');
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY)   missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
+  if (!process.env.ANTHROPIC_API_KEY)           missingVars.push('ANTHROPIC_API_KEY');
+  if (missingVars.length > 0) {
+    return NextResponse.json(
+      { error: `Missing env vars: ${missingVars.join(', ')}` },
+      { status: 500 }
+    );
+  }
+
   // Auth
+  const service    = getService();
   const authClient = await createClient();
   const { data: { user } } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

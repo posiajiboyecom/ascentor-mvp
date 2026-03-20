@@ -1347,6 +1347,21 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
           customPrompt: imgPrompt.trim(),
         }),
       });
+
+      // Guard against HTML error pages (Next.js 404/500 before route runs)
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const text = await res.text();
+        const hint = res.status === 404
+          ? 'API route not found — redeploy to Vercel'
+          : res.status === 500
+          ? 'Server error — check Vercel logs'
+          : `HTTP ${res.status}`;
+        setImgError(prev => ({ ...prev, [idx]: hint }));
+        setImgLoading(prev => ({ ...prev, [idx]: false }));
+        return;
+      }
+
       const data = await res.json();
       if (data.storedUrl || data.imageUrl) {
         setImgResults(prev => ({ ...prev, [idx]: { url: data.storedUrl || data.imageUrl, prompt: data.prompt, provider: data.provider } }));
