@@ -312,9 +312,17 @@ export default function AdminSurveysInner() {
         })
       );
       setSurveys(withCounts as SurveyWithCount[]);
-      if (withCounts.length > 0 && !activeSurveyId) {
-        openSurvey(withCounts[0] as Survey);
-      }
+      // Use functional update to read current state without stale closure
+      setActiveSurveyId(currentId => {
+        if (!currentId && withCounts.length > 0) {
+          const first = withCounts[0] as Survey;
+          setQuestions(first.questions ?? []);
+          setSurveyTitle(first.title);
+          setSurveyDesc(first.description ?? '');
+          return first.id;
+        }
+        return currentId;
+      });
     }
     setLoading(false);
   }
@@ -378,7 +386,7 @@ export default function AdminSurveysInner() {
     showToast(current.is_published ? 'Survey unpublished' : 'Survey published');
   }
 
-  async function createNewSurvey() {
+  async async function createNewSurvey() {
     const title = 'New Survey';
     const slug = `survey-${Date.now()}`;
     const res = await fetch('/api/admin/surveys', {
@@ -387,8 +395,16 @@ export default function AdminSurveysInner() {
       body: JSON.stringify({ title, slug, questions: [] }),
     });
     if (res.ok) {
+      const created = await res.json();
       await loadSurveys();
+      setActiveSurveyId(created.id);
+      setSurveyTitle(created.title);
+      setSurveyDesc(created.description ?? '');
+      setQuestions(created.questions ?? []);
       showToast('New survey created');
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast(err.error ?? 'Failed to create survey — check admin permissions');
     }
   }
 
