@@ -533,7 +533,7 @@ export default function AdminContentPage() {
                 platform: post.platform === 'linkedin' ? 'LinkedIn' : 'Twitter/X',
                 content: post.content,
                 pillar: 'personal',
-                status: 'pending',
+                status: 'queued',
                 scheduled_for: defaultSchedule,
               });
               if (!error) showToast('Saved to Social Queue — scheduled for tomorrow');

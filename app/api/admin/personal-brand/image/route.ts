@@ -70,11 +70,11 @@ async function tryHuggingFace(prompt: string, dims: { width: number; height: num
   if (!hfKey) throw new Error('HUGGINGFACE_API_KEY not configured');
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 45_000); // 45s timeout
+  const timeout = setTimeout(() => controller.abort(), 45_000);
 
   try {
     const res = await fetch(
-      'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell',
+      'https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell',
       {
         method:  'POST',
         headers: {
@@ -121,7 +121,7 @@ async function tryPollinations(prompt: string, dims: { width: number; height: nu
   const url     = `https://image.pollinations.ai/prompt/${encoded}?width=${dims.width}&height=${dims.height}&seed=${seed}&model=${model}&nologo=true&enhance=false`;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55_000); // 55s timeout
+  const timeout = setTimeout(() => controller.abort(), 70_000); // 70s — Pollinations can be slow
 
   try {
     const res = await fetch(url, { signal: controller.signal });
@@ -207,30 +207,30 @@ export async function POST(req: NextRequest) {
       errors.push('HuggingFace: API key not set');
     }
 
-    // ── 2. Pollinations FLUX (reduced size) ───────────────────────────────
+    // ── 2. Pollinations FLUX-realism (reduced size) ───────────────────────
     if (!imageBuffer) {
       try {
-        console.log('[pb/image] Trying Pollinations flux…');
-        imageBuffer = await tryPollinations(imagePrompt, dims.reduced, 'flux');
+        console.log('[pb/image] Trying Pollinations flux-realism…');
+        imageBuffer = await tryPollinations(imagePrompt, dims.reduced, 'flux-realism');
         provider    = 'pollinations';
-        console.log('[pb/image] Pollinations flux OK');
+        console.log('[pb/image] Pollinations flux-realism OK');
       } catch (e: any) {
-        console.warn('[pb/image] Pollinations flux failed:', e.message);
+        console.warn('[pb/image] Pollinations flux-realism failed:', e.message);
         errors.push(`Pollinations flux: ${e.message}`);
       }
     }
 
-    // ── 3. Pollinations turbo (fastest, smallest) ─────────────────────────
+    // ── 3. Pollinations flux at smallest size — most reliable fallback ────
     if (!imageBuffer) {
       try {
-        console.log('[pb/image] Trying Pollinations turbo…');
+        console.log('[pb/image] Trying Pollinations flux small…');
         const smallDims = { width: 512, height: 512 };
-        imageBuffer = await tryPollinations(imagePrompt, smallDims, 'turbo');
-        provider    = 'pollinations-turbo';
-        console.log('[pb/image] Pollinations turbo OK');
+        imageBuffer = await tryPollinations(imagePrompt, smallDims, 'flux');
+        provider    = 'pollinations-small';
+        console.log('[pb/image] Pollinations flux small OK');
       } catch (e: any) {
-        console.warn('[pb/image] Pollinations turbo failed:', e.message);
-        errors.push(`Pollinations turbo: ${e.message}`);
+        console.warn('[pb/image] Pollinations flux small failed:', e.message);
+        errors.push(`Pollinations small: ${e.message}`);
       }
     }
 
