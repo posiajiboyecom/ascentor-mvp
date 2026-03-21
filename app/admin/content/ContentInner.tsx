@@ -1418,9 +1418,9 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
           <div>
             <label style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: 'var(--admin-text-muted)', display: 'block', marginBottom: 4 }}>IMAGE DIMENSIONS</label>
             <select className="cp-select" value={imgPlatform} onChange={e => setImgPlatform(e.target.value)}>
-              <option value="linkedin">LinkedIn (1200×627)</option>
-              <option value="twitter">Twitter/X (1200×675)</option>
-              <option value="square">Square (1080×1080)</option>
+              <option value="linkedin">LinkedIn — 896×512 (optimised for speed)</option>
+              <option value="twitter">Twitter/X — 896×512 (optimised for speed)</option>
+              <option value="square">Square — 768×768 (optimised for speed)</option>
             </select>
           </div>
         </div>
