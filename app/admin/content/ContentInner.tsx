@@ -527,14 +527,16 @@ export default function AdminContentPage() {
               setTimeout(() => setPbCopied(null), 2000);
             }}
             onSaveToQueue={async (post: any) => {
+              // Default to 24 hours from now — user can reschedule in the Social Queue panel
+              const defaultSchedule = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
               const { error } = await supabase.from('social_queue').insert({
                 platform: post.platform === 'linkedin' ? 'LinkedIn' : 'Twitter/X',
                 content: post.content,
                 pillar: 'personal',
                 status: 'pending',
-                scheduled_for: null,
+                scheduled_for: defaultSchedule,
               });
-              if (!error) showToast('Saved to Social Queue');
+              if (!error) showToast('Saved to Social Queue — scheduled for tomorrow');
               else showToast('Error: ' + error.message, false);
             }}
           />
