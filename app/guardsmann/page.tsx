@@ -101,6 +101,129 @@ export default function GuardsmannOverview() {
           </Link>
         ))}
       </div>
+
+      {/* Push notifications */}
+      <div style={{ marginTop: 32 }}>
+        <div style={{ fontFamily: 'var(--gm-font-mono)', fontSize: 10, color: 'var(--gm-muted)', marginBottom: 12, letterSpacing: '0.08em' }}>
+          JOB ALERTS
+        </div>
+        <PushToggle />
+      </div>
+    </div>
+  );
+}
+
+// ── Push notification toggle ──────────────────────────────────────────────
+function PushToggle() {
+  const [status,  setStatus]  = useState<'idle' | 'granted' | 'denied' | 'requesting' | 'unsupported'>('idle');
+  const [testing, setTesting] = useState(false);
+  const [toast,   setToast]   = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setStatus('unsupported'); return;
+    }
+    const p = (window as any).Notification?.permission;
+    if (p === 'granted') setStatus('granted');
+    else if (p === 'denied') setStatus('denied');
+    else setStatus('idle');
+  }, []);
+
+  async function enable() {
+    setStatus('requesting');
+    try {
+      const permission = await (window as any).Notification.requestPermission();
+      if (permission !== 'granted') { setStatus('denied'); return; }
+      const reg     = await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      let sub = existing;
+      if (!sub) {
+        const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        if (!vapidKey) { setStatus('idle'); return; }
+        const padding = '='.repeat((4 - (vapidKey.length % 4)) % 4);
+        const base64  = (vapidKey + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const raw     = atob(base64);
+        const key     = Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+        sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key.buffer as ArrayBuffer });
+      }
+      const res = await fetch('/api/push/subscribe', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', body: JSON.stringify({ subscription: sub.toJSON() }),
+      });
+      if (res.ok) { setStatus('granted'); localStorage.setItem('push_granted', '1'); }
+      else setStatus('idle');
+    } catch { setStatus('idle'); }
+  }
+
+  async function sendTest() {
+    setTesting(true);
+    try {
+      const res  = await fetch('/api/guardsmann/notify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'test' }),
+      });
+      const data = await res.json();
+      setToast(data.ok ? 'Test push sent — check your phone' : 'Error: ' + (data.error || 'unknown'));
+    } catch (e: any) { setToast('Error: ' + e.message); }
+    setTesting(false);
+    setTimeout(() => setToast(null), 4000);
+  }
+
+  return (
+    <div className="gm-card" style={{ borderLeft: '3px solid var(--gm-gold)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: status === 'granted' ? 'rgba(16,185,129,0.12)' : 'rgba(232,160,32,0.10)',
+            border: `1px solid ${status === 'granted' ? 'rgba(16,185,129,0.3)' : 'rgba(232,160,32,0.25)'}` }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={status === 'granted' ? '#10B981' : '#E8A020'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#F5F3EE', marginBottom: 2 }}>
+              {status === 'granted' ? 'Job alerts active' : 'Enable job alerts on your phone'}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--gm-muted)' }}>
+              {status === 'granted'
+                ? 'Guardsmann scans for fresh GRC jobs 3× daily — 07:00, 13:00, 18:00 WAT — and pushes when it finds something'
+                : status === 'denied'
+                ? 'Notifications blocked in browser settings — enable in Settings → Safari/Chrome → Notifications'
+                : status === 'unsupported'
+                ? 'Push not supported in this browser — open the app in Safari on iOS or Chrome on Android'
+                : 'Get notified within seconds when fresh GRC jobs are posted — 3× daily auto-scan'}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          {status === 'granted' && (
+            <button className="gm-btn-secondary" style={{ fontSize: 12, padding: '7px 14px' }}
+              onClick={sendTest} disabled={testing}>
+              {testing ? 'Sending…' : '🧪 Test Push'}
+            </button>
+          )}
+          {(status === 'idle' || status === 'requesting') && (
+            <button className="gm-btn-primary" onClick={enable} disabled={status === 'requesting'}>
+              {status === 'requesting' ? 'Enabling…' : '🔔 Enable Alerts'}
+            </button>
+          )}
+          {status === 'denied' && (
+            <span className="gm-badge gm-badge-red" style={{ fontSize: 11, padding: '6px 12px' }}>Blocked in settings</span>
+          )}
+          {status === 'granted' && (
+            <span className="gm-badge gm-badge-green" style={{ fontSize: 11, padding: '6px 12px' }}>✓ Active</span>
+          )}
+        </div>
+      </div>
+      {toast && (
+        <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 8,
+          background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
+          fontFamily: 'var(--gm-font-mono)', fontSize: 11, color: '#10B981' }}>
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
