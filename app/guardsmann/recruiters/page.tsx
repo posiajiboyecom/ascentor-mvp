@@ -87,7 +87,7 @@ export default function GuardsmannRecruiters() {
         <div style={{ fontFamily: 'var(--gm-font-mono)', fontSize: 10, color: 'var(--gm-gold)', letterSpacing: '0.08em', marginBottom: 10 }}>
           WHY THIS BEATS JOB BOARDS
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
           {[
             { n: '1', title: 'Before the queue', body: 'Recruiters with active GRC mandates often place candidates before the role is publicly posted. You reach them when they have zero applicants.' },
             { n: '2', title: 'Warm pipeline',    body: 'A recruiter who has your CV keeps you in mind for future roles. One contact = multiple opportunities over months.' },

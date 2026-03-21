@@ -118,8 +118,14 @@ JSON array only, no markdown.`;
     });
 
     const text = msg.content
-      .filter((b: any) => b.type === 'text')
-      .map((b: any) => b.text)
+      .flatMap((b: any) => {
+        if (b.type === 'text') return [b.text];
+        if (b.type === 'tool_result') {
+          if (typeof b.content === 'string') return [b.content];
+          if (Array.isArray(b.content)) return b.content.map((c: any) => c.text || '');
+        }
+        return [];
+      })
       .join('');
 
     const jsonMatch = text.match(/\[[\s\S]*\]/);

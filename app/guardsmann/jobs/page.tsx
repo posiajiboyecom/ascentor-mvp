@@ -129,6 +129,7 @@ export default function GuardsmannJobs() {
       fit_note:              job.fitNote,
       open_to_international: job.openToInternational,
       experience_required:   job.experienceRequired,
+      job_level:             job.jobLevel,
       status:                'saved',
       notes:                 `Posted: ${job.postedAt || 'unknown'} | Source: ${job.source || 'unknown'}`,
     });
@@ -152,7 +153,7 @@ export default function GuardsmannJobs() {
 
       {/* Search controls */}
       <div className="gm-card" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 14, marginBottom: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 14 }}>
           <div>
             <label className="gm-label">Role</label>
             <select className="gm-select" value={role} onChange={e => setRole(e.target.value)}>
@@ -301,7 +302,7 @@ export default function GuardsmannJobs() {
       {(['entry', 'mid', 'senior', 'management'] as const).map(lvl => {
         const visibleJobs = jobs
           .map((j, i) => ({ ...j, _idx: i }))
-          .filter(j => (levelFilter === 'all' || j.jobLevel === lvl) && (levelFilter !== 'all' || j.jobLevel === lvl));
+          .filter(j => j.jobLevel === lvl && (levelFilter === 'all' || levelFilter === lvl));
         if (visibleJobs.length === 0 || (levelFilter !== 'all' && levelFilter !== lvl)) return null;
         const m = LEVEL_META[lvl];
         return (

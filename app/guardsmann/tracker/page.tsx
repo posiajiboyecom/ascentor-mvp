@@ -102,7 +102,7 @@ export default function GuardsmannTracker() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: '#F5F3EE', marginBottom: 4 }}>Application Tracker</h1>
           <p style={{ fontSize: 12, color: 'var(--gm-muted)', fontFamily: 'var(--gm-font-mono)' }}>
@@ -115,7 +115,7 @@ export default function GuardsmannTracker() {
       </div>
 
       {/* Pipeline summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: 10, marginBottom: 24 }}>
         {STATUSES.map(s => {
           const st = STATUS_STYLE[s];
           return (
@@ -134,7 +134,7 @@ export default function GuardsmannTracker() {
           <div style={{ fontFamily: 'var(--gm-font-mono)', fontSize: 11, color: 'var(--gm-gold)', marginBottom: 16 }}>
             {editId ? 'EDIT APPLICATION' : 'LOG NEW APPLICATION'}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
             <div className="gm-field">
               <label className="gm-label">Company *</label>
               <input className="gm-input" placeholder="Acme Corp" value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} />
@@ -191,8 +191,9 @@ export default function GuardsmannTracker() {
         {filtered.map(app => {
           const st = STATUS_STYLE[app.status] || STATUS_STYLE.saved;
           return (
-            <div key={app.id} className="gm-card" style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-              <div style={{ flex: 1 }}>
+            <div key={app.id} className="gm-card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Info */}
+              <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 14, fontWeight: 700, color: '#F5F3EE' }}>{app.title}</span>
                   <span style={{ fontSize: 13, color: 'var(--gm-muted)' }}>— {app.company}{app.hq ? ` · ${app.hq}` : ''}</span>
@@ -204,19 +205,20 @@ export default function GuardsmannTracker() {
                 </div>
                 {app.notes && <div style={{ fontSize: 12, color: 'var(--gm-muted)', marginTop: 4 }}>{app.notes}</div>}
               </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                <select className="gm-select" style={{ width: 130, fontSize: 11, padding: '5px 8px' }}
+              {/* Actions — always in a wrapping row below, never overflows */}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <select className="gm-select" style={{ width: 140, fontSize: 11, padding: '5px 8px', flex: '0 0 auto' }}
                   value={app.status} onChange={e => updateStatus(app.id, e.target.value)}>
                   {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                 </select>
                 {app.url && (
                   <a href={app.url} target="_blank" rel="noreferrer"
-                    className="gm-btn-secondary" style={{ fontSize: 11, padding: '5px 10px', textDecoration: 'none' }}>↗</a>
+                    className="gm-btn-secondary" style={{ fontSize: 11, padding: '5px 10px', textDecoration: 'none' }}>↗ View</a>
                 )}
                 <button className="gm-btn-secondary" style={{ fontSize: 11, padding: '5px 10px' }}
                   onClick={() => startEdit(app)}>Edit</button>
                 <button className="gm-btn-secondary" style={{ fontSize: 11, padding: '5px 10px', color: '#EF4444', borderColor: 'rgba(239,68,68,0.3)' }}
-                  onClick={() => deleteApp(app.id)}>×</button>
+                  onClick={() => deleteApp(app.id)}>Remove</button>
               </div>
             </div>
           );

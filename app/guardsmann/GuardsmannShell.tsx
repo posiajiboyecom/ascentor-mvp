@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // ─── Guardsmann Nav ────────────────────────────────────────────
 // Personal brand + GRC job search command centre
@@ -23,7 +23,7 @@ const NAV = [
         ),
       },
       {
-        href: '/guardsmann/content',
+        href: '/admin/content',
         label: 'Content Engine',
         icon: (
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -97,7 +97,7 @@ const STYLES = `
 
   .gm-shell { display: flex; min-height: 100vh; }
 
-  /* Sidebar */
+  /* ── Sidebar (desktop) ───────────────────────────────────────────── */
   .gm-sidebar {
     width: 220px; flex-shrink: 0;
     background: var(--gm-sidebar);
@@ -105,6 +105,7 @@ const STYLES = `
     display: flex; flex-direction: column;
     position: fixed; top: 0; left: 0; bottom: 0; overflow-y: auto;
     z-index: 50;
+    transition: transform 0.25s ease;
   }
   .gm-logo-area {
     padding: 20px 16px 16px;
@@ -165,7 +166,7 @@ const STYLES = `
   }
   .gm-admin-link a:hover { color: var(--gm-text); }
 
-  /* Main */
+  /* ── Main ─────────────────────────────────────────────────────────── */
   .gm-main { margin-left: 220px; flex: 1; min-height: 100vh; }
   .gm-topbar {
     height: 52px; padding: 0 28px;
@@ -183,9 +184,30 @@ const STYLES = `
     font-family: var(--gm-font-mono);
     font-size: 10px; color: var(--gm-muted);
   }
+  .gm-topbar-hamburger {
+    display: none;
+    background: none; border: none; cursor: pointer;
+    padding: 6px; color: var(--gm-muted);
+    border-radius: 6px;
+  }
+  .gm-topbar-hamburger:hover { color: var(--gm-text); background: rgba(255,255,255,0.05); }
+
   .gm-content { padding: 28px; }
 
-  /* Cards */
+  /* ── Overlay (mobile drawer backdrop) ────────────────────────────── */
+  .gm-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 45;
+    backdrop-filter: blur(2px);
+  }
+  .gm-overlay.open { display: block; }
+
+  /* ── Bottom nav (mobile only) ─────────────────────────────────────── */
+  .gm-bottom-nav { display: none; }
+
+  /* ── Cards ────────────────────────────────────────────────────────── */
   .gm-card {
     background: var(--gm-card);
     border: 1px solid var(--gm-border);
@@ -202,12 +224,13 @@ const STYLES = `
     letter-spacing: 0.05em;
   }
 
-  /* Buttons */
+  /* ── Buttons ──────────────────────────────────────────────────────── */
   .gm-btn-primary {
     padding: 9px 18px; border-radius: 10px; border: none;
     background: var(--gm-gold); color: #0C0B08;
     font-weight: 700; font-size: 13px; cursor: pointer;
     transition: opacity 0.15s;
+    white-space: nowrap;
   }
   .gm-btn-primary:hover { opacity: 0.88; }
   .gm-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -217,10 +240,11 @@ const STYLES = `
     border: 1px solid var(--gm-border);
     color: var(--gm-muted); font-size: 12px;
     transition: all 0.15s;
+    white-space: nowrap;
   }
   .gm-btn-secondary:hover { border-color: var(--gm-gold); color: var(--gm-gold); }
 
-  /* Badge */
+  /* ── Badge ────────────────────────────────────────────────────────── */
   .gm-badge {
     display: inline-flex; align-items: center;
     padding: 2px 8px; border-radius: 999px;
@@ -234,7 +258,7 @@ const STYLES = `
   .gm-badge-blue  { background: rgba(59,130,246,0.12); color: #60A5FA; border: 1px solid rgba(59,130,246,0.25); }
   .gm-badge-grey  { background: rgba(107,100,86,0.15); color: var(--gm-muted); border: 1px solid var(--gm-border); }
 
-  /* Input / select */
+  /* ── Input / select ───────────────────────────────────────────────── */
   .gm-input, .gm-select, .gm-textarea {
     width: 100%; padding: 9px 12px; border-radius: 9px;
     background: rgba(255,255,255,0.04);
@@ -255,7 +279,7 @@ const STYLES = `
   }
   .gm-field { margin-bottom: 16px; }
 
-  /* Toast */
+  /* ── Toast ────────────────────────────────────────────────────────── */
   .gm-toast {
     position: fixed; bottom: 24px; right: 24px;
     padding: 10px 18px; border-radius: 10px;
@@ -265,15 +289,63 @@ const STYLES = `
   .gm-toast.ok  { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #10B981; }
   .gm-toast.err { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.25); color: #EF4444; }
 
+  /* ── Mobile ───────────────────────────────────────────────────────── */
   @media (max-width: 768px) {
-    .gm-sidebar { width: 100%; height: auto; position: relative; }
-    .gm-main { margin-left: 0; }
+    /* Sidebar becomes a slide-in drawer */
+    .gm-sidebar {
+      transform: translateX(-100%);
+      width: 260px;
+    }
+    .gm-sidebar.open {
+      transform: translateX(0);
+      box-shadow: 4px 0 32px rgba(0,0,0,0.6);
+    }
+
+    /* Main takes full width */
+    .gm-main { margin-left: 0; padding-bottom: 64px; }
+
+    /* Topbar: show hamburger, shrink padding */
+    .gm-topbar { padding: 0 16px; }
+    .gm-topbar-hamburger { display: flex; align-items: center; justify-content: center; }
+    .gm-topbar-user { display: none; }
+
+    /* Content padding tighter on mobile */
+    .gm-content { padding: 16px; }
+
+    /* Cards: tighter padding */
+    .gm-card { padding: 16px; }
+
+    /* Toast: full-width at bottom above bottom nav */
+    .gm-toast { left: 12px; right: 12px; bottom: 76px; text-align: center; }
+
+    /* Bottom nav */
+    .gm-bottom-nav {
+      display: flex;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 60px;
+      background: var(--gm-sidebar);
+      border-top: 1px solid var(--gm-border);
+      z-index: 40;
+      align-items: stretch;
+    }
+    .gm-bottom-nav a {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3px;
+      text-decoration: none;
+      color: var(--gm-muted);
+      font-family: var(--gm-font-mono);
+      font-size: 8px; letter-spacing: 0.04em;
+      transition: color 0.15s;
+      padding: 0 4px;
+    }
+    .gm-bottom-nav a.active { color: var(--gm-gold); }
+    .gm-bottom-nav a svg { flex-shrink: 0; }
   }
 `;
 
 const PAGE_TITLES: Record<string, string> = {
   '/guardsmann':            'Overview',
-  '/guardsmann/content':    'Content Engine',
+  '/admin/content':         'Content Engine',
   '/guardsmann/jobs':       'Job Search',
   '/guardsmann/alerts':     'Alerts & Monitoring',
   '/guardsmann/recruiters': 'Recruiter Finder',
@@ -288,6 +360,16 @@ export default function GuardsmannShell({
   name: string;
 }) {
   const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close sidebar on route change
+  useEffect(() => { setSidebarOpen(false); }, [pathname]);
+
+  // Lock body scroll when sidebar is open on mobile
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   const isActive = (href: string) =>
     href === '/guardsmann'
@@ -296,12 +378,73 @@ export default function GuardsmannShell({
 
   const pageTitle = PAGE_TITLES[pathname] || 'Guardsmann';
 
+  // Bottom nav: the 5 most useful pages (no admin/content — that's a full redirect)
+  const BOTTOM_NAV = [
+    {
+      href: '/guardsmann',
+      label: 'Overview',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+      ),
+    },
+    {
+      href: '/guardsmann/jobs',
+      label: 'Jobs',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      ),
+    },
+    {
+      href: '/guardsmann/recruiters',
+      label: 'Recruiters',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      ),
+    },
+    {
+      href: '/guardsmann/alerts',
+      label: 'Alerts',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      ),
+    },
+    {
+      href: '/guardsmann/tracker',
+      label: 'Tracker',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 11 12 14 22 4"/>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+      ),
+    },
+  ];
+
   return (
     <>
       <style>{STYLES}</style>
       <div className="gm-shell">
+
+        {/* Overlay — closes sidebar on mobile */}
+        <div
+          className={`gm-overlay ${sidebarOpen ? 'open' : ''}`}
+          onClick={() => setSidebarOpen(false)}
+        />
+
         {/* Sidebar */}
-        <aside className="gm-sidebar">
+        <aside className={`gm-sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="gm-logo-area">
             <Link href="/guardsmann" className="gm-brand">GUARDSMANN</Link>
             <div className="gm-subbrand">GRC Career Command Centre</div>
@@ -340,13 +483,41 @@ export default function GuardsmannShell({
         {/* Main */}
         <main className="gm-main">
           <div className="gm-topbar">
+            {/* Hamburger — mobile only */}
+            <button
+              className="gm-topbar-hamburger"
+              onClick={() => setSidebarOpen(o => !o)}
+              aria-label="Open menu"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
+            </button>
             <span className="gm-topbar-title">{pageTitle}</span>
             <span className="gm-topbar-user">{name}</span>
           </div>
+
           <div className="gm-content">
             {children}
           </div>
         </main>
+
+        {/* Bottom nav — mobile only */}
+        <nav className="gm-bottom-nav">
+          {BOTTOM_NAV.map(item => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={isActive(item.href) ? 'active' : ''}
+            >
+              {item.icon}
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
       </div>
     </>
   );

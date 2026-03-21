@@ -30,13 +30,13 @@ export default function GuardsmannOverview() {
   }, []);
 
   const statCards = [
-    { label: 'Posts in Queue',        value: stats.postsGenerated,      href: '/guardsmann/content', colour: '#E8A020' },
+    { label: 'Posts in Queue',        value: stats.postsGenerated,      href: '/admin/content', colour: '#E8A020' },
     { label: 'Jobs Saved',            value: stats.jobsSaved,           href: '/guardsmann/jobs',    colour: '#10B981' },
     { label: 'Applications Tracked',  value: stats.applicationsTracked, href: '/guardsmann/tracker', colour: '#60A5FA' },
   ];
 
   const quickActions = [
-    { label: '⚡ Generate GRC Post',  href: '/guardsmann/content', desc: 'LinkedIn + Twitter from 7 GRC pillars' },
+    { label: '⚡ Generate GRC Post',  href: '/admin/content', desc: 'LinkedIn + Twitter from 7 GRC pillars' },
     { label: '🔍 Search Remote Jobs', href: '/guardsmann/jobs',    desc: 'GRC roles open to foreign remote — USD pay' },
     { label: '📋 Log Application',    href: '/guardsmann/tracker', desc: 'Track every application and follow-up' },
   ];
@@ -58,7 +58,7 @@ export default function GuardsmannOverview() {
         <div style={{ fontFamily: 'var(--gm-font-mono)', fontSize: 10, color: 'var(--gm-gold)', letterSpacing: '0.08em', marginBottom: 12 }}>
           MISSION
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20 }}>
           {[
             { label: 'Target roles', value: 'GRC Analyst · Risk Analyst · Compliance Analyst · InfoSec Analyst' },
             { label: 'Content mix',  value: '80% GRC (frameworks, risk, compliance, audit) · 20% Technical' },
@@ -74,7 +74,7 @@ export default function GuardsmannOverview() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginBottom: 28 }}>
         {statCards.map(s => (
           <Link href={s.href} key={s.label} style={{ textDecoration: 'none' }}>
             <div className="gm-card" style={{ borderTop: `3px solid ${s.colour}`, cursor: 'pointer' }}>
@@ -89,7 +89,7 @@ export default function GuardsmannOverview() {
       <div style={{ marginBottom: 8, fontFamily: 'var(--gm-font-mono)', fontSize: 10, color: 'var(--gm-muted)', letterSpacing: '0.08em' }}>
         QUICK ACTIONS
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
         {quickActions.map(a => (
           <Link href={a.href} key={a.label} style={{ textDecoration: 'none' }}>
             <div className="gm-card" style={{ cursor: 'pointer', transition: 'border-color 0.15s' }}
@@ -152,7 +152,11 @@ function PushToggle() {
         credentials: 'include', body: JSON.stringify({ subscription: sub.toJSON() }),
       });
       if (res.ok) { setStatus('granted'); localStorage.setItem('push_granted', '1'); }
-      else setStatus('idle');
+      else {
+        setStatus('idle');
+        setToast('Could not register push subscription — try again');
+        setTimeout(() => setToast(null), 4000);
+      }
     } catch { setStatus('idle'); }
   }
 

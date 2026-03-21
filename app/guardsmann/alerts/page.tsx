@@ -87,6 +87,8 @@ export default function GuardsmannAlerts() {
     color: activeTab === t ? 'var(--gm-gold)' : 'var(--gm-muted)',
     fontFamily: 'var(--gm-font-mono)', fontSize: 11, fontWeight: 600,
     marginBottom: -1,
+    flexShrink: 0,
+    whiteSpace: 'nowrap' as const,
   });
 
   return (
@@ -114,7 +116,7 @@ export default function GuardsmannAlerts() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 0, borderBottom: '1px solid var(--gm-border)' }}>
+      <div style={{ display: 'flex', gap: 2, marginBottom: 0, borderBottom: '1px solid var(--gm-border)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         {[
           { key: 'checklist', label: '✅ Setup Checklist' },
           { key: 'google',    label: '🔔 Google Alerts' },
@@ -349,7 +351,7 @@ export default function GuardsmannAlerts() {
               ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
               {filteredCompanies.map((co, i) => {
                 const vpUrl = buildVisualpingUrl(co.careersUrl);
                 return (

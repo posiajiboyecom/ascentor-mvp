@@ -40,9 +40,17 @@ async function runSearch(prompt: string): Promise<any[]> {
     messages:   [{ role: 'user', content: prompt }],
   });
 
+  // Collect text from both text blocks AND tool_result blocks (web_search returns results there)
   const text = msg.content
-    .filter((b: any) => b.type === 'text')
-    .map((b: any) => b.text)
+    .flatMap((b: any) => {
+      if (b.type === 'text') return [b.text];
+      if (b.type === 'tool_result') {
+        // tool_result content can be a string or an array of content blocks
+        if (typeof b.content === 'string') return [b.content];
+        if (Array.isArray(b.content)) return b.content.map((c: any) => c.text || '');
+      }
+      return [];
+    })
     .join('');
 
   const jsonMatch = text.match(/\[[\s\S]*\]/);
