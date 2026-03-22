@@ -1,15 +1,19 @@
 import { defineConfig } from "@trigger.dev/sdk/v3";
+import { pythonExtension } from "@trigger.dev/python/extension";
 
 export default defineConfig({
   project: "proj_zwrdqutfrrdneuwbjvxi",
   maxDuration: 120,
   dirs: ["./src/trigger"],
-  // No global retries — free tier, tasks handle their own fallbacks
   retries: {
     enabledInDev: false,
     default: { maxAttempts: 1 },
   },
   build: {
-    additionalPackages: ["python3-pil"],
+    extensions: [
+      pythonExtension({
+        requirementsFile: "./requirements.txt",
+      }),
+    ],
   },
 });

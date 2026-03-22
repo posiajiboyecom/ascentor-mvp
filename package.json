@@ -14,7 +14,7 @@
     "@plausible-analytics/tracker": "^0.4.4",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
-    "@trigger.dev/python": "^4.4.3",
+    "@trigger.dev/python": "4.4.3",
     "@trigger.dev/sdk": "4.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
