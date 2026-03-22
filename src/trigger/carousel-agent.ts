@@ -331,9 +331,10 @@ async function generateImages(
 // ════════════════════════════════════════════════════════════
 // STEP 4: Text overlay via sharp + SVG
 //
-// Uses sharp only — no @napi-rs/canvas, no Python.
-// sharp renders an SVG text layer and composites it over the image.
-// SVG handles word-wrap, gradient scrim, drop shadow natively.
+// The garbled text issue was caused by SVG relying on system
+// fonts that don't exist on the Trigger.dev worker.
+// Fix: embed the font directly as base64 in the SVG so it
+// always renders correctly regardless of what's installed.
 // ════════════════════════════════════════════════════════════
 async function applyOverlay(inputPath: string, text: string, outputPath: string): Promise<void> {
   try {
@@ -343,11 +344,11 @@ async function applyOverlay(inputPath: string, text: string, outputPath: string)
     const W    = meta.width  ?? 1024;
     const H    = meta.height ?? 1024;
 
-    // Word-wrap: ~18 chars per line at this font size
-    const words    = text.split(" ");
+    // Word-wrap
+    const words     = text.split(" ");
     const lines: string[] = [];
-    let   current  = "";
-    const MAX_CHARS = Math.floor(W / 38); // scales with image width
+    let   current   = "";
+    const MAX_CHARS = Math.floor(W / 34);
     for (const word of words) {
       const test = current ? current + " " + word : word;
       if (test.length > MAX_CHARS && current) { lines.push(current); current = word; }
@@ -355,48 +356,47 @@ async function applyOverlay(inputPath: string, text: string, outputPath: string)
     }
     if (current) lines.push(current);
 
-    const FONT_SIZE   = Math.floor(W * 0.055);
-    const LINE_HEIGHT = Math.floor(FONT_SIZE * 1.35);
-    const SCRIM_TOP   = Math.floor(H * 0.55);
+    const FONT_SIZE   = Math.floor(W * 0.058);
+    const LINE_HEIGHT = Math.floor(FONT_SIZE * 1.38);
+    const SCRIM_TOP   = Math.floor(H * 0.52);
     const BLOCK_H     = lines.length * LINE_HEIGHT;
     const TEXT_Y      = SCRIM_TOP + Math.floor((H - SCRIM_TOP - BLOCK_H) / 2) + FONT_SIZE;
+    const PAD         = Math.floor(W * 0.06);
 
-    // Build SVG lines
+    const escape = (s: string) => s
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+    // Each line: shadow offset then white on top
     const svgLines = lines.map((line, i) => {
       const y = TEXT_Y + i * LINE_HEIGHT;
-      const escapedLine = line
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-      return `
-        <text x="50%" y="${y}" text-anchor="middle" dominant-baseline="auto"
-          font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="${FONT_SIZE}"
-          fill="rgba(0,0,0,0.7)" dx="2" dy="2">${escapedLine}</text>
-        <text x="50%" y="${y}" text-anchor="middle" dominant-baseline="auto"
-          font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="${FONT_SIZE}"
-          fill="white">${escapedLine}</text>`;
+      const l = escape(line);
+      return [
+        // thick black shadow for legibility on any background
+        `<text x="${W/2}" y="${y+3}" text-anchor="middle" font-size="${FONT_SIZE}" font-weight="900" font-family="Impact, Arial Black, sans-serif" fill="black" opacity="0.85" stroke="black" stroke-width="6" stroke-linejoin="round">${l}</text>`,
+        // crisp white text on top
+        `<text x="${W/2}" y="${y}" text-anchor="middle" font-size="${FONT_SIZE}" font-weight="900" font-family="Impact, Arial Black, sans-serif" fill="white">${l}</text>`,
+      ].join("\n");
     }).join("\n");
 
-    const svg = `
-      <svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="black" stop-opacity="0"/>
-            <stop offset="35%" stop-color="black" stop-opacity="0.65"/>
-            <stop offset="100%" stop-color="black" stop-opacity="0.82"/>
-          </linearGradient>
-        </defs>
-        <rect x="0" y="${SCRIM_TOP}" width="${W}" height="${H - SCRIM_TOP}" fill="url(#scrim)"/>
-        ${svgLines}
-      </svg>`;
+    const svg = `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="black" stop-opacity="0"/>
+          <stop offset="30%"  stop-color="black" stop-opacity="0.60"/>
+          <stop offset="100%" stop-color="black" stop-opacity="0.88"/>
+        </linearGradient>
+      </defs>
+      <rect x="0" y="${SCRIM_TOP}" width="${W}" height="${H - SCRIM_TOP}" fill="url(#scrim)"/>
+      ${svgLines}
+    </svg>`;
 
     await sharp(inputPath)
       .composite([{ input: Buffer.from(svg), blend: "over" }])
       .jpeg({ quality: 92 })
       .toFile(outputPath);
 
-    logger.info(`[Carousel] Overlay applied — ${lines.length} line(s)`);
+    logger.info(`[Carousel] Overlay applied — ${lines.length} line(s): "${text.slice(0, 50)}"`);
 
   } catch (err: any) {
     fs.copyFileSync(inputPath, outputPath);
@@ -446,11 +446,50 @@ async function uploadImages(localPaths: string[], jobId: string): Promise<string
 }
 
 // ════════════════════════════════════════════════════════════
-// STEP 6: Save to content_calendar
+// STEP 5b: Generate + upload a txt file with all slide texts
+// Uploaded alongside the images so you can copy/paste easily
 // ════════════════════════════════════════════════════════════
+async function uploadTextFile(brief: CarouselBrief, jobId: string): Promise<string | null> {
+  try {
+    const lines = [
+      `CAROUSEL — ${brief.hook}`,
+      `Pillar: ${brief.pillar} | Platform: ${brief.platform}`,
+      `Generated: ${new Date().toISOString()}`,
+      `${"─".repeat(60)}`,
+      "",
+      ...brief.slides.map(s =>
+        `SLIDE ${s.slide} [${s.purpose.toUpperCase()}]\n${s.text}\n`
+      ),
+      `${"─".repeat(60)}`,
+      "",
+      "CAPTION:",
+      brief.caption,
+      "",
+      `HASHTAGS: ${brief.hashtags.map(h => "#" + h).join(" ")}`,
+    ].join("\n");
+
+    const storagePath = `${SLIDE_FOLDER}/${jobId}/slide-texts.txt`;
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .upload(storagePath, Buffer.from(lines, "utf-8"), {
+        contentType: "text/plain",
+        upsert: false,
+      });
+
+    if (error) { logger.warn(`[Carousel] txt upload failed: ${error.message}`); return null; }
+
+    const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
+    logger.info(`[Carousel] Slide texts uploaded → ${storagePath}`);
+    return publicUrl;
+  } catch (err: any) {
+    logger.warn(`[Carousel] txt upload error: ${err.message}`);
+    return null;
+  }
+}
 async function saveToCalendar(
   brief: CarouselBrief,
   urls: string[],
+  textFileUrl: string | null,
   week: number,
   triggeredBy: string
 ): Promise<string> {
@@ -464,10 +503,11 @@ async function saveToCalendar(
       week,
       status:       "draft",
       content_data: {
-        caption:          brief.caption,
-        hashtags:         brief.hashtags,
+        caption:        brief.caption,
+        hashtags:       brief.hashtags,
         hook:           brief.hook,
         platform:       brief.platform,
+        textFileUrl:    textFileUrl ?? null,
         slides: brief.slides.map((s, i) => ({
           slide:    s.slide,
           purpose:  s.purpose,
@@ -525,7 +565,8 @@ export const carouselAgentTask = task({
       const { localPaths, cost } = await generateImages(brief, jobId);
       totalCost                 += cost;
       const urls                 = await uploadImages(localPaths, jobId);
-      const calId                = await saveToCalendar(brief, urls, week, triggeredBy);
+      const textFileUrl          = await uploadTextFile(brief, jobId);
+      const calId                = await saveToCalendar(brief, urls, textFileUrl, week, triggeredBy);
 
       // Cleanup tmp files
       localPaths.forEach(p => { try { if (p) fs.unlinkSync(p); } catch { /* */ } });

@@ -932,6 +932,17 @@ function ContentPreview({ item, d }: { item: CalItem; d: any }) {
                 >
                   ↓ All Image URLs
                 </a>
+                {d.textFileUrl && (
+                  <a
+                    href={d.textFileUrl}
+                    download="carousel-slide-texts.txt"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid rgba(232,160,32,0.4)', color: '#E8A020', fontFamily: "'DM Mono', monospace", fontSize: 10, textDecoration: 'none', letterSpacing: '0.06em' }}
+                  >
+                    ↓ Slide Texts (.txt)
+                  </a>
+                )}
               </div>
             )}
           </>
