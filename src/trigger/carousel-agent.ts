@@ -71,7 +71,10 @@ function extractJSON(raw: string): any {
       if (esc) { r += ch; esc = false; continue; }
       if (ch === "\\") { esc = true; r += ch; continue; }
       if (ch === '"') { inStr = !inStr; r += ch; continue; }
+      // Escape ANY literal control character inside a string
       if (inStr && ch === "\n") { r += "\\n"; continue; }
+      if (inStr && ch === "\r") { r += "\\r"; continue; }
+      if (inStr && ch === "\t") { r += "\\t"; continue; }
       r += ch;
     }
     return r;
@@ -219,20 +222,21 @@ async function buildBrief(
         `Build a 6-slide carousel brief.\n` +
         `Hook: "${hook}" | Pillar: ${pillar} | Platform: ${platform}\n\n` +
         `SLIDE RULES:\n` +
-        `- Slide 1: hook text verbatim, max 18 words\n` +
-        `- Slides 2-5: max 30 words each\n` +
-        `- Slide 6: exactly "${cta[platform]}"\n\n` +
-        `CAPTION: first person, past tense, max 150 words, no emojis, no exclamation marks, ` +
-        `no "leverage/synergy/impactful/journey". Represent newlines as \\n.\n\n` +
-        `Return ONLY:\n` +
-        `{"hook":"...","pillar":"${pillar}","platform":"${platform}",` +
-        `"sceneType":"office|startup|mentorship|boardroom",` +
-        `"slides":[{"slide":1,"purpose":"hook","text":"..."},{"slide":2,"purpose":"context","text":"..."},` +
-        `{"slide":3,"purpose":"conflict","text":"..."},{"slide":4,"purpose":"moment","text":"..."},` +
-        `{"slide":5,"purpose":"result","text":"..."},{"slide":6,"purpose":"cta","text":"${cta[platform]}"}],` +
-        `"styleProgression":["tired","focused","curious","clarity","confident","aspirational"],` +
-        `"caption":"...",` +
-        `"hashtags":${JSON.stringify(tags[pillar])}}`,
+        `- slide 1: purpose "hook", text = hook verbatim (max 18 words)\n` +
+        `- slide 2: purpose "context", text max 30 words\n` +
+        `- slide 3: purpose "conflict", text max 30 words\n` +
+        `- slide 4: purpose "moment", text max 30 words\n` +
+        `- slide 5: purpose "result", text max 30 words\n` +
+        `- slide 6: purpose "cta", text = exactly "${cta[platform]}"\n\n` +
+        `sceneType must be one of: office, startup, mentorship, boardroom\n` +
+        `styleProgression must be exactly: ["tired","focused","curious","clarity","confident","aspirational"]\n` +
+        `caption: first person, past tense, max 150 words, no emojis, no exclamation marks, ` +
+        `no leverage/synergy/impactful/journey. Use \\n for line breaks inside the string.\n` +
+        `hashtags: ${JSON.stringify(tags[pillar])}\n\n` +
+        `Return a single JSON object matching this shape exactly:\n` +
+        `{ "hook": string, "pillar": string, "platform": string, "sceneType": string, ` +
+        `"slides": [{"slide":number,"purpose":string,"text":string},...], ` +
+        `"styleProgression": [string,...], "caption": string, "hashtags": [string,...] }`,
     }],
   });
 
