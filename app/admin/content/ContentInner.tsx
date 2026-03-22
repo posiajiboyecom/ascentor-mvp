@@ -425,7 +425,7 @@ export default function AdminContentPage() {
         <div className="cp-tabs">
           {(['content', 'briefs', 'queue', 'personal', 'carousel'] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)} className={"cp-tab " + (tab === t ? 'on' : 'off')}>
-              {t === 'content' ? ('Content' + (counts.draft > 0 ? ' (' + counts.draft + ')' : '')) : t === 'briefs' ? 'Research' : t === 'queue' ? 'Social Queue' : '⚡ Personal Brand'}
+              {t === 'content' ? ('Content' + (counts.draft > 0 ? ' (' + counts.draft + ')' : '')) : t === 'briefs' ? 'Research' : t === 'queue' ? 'Social Queue' : t === 'personal' ? '⚡ Personal Brand' : '🎠 Carousel'}
             </button>
           ))}
         </div>
@@ -873,6 +873,72 @@ function ContentPreview({ item, d }: { item: CalItem; d: any }) {
       <div className="cp-content-box">{d.body || 'No content'}</div>
     </>
   );
+  if (item.type === 'Instagram Carousel') {
+    const slides: any[] = d.slides ?? [];
+    return (
+      <>
+        {d.hook && <><p className="cp-section-lbl">Hook</p><div className="cp-sub-box"><p className="cp-sub-text">{d.hook}</p></div></>}
+        {d.caption && <><p className="cp-section-lbl">Caption</p><div className="cp-content-box">{d.caption}</div></>}
+        {d.hashtags?.length > 0 && (
+          <><p className="cp-section-lbl">Hashtags</p>
+          <div className="cp-sub-box"><p className="cp-sub-text" style={{ color: '#6B7280' }}>{d.hashtags.map((h: string) => '#' + h).join(' ')}</p></div></>
+        )}
+        {slides.length > 0 && (
+          <>
+            <p className="cp-section-lbl">Slides ({slides.filter((s: any) => s.imageUrl).length}/{slides.length} images ready)</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 8 }}>
+              {slides.map((slide: any, i: number) => (
+                <div key={i} style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid var(--admin-bg-input)', background: 'var(--admin-bg-deep, #0C0B08)' }}>
+                  {slide.imageUrl ? (
+                    <img src={slide.imageUrl} alt={`Slide ${i + 1}`} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', display: 'block' }} />
+                  ) : (
+                    <div style={{ width: '100%', aspectRatio: '1/1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontSize: 11, fontFamily: "'DM Mono', monospace" }}>No image</div>
+                  )}
+                  <div style={{ padding: '8px 10px' }}>
+                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E8A020', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
+                      {i + 1} · {slide.purpose}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--admin-text-faint)', lineHeight: 1.4, marginBottom: 8 }}>{slide.text}</div>
+                    {slide.imageUrl && (
+                      <a
+                        href={slide.imageUrl}
+                        download={`carousel-slide-${i + 1}.jpg`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 5, border: '1px solid var(--admin-bg-input)', color: '#E8A020', fontFamily: "'DM Mono', monospace", fontSize: 9, textDecoration: 'none', letterSpacing: '0.06em' }}
+                      >
+                        ↓ Download
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {slides.some((s: any) => s.imageUrl) && (
+              <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                <a
+                  href={d.coverImageUrl || slides.find((s: any) => s.imageUrl)?.imageUrl}
+                  download="carousel-cover.jpg"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--admin-bg-input)', color: '#E8A020', fontFamily: "'DM Mono', monospace", fontSize: 10, textDecoration: 'none', letterSpacing: '0.06em' }}
+                >
+                  ↓ Download Cover Slide
+                </a>
+                <a
+                  href={`data:text/plain;charset=utf-8,${encodeURIComponent(slides.map((s: any) => s.imageUrl).filter(Boolean).join('\n'))}`}
+                  download="carousel-all-urls.txt"
+                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--admin-bg-input)', color: '#6B7280', fontFamily: "'DM Mono', monospace", fontSize: 10, textDecoration: 'none', letterSpacing: '0.06em' }}
+                >
+                  ↓ All Image URLs
+                </a>
+              </div>
+            )}
+          </>
+        )}
+      </>
+    );
+  }
   return <div className="cp-content-box">{JSON.stringify(d, null, 2)}</div>;
 }
 
@@ -1555,7 +1621,8 @@ function CarouselTab({ showToast }: { showToast: (msg: string, ok?: boolean) => 
 
   const pillars   = ['career', 'leadership', 'ai', 'coaching', 'community'];
   const platforms = ['LinkedIn', 'Instagram', 'TikTok'];
-  const cost      = (postCount * 6 * 0.10 + 0.02).toFixed(2);
+  const PRICE_PER_IMAGE = 0.011; // gpt-image-1 low quality 1024x1024 — update if quality/size changes
+  const cost = (postCount * 6 * PRICE_PER_IMAGE + 0.02).toFixed(3);
 
   async function run() {
     setRunning(true); setDone(false);
@@ -1606,7 +1673,7 @@ function CarouselTab({ showToast }: { showToast: (msg: string, ok?: boolean) => 
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F5F3EE', border: '1px solid #E2DDD4', borderRadius: 8, padding: '10px 16px', marginBottom: 16 }}>
         <span style={{ fontSize: 12, color: '#6B6860', fontFamily: "'DM Mono', monospace" }}>Estimated cost</span>
-        <span style={{ fontSize: 13, fontFamily: "'DM Mono', monospace", color: '#0C0B08' }}>~${cost} <span style={{ color: '#9E9B94', fontSize: 11 }}>({postCount} posts × 6 × $0.10)</span></span>
+        <span style={{ fontSize: 13, fontFamily: "'DM Mono', monospace", color: '#0C0B08' }}>~${cost} <span style={{ color: '#9E9B94', fontSize: 11 }}>({postCount} posts × 6 × ${PRICE_PER_IMAGE})</span></span>
       </div>
 
       <button onClick={run} disabled={running} style={{ width: '100%', padding: '12px 0', borderRadius: 8, border: 'none', cursor: running?'not-allowed':'pointer', background: running?'#9E9B94':'#0C0B08', color: '#fff', fontSize: 13, fontFamily: "'DM Mono', monospace", letterSpacing: '0.04em' }}>

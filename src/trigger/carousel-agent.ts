@@ -23,7 +23,10 @@ import OpenAI            from "openai";
 import { createClient }  from "@supabase/supabase-js";
 import * as fs           from "fs";
 import * as path         from "path";
-import { execSync }      from "child_process";
+// sharp + @napi-rs/canvas loaded lazily inside applyOverlay
+// Trigger.dev imports this file to register the task.
+// If OpenAI were init'd here, it would throw on import
+// when OPENAI_API_KEY isn't in the environment yet.
 
 // ── Anthropic + Supabase: safe to init at module level ───────
 // ── OpenAI: lazy — initialised inside generateImages() ───────
@@ -44,20 +47,19 @@ type ContentPillar = "leadership" | "career" | "ai" | "coaching" | "community";
 type Platform      = "LinkedIn" | "Instagram" | "TikTok";
 
 interface SlideBrief {
-  slide:   number;
-  purpose: "hook" | "context" | "conflict" | "moment" | "result" | "cta";
-  text:    string;
+  slide:       number;
+  purpose:     "hook" | "context" | "conflict" | "moment" | "result" | "cta";
+  text:        string;
+  imagePrompt: string; // Claude-generated cinematic prompt unique to this slide
 }
 
 interface CarouselBrief {
-  hook:             string;
-  pillar:           ContentPillar;
-  platform:         Platform;
-  sceneType:        "office" | "startup" | "mentorship" | "boardroom";
-  slides:           SlideBrief[];
-  styleProgression: string[];
-  caption:          string;
-  hashtags:         string[];
+  hook:     string;
+  pillar:   ContentPillar;
+  platform: Platform;
+  slides:   SlideBrief[];
+  caption:  string;
+  hashtags: string[];
 }
 
 // ── JSON extractor — same pattern as content-writer.ts ───────
@@ -111,37 +113,7 @@ const FORMULA =
   "HOOK RULES: max 18 words · named person · conflict present · " +
   "no features/pricing · no emojis · no exclamation marks · global framing";
 
-const SCENE: Record<string, string> = {
-  office:
-    "iPhone photo of a modern open-plan office. Shot from a desk toward floor-to-ceiling " +
-    "windows, city skyline, late afternoon light. One person back to camera at standing desk. " +
-    "Laptop, coffee cup, phone face-down on desk. Grey carpet, white ceiling, pendant lighting. " +
-    "Portrait orientation, natural phone camera quality, realistic lighting.",
-  startup:
-    "iPhone photo of a small co-working space. Shot from entrance diagonally across the room. " +
-    "Two wooden desks, whiteboard with handwritten diagrams, one window with morning light. " +
-    "Concrete floor, exposed ceiling, warm pendant bulbs. Open laptop, coffee cup, printed papers. " +
-    "Portrait orientation, natural phone camera quality.",
-  mentorship:
-    "iPhone photo of two professionals talking at a round cafe table. Side angle shot, " +
-    "large window on left, afternoon light. Laptop open, two coffee cups, notepad. " +
-    "Warm ambient light, blurred background. Portrait orientation, natural phone camera quality.",
-  boardroom:
-    "iPhone photo of a modern boardroom. Shot from end of table toward presentation screen. " +
-    "Eight chairs, glass walls, city view. Printed decks on table, water glasses. " +
-    "Recessed lighting, dark wood table, grey carpet. Portrait orientation, natural phone camera quality.",
-};
-
-const STYLE: Record<string, string> = {
-  tired:        "Muted palette. Overcast light. Lived-in feel.",
-  frustrated:   "Cool desaturated tones. Harsh overhead light.",
-  focused:      "Warmer tones. Clean surface. Single light source.",
-  curious:      "Brighter ambient light. Laptop screen glow.",
-  clarity:      "Crisp sharp light. Clean surfaces.",
-  confident:    "Rich warm tones. Good natural light. Polished scene.",
-  aspirational: "Bright golden hour light. Clean elevated feel.",
-  corporate:    "Cool professional tones. Structured. Authoritative.",
-};
+// ── No hardcoded scenes. Claude invents a unique visual for each slide. ──
 
 // ════════════════════════════════════════════════════════════
 // STEP 1: Get hooks
@@ -191,6 +163,9 @@ async function getHooks(
 
 // ════════════════════════════════════════════════════════════
 // STEP 2: Build brief per hook
+// Uses Claude Sonnet as a creative director — it reads the hook,
+// understands the emotional arc, and writes a unique cinematic
+// image prompt for EACH slide from scratch. No template picking.
 // ════════════════════════════════════════════════════════════
 async function buildBrief(
   hook: string,
@@ -212,31 +187,64 @@ async function buildBrief(
   };
 
   const res = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 1500,
+    model:      "claude-sonnet-4-6",
+    max_tokens: 3000,
     system: SYSTEM,
     messages: [{
       role: "user",
       content:
-        `${FORMULA}\n\n` +
-        `Build a 6-slide carousel brief.\n` +
-        `Hook: "${hook}" | Pillar: ${pillar} | Platform: ${platform}\n\n` +
-        `SLIDE RULES:\n` +
-        `- slide 1: purpose "hook", text = hook verbatim (max 18 words)\n` +
-        `- slide 2: purpose "context", text max 30 words\n` +
-        `- slide 3: purpose "conflict", text max 30 words\n` +
-        `- slide 4: purpose "moment", text max 30 words\n` +
-        `- slide 5: purpose "result", text max 30 words\n` +
-        `- slide 6: purpose "cta", text = exactly "${cta[platform]}"\n\n` +
-        `sceneType must be one of: office, startup, mentorship, boardroom\n` +
-        `styleProgression must be exactly: ["tired","focused","curious","clarity","confident","aspirational"]\n` +
-        `caption: first person, past tense, max 150 words, no emojis, no exclamation marks, ` +
-        `no leverage/synergy/impactful/journey. Use \\n for line breaks inside the string.\n` +
-        `hashtags: ${JSON.stringify(tags[pillar])}\n\n` +
-        `Return a single JSON object matching this shape exactly:\n` +
-        `{ "hook": string, "pillar": string, "platform": string, "sceneType": string, ` +
-        `"slides": [{"slide":number,"purpose":string,"text":string},...], ` +
-        `"styleProgression": [string,...], "caption": string, "hashtags": [string,...] }`,
+        `You are a world-class creative director and visual storyteller for a career platform serving ambitious African professionals globally.\n\n` +
+
+        `HOOK: "${hook}"\n` +
+        `PILLAR: ${pillar} | PLATFORM: ${platform}\n\n` +
+
+        `YOUR JOB:\n` +
+        `1. Read the hook deeply. Understand the human story — the emotion, the stakes, the transformation.\n` +
+        `2. Write 6 slides that tell this story with cinematic, varied visuals. Each slide must feel like a different scene in a short film.\n` +
+        `3. For each slide, write a UNIQUE imagePrompt — a detailed, specific, photorealistic image generation prompt.\n\n` +
+
+        `SLIDE STRUCTURE:\n` +
+        `- Slide 1 (hook): The arresting opening image. Must stop the scroll. Bold, unexpected composition.\n` +
+        `- Slide 2 (context): The "before" world. Grounded, slightly heavy. The situation before the change.\n` +
+        `- Slide 3 (conflict): Tension at its peak. Something is wrong or hard. Visually uncomfortable.\n` +
+        `- Slide 4 (moment): The pivot. The conversation, the question, the realisation. Something shifts.\n` +
+        `- Slide 5 (result): The after. Lighter. More confident. Visually warmer and more open.\n` +
+        `- Slide 6 (cta): Clean, aspirational, inviting. "${cta[platform]}"\n\n` +
+
+        `IMAGE PROMPT RULES (apply to every imagePrompt):\n` +
+        `- Be specific and cinematic — describe exact composition, angle, lighting, colour palette, mood\n` +
+        `- Feature Black African professionals in global professional settings\n` +
+        `- Vary the visual concept completely across slides — never repeat the same setting or angle\n` +
+        `- Use documentary/editorial photography style — real moments, not posed stock photos\n` +
+        `- Suggest specific lighting: golden hour, laptop screen glow, harsh fluorescent, soft window light, etc.\n` +
+        `- NO text, words, letters, signs, or captions in the image — ever\n` +
+        `- Portrait orientation (vertical). Photorealistic. Cinematic quality.\n` +
+        `- Each prompt must be 40–60 words. Specific enough to produce a distinct image every time.\n\n` +
+
+        `VISUAL VARIETY MANDATE:\n` +
+        `Across 6 slides you must use: different locations, different times of day, different shot types ` +
+        `(wide/close/overhead/low angle), different colour temperatures (warm/cool/neutral), ` +
+        `different number of people (solo/two/group). No two slides should look like they could be from the same photoshoot.\n\n` +
+
+        `TEXT RULES:\n` +
+        `- Slide texts: punchy, max 15 words each. First person. No corporate language.\n` +
+        `- Slide 6 text = exactly: "${cta[platform]}"\n\n` +
+
+        `caption: First person, past tense, 100–150 words. Conversational. Raw. No emojis, no exclamation marks. ` +
+        `No words: leverage/synergy/impactful/journey/pivot/game-changer. Use \\n for line breaks.\n\n` +
+
+        `Return a single JSON object:\n` +
+        `{\n` +
+        `  "hook": string,\n` +
+        `  "pillar": string,\n` +
+        `  "platform": string,\n` +
+        `  "slides": [\n` +
+        `    {"slide": number, "purpose": string, "text": string, "imagePrompt": string},\n` +
+        `    ...\n` +
+        `  ],\n` +
+        `  "caption": string,\n` +
+        `  "hashtags": ${JSON.stringify(tags[pillar])}\n` +
+        `}`,
     }],
   });
 
@@ -269,18 +277,12 @@ async function generateImages(
   let cost = 0;
 
   for (let i = 0; i < brief.slides.length; i++) {
-    const slide = brief.slides[i];
-    const mood  = brief.styleProgression[i] ?? "confident";
-    const style = slide.purpose === "cta"
-      ? "Bright golden hour light. Clean elevated aspirational feel."
-      : (STYLE[mood] ?? "Warm professional tones.");
+    const slide  = brief.slides[i];
 
-    const prompt =
-      `${SCENE[brief.sceneType] ?? SCENE.office}\n\n` +
-      `Style: ${style}\n\n` +
-      `Text overlay in lower third: "${slide.text}"\n` +
-      `Large bold white sans-serif. High contrast. Legible at small size.\n` +
-      `Dark semi-transparent gradient behind text. No other text in scene.`;
+    // Claude wrote a unique cinematic prompt for this slide in buildBrief
+    const prompt = slide.imagePrompt
+      ? `${slide.imagePrompt}\n\nNo text, words, letters, or captions anywhere in the image. Photorealistic. Cinematic quality. Portrait orientation.`
+      : `Professional career moment. Cinematic. Black African professional. No text. Portrait orientation.`;
 
     logger.info(`[Carousel] Generating slide ${i + 1}/6 — ${slide.purpose}...`);
 
@@ -310,7 +312,7 @@ async function generateImages(
       const rawPath   = path.join(dir, `slide-${i + 1}-raw.jpg`);
       const finalPath = path.join(dir, `slide-${i + 1}.jpg`);
       fs.writeFileSync(rawPath, imageBuffer);
-      applyOverlay(rawPath, slide.text, finalPath);
+      await applyOverlay(rawPath, slide.text, finalPath);
 
       localPaths.push(finalPath);
       cost += COST_PER_IMAGE;
@@ -327,48 +329,95 @@ async function generateImages(
 }
 
 // ════════════════════════════════════════════════════════════
-// STEP 4: Text overlay via Pillow
+// STEP 4: Text overlay via Node.js (sharp + @napi-rs/canvas)
+//
+// Replaces the old Python/Pillow approach which had font
+// encoding issues causing garbled text on Trigger.dev workers.
+//
+// sharp   — composites the dark gradient scrim onto the image
+// canvas  — renders crisp bold text onto a transparent layer
+//           using the system sans-serif font stack
 // ════════════════════════════════════════════════════════════
-function applyOverlay(inputPath: string, text: string, outputPath: string): void {
-  const script = `
-import sys
-from PIL import Image, ImageDraw, ImageFont
-import textwrap
-img = Image.open(sys.argv[1]).convert('RGBA')
-W, H = img.size
-zt = int(H * 0.60)
-from PIL import Image as I2
-ov = I2.new('RGBA', img.size, (0,0,0,0))
-ImageDraw.Draw(ov).rectangle([(0,zt),(W,H)], fill=(0,0,0,155))
-img = I2.alpha_composite(img, ov)
-draw = ImageDraw.Draw(img)
-font = None
-for fp in ['/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
-           '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
-           '/usr/share/fonts/truetype/freefont/FreeSansBold.ttf']:
-    try: font = ImageFont.truetype(fp, 64); break
-    except: continue
-if not font: font = ImageFont.load_default()
-lines = textwrap.wrap(sys.argv[2], width=22)
-lh = 78
-y0 = zt + ((H - zt) - len(lines)*lh) // 2
-for i, ln in enumerate(lines):
-    bb = draw.textbbox((0,0), ln, font=font)
-    x = max(40, (W - (bb[2]-bb[0])) // 2)
-    y = y0 + i*lh
-    draw.text((x+2,y+2), ln, font=font, fill=(0,0,0,200))
-    draw.text((x,y), ln, font=font, fill=(255,255,255,255))
-img.convert('RGB').save(sys.argv[3], 'JPEG', quality=95)
-`;
-  fs.writeFileSync("/tmp/ascentor-overlay.py", script);
+async function applyOverlay(inputPath: string, text: string, outputPath: string): Promise<void> {
   try {
-    execSync(
-      `python3 /tmp/ascentor-overlay.py "${inputPath}" "${text.replace(/"/g, '\\"')}" "${outputPath}"`,
-      { stdio: "pipe" }
-    );
-  } catch {
+    // Lazy imports — prevents crash on import if packages missing
+    const sharp                    = (await import("sharp")).default;
+    const { createCanvas, GlobalFonts } = await import("@napi-rs/canvas");
+
+    // ── Load image metadata ──────────────────────────────────
+    const meta = await sharp(inputPath).metadata();
+    const W    = meta.width  ?? 1024;
+    const H    = meta.height ?? 1024;
+
+    const SCRIM_TOP    = Math.floor(H * 0.58); // gradient starts at 58% down
+    const SCRIM_HEIGHT = H - SCRIM_TOP;
+    const FONT_SIZE    = Math.floor(W * 0.058); // ~60px on 1024px wide image
+    const LINE_HEIGHT  = Math.floor(FONT_SIZE * 1.30);
+    const MAX_WIDTH    = W - 80;               // 40px padding each side
+
+    // ── Draw text onto a transparent canvas ─────────────────
+    const canvas = createCanvas(W, H);
+    const ctx    = canvas.getContext("2d");
+
+    // Dark gradient scrim — bottom 42% of image
+    const grad = ctx.createLinearGradient(0, SCRIM_TOP, 0, H);
+    grad.addColorStop(0,   "rgba(0,0,0,0)");
+    grad.addColorStop(0.3, "rgba(0,0,0,0.65)");
+    grad.addColorStop(1,   "rgba(0,0,0,0.82)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, SCRIM_TOP, W, SCRIM_HEIGHT);
+
+    // Text style
+    ctx.font         = `bold ${FONT_SIZE}px sans-serif`;
+    ctx.textAlign    = "center";
+    ctx.textBaseline = "middle";
+
+    // Word-wrap
+    const words = text.split(" ");
+    const lines: string[] = [];
+    let   current         = "";
+    for (const word of words) {
+      const test = current ? current + " " + word : word;
+      if (ctx.measureText(test).width > MAX_WIDTH && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    }
+    if (current) lines.push(current);
+
+    // Vertically centre lines in the scrim area
+    const blockH  = lines.length * LINE_HEIGHT;
+    const startY  = SCRIM_TOP + (SCRIM_HEIGHT - blockH) / 2 + LINE_HEIGHT / 2;
+    const centerX = W / 2;
+
+    lines.forEach((line, i) => {
+      const y = startY + i * LINE_HEIGHT;
+      // Drop shadow
+      ctx.fillStyle    = "rgba(0,0,0,0.75)";
+      ctx.shadowColor  = "transparent";
+      ctx.fillText(line, centerX + 2, y + 2);
+      // White text
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillText(line, centerX, y);
+    });
+
+    // Export canvas as PNG buffer
+    const textLayer = canvas.toBuffer("image/png");
+
+    // ── Composite: base image + text layer ──────────────────
+    await sharp(inputPath)
+      .composite([{ input: textLayer, blend: "over" }])
+      .jpeg({ quality: 92 })
+      .toFile(outputPath);
+
+    logger.info(`[Carousel] Overlay applied — ${lines.length} line(s): "${text.slice(0, 40)}…"`);
+
+  } catch (err: any) {
+    // Graceful fallback — use raw image if sharp/canvas unavailable
     fs.copyFileSync(inputPath, outputPath);
-    logger.warn("[Carousel] Pillow unavailable — raw image used. Run: pip install Pillow");
+    logger.warn(`[Carousel] Overlay skipped (${err.message}) — raw image used. Run: npm install sharp @napi-rs/canvas`);
   }
 }
 
@@ -434,10 +483,8 @@ async function saveToCalendar(
       content_data: {
         caption:          brief.caption,
         hashtags:         brief.hashtags,
-        hook:             brief.hook,
-        platform:         brief.platform,
-        sceneType:        brief.sceneType,
-        styleProgression: brief.styleProgression,
+        hook:           brief.hook,
+        platform:       brief.platform,
         slides: brief.slides.map((s, i) => ({
           slide:    s.slide,
           purpose:  s.purpose,
