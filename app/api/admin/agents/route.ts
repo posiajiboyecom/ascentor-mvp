@@ -125,6 +125,28 @@ const AGENT_REGISTRY = [
     requiresPayload: false,
   },
   {
+    id: "13",
+    name: "Carousel Agent",
+    triggerTaskId: "carousel-agent",
+    type: "manual",
+    description:
+      "Claude + GPT-image-1 → 6-slide portrait carousel with text overlays " +
+      "→ saved to Content Calendar as draft. " +
+      "Review → approve → Queue Social → Buffer schedules.",
+    schedule: "Manual — trigger from Carousel Agent tab in Content admin",
+    toolStack: "Claude Haiku + GPT-image-1 + Pillow + Supabase Storage",
+    requiresPayload: true,
+    payloadSchema: {
+      pillar:    "career | leadership | ai | coaching | community",
+      platform:  "LinkedIn | Instagram | TikTok",
+      postCount: "number — default 3",
+      week:      "number — e.g. 12",
+      hooks:
+        "optional: string[] from hook bank, one per slot. " +
+        "Leave empty to auto-generate.",
+    },
+  },
+  {
     id: "11",
     name: "Personal Brand Writer",
     triggerTaskId: "personal-brand-writer",

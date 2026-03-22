@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 
 const supabase = createClient();
 
-type Tab           = 'content' | 'briefs' | 'queue' | 'personal';
+type Tab           = 'content' | 'briefs' | 'queue' | 'personal' | 'carousel';
 type ContentFilter = 'all' | 'Blog Post' | 'LinkedIn Post' | 'Twitter Thread' | 'Twitter Single' | 'Email Newsletter' | 'Personal Brand';
 type StatusFilter  = 'all' | 'draft' | 'approved' | 'scheduled' | 'published';
 
@@ -423,7 +423,7 @@ export default function AdminContentPage() {
         </div>
 
         <div className="cp-tabs">
-          {(['content', 'briefs', 'queue', 'personal'] as Tab[]).map(t => (
+          {(['content', 'briefs', 'queue', 'personal', 'carousel'] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)} className={"cp-tab " + (tab === t ? 'on' : 'off')}>
               {t === 'content' ? ('Content' + (counts.draft > 0 ? ' (' + counts.draft + ')' : '')) : t === 'briefs' ? 'Research' : t === 'queue' ? 'Social Queue' : '⚡ Personal Brand'}
             </button>
@@ -540,6 +540,10 @@ export default function AdminContentPage() {
               else showToast('Error: ' + error.message, false);
             }}
           />
+        )}
+
+        {!loading && tab === 'carousel' && (
+          <CarouselTab showToast={showToast} />
         )}
       </div>
 
@@ -1531,6 +1535,89 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// CarouselTab — Agent 13 UI (added by carousel-agent setup)
+// ─────────────────────────────────────────────────────────────
+function CarouselTab({ showToast }: { showToast: (msg: string, ok?: boolean) => void }) {
+  const [pillar,    setPillar]    = useState('career');
+  const [platform,  setPlatform]  = useState('LinkedIn');
+  const [postCount, setPostCount] = useState(3);
+  const [week,      setWeek]      = useState(Math.ceil(new Date().getDate() / 7));
+  const [hooks,     setHooks]     = useState('');
+  const [running,   setRunning]   = useState(false);
+  const [done,      setDone]      = useState(false);
+
+  const pillars   = ['career', 'leadership', 'ai', 'coaching', 'community'];
+  const platforms = ['LinkedIn', 'Instagram', 'TikTok'];
+  const cost      = (postCount * 6 * 0.10 + 0.02).toFixed(2);
+
+  async function run() {
+    setRunning(true); setDone(false);
+    try {
+      const hooksArr = hooks.split('\n').map((h: string) => h.trim()).filter(Boolean);
+      const payload: Record<string, any> = { pillar, platform, postCount, week };
+      if (hooksArr.length > 0) payload.hooks = hooksArr;
+      const res  = await fetch('/api/admin/agents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId: '13', payload }) });
+      const data = await res.json();
+      if (data.success) { showToast(`Carousel agent started — run ${(data.runId||'').slice(0,8)}\u2026 Posts in Content Calendar as drafts in ~3 min.`); setDone(true); }
+      else showToast('Error: ' + data.error, false);
+    } catch (e: any) { showToast('Error: ' + e.message, false); }
+    setRunning(false);
+  }
+
+  const pill = (active: boolean) => ({ padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontFamily: "'DM Mono', monospace", textTransform: 'capitalize' as const, border: `1px solid ${active ? '#A0720A' : '#E2DDD4'}`, background: active ? '#A0720A' : '#F5F3EE', color: active ? '#fff' : '#6B6860' });
+
+  return (
+    <div style={{ padding: '24px 0', maxWidth: 620 }}>
+      <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#A0720A', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Agent 13 · Carousel Agent</p>
+      <p style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.65, marginBottom: 24 }}>Claude + GPT-image-1 → 6-slide portrait carousels → Content Calendar drafts → Queue Social → Buffer. ~${cost} per session.</p>
+
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Pillar</label>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{pillars.map(p => <button key={p} style={pill(pillar === p)} onClick={() => setPillar(p)}>{p}</button>)}</div>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Platform</label>
+        <div style={{ display: 'flex', gap: 8 }}>{platforms.map(p => <button key={p} style={pill(platform === p)} onClick={() => setPlatform(p)}>{p}</button>)}</div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 32, marginBottom: 16 }}>
+        <div>
+          <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Posts</label>
+          <div style={{ display: 'flex', gap: 6 }}>{[1,2,3,5].map(n => <button key={n} onClick={() => setPostCount(n)} style={{ width: 36, height: 36, borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: "'DM Mono', monospace", border: `1px solid ${postCount===n?'#A0720A':'#E2DDD4'}`, background: postCount===n?'#A0720A':'#F5F3EE', color: postCount===n?'#fff':'#6B6860' }}>{n}</button>)}</div>
+        </div>
+        <div>
+          <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Week</label>
+          <input type="number" min={1} max={52} value={week} onChange={e => setWeek(Number(e.target.value))} style={{ width: 64, padding: '6px 10px', border: '1px solid #E2DDD4', borderRadius: 6, background: '#F5F3EE', fontSize: 13, fontFamily: "'DM Mono', monospace", color: '#0C0B08' }} />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Hooks from hook bank <span style={{ color: '#9E9B94', fontWeight: 400, textTransform: 'none', fontSize: 10 }}>— optional, one per line</span></label>
+        <textarea value={hooks} onChange={e => setHooks(e.target.value)} rows={3} placeholder={"My manager said I wasn't ready for a promotion. My Ascentor mentor asked me one question that changed everything.\nI almost quit my job. My mentor showed me I wasn't stuck — I was just invisible to the right people."} style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2DDD4', borderRadius: 8, background: '#F5F3EE', fontSize: 12, fontFamily: "'DM Mono', monospace", color: '#0C0B08', resize: 'vertical', lineHeight: 1.65 }} />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F5F3EE', border: '1px solid #E2DDD4', borderRadius: 8, padding: '10px 16px', marginBottom: 16 }}>
+        <span style={{ fontSize: 12, color: '#6B6860', fontFamily: "'DM Mono', monospace" }}>Estimated cost</span>
+        <span style={{ fontSize: 13, fontFamily: "'DM Mono', monospace", color: '#0C0B08' }}>~${cost} <span style={{ color: '#9E9B94', fontSize: 11 }}>({postCount} posts × 6 × $0.10)</span></span>
+      </div>
+
+      <button onClick={run} disabled={running} style={{ width: '100%', padding: '12px 0', borderRadius: 8, border: 'none', cursor: running?'not-allowed':'pointer', background: running?'#9E9B94':'#0C0B08', color: '#fff', fontSize: 13, fontFamily: "'DM Mono', monospace", letterSpacing: '0.04em' }}>
+        {running ? 'Running\u2026 (~3 min for image generation)' : `\u25b6  Generate ${postCount} carousel${postCount>1?'s':''} \u2014 ${platform}`}
+      </button>
+
+      {done && <div style={{ marginTop: 14, padding: '12px 16px', borderRadius: 8, background: '#E8F4F0', border: '1px solid #9FE1CB', fontSize: 12, color: '#1A5C4A', fontFamily: "'DM Mono', monospace", lineHeight: 1.7 }}>\u2713 Agent started. When done (~3 min):<br/>1. Content tab \u2192 filter: Instagram Carousel<br/>2. Review \u2192 Approve<br/>3. Queue Social \u2192 cover slide auto-attaches to Buffer<br/>4. TikTok: drafts \u2192 add trending sound \u2192 publish</div>}
+
+      <div style={{ marginTop: 20, padding: '14px 16px', borderRadius: 8, background: '#0C0B08' }}>
+        <p style={{ fontSize: 10, color: '#A0720A', fontFamily: "'DM Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>The winning formula</p>
+        <p style={{ fontSize: 12, color: '#F5F3EE', fontFamily: "'DM Mono', monospace", lineHeight: 1.8 }}>[PERSON] + [CONFLICT] \u2192 [ASCENTOR MOMENT] \u2192 [MIND CHANGED]</p>
       </div>
     </div>
   );
