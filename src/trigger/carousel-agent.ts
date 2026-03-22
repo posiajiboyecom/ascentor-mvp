@@ -431,7 +431,6 @@ async function saveToCalendar(
       platform:     brief.platform === "LinkedIn" ? "LinkedIn" : "Instagram",
       week,
       status:       "draft",
-      triggered_by: triggeredBy,
       content_data: {
         caption:          brief.caption,
         hashtags:         brief.hashtags,

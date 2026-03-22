@@ -9,4 +9,7 @@ export default defineConfig({
     enabledInDev: false,
     default: { maxAttempts: 1 },
   },
+  build: {
+    additionalPackages: ["python3-pil"],
+  },
 });
