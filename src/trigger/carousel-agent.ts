@@ -41,7 +41,7 @@ const supabase  = createClient(
 
 const BUCKET         = "content-media";
 const SLIDE_FOLDER   = "carousel-slides";
-const COST_PER_IMAGE = 0.011;
+const COST_PER_IMAGE = 0.063;
 
 type ContentPillar = "leadership" | "career" | "ai" | "coaching" | "community";
 type Platform      = "LinkedIn" | "Instagram" | "TikTok";
@@ -291,7 +291,7 @@ async function generateImages(
         model:   "gpt-image-1",
         prompt,
         size:    "1024x1024",  // square — cheapest size, upgrade to 1024x1536 when ready
-        quality: "low",        // $0.011/image — upgrade to "medium" ($0.063) or "high" ($0.25) when ready
+        quality: "medium",        // $0.011/image — upgrade to "medium" ($0.063) or "high" ($0.25) when ready
         n:       1,
       });
 
