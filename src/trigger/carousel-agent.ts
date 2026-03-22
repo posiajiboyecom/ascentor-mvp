@@ -38,7 +38,8 @@ const supabase  = createClient(
 
 const BUCKET         = "content-media";
 const SLIDE_FOLDER   = "carousel-slides";
-const COST_PER_IMAGE = 0.10;
+const COST_PER_IMAGE = 0.063;
+
 
 type ContentPillar = "leadership" | "career" | "ai" | "coaching" | "community";
 type Platform      = "LinkedIn" | "Instagram" | "TikTok";
@@ -249,6 +250,10 @@ async function buildBrief(
 // NOTE: OpenAI client is initialised HERE — not at module level.
 // This prevents Trigger.dev from crashing on import when
 // OPENAI_API_KEY is not yet set in the local environment.
+//
+// FIX: gpt-image-1 returns base64 (b64_json) by default, not a URL.
+// We handle both response shapes so it works regardless of how
+// OpenAI decides to return the image.
 // ════════════════════════════════════════════════════════════
 async function generateImages(
   brief: CarouselBrief,
@@ -285,16 +290,27 @@ async function generateImages(
         model:   "gpt-image-1",
         prompt,
         size:    "1024x1536",  // ALWAYS portrait — never change this
-        quality: "high",
+        quality: "medium",
         n:       1,
       });
 
-      const url = response.data?.[0]?.url;
-      if (!url) throw new Error(`No URL for slide ${i + 1}`);
+      const item = response.data?.[0];
+
+      // ── gpt-image-1 returns b64_json by default, not a URL ──
+      let imageBuffer: Buffer;
+      if (item?.b64_json) {
+        logger.info(`[Carousel] Slide ${i + 1} received as base64`);
+        imageBuffer = Buffer.from(item.b64_json, "base64");
+      } else if (item?.url) {
+        logger.info(`[Carousel] Slide ${i + 1} received as URL`);
+        imageBuffer = Buffer.from(await (await fetch(item.url)).arrayBuffer());
+      } else {
+        throw new Error(`No image data for slide ${i + 1} — response: ${JSON.stringify(response.data)}`);
+      }
 
       const rawPath   = path.join(dir, `slide-${i + 1}-raw.jpg`);
       const finalPath = path.join(dir, `slide-${i + 1}.jpg`);
-      fs.writeFileSync(rawPath, Buffer.from(await (await fetch(url)).arrayBuffer()));
+      fs.writeFileSync(rawPath, imageBuffer);
       applyOverlay(rawPath, slide.text, finalPath);
 
       localPaths.push(finalPath);
