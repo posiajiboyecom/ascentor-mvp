@@ -329,95 +329,78 @@ async function generateImages(
 }
 
 // ════════════════════════════════════════════════════════════
-// STEP 4: Text overlay via Node.js (sharp + @napi-rs/canvas)
+// STEP 4: Text overlay via sharp + SVG
 //
-// Replaces the old Python/Pillow approach which had font
-// encoding issues causing garbled text on Trigger.dev workers.
-//
-// sharp   — composites the dark gradient scrim onto the image
-// canvas  — renders crisp bold text onto a transparent layer
-//           using the system sans-serif font stack
+// Uses sharp only — no @napi-rs/canvas, no Python.
+// sharp renders an SVG text layer and composites it over the image.
+// SVG handles word-wrap, gradient scrim, drop shadow natively.
 // ════════════════════════════════════════════════════════════
 async function applyOverlay(inputPath: string, text: string, outputPath: string): Promise<void> {
   try {
-    // Lazy imports — prevents crash on import if packages missing
-    const sharp                    = (await import("sharp")).default;
-    const { createCanvas, GlobalFonts } = await import("@napi-rs/canvas");
+    const sharp = (await import("sharp")).default;
 
-    // ── Load image metadata ──────────────────────────────────
     const meta = await sharp(inputPath).metadata();
     const W    = meta.width  ?? 1024;
     const H    = meta.height ?? 1024;
 
-    const SCRIM_TOP    = Math.floor(H * 0.58); // gradient starts at 58% down
-    const SCRIM_HEIGHT = H - SCRIM_TOP;
-    const FONT_SIZE    = Math.floor(W * 0.058); // ~60px on 1024px wide image
-    const LINE_HEIGHT  = Math.floor(FONT_SIZE * 1.30);
-    const MAX_WIDTH    = W - 80;               // 40px padding each side
-
-    // ── Draw text onto a transparent canvas ─────────────────
-    const canvas = createCanvas(W, H);
-    const ctx    = canvas.getContext("2d");
-
-    // Dark gradient scrim — bottom 42% of image
-    const grad = ctx.createLinearGradient(0, SCRIM_TOP, 0, H);
-    grad.addColorStop(0,   "rgba(0,0,0,0)");
-    grad.addColorStop(0.3, "rgba(0,0,0,0.65)");
-    grad.addColorStop(1,   "rgba(0,0,0,0.82)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, SCRIM_TOP, W, SCRIM_HEIGHT);
-
-    // Text style
-    ctx.font         = `bold ${FONT_SIZE}px sans-serif`;
-    ctx.textAlign    = "center";
-    ctx.textBaseline = "middle";
-
-    // Word-wrap
-    const words = text.split(" ");
+    // Word-wrap: ~18 chars per line at this font size
+    const words    = text.split(" ");
     const lines: string[] = [];
-    let   current         = "";
+    let   current  = "";
+    const MAX_CHARS = Math.floor(W / 38); // scales with image width
     for (const word of words) {
       const test = current ? current + " " + word : word;
-      if (ctx.measureText(test).width > MAX_WIDTH && current) {
-        lines.push(current);
-        current = word;
-      } else {
-        current = test;
-      }
+      if (test.length > MAX_CHARS && current) { lines.push(current); current = word; }
+      else current = test;
     }
     if (current) lines.push(current);
 
-    // Vertically centre lines in the scrim area
-    const blockH  = lines.length * LINE_HEIGHT;
-    const startY  = SCRIM_TOP + (SCRIM_HEIGHT - blockH) / 2 + LINE_HEIGHT / 2;
-    const centerX = W / 2;
+    const FONT_SIZE   = Math.floor(W * 0.055);
+    const LINE_HEIGHT = Math.floor(FONT_SIZE * 1.35);
+    const SCRIM_TOP   = Math.floor(H * 0.55);
+    const BLOCK_H     = lines.length * LINE_HEIGHT;
+    const TEXT_Y      = SCRIM_TOP + Math.floor((H - SCRIM_TOP - BLOCK_H) / 2) + FONT_SIZE;
 
-    lines.forEach((line, i) => {
-      const y = startY + i * LINE_HEIGHT;
-      // Drop shadow
-      ctx.fillStyle    = "rgba(0,0,0,0.75)";
-      ctx.shadowColor  = "transparent";
-      ctx.fillText(line, centerX + 2, y + 2);
-      // White text
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillText(line, centerX, y);
-    });
+    // Build SVG lines
+    const svgLines = lines.map((line, i) => {
+      const y = TEXT_Y + i * LINE_HEIGHT;
+      const escapedLine = line
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+      return `
+        <text x="50%" y="${y}" text-anchor="middle" dominant-baseline="auto"
+          font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="${FONT_SIZE}"
+          fill="rgba(0,0,0,0.7)" dx="2" dy="2">${escapedLine}</text>
+        <text x="50%" y="${y}" text-anchor="middle" dominant-baseline="auto"
+          font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="${FONT_SIZE}"
+          fill="white">${escapedLine}</text>`;
+    }).join("\n");
 
-    // Export canvas as PNG buffer
-    const textLayer = canvas.toBuffer("image/png");
+    const svg = `
+      <svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="black" stop-opacity="0"/>
+            <stop offset="35%" stop-color="black" stop-opacity="0.65"/>
+            <stop offset="100%" stop-color="black" stop-opacity="0.82"/>
+          </linearGradient>
+        </defs>
+        <rect x="0" y="${SCRIM_TOP}" width="${W}" height="${H - SCRIM_TOP}" fill="url(#scrim)"/>
+        ${svgLines}
+      </svg>`;
 
-    // ── Composite: base image + text layer ──────────────────
     await sharp(inputPath)
-      .composite([{ input: textLayer, blend: "over" }])
+      .composite([{ input: Buffer.from(svg), blend: "over" }])
       .jpeg({ quality: 92 })
       .toFile(outputPath);
 
-    logger.info(`[Carousel] Overlay applied — ${lines.length} line(s): "${text.slice(0, 40)}…"`);
+    logger.info(`[Carousel] Overlay applied — ${lines.length} line(s)`);
 
   } catch (err: any) {
-    // Graceful fallback — use raw image if sharp/canvas unavailable
     fs.copyFileSync(inputPath, outputPath);
-    logger.warn(`[Carousel] Overlay skipped (${err.message}) — raw image used. Run: npm install sharp @napi-rs/canvas`);
+    logger.warn(`[Carousel] Overlay skipped (${err.message}) — raw image used`);
   }
 }
 
