@@ -1,14 +1,14 @@
 // POST /api/guardsmann/jobs
 //
-// Searches multiple sources for FRESH GRC jobs (posted within 48 hours).
+// Searches multiple sources for GRC jobs — no date restriction by default.
 // Runs 3 parallel targeted searches to maximise coverage:
 //   Search 1 — LinkedIn/Greenhouse/Lever: remote, global companies
 //   Search 2 — African multinationals with GRC openings
 //   Search 3 — Niche GRC job boards (ISACA, CyberSeek, InfoSec jobs)
 //
-// FRESH ONLY MODE (default ON):
-//   Only returns jobs posted in the last 48 hours.
-//   Jobs older than 2 days are dropped — too many applicants already.
+// FRESH ONLY MODE (optional toggle):
+//   When enabled, filters to jobs posted in the last 48 hours.
+//   OFF by default — gathers all available jobs.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -40,17 +40,9 @@ async function runSearch(prompt: string): Promise<any[]> {
     messages:   [{ role: 'user', content: prompt }],
   });
 
-  // Collect text from both text blocks AND tool_result blocks (web_search returns results there)
   const text = msg.content
-    .flatMap((b: any) => {
-      if (b.type === 'text') return [b.text];
-      if (b.type === 'tool_result') {
-        // tool_result content can be a string or an array of content blocks
-        if (typeof b.content === 'string') return [b.content];
-        if (Array.isArray(b.content)) return b.content.map((c: any) => c.text || '');
-      }
-      return [];
-    })
+    .filter((b: any) => b.type === 'text')
+    .map((b: any) => b.text)
     .join('');
 
   const jsonMatch = text.match(/\[[\s\S]*\]/);
@@ -105,16 +97,16 @@ function africaSearchPrompt(role: string): string {
 
 Target companies: MTN, Airtel, Glo, 9mobile, Access Bank, GTBank, Zenith Bank, UBA, First Bank, Stanbic IBTC, Standard Chartered Nigeria, Citibank Nigeria, Shell Nigeria, TotalEnergies Nigeria, ExxonMobil Nigeria, Nestlé Nigeria, Unilever Nigeria, PwC Nigeria, Deloitte Nigeria, KPMG Nigeria, EY Nigeria, Accenture Nigeria, Microsoft Nigeria, Google Nigeria, Flutterwave, Paystack, Interswitch, Andela, IFC, World Bank Nigeria, UN agencies Nigeria.
 
-Search: "${role} Nigeria" site:linkedin.com/jobs posted today
-Also: "${role}" "Lagos" OR "Abuja" OR "Nigeria" site:linkedin.com/jobs "1 day ago" OR "today" OR "hours ago"
+Search: "${role} Nigeria" site:linkedin.com/jobs
+Also: "${role}" "Lagos" OR "Abuja" OR "Nigeria" site:linkedin.com/jobs
 
 FILTERS:
-1. Posted within 48 hours only
+1. No date restriction — include all available GRC/risk/compliance jobs you can find.
 2. At a recognised multinational or major Nigerian institution
 3. ANY experience level — include entry, mid, senior, and management roles
 4. GRC, Risk, Compliance, or InfoSec function
 
-Return JSON array (same schema as above) or [] if nothing fresh found.
+Return JSON array (same schema as above) or [] if nothing found.
 [{
   "company": "string",
   "hq": "string",
@@ -138,7 +130,7 @@ JSON only.`;
 // ── Search 3: Niche GRC job boards ────────────────────────────────────────
 function nicheSearchPrompt(role: string, keywords: string): string {
   const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-  return `Today is ${today}. Search niche cybersecurity and GRC job boards for FRESH postings (last 48 hours only).
+  return `Today is ${today}. Search niche cybersecurity and GRC job boards for ALL available GRC job postings — no date restriction.
 
 Search these sources:
 - ISACA job board (isaca.org/job-board)
@@ -146,11 +138,13 @@ Search these sources:
 - InfoSec-Jobs (infosec-jobs.com)
 - CyberSN (cybersn.com)
 - Dice.com (filter: GRC, remote)
-- Indeed: "GRC Analyst" remote posted:last24hours OR posted:last48hours
+- Indeed: "GRC Analyst" remote
+- Indeed: "Compliance Analyst" remote
+- Indeed: "Risk Analyst" remote
 
 Role: "${role}" ${keywords ? `with keywords: ${keywords}` : ''}
 
-FILTERS: Same as before — fresh (48h), remote, open to international, 0-3 years experience.
+FILTERS: Remote, open to international applicants, any experience level. No date restriction — gather all available GRC roles.
 
 Return JSON array or [] if nothing found.
 [{
@@ -240,12 +234,13 @@ export async function POST(req: NextRequest) {
     // Deduplicate
     let jobs = deduplicate(allJobs);
 
-    // Apply fresh filter
+    // Apply fresh filter (optional — user can toggle off to see all jobs)
     if (freshOnly) {
       jobs = jobs.filter(j =>
         isWithin48Hours(j.postedAt) || (typeof j.hoursOld === 'number' && j.hoursOld <= 48)
       );
     }
+    // When freshOnly is OFF — keep all jobs regardless of age
 
     // Classify each job by level
     jobs = jobs.map(j => ({ ...j, jobLevel: classifyLevel(j) }));

@@ -67,7 +67,7 @@ export default function GuardsmannJobs() {
   const [role,      setRole]      = useState('GRC Analyst');
   const [region,    setRegion]    = useState('global');
   const [keywords,  setKeywords]  = useState('');
-  const [freshOnly, setFreshOnly] = useState(true);
+  const [freshOnly, setFreshOnly] = useState(false);
   const [loading,   setLoading]   = useState(false);
   const [jobs,      setJobs]      = useState<any[]>([]);
   const [sources,   setSources]   = useState<Record<string, number>>({});
@@ -129,7 +129,6 @@ export default function GuardsmannJobs() {
       fit_note:              job.fitNote,
       open_to_international: job.openToInternational,
       experience_required:   job.experienceRequired,
-      job_level:             job.jobLevel,
       status:                'saved',
       notes:                 `Posted: ${job.postedAt || 'unknown'} | Source: ${job.source || 'unknown'}`,
     });
@@ -153,7 +152,7 @@ export default function GuardsmannJobs() {
 
       {/* Search controls */}
       <div className="gm-card" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 14, marginBottom: 14 }}>
           <div>
             <label className="gm-label">Role</label>
             <select className="gm-select" value={role} onChange={e => setRole(e.target.value)}>
@@ -190,16 +189,16 @@ export default function GuardsmannJobs() {
                 transition: 'all 0.15s',
               }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: freshOnly ? '#10B981' : 'var(--gm-muted)' }} />
-              {freshOnly ? '⏱ FRESH ONLY — last 48h' : '📅 ALL JOBS'}
+              {freshOnly ? '⏱ FRESH ONLY — last 48h' : '📅 ALL JOBS — no date limit'}
             </button>
             {freshOnly && (
               <span style={{ fontSize: 11, color: 'var(--gm-muted)', fontFamily: 'var(--gm-font-mono)' }}>
-                Jobs older than 48h are hidden — too many applicants already
+                Showing jobs from the last 48 hours only — toggle off to see all available roles
               </span>
             )}
           </div>
           <button className="gm-btn-primary" onClick={search} disabled={loading}>
-            {loading ? 'Searching 3 sources…' : '🔍 Search Now'}
+            {loading ? 'Gathering all GRC jobs…' : '🔍 Search Now'}
           </button>
         </div>
       </div>
@@ -287,7 +286,7 @@ export default function GuardsmannJobs() {
           <div style={{ fontSize: 15, color: 'var(--gm-text)', marginBottom: 8 }}>No fresh jobs found right now</div>
           <div style={{ fontSize: 12, color: 'var(--gm-muted)', marginBottom: 20 }}>
             {freshOnly
-              ? 'No GRC jobs posted in the last 48 hours match your filters. Try turning off Fresh Only or changing the role.'
+              ? 'No GRC jobs found matching your filters. Try a different role or region.'
               : 'No matching jobs found. Try a different role or region.'}
           </div>
           {freshOnly && (
@@ -302,7 +301,7 @@ export default function GuardsmannJobs() {
       {(['entry', 'mid', 'senior', 'management'] as const).map(lvl => {
         const visibleJobs = jobs
           .map((j, i) => ({ ...j, _idx: i }))
-          .filter(j => j.jobLevel === lvl && (levelFilter === 'all' || levelFilter === lvl));
+          .filter(j => (levelFilter === 'all' || j.jobLevel === lvl) && (levelFilter !== 'all' || j.jobLevel === lvl));
         if (visibleJobs.length === 0 || (levelFilter !== 'all' && levelFilter !== lvl)) return null;
         const m = LEVEL_META[lvl];
         return (
