@@ -92,8 +92,6 @@ const PLANS: Plan[] = [
 // Promo codes are validated SERVER-SIDE ONLY (see /api/payment/initialize)
 // They are intentionally NOT present in this client file — S4 security fix.
 
-const NGN_PER_USD = 1600;
-
 // Yearly savings computed from centralised pricing lib
 function yearlySavings(plan: Plan): number {
   return Math.round(plan.monthlyPrice * 12 - plan.yearlyPrice);
@@ -267,7 +265,7 @@ export default function CheckoutPage() {
       setLoading(false); return;
     }
 
-    const amountKobo = Math.round(finalPrice * NGN_PER_USD * 100);
+    const amountKobo = Math.round(finalPrice * 100);
     const reference = `asc_${user.id.slice(0, 8)}_${Date.now()}`;
     try {
       // @ts-ignore
@@ -813,7 +811,7 @@ export default function CheckoutPage() {
             <p style={{ fontSize: 12, color: '#7A7260', marginTop: 10 }}>
               <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg> Switch to yearly and save up to{' '}
               <span style={{ color: '#E8A020', fontWeight: 600 }}>
-                ${MAX_YEARLY_SAVINGS}/year
+                ₦{MAX_YEARLY_SAVINGS.toLocaleString()}/year
               </span>
             </p>
           )}
@@ -858,9 +856,9 @@ export default function CheckoutPage() {
                         fontFamily: "'DM Mono', monospace", fontSize: 13,
                         color: '#4A4438', textDecoration: 'line-through', letterSpacing: '0.04em',
                       }}>
-                        ${billing === 'monthly'
+                        ₦{(billing === 'monthly'
                           ? getOriginalPrice(plan)
-                          : Math.round(getOriginalPrice(plan) / 12)}/mo
+                          : Math.round(getOriginalPrice(plan) / 12)).toLocaleString()}/mo
                       </span>
                       <span style={{
                         fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700,
@@ -874,7 +872,7 @@ export default function CheckoutPage() {
                   )}
 
                   <div className="co-price-main">
-                    <span className="co-price-dollar">$</span>
+                    <span className="co-price-dollar">₦</span>
                     <span className="co-price-num" style={{ color: hasPromo ? '#E8A020' : undefined }}>
                       {monthlyDisplay}
                     </span>
@@ -887,12 +885,12 @@ export default function CheckoutPage() {
                         {hasPromo ? (
                           <>
                             <span style={{ textDecoration: 'line-through', color: '#4A4438', marginRight: 6 }}>
-                              ${getOriginalPrice(plan)}
+                              ₦{getOriginalPrice(plan).toLocaleString()}
                             </span>
-                            <span style={{ color: '#E8A020' }}>${price} BILLED ANNUALLY</span>
+                            <span style={{ color: '#E8A020' }}>₦{price.toLocaleString()} BILLED ANNUALLY</span>
                           </>
                         ) : (
-                          <>${price} BILLED ANNUALLY</>
+                          <>₦{price.toLocaleString()} BILLED ANNUALLY</>
                         )}
                       </p>
                       {!hasPromo && (
@@ -902,7 +900,7 @@ export default function CheckoutPage() {
                           background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
                         }}>
                           <span style={{ color: '#10B981', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "'DM Mono', monospace" }}>
-                            ✓ YOU SAVE ${yearlySavings(plan)}/YR
+                            ✓ YOU SAVE ₦{yearlySavings(plan).toLocaleString()}/YR
                           </span>
                         </div>
                       )}
@@ -919,7 +917,7 @@ export default function CheckoutPage() {
                         ✓ {promoApplied!.label}
                       </span>
                       <span style={{ color: '#E8A020', fontSize: 10, fontFamily: "'DM Mono', monospace", marginLeft: 'auto' }}>
-                        You save ${Math.round((getOriginalPrice(plan) - price) * (billing === 'yearly' ? 1 : 12) * 10) / 10}/yr
+                        You save ₦{Math.round((getOriginalPrice(plan) - price) * (billing === 'yearly' ? 1 : 12) * 10) / 10}/yr
                       </span>
                     </div>
                   )}
@@ -1056,7 +1054,7 @@ export default function CheckoutPage() {
             ))}
           </div>
           <p className="co-trust-note">
-            Prices in USD · charged in NGN at current rate · 7-day money-back guarantee.{' '}
+            Prices in NGN · 7-day money-back guarantee.{' '}
             Questions?{' '}
             <a href="mailto:asamuel@ascentorbi.com" className="co-trust-link">hello@ascentorbi.com</a>
           </p>

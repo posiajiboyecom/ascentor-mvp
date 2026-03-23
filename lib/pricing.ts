@@ -11,46 +11,45 @@
 // ─────────────────────────────────────────────────────────────
 
 export interface PlanPricing {
-  id:           string;
-  name:         string;
-  monthlyPrice: number;  // USD/month billed monthly
-  yearlyPrice:  number;  // USD total billed annually
-  yearlyPerMonth: number; // yearlyPrice / 12 for display
-  yearlyDiscount: number; // percentage saved vs monthly × 12
-  yearlySavings:  number; // absolute USD saved per year
+  id:             string;
+  name:           string;
+  monthlyPrice:   number;  // NGN/month billed monthly
+  yearlyPrice:    number;  // NGN total billed annually
+  yearlyPerMonth: number;  // yearlyPrice / 12 for display
+  yearlyDiscount: number;  // percentage saved vs monthly × 12
+  yearlySavings:  number;  // absolute NGN saved per year
 }
 
 // ── Prices ────────────────────────────────────────────────────
-// Monthly: Explorer $12 · Builder $24 · Climber $39
-// Yearly:  Explorer $86 (40% off) · Builder $173 (40% off) · Climber $281 (40% off)
-// Yearly prices rounded to psychologically clean numbers.
+// Monthly: Explorer ₦5,000 · Builder ₦10,000 · Climber ₦15,000
+// Yearly:  Explorer ₦48,000 (20% off) · Builder ₦96,000 (20% off) · Climber ₦144,000 (20% off)
 export const PLAN_PRICING: PlanPricing[] = [
   {
     id:             'explorer',
     name:           'Explorer',
-    monthlyPrice:   12,
-    yearlyPrice:    86,   // $7.17/mo — 40% off
-    yearlyPerMonth: 7,
-    yearlyDiscount: 40,
-    yearlySavings:  58,   // 12×12 - 86
+    monthlyPrice:   5000,
+    yearlyPrice:    48000,   // ₦4,000/mo — 20% off
+    yearlyPerMonth: 4000,
+    yearlyDiscount: 20,
+    yearlySavings:  12000,   // 5000×12 - 48000
   },
   {
     id:             'builder',
     name:           'Builder',
-    monthlyPrice:   24,
-    yearlyPrice:    173,  // $14.42/mo — 40% off
-    yearlyPerMonth: 14,
-    yearlyDiscount: 40,
-    yearlySavings:  115,  // 24×12 - 173
+    monthlyPrice:   10000,
+    yearlyPrice:    96000,   // ₦8,000/mo — 20% off
+    yearlyPerMonth: 8000,
+    yearlyDiscount: 20,
+    yearlySavings:  24000,   // 10000×12 - 96000
   },
   {
     id:             'climber',
     name:           'Climber',
-    monthlyPrice:   39,
-    yearlyPrice:    281,  // $23.42/mo — 40% off
-    yearlyPerMonth: 23,
-    yearlyDiscount: 40,
-    yearlySavings:  187,  // 39×12 - 281
+    monthlyPrice:   15000,
+    yearlyPrice:    144000,  // ₦12,000/mo — 20% off
+    yearlyPerMonth: 12000,
+    yearlyDiscount: 20,
+    yearlySavings:  36000,   // 15000×12 - 144000
   },
 ];
 

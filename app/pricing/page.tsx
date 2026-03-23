@@ -3,13 +3,13 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Pricing — Ascentor',
-  description: 'Affordable mentorship for ambitious professionals worldwide. Plans from $12/month with Sage, expert sessions, and peer circles.',
+  description: 'Affordable mentorship for ambitious professionals. Plans from ₦5,000/month with Sage, expert sessions, and peer circles.',
 };
 
 const TIERS = [
   {
     name: 'Explorer',
-    price: 12,
+    price: 5000,
     desc: 'For those 15–22 just starting to find their path.',
     color: '#14B8A6',
     features: [
@@ -27,7 +27,7 @@ const TIERS = [
   },
   {
     name: 'Builder',
-    price: 24,
+    price: 10000,
     desc: 'For professionals 22–32 building their career edge.',
     color: '#E8A020',
     features: [
@@ -47,7 +47,7 @@ const TIERS = [
   },
   {
     name: 'Climber',
-    price: 39,
+    price: 15000,
     desc: 'For leaders 32–50 scaling teams and building legacy.',
     color: '#8B5CF6',
     features: [
@@ -97,7 +97,7 @@ export default function PricingPage() {
           Invest in your growth
         </h1>
         <p className="text-base max-w-xl mx-auto" style={{ color: '#6B7280' }}>
-          What used to cost $5,000–$10,000 in executive coaching, now starts at $12/month. All plans include a 7-day free trial.
+          What used to cost ₦5,000,000–₦10,000,000 in executive coaching, now starts at ₦5,000/month. All plans include a 7-day free trial.
         </p>
       </section>
 
@@ -124,7 +124,7 @@ export default function PricingPage() {
                 <p className="text-xs mb-3" style={{ color: '#9CA3AF' }}>{t.desc}</p>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-bold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: t.color }}>
-                    ${t.price}
+                    ₦{t.price.toLocaleString()}
                   </span>
                   <span className="text-sm" style={{ color: '#9CA3AF' }}>/month</span>
                 </div>
