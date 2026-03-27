@@ -12,6 +12,17 @@ export interface PushPayload {
   tag?:  string;
 }
 
+export interface NativeSubscription {
+  type:  'native';
+  token: string;
+}
+
+export interface WebSubscription extends webpush.PushSubscription {
+  type?: 'web';
+}
+
+export type StoredSubscription = NativeSubscription | WebSubscription;
+
 let vapidInitialised = false;
 
 function initVapid(): boolean {
@@ -32,7 +43,22 @@ function initVapid(): boolean {
 }
 
 /**
- * Send a push to a single PushSubscription object.
+ * Send a push via Firebase Cloud Messaging (FCM) for native Android + iOS.
+ * Placeholder until Phase 5 FCM setup is complete.
+ */
+async function sendFCMPush(token: string, payload: PushPayload): Promise<void> {
+  // TODO (Phase 5): initialise Firebase Admin SDK and send via FCM.
+  // Example:
+  //   await admin.messaging().send({
+  //     token,
+  //     notification: { title: payload.title, body: payload.body },
+  //     data: { url: payload.url ?? '' },
+  //   });
+  console.warn('[push] FCM not yet configured — skipping native push for token:', token);
+}
+
+/**
+ * Send a push to a single web PushSubscription object.
  * Returns false if the subscription has expired (caller should delete it).
  */
 export async function sendPush(
@@ -52,7 +78,8 @@ export async function sendPush(
 
 /**
  * Send a push to every registered device for a given user.
- * Silently removes expired subscriptions.
+ * Detects native (FCM) vs web (VAPID) subscriptions automatically.
+ * Silently removes expired web subscriptions.
  * Never throws.
  */
 export async function sendPushToUser(
@@ -74,8 +101,15 @@ export async function sendPushToUser(
 
   await Promise.all(
     subs.map(async (row: any) => {
-      const ok = await sendPush(row.subscription as webpush.PushSubscription, payload);
-      if (!ok) expiredIds.push(row.id);
+      const sub = row.subscription as StoredSubscription;
+
+      if (sub.type === 'native') {
+        await sendFCMPush(sub.token, payload);
+      } else {
+        // Existing VAPID web push — keep expired-subscription cleanup
+        const ok = await sendPush(sub as webpush.PushSubscription, payload);
+        if (!ok) expiredIds.push(row.id);
+      }
     })
   );
 

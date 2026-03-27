@@ -4,11 +4,12 @@ import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { ModalProvider } from '@/components/Modal';
 import { NotificationProvider } from '@/components/Notifications';
 import PushPermission from '@/components/PushPermission';
-import Script from 'next/script'; // <-- 1. Import the Script component
+import { MobileInit } from '@/components/MobileInit';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
-  title: 'Ascentor — AI-Powered Leadership Development',
-  description: 'Accelerate your leadership journey with Sage AI, expert mentors, and peer communities. Built for ambitious professionals.',
+  title: 'Ascentor — AI-Powered Mentorship Platform',
+  description: 'Accelerate your journey with Sage AI, expert mentors, and peer communities. Built for ambitious professionals.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -64,6 +65,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ModalProvider>
           <NotificationProvider>
+            {/* Initialises Capacitor push listeners on native iOS/Android */}
+            <MobileInit />
             {children}
             <PWAInstallPrompt />
             <PushPermission />
