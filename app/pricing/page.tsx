@@ -1,7 +1,8 @@
-// app/pricing/page.tsx
-// Server component — exports metadata, renders the client pricing shell.
+// app/pricing/page.tsx — reads x-currency set by proxy locale detection
 
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
+import type { Currency } from './data'
 import PricingClient from './PricingClient'
 
 export const metadata: Metadata = {
@@ -15,5 +16,10 @@ export const metadata: Metadata = {
 }
 
 export default function PricingPage() {
-  return <PricingClient />
+  const headersList = headers()
+  // Set by proxy via localeDetection.ts — falls back to ngn if not present
+  const currency = (headersList.get('x-currency') as Currency | null) ?? 'ngn'
+  const country  = headersList.get('x-country') ?? 'NG'
+
+  return <PricingClient defaultCurrency={currency} defaultCountry={country} />
 }
