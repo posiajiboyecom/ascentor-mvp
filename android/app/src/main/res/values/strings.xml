@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ascentor</string>
+    <string name="title_activity_main">Ascentor</string>
+    <string name="package_name">com.ascentor.app</string>
+    <string name="custom_url_scheme">com.ascentor.app</string>
+</resources>
