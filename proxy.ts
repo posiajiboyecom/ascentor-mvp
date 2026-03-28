@@ -34,6 +34,63 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// ── Locale detection ──────────────────────────────────────────────────────
+// Detects visitor country and maps it to a pricing currency.
+// Sets x-country and x-currency headers on every response so that
+// app/pricing/page.tsx (server component) can read them via headers().
+//
+// Detection priority:
+//   1. Vercel geo (free, no API call — populated automatically on Vercel)
+//   2. Cloudflare CF-IPCountry header (if behind CF)
+//   3. x-vercel-ip-country (set by some proxy providers)
+//   4. ipapi.co free lookup via client IP (1,000 req/day free tier)
+//      — disable in local dev by setting DISABLE_IP_GEOLOCATION=true
+//   5. Default: 'NG' → NGN (safe fallback — Nigeria is primary market)
+
+async function detectCountry(req: NextRequest): Promise<string> {
+  // 1. Vercel built-in geo
+  const vercelGeo = (req as NextRequest & { geo?: { country?: string } }).geo?.country;
+  if (vercelGeo) return vercelGeo;
+
+  // 2. Cloudflare
+  const cf = req.headers.get('cf-ipcountry');
+  if (cf && cf !== 'XX') return cf;
+
+  // 3. Forwarded Vercel country header
+  const fwd = req.headers.get('x-vercel-ip-country');
+  if (fwd) return fwd;
+
+  // 4. ipapi.co fallback (skipped in local dev)
+  if (process.env.DISABLE_IP_GEOLOCATION !== 'true') {
+    try {
+      const ip =
+        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+        req.headers.get('x-real-ip') ??
+        null;
+
+      if (ip && ip !== '127.0.0.1' && ip !== '::1') {
+        const res = await fetch(`https://ipapi.co/${ip}/country/`, {
+          headers: { 'User-Agent': 'ascentorbi.com/1.0' },
+          signal: AbortSignal.timeout(800), // never block page load
+        });
+        if (res.ok) {
+          const country = (await res.text()).trim();
+          if (country.length === 2) return country.toUpperCase();
+        }
+      }
+    } catch {
+      // silently fall through — never let geo kill a page load
+    }
+  }
+
+  // 5. Default → Nigeria
+  return 'NG';
+}
+
+function currencyFromCountry(country: string): 'ngn' | 'usd' {
+  return country.toUpperCase() === 'NG' ? 'ngn' : 'usd';
+}
+
 const MAIN_DOMAIN  = 'ascentorbi.com';
 const MAIN_APP_URL = process.env.NEXT_PUBLIC_URL || 'https://ascentorbi.com';
 
@@ -101,6 +158,20 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // ── 1b. Locale detection ──────────────────────────────────
+  // Runs once per non-static request. Headers are injected into
+  // every response branch below (public, subdomain, custom domain,
+  // authenticated). app/pricing/page.tsx reads x-currency server-side.
+  const country  = await detectCountry(request);
+  const currency = currencyFromCountry(country);
+
+  /** Attaches locale headers to any NextResponse before returning it. */
+  function withLocale(res: NextResponse): NextResponse {
+    res.headers.set('x-country', country);
+    res.headers.set('x-currency', currency);
+    return res;
+  }
+
   // ── 2. White-label subdomain routing ─────────────────────
   // Store rewrite intent; fall through to auth/subscription checks.
   // The previous early-return meant unauthenticated visitors on
@@ -146,20 +217,20 @@ export default async function proxy(request: NextRequest) {
       res.headers.set('x-partner-subdomain', partnerSubdomain!);
       res.headers.set('x-partner-pathname', pathname);
       res.headers.set('x-ascentor-api-base', MAIN_APP_URL);
-      return res;
+      return withLocale(res);
     }
     if (customDomainRewrite) {
       const res = NextResponse.rewrite(customDomainRewrite);
       res.headers.set('x-partner-custom-domain', host);
       res.headers.set('x-partner-pathname', pathname);
       res.headers.set('x-ascentor-api-base', MAIN_APP_URL);
-      return res;
+      return withLocale(res);
     }
-    return NextResponse.next();
+    return withLocale(NextResponse.next());
   }
 
   if (PUBLIC_API_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
-    return NextResponse.next();
+    return withLocale(NextResponse.next());
   }
 
   // ── 5. Build Supabase client ──────────────────────────────
@@ -186,7 +257,7 @@ export default async function proxy(request: NextRequest) {
   // ── 6. Protect API routes ─────────────────────────────────
   if (PROTECTED_API_PREFIXES.some(p => pathname.startsWith(p))) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    return response;
+    return withLocale(response);
   }
 
   // ── 7. Protect page routes ────────────────────────────────
@@ -195,17 +266,17 @@ export default async function proxy(request: NextRequest) {
     if (subdomainRewrite) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      return withLocale(NextResponse.redirect(loginUrl));
     }
     // Custom domains: redirect to the partner's login page on its own domain
     if (customDomainRewrite) {
       const loginUrl = new URL(`https://${host}/login`);
       loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      return withLocale(NextResponse.redirect(loginUrl));
     }
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+    return withLocale(NextResponse.redirect(loginUrl));
   }
 
   // ── 8. Subscription tier gate ─────────────────────────────
@@ -230,7 +301,7 @@ export default async function proxy(request: NextRequest) {
         checkoutUrl.searchParams.set('reason', 'subscription_required');
         checkoutUrl.searchParams.set('from', pathname);
         checkoutUrl.searchParams.set('required', matchedTier.minPlan);
-        return NextResponse.redirect(checkoutUrl);
+        return withLocale(NextResponse.redirect(checkoutUrl));
       }
     }
   }
@@ -244,7 +315,7 @@ export default async function proxy(request: NextRequest) {
     response.cookies.getAll().forEach(({ name, value, ...opts }) => {
       rewriteRes.cookies.set(name, value, opts);
     });
-    return rewriteRes;
+    return withLocale(rewriteRes);
   }
 
   if (customDomainRewrite) {
@@ -257,10 +328,10 @@ export default async function proxy(request: NextRequest) {
     response.cookies.getAll().forEach(({ name, value, ...opts }) => {
       rewriteRes.cookies.set(name, value, opts);
     });
-    return rewriteRes;
+    return withLocale(rewriteRes);
   }
 
-  return response;
+  return withLocale(response);
 }
 
 function checkAccess(profile: any, minPlan: string): boolean {

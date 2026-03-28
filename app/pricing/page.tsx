@@ -15,8 +15,8 @@ export const metadata: Metadata = {
   },
 }
 
-export default function PricingPage() {
-  const headersList = headers()
+export default async function PricingPage() {
+  const headersList = await headers()
   // Set by proxy via localeDetection.ts — falls back to ngn if not present
   const currency = (headersList.get('x-currency') as Currency | null) ?? 'ngn'
   const country  = headersList.get('x-country') ?? 'NG'
