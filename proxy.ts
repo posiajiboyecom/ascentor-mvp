@@ -132,6 +132,8 @@ const PUBLIC_ROUTES = [
 const PUBLIC_API_ROUTES = [
   '/api/waitlist', '/api/newsletter', '/api/welcome', '/api/auth',
   '/api/subscription/webhook',
+  '/api/payment/webhook',      // Paystack charge-level events (C-1 fix)
+  '/api/payments/webhook',     // New payments dir webhook (C-1 fix)
   '/api/partner/webhook',
   '/api/survey',
 ];

@@ -1,20 +1,20 @@
 'use client'
 
-// app/pricing/components/useCheckout.ts
-// Routes NGN checkout → Paystack inline popup
-// Routes USD checkout → Lemonsqueezy checkout URL (redirect)
+// components/useCheckout.ts
+// Wraps the Paystack inline popup.
+// Loads the Paystack script lazily on first call.
+//
+// H-1 fix: was pointing at /api/payments/ (plural — the new scaffolded dir).
+// Canonical payment routes with HMAC verification, audit logs, and referral
+// rewards live in /api/payment/ (singular). Consolidated here.
 
 import { useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Currency, getProvider } from '../data'
 
 interface CheckoutOptions {
+  planCode: string
   planName: string
-  currency: Currency
-  billing: 'monthly' | 'annual'
-  // exactly one of these will be set based on currency
-  paystackPlanCode?: string
-  lemonVariantId?: string
+  currency: 'ngn' | 'usd'
 }
 
 declare global {
@@ -41,57 +41,31 @@ export function useCheckout() {
   const supabase = createClient()
 
   const initiateCheckout = useCallback(async (opts: CheckoutOptions) => {
-    const provider = getProvider(opts.currency)
-    setLoading(true)
+    if (!opts.planCode) {
+      window.location.href = `/signup?plan=${opts.planName.toLowerCase()}`
+      return
+    }
 
+    setLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
 
-      // ── Lemonsqueezy (USD) ───────────────────────────────────────
-      if (provider === 'lemonsqueezy') {
-        if (!opts.lemonVariantId) {
-          // Variant not configured yet — redirect to signup with intent
-          window.location.href = `/signup?plan=${opts.planName.toLowerCase()}&currency=usd`
-          return
-        }
-
-        // Call our LS checkout URL builder
-        const res = await fetch('/api/payments/lemon/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            variantId: opts.lemonVariantId,
-            email: user?.email ?? '',
-            userId: user?.id ?? '',
-            planName: opts.planName,
-          }),
-        })
-        const { checkoutUrl, error } = await res.json()
-        if (error) throw new Error(error)
-        // Redirect to Lemonsqueezy hosted checkout
-        window.location.href = checkoutUrl
-        return
-      }
-
-      // ── Paystack (NGN) ───────────────────────────────────────────
-      if (!opts.paystackPlanCode) {
-        window.location.href = `/signup?plan=${opts.planName.toLowerCase()}&currency=ngn`
-        return
-      }
-
-      const res = await fetch('/api/payments/initialize', {
+      // H-1 fix: /api/payment/initialize (singular) — has rate limiting, audit logs
+      const res = await fetch('/api/payment/initialize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          plan: opts.paystackPlanCode,
-          currency: 'NGN',
+          plan: opts.planCode,
+          currency: opts.currency.toUpperCase(),
           email: user?.email ?? '',
-          metadata: { planName: opts.planName, userId: user?.id },
+          metadata: { planName: opts.planName },
         }),
       })
 
-      const { access_code, reference, error } = await res.json()
-      if (error) throw new Error(error)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Initialization failed')
+
+      const { access_code, reference } = json
 
       await loadPaystackScript()
 
@@ -101,7 +75,8 @@ export function useCheckout() {
         ref: reference,
         onClose: () => setLoading(false),
         callback: (response: { reference: string }) => {
-          window.location.href = `/api/payments/verify?reference=${response.reference}&redirect=/dashboard`
+          // H-1 fix: /api/payment/verify (singular)
+          window.location.href = `/api/payment/verify?reference=${response.reference}&redirect=/dashboard`
         },
       })
 

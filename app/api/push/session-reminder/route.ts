@@ -14,7 +14,9 @@ const service = createServiceClient(
 
 export async function POST(req: NextRequest) {
   const secret = req.headers.get('x-internal-secret');
-  if (secret !== process.env.INTERNAL_API_SECRET) {
+  const configuredSecret = process.env.INTERNAL_API_SECRET;
+  // H-2 fix: reject if env var unset OR if sent secret is empty string
+  if (!secret || !configuredSecret || secret !== configuredSecret) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

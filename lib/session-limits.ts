@@ -25,6 +25,32 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     courseAccess: false,        // no course access
     exportData: false,         // no data export
   },
+  // ── Current plan names used by proxy.ts (C-3 fix) ──────────────────
+  explorer: {
+    coachingSessions: 20,
+    sessionLength: 30,
+    expertSessions: 2,
+    communityPosts: 10,
+    courseAccess: true,
+    exportData: false,
+  },
+  builder: {
+    coachingSessions: 50,
+    sessionLength: 50,
+    expertSessions: 10,
+    communityPosts: 20,
+    courseAccess: true,
+    exportData: true,
+  },
+  climber: {
+    coachingSessions: 200,
+    sessionLength: 100,
+    expertSessions: 999,
+    communityPosts: 100,
+    courseAccess: true,
+    exportData: true,
+  },
+  // ── Legacy plan names — kept for backward-compat with older subscribers ──
   standard: {
     coachingSessions: 50,      // 50 coaching sessions per month
     sessionLength: 50,         // 50 messages per session
@@ -38,6 +64,15 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     sessionLength: 50,
     expertSessions: 10,
     communityPosts: 20,
+    courseAccess: true,
+    exportData: true,
+  },
+  // pro maps to climber-level access
+  pro: {
+    coachingSessions: 200,
+    sessionLength: 100,
+    expertSessions: 999,
+    communityPosts: 100,
     courseAccess: true,
     exportData: true,
   },

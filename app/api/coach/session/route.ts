@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { retrieveContext } from '@/app/lib/rag';
+import { coachSessionLimiter, getClientIp } from '@/lib/rate-limit';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
@@ -32,6 +33,17 @@ const OUTPUT_FORMAT = `
 
 export async function POST(request: Request) {
   try {
+    // ── 0. IP-level rate limit (before auth to save DB calls) ─────────
+    // 30 requests per 10 minutes per IP — protects Claude API budget (H-3 fix)
+    const ip = getClientIp(request);
+    const { allowed, retryAfter } = coachSessionLimiter.check(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait before sending another message.', retryAfter },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      );
+    }
+
     // 1. Check Auth
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();

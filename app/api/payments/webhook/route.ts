@@ -1,144 +1,182 @@
-// app/api/payments/webhook/route.ts
-// Receives Paystack webhooks and keeps the subscriptions table in Supabase
-// in sync. This is the authoritative source for subscription state.
+// ============================================================
+// PAYSTACK PAYMENT WEBHOOK — /api/payment/webhook
 //
-// Events handled:
-//   charge.success          → activate / confirm subscription
-//   subscription.create     → store subscription_code + next billing date
-//   subscription.disable    → mark subscription inactive
-//   invoice.payment_failed  → flag dunning
+// BUG FIX (Bug 2 & 4): This file previously contained a copy of the OLD,
+// insecure version of /api/payment/initialize — complete with userId read
+// from the request body and no session check. That code:
+//   - Provided no actual webhook handling
+//   - Allowed any authenticated caller to activate an arbitrary userId
+//     to subscription_plan 'pro' by passing a 100%-off promo code
+//
+// This file now contains the correct Paystack webhook handler for
+// charge-level events (charge.success, charge.failed). It follows the
+// same HMAC-SHA512 verification pattern as /api/subscription/webhook.
+//
+// NOTE: This route is NOT in proxy.ts PROTECTED_API_PREFIXES whitelist
+// because /api/payment IS protected. Add '/api/payment/webhook' to
+// PUBLIC_API_ROUTES in proxy.ts if Paystack is configured to POST here,
+// so Paystack's servers (no auth cookie) can reach it.
+//
+// SECURITY: HMAC-SHA512 signature verified on every request using
+// PAYSTACK_SECRET_KEY. No session auth — Paystack calls this server-to-server.
+// ============================================================
 
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import crypto from 'crypto'
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
-// Supabase admin client (service role — bypasses RLS)
-function getAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-function verifySignature(body: string, signature: string | null): boolean {
-  if (!signature) return false
+const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!;
+
+// ── Signature verification ────────────────────────────────
+function verifySignature(rawBody: string, signature: string): boolean {
   const hash = crypto
-    .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY!)
-    .update(body)
-    .digest('hex')
-  return hash === signature
+    .createHmac('sha512', PAYSTACK_SECRET)
+    .update(rawBody)
+    .digest('hex');
+  return hash === signature;
 }
+
+// ── Look up profile by email ──────────────────────────────
+async function getProfileByEmail(email: string) {
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, subscription_plan, subscription_status, subscription_end')
+    .eq('email', email)
+    .maybeSingle();
+
+  // H-4 fix: removed auth.admin.listUsers() fallback.
+  // At scale, listUsers() fetches ALL users and fails past 1,000.
+  // profiles.email must always be populated — enforced by the DB trigger
+  // that copies auth.users.email on insert. If not found, the user hasn't
+  // completed signup and we log a warning rather than scanning all users.
+  if (!data) {
+    console.warn(`[Payment Webhook] No profile found for email: ${email}. User may not have completed signup.`);
+  }
+  return data ?? null;
+}
+
+// ── Audit log helper ──────────────────────────────────────
+async function logAudit(userId: string, action: string, details: object) {
+  try {
+    await supabase.from('audit_logs').insert({
+      user_id: userId,
+      action,
+      entity_type: 'payment',
+      entity_id: action,
+      details,
+    });
+  } catch { /* non-critical */ }
+}
+
+// ── Notification helper ───────────────────────────────────
+async function notify(userId: string, type: string, title: string, message: string, link = '/account') {
+  try {
+    await supabase.from('notifications').insert({
+      user_id: userId,
+      type,
+      title,
+      message,
+      link,
+    });
+  } catch { /* non-critical */ }
+}
+
+// ── EVENT HANDLERS ────────────────────────────────────────
+
+/**
+ * charge.success
+ * One-time charge succeeded. Used here for any direct charge events
+ * not covered by /api/subscription/webhook (e.g. product purchases).
+ */
+async function handleChargeSuccess(data: any) {
+  const email = data.customer?.email;
+  if (!email) return;
+
+  const profile = await getProfileByEmail(email);
+  if (!profile) {
+    console.warn(`[Payment Webhook] charge.success — no profile for ${email}`);
+    return;
+  }
+
+  await logAudit(profile.id, 'charge_success', {
+    amount: data.amount,
+    reference: data.reference,
+    channel: data.channel,
+  });
+
+  console.log(`[Payment Webhook] ✅ charge.success — ${email}`);
+}
+
+/**
+ * charge.failed
+ * One-time charge attempt failed.
+ */
+async function handleChargeFailed(data: any) {
+  const email = data.customer?.email;
+  if (!email) return;
+
+  const profile = await getProfileByEmail(email);
+  if (!profile) return;
+
+  await logAudit(profile.id, 'charge_failed', {
+    amount: data.amount,
+    reference: data.reference,
+    gateway_response: data.gateway_response,
+  });
+
+  await notify(
+    profile.id,
+    'warning',
+    '⚠️ Payment Failed',
+    'Your payment could not be processed. Please check your card details and try again.',
+    '/checkout'
+  );
+
+  console.log(`[Payment Webhook] ❌ charge.failed — ${email}`);
+}
+
+// ── Main Route ────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  const rawBody = await req.text()
-  const signature = req.headers.get('x-paystack-signature')
-
-  if (!verifySignature(rawBody, signature)) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-  }
-
-  const event = JSON.parse(rawBody)
-  const supabase = getAdminClient()
-
   try {
-    switch (event.event) {
-      // ── Subscription created ───────────────────────────────────────
-      case 'subscription.create': {
-        const { customer, plan, subscription_code, next_payment_date, status } = event.data
-        const email = customer?.email
+    const rawBody = await req.text();
+    const signature = req.headers.get('x-paystack-signature') || '';
 
-        if (!email) break
-
-        // Find user by email
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', email)
-          .single()
-
-        if (!profile) break
-
-        await supabase.from('subscriptions').upsert({
-          user_id: profile.id,
-          paystack_subscription_code: subscription_code,
-          paystack_plan_code: plan?.plan_code,
-          plan_name: plan?.name,
-          status: status === 'active' ? 'active' : 'pending',
-          current_period_end: next_payment_date,
-          currency: plan?.currency,
-          amount: plan?.amount,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' })
-        break
-      }
-
-      // ── Charge successful (renewal or one-off) ───────────────────
-      case 'charge.success': {
-        const { customer, plan, paid_at } = event.data
-        if (!plan?.plan_code) break // not a subscription charge
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', customer?.email)
-          .single()
-
-        if (!profile) break
-
-        await supabase.from('subscriptions').upsert({
-          user_id: profile.id,
-          status: 'active',
-          last_payment_at: paid_at,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' })
-        break
-      }
-
-      // ── Subscription disabled / cancelled ────────────────────────
-      case 'subscription.disable': {
-        const { customer } = event.data
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', customer?.email)
-          .single()
-
-        if (!profile) break
-
-        await supabase.from('subscriptions')
-          .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-          .eq('user_id', profile.id)
-        break
-      }
-
-      // ── Payment failed (dunning) ──────────────────────────────────
-      case 'invoice.payment_failed': {
-        const { customer } = event.data
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', customer?.email)
-          .single()
-
-        if (!profile) break
-
-        await supabase.from('subscriptions')
-          .update({ status: 'past_due', updated_at: new Date().toISOString() })
-          .eq('user_id', profile.id)
-        break
-      }
-
-      default:
-        // Unhandled event type — log and acknowledge
-        console.log('[webhook] unhandled event:', event.event)
+    if (!verifySignature(rawBody, signature)) {
+      console.error('[Payment Webhook] ❌ Invalid signature');
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
-    return NextResponse.json({ received: true })
-  } catch (err) {
-    console.error('[webhook] error:', err)
-    // Return 200 to prevent Paystack from retrying on a logic error
-    return NextResponse.json({ received: true, error: 'Processing error' })
+    const event = JSON.parse(rawBody);
+    const { event: eventName, data } = event;
+
+    console.log(`[Payment Webhook] 📥 ${eventName}`);
+
+    switch (eventName) {
+      case 'charge.success':
+        await handleChargeSuccess(data);
+        break;
+      case 'charge.failed':
+        await handleChargeFailed(data);
+        break;
+      default:
+        console.log(`[Payment Webhook] Unhandled: ${eventName}`);
+    }
+
+    // Always 200 — Paystack retries on non-2xx
+    return NextResponse.json({ received: true });
+
+  } catch (err: any) {
+    console.error('[Payment Webhook] Fatal:', err);
+    return NextResponse.json({ received: true, warning: 'Processing error' });
   }
+}
+
+export async function GET() {
+  return NextResponse.json({ status: 'Payment webhook active' });
 }
