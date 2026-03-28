@@ -16,16 +16,16 @@ export default function B2BPlanCard({ tier, billing }: Props) {
 
   function handleCTA() {
     if (isCustom || tier.id === 'enterprise') {
-      window.location.href = 'mailto:asamuel@ascentorbi.com?subject=Enterprise Partner Enquiry'
+      window.location.href = 'mailto:partners@ascentorbi.com?subject=Enterprise Partner Enquiry'
       return
     }
     initiateCheckout({
       planName: `${tier.name} Partner`,
       currency: 'usd',
       billing,
-      paystackPlanCode: billing === 'annual'
-        ? tier.paystackPlanCode.annual
-        : tier.paystackPlanCode.monthly,
+      lemonVariantId: billing === 'annual'
+        ? tier.lemonVariantId.annual
+        : tier.lemonVariantId.monthly,
     })
   }
 

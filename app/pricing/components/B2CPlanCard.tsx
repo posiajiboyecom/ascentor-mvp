@@ -40,10 +40,26 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
       window.location.href = 'mailto:hello@ascentorbi.com?subject=Elite Plan Enquiry'
       return
     }
-    const planCode = billing === 'annual'
-      ? tier.paystackPlanCode[currency].annual
-      : tier.paystackPlanCode[currency].monthly
-    initiateCheckout({ planCode, planName: tier.name, currency })
+
+    if (currency === 'ngn') {
+      initiateCheckout({
+        planName: tier.name,
+        currency,
+        billing,
+        paystackPlanCode: billing === 'annual'
+          ? tier.paystackPlanCode.annual
+          : tier.paystackPlanCode.monthly,
+      })
+    } else {
+      initiateCheckout({
+        planName: tier.name,
+        currency,
+        billing,
+        lemonVariantId: billing === 'annual'
+          ? tier.lemonVariantId.annual
+          : tier.lemonVariantId.monthly,
+      })
+    }
   }
 
   return (
