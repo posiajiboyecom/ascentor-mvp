@@ -21,7 +21,7 @@ export default function B2BPlanCard({ tier, billing }: Props) {
     }
     initiateCheckout({
       planName: `${tier.name} Partner`,
-      currency: 'USD',
+      currency: 'usd',
       billing,
       paystackPlanCode: billing === 'annual'
         ? tier.paystackPlanCode.annual
