@@ -1,15 +1,7 @@
 // components/pricing/RevenueModel.tsx
-// REVENUE_ROWS removed from data.ts — data inlined here to avoid import error.
-// This component is no longer rendered (Revenue Model tab removed) but must
-// compile cleanly in case it is imported elsewhere.
+import { REVENUE_ROWS } from '../data'
 
 export default function RevenueModel() {
-  const combinedRows = [
-    { label: 'Month 6',  b2cMRR: '$1,618',  b2bMRR: '$1,617',  totalMRR: '$3,235',  arr: '~$38k' },
-    { label: 'Month 12', b2cMRR: '$6,675',  b2bMRR: '$10,990', totalMRR: '$17,665', arr: '~$212k' },
-    { label: 'Month 24', b2cMRR: '$22,250', b2bMRR: '$41,725', totalMRR: '$63,975', arr: '~$768k' },
-  ]
-
   return (
     <div className="space-y-8">
       {/* B2C */}
@@ -23,24 +15,24 @@ export default function RevenueModel() {
               <tr className="border-b border-border bg-muted/40">
                 <th className="px-4 py-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Scenario</th>
                 <th className="px-4 py-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Free</th>
-                <th className="px-4 py-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Explorers</th>
-                <th className="px-4 py-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Builders</th>
-                <th className="px-4 py-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Climbers</th>
+                <th className="px-4 py-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Builder</th>
+                <th className="px-4 py-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Pro</th>
+                <th className="px-4 py-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Elite</th>
                 <th className="px-4 py-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">MRR</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {[
-                { scenario: 'Early (month 6)',   free: '500',   explorers: '40 × $19',  builders: '15 × $39', climbers: '3 × $99',  mrr: '$1,618' },
-                { scenario: 'Growth (month 12)', free: '2,000', explorers: '150 × $19', builders: '60 × $39', climbers: '15 × $99', mrr: '$6,675' },
-                { scenario: 'Scale (month 24)',  free: '8,000', explorers: '500 × $19', builders: '200 × $39',climbers: '50 × $99', mrr: '$22,250' },
+                { scenario: 'Early (month 6)',  free: '500',   builder: '40 × $19',  pro: '15 × $39',  elite: '3 × $99',   mrr: '$1,618' },
+                { scenario: 'Growth (month 12)', free: '2,000', builder: '150 × $19', pro: '60 × $39',  elite: '15 × $99',  mrr: '$6,675' },
+                { scenario: 'Scale (month 24)',  free: '8,000', builder: '500 × $19', pro: '200 × $39', elite: '50 × $99',  mrr: '$22,250' },
               ].map((row) => (
                 <tr key={row.scenario} className="hover:bg-muted/20">
                   <td className="px-4 py-3 font-medium text-foreground">{row.scenario}</td>
                   <td className="px-4 py-3 text-muted-foreground">{row.free}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{row.explorers}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{row.builders}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{row.climbers}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{row.builder}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{row.pro}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{row.elite}</td>
                   <td className="px-4 py-3 font-semibold text-emerald-600 dark:text-emerald-400">{row.mrr}</td>
                 </tr>
               ))}
@@ -98,7 +90,7 @@ export default function RevenueModel() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {combinedRows.map((row) => (
+              {REVENUE_ROWS.map((row) => (
                 <tr key={row.label} className="hover:bg-muted/20">
                   <td className="px-4 py-3 font-medium text-foreground">{row.label}</td>
                   <td className="px-4 py-3 text-muted-foreground">{row.b2cMRR}</td>
@@ -111,7 +103,7 @@ export default function RevenueModel() {
           </table>
         </div>
         <p className="mt-3 text-[11px] text-muted-foreground">
-          B2B becomes your dominant revenue stream by month 10. Prioritise partner acquisition early — one Academy partner at scale equals 73 Explorers B2C users.
+          B2B becomes your dominant revenue stream by month 10. Prioritise partner acquisition early — one Academy partner at scale equals 73 Builder B2C users.
         </p>
       </section>
     </div>

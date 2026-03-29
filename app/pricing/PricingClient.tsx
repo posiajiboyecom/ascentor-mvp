@@ -1,22 +1,21 @@
 'use client'
 
-// app/pricing/PricingClient.tsx — v3
-// • Full Ascentor brand (dark bg, gold accent, Cormorant + Syne fonts)
-// • Auto-detects currency from server (x-currency header via proxy)
-// • Non-NG users see USD prices; all payments still via Paystack (NGN equiv)
-// • No Revenue Model tab, no Pricing Rationale sections
-// • "For your organisation" CTAs → demo.ascentorbi.com with payment gate
+// app/pricing/PricingClient.tsx — v2
+// Accepts defaultCurrency from server (set by proxy locale detection).
+// No more useEffect timezone heuristic.
 
 import { useState } from 'react'
-import { B2C_TIERS, B2B_TIERS, type Currency, type BillingCycle } from './data'
+import { B2C_TIERS, B2B_TIERS, Currency, BillingCycle } from './data'
 import B2CPlanCard from './components/B2CPlanCard'
 import B2BPlanCard from './components/B2BPlanCard'
+import RevenueModel from './components/RevenueModel'
 
-type Tab = 'b2c' | 'b2b'
+type Tab = 'b2c' | 'b2b' | 'revenue'
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'b2c', label: 'For you' },
-  { id: 'b2b', label: 'For your organisation' },
+  { id: 'b2c',     label: 'For you' },
+  { id: 'b2b',     label: 'For your organisation' },
+  { id: 'revenue', label: 'Revenue model' },
 ]
 
 interface Props {
@@ -24,362 +23,188 @@ interface Props {
   defaultCountry?: string
 }
 
-export default function PricingClient({ defaultCurrency, defaultCountry }: Props) {
-  const [tab,      setTab]      = useState<Tab>('b2c')
+export default function PricingClient({ defaultCurrency, defaultCountry: _ }: Props) {
+  const [tab,      setTab]     = useState<Tab>('b2c')
   const [currency, setCurrency] = useState<Currency>(defaultCurrency)
   const [billing,  setBilling]  = useState<BillingCycle>('monthly')
 
-  // Whether the visitor is outside Nigeria (auto-detected)
-  const isGlobal = defaultCountry !== 'NG'
-
   return (
-    <>
-      {/* ── Brand fonts ── */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,700;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+    <div className="mx-auto w-full max-w-6xl px-4 py-12 md:py-16">
 
-        .pr-wrap {
-          min-height: 100vh;
-          background: #0C0B08;
-          color: #F7F6F3;
-          font-family: 'Syne', system-ui, sans-serif;
-        }
-        .pr-inner {
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 64px 24px 100px;
-        }
+      {/* Header */}
+      <div className="mb-10 text-center">
+        <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Pricing</p>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+          Invest in your career.
+        </h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Cancel anytime. 7-day free trial on paid plans.
+        </p>
+      </div>
 
-        /* ── header ── */
-        .pr-eyebrow {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.2em;
-          color: #E8A020;
-          text-transform: uppercase;
-          margin-bottom: 14px;
-          text-align: center;
-        }
-        .pr-headline {
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: clamp(38px, 5vw, 58px);
-          font-weight: 700;
-          line-height: 1.08;
-          text-align: center;
-          color: #F7F6F3;
-          margin-bottom: 16px;
-        }
-        .pr-headline span { color: #E8A020; }
-        .pr-sub {
-          text-align: center;
-          font-size: 14px;
-          color: #8A8272;
-          margin-bottom: 48px;
-          line-height: 1.6;
-        }
+      {/* Tabs */}
+      <div className="mb-8 flex justify-center gap-2">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={[
+              'rounded-full border px-5 py-1.5 text-[13px] transition-all',
+              tab === t.id
+                ? 'border-foreground bg-foreground text-background'
+                : 'border-border bg-transparent text-muted-foreground hover:border-foreground/50 hover:text-foreground',
+            ].join(' ')}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-        /* ── tabs ── */
-        .pr-tabs {
-          display: flex;
-          justify-content: center;
-          gap: 8px;
-          margin-bottom: 40px;
-        }
-        .pr-tab {
-          padding: 8px 22px;
-          border-radius: 100px;
-          border: 1px solid rgba(212,207,195,0.16);
-          background: transparent;
-          color: #8A8272;
-          font-family: 'Syne', sans-serif;
-          font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.18s;
-        }
-        .pr-tab:hover { color: #F7F6F3; border-color: rgba(212,207,195,0.35); }
-        .pr-tab.active {
-          background: #E8A020;
-          border-color: #E8A020;
-          color: #0C0B08;
-          font-weight: 700;
-        }
+      {/* ── B2C ─────────────────────────────────────────────────────── */}
+      {tab === 'b2c' && (
+        <div>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            {/* Currency */}
+            <div className="flex gap-2">
+              {([
+                { val: 'ngn' as Currency, label: '₦ Nigeria' },
+                { val: 'usd' as Currency, label: '$ Global' },
+              ]).map(c => (
+                <button
+                  key={c.val}
+                  onClick={() => setCurrency(c.val)}
+                  className={[
+                    'rounded-full border px-4 py-1 text-[12px] transition-all',
+                    currency === c.val
+                      ? 'border-foreground bg-foreground text-background'
+                      : 'border-border text-muted-foreground hover:border-foreground/40',
+                  ].join(' ')}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
 
-        /* ── controls row ── */
-        .pr-controls {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 10px;
-        }
-        .pr-currency-btns { display: flex; gap: 6px; }
-        .pr-pill {
-          padding: 6px 16px;
-          border-radius: 100px;
-          border: 1px solid rgba(212,207,195,0.16);
-          background: transparent;
-          color: #8A8272;
-          font-family: 'Syne', sans-serif;
-          font-size: 12px;
-          cursor: pointer;
-          transition: all 0.15s;
-        }
-        .pr-pill:hover { color: #F7F6F3; border-color: rgba(212,207,195,0.4); }
-        .pr-pill.active {
-          background: #1E1C17;
-          border-color: rgba(232,160,32,0.5);
-          color: #E8A020;
-        }
-        .pr-billing-toggle {
-          display: flex;
-          align-items: center;
-          gap: 2px;
-          padding: 3px;
-          border-radius: 100px;
-          border: 1px solid rgba(212,207,195,0.14);
-          background: #1E1C17;
-        }
-        .pr-billing-btn {
-          padding: 6px 16px;
-          border-radius: 100px;
-          border: none;
-          background: transparent;
-          color: #8A8272;
-          font-family: 'Syne', sans-serif;
-          font-size: 12px;
-          cursor: pointer;
-          transition: all 0.15s;
-          white-space: nowrap;
-        }
-        .pr-billing-btn.active {
-          background: #E8A020;
-          color: #0C0B08;
-          font-weight: 700;
-        }
-        .pr-hint {
-          font-size: 11px;
-          color: #4A4438;
-          margin-bottom: 28px;
-          font-family: 'DM Mono', monospace;
-          letter-spacing: 0.02em;
-        }
+            {/* Billing cycle */}
+            <div className="flex items-center gap-2 rounded-full border border-border p-0.5">
+              {([
+                { val: 'monthly' as BillingCycle, label: 'Monthly' },
+                { val: 'annual'  as BillingCycle, label: 'Annual · save 20%' },
+              ]).map(b => (
+                <button
+                  key={b.val}
+                  onClick={() => setBilling(b.val)}
+                  className={[
+                    'rounded-full px-4 py-1.5 text-[12px] transition-all',
+                    billing === b.val
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:text-foreground',
+                  ].join(' ')}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        /* ── card grid ── */
-        .pr-grid-4 {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
-        }
-        .pr-grid-3 {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 16px;
-          max-width: 900px;
-          margin: 0 auto;
-        }
-
-        /* ── geo notice ── */
-        .pr-geo-notice {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          background: rgba(232,160,32,0.08);
-          border: 1px solid rgba(232,160,32,0.2);
-          border-radius: 10px;
-          padding: 10px 16px;
-          margin-bottom: 24px;
-          font-size: 12px;
-          color: #C8C3B8;
-        }
-        .pr-geo-dot {
-          width: 7px; height: 7px;
-          border-radius: 50%;
-          background: #E8A020;
-          flex-shrink: 0;
-        }
-
-        @media (max-width: 640px) {
-          .pr-controls { flex-direction: column; align-items: flex-start; }
-        }
-      `}</style>
-
-      <div className="pr-wrap">
-        <div className="pr-inner">
-
-          {/* ── Header ── */}
-          <p className="pr-eyebrow">Pricing</p>
-          <h1 className="pr-headline">
-            Invest in your <span>career.</span>
-          </h1>
-          <p className="pr-sub">
-            Cancel anytime · 7-day free trial on all paid plans
+          <p className="mb-6 text-[11px] text-muted-foreground">
+            {currency === 'ngn'
+              ? 'Showing Nigerian naira (₦). Toggle to $ for diaspora / global pricing.'
+              : 'Showing USD pricing. Toggle to ₦ for Nigeria pricing. Payments via Lemonsqueezy.'}
           </p>
 
-          {/* ── Tabs ── */}
-          <div className="pr-tabs">
-            {TABS.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`pr-tab${tab === t.id ? ' active' : ''}`}
-              >
-                {t.label}
-              </button>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {B2C_TIERS.map(tier => (
+              <B2CPlanCard key={tier.id} tier={tier} currency={currency} billing={billing} />
             ))}
           </div>
 
-          {/* ════════════════════════════════════════════
-              B2C TAB
-          ════════════════════════════════════════════ */}
-          {tab === 'b2c' && (
-            <div>
-              {/* Auto-detected geo notice */}
-              {isGlobal && (
-                <div className="pr-geo-notice">
-                  <span className="pr-geo-dot" />
-                  <span>
-                    We detected you&rsquo;re outside Nigeria &mdash; showing USD prices.
-                    All payments are processed securely via Paystack at the current exchange rate.
-                  </span>
+          {/* Rationale */}
+          <div className="mt-10">
+            <p className="mb-4 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+              Pricing rationale
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {(currency === 'ngn'
+                ? [
+                    { label: 'Free tier purpose',   text: 'Acquisition — no credit card. Session cap forces upgrade. 15–20% convert within 60 days if coaching delivers value.' },
+                    { label: '₦12k Builder logic',  text: '~$7 USD. Less than one business lunch. Targets professionals earning ₦300k–₦600k/month.' },
+                    { label: '₦25k Pro logic',      text: 'Your revenue engine. The AI content agent saves 5+ hours/week — frame the upgrade around time saved, not features unlocked.' },
+                    { label: '₦60k Elite logic',    text: 'Price anchor that makes Pro feel affordable. 10 Elite subscribers = ₦600k/month from this tier alone.' },
+                  ]
+                : [
+                    { label: 'Builder $19',         text: 'Below LinkedIn Premium ($40). Above Calm ($15). Frame it as career ROI vs entertainment spend.' },
+                    { label: 'Pro $39',             text: 'One human coaching session costs $150–$500. $39/month for unlimited AI coaching + content writing is a clear win.' },
+                    { label: 'Diaspora conversion', text: 'Diaspora users convert 25–30% faster — higher disposable income and stronger career anxiety around standing out globally.' },
+                    { label: 'Elite $99 anchor',    text: 'Positions Pro as obvious value. Less than one hour with a human executive coach — lead with that comparison.' },
+                  ]
+              ).map(item => (
+                <div key={item.label} className="rounded-xl border-l-2 border-border bg-muted/30 py-3 pl-4 pr-3">
+                  <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{item.label}</p>
+                  <p className="text-[12px] leading-relaxed text-foreground/80">{item.text}</p>
                 </div>
-              )}
-
-              {/* Controls */}
-              <div className="pr-controls">
-                <div className="pr-currency-btns">
-                  {([
-                    { val: 'ngn' as Currency, label: '₦ Nigeria' },
-                    { val: 'usd' as Currency, label: '$ Global' },
-                  ]).map(c => (
-                    <button
-                      key={c.val}
-                      onClick={() => setCurrency(c.val)}
-                      className={`pr-pill${currency === c.val ? ' active' : ''}`}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="pr-billing-toggle">
-                  {([
-                    { val: 'monthly' as BillingCycle, label: 'Monthly' },
-                    { val: 'annual'  as BillingCycle, label: 'Annual · save 20%' },
-                  ]).map(b => (
-                    <button
-                      key={b.val}
-                      onClick={() => setBilling(b.val)}
-                      className={`pr-billing-btn${billing === b.val ? ' active' : ''}`}
-                    >
-                      {b.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <p className="pr-hint">
-                {currency === 'ngn'
-                  ? '₦ Nigerian naira · Toggle to $ for global / diaspora pricing'
-                  : '$ USD · Charged in NGN equivalent via Paystack at live exchange rate'}
-              </p>
-
-              <div className="pr-grid-4">
-                {B2C_TIERS.map(tier => (
-                  <B2CPlanCard
-                    key={tier.id}
-                    tier={tier}
-                    currency={currency}
-                    billing={billing}
-                  />
-                ))}
-              </div>
+              ))}
             </div>
-          )}
-
-          {/* ════════════════════════════════════════════
-              B2B TAB — full pricing cards + demo invite
-          ════════════════════════════════════════════ */}
-          {tab === 'b2b' && (
-            <div>
-              <p className="pr-hint" style={{ marginBottom: 24 }}>
-                All partner plans priced in USD · Partners collect member revenue in any currency
-              </p>
-
-              {/* Billing toggle */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 28 }}>
-                <div className="pr-billing-toggle">
-                  {([
-                    { val: 'monthly' as BillingCycle, label: 'Monthly' },
-                    { val: 'annual'  as BillingCycle, label: 'Annual · save 15%' },
-                  ]).map(b => (
-                    <button
-                      key={b.val}
-                      onClick={() => setBilling(b.val)}
-                      className={`pr-billing-btn${billing === b.val ? ' active' : ''}`}
-                    >
-                      {b.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Plan cards */}
-              <div className="pr-grid-3">
-                {B2B_TIERS.map(tier => (
-                  <B2BPlanCard key={tier.id} tier={tier} billing={billing} />
-                ))}
-              </div>
-
-              {/* Demo invite banner */}
-              <div style={{
-                marginTop: 40,
-                background: 'linear-gradient(135deg, rgba(232,160,32,0.10), rgba(139,92,246,0.07))',
-                border: '1px solid rgba(232,160,32,0.25)',
-                borderRadius: 18,
-                padding: '32px 36px',
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 24,
-              }}>
-                <div style={{ flex: 1, minWidth: 260 }}>
-                  <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.16em', color: '#E8A020', textTransform: 'uppercase', marginBottom: 10 }}>
-                    Live demo
-                  </p>
-                  <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: '#F7F6F3', marginBottom: 10, lineHeight: 1.15 }}>
-                    See it live before you commit
-                  </p>
-                  <p style={{ fontSize: 13, color: '#8A8272', lineHeight: 1.65, maxWidth: 440 }}>
-                    Explore a fully working demo of the Ascentor partner platform &mdash;
-                    white-label branding, AI coaching, community, and member payment flows.
-                    Request access from Team Ascentor, and once approved you can log in and
-                    explore the platform including full NGN pricing.
-                  </p>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                  <a
-                    href="https://demo.ascentorbi.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: 'inline-block', padding: '13px 30px', borderRadius: 10, background: '#E8A020', color: '#0C0B08', fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, textDecoration: 'none' }}
-                  >
-                    Request demo access →
-                  </a>
-                  <a
-                    href="mailto:asamuel@ascentorbi.com?subject=Organisation Plan Enquiry"
-                    style={{ fontSize: 12, color: '#8A8272', fontFamily: "'DM Mono', monospace", textDecoration: 'none', letterSpacing: '0.02em' }}
-                  >
-                    asamuel@ascentorbi.com
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
-
+          </div>
         </div>
-      </div>
-    </>
+      )}
+
+      {/* ── B2B ─────────────────────────────────────────────────────── */}
+      {tab === 'b2b' && (
+        <div>
+          <p className="mb-6 text-[11px] text-muted-foreground">
+            All B2B plans priced in USD. Partners collect their own revenue from members in any currency.
+          </p>
+
+          <div className="mb-6 flex justify-end">
+            <div className="flex items-center gap-2 rounded-full border border-border p-0.5">
+              {([
+                { val: 'monthly' as BillingCycle, label: 'Monthly' },
+                { val: 'annual'  as BillingCycle, label: 'Annual · save 15%' },
+              ]).map(b => (
+                <button
+                  key={b.val}
+                  onClick={() => setBilling(b.val)}
+                  className={[
+                    'rounded-full px-4 py-1.5 text-[12px] transition-all',
+                    billing === b.val
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:text-foreground',
+                  ].join(' ')}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {B2B_TIERS.map(tier => (
+              <B2BPlanCard key={tier.id} tier={tier} billing={billing} />
+            ))}
+          </div>
+
+          <div className="mt-10">
+            <p className="mb-4 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">Seat pricing logic</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {[
+                { label: 'What counts as a seat',    text: 'Each active member on the partner\'s platform is one seat. Inactive users (90+ days) don\'t count.' },
+                { label: 'Why flat + per seat',       text: 'Flat fee covers your infrastructure baseline. Seat charge scales revenue as the partner grows — you win when they win.' },
+                { label: 'Volume discount trigger',   text: 'Partners with 500+ seats get custom pricing. This forces an enterprise conversation and protects margin at scale.' },
+                { label: 'Annual discount',           text: '15% off annual on the flat fee only — not on seats. Keeps your recurring seat revenue predictable month to month.' },
+              ].map(item => (
+                <div key={item.label} className="rounded-xl border-l-2 border-border bg-muted/30 py-3 pl-4 pr-3">
+                  <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{item.label}</p>
+                  <p className="text-[12px] leading-relaxed text-foreground/80">{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Revenue model ────────────────────────────────────────────── */}
+      {tab === 'revenue' && <RevenueModel />}
+    </div>
   )
 }

@@ -1,8 +1,11 @@
 'use client'
 
-// app/pricing/components/useCheckout.ts
+// app/pricing/components/useCheckout.tsx
 // Routes NGN checkout → Paystack inline popup
 // Routes USD checkout → Lemonsqueezy checkout URL (redirect)
+//
+// H-1 fix: canonical routes are /api/payment/ (singular) — has HMAC
+// verification, audit logs, and rate limiting.
 
 import { useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -12,7 +15,6 @@ interface CheckoutOptions {
   planName: string
   currency: Currency
   billing: 'monthly' | 'annual'
-  // exactly one of these will be set based on currency
   paystackPlanCode?: string
   lemonVariantId?: string
 }
@@ -55,8 +57,8 @@ export function useCheckout() {
           return
         }
 
-        // Call our LS checkout URL builder
-        const res = await fetch('/api/payments/lemon/checkout', {
+        // H-1 fix: /api/payment/lemon/checkout (singular)
+        const res = await fetch('/api/payment/lemon/checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -68,7 +70,6 @@ export function useCheckout() {
         })
         const { checkoutUrl, error } = await res.json()
         if (error) throw new Error(error)
-        // Redirect to Lemonsqueezy hosted checkout
         window.location.href = checkoutUrl
         return
       }
@@ -79,7 +80,8 @@ export function useCheckout() {
         return
       }
 
-      const res = await fetch('/api/payments/initialize', {
+      // H-1 fix: /api/payment/initialize (singular) — has rate limiting, audit logs
+      const res = await fetch('/api/payment/initialize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -101,7 +103,8 @@ export function useCheckout() {
         ref: reference,
         onClose: () => setLoading(false),
         callback: (response: { reference: string }) => {
-          window.location.href = `/api/payments/verify?reference=${response.reference}&redirect=/dashboard`
+          // H-1 fix: /api/payment/verify (singular)
+          window.location.href = `/api/payment/verify?reference=${response.reference}&redirect=/dashboard`
         },
       })
 

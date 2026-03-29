@@ -1,6 +1,6 @@
-// app/pricing/data.ts — v3
-// Tier names aligned with who-its-for personas: Explorers · Builders · Climbers
-// Paystack handles all payments (NGN + USD equivalent).
+// app/pricing/data.ts — v2
+// Paystack handles NGN. Lemonsqueezy handles USD.
+// After running scripts/seed-paystack-plans.ts, paste the printed codes below.
 
 export type Currency = 'ngn' | 'usd'
 export type BillingCycle = 'monthly' | 'annual'
@@ -21,10 +21,12 @@ export interface B2CTier {
   badge: string
   ctaLabel: string
   ctaVariant: 'primary' | 'secondary'
+  // Paystack plan codes (NGN)
   paystackPlanCode: {
     monthly: string
     annual: string
   }
+  // Lemonsqueezy variant IDs (USD) — get from LS dashboard → Products → Variants
   lemonVariantId: {
     monthly: string
     annual: string
@@ -51,7 +53,8 @@ export interface B2BTier {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // B2C TIERS
-// Names match the who-its-for personas exactly.
+// After running seed-paystack-plans.ts, paste codes into paystackPlanCode.
+// After creating LS products, paste variant IDs into lemonVariantId.
 // ─────────────────────────────────────────────────────────────────────────────
 export const B2C_TIERS: B2CTier[] = [
   {
@@ -77,8 +80,8 @@ export const B2C_TIERS: B2CTier[] = [
     ],
   },
   {
-    id: 'explorers',
-    name: 'Explorers',
+    id: 'builder',
+    name: 'Builder',
     label: 'Popular',
     priceMonthly: { ngn: 12000, usd: 19 },
     annualTotal: { ngn: 115200, usd: 180 },
@@ -87,7 +90,9 @@ export const B2C_TIERS: B2CTier[] = [
     badge: '',
     ctaLabel: 'Start 7-day trial',
     ctaVariant: 'secondary',
+    // ↓ paste output from seed script
     paystackPlanCode: { monthly: '', annual: '' },
+    // ↓ paste from Lemonsqueezy dashboard
     lemonVariantId: { monthly: '', annual: '' },
     features: [
       { enabled: true,  text: 'Unlimited AI coaching' },
@@ -99,8 +104,8 @@ export const B2C_TIERS: B2CTier[] = [
     ],
   },
   {
-    id: 'builders',
-    name: 'Builders',
+    id: 'pro',
+    name: 'Pro',
     label: 'Recommended',
     priceMonthly: { ngn: 25000, usd: 39 },
     annualTotal: { ngn: 240000, usd: 372 },
@@ -112,7 +117,7 @@ export const B2C_TIERS: B2CTier[] = [
     paystackPlanCode: { monthly: '', annual: '' },
     lemonVariantId: { monthly: '', annual: '' },
     features: [
-      { enabled: true,  text: 'Everything in Explorers' },
+      { enabled: true,  text: 'Everything in Builder' },
       { enabled: true,  text: 'AI writes your content 3×/week' },
       { enabled: true,  text: 'Personal brand agent' },
       { enabled: true,  text: '1 expert session/month' },
@@ -121,8 +126,8 @@ export const B2C_TIERS: B2CTier[] = [
     ],
   },
   {
-    id: 'climbers',
-    name: 'Climbers',
+    id: 'elite',
+    name: 'Elite',
     label: 'High-touch',
     priceMonthly: { ngn: 60000, usd: 99 },
     annualTotal: { ngn: 576000, usd: 948 },
@@ -134,7 +139,7 @@ export const B2C_TIERS: B2CTier[] = [
     paystackPlanCode: { monthly: '', annual: '' },
     lemonVariantId: { monthly: '', annual: '' },
     features: [
-      { enabled: true, text: 'Everything in Builders' },
+      { enabled: true, text: 'Everything in Pro' },
       { enabled: true, text: '2 expert sessions/month' },
       { enabled: true, text: 'Weekly human check-in' },
       { enabled: true, text: 'CV + LinkedIn audit' },
@@ -145,7 +150,7 @@ export const B2C_TIERS: B2CTier[] = [
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
-// B2B TIERS  (unchanged)
+// B2B TIERS
 // ─────────────────────────────────────────────────────────────────────────────
 export const B2B_TIERS: B2BTier[] = [
   {
@@ -223,6 +228,23 @@ export const B2B_TIERS: B2BTier[] = [
       { enabled: true, text: 'Custom contract + invoicing' },
     ],
   },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REVENUE MODEL
+// ─────────────────────────────────────────────────────────────────────────────
+export interface RevenueRow {
+  label: string
+  b2cMRR: string
+  b2bMRR: string
+  totalMRR: string
+  arr: string
+}
+
+export const REVENUE_ROWS: RevenueRow[] = [
+  { label: 'Month 6',  b2cMRR: '$1,618',  b2bMRR: '$1,617',  totalMRR: '$3,235',  arr: '~$38k' },
+  { label: 'Month 12', b2cMRR: '$6,675',  b2bMRR: '$10,990', totalMRR: '$17,665', arr: '~$212k' },
+  { label: 'Month 24', b2cMRR: '$22,250', b2bMRR: '$41,725', totalMRR: '$63,975', arr: '~$768k' },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
