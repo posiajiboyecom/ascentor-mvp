@@ -107,18 +107,30 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
           color: #F7F6F3;
           margin-bottom: 20px;
         }
-        .b2c-price-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px; }
+        .b2c-price-row {
+          display: flex;
+          align-items: baseline;
+          gap: 4px;
+          margin-bottom: 4px;
+          min-width: 0;
+          overflow: hidden;
+        }
         .b2c-price {
           font-family: 'Syne', sans-serif;
-          font-size: 36px;
+          font-size: clamp(20px, 4vw, 30px);
           font-weight: 800;
           color: #F7F6F3;
           line-height: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          min-width: 0;
         }
         .b2c-price-unit {
           font-size: 12px;
           color: #4A4438;
           font-family: 'DM Mono', monospace;
+          flex-shrink: 0;
         }
         .b2c-annual-note {
           font-size: 11px;

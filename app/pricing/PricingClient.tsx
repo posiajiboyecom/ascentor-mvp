@@ -8,9 +8,8 @@
 // • "For your organisation" CTAs → demo.ascentorbi.com with payment gate
 
 import { useState } from 'react'
-import { B2C_TIERS, B2B_TIERS, type Currency, type BillingCycle } from './data'
+import { B2C_TIERS, type Currency, type BillingCycle } from './data'
 import B2CPlanCard from './components/B2CPlanCard'
-import B2BPlanCard from './components/B2BPlanCard'
 
 type Tab = 'b2c' | 'b2b'
 
@@ -200,56 +199,6 @@ export default function PricingClient({ defaultCurrency, defaultCountry }: Props
           flex-shrink: 0;
         }
 
-        /* ── b2b note ── */
-        .pr-b2b-note {
-          font-size: 12px;
-          color: #8A8272;
-          margin-bottom: 24px;
-          font-family: 'DM Mono', monospace;
-          letter-spacing: 0.02em;
-        }
-        .pr-b2b-demo-banner {
-          background: linear-gradient(135deg, rgba(232,160,32,0.10), rgba(139,92,246,0.08));
-          border: 1px solid rgba(232,160,32,0.22);
-          border-radius: 16px;
-          padding: 28px 32px;
-          margin-top: 36px;
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          justify-content: space-between;
-          gap: 20px;
-        }
-        .pr-b2b-demo-title {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 22px;
-          font-weight: 700;
-          color: #F7F6F3;
-          margin-bottom: 6px;
-        }
-        .pr-b2b-demo-sub {
-          font-size: 13px;
-          color: #8A8272;
-          max-width: 420px;
-          line-height: 1.55;
-        }
-        .pr-b2b-demo-btn {
-          padding: 12px 28px;
-          border-radius: 10px;
-          background: #E8A020;
-          color: #0C0B08;
-          font-family: 'Syne', sans-serif;
-          font-size: 13px;
-          font-weight: 700;
-          border: none;
-          cursor: pointer;
-          transition: background 0.15s, transform 0.12s;
-          white-space: nowrap;
-          text-decoration: none;
-          display: inline-block;
-        }
-        .pr-b2b-demo-btn:hover { background: #F5C55A; transform: translateY(-1px); }
-
         @media (max-width: 640px) {
           .pr-controls { flex-direction: column; align-items: flex-start; }
         }
@@ -348,57 +297,80 @@ export default function PricingClient({ defaultCurrency, defaultCountry }: Props
           )}
 
           {/* ════════════════════════════════════════════
-              B2B TAB
+              B2B TAB — demo invite, no public pricing grid
           ════════════════════════════════════════════ */}
           {tab === 'b2b' && (
-            <div>
-              <p className="pr-b2b-note">
-                All partner plans priced in USD · Partners collect member revenue in any currency
+            <div style={{ maxWidth: 720, margin: '0 auto' }}>
+
+              {/* Eyebrow */}
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.18em', color: '#E8A020', textTransform: 'uppercase', marginBottom: 20, textAlign: 'center' }}>
+                White-label partner platform
               </p>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
-                <div className="pr-billing-toggle">
-                  {([
-                    { val: 'monthly' as BillingCycle, label: 'Monthly' },
-                    { val: 'annual'  as BillingCycle, label: 'Annual · save 15%' },
-                  ]).map(b => (
-                    <button
-                      key={b.val}
-                      onClick={() => setBilling(b.val)}
-                      className={`pr-billing-btn${billing === b.val ? ' active' : ''}`}
-                    >
-                      {b.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Headline */}
+              <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 700, color: '#F7F6F3', textAlign: 'center', lineHeight: 1.1, marginBottom: 20 }}>
+                Your brand. Our infrastructure.<br />
+                <span style={{ color: '#E8A020' }}>Built to scale.</span>
+              </h2>
 
-              <div className="pr-grid-3">
-                {B2B_TIERS.map(tier => (
-                  <B2BPlanCard key={tier.id} tier={tier} billing={billing} />
+              <p style={{ fontSize: 14, color: '#8A8272', textAlign: 'center', lineHeight: 1.7, marginBottom: 40 }}>
+                Deploy a fully branded coaching and community platform for your team, alumni network, or institution &mdash; powered by Ascentor&rsquo;s AI. Plans are available for solo coaches through to large enterprises, with pricing tailored to your scale.
+              </p>
+
+              {/* Feature highlights */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 40 }}>
+                {[
+                  { icon: '◈', label: 'Branded subdomain', desc: 'Your name, your platform' },
+                  { icon: '◈', label: 'AI coaching suite', desc: 'Content, intel & personal brand agents' },
+                  { icon: '◈', label: 'Community & courses', desc: 'Cohorts, discussions, learning paths' },
+                  { icon: '◈', label: 'Payment collection', desc: 'Charge your members directly' },
+                  { icon: '◈', label: 'Admin dashboard', desc: 'Full visibility on engagement' },
+                  { icon: '◈', label: 'Custom domain', desc: 'Available on growing plans' },
+                ].map(f => (
+                  <div key={f.label} style={{ background: '#141310', border: '1px solid rgba(212,207,195,0.10)', borderRadius: 12, padding: '16px 18px' }}>
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', letterSpacing: '0.1em', marginBottom: 6 }}>{f.icon} {f.label.toUpperCase()}</p>
+                    <p style={{ fontSize: 12, color: '#8A8272', lineHeight: 1.5 }}>{f.desc}</p>
+                  </div>
                 ))}
               </div>
 
-              {/* Demo CTA banner */}
-              <div className="pr-b2b-demo-banner">
-                <div>
-                  <p className="pr-b2b-demo-title">See it live before you commit</p>
-                  <p className="pr-b2b-demo-sub">
-                    Explore a fully working demo of the Ascentor partner platform &mdash;
-                    white-label branding, AI coaching, community, and payment flows &mdash;
-                    exactly as your members will experience it.
-                    An active subscription or admin approval is required to access.
-                  </p>
-                </div>
+              {/* Demo CTA card */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(232,160,32,0.10), rgba(139,92,246,0.07))', border: '1px solid rgba(232,160,32,0.25)', borderRadius: 18, padding: '32px 36px', marginBottom: 20, textAlign: 'center' }}>
+                <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 700, color: '#F7F6F3', marginBottom: 10 }}>
+                  See it live before you commit
+                </p>
+                <p style={{ fontSize: 13, color: '#8A8272', lineHeight: 1.65, marginBottom: 28, maxWidth: 480, margin: '0 auto 28px' }}>
+                  Explore a fully working demo of the Ascentor partner platform &mdash; white-label branding, AI coaching, community, and member payment flows &mdash; exactly as your members will experience it.
+                </p>
                 <a
                   href="https://demo.ascentorbi.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="pr-b2b-demo-btn"
+                  style={{ display: 'inline-block', padding: '13px 32px', borderRadius: 10, background: '#E8A020', color: '#0C0B08', fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, textDecoration: 'none', transition: 'background 0.15s' }}
                 >
-                  View live demo →
+                  Visit demo.ascentorbi.com →
+                </a>
+                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#4A4438', marginTop: 12, letterSpacing: '0.04em' }}>
+                  Access requires approval from Team Ascentor
+                </p>
+              </div>
+
+              {/* Contact card */}
+              <div style={{ background: '#141310', border: '1px solid rgba(212,207,195,0.10)', borderRadius: 14, padding: '22px 28px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                <div>
+                  <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#4A4438', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 6 }}>Ready to discuss?</p>
+                  <p style={{ fontSize: 13, color: '#C8C3B8', lineHeight: 1.5 }}>
+                    Contact Team Ascentor to get pricing, request demo access, or book a discovery call.
+                  </p>
+                </div>
+                <a
+                  href="mailto:asamuel@ascentorbi.com?subject=Organisation Plan Enquiry"
+                  style={{ display: 'inline-block', padding: '10px 22px', borderRadius: 10, background: 'transparent', border: '1px solid rgba(232,160,32,0.4)', color: '#E8A020', fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}
+                >
+                  asamuel@ascentorbi.com
                 </a>
               </div>
+
             </div>
           )}
 
