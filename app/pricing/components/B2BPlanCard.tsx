@@ -14,7 +14,7 @@ interface Props {
 
 // The demo URL — users land here, see a paywall/contact prompt before use
 const DEMO_URL = 'https://demo.ascentorbi.com'
-const CONTACT_EMAIL = 'partners@ascentorbi.com'
+const CONTACT_EMAIL = 'asamuel@ascentorbi.com'
 
 export default function B2BPlanCard({ tier, billing }: Props) {
   const isCustom = tier.flatMonthly === null
@@ -206,12 +206,12 @@ export default function B2BPlanCard({ tier, billing }: Props) {
         </ul>
 
         <button onClick={handleCTA} className={`b2b-cta ${tier.ctaVariant}`}>
-          {tier.id === 'enterprise' ? 'Contact us' : 'Explore demo →'}
+          {tier.id === 'enterprise' ? 'Contact us →' : 'Request demo access →'}
         </button>
 
         {tier.id !== 'enterprise' && (
           <p className="b2b-demo-hint">
-            Subscription or admin approval required to unlock
+            Approval required · NGN pricing shown after login
           </p>
         )}
       </div>
