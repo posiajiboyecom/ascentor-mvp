@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 /* ── Data ────────────────────────────────────────────────── */
 const PERSONAS = [
   {
-    stage:    'Explorer',
+    stage:    'Explorers',
     age:      '15 – 22',
     emoji:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>',
     color:    '#14B8A6',
@@ -41,12 +41,12 @@ const PERSONAS = [
       'Access to global opportunities & scholarships',
       'Peer circles of driven young professionals like you',
     ],
-    price:    12,
-    plan:     'Explorer Plan',
+    price:    19,
+    plan:     'Explorers Plan',
     href:     '/signup',
   },
   {
-    stage:    'Builder',
+    stage:    'Builders',
     age:      '22 – 32',
     emoji:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
     color:    '#E8A020',
@@ -71,13 +71,13 @@ const PERSONAS = [
       "1-on-1 sessions with mentors who've done it",
       'A personal board of advisors in your peer circle',
     ],
-    price:    24,
-    plan:     'Builder Plan',
+    price:    39,
+    plan:     'Builders Plan',
     href:     '/signup',
     popular:  true,
   },
   {
-    stage:    'Climber',
+    stage:    'Climbers',
     age:      '32 – 50',
     emoji:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
     color:    '#8B5CF6',
@@ -102,8 +102,8 @@ const PERSONAS = [
       'Unlimited access to world-class senior mentors',
       'Legacy planning: building something that outlasts you',
     ],
-    price:    39,
-    plan:     'Climber Plan',
+    price:    99,
+    plan:     'Climbers Plan',
     href:     '/signup',
   },
 ];
