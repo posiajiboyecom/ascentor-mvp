@@ -841,7 +841,6 @@ export default function LearnPage() {
   // false = not logged in
   if (hasAccess === false) return <UpgradePrompt feature="learn" />;
   const isPreview = hasAccess === 'preview';
-  const isPreview = hasAccess === 'preview';
 
   const activeCourseData = activeCourse ? courses.find(c => c.id === activeCourse) : null;
 
