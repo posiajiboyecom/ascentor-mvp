@@ -651,8 +651,7 @@ export default function CohortFeedPage() {
               {postLimitMsg}
             </p>
           )}
-          <button onClick={createPost} disabled={postLimitReached}
-            disabled={!newPost.trim() || posting}
+          <button onClick={createPost} disabled={postLimitReached || !newPost.trim() || posting}
             className="px-5 py-2 rounded-lg text-xs font-semibold disabled:opacity-40"
             style={{ background: 'var(--accent)', color: '#000' }}>
             {posting ? 'Posting...' : 'Post'}
