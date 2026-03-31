@@ -1,6 +1,7 @@
 // ============================================================
-// PAYMENT INITIALIZE — /api/payment/initialize
+// PAYMENT INITIALIZE — /api/payments/initialize
 // Handles promo code activation (100% off = instant access)
+// and Paystack transaction initialization for paid plans.
 //
 // SECURITY FIX (S2): userId is now taken from the authenticated
 // session, NOT from the request body. A caller cannot activate
@@ -174,8 +175,52 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // No promo — Paystack popup handles payment client-side
-    return NextResponse.json({ success: true, message: 'Use Paystack popup for payment' });
+    // ── 4. NO PROMO — Initialize Paystack transaction ──────────────
+    // FIX: Previously this returned { success: true } with no access_code/reference,
+    // causing the checkout button to hang on "Loading payment..." forever.
+    // Now we call the Paystack API and return the access_code + reference
+    // that the client-side PaystackPop.setup() requires.
+    const { plan, currency, email, metadata } = body;
+
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    }
+    if (!plan) {
+      return NextResponse.json({ error: 'Plan code is required' }, { status: 400 });
+    }
+
+    const paystackRes = await fetch('https://api.paystack.co/transaction/initialize', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        plan,
+        currency: currency || 'NGN',
+        metadata: {
+          ...metadata,
+          // Ensure userId from session is in metadata, not from client body
+          userId,
+        },
+      }),
+    });
+
+    const paystackData = await paystackRes.json();
+
+    if (!paystackData.status) {
+      console.error('[payment/initialize] Paystack error:', paystackData.message);
+      return NextResponse.json(
+        { error: paystackData.message || 'Failed to initialize payment' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({
+      access_code: paystackData.data.access_code,
+      reference:   paystackData.data.reference,
+    });
 
   } catch (err: any) {
     console.error('Payment initialization error:', err);

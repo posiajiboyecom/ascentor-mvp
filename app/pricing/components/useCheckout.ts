@@ -93,6 +93,13 @@ export function useCheckout() {
       const { access_code, reference, error } = await res.json()
       if (error) throw new Error(error)
 
+      // FIX: Guard against missing access_code so loading state always resets.
+      // Previously, if the API returned without access_code, setLoading(false)
+      // was never called and the button stayed on "Loading payment..." forever.
+      if (!access_code || !reference) {
+        throw new Error('Payment initialization failed — no access code returned.')
+      }
+
       await loadPaystackScript()
 
       const handler = window.PaystackPop!.setup({
