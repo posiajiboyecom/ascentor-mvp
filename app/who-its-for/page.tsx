@@ -41,7 +41,8 @@ const PERSONAS = [
       'Access to global opportunities & scholarships',
       'Peer circles of driven young professionals like you',
     ],
-    price:    19,
+    priceNgn: 12000,
+    priceUsd: 19,
     plan:     'Explorers Plan',
     href:     '/signup',
   },
@@ -71,7 +72,8 @@ const PERSONAS = [
       "1-on-1 sessions with mentors who've done it",
       'A personal board of advisors in your peer circle',
     ],
-    price:    39,
+    priceNgn: 25000,
+    priceUsd: 39,
     plan:     'Builders Plan',
     href:     '/signup',
     popular:  true,
@@ -102,7 +104,8 @@ const PERSONAS = [
       'Unlimited access to world-class senior mentors',
       'Legacy planning: building something that outlasts you',
     ],
-    price:    99,
+    priceNgn: 60000,
+    priceUsd: 99,
     plan:     'Climbers Plan',
     href:     '/signup',
   },
@@ -273,7 +276,8 @@ export default function WhoItsForPage() {
               style={{ background: '#0C0B08' }}>
               <div>
                 <p className="text-sm font-semibold" style={{ color: '#F3F4F6' }}>
-                  {p.plan} — starts at <span style={{ color: p.color }}>${p.price}/month</span>
+                  {p.plan} — starts at <span style={{ color: p.color }}>₦{p.priceNgn.toLocaleString('en-NG')}/month</span>
+                  <span className="text-xs font-normal ml-2" style={{ color: '#6B7280' }}>(~${p.priceUsd} USD)</span>
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
                   7-day free trial · No credit card required · Cancel anytime
