@@ -232,6 +232,25 @@ export const B2B_TIERS: B2BTier[] = [
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
+// REVENUE MODEL ROWS (used by RevenueModel.tsx — Combined trajectory table)
+// ─────────────────────────────────────────────────────────────────────────────
+export interface RevenueRow {
+  label: string
+  b2cMRR: string
+  b2bMRR: string
+  totalMRR: string
+  arr: string
+}
+
+export const REVENUE_ROWS: RevenueRow[] = [
+  { label: 'Month 6',  b2cMRR: '$1,618',  b2bMRR: '$1,617',  totalMRR: '$3,235',   arr: '$38,820'   },
+  { label: 'Month 9',  b2cMRR: '$3,800',  b2bMRR: '$5,200',  totalMRR: '$9,000',   arr: '$108,000'  },
+  { label: 'Month 12', b2cMRR: '$6,675',  b2bMRR: '$10,990', totalMRR: '$17,665',  arr: '$211,980'  },
+  { label: 'Month 18', b2cMRR: '$13,000', b2bMRR: '$24,000', totalMRR: '$37,000',  arr: '$444,000'  },
+  { label: 'Month 24', b2cMRR: '$22,250', b2bMRR: '$41,725', totalMRR: '$63,975',  arr: '$767,700'  },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 export function formatPrice(amount: number | null, currency: Currency): string {
