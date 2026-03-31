@@ -3,6 +3,11 @@
 // Single source of truth for all plan prices and discounts.
 // To change pricing: edit ONLY this file.
 //
+// Plan ID mapping (Supabase subscription_plan → display name):
+//   builder → Explorer  (₦12,000/mo)
+//   pro     → Builder   (₦25,000/mo)
+//   elite   → Climber   (₦60,000/mo)
+//
 // Imported by:
 //   - app/checkout/page.tsx
 //   - app/pricing/page.tsx
@@ -11,8 +16,8 @@
 // ─────────────────────────────────────────────────────────────
 
 export interface PlanPricing {
-  id:             string;
-  name:           string;
+  id:             string;  // Supabase subscription_plan value
+  name:           string;  // Display name shown to users
   monthlyPrice:   number;  // NGN/month billed monthly
   yearlyPrice:    number;  // NGN total billed annually
   yearlyPerMonth: number;  // yearlyPrice / 12 for display
@@ -20,40 +25,37 @@ export interface PlanPricing {
   yearlySavings:  number;  // absolute NGN saved per year
 }
 
-// ── Prices ────────────────────────────────────────────────────
-// Monthly: Explorer ₦5,000 · Builder ₦10,000 · Climber ₦15,000
-// Yearly:  Explorer ₦48,000 (20% off) · Builder ₦96,000 (20% off) · Climber ₦144,000 (20% off)
 export const PLAN_PRICING: PlanPricing[] = [
   {
-    id:             'explorer',
-    name:           'Explorer',
-    monthlyPrice:   5000,
-    yearlyPrice:    48000,   // ₦4,000/mo — 20% off
-    yearlyPerMonth: 4000,
+    id:             'builder',      // Supabase ID
+    name:           'Explorer',     // display name
+    monthlyPrice:   12000,
+    yearlyPrice:    115200,         // ₦9,600/mo — 20% off
+    yearlyPerMonth: 9600,
     yearlyDiscount: 20,
-    yearlySavings:  12000,   // 5000×12 - 48000
+    yearlySavings:  28800,          // 12000×12 - 115200
   },
   {
-    id:             'builder',
-    name:           'Builder',
-    monthlyPrice:   10000,
-    yearlyPrice:    96000,   // ₦8,000/mo — 20% off
-    yearlyPerMonth: 8000,
+    id:             'pro',          // Supabase ID
+    name:           'Builder',      // display name
+    monthlyPrice:   25000,
+    yearlyPrice:    240000,         // ₦20,000/mo — 20% off
+    yearlyPerMonth: 20000,
     yearlyDiscount: 20,
-    yearlySavings:  24000,   // 10000×12 - 96000
+    yearlySavings:  60000,          // 25000×12 - 240000
   },
   {
-    id:             'climber',
-    name:           'Climber',
-    monthlyPrice:   15000,
-    yearlyPrice:    144000,  // ₦12,000/mo — 20% off
-    yearlyPerMonth: 12000,
+    id:             'elite',        // Supabase ID
+    name:           'Climber',      // display name
+    monthlyPrice:   60000,
+    yearlyPrice:    576000,         // ₦48,000/mo — 20% off
+    yearlyPerMonth: 48000,
     yearlyDiscount: 20,
-    yearlySavings:  36000,   // 15000×12 - 144000
+    yearlySavings:  144000,         // 60000×12 - 576000
   },
 ];
 
-/** Fast lookup by plan id */
+/** Fast lookup by Supabase plan id */
 export const PLAN_PRICING_MAP: Record<string, PlanPricing> = Object.fromEntries(
   PLAN_PRICING.map((p) => [p.id, p])
 );

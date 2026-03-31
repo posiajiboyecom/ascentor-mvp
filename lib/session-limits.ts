@@ -1,80 +1,101 @@
 // ============================================================
 // FEATURE #5: Session Limiting per Subscription Type
 // Middleware + utility to enforce usage limits based on plan.
-// Free users get limited AI coaching sessions; paid get more.
+//
+// Plan ID mapping (Supabase subscription_plan → display name):
+//   free    → Free
+//   builder → Explorer  (₦12,000/mo)
+//   pro     → Builder   (₦25,000/mo)
+//   elite   → Climber   (₦60,000/mo)
 // ============================================================
 
 import { createClient } from '@supabase/supabase-js';
 
-// --- Plan Limits ---
 export interface PlanLimits {
-  coachingSessions: number;    // per month
-  sessionLength: number;       // max messages per session
-  expertSessions: number;      // registrations per month
-  communityPosts: number;      // per day
-  courseAccess: boolean;        // can access learn module
-  exportData: boolean;         // can export data
+  coachingSessions: number;   // per month (-1 = unlimited)
+  sessionLength: number;      // max messages per session (-1 = unlimited)
+  expertSessions: number;     // registrations per month (-1 = unlimited)
+  communityPosts: number;     // per day (-1 = unlimited)
+  communityLimit: number;     // max cohorts joined (-1 = unlimited)
+  courseAccess: 'none' | 'preview' | 'full'; // course access level
 }
 
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
   free: {
-    coachingSessions: 2,       // 2 coaching sessions per month for unpaid users
-    sessionLength: 10,         // 10 messages per session
-    expertSessions: 1,         // 1 expert session per month
-    communityPosts: 3,         // 3 posts per day
-    courseAccess: false,        // no course access
-    exportData: false,         // no data export
+    coachingSessions: 5,        // 5 sessions/month — matches pricing page
+    sessionLength: 8,           // 8 messages per session
+    expertSessions: 0,          // is_free sessions only (enforced separately)
+    communityPosts: 2,          // 2 posts/day
+    communityLimit: 1,          // 1 cohort
+    courseAccess: 'preview',    // 1 preview course
   },
-  // ── Current plan names used by proxy.ts (C-3 fix) ──────────────────
-  explorer: {
-    coachingSessions: 20,
-    sessionLength: 30,
+
+  // ── Current Supabase plan IDs ────────────────────────────────────────────
+  builder: {                    // Display: Explorer (₦12,000/mo)
+    coachingSessions: 30,
+    sessionLength: 20,
+    expertSessions: 1,          // 1 expert session/month
+    communityPosts: 5,
+    communityLimit: 3,          // up to 3 cohorts
+    courseAccess: 'full',
+  },
+  pro: {                        // Display: Builder (₦25,000/mo)
+    coachingSessions: -1,       // unlimited
+    sessionLength: 50,
+    expertSessions: 2,          // 2 expert sessions/month
+    communityPosts: -1,
+    communityLimit: -1,
+    courseAccess: 'full',
+  },
+  elite: {                      // Display: Climber (₦60,000/mo)
+    coachingSessions: -1,
+    sessionLength: -1,
+    expertSessions: -1,         // unlimited
+    communityPosts: -1,
+    communityLimit: -1,
+    courseAccess: 'full',
+  },
+
+  // ── Legacy aliases — kept for backward-compat ────────────────────────────
+  explorer: {                   // old display-name key — same as builder
+    coachingSessions: 30,
+    sessionLength: 20,
+    expertSessions: 1,
+    communityPosts: 5,
+    communityLimit: 3,
+    courseAccess: 'full',
+  },
+  standard: {                   // old legacy key — builder-level
+    coachingSessions: -1,
+    sessionLength: 50,
     expertSessions: 2,
-    communityPosts: 10,
-    courseAccess: true,
-    exportData: false,
+    communityPosts: -1,
+    communityLimit: -1,
+    courseAccess: 'full',
   },
-  builder: {
-    coachingSessions: 50,
+  tester: {                     // promo — builder-level
+    coachingSessions: -1,
     sessionLength: 50,
-    expertSessions: 10,
-    communityPosts: 20,
-    courseAccess: true,
-    exportData: true,
+    expertSessions: 2,
+    communityPosts: -1,
+    communityLimit: -1,
+    courseAccess: 'full',
   },
-  climber: {
-    coachingSessions: 200,
-    sessionLength: 100,
-    expertSessions: 999,
-    communityPosts: 100,
-    courseAccess: true,
-    exportData: true,
+  climber: {                    // old display-name key — same as elite
+    coachingSessions: -1,
+    sessionLength: -1,
+    expertSessions: -1,
+    communityPosts: -1,
+    communityLimit: -1,
+    courseAccess: 'full',
   },
-  // ── Legacy plan names — kept for backward-compat with older subscribers ──
-  standard: {
-    coachingSessions: 50,      // 50 coaching sessions per month
-    sessionLength: 50,         // 50 messages per session
-    expertSessions: 10,        // unlimited expert sessions
-    communityPosts: 20,        // 20 posts per day
-    courseAccess: true,         // full course access
-    exportData: true,          // can export data
-  },
-  tester: {
-    coachingSessions: 50,      // Same as standard (tester promo)
-    sessionLength: 50,
-    expertSessions: 10,
-    communityPosts: 20,
-    courseAccess: true,
-    exportData: true,
-  },
-  // pro maps to climber-level access
-  pro: {
-    coachingSessions: 200,
-    sessionLength: 100,
-    expertSessions: 999,
-    communityPosts: 100,
-    courseAccess: true,
-    exportData: true,
+  pro_legacy: {                 // old pro maps to elite-level
+    coachingSessions: -1,
+    sessionLength: -1,
+    expertSessions: -1,
+    communityPosts: -1,
+    communityLimit: -1,
+    courseAccess: 'full',
   },
 };
 
@@ -88,19 +109,14 @@ interface UsageCheckResult {
   message?: string;
 }
 
-/**
- * Check if user has remaining quota for a specific feature.
- * Call this BEFORE allowing an action (e.g., starting a coaching session).
- */
 export async function checkUsage(
   userId: string,
-  feature: keyof PlanLimits,
+  feature: keyof Omit<PlanLimits, 'courseAccess'>,
   supabaseUrl: string,
   serviceRoleKey: string
 ): Promise<UsageCheckResult> {
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  // Get user's plan
   const { data: profile } = await supabase
     .from('profiles')
     .select('subscription_plan, subscription_status, subscription_end')
@@ -109,20 +125,12 @@ export async function checkUsage(
 
   const plan = getEffectivePlan(profile);
   const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
-  const limit = limits[feature];
+  const limit = limits[feature] as number;
 
-  // Boolean features (courseAccess, exportData)
-  if (typeof limit === 'boolean') {
-    return {
-      allowed: limit,
-      used: 0,
-      limit: limit ? 1 : 0,
-      remaining: limit ? 1 : 0,
-      message: limit ? undefined : 'Upgrade to Standard to access this feature.',
-    };
+  if (limit === -1) {
+    return { allowed: true, used: 0, limit: -1, remaining: -1 };
   }
 
-  // Count-based features
   const used = await getUsageCount(supabase, userId, feature);
   const remaining = Math.max(0, limit - used);
 
@@ -137,9 +145,6 @@ export async function checkUsage(
   };
 }
 
-/**
- * Increment usage counter after an action is performed.
- */
 export async function recordUsage(
   userId: string,
   feature: string,
@@ -147,7 +152,6 @@ export async function recordUsage(
   serviceRoleKey: string
 ): Promise<void> {
   const supabase = createClient(supabaseUrl, serviceRoleKey);
-
   await supabase.from('usage_tracking').insert({
     user_id: userId,
     feature,
@@ -157,35 +161,27 @@ export async function recordUsage(
 
 // --- Helpers ---
 
-function getEffectivePlan(profile: any): string {
+export function getEffectivePlan(profile: any): string {
   if (!profile) return 'free';
-
   const { subscription_plan, subscription_status, subscription_end } = profile;
-
-  // Check if subscription is still active
-  if (subscription_status === 'active' && subscription_end) {
-    const endDate = new Date(subscription_end);
-    if (endDate > new Date()) {
-      return subscription_plan || 'standard';
+  if (subscription_status === 'active' || subscription_status === 'trialing') {
+    if (subscription_end) {
+      return new Date(subscription_end) > new Date() ? (subscription_plan || 'builder') : 'free';
     }
-    // Subscription expired
-    return 'free';
+    return subscription_plan || 'builder';
   }
-
-  if (subscription_status === 'active') {
-    return subscription_plan || 'standard';
+  if (subscription_status === 'cancelled' && subscription_end) {
+    return new Date(subscription_end) > new Date() ? (subscription_plan || 'builder') : 'free';
   }
-
   return 'free';
 }
 
 async function getUsageCount(
   supabase: any,
   userId: string,
-  feature: keyof PlanLimits
+  feature: keyof Omit<PlanLimits, 'courseAccess'>
 ): Promise<number> {
   const period = getPeriodDates(feature);
-
   const { count } = await supabase
     .from('usage_tracking')
     .select('*', { count: 'exact', head: true })
@@ -193,42 +189,37 @@ async function getUsageCount(
     .eq('feature', feature)
     .gte('created_at', period.start.toISOString())
     .lte('created_at', period.end.toISOString());
-
   return count || 0;
 }
 
-function getPeriodDates(feature: keyof PlanLimits): { start: Date; end: Date } {
+function getPeriodDates(feature: keyof Omit<PlanLimits, 'courseAccess'>): { start: Date; end: Date } {
   const now = new Date();
-
   if (feature === 'communityPosts') {
-    // Daily limit
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
     return { start, end };
   }
-
-  // Monthly limit (default)
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   return { start, end };
 }
 
-function getPeriod(feature: keyof PlanLimits): string {
+function getPeriod(feature: keyof Omit<PlanLimits, 'courseAccess'>): string {
   return feature === 'communityPosts' ? 'day' : 'month';
 }
 
-function formatFeatureName(feature: keyof PlanLimits): string {
+function formatFeatureName(feature: keyof Omit<PlanLimits, 'courseAccess'>): string {
   const names: Record<string, string> = {
     coachingSessions: 'coaching session',
     sessionLength: 'message',
     expertSessions: 'expert session',
     communityPosts: 'community post',
+    communityLimit: 'community',
   };
   return names[feature] || feature;
 }
 
-// --- SQL: usage_tracking table ---
 export const USAGE_TRACKING_SQL = `
 CREATE TABLE IF NOT EXISTS usage_tracking (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -236,36 +227,11 @@ CREATE TABLE IF NOT EXISTS usage_tracking (
   feature text NOT NULL,
   created_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_usage_tracking_user_feature
   ON usage_tracking(user_id, feature, created_at DESC);
-
 ALTER TABLE usage_tracking ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Users can view own usage" ON usage_tracking
   FOR SELECT USING (auth.uid() = user_id);
-
 CREATE POLICY "Service role can insert usage" ON usage_tracking
   FOR INSERT WITH CHECK (true);
-`;
-
-// --- Client-side hook (for React components) ---
-export const USAGE_CHECK_CLIENT_CODE = `
-// Use in any component that needs to check limits before an action:
-//
-// import { useState, useEffect } from 'react';
-//
-// function useUsageCheck(feature: string) {
-//   const [usage, setUsage] = useState<UsageCheckResult | null>(null);
-//   const [loading, setLoading] = useState(true);
-//
-//   useEffect(() => {
-//     fetch(\`/api/usage/check?feature=\${feature}\`)
-//       .then(r => r.json())
-//       .then(setUsage)
-//       .finally(() => setLoading(false));
-//   }, [feature]);
-//
-//   return { usage, loading };
-// }
 `;

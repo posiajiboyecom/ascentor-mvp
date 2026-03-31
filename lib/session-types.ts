@@ -6,10 +6,10 @@
 //   - app/api/coach/session/route.ts    (prompt selection)
 //
 // tier: which plans unlock this type
-//   'all'     — available to everyone including free
-//   'paid'    — explorer, builder, climber, standard, pro
-//   'builder' — builder, climber, standard, pro
-//   'climber' — climber only
+//   'all'     — available to everyone including free (challenge_navigation, weekly_reflection)
+//   'paid'    — explorer (builder ID), builder (pro ID), climber (elite ID) and legacy plans
+//   'builder' — builder (pro ID), climber (elite ID), standard, pro legacy
+//   'climber' — climber (elite ID) only
 // ─────────────────────────────────────────────────────────────
 
 export interface SessionType {
@@ -42,7 +42,7 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
     id:          'difficult_conversation',
     label:       'Prep a Conversation',
     description: 'Prepare for a hard conversation at work',
-    tier:        'all',
+    tier:        'paid',
     prompt: `You are Sage, Ascentor's AI mentor for ambitious African professionals.
 Help the user prepare for a difficult conversation at work.
 Be practical and specific. Help them think through what to say and how.
@@ -74,7 +74,7 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
     id:          'accountability_check',
     label:       'Accountability Check',
     description: 'Review commitments, celebrate wins, and re-commit',
-    tier:        'all',
+    tier:        'paid',
     prompt: `You are Sage, Ascentor's AI mentor for ambitious African professionals.
 Hold the user accountable to their commitments in a warm but direct way.
 Celebrate wins, explore blockers, and help them re-commit to what matters.

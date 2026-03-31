@@ -103,7 +103,7 @@ export default function CommunityPage() {
     setLoading(false);
   }
 
-  const communityLimit = subscription?.hasAccess ? -1 : 3; // -1 = unlimited
+  const communityLimit = subscription?.hasAccess ? -1 : 1; // free: 1 cohort, paid: unlimited
 
   async function joinCohort(cohortId: string) {
     // Check limit for free users
@@ -341,7 +341,7 @@ export default function CommunityPage() {
           <div className="text-center py-8">
             <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
               {communityLimit !== -1 && myCohortIds.size >= communityLimit
-                ? "You've reached the free community limit — upgrade or leave one to explore others"
+                ? "You've reached your free cohort limit (1) — upgrade to Explorer for 3, or Builder for unlimited"
                 : searchLower
                   ? `No circles match "${search}"`
                   : 'No circles in this category'}

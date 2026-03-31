@@ -68,7 +68,6 @@ export default function AccountClient({ profile, email, authProvider, userId, no
   // ═══ DANGER STATE ═══
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
-  const [exporting, setExporting] = useState(false);
 
   const [signingOut, setSigningOut] = useState(false);
   const isOAuth = authProvider !== 'email';
@@ -195,40 +194,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
     setTimeout(() => setNotifSaved(false), 3000);
     setNotifSaving(false);
   };
-
   // ═══ DANGER HANDLERS ═══
-  const handleExportData = async () => {
-    setExporting(true);
-    try {
-      const [profileData, sessions, goals, commitments, posts] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', userId).single(),
-        supabase.from('coaching_sessions').select('*').eq('user_id', userId),
-        supabase.from('user_goals').select('*').eq('user_id', userId),
-        supabase.from('user_commitments').select('*').eq('user_id', userId),
-        supabase.from('cohort_posts').select('*').eq('user_id', userId),
-      ]);
-
-      const exportData = {
-        exported_at: new Date().toISOString(),
-        profile: profileData.data,
-        coaching_sessions: sessions.data,
-        goals: goals.data,
-        commitments: commitments.data,
-        community_posts: posts.data,
-      };
-
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ascentor-data-${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      alert('Export failed. Please try again.');
-    }
-    setExporting(false);
-  };
 
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== 'DELETE') return;
@@ -554,18 +520,18 @@ export default function AccountClient({ profile, email, authProvider, userId, no
                 label: 'Free',
                 color: '#7A7260',
                 features: ['Sage (3 sessions/month)', '1 mentorship circle', 'Goal tracking'],
-                missing: ['Expert sessions', 'Courses & learning', 'Unlimited Sage', 'Export history'],
+                missing: ['Expert sessions', 'Courses & learning', 'Unlimited Sage'],
               },
               explorer: {
                 label: 'Explorer',
                 color: '#14B8A6',
                 features: ['Sage (10 sessions/month)', '1 mentorship circle', 'Courses & learning', 'Goal tracking (3 goals)', 'Weekly reflection prompts'],
-                missing: ['Live mentor sessions', 'Export history', 'Priority support'],
+                missing: ['Live mentor sessions', 'Priority support'],
               },
               builder: {
                 label: 'Builder',
                 color: '#E8A020',
-                features: ['Sage (unlimited sessions)', 'Up to 3 mentorship circles', 'Live mentor sessions', 'Human mentor matching', 'Courses & learning', 'Export session history', 'Priority support'],
+                features: ['Sage (unlimited sessions)', 'Up to 3 mentorship circles', 'Live mentor sessions', 'Human mentor matching', 'Courses & learning', 'Priority support'],
                 missing: ['1-on-1 quarterly expert session', 'Executive peer circle', 'Team dashboard'],
               },
               climber: {
@@ -575,7 +541,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
                 missing: [],
               },
               // Legacy aliases
-              standard: { label: 'Builder', color: '#E8A020', features: ['Sage (unlimited)', 'Up to 3 circles', 'Courses & learning', 'Export history', 'Priority support'], missing: [] },
+              standard: { label: 'Builder', color: '#E8A020', features: ['Sage (unlimited)', 'Up to 3 circles', 'Courses & learning', 'Priority support'], missing: [] },
               tester:   { label: 'Tester',  color: '#E8A020', features: ['Full access (beta tester)', 'All Builder features included'], missing: [] },
               pro:      { label: 'Pro',     color: '#8B5CF6', features: ['Full access', 'All features included'], missing: [] },
             };
@@ -723,19 +689,6 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
               style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
               {signingOut ? 'Signing out...' : 'Sign Out'}
-            </button>
-          </div>
-
-          {/* Export Data */}
-          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Export Your Data</h2>
-            <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>
-              Download all your data including profile, coaching sessions, goals, and community posts as a JSON file. GDPR compliant.
-            </p>
-            <button onClick={handleExportData} disabled={exporting}
-              className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
-              style={{ color: 'var(--blue)', border: '1px solid rgba(59,130,246,0.3)', background: 'rgba(59,130,246,0.04)' }}>
-              {exporting ? 'Preparing download...' : 'Download My Data'}
             </button>
           </div>
 

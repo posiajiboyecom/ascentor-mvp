@@ -59,6 +59,8 @@ export default function CohortFeedPage() {
   const [userId,       setUserId]       = useState<string | null>(null);
   const [loading,      setLoading]      = useState(true);
   const [posting,      setPosting]      = useState(false);
+  const [postLimitReached, setPostLimitReached] = useState(false);
+  const [postLimitMsg,     setPostLimitMsg]     = useState<string | null>(null);
   // ── Feature 1: Real member count (live from DB, not hardcoded) ──
   const [memberCount,  setMemberCount]  = useState(0);
   // ── Feature 2: Real online count via Supabase Presence ──────────
@@ -317,7 +319,21 @@ export default function CohortFeedPage() {
   }
 
   async function createPost() {
-    if (!newPost.trim() || !userId || posting) return;
+    if (!newPost.trim() || !userId || posting || postLimitReached) return;
+
+    // Check daily post limit before submitting
+    try {
+      const res = await fetch('/api/usage/check?feature=communityPosts');
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.allowed) {
+          setPostLimitReached(true);
+          setPostLimitMsg(data.message || "You've reached your daily post limit. Upgrade for more.");
+          return;
+        }
+      }
+    } catch { /* non-fatal — allow post if check fails */ }
+
     setPosting(true);
     const content = newPost.trim();
     setNewPost('');
@@ -622,6 +638,7 @@ export default function CohortFeedPage() {
           value={newPost}
           onChange={(e) => setNewPost(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && e.metaKey) createPost(); }}
+          disabled={postLimitReached}
           placeholder="Share a win, ask a question, or spark a discussion..."
           rows={3}
           className="w-full px-3.5 py-2.5 text-sm rounded-lg resize-none mb-2.5"
@@ -629,7 +646,12 @@ export default function CohortFeedPage() {
         />
         <div className="flex justify-between items-center">
           <span className="text-[10px]" style={{ color: 'var(--text-dim)' }}>⌘ + Enter to post</span>
-          <button onClick={createPost}
+          {postLimitMsg && (
+            <p style={{ fontSize: 11, color: 'var(--error, #EF4444)', margin: '4px 0' }}>
+              {postLimitMsg}
+            </p>
+          )}
+          <button onClick={createPost} disabled={postLimitReached}
             disabled={!newPost.trim() || posting}
             className="px-5 py-2 rounded-lg text-xs font-semibold disabled:opacity-40"
             style={{ background: 'var(--accent)', color: '#000' }}>

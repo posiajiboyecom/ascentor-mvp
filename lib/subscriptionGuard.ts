@@ -1,31 +1,31 @@
 // ============================================================
 // SERVER-SIDE SUBSCRIPTION GUARD
-// Drop into: lib/subscriptionGuard.ts
+// lib/subscriptionGuard.ts
 //
-// Uses your plan names: explorer | builder | climber
-// Call in any API route that needs plan-level enforcement.
-//
-// Usage:
-//   const guard = await requireSubscription('explorer');
-//   if (guard.error) return guard.error;
-//   const { user, effectivePlan } = guard;
+// Plan ID mapping (Supabase subscription_plan → display name):
+//   free    → Free
+//   builder → Explorer  (₦12,000/mo)
+//   pro     → Builder   (₦25,000/mo)
+//   elite   → Climber   (₦60,000/mo)
 // ============================================================
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 const PLAN_RANK: Record<string, number> = {
-  free: 0,
-  explorer: 1,
-  builder: 2,
-  climber: 3,
+  free:     0,
+  // Current Supabase IDs
+  builder:  1,   // Explorer
+  pro:      2,   // Builder
+  elite:    3,   // Climber
   // Legacy aliases
+  explorer: 1,
   standard: 2,
-  tester: 2,
-  pro: 3,
+  tester:   2,
+  climber:  3,
 };
 
-export type MinPlan = 'free' | 'explorer' | 'builder' | 'climber';
+export type MinPlan = 'free' | 'explorer' | 'builder' | 'pro' | 'elite' | 'climber';
 
 export interface GuardSuccess {
   error: null;
@@ -60,7 +60,7 @@ export async function requireSubscription(minPlan: MinPlan = 'free'): Promise<Gu
     .eq('id', user.id)
     .single();
 
-  const plan = profile?.subscription_plan || 'free';
+  const plan   = profile?.subscription_plan || 'free';
   const status = profile?.subscription_status || 'free';
 
   const isActive =
@@ -97,12 +97,18 @@ export async function requireSubscription(minPlan: MinPlan = 'free'): Promise<Gu
   };
 }
 
-// ── Coach session limit check ──────────────────────────────
-// Call AFTER requireSubscription to enforce monthly quotas
-
+// ── Coach session limit check ─────────────────────────────────────────────
+// -1 = unlimited. Matches PLAN_LIMITS in session-limits.ts.
 const COACH_LIMITS: Record<string, number> = {
-  free: 3, explorer: 10, builder: -1, climber: -1,
-  standard: -1, tester: -1, pro: -1,
+  free:     5,   // 5/month
+  builder:  30,  // Explorer: 30/month
+  pro:      -1,  // Builder: unlimited
+  elite:    -1,  // Climber: unlimited
+  // Legacy aliases
+  explorer: 30,
+  standard: -1,
+  tester:   -1,
+  climber:  -1,
 };
 
 export async function checkCoachSessionLimit(userId: string, effectivePlan: string): Promise<{
@@ -111,7 +117,7 @@ export async function checkCoachSessionLimit(userId: string, effectivePlan: stri
   limit: number;
   error?: NextResponse;
 }> {
-  const limit = COACH_LIMITS[effectivePlan] ?? 3;
+  const limit = COACH_LIMITS[effectivePlan] ?? 5;
   if (limit === -1) return { allowed: true, used: 0, limit: -1 };
 
   const supabase = await createClient();
@@ -128,7 +134,7 @@ export async function checkCoachSessionLimit(userId: string, effectivePlan: stri
   const used = count || 0;
 
   if (used >= limit) {
-    const nextPlan = effectivePlan === 'free' ? 'explorer' : 'builder';
+    const nextPlan = effectivePlan === 'free' ? 'builder' : 'pro';
     return {
       allowed: false,
       used,
@@ -140,6 +146,77 @@ export async function checkCoachSessionLimit(userId: string, effectivePlan: stri
           limit,
           upgradeUrl: `/checkout?required=${nextPlan}&feature=coach`,
           message: `You've used all ${limit} Sage sessions this month. Upgrade for more.`,
+        },
+        { status: 429 }
+      ),
+    };
+  }
+
+  return { allowed: true, used, limit };
+}
+
+// ── Expert session monthly limit check ───────────────────────────────────
+// Free: 0 paid sessions (is_free only). builder=1, pro=2, elite=unlimited.
+const EXPERT_LIMITS: Record<string, number> = {
+  free:     0,
+  builder:  1,
+  pro:      2,
+  elite:    -1,
+  explorer: 1,
+  standard: 2,
+  tester:   2,
+  climber:  -1,
+};
+
+export async function checkExpertSessionLimit(userId: string, effectivePlan: string): Promise<{
+  allowed: boolean;
+  used: number;
+  limit: number;
+  error?: NextResponse;
+}> {
+  const limit = EXPERT_LIMITS[effectivePlan] ?? 0;
+  if (limit === -1) return { allowed: true, used: 0, limit: -1 };
+  if (limit === 0) {
+    return {
+      allowed: false,
+      used: 0,
+      limit: 0,
+      error: NextResponse.json(
+        {
+          error: 'Expert sessions require a paid plan',
+          upgradeUrl: '/checkout?required=builder&feature=experts',
+          message: 'Upgrade to Explorer or higher to register for expert sessions.',
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
+  const supabase = await createClient();
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const { count } = await supabase
+    .from('session_registrations')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', startOfMonth.toISOString());
+
+  const used = count || 0;
+
+  if (used >= limit) {
+    return {
+      allowed: false,
+      used,
+      limit,
+      error: NextResponse.json(
+        {
+          error: 'Monthly expert session limit reached',
+          used,
+          limit,
+          upgradeUrl: '/checkout?required=pro&feature=experts',
+          message: `You've used your ${limit} expert session${limit > 1 ? 's' : ''} this month. Upgrade to Builder for more.`,
         },
         { status: 429 }
       ),

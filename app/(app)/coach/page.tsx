@@ -400,7 +400,7 @@ export default function CoachPage() {
                 letterSpacing: '0.06em',
               }}
             >
-              {usageInfo.used}/{usageInfo.limit} sessions today
+              {usageInfo.used}/{usageInfo.limit} sessions this month
             </span>
           </div>
         )}
@@ -593,7 +593,7 @@ export default function CoachPage() {
           onKeyDown={e => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
           }}
-          placeholder={limitReached ? "Daily session limit reached — upgrade for more" : "Share what's on your mind..."}
+          placeholder={limitReached ? "Monthly session limit reached — upgrade for more" : "Share what's on your mind..."}
           rows={2}
           disabled={limitReached}
           className="flex-1 px-4 py-3 text-sm rounded-xl resize-none leading-relaxed disabled:opacity-50"

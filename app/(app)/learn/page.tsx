@@ -145,12 +145,13 @@ function ContinueBanner({ course, onResume }: { course: Course; onResume: () => 
 
 // ─── Section Accordion ───────────────────────────────────────
 function SectionAccordion({
-  section, isOpen, onToggle, onOpenCourse,
+  section, isOpen, onToggle, onOpenCourse, isPreview,
 }: {
   section: Section;
   isOpen: boolean;
   onToggle: () => void;
   onOpenCourse: (id: string) => void;
+  isPreview?: boolean;
 }) {
   const total = section.courses.length;
   const done  = section.totalCompleted;
@@ -229,13 +230,14 @@ function SectionAccordion({
       }}>
         <div style={{ padding: '4px 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {section.courses.map((course, idx) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              idx={idx}
-              onOpen={() => onOpenCourse(course.id)}
-            />
-          ))}
+              <CourseCard
+                key={course.id}
+                course={course}
+                idx={idx}
+                onOpen={() => onOpenCourse(course.id)}
+                isLocked={false}
+              />
+            ))}
         </div>
       </div>
     </div>
@@ -243,19 +245,22 @@ function SectionAccordion({
 }
 
 // ─── Course Card ─────────────────────────────────────────────
-function CourseCard({ course, idx, onOpen }: { course: Course; idx: number; onOpen: () => void }) {
+function CourseCard({ course, idx, onOpen, isLocked }: { course: Course; idx: number; onOpen: () => void; isLocked?: boolean }) {
   const pct = Math.round(course.progress);
   const isNew = course.progress === 0 && !course.completed;
   const isInProgress = course.progress > 0 && !course.completed;
 
   return (
-    <div onClick={onOpen} style={{
+    <div onClick={isLocked ? undefined : onOpen} style={{
       display: 'flex', gap: 12, alignItems: 'center',
       padding: '10px 12px',
       borderRadius: 10,
       background: B.dark700,
-      border: `1px solid ${course.completed ? 'rgba(16,185,129,0.18)' : B.border}`,
-      cursor: 'pointer',
+      border: `1px solid ${isLocked ? B.border : course.completed ? 'rgba(16,185,129,0.18)' : B.border}`,
+      cursor: isLocked ? 'default' : 'pointer',
+      opacity: isLocked ? 0.45 : 1,
+      filter: isLocked ? 'blur(0.5px)' : 'none',
+      position: 'relative' as const,
       transition: 'border-color 0.2s, background 0.2s',
       animation: 'fade-in-up 0.25s ease both',
       animationDelay: `${idx * 0.04}s`,
@@ -693,7 +698,7 @@ export default function LearnPage() {
   const [activeCourse, setActiveCourse] = useState<string | null>(null);
   const [continueCourse, setContinueCourse] = useState<Course | null>(null);
   const [loading, setLoading]         = useState(true);
-  const [hasAccess, setHasAccess]     = useState<boolean | null>(null);
+  const [hasAccess, setHasAccess]     = useState<boolean | 'preview' | null>(null);
   const [userId, setUserId]           = useState<string | null>(null);
   // Stable ref — never recreate on re-renders (same fix as community page)
   const supabaseRef = useRef(createClient());
@@ -719,10 +724,12 @@ export default function LearnPage() {
       profile.subscription_end && new Date(profile.subscription_end) > new Date();
 
     if (!active && !cancelledActive) {
-      setHasAccess(false); setLoading(false);
-      analytics.upgradePromptShown('learn'); return;
+      // Free users get preview access (1 unlocked course)
+      setHasAccess('preview'); setLoading(false);
+      // Still load courses so we can show the preview
+    } else {
+      setHasAccess(true);
     }
-    setHasAccess(true);
 
     const [coursesRes, progressRes] = await Promise.all([
       supabase.from('courses').select('*').eq('is_published', true).order('sort_order'),
@@ -830,7 +837,11 @@ export default function LearnPage() {
   };
 
   if (loading) return <SageLoader message="Loading courses…" />;
+  // 'preview' = free user, shows 1 unlocked course + blurred locked courses
+  // false = not logged in
   if (hasAccess === false) return <UpgradePrompt feature="learn" />;
+  const isPreview = hasAccess === 'preview';
+  const isPreview = hasAccess === 'preview';
 
   const activeCourseData = activeCourse ? courses.find(c => c.id === activeCourse) : null;
 
@@ -909,7 +920,16 @@ export default function LearnPage() {
             onToggle={() => setOpenSection(
               openSection === section.category ? null : section.category
             )}
-            onOpenCourse={openCourse}
+            onOpenCourse={(id) => {
+              if (isPreview) {
+                // In preview mode, only allow the first course (index 0 across all sections)
+                const allCourses = sections.flatMap(s => s.courses);
+                const firstCourse = allCourses[0];
+                if (firstCourse && id !== firstCourse.id) return; // block locked courses
+              }
+              openCourse(id);
+            }}
+            isPreview={isPreview}
           />
         ))
       )}
