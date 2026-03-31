@@ -152,56 +152,7 @@ export default function PricingClient({ defaultCurrency }: Props) {
             ))}
           </div>
 
-          {/* Pricing rationale */}
-          <div style={{ marginTop: 40 }}>
-            <p style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: '0.16em',
-              textTransform: 'uppercase',
-              color: 'var(--text-dim)',
-              marginBottom: 14,
-            }}>
-              Pricing rationale
-            </p>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: 12,
-            }}>
-              {(currency === 'ngn'
-                ? [
-                    { label: 'Free tier purpose',      text: 'Acquisition — no credit card. Session cap creates upgrade pressure. 15–20% convert within 60 days if coaching delivers value.' },
-                    { label: '₦12k Explorer logic',    text: '~$7 USD. Less than one business lunch. Targets professionals earning ₦300k–₦600k/month.' },
-                    { label: '₦25k Builder logic',     text: 'Your revenue engine. The AI content agent saves 5+ hours/week — frame the upgrade around time saved, not features unlocked.' },
-                    { label: '₦60k Climber logic',     text: 'Price anchor that makes Builder feel affordable. 10 Climber subscribers = ₦600k/month from this tier alone.' },
-                  ]
-                : [
-                    { label: 'Explorer $19',           text: 'Below LinkedIn Premium ($40). Above Calm ($15). Frame it as career ROI vs entertainment spend.' },
-                    { label: 'Builder $39',            text: 'One human coaching session costs $150–$500. $39/month for unlimited AI coaching + content writing is a clear win.' },
-                    { label: 'Diaspora conversion',    text: 'Global users convert 25–30% faster — higher disposable income and stronger career anxiety around standing out internationally.' },
-                    { label: 'Climber $99 anchor',     text: 'Positions Builder as obvious value. Less than one hour with a human executive coach — lead with that comparison.' },
-                  ]
-              ).map(item => (
-                <div key={item.label} style={{
-                  borderLeft: '2px solid var(--border)',
-                  paddingLeft: 16,
-                  paddingTop: 10,
-                  paddingBottom: 10,
-                  paddingRight: 12,
-                  background: 'rgba(212,207,195,0.03)',
-                  borderRadius: '0 8px 8px 0',
-                }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: '0 0 5px' }}>
-                    {item.label}
-                  </p>
-                  <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-muted)', margin: 0 }}>
-                    {item.text}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+
         </div>
       )}
 
