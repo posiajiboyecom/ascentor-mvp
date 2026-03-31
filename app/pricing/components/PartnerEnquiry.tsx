@@ -418,7 +418,7 @@ export default function PartnerEnquiry() {
             {
               icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a2 2 0 0 1 2 2v1H10V4a2 2 0 0 1 2-2z"/><rect x="3" y="5" width="18" height="16" rx="2"/><circle cx="9" cy="13" r="1" fill="var(--gold)" stroke="none"/><circle cx="15" cy="13" r="1" fill="var(--gold)" stroke="none"/><path d="M12 16v2"/></svg>,
               title: 'AI-powered coaching',
-              desc:  'Sage becomes your branded AI mentor, trained on your expertise and your community's needs.',
+              desc: 'Sage becomes your branded AI mentor, trained on your expertise and your community\'s needs.',
             },
             {
               icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
