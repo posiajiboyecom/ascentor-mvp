@@ -1,4 +1,4 @@
-// app/pricing/data.ts — v3
+// app/pricing/data.ts — v4
 // Plan display names updated: Starter→Free, Builder→Explorer, Pro→Builder, Elite→Climber
 // Backend IDs (id field) are UNCHANGED — they map to subscription_plan in Supabase.
 // Currency is auto-detected server-side via x-currency header (NG→ngn, rest→usd).
@@ -11,6 +11,9 @@ export interface PlanFeature {
   text: string
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// B2C TYPES
+// ─────────────────────────────────────────────────────────────────────────────
 export interface B2CTier {
   id: string
   name: string
@@ -35,9 +38,32 @@ export interface B2CTier {
   features: PlanFeature[]
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// B2B TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+export interface B2BTier {
+  id: string
+  name: string
+  label: string
+  flatMonthly: number | null        // null = custom/enterprise pricing
+  seatPrice: number | null          // per active member on top of flat fee
+  maxSeats: string                  // e.g. "Up to 50 members"
+  annualText: string                // e.g. "Save $200/yr billed annually"
+  hot: boolean
+  badge: string
+  ctaLabel: string
+  ctaVariant: 'primary' | 'secondary'
+  // Lemonsqueezy variant IDs (USD) — paste from LS dashboard
+  lemonVariantId: {
+    monthly: string
+    annual: string
+  }
+  features: PlanFeature[]
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // B2C TIERS
+// ─────────────────────────────────────────────────────────────────────────────
 export const B2C_TIERS: B2CTier[] = [
   {
     id: 'free',
@@ -127,6 +153,80 @@ export const B2C_TIERS: B2CTier[] = [
       { enabled: true, text: 'CV + LinkedIn audit' },
       { enabled: true, text: 'Custom learning path' },
       { enabled: true, text: 'Dedicated success manager' },
+    ],
+  },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// B2B TIERS
+// ─────────────────────────────────────────────────────────────────────────────
+export const B2B_TIERS: B2BTier[] = [
+  {
+    id: 'partner_starter',
+    name: 'Starter Partner',
+    label: 'For small communities',
+    flatMonthly: 199,
+    seatPrice: 5,
+    maxSeats: 'Up to 50 active members',
+    annualText: 'Save $398/yr billed annually',
+    hot: false,
+    badge: '',
+    ctaLabel: 'Get started',
+    ctaVariant: 'secondary',
+    // ↓ paste from Lemonsqueezy dashboard
+    lemonVariantId: { monthly: '', annual: '' },
+    features: [
+      { enabled: true,  text: 'Branded AI coaching (Sage)' },
+      { enabled: true,  text: 'Community dashboard' },
+      { enabled: true,  text: 'Up to 50 members' },
+      { enabled: true,  text: 'Basic analytics' },
+      { enabled: false, text: 'White-label mobile app' },
+      { enabled: false, text: 'Dedicated success manager' },
+    ],
+  },
+  {
+    id: 'partner_growth',
+    name: 'Growth Partner',
+    label: 'For scaling communities',
+    flatMonthly: 499,
+    seatPrice: 4,
+    maxSeats: 'Up to 200 active members',
+    annualText: 'Save $998/yr billed annually',
+    hot: true,
+    badge: 'Most popular',
+    ctaLabel: 'Start 14-day trial',
+    ctaVariant: 'primary',
+    // ↓ paste from Lemonsqueezy dashboard
+    lemonVariantId: { monthly: '', annual: '' },
+    features: [
+      { enabled: true,  text: 'Everything in Starter' },
+      { enabled: true,  text: 'Up to 200 members' },
+      { enabled: true,  text: 'Advanced analytics + cohort tracking' },
+      { enabled: true,  text: 'Custom learning paths' },
+      { enabled: true,  text: 'White-label mobile app' },
+      { enabled: false, text: 'Dedicated success manager' },
+    ],
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    label: 'For large organisations',
+    flatMonthly: null,
+    seatPrice: null,
+    maxSeats: 'Unlimited members',
+    annualText: 'Custom pricing — contact us',
+    hot: false,
+    badge: '',
+    ctaLabel: 'Contact us',
+    ctaVariant: 'secondary',
+    lemonVariantId: { monthly: '', annual: '' },
+    features: [
+      { enabled: true, text: 'Everything in Growth' },
+      { enabled: true, text: 'Unlimited members' },
+      { enabled: true, text: 'SLA guarantee' },
+      { enabled: true, text: 'Dedicated success manager' },
+      { enabled: true, text: 'Custom integrations' },
+      { enabled: true, text: 'On-site onboarding' },
     ],
   },
 ]
