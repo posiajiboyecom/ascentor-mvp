@@ -10,10 +10,34 @@
 // document (29 March 2026). Styled with Ascentor brand tokens.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`)
+    setIsMobile(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [breakpoint])
+  return isMobile
+}
 
 type FormField = 'name' | 'email' | 'org' | 'message'
 type Errors = Partial<Record<FormField, string>>
+
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${bp}px)`)
+    setM(mq.matches)
+    const h = (e: MediaQueryListEvent) => setM(e.matches)
+    mq.addEventListener('change', h)
+    return () => mq.removeEventListener('change', h)
+  }, [bp])
+  return m
+}
 
 // ── Pricing data from Ascentor_Organisation_Pricing.docx ─────────────────────
 const PLANS = [
@@ -114,6 +138,9 @@ const ACCESS_STEPS = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function PartnerEnquiry() {
+  const isMobile = useIsMobile()
+  const isMobile = useIsMobile()
+  const isMobile = useIsMobile()
   const [name,        setName]        = useState('')
   const [email,       setEmail]       = useState('')
   const [org,         setOrg]         = useState('')
@@ -192,14 +219,14 @@ export default function PartnerEnquiry() {
         {/* Overview */}
         <div style={{ textAlign: 'center', margin: '48px 0 40px' }}>
           <p style={s.eyebrow}>Organisation Plans</p>
-          <h2 style={s.revealHeadline}>White-label AI coaching infrastructure<br />for teams, coaches, and institutions.</h2>
+          <h2 style={{ ...s.revealHeadline, fontSize: isMobile ? '26px' : 'clamp(28px, 3.5vw, 44px)' }}>White-label AI coaching infrastructure{isMobile ? ' ' : <br />}for teams, coaches, and institutions.</h2>
           <p style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 580, margin: '12px auto 0', lineHeight: 1.7, fontFamily: 'var(--font-ui)' }}>
             Each plan includes a white-label subdomain, community infrastructure, course hosting, payment collection from your members, and varying levels of AI agent capability. You focus on your community; Ascentor handles the technology.
           </p>
         </div>
 
         {/* Plan cards */}
-        <div style={s.planGrid}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? 16 : 20, alignItems: 'start' }}>
           {PLANS.map(plan => (
             <div key={plan.id} style={{
               ...s.planCard,
@@ -283,7 +310,7 @@ export default function PartnerEnquiry() {
         {/* Comparison table */}
         <div style={{ marginTop: 64 }}>
           <p style={{ ...s.eyebrow, textAlign: 'center' }}>Plan Comparison</p>
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', margin: isMobile ? '0 -16px' : 0, padding: isMobile ? '0 16px' : 0 }}>
             <table style={s.table}>
               <thead>
                 <tr>
@@ -321,7 +348,7 @@ export default function PartnerEnquiry() {
         {/* Seat pricing explanation */}
         <div style={s.seatSection}>
           <p style={s.eyebrow}>How Seat Pricing Works</p>
-          <div style={s.seatGrid}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: isMobile ? 12 : 16, marginTop: 16 }}>
             {[
               {
                 title: 'What counts as a seat',
@@ -354,7 +381,7 @@ export default function PartnerEnquiry() {
           <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginBottom: 36, lineHeight: 1.6 }}>
             Ascentor operates a curated partner model. All organisation accounts are reviewed and approved by Team Ascentor before activation.
           </p>
-          <div style={s.stepsWrap}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: isMobile ? 20 : 12 }}>
             {ACCESS_STEPS.map((step, i) => (
               <div key={i} style={s.step}>
                 <div style={s.stepNum}>{step.n}</div>
@@ -365,7 +392,7 @@ export default function PartnerEnquiry() {
         </div>
 
         {/* Demo + contact CTA */}
-        <div style={s.ctaRow}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 20, marginTop: isMobile ? 40 : 56 }}>
           <div style={s.ctaCard}>
             <p style={s.ctaLabel}>Live Demo</p>
             <p style={s.ctaTitle}>Experience the platform before committing.</p>
@@ -396,12 +423,15 @@ export default function PartnerEnquiry() {
   // PHASE 1 — Contact Form
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div ref={topRef} style={s.formWrap}>
+    <div ref={topRef} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 28 : 48, maxWidth: 1040, margin: '0 auto', alignItems: 'start' }}>
 
       {/* Left: value prop */}
       <div style={s.formLeft}>
         <p style={s.eyebrow}>For organisations</p>
-        <h2 style={s.formHeadline}>
+        <h2 style={{
+          ...s.formHeadline,
+          fontSize: isMobile ? '32px' : 'clamp(30px, 3.5vw, 46px)',
+        }}>
           Bring Ascentor<br />to your people.
         </h2>
         <p style={s.formSubtext}>
@@ -448,7 +478,7 @@ export default function PartnerEnquiry() {
 
       {/* Right: form card */}
       <div>
-        <div style={s.formCard}>
+        <div style={{ ...s.formCard, padding: isMobile ? "24px 20px" : "32px 28px" }}>
           <p style={s.formCardTitle}>Request partner access</p>
           <p style={s.formCardSub}>
             Tell us about your organisation and we'll be in touch within 1–2 business days.
@@ -513,7 +543,7 @@ function FormField({ label, placeholder, value, onChange, error, type = 'text', 
   )
 }
 
-// ── Shared styles ─────────────────────────────────────────────────────────────
+// ── Shared styles ────────────────────────────────────────────────────────────
 const s: Record<string, React.CSSProperties> = {
   // Shared
   eyebrow: {
@@ -523,13 +553,9 @@ const s: Record<string, React.CSSProperties> = {
   },
 
   // ── Phase 1 form ──
-  formWrap: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr',
-    gap: 48, maxWidth: 1040, margin: '0 auto', alignItems: 'start',
-  },
   formLeft:    { display: 'flex', flexDirection: 'column' as const, gap: 0 },
   formHeadline: {
-    fontFamily: 'var(--font-display)', fontSize: 'clamp(30px, 3.5vw, 46px)',
+    fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 5vw, 46px)',
     fontWeight: 700, color: 'var(--text)', lineHeight: 1.1, marginBottom: 14,
   },
   formSubtext: { fontSize: 15, lineHeight: 1.7, color: 'var(--text-muted)', marginBottom: 28 },
@@ -545,6 +571,7 @@ const s: Record<string, React.CSSProperties> = {
   approvalNote: {
     display: 'flex', gap: 10, alignItems: 'flex-start', padding: '13px 16px',
     background: 'rgba(232,160,32,0.06)', border: '1px solid rgba(232,160,32,0.18)', borderRadius: 10,
+    marginTop: 24,
   },
   formCard: {
     background: 'var(--bg-card)', border: '1px solid var(--border-light)',
@@ -591,12 +618,8 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   revealHeadline: {
-    fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 3.5vw, 44px)',
+    fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 5vw, 44px)',
     fontWeight: 700, color: 'var(--text)', lineHeight: 1.1, margin: '0 0 0',
-  },
-  planGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: 20, alignItems: 'start',
   },
   planCard: {
     display: 'flex', flexDirection: 'column' as const,
@@ -610,16 +633,16 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' as const,
     padding: '3px 14px', borderRadius: 999, fontFamily: 'var(--font-ui)',
   },
-  planFor:   { fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-ui)', margin: '0 0 6px', lineHeight: 1.4 },
-  planName:  { fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 },
-  planPrice: { fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
-  planUnit:  { fontSize: 13, color: 'var(--text-dim)', fontFamily: 'var(--font-ui)' },
-  planSeat:  { fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', margin: '2px 0 2px' },
-  planSeats: { fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-ui)', margin: '0 0 4px' },
-  planAnnual:{ fontSize: 11, color: 'var(--success)', fontFamily: 'var(--font-ui)', margin: '0 0 4px' },
-  planDivider: { height: 1, background: 'var(--border)', margin: '16px 0' },
-  featureList: { flex: 1, listStyle: 'none', margin: '0 0 20px', padding: 0, display: 'flex', flexDirection: 'column' as const, gap: 8 },
-  featureItem: { display: 'flex', alignItems: 'flex-start', gap: 8 },
+  planFor:    { fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-ui)', margin: '0 0 6px', lineHeight: 1.4 },
+  planName:   { fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 },
+  planPrice:  { fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 700, color: 'var(--text)', lineHeight: 1 },
+  planUnit:   { fontSize: 13, color: 'var(--text-dim)', fontFamily: 'var(--font-ui)' },
+  planSeat:   { fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', margin: '2px 0 2px' },
+  planSeats:  { fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-ui)', margin: '0 0 4px' },
+  planAnnual: { fontSize: 11, color: 'var(--success)', fontFamily: 'var(--font-ui)', margin: '0 0 4px' },
+  planDivider:{ height: 1, background: 'var(--border)', margin: '16px 0' },
+  featureList:{ flex: 1, listStyle: 'none', margin: '0 0 20px', padding: 0, display: 'flex', flexDirection: 'column' as const, gap: 8 },
+  featureItem:{ display: 'flex', alignItems: 'flex-start', gap: 8 },
   planCta: {
     display: 'block', padding: '11px 0', borderRadius: 10,
     fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-ui)',
@@ -627,27 +650,23 @@ const s: Record<string, React.CSSProperties> = {
   },
 
   // Comparison table
-  table: { width: '100%', borderCollapse: 'collapse' as const, marginTop: 16 },
+  table:   { width: '100%', borderCollapse: 'collapse' as const, marginTop: 16 },
   th: {
     fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const,
-    color: 'var(--text-dim)', padding: '10px 16px', textAlign: 'center' as const,
+    color: 'var(--text-dim)', padding: '10px 8px', textAlign: 'center' as const,
     borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-ui)',
   },
   tdLabel: {
-    padding: '10px 16px', fontSize: 13, color: 'var(--text-muted)',
+    padding: '10px 8px', fontSize: 12, color: 'var(--text-muted)',
     fontFamily: 'var(--font-ui)', borderBottom: '1px solid var(--border)',
   },
   td: {
-    padding: '10px 16px', textAlign: 'center' as const,
-    borderBottom: '1px solid var(--border)',
-    verticalAlign: 'middle' as const,
+    padding: '10px 8px', textAlign: 'center' as const,
+    borderBottom: '1px solid var(--border)', verticalAlign: 'middle' as const,
   },
 
   // Seat section
-  seatSection: { marginTop: 64 },
-  seatGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginTop: 16,
-  },
+  seatSection: { marginTop: 48 },
   seatCard: {
     background: 'var(--bg-card)', border: '1px solid var(--border)',
     borderRadius: 14, padding: '20px 22px',
@@ -656,10 +675,7 @@ const s: Record<string, React.CSSProperties> = {
   seatBody:  { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7, margin: 0, fontFamily: 'var(--font-ui)' },
 
   // Steps
-  stepsWrap: {
-    display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12,
-  },
-  step: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', textAlign: 'center' as const },
+  step:    { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', textAlign: 'center' as const },
   stepNum: {
     width: 44, height: 44, borderRadius: '50%',
     background: 'rgba(232,160,32,0.10)', border: '1.5px solid rgba(232,160,32,0.3)',
@@ -670,12 +686,9 @@ const s: Record<string, React.CSSProperties> = {
   stepText: { fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, margin: 0, fontFamily: 'var(--font-ui)' },
 
   // Bottom CTAs
-  ctaRow: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 56,
-  },
   ctaCard: {
     background: 'rgba(232,160,32,0.06)', border: '1px solid rgba(232,160,32,0.18)',
-    borderRadius: 20, padding: '28px 28px',
+    borderRadius: 20, padding: '24px',
   },
   ctaLabel: {
     fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const,

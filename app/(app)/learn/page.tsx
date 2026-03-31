@@ -48,6 +48,7 @@ type Course = {
   sort_order: number;
   total_duration_seconds?: number;
   is_published: boolean;
+  is_free_preview: boolean;
   // computed
   progress: number;
   completed: boolean;
@@ -235,7 +236,7 @@ function SectionAccordion({
                 course={course}
                 idx={idx}
                 onOpen={() => onOpenCourse(course.id)}
-                isLocked={false}
+                isLocked={!!isPreview && !course.is_free_preview}
               />
             ))}
         </div>
@@ -748,6 +749,7 @@ export default function LearnPage() {
 
     const allCourses: Course[] = (coursesRes.data || []).map((c: any) => ({
       ...c,
+      is_free_preview: c.is_free_preview || false,
       progress:     progressMap[c.id]?.progress     || 0,
       lastPosition: progressMap[c.id]?.lastPosition || 0,
       completed:    progressMap[c.id]?.completed    || false,
@@ -921,10 +923,9 @@ export default function LearnPage() {
             )}
             onOpenCourse={(id) => {
               if (isPreview) {
-                // In preview mode, only allow the first course (index 0 across all sections)
-                const allCourses = sections.flatMap(s => s.courses);
-                const firstCourse = allCourses[0];
-                if (firstCourse && id !== firstCourse.id) return; // block locked courses
+                // In preview mode, only allow courses marked is_free_preview in the DB
+                const course = sections.flatMap(s => s.courses).find(c => c.id === id);
+                if (!course?.is_free_preview) return;
               }
               openCourse(id);
             }}

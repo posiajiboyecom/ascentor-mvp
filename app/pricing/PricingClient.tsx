@@ -1,18 +1,6 @@
 'use client'
 
-// app/pricing/PricingClient.tsx — v3
-// ─────────────────────────────────────────────────────────────────────────────
-// Changes from v2:
-//  1. Currency auto-detected server-side (via x-currency header from proxy).
-//     No manual Nigeria/Global toggle shown to users.
-//  2. Revenue Model tab removed entirely.
-//  3. "For your organisation" tab now shows PartnerEnquiry form instead of
-//     B2B plan cards. Partners must contact sales to get pricing & demo access.
-//  4. Plan display names: Free / Explorer / Builder / Climber (from data.ts v3).
-//  5. Styled with Ascentor brand tokens (var(--gold), var(--bg-card), etc.)
-// ─────────────────────────────────────────────────────────────────────────────
-
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { B2C_TIERS, Currency, BillingCycle } from './data'
 import B2CPlanCard from './components/B2CPlanCard'
 import PartnerEnquiry from './components/PartnerEnquiry'
@@ -24,11 +12,22 @@ interface Props {
   defaultCountry?: string
 }
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`)
+    setIsMobile(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [breakpoint])
+  return isMobile
+}
+
 export default function PricingClient({ defaultCurrency }: Props) {
   const [tab,     setTab]     = useState<Tab>('b2c')
   const [billing, setBilling] = useState<BillingCycle>('monthly')
-
-  // Currency comes from server-side locale detection — no toggle shown
+  const isMobile = useIsMobile()
   const currency: Currency = defaultCurrency
 
   return (
@@ -36,29 +35,22 @@ export default function PricingClient({ defaultCurrency }: Props) {
       width: '100%',
       maxWidth: 1040,
       margin: '0 auto',
-      padding: '48px 24px 80px',
+      padding: isMobile ? '32px 16px 64px' : '48px 24px 80px',
       fontFamily: 'var(--font-ui)',
     }}>
 
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div style={{ textAlign: 'center', marginBottom: 40 }}>
+      {/* ── Header ── */}
+      <div style={{ textAlign: 'center', marginBottom: isMobile ? 28 : 40 }}>
         <p style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-          color: 'var(--gold)',
-          margin: '0 0 10px',
+          fontSize: 11, fontWeight: 700, letterSpacing: '0.18em',
+          textTransform: 'uppercase', color: 'var(--gold)', margin: '0 0 10px',
         }}>
           Pricing
         </p>
         <h1 style={{
           fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(32px, 5vw, 52px)',
-          fontWeight: 700,
-          color: 'var(--text)',
-          margin: '0 0 10px',
-          lineHeight: 1.1,
+          fontSize: isMobile ? '36px' : 'clamp(32px, 5vw, 52px)',
+          fontWeight: 700, color: 'var(--text)', margin: '0 0 10px', lineHeight: 1.1,
         }}>
           Invest in your career.
         </h1>
@@ -67,19 +59,23 @@ export default function PricingClient({ defaultCurrency }: Props) {
         </p>
       </div>
 
-      {/* ── Tabs ───────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 36 }}>
+      {/* ── Tabs ── */}
+      <div style={{
+        display: 'flex', justifyContent: 'center', gap: 8,
+        marginBottom: isMobile ? 24 : 36,
+        flexWrap: 'wrap',
+      }}>
         {([
           { id: 'b2c' as Tab, label: 'For you' },
           { id: 'b2b' as Tab, label: 'For your organisation' },
-        ] as { id: Tab; label: string }[]).map(t => (
+        ]).map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             style={{
-              padding: '8px 20px',
+              padding: isMobile ? '8px 16px' : '8px 20px',
               borderRadius: 999,
-              fontSize: 13,
+              fontSize: isMobile ? 12 : 13,
               fontWeight: 600,
               fontFamily: 'var(--font-ui)',
               cursor: 'pointer',
@@ -96,36 +92,38 @@ export default function PricingClient({ defaultCurrency }: Props) {
         ))}
       </div>
 
-      {/* ── B2C Tab ─────────────────────────────────────────────────────── */}
+      {/* ── B2C Tab ── */}
       {tab === 'b2c' && (
         <div>
           {/* Billing toggle */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 28 }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: isMobile ? 'center' : 'flex-end',
+            marginBottom: 24,
+          }}>
             <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
+              display: 'flex', alignItems: 'center', gap: 2,
               background: 'var(--bg-card)',
               border: '1px solid var(--border)',
-              borderRadius: 999,
-              padding: '3px',
+              borderRadius: 999, padding: '3px',
             }}>
               {([
                 { val: 'monthly' as BillingCycle, label: 'Monthly' },
-                { val: 'annual'  as BillingCycle, label: 'Annual · save 20%' },
+                { val: 'annual'  as BillingCycle, label: isMobile ? 'Annual −20%' : 'Annual · save 20%' },
               ]).map(b => (
                 <button
                   key={b.val}
                   onClick={() => setBilling(b.val)}
                   style={{
-                    padding: '6px 16px',
+                    padding: isMobile ? '6px 12px' : '6px 16px',
                     borderRadius: 999,
-                    fontSize: 12,
+                    fontSize: isMobile ? 11 : 12,
                     fontWeight: 600,
                     fontFamily: 'var(--font-ui)',
                     cursor: 'pointer',
                     transition: 'all 0.15s',
                     border: 'none',
+                    whiteSpace: 'nowrap',
                     background: billing === b.val ? 'var(--text)' : 'transparent',
                     color:      billing === b.val ? 'var(--dark)' : 'var(--text-dim)',
                   }}
@@ -136,12 +134,8 @@ export default function PricingClient({ defaultCurrency }: Props) {
             </div>
           </div>
 
-          {/* Plan cards */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 16,
-          }}>
+          {/* Plan cards — 1 col mobile, 2 col tablet, 4 col desktop */}
+          <div className="pricing-grid">
             {B2C_TIERS.map(tier => (
               <B2CPlanCard
                 key={tier.id}
@@ -152,11 +146,28 @@ export default function PricingClient({ defaultCurrency }: Props) {
             ))}
           </div>
 
-
+          <style>{`
+            .pricing-grid {
+              display: grid;
+              grid-template-columns: 1fr;
+              gap: 14px;
+            }
+            @media (min-width: 560px) {
+              .pricing-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+              }
+            }
+            @media (min-width: 1024px) {
+              .pricing-grid {
+                grid-template-columns: repeat(4, 1fr);
+              }
+            }
+          `}</style>
         </div>
       )}
 
-      {/* ── For your organisation Tab ───────────────────────────────────── */}
+      {/* ── Organisation Tab ── */}
       {tab === 'b2b' && <PartnerEnquiry />}
 
     </div>
