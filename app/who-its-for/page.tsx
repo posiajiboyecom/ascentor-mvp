@@ -345,11 +345,6 @@ export default function WhoItsForPage() {
             Early members get <strong style={{ color: '#E8A020' }}>3 months free</strong> on launch.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/waitlist"
-              className="px-8 py-3.5 rounded-xl text-sm font-semibold"
-              style={{ background: '#E8A020', color: '#000' }}>
-              Join the Waitlist →
-            </Link>
             <Link href="/how-it-works"
               className="px-8 py-3.5 rounded-xl text-sm font-semibold"
               style={{ border: '1px solid #374151', color: '#F3F4F6' }}>
