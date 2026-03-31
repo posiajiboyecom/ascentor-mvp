@@ -281,6 +281,42 @@ export default async function proxy(request: NextRequest) {
     return withLocale(NextResponse.redirect(loginUrl));
   }
 
+  // ── 7b. Onboarding gate ──────────────────────────────────
+  // If an authenticated user tries to access the main app directly
+  // (e.g. bookmarked /dashboard) without completing onboarding,
+  // redirect them back to the right onboarding step.
+  // Skip this check for: /onboarding itself, /checkout, /auth, partner routes.
+  const ONBOARDING_EXEMPT = ['/onboarding', '/checkout', '/auth', '/account', '/api'];
+  const isMainAppRoute = !subdomainRewrite && !customDomainRewrite;
+  const needsOnboardingCheck =
+    isMainAppRoute &&
+    user &&
+    pathname.startsWith('/dashboard') &&
+    !ONBOARDING_EXEMPT.some(e => pathname.startsWith(e));
+
+  if (needsOnboardingCheck) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_completed, subscription_status, full_name, current_role, goal_role, industry')
+      .eq('id', user.id)
+      .single();
+
+    if (profile && !profile.onboarding_completed) {
+      const hasPaid =
+        profile.subscription_status === 'active' ||
+        profile.subscription_status === 'trialing';
+
+      const completedStep2 = !!(profile.full_name && profile.current_role && profile.goal_role && profile.industry);
+      const completedStep1 = !!(profile.full_name && profile.current_role);
+
+      if (!completedStep2 && !hasPaid) {
+        // Not done with onboarding steps yet
+        const step = completedStep1 ? '?step=2' : '';
+        return withLocale(NextResponse.redirect(new URL(`/onboarding${step}`, request.url)));
+      }
+    }
+  }
+
   // ── 8. Subscription tier gate ─────────────────────────────
   if (user) {
     const matchedTier = TIERED_ROUTES.find(r =>

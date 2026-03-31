@@ -105,10 +105,8 @@ export async function GET(request: Request) {
     profile?.subscription_status === 'active' ||
     profile?.subscription_status === 'trialing';
 
-  // Edge case: paid but onboarding flag not set — mark complete and send to dashboard
-  if (hasPaid && !profile?.onboarding_completed) {
-    return NextResponse.redirect(`${origin}/dashboard`);
-  }
+  // NOTE: If paid but onboarding not completed, fall through to onboarding steps below.
+  // We never skip onboarding — onboarding_completed is only set at the END of the flow.
 
   // Check how far through onboarding the user is
   // Step 1 = has name + role (profile info)
@@ -118,9 +116,14 @@ export async function GET(request: Request) {
   // Step 2 requires goal_role to be set (set during goal-setting step)
   const completedStep2 = !!(profile?.full_name && profile?.current_role && profile?.goal_role && profile?.industry);
 
-  // Only route to checkout if BOTH onboarding steps are fully done
+  // Onboarding routing — hasPaid users still must complete onboarding
   if (completedStep2) {
-    // Completed all onboarding steps but not paid — send to checkout
+    // Completed all onboarding steps but not paid yet → checkout
+    // Completed all onboarding steps AND paid but flag not set → dashboard
+    // (This handles webhook timing edge cases without skipping onboarding)
+    if (hasPaid) {
+      return NextResponse.redirect(`${origin}/dashboard`);
+    }
     return NextResponse.redirect(`${origin}/checkout`);
   }
 
@@ -129,7 +132,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/onboarding?step=2`);
   }
 
-  // Case 3: Fresh user — start onboarding from the beginning
+  // Fresh user — start onboarding from the beginning
   return NextResponse.redirect(`${origin}/onboarding`);
 }
 
