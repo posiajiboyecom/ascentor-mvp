@@ -78,29 +78,48 @@ export default function OnboardingPage() {
 
   const handleGoalSave = async () => {
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { alert('User not found'); setSaving(false); return; }
 
-    // 1. Save the 90-day goal
-    const { error: goalError } = await supabase.from('user_goals').insert({
-      user_id: user.id,
-      goal_text: goal.goal_text,
-      timeframe: '90 days',
-      milestone_1: goal.milestone_1,
-      milestone_2: goal.milestone_2,
-      milestone_3: goal.milestone_3,
-    });
+    // Use the user already authenticated — single getUser call
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      alert('Session expired. Please sign in again.');
+      setSaving(false);
+      return;
+    }
 
-    if (goalError) { alert(`Error: ${goalError.message}`); setSaving(false); return; }
-
-    // 2. Save profile name to ML (no welcome email yet — fires on payment)
-    // onboarding_completed is NOT set here — only set in /api/payment/verify
-    // so users who abandon at checkout are correctly identified as unpaid
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        // Tag as checkout-pending in ML for nurture targeting (fix 5)
-        await fetch('/api/checkout-pending', {
+      // 1. Save the 90-day goal
+      const { error: goalError } = await supabase.from('user_goals').insert({
+        user_id: user.id,
+        goal_text: goal.goal_text,
+        timeframe: '90 days',
+        milestone_1: goal.milestone_1,
+        milestone_2: goal.milestone_2,
+        milestone_3: goal.milestone_3,
+      });
+
+      if (goalError) {
+        // Duplicate goal is fine (user hit back and resubmitted) — ignore unique violations
+        if (!goalError.message.includes('duplicate') && goalError.code !== '23505') {
+          alert(`Error saving goal: ${goalError.message}`);
+          setSaving(false);
+          return;
+        }
+      }
+
+      // 2. Mark onboarding complete — fire-and-forget, never blocks navigation.
+      // Free users: this lets them reach /dashboard on next login.
+      // Paid users: /api/payment/verify sets this flag again on payment.
+      supabase.from('profiles').update({
+        onboarding_completed: true,
+        updated_at: new Date().toISOString(),
+      }).eq('id', user.id).then(({ error }) => {
+        if (error) console.warn('[onboarding] onboarding_completed update failed (non-fatal):', error.message);
+      });
+
+      // 3. ML tagging — fire-and-forget, never blocks navigation
+      if (user.email) {
+        fetch('/api/checkout-pending', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -108,26 +127,30 @@ export default function OnboardingPage() {
             name: profile.full_name || user.email.split('@')[0],
             userId: user.id,
           }),
-        });
+        }).catch(() => {});
       }
-    } catch { /* non-fatal */ }
 
-    // 3. Handle referral (non-blocking)
-    try {
-      const storedRef = localStorage.getItem('ascentor_referral');
-      if (storedRef) {
-        await fetch('/api/referral', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ referralCode: storedRef }),
-        });
-        localStorage.removeItem('ascentor_referral');
-      }
-    } catch (e) {
-      console.warn('Referral non-blocking error:', e);
+      // 4. Referral — fire-and-forget
+      try {
+        const storedRef = localStorage.getItem('ascentor_referral');
+        if (storedRef) {
+          fetch('/api/referral', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ referralCode: storedRef }),
+          }).catch(() => {});
+          localStorage.removeItem('ascentor_referral');
+        }
+      } catch { /* non-fatal */ }
+
+      // Navigate immediately — don't wait for non-critical operations
+      router.push('/dashboard');
+
+    } catch (err: any) {
+      console.error('[onboarding] handleGoalSave error:', err);
+      alert('Something went wrong. Please try again.');
+      setSaving(false);
     }
-
-    router.push('/checkout');
   };
 
   const step1Valid = profile.full_name && profile.current_role && profile.industry && profile.goal_role;

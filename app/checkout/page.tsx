@@ -197,11 +197,33 @@ export default function CheckoutPage() {
     return () => clearInterval(interval);
   }, [autoPromo]);
 
+  // Track Paystack script readiness
+  const [paystackReady, setPaystackReady] = useState(false);
+
   useEffect(() => {
-    if (typeof window !== 'undefined' && !document.getElementById('paystack-script')) {
+    if (typeof window === 'undefined') return;
+
+    // If already loaded (e.g. hot reload), mark ready immediately
+    if ((window as any).PaystackPop) { setPaystackReady(true); return; }
+
+    if (!document.getElementById('paystack-script')) {
       const s = document.createElement('script');
-      s.id = 'paystack-script'; s.src = 'https://js.paystack.co/v2/inline.js'; s.async = true;
+      s.id = 'paystack-script';
+      s.src = 'https://js.paystack.co/v2/inline.js';
+      s.async = true;
+      s.onload = () => setPaystackReady(true);
+      s.onerror = () => console.error('[checkout] Paystack script failed to load');
       document.head.appendChild(s);
+    } else {
+      // Script tag already in DOM but may still be loading — poll for it
+      const poll = setInterval(() => {
+        if ((window as any).PaystackPop) {
+          setPaystackReady(true);
+          clearInterval(poll);
+        }
+      }, 100);
+      // Give up after 10s
+      setTimeout(() => clearInterval(poll), 10000);
     }
   }, []);
 
@@ -265,13 +287,30 @@ export default function CheckoutPage() {
       setLoading(false); return;
     }
 
+    // Guard: Paystack script not ready yet — script loads async on mount
+    if (!paystackReady || !(window as any).PaystackPop) {
+      setError('Payment system is still loading. Please wait a moment and try again.');
+      setLoading(false);
+      setSelectedPlan(null);
+      return;
+    }
+
+    // Guard: public key must be set at build time via NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+    const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '';
+    if (!paystackKey) {
+      setError('Payment configuration error. Please contact support@ascentorbi.com.');
+      setLoading(false);
+      setSelectedPlan(null);
+      return;
+    }
+
     const amountKobo = Math.round(finalPrice * 100);
     const reference = `asc_${user.id.slice(0, 8)}_${Date.now()}`;
     try {
       // @ts-ignore
-      const paystack = new window.PaystackPop();
+      const paystack = new (window as any).PaystackPop();
       paystack.newTransaction({
-        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
+        key: paystackKey,
         email: user.email, amount: amountKobo, currency: 'NGN', ref: reference,
         metadata: {
           user_id: user.id, plan: planId, billing_cycle: billing,
@@ -944,7 +983,7 @@ export default function CheckoutPage() {
                 <button
                   className="co-cta"
                   onClick={() => handleSelectPlan(plan.id)}
-                  disabled={current || (loading && selectedPlan === plan.id)}
+                  disabled={current || (loading && selectedPlan === plan.id) || !paystackReady}
                   style={
                     current ? {
                       background: 'transparent',
@@ -962,9 +1001,11 @@ export default function CheckoutPage() {
                 >
                   {loading && selectedPlan === plan.id
                     ? 'Processing…'
-                    : current
-                      ? '✓ Current Plan'
-                      : plan.cta}
+                    : !paystackReady
+                      ? 'Loading payment…'
+                      : current
+                        ? '✓ Current Plan'
+                        : plan.cta}
                 </button>
 
                 {!current && (

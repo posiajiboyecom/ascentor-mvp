@@ -1,8 +1,8 @@
 'use client'
 
-// app/pricing/components/B2CPlanCard.tsx — v3
-// Styled using Ascentor brand tokens from globals.css (var(--gold), var(--bg-card), etc.)
-// Plan display names come from data.ts — ids are unchanged (used by Supabase/Paystack).
+// app/pricing/components/B2CPlanCard.tsx — v4
+// Uses CSS classes from PricingClient.tsx <style> block.
+// No JS breakpoint detection — pure CSS media queries.
 
 import { B2CTier, BillingCycle, Currency, formatPrice, getAnnualLabel } from '../data'
 import { useRouter } from 'next/navigation'
@@ -14,13 +14,11 @@ interface Props {
   billing: BillingCycle
 }
 
-// Stage accent colours matching globals.css --explorer, --builder, --climber
-// Free has no stage colour so we use a neutral gold-muted
 const STAGE_COLOR: Record<string, string> = {
-  free:    'rgba(232,160,32,0.35)',
-  builder: 'var(--explorer)',   // id=builder → display=Explorer → teal
-  pro:     'var(--builder)',    // id=pro      → display=Builder  → gold
-  elite:   'var(--climber)',    // id=elite    → display=Climber  → purple
+  free:    'rgba(232,160,32,0.4)',
+  builder: 'var(--teal,    #14B8A6)',  // id=builder → display=Explorer
+  pro:     'var(--gold,    #E8A020)',  // id=pro     → display=Builder
+  elite:   'var(--purple,  #8B5CF6)',  // id=elite   → display=Climber
 }
 
 export default function B2CPlanCard({ tier, currency, billing }: Props) {
@@ -29,15 +27,12 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
 
   const monthlyPrice = tier.priceMonthly[currency]
   const isFree       = monthlyPrice === 0
-  const isHot        = tier.hot
-  const accentColor  = STAGE_COLOR[tier.id] || 'var(--gold)'
+  const accentColor  = STAGE_COLOR[tier.id] || 'var(--gold, #E8A020)'
 
-  // Displayed price
   const displayedPrice = (() => {
     if (isFree) return formatPrice(0, currency)
     if (billing === 'annual' && tier.annualTotal[currency]) {
-      const monthlyEquiv = Math.round(tier.annualTotal[currency]! / 12)
-      return formatPrice(monthlyEquiv, currency)
+      return formatPrice(Math.round(tier.annualTotal[currency]! / 12), currency)
     }
     return formatPrice(monthlyPrice, currency)
   })()
@@ -55,144 +50,82 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
     if (currency === 'ngn') {
       initiateCheckout({
         planName: tier.name, currency, billing,
-        paystackPlanCode: billing === 'annual' ? tier.paystackPlanCode.annual : tier.paystackPlanCode.monthly,
+        paystackPlanCode: billing === 'annual'
+          ? tier.paystackPlanCode.annual
+          : tier.paystackPlanCode.monthly,
       })
     } else {
       initiateCheckout({
         planName: tier.name, currency, billing,
-        lemonVariantId: billing === 'annual' ? tier.lemonVariantId.annual : tier.lemonVariantId.monthly,
+        lemonVariantId: billing === 'annual'
+          ? tier.lemonVariantId.annual
+          : tier.lemonVariantId.monthly,
       })
     }
   }
 
   return (
-    <div style={{
-      position: 'relative',
-      display: 'flex',
-      flexDirection: 'column',
-      borderRadius: 20,
-      padding: '28px 24px',
-      background: isHot ? 'var(--bg-card)' : 'var(--bg-card)',
-      border: isHot
-        ? `1.5px solid ${accentColor}`
-        : '1px solid var(--border)',
-      boxShadow: isHot ? `0 0 0 1px ${accentColor}22, 0 8px 32px rgba(0,0,0,0.4)` : 'none',
-      transform: isHot ? 'translateY(-4px)' : 'none',
-      transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s',
-    }}>
-
-      {/* Top accent bar */}
-      <div style={{
-        position: 'absolute',
-        top: 0, left: 0, right: 0,
-        height: 3,
-        borderRadius: '20px 20px 0 0',
-        background: isHot
-          ? `linear-gradient(90deg, ${accentColor}, transparent)`
-          : 'transparent',
-      }} />
+    <div
+      className={`pr-card ${tier.hot ? 'pr-card-hot' : ''}`}
+      style={{
+        borderColor: tier.hot ? accentColor : undefined,
+        boxShadow: tier.hot
+          ? `0 0 0 1px ${accentColor}22, 0 8px 32px rgba(0,0,0,0.4)`
+          : undefined,
+      }}
+    >
+      {/* Accent top bar */}
+      <div
+        className="pr-card-bar"
+        style={{
+          background: tier.hot
+            ? `linear-gradient(90deg, ${accentColor}, transparent)`
+            : 'transparent',
+        }}
+      />
 
       {/* Badge */}
       {tier.badge && (
-        <div style={{
-          position: 'absolute',
-          top: -13,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          whiteSpace: 'nowrap',
-          background: 'var(--gold)',
-          color: 'var(--dark)',
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          padding: '3px 14px',
-          borderRadius: 999,
-          fontFamily: 'var(--font-ui)',
-        }}>
-          {tier.badge}
-        </div>
+        <div className="pr-badge">{tier.badge}</div>
       )}
 
       {/* Label + name */}
-      <div style={{ marginBottom: 16 }}>
-        <p style={{
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase',
-          color: 'var(--text-dim)',
-          margin: '0 0 5px',
-          fontFamily: 'var(--font-ui)',
-        }}>
-          {tier.label}
-        </p>
-        <p style={{
-          fontSize: 18,
-          fontWeight: 700,
-          color: 'var(--text)',
-          margin: 0,
-          fontFamily: 'var(--font-display)',
-        }}>
-          {tier.name}
-        </p>
-      </div>
+      <p className="pr-card-label">{tier.label}</p>
+      <p className="pr-card-name">{tier.name}</p>
 
       {/* Price */}
-      <div style={{ marginBottom: 4 }}>
-        <span style={{
-          fontSize: 38,
-          fontWeight: 700,
-          color: 'var(--text)',
-          fontFamily: 'var(--font-display)',
-          letterSpacing: '-1px',
-          lineHeight: 1,
-        }}>
-          {displayedPrice}
-        </span>
-        <span style={{ fontSize: 13, color: 'var(--text-dim)', marginLeft: 4, fontFamily: 'var(--font-ui)' }}>
-          {isFree ? 'forever' : '/mo'}
-        </span>
+      <div>
+        <span className="pr-card-price">{displayedPrice}</span>
+        <span className="pr-card-per">{isFree ? 'forever' : '/mo'}</span>
       </div>
 
-      {/* Annual savings line */}
-      <p style={{
-        minHeight: 18,
-        fontSize: 11,
-        color: 'var(--success)',
-        margin: '0 0 20px',
-        fontFamily: 'var(--font-ui)',
-      }}>
-        {annualLine}
-      </p>
+      {/* Annual savings */}
+      <p className="pr-card-savings">{annualLine}</p>
 
-      <div style={{
-        height: 1,
-        background: 'var(--border)',
-        marginBottom: 16,
-      }} />
+      <div className="pr-card-divider" />
 
       {/* Features */}
-      <ul style={{ flex: 1, margin: '0 0 20px', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9 }}>
+      <ul className="pr-features">
         {tier.features.map((feat, i) => (
-          <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12 }}>
-            {feat.enabled ? (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-            ) : (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1, opacity: 0.4 }}>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-            )}
-            <span style={{
-              color: feat.enabled ? 'var(--text-muted)' : 'var(--text-dim)',
-              textDecoration: feat.enabled ? 'none' : 'line-through',
-              opacity: feat.enabled ? 1 : 0.5,
-              fontFamily: 'var(--font-ui)',
-              lineHeight: 1.5,
-            }}>
+          <li key={i} className="pr-feature">
+            <span className="pr-feature-icon">
+              {feat.enabled ? (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="var(--success, #10B981)" strokeWidth="2.5"
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              ) : (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  style={{ opacity: 0.3 }}>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              )}
+            </span>
+            <span className={feat.enabled ? 'pr-feature-on' : 'pr-feature-off'}>
               {feat.text}
             </span>
           </li>
@@ -203,22 +136,12 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
       <button
         onClick={handleCTA}
         disabled={loading}
-        style={{
-          width: '100%',
-          padding: '11px 20px',
-          borderRadius: 10,
-          fontSize: 13,
-          fontWeight: 700,
-          fontFamily: 'var(--font-ui)',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          opacity: loading ? 0.6 : 1,
-          transition: 'opacity 0.15s, transform 0.1s',
-          border: 'none',
-          ...(tier.ctaVariant === 'primary'
-            ? { background: 'var(--gold)', color: 'var(--dark)' }
-            : { background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)' }
-          ),
-        }}
+        className={`pr-cta ${tier.ctaVariant === 'primary' ? 'pr-cta-primary' : 'pr-cta-secondary'}`}
+        style={
+          tier.ctaVariant === 'secondary' && !isFree
+            ? { color: accentColor, borderColor: `${accentColor}40` }
+            : undefined
+        }
       >
         {loading ? 'Loading…' : tier.ctaLabel}
       </button>

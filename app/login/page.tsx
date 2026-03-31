@@ -68,6 +68,56 @@ export default function LoginPage() {
         }
       } catch {} // Non-critical
 
+      // ── Smart post-login routing ──────────────────────────────────────────
+      // Mirror auth/callback logic so email/password login routes identically
+      // to OAuth: incomplete onboarding → /onboarding, no payment → /checkout,
+      // completed onboarding (free or paid) → /dashboard.
+      try {
+        const { data: { user: loggedInUser } } = await supabase.auth.getUser();
+        if (loggedInUser) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('onboarding_completed, subscription_status, full_name, current_role, goal_role, industry')
+            .eq('id', loggedInUser.id)
+            .single();
+
+          // Fully onboarded (free or paid) — go straight to dashboard
+          if (profile?.onboarding_completed === true) {
+            router.push('/dashboard');
+            return;
+          }
+
+          const hasPaid =
+            profile?.subscription_status === 'active' ||
+            profile?.subscription_status === 'trialing';
+
+          // Paid but flag not set yet (edge case) — let them through
+          if (hasPaid) {
+            router.push('/dashboard');
+            return;
+          }
+
+          // Check onboarding progress
+          const completedStep1 = !!(profile?.full_name && profile?.current_role);
+          const completedStep2 = !!(
+            profile?.full_name && profile?.current_role &&
+            profile?.goal_role  && profile?.industry
+          );
+
+          if (completedStep2) {
+            // Both steps done but not paid — go to checkout
+            router.push('/checkout');
+          } else if (completedStep1) {
+            // Partial onboarding — resume at step 2
+            router.push('/onboarding?step=2');
+          } else {
+            // Fresh or incomplete — start from beginning
+            router.push('/onboarding');
+          }
+          return;
+        }
+      } catch {} // Non-critical — fall through
+
       router.push('/dashboard');
     }
     setLoading(false);

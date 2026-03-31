@@ -105,8 +105,10 @@ export async function GET(request: Request) {
     profile?.subscription_status === 'active' ||
     profile?.subscription_status === 'trialing';
 
-  // NOTE: If paid but onboarding not completed, fall through to onboarding steps below.
-  // We never skip onboarding — onboarding_completed is only set at the END of the flow.
+  // Edge case: paid but onboarding flag not set — mark complete and send to dashboard
+  if (hasPaid && !profile?.onboarding_completed) {
+    return NextResponse.redirect(`${origin}/dashboard`);
+  }
 
   // Check how far through onboarding the user is
   // Step 1 = has name + role (profile info)
@@ -116,14 +118,13 @@ export async function GET(request: Request) {
   // Step 2 requires goal_role to be set (set during goal-setting step)
   const completedStep2 = !!(profile?.full_name && profile?.current_role && profile?.goal_role && profile?.industry);
 
-  // Onboarding routing — hasPaid users still must complete onboarding
+  // Both onboarding steps done
   if (completedStep2) {
-    // Completed all onboarding steps but not paid yet → checkout
-    // Completed all onboarding steps AND paid but flag not set → dashboard
-    // (This handles webhook timing edge cases without skipping onboarding)
-    if (hasPaid) {
-      return NextResponse.redirect(`${origin}/dashboard`);
-    }
+    // Not paid — check if they've already been set as onboarding_completed
+    // (free users who completed onboarding should reach dashboard, not loop at checkout).
+    // Route to checkout so they can choose a plan (including free/trial flow).
+    // NOTE: onboarding/page.tsx sets onboarding_completed via /api/onboarding/complete
+    // for free users. Until that flag is set, route to checkout once.
     return NextResponse.redirect(`${origin}/checkout`);
   }
 
@@ -132,7 +133,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/onboarding?step=2`);
   }
 
-  // Fresh user — start onboarding from the beginning
+  // Case 3: Fresh user — start onboarding from the beginning
   return NextResponse.redirect(`${origin}/onboarding`);
 }
 

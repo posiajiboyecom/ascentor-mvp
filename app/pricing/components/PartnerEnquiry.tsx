@@ -212,7 +212,7 @@ export default function PartnerEnquiry() {
         </div>
 
         {/* Plan cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? 16 : 20, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 14, alignItems: 'start' }}>
           {PLANS.map(plan => (
             <div key={plan.id} style={{
               ...s.planCard,
@@ -334,7 +334,7 @@ export default function PartnerEnquiry() {
         {/* Seat pricing explanation */}
         <div style={s.seatSection}>
           <p style={s.eyebrow}>How Seat Pricing Works</p>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: isMobile ? 12 : 16, marginTop: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 12, marginTop: 16 }}>
             {[
               {
                 title: 'What counts as a seat',
@@ -367,7 +367,7 @@ export default function PartnerEnquiry() {
           <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginBottom: 36, lineHeight: 1.6 }}>
             Ascentor operates a curated partner model. All organisation accounts are reviewed and approved by Team Ascentor before activation.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: isMobile ? 20 : 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16 }}>
             {ACCESS_STEPS.map((step, i) => (
               <div key={i} style={s.step}>
                 <div style={s.stepNum}>{step.n}</div>
@@ -378,7 +378,7 @@ export default function PartnerEnquiry() {
         </div>
 
         {/* Demo + contact CTA */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 20, marginTop: isMobile ? 40 : 56 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 16, marginTop: 44 }}>
           <div style={s.ctaCard}>
             <p style={s.ctaLabel}>Live Demo</p>
             <p style={s.ctaTitle}>Experience the platform before committing.</p>
@@ -409,7 +409,7 @@ export default function PartnerEnquiry() {
   // PHASE 1 — Contact Form
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div ref={topRef} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 28 : 48, maxWidth: 1040, margin: '0 auto', alignItems: 'start' }}>
+    <div ref={topRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: 32, maxWidth: 1040, margin: '0 auto', alignItems: 'start' }}>
 
       {/* Left: value prop */}
       <div style={s.formLeft}>
