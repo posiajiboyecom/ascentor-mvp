@@ -1,92 +1,115 @@
 'use client'
 
-// app/pricing/PricingClient.tsx — v2
-// Accepts defaultCurrency from server (set by proxy locale detection).
-// No more useEffect timezone heuristic.
+// app/pricing/PricingClient.tsx — v3
+// ─────────────────────────────────────────────────────────────────────────────
+// Changes from v2:
+//  1. Currency auto-detected server-side (via x-currency header from proxy).
+//     No manual Nigeria/Global toggle shown to users.
+//  2. Revenue Model tab removed entirely.
+//  3. "For your organisation" tab now shows PartnerEnquiry form instead of
+//     B2B plan cards. Partners must contact sales to get pricing & demo access.
+//  4. Plan display names: Free / Explorer / Builder / Climber (from data.ts v3).
+//  5. Styled with Ascentor brand tokens (var(--gold), var(--bg-card), etc.)
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from 'react'
-import { B2C_TIERS, B2B_TIERS, Currency, BillingCycle } from './data'
+import { B2C_TIERS, Currency, BillingCycle } from './data'
 import B2CPlanCard from './components/B2CPlanCard'
-import B2BPlanCard from './components/B2BPlanCard'
-import RevenueModel from './components/RevenueModel'
+import PartnerEnquiry from './components/PartnerEnquiry'
 
-type Tab = 'b2c' | 'b2b' | 'revenue'
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'b2c',     label: 'For you' },
-  { id: 'b2b',     label: 'For your organisation' },
-  { id: 'revenue', label: 'Revenue model' },
-]
+type Tab = 'b2c' | 'b2b'
 
 interface Props {
   defaultCurrency: Currency
   defaultCountry?: string
 }
 
-export default function PricingClient({ defaultCurrency, defaultCountry: _ }: Props) {
-  const [tab,      setTab]     = useState<Tab>('b2c')
-  const [currency, setCurrency] = useState<Currency>(defaultCurrency)
-  const [billing,  setBilling]  = useState<BillingCycle>('monthly')
+export default function PricingClient({ defaultCurrency }: Props) {
+  const [tab,     setTab]     = useState<Tab>('b2c')
+  const [billing, setBilling] = useState<BillingCycle>('monthly')
+
+  // Currency comes from server-side locale detection — no toggle shown
+  const currency: Currency = defaultCurrency
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-12 md:py-16">
+    <div style={{
+      width: '100%',
+      maxWidth: 1040,
+      margin: '0 auto',
+      padding: '48px 24px 80px',
+      fontFamily: 'var(--font-ui)',
+    }}>
 
-      {/* Header */}
-      <div className="mb-10 text-center">
-        <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Pricing</p>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <div style={{ textAlign: 'center', marginBottom: 40 }}>
+        <p style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase',
+          color: 'var(--gold)',
+          margin: '0 0 10px',
+        }}>
+          Pricing
+        </p>
+        <h1 style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: 'clamp(32px, 5vw, 52px)',
+          fontWeight: 700,
+          color: 'var(--text)',
+          margin: '0 0 10px',
+          lineHeight: 1.1,
+        }}>
           Invest in your career.
         </h1>
-        <p className="mt-3 text-sm text-muted-foreground">
+        <p style={{ fontSize: 14, color: 'var(--text-dim)', margin: 0 }}>
           Cancel anytime. 7-day free trial on paid plans.
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="mb-8 flex justify-center gap-2">
-        {TABS.map(t => (
+      {/* ── Tabs ───────────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 36 }}>
+        {([
+          { id: 'b2c' as Tab, label: 'For you' },
+          { id: 'b2b' as Tab, label: 'For your organisation' },
+        ] as { id: Tab; label: string }[]).map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={[
-              'rounded-full border px-5 py-1.5 text-[13px] transition-all',
-              tab === t.id
-                ? 'border-foreground bg-foreground text-background'
-                : 'border-border bg-transparent text-muted-foreground hover:border-foreground/50 hover:text-foreground',
-            ].join(' ')}
+            style={{
+              padding: '8px 20px',
+              borderRadius: 999,
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: 'var(--font-ui)',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+              background: tab === t.id ? 'var(--gold)' : 'transparent',
+              color:      tab === t.id ? 'var(--dark)' : 'var(--text-dim)',
+              border: tab === t.id
+                ? '1.5px solid var(--gold)'
+                : '1.5px solid var(--border)',
+            }}
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* ── B2C ─────────────────────────────────────────────────────── */}
+      {/* ── B2C Tab ─────────────────────────────────────────────────────── */}
       {tab === 'b2c' && (
         <div>
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            {/* Currency */}
-            <div className="flex gap-2">
-              {([
-                { val: 'ngn' as Currency, label: '₦ Nigeria' },
-                { val: 'usd' as Currency, label: '$ Global' },
-              ]).map(c => (
-                <button
-                  key={c.val}
-                  onClick={() => setCurrency(c.val)}
-                  className={[
-                    'rounded-full border px-4 py-1 text-[12px] transition-all',
-                    currency === c.val
-                      ? 'border-foreground bg-foreground text-background'
-                      : 'border-border text-muted-foreground hover:border-foreground/40',
-                  ].join(' ')}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Billing cycle */}
-            <div className="flex items-center gap-2 rounded-full border border-border p-0.5">
+          {/* Billing toggle */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 28 }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 999,
+              padding: '3px',
+            }}>
               {([
                 { val: 'monthly' as BillingCycle, label: 'Monthly' },
                 { val: 'annual'  as BillingCycle, label: 'Annual · save 20%' },
@@ -94,12 +117,18 @@ export default function PricingClient({ defaultCurrency, defaultCountry: _ }: Pr
                 <button
                   key={b.val}
                   onClick={() => setBilling(b.val)}
-                  className={[
-                    'rounded-full px-4 py-1.5 text-[12px] transition-all',
-                    billing === b.val
-                      ? 'bg-foreground text-background'
-                      : 'text-muted-foreground hover:text-foreground',
-                  ].join(' ')}
+                  style={{
+                    padding: '6px 16px',
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-ui)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    border: 'none',
+                    background: billing === b.val ? 'var(--text)' : 'transparent',
+                    color:      billing === b.val ? 'var(--dark)' : 'var(--text-dim)',
+                  }}
                 >
                   {b.label}
                 </button>
@@ -107,41 +136,68 @@ export default function PricingClient({ defaultCurrency, defaultCountry: _ }: Pr
             </div>
           </div>
 
-          <p className="mb-6 text-[11px] text-muted-foreground">
-            {currency === 'ngn'
-              ? 'Showing Nigerian naira (₦). Toggle to $ for diaspora / global pricing.'
-              : 'Showing USD pricing. Toggle to ₦ for Nigeria pricing. Payments via Lemonsqueezy.'}
-          </p>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Plan cards */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 16,
+          }}>
             {B2C_TIERS.map(tier => (
-              <B2CPlanCard key={tier.id} tier={tier} currency={currency} billing={billing} />
+              <B2CPlanCard
+                key={tier.id}
+                tier={tier}
+                currency={currency}
+                billing={billing}
+              />
             ))}
           </div>
 
-          {/* Rationale */}
-          <div className="mt-10">
-            <p className="mb-4 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+          {/* Pricing rationale */}
+          <div style={{ marginTop: 40 }}>
+            <p style={{
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: 'var(--text-dim)',
+              marginBottom: 14,
+            }}>
               Pricing rationale
             </p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: 12,
+            }}>
               {(currency === 'ngn'
                 ? [
-                    { label: 'Free tier purpose',   text: 'Acquisition — no credit card. Session cap forces upgrade. 15–20% convert within 60 days if coaching delivers value.' },
-                    { label: '₦12k Builder logic',  text: '~$7 USD. Less than one business lunch. Targets professionals earning ₦300k–₦600k/month.' },
-                    { label: '₦25k Pro logic',      text: 'Your revenue engine. The AI content agent saves 5+ hours/week — frame the upgrade around time saved, not features unlocked.' },
-                    { label: '₦60k Elite logic',    text: 'Price anchor that makes Pro feel affordable. 10 Elite subscribers = ₦600k/month from this tier alone.' },
+                    { label: 'Free tier purpose',      text: 'Acquisition — no credit card. Session cap creates upgrade pressure. 15–20% convert within 60 days if coaching delivers value.' },
+                    { label: '₦12k Explorer logic',    text: '~$7 USD. Less than one business lunch. Targets professionals earning ₦300k–₦600k/month.' },
+                    { label: '₦25k Builder logic',     text: 'Your revenue engine. The AI content agent saves 5+ hours/week — frame the upgrade around time saved, not features unlocked.' },
+                    { label: '₦60k Climber logic',     text: 'Price anchor that makes Builder feel affordable. 10 Climber subscribers = ₦600k/month from this tier alone.' },
                   ]
                 : [
-                    { label: 'Builder $19',         text: 'Below LinkedIn Premium ($40). Above Calm ($15). Frame it as career ROI vs entertainment spend.' },
-                    { label: 'Pro $39',             text: 'One human coaching session costs $150–$500. $39/month for unlimited AI coaching + content writing is a clear win.' },
-                    { label: 'Diaspora conversion', text: 'Diaspora users convert 25–30% faster — higher disposable income and stronger career anxiety around standing out globally.' },
-                    { label: 'Elite $99 anchor',    text: 'Positions Pro as obvious value. Less than one hour with a human executive coach — lead with that comparison.' },
+                    { label: 'Explorer $19',           text: 'Below LinkedIn Premium ($40). Above Calm ($15). Frame it as career ROI vs entertainment spend.' },
+                    { label: 'Builder $39',            text: 'One human coaching session costs $150–$500. $39/month for unlimited AI coaching + content writing is a clear win.' },
+                    { label: 'Diaspora conversion',    text: 'Global users convert 25–30% faster — higher disposable income and stronger career anxiety around standing out internationally.' },
+                    { label: 'Climber $99 anchor',     text: 'Positions Builder as obvious value. Less than one hour with a human executive coach — lead with that comparison.' },
                   ]
               ).map(item => (
-                <div key={item.label} className="rounded-xl border-l-2 border-border bg-muted/30 py-3 pl-4 pr-3">
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{item.label}</p>
-                  <p className="text-[12px] leading-relaxed text-foreground/80">{item.text}</p>
+                <div key={item.label} style={{
+                  borderLeft: '2px solid var(--border)',
+                  paddingLeft: 16,
+                  paddingTop: 10,
+                  paddingBottom: 10,
+                  paddingRight: 12,
+                  background: 'rgba(212,207,195,0.03)',
+                  borderRadius: '0 8px 8px 0',
+                }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', margin: '0 0 5px' }}>
+                    {item.label}
+                  </p>
+                  <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-muted)', margin: 0 }}>
+                    {item.text}
+                  </p>
                 </div>
               ))}
             </div>
@@ -149,62 +205,9 @@ export default function PricingClient({ defaultCurrency, defaultCountry: _ }: Pr
         </div>
       )}
 
-      {/* ── B2B ─────────────────────────────────────────────────────── */}
-      {tab === 'b2b' && (
-        <div>
-          <p className="mb-6 text-[11px] text-muted-foreground">
-            All B2B plans priced in USD. Partners collect their own revenue from members in any currency.
-          </p>
+      {/* ── For your organisation Tab ───────────────────────────────────── */}
+      {tab === 'b2b' && <PartnerEnquiry />}
 
-          <div className="mb-6 flex justify-end">
-            <div className="flex items-center gap-2 rounded-full border border-border p-0.5">
-              {([
-                { val: 'monthly' as BillingCycle, label: 'Monthly' },
-                { val: 'annual'  as BillingCycle, label: 'Annual · save 15%' },
-              ]).map(b => (
-                <button
-                  key={b.val}
-                  onClick={() => setBilling(b.val)}
-                  className={[
-                    'rounded-full px-4 py-1.5 text-[12px] transition-all',
-                    billing === b.val
-                      ? 'bg-foreground text-background'
-                      : 'text-muted-foreground hover:text-foreground',
-                  ].join(' ')}
-                >
-                  {b.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {B2B_TIERS.map(tier => (
-              <B2BPlanCard key={tier.id} tier={tier} billing={billing} />
-            ))}
-          </div>
-
-          <div className="mt-10">
-            <p className="mb-4 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">Seat pricing logic</p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {[
-                { label: 'What counts as a seat',    text: 'Each active member on the partner\'s platform is one seat. Inactive users (90+ days) don\'t count.' },
-                { label: 'Why flat + per seat',       text: 'Flat fee covers your infrastructure baseline. Seat charge scales revenue as the partner grows — you win when they win.' },
-                { label: 'Volume discount trigger',   text: 'Partners with 500+ seats get custom pricing. This forces an enterprise conversation and protects margin at scale.' },
-                { label: 'Annual discount',           text: '15% off annual on the flat fee only — not on seats. Keeps your recurring seat revenue predictable month to month.' },
-              ].map(item => (
-                <div key={item.label} className="rounded-xl border-l-2 border-border bg-muted/30 py-3 pl-4 pr-3">
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{item.label}</p>
-                  <p className="text-[12px] leading-relaxed text-foreground/80">{item.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Revenue model ────────────────────────────────────────────── */}
-      {tab === 'revenue' && <RevenueModel />}
     </div>
   )
 }
