@@ -27,18 +27,6 @@ function useIsMobile(breakpoint = 768) {
 type FormField = 'name' | 'email' | 'org' | 'message'
 type Errors = Partial<Record<FormField, string>>
 
-function useIsMobile(bp = 768) {
-  const [m, setM] = useState(false)
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${bp}px)`)
-    setM(mq.matches)
-    const h = (e: MediaQueryListEvent) => setM(e.matches)
-    mq.addEventListener('change', h)
-    return () => mq.removeEventListener('change', h)
-  }, [bp])
-  return m
-}
-
 // ── Pricing data from Ascentor_Organisation_Pricing.docx ─────────────────────
 const PLANS = [
   {
@@ -138,8 +126,6 @@ const ACCESS_STEPS = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function PartnerEnquiry() {
-  const isMobile = useIsMobile()
-  const isMobile = useIsMobile()
   const isMobile = useIsMobile()
   const [name,        setName]        = useState('')
   const [email,       setEmail]       = useState('')
