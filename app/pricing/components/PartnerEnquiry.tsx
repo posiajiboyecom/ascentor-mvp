@@ -140,7 +140,7 @@ export default function PartnerEnquiry() {
     setLoading(true)
     setServerError('')
     try {
-      const res  = await fetch('/api/pricing/partner-enquiry', {
+      const res  = await fetch('/api/partner-enquiry', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
