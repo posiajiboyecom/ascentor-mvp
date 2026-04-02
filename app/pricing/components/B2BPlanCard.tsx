@@ -1,31 +1,44 @@
 'use client'
 
-// components/pricing/B2BPlanCard.tsx
+// app/pricing/components/B2BPlanCard.tsx — v6
+// Paystack-only. Lemonsqueezy fully removed.
+// Starter/Growth → Paystack inline popup (when plan codes configured)
+// Enterprise/custom → mailto enquiry
+
 import { B2BTier, BillingCycle } from '../data'
-import { CheckCircle2, MinusCircle } from 'lucide-react'
 import { useCheckout } from './useCheckout'
 
 interface Props {
-  tier: B2BTier
+  tier:    B2BTier
   billing: BillingCycle
 }
 
 export default function B2BPlanCard({ tier, billing }: Props) {
-  const { initiateCheckout, loading } = useCheckout()
+  const { initiateCheckout, loading, error } = useCheckout()
   const isCustom = tier.flatMonthly === null
 
   function handleCTA() {
+    // Enterprise or no flat price → email enquiry
     if (isCustom || tier.id === 'enterprise') {
       window.location.href = 'mailto:partners@ascentorbi.com?subject=Enterprise Partner Enquiry'
       return
     }
+
+    const planCode = billing === 'annual'
+      ? tier.paystackPlanCode.annual
+      : tier.paystackPlanCode.monthly
+
+    if (!planCode) {
+      // B2B plan codes not yet configured — send to enquiry
+      window.location.href = `mailto:partners@ascentorbi.com?subject=${encodeURIComponent(tier.name + ' Enquiry')}`
+      return
+    }
+
     initiateCheckout({
-      planName: `${tier.name} Partner`,
-      currency: 'usd',
+      planName:        tier.name,
+      currency:        'ngn',
       billing,
-      lemonVariantId: billing === 'annual'
-        ? tier.lemonVariantId.annual
-        : tier.lemonVariantId.monthly,
+      paystackPlanCode: planCode,
     })
   }
 
@@ -75,16 +88,33 @@ export default function B2BPlanCard({ tier, billing }: Props) {
         {tier.features.map((feat, i) => (
           <li key={i} className="flex items-start gap-2 text-[12px]">
             {feat.enabled ? (
-              <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-emerald-500" />
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                stroke="#10B981" strokeWidth="2.5"
+                strokeLinecap="round" strokeLinejoin="round"
+                className="mt-0.5 shrink-0">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
             ) : (
-              <MinusCircle size={13} className="mt-0.5 shrink-0 text-muted-foreground/40" />
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round"
+                className="mt-0.5 shrink-0 text-muted-foreground/40">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
             )}
-            <span className={feat.enabled ? 'text-foreground' : 'text-muted-foreground/50 line-through decoration-1'}>
+            <span className={feat.enabled
+              ? 'text-foreground'
+              : 'text-muted-foreground/50 line-through decoration-1'}>
               {feat.text}
             </span>
           </li>
         ))}
       </ul>
+
+      {error && (
+        <p className="mb-2 text-[11px] text-red-500">{error}</p>
+      )}
 
       <button
         onClick={handleCTA}

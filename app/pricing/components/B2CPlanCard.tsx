@@ -1,10 +1,8 @@
 'use client'
 
-// app/pricing/components/B2CPlanCard.tsx — v5
-// FIX: Free → /signup?plan=free (routes to onboarding, not checkout)
-// FIX: Climber mailto removed — all paid plans go through checkout flow
-// FIX: Unauthenticated paid users sent to /signup?plan=X&billing=Y&currency=Z
-//      so plan intent is preserved through the full signup → onboarding → checkout flow
+// app/pricing/components/B2CPlanCard.tsx — v6
+// PAYSTACK ONLY — no LemonSqueezy, no getProvider(), no lemonVariantId.
+// All plans and all currencies go through Paystack.
 
 import { B2CTier, BillingCycle, Currency, formatPrice, getAnnualLabel } from '../data'
 import { useRouter } from 'next/navigation'
@@ -18,13 +16,13 @@ interface Props {
 
 const STAGE_COLOR: Record<string, string> = {
   free:    'rgba(232,160,32,0.4)',
-  builder: 'var(--teal,    #14B8A6)',  // id=builder → display=Explorer
-  pro:     'var(--gold,    #E8A020)',  // id=pro     → display=Builder
-  elite:   'var(--purple,  #8B5CF6)',  // id=elite   → display=Climber
+  builder: 'var(--teal,    #14B8A6)',
+  pro:     'var(--gold,    #E8A020)',
+  elite:   'var(--purple,  #8B5CF6)',
 }
 
 export default function B2CPlanCard({ tier, currency, billing }: Props) {
-  const { initiateCheckout, loading } = useCheckout()
+  const { initiateCheckout, loading, error } = useCheckout()
   const router = useRouter()
 
   const monthlyPrice = tier.priceMonthly[currency]
@@ -44,55 +42,27 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
     : (!isFree ? `${getAnnualLabel(tier, currency).replace(/·.*/, '').trim()} if billed annually` : '')
 
   function handleCTA() {
-    // ── Free plan ──────────────────────────────────────────────────
-    // Route to signup with plan=free so signup page knows to go to
-    // onboarding directly instead of checkout.
     if (isFree) {
       router.push('/signup?plan=free')
       return
     }
 
-    // ── All paid plans (Explorer, Builder, Climber) ────────────────
-    // NGN → Paystack inline popup (user must be authenticated)
-    // USD → Lemonsqueezy redirect (user must be authenticated)
-    // If variant/plan code is missing, send to signup carrying intent
-    // so the plan is pre-selected when they reach checkout after onboarding.
+    const planCode = billing === 'annual'
+      ? tier.paystackPlanCode.annual
+      : tier.paystackPlanCode.monthly
 
-    if (currency === 'ngn') {
-      const planCode = billing === 'annual'
-        ? tier.paystackPlanCode.annual
-        : tier.paystackPlanCode.monthly
-
-      if (!planCode) {
-        // Plan code not configured — preserve intent through signup flow
-        router.push(`/signup?plan=${tier.id}&billing=${billing}&currency=ngn`)
-        return
-      }
-
-      initiateCheckout({
-        planName: tier.name,
-        currency,
-        billing,
-        paystackPlanCode: planCode,
-      })
-    } else {
-      const variantId = billing === 'annual'
-        ? tier.lemonVariantId.annual
-        : tier.lemonVariantId.monthly
-
-      if (!variantId) {
-        // Variant not yet configured — preserve intent through signup flow
-        router.push(`/signup?plan=${tier.id}&billing=${billing}&currency=usd`)
-        return
-      }
-
-      initiateCheckout({
-        planName: tier.name,
-        currency,
-        billing,
-        lemonVariantId: variantId,
-      })
+    if (!planCode) {
+      router.push(`/signup?plan=${tier.id}&billing=${billing}&currency=${currency}`)
+      return
     }
+
+    initiateCheckout({
+      planName:         tier.name,
+      planId:           tier.id,
+      currency,
+      billing,
+      paystackPlanCode: planCode,
+    })
   }
 
   return (
@@ -105,7 +75,6 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
           : undefined,
       }}
     >
-      {/* Accent top bar */}
       <div
         className="pr-card-bar"
         style={{
@@ -115,27 +84,19 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
         }}
       />
 
-      {/* Badge */}
-      {tier.badge && (
-        <div className="pr-badge">{tier.badge}</div>
-      )}
+      {tier.badge && <div className="pr-badge">{tier.badge}</div>}
 
-      {/* Label + name */}
       <p className="pr-card-label">{tier.label}</p>
       <p className="pr-card-name">{tier.name}</p>
 
-      {/* Price */}
       <div>
         <span className="pr-card-price">{displayedPrice}</span>
         <span className="pr-card-per">{isFree ? 'forever' : '/mo'}</span>
       </div>
 
-      {/* Annual savings */}
       <p className="pr-card-savings">{annualLine}</p>
-
       <div className="pr-card-divider" />
 
-      {/* Features */}
       <ul className="pr-features">
         {tier.features.map((feat, i) => (
           <li key={i} className="pr-feature">
@@ -163,7 +124,12 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
         ))}
       </ul>
 
-      {/* CTA */}
+      {error && (
+        <p style={{ fontSize: '11px', color: 'var(--error, #EF4444)', margin: '0 0 8px', fontFamily: 'var(--font-ui)' }}>
+          {error}
+        </p>
+      )}
+
       <button
         onClick={handleCTA}
         disabled={loading}
