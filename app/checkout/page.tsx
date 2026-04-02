@@ -16,7 +16,14 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-// ── Paystack config type ─────────────────────────────────────
+// ── Paystack global type ─────────────────────────────────────
+declare global {
+  interface Window {
+    PaystackPop: {
+      setup: (cfg: PaystackConfig) => { openIframe: () => void };
+    };
+  }
+}
 interface PaystackConfig {
   key: string;
   email: string;
@@ -137,7 +144,7 @@ export default function CheckoutPage() {
         // User closed popup WITHOUT paying → reset button cleanly
         onClose: () => setStatus('idle'),
         // Payment succeeded → verify server-side
-        callback: (response) => verifyAndActivate(response.reference),
+        callback: (response: { reference: string }) => verifyAndActivate(response.reference),
       });
       handler.openIframe();
     } catch (err: any) {
