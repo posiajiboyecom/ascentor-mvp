@@ -16,14 +16,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-// ── Paystack global type ─────────────────────────────────────
-declare global {
-  interface Window {
-    PaystackPop: {
-      setup: (cfg: PaystackConfig) => { openIframe: () => void };
-    };
-  }
-}
+// ── Paystack config type ─────────────────────────────────────
 interface PaystackConfig {
   key: string;
   email: string;
