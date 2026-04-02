@@ -29,7 +29,7 @@ interface Plan {
 
 const PLANS: Plan[] = [
   {
-    id: 'explorer',
+    id: 'builder',       // CRIT-2 FIX: Supabase canonical ID (was 'explorer')
     name: 'Explorer',
     description: 'For those 15–22 just starting to find their path.',
     stage: 'EXPLORER',
@@ -47,7 +47,7 @@ const PLANS: Plan[] = [
     cta: 'Start Now',
   },
   {
-    id: 'builder',
+    id: 'pro',           // CRIT-2 FIX: Supabase canonical ID (was 'builder')
     name: 'Builder',
     description: 'For professionals 22–32 building their career edge.',
     stage: 'BUILDER',
@@ -68,7 +68,7 @@ const PLANS: Plan[] = [
     cta: 'Start Now',
   },
   {
-    id: 'climber',
+    id: 'elite',         // CRIT-2 FIX: Supabase canonical ID (was 'climber')
     name: 'Climber',
     description: 'For leaders 32–50 scaling teams and building legacy.',
     stage: 'CLIMBER',
@@ -149,7 +149,7 @@ export default function CheckoutPage() {
   // Fetch active auto-apply promo on page load
   useEffect(() => {
     const fetchAutoPromo = async () => {
-      const res  = await fetch('/api/payment/active-promo');
+      const res  = await fetch('/api/payments/active-promo'); // HIGH-1 FIX: consolidated route
       const data = await res.json();
       if (data.promo) {
         setAutoPromo(data.promo);
@@ -197,33 +197,11 @@ export default function CheckoutPage() {
     return () => clearInterval(interval);
   }, [autoPromo]);
 
-  // Track Paystack script readiness
-  const [paystackReady, setPaystackReady] = useState(false);
-
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    // If already loaded (e.g. hot reload), mark ready immediately
-    if ((window as any).PaystackPop) { setPaystackReady(true); return; }
-
-    if (!document.getElementById('paystack-script')) {
+    if (typeof window !== 'undefined' && !document.getElementById('paystack-script')) {
       const s = document.createElement('script');
-      s.id = 'paystack-script';
-      s.src = 'https://js.paystack.co/v2/inline.js';
-      s.async = true;
-      s.onload = () => setPaystackReady(true);
-      s.onerror = () => console.error('[checkout] Paystack script failed to load');
+      s.id = 'paystack-script'; s.src = 'https://js.paystack.co/v1/inline.js'; // standardised to v1 — v2 API differs s.async = true;
       document.head.appendChild(s);
-    } else {
-      // Script tag already in DOM but may still be loading — poll for it
-      const poll = setInterval(() => {
-        if ((window as any).PaystackPop) {
-          setPaystackReady(true);
-          clearInterval(poll);
-        }
-      }, 100);
-      // Give up after 10s
-      setTimeout(() => clearInterval(poll), 10000);
     }
   }, []);
 
@@ -237,7 +215,7 @@ export default function CheckoutPage() {
     try {
       // validate=true means: check the code and return discount info only
       // — do NOT activate the account yet (that happens when user picks a plan)
-      const res = await fetch('/api/payment/initialize', {
+      const res = await fetch('/api/payments/initialize', { // HIGH-1 FIX: use rate-limited route
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ promoCode: code, validateOnly: true }),
@@ -276,9 +254,9 @@ export default function CheckoutPage() {
     if (finalPrice === 0 && promoApplied?.discount === 1) {
       try {
         // userId intentionally omitted — server reads it from session (S2 fix)
-        const res = await fetch('/api/payment/initialize', {
+        const res = await fetch('/api/payments/initialize', { // HIGH-1 FIX: consolidated route
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ promoCode: promoCode.trim().toUpperCase() }),
+          body: JSON.stringify({ promoCode: promoCode.trim().toUpperCase(), plan: planId }),
         });
         const data = await res.json();
         if (data.free) { setSuccess('Account activated! Taking you to your dashboard…'); setTimeout(() => router.push('/dashboard'), 2000); }
@@ -287,50 +265,65 @@ export default function CheckoutPage() {
       setLoading(false); return;
     }
 
-    // Guard: Paystack script not ready yet — script loads async on mount
-    if (!paystackReady || !(window as any).PaystackPop) {
-      setError('Payment system is still loading. Please wait a moment and try again.');
-      setLoading(false);
-      setSelectedPlan(null);
-      return;
-    }
-
-    // Guard: public key must be set at build time via NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
-    const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '';
-    if (!paystackKey) {
-      setError('Payment configuration error. Please contact support@ascentorbi.com.');
-      setLoading(false);
-      setSelectedPlan(null);
-      return;
-    }
-
     const amountKobo = Math.round(finalPrice * 100);
     const reference = `asc_${user.id.slice(0, 8)}_${Date.now()}`;
     try {
       // @ts-ignore
-      const paystack = new (window as any).PaystackPop();
-      paystack.newTransaction({
-        key: paystackKey,
-        email: user.email, amount: amountKobo, currency: 'NGN', ref: reference,
-        metadata: {
-          user_id: user.id, plan: planId, billing_cycle: billing,
-          promo_code: promoCode.trim().toUpperCase() || null, is_trial: true,
-        },
-        onSuccess: async (transaction: any) => {
+      // CRIT-2 + MED-3 FIX: Use PaystackPop.setup() (v1 API) — consistent with useCheckout.tsx
+      // First initialize transaction server-side to get access_code
+      const initRes = await fetch('/api/payments/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: (() => {
+            // Map display planId to Paystack plan code
+            const codeMap: Record<string, string> = {
+              'builder': '${PLN_EXPLORER_MONTHLY}',
+              'pro':     '${PLN_BUILDER_MONTHLY}',
+              'elite':   '${PLN_CLIMBER_MONTHLY}',
+            };
+            // For yearly billing, use yearly codes
+            const yearlyMap: Record<string, string> = {
+              'builder': '${PLN_EXPLORER_ANNUAL}',
+              'pro':     '${PLN_BUILDER_ANNUAL}',
+              'elite':   '${PLN_CLIMBER_ANNUAL}',
+            };
+            return billing === 'yearly' ? yearlyMap[planId] : codeMap[planId];
+          })(),
+          currency: 'NGN',
+          email: user.email,
+          metadata: { planName: planId, userId: user.id, billing_cycle: billing, is_trial: true },
+        }),
+      });
+      const initData = await initRes.json();
+      if (!initRes.ok || initData.error) throw new Error(initData.error || 'Failed to initialize payment');
+
+      const handler = (window as any).PaystackPop.setup({
+        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
+        access_code: initData.access_code,
+        ref: initData.reference,
+        onClose: () => { setLoading(false); setSelectedPlan(null); },
+        callback: async (transaction: any) => {
           try {
-            const res = await fetch('/api/payment/verify', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              // userId intentionally omitted — server reads from session (S1 fix)
-            body: JSON.stringify({ reference: transaction.reference, plan: planId, billing }),
+            const res = await fetch('/api/payments/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reference: transaction.reference, plan: planId, billing }),
             });
             const data = await res.json();
-            if (data.success) { setSuccess('Payment confirmed! Taking you to your dashboard…'); setTimeout(() => router.push('/dashboard'), 2000); }
-            else setError('Payment received but verification failed. Contact support.');
-          } catch { setError('Payment may have succeeded. Contact support if not reflected.'); }
+            if (data.success) {
+              setSuccess('Payment confirmed! Taking you to your dashboard…');
+              setTimeout(() => router.push('/dashboard?welcome=1'), 2000);
+            } else {
+              setError('Payment received but verification failed. Contact support.');
+            }
+          } catch {
+            setError('Payment may have succeeded. Contact support if not reflected.');
+          }
           setLoading(false);
         },
-        onCancel: () => { setLoading(false); setSelectedPlan(null); },
       });
+      handler.openIframe();
     } catch {
       setError('Payment system unavailable. Please try again later.');
       setLoading(false);
@@ -983,7 +976,7 @@ export default function CheckoutPage() {
                 <button
                   className="co-cta"
                   onClick={() => handleSelectPlan(plan.id)}
-                  disabled={current || (loading && selectedPlan === plan.id) || !paystackReady}
+                  disabled={current || (loading && selectedPlan === plan.id)}
                   style={
                     current ? {
                       background: 'transparent',
@@ -1001,11 +994,9 @@ export default function CheckoutPage() {
                 >
                   {loading && selectedPlan === plan.id
                     ? 'Processing…'
-                    : !paystackReady
-                      ? 'Loading payment…'
-                      : current
-                        ? '✓ Current Plan'
-                        : plan.cta}
+                    : current
+                      ? '✓ Current Plan'
+                      : plan.cta}
                 </button>
 
                 {!current && (

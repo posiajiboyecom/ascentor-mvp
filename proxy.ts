@@ -112,7 +112,7 @@ const AUTH_ROUTES = [
 ];
 
 const PROTECTED_API_PREFIXES = [
-  '/api/coach', '/api/coaching', '/api/payment',
+  '/api/coach', '/api/coaching', '/api/payment', '/api/payments', // HIGH-1: both dirs protected
   '/api/referral', '/api/subscription', '/api/usage',
   '/api/push', '/api/admin', '/api/partner',
 ];
@@ -139,8 +139,16 @@ const PUBLIC_API_ROUTES = [
 ];
 
 const PLAN_RANK: Record<string, number> = {
-  free: 0, explorer: 1, builder: 2, climber: 3,
-  standard: 2, tester: 2, pro: 3,
+  // Supabase canonical plan IDs (subscription_plan column values)
+  free:    0,
+  builder: 1,  // Supabase ID for Explorer tier
+  pro:     2,  // Supabase ID for Builder tier
+  elite:   3,  // Supabase ID for Climber tier
+  // TIERED_ROUTES minPlan aliases (display names used in route config)
+  explorer: 1,
+  climber:  3,
+  // Legacy / promo plan aliases
+  standard: 1, tester: 1,
 };
 
 export default async function proxy(request: NextRequest) {

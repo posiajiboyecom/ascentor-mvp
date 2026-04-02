@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const promoCode: string | undefined = body.promoCode;
     const validateOnly: boolean = body.validateOnly === true; // just validate, don't activate
+    // MED-2 FIX: capture the user's chosen plan so 100% promo activates the correct plan
+    const chosenPlan: string = body.plan || 'explorer';
 
     // ── 3. HANDLE PROMO CODE ───────────────────────────────────────
     if (promoCode) {
@@ -107,7 +109,7 @@ export async function POST(req: NextRequest) {
         subscriptionEnd.setDate(subscriptionEnd.getDate() + 30);
 
         const { error: updateError } = await supabase.from('profiles').update({
-          subscription_plan:   'standard',
+          subscription_plan:   chosenPlan, // MED-2 FIX: user's actual chosen plan
           subscription_status: 'active',
           subscription_end:    subscriptionEnd.toISOString(),
           updated_at:          new Date().toISOString(),

@@ -1,12 +1,14 @@
 // ============================================================
-// CANCEL SUBSCRIPTION — /api/subscription/cancel  [UPDATED]
+// CANCEL SUBSCRIPTION — /api/subscription/cancel
 //
-// Matches your existing cancel route pattern from the git objects.
-// Uses your plan names: explorer | builder | climber
+// CRIT-1 FIX: userId now taken from authenticated session,
+// NOT from the request body. Any logged-in user could previously
+// cancel another user's subscription by passing their userId.
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createClient as createAuthClient } from '@/lib/supabase/server';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,11 +19,20 @@ const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, reason } = await req.json();
+    // ── CRIT-1 FIX: Authenticate session first ──────────────
+    const authClient = await createAuthClient();
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // userId ALWAYS from session — never from body
+    const userId = user.id;
+
+    // Only read reason from body — userId is ignored
+    const body = await req.json().catch(() => ({}));
+    const reason: string | undefined = body.reason;
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -33,7 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No active subscription to cancel' }, { status: 400 });
     }
 
-    // Try to cancel on Paystack side if applicable
+    // Try to cancel on Paystack side if applicable (non-critical)
     if (profile.payment_method && PAYSTACK_SECRET) {
       try {
         const { data: authUser } = await supabase.auth.admin.getUserById(userId);
@@ -63,7 +74,7 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (err) {
-        console.error('[Cancel] Paystack error:', err);
+        console.error('[Cancel] Paystack error (non-fatal):', err);
         // Continue — still cancel on our side
       }
     }

@@ -51,20 +51,12 @@ async function getProfileByEmail(email: string) {
     .eq('email', email)
     .maybeSingle();
 
-  if (data) return data;
-
-  // Fallback: auth.users → profiles join
-  const { data: authData } = await supabase.auth.admin.listUsers();
-  const authUser = authData?.users?.find(u => u.email === email);
-  if (!authUser) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, subscription_plan, subscription_status, subscription_end')
-    .eq('id', authUser.id)
-    .maybeSingle();
-
-  return profile;
+  // HIGH-4 FIX: Removed listUsers() fallback — it fetches ALL users and fails at scale.
+  // Ensure your profiles table has an email column populated via DB trigger on user creation.
+  if (!data) {
+    console.warn(`[Webhook] No profile found for email: ${email}. Ensure profiles.email is populated.`);
+  }
+  return data ?? null;
 }
 
 // ── Derive plan from metadata ─────────────────────────────
@@ -133,7 +125,16 @@ async function handleChargeSuccess(data: any) {
   // payment (trialing → active), which is already handled by /api/payment/verify.
   const wasTrialing = profile.subscription_status === 'trialing';
 
-  // Calculate next billing date (30 days from payment)
+  // CRIT-4 FIX: If user is currently trialing, this charge.success is the INITIAL
+  // payment — already handled by /api/payment/verify which set subscription_end
+  // correctly with the 7-day trial. Skip the update to avoid overwriting
+  // subscription_end (37 days → 30 days) and bypassing the trial period.
+  if (wasTrialing) {
+    console.log(`[Webhook] Skipping charge.success update for trialing user ${email} — already activated by /api/payment/verify`);
+    return;
+  }
+
+  // Calculate next billing date (30 days from payment) — for RENEWALS only
   const paidAt = data.paid_at ? new Date(data.paid_at) : new Date();
   const nextBilling = new Date(paidAt);
   nextBilling.setDate(nextBilling.getDate() + 30);

@@ -70,13 +70,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Payment not verified' }, { status: 400 });
     }
 
+    // ── CRIT-3 FIX: Idempotency — check if reference already processed ──
+    // Without this, calling verify twice with same reference grants double access.
+    const { data: existingPayment } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('reference', reference)
+      .maybeSingle();
+
+    if (existingPayment) {
+      console.log(`[payment/verify] Reference ${reference} already processed — skipping`);
+      return NextResponse.json({ success: true, alreadyProcessed: true });
+    }
+
     // ── 4. CALCULATE SUBSCRIPTION END ──────────────────────────────
+    // MED-4 FIX: Calculate consistently — add trial first, then billing period
     const subscriptionEnd = new Date();
+    subscriptionEnd.setDate(subscriptionEnd.getDate() + 7); // 7-day trial always
     if (billing === 'yearly') {
       subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
-      subscriptionEnd.setDate(subscriptionEnd.getDate() + 7); // +7 trial
     } else {
-      subscriptionEnd.setDate(subscriptionEnd.getDate() + 37); // 30 days + 7 trial
+      subscriptionEnd.setDate(subscriptionEnd.getDate() + 30); // 30 days monthly
     }
 
     // ── 5. ACTIVATE SUBSCRIPTION ───────────────────────────────────
