@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/client'
 
 export interface CheckoutOptions {
   planName: string          // display name e.g. 'Explorer', 'Builder', 'Climber'
-  planId: string            // Supabase plan ID: 'builder' | 'pro' | 'elite'
+  planId?: string           // Supabase plan ID: 'builder' | 'pro' | 'elite' (optional for B2B)
   currency: 'ngn' | 'usd'
   billing: 'monthly' | 'annual'
   paystackPlanCode: string  // Paystack plan code — always required now
