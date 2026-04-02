@@ -43,6 +43,21 @@ export function useCheckout() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
 
+      // ── Not logged in — redirect to signup with plan intent ──────
+      if (!user) {
+        // Store plan intent so checkout page can auto-select it after signup
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('ascentor_plan_intent', JSON.stringify({
+            planName:        opts.planName,
+            billing:         opts.billing,
+            currency:        opts.currency,
+            paystackPlanCode: opts.paystackPlanCode || '',
+          }))
+        }
+        window.location.href = `/signup?plan=${opts.planName.toLowerCase()}&billing=${opts.billing}`
+        return
+      }
+
       // ── Lemonsqueezy (USD) ───────────────────────────────────────
       if (provider === 'lemonsqueezy') {
         if (!opts.lemonVariantId) {

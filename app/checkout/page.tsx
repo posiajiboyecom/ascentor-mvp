@@ -5,6 +5,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { PLAN_PRICING, MAX_YEARLY_SAVINGS } from '@/lib/pricing';
+import { B2C_TIERS } from '@/app/pricing/data';
+
+// Plan code lookup from data.ts — single source of truth
+function getPaystackCode(supabasePlanId: string, billing: 'monthly' | 'yearly'): string {
+  const tier = B2C_TIERS.find(t => t.id === supabasePlanId);
+  if (!tier) return '';
+  return billing === 'yearly'
+    ? tier.paystackPlanCode.annual
+    : tier.paystackPlanCode.monthly;
+}
 
 
 // Renders SVG icon strings safely  
@@ -117,21 +127,8 @@ export default function CheckoutPage() {
   const searchParams  = useSearchParams();
   const upgradeReason = searchParams.get('reason');
   const fromPage      = searchParams.get('from');
-  // FIX: read plan + billing passed from pricing page
-  const planParam     = searchParams.get('plan');    // e.g. 'builder' | 'pro' | 'elite'
-  const billingParam  = searchParams.get('billing'); // 'monthly' | 'yearly'
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
-
-  // FIX: Auto-select plan and billing from URL params set by pricing page
-  useEffect(() => {
-    if (planParam && PLANS.find(p => p.id === planParam)) {
-      setSelectedPlan(planParam);
-    }
-    if (billingParam === 'yearly' || billingParam === 'monthly') {
-      setBilling(billingParam);
-    }
-  }, [planParam, billingParam]); // eslint-disable-line
 
   // Sync theme with app-wide preference (same key as AppThemeProvider)
   useEffect(() => {
@@ -158,6 +155,26 @@ export default function CheckoutPage() {
     };
     loadUser();
   }, [supabase, router]);
+
+  // FIX: Auto-select plan from pricing page intent (set in useCheckout when not logged in)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const raw = localStorage.getItem('ascentor_plan_intent');
+    if (!raw) return;
+    try {
+      const intent = JSON.parse(raw);
+      // Map planName back to Supabase plan ID
+      const nameToId: Record<string, string> = {
+        'explorer': 'builder',
+        'builder':  'pro',
+        'climber':  'elite',
+      };
+      const planId = nameToId[intent.planName?.toLowerCase()] || null;
+      if (planId) setSelectedPlan(planId);
+      if (intent.billing === 'yearly') setBilling('yearly');
+      localStorage.removeItem('ascentor_plan_intent'); // consume once
+    } catch {}
+  }, []);
 
   // Fetch active auto-apply promo on page load
   useEffect(() => {
@@ -288,21 +305,7 @@ export default function CheckoutPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          plan: (() => {
-            // Map display planId to Paystack plan code
-            const codeMap: Record<string, string> = {
-              'builder': 'PLN_4v5qnnjk9rt6cdk',
-              'pro':     'PLN_4gok25gn1vz20i0',
-              'elite':   'PLN_ve92id76obworr6',
-            };
-            // For yearly billing, use yearly codes
-            const yearlyMap: Record<string, string> = {
-              'builder': 'PLN_vxl1wn9nirjic5j',
-              'pro':     'PLN_73hl3c3n3zxhh79',
-              'elite':   'PLN_4gbyspguka7qn0h',
-            };
-            return billing === 'yearly' ? yearlyMap[planId] : codeMap[planId];
-          })(),
+          plan: getPaystackCode(planId, billing),
           currency: 'NGN',
           email: user.email,
           metadata: { planName: planId, userId: user.id, billing_cycle: billing, is_trial: true },
@@ -458,18 +461,13 @@ export default function CheckoutPage() {
         }
         .co-nav-back {
           font-family: 'DM Mono', monospace;
-          font-size: 11px; letter-spacing: 0.06em;
-          color: var(--co-text-dim, #7A7260); text-decoration: none;
+          font-size: 11px; letter-spacing: 0.08em;
+          color: var(--co-text-muted); text-decoration: none;
           padding: 7px 14px; border-radius: 8px;
-          border: 1px solid transparent;
-          transition: color 0.2s, border-color 0.2s, background 0.2s;
-          white-space: nowrap;
+          border: 1px solid var(--co-bord);
+          transition: color 0.2s, border-color 0.2s;
         }
-        .co-nav-back:hover {
-          color: var(--co-text-muted);
-          border-color: var(--co-bord);
-          background: rgba(212,207,195,0.04);
-        }
+        .co-nav-back:hover { color: var(--co-text); border-color: var(--co-bord-med); }
 
         /* ── HERO ── */
         .co-upgrade-banner {
@@ -800,7 +798,7 @@ export default function CheckoutPage() {
     style={{ height: '32px', width: 'auto' }}
   />
 </Link>
-          <a href="/dashboard" className="co-nav-back">Not ready? Go to dashboard →</a>
+          <a href="/onboarding" className="co-nav-back">← Back</a>
           <button
             onClick={() => {
               const next = isDark ? 'light' : 'dark';
