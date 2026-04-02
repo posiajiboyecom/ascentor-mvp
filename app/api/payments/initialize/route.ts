@@ -200,7 +200,9 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         email,
         plan,
-        currency: currency || 'NGN',
+        // Do NOT send `currency` when using a plan code.
+        // Paystack derives currency from the plan itself.
+        // Sending currency alongside plan causes "Invalid Amount Sent".
         metadata: {
           ...metadata,
           // Ensure userId from session is in metadata, not from client body
