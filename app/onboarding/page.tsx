@@ -1,582 +1,248 @@
 'use client';
 
+// ============================================================
+// FILE: app/onboarding/page.tsx
+//
+// This replaces or augments your existing onboarding page.
+// KEY ADDITION: reads ?next= param so it knows where to send
+// the user after they finish — either /dashboard or /checkout?plan=X
+//
+// On completion:
+//   1. Saves profile fields to Supabase
+//   2. Sets onboarding_completed = true
+//   3. Redirects to the `next` destination
+//
+// If you already have a multi-step onboarding UI, just replace
+// the handleComplete function and the router.push at the end.
+// ============================================================
+
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
-const industries = [
-  'Technology', 'Finance & Banking', 'Consulting', 'Healthcare',
-  'Education', 'Energy', 'Telecom', 'Government', 'NGO', 'Other',
-];
-
-const timeOptions = [
-  { value: '10min', label: '10 min / day' },
-  { value: '15min', label: '15 min / day' },
-  { value: '30min', label: '30 min / day' },
-  { value: '60min', label: '1 hour / day' },
+// ── Onboarding steps ─────────────────────────────────────────
+const STEPS = [
+  {
+    id: 'role',
+    question: "What's your current role?",
+    field: 'current_role',
+    placeholder: 'e.g. Product Manager, Engineer, Consultant...',
+    type: 'text',
+  },
+  {
+    id: 'industry',
+    question: 'Which industry are you in?',
+    field: 'industry',
+    placeholder: 'e.g. Banking, Tech, Oil & Gas, Healthcare...',
+    type: 'text',
+  },
+  {
+    id: 'goal_role',
+    question: "What's the role you're working towards?",
+    field: 'goal_role',
+    placeholder: 'e.g. VP of Engineering, CEO, Director of Strategy...',
+    type: 'text',
+  },
+  {
+    id: 'biggest_challenge',
+    question: "What's your biggest career challenge right now?",
+    field: 'biggest_challenge',
+    placeholder: 'Be honest — this helps your AI coach understand you deeply.',
+    type: 'textarea',
+  },
 ];
 
 export default function OnboardingPage() {
+  const router      = useRouter();
   const searchParams = useSearchParams();
-  const initialStep = searchParams.get('step') === '2' ? 2 : 1;
-  const [step, setStep] = useState(initialStep);
-  const [saving, setSaving] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
 
-  const [profile, setProfile] = useState({
-    full_name: '',
-    current_role: '',
-    industry: '',
-    goal_role: '',
-    biggest_challenge: '',
-    time_commitment: '15min',
-  });
+  // Where to go after onboarding — default to dashboard
+  const nextPath = searchParams.get('next') || '/dashboard';
 
-  const [goal, setGoal] = useState({
-    goal_text: '',
-    milestone_1: '',
-    milestone_2: '',
-    milestone_3: '',
-  });
+  const [step, setStep]       = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
 
-  const handleProfileSave = async () => {
-    setSaving(true);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      alert(authError?.message || 'Not logged in. Please sign in again.');
-      setSaving(false);
+  const currentStep = STEPS[step];
+  const currentValue = answers[currentStep.field] || '';
+  const isLast = step === STEPS.length - 1;
+
+  const handleNext = () => {
+    if (!currentValue.trim()) {
+      setError('Please answer this question before continuing.');
       return;
     }
-
-    const { data: existingProfile } = await supabase
-      .from('profiles')
-      .select('referral_code')
-      .eq('id', user.id)
-      .single();
-
-    const referralCode = existingProfile?.referral_code || (
-      'ASC-' + Math.random().toString(36).substring(2, 6).toUpperCase()
-    );
-
-    const { error: dbError } = await supabase.from('profiles').upsert({
-      id: user.id,
-      ...profile,
-      referral_code: referralCode,
-      updated_at: new Date().toISOString(),
-    });
-
-    if (dbError) {
-      alert('Error: ' + dbError.message);
-      setSaving(false);
-      return;
+    setError('');
+    if (isLast) {
+      handleComplete();
+    } else {
+      setStep((s) => s + 1);
     }
-
-    setSaving(false);
-    setStep(2);
   };
 
-  const handleGoalSave = async () => {
+  const handleComplete = async () => {
     setSaving(true);
+    setError('');
 
-    // Use the user already authenticated — single getUser call
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      alert('Session expired. Please sign in again.');
-      setSaving(false);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push('/login');
       return;
     }
 
-    try {
-      // 1. Save the 90-day goal
-      const { error: goalError } = await supabase.from('user_goals').insert({
-        user_id: user.id,
-        goal_text: goal.goal_text,
-        timeframe: '90 days',
-        milestone_1: goal.milestone_1,
-        milestone_2: goal.milestone_2,
-        milestone_3: goal.milestone_3,
-      });
-
-      if (goalError) {
-        // Duplicate goal is fine (user hit back and resubmitted) — ignore unique violations
-        if (!goalError.message.includes('duplicate') && goalError.code !== '23505') {
-          alert(`Error saving goal: ${goalError.message}`);
-          setSaving(false);
-          return;
-        }
-      }
-
-      // 2. Mark onboarding complete — fire-and-forget, never blocks navigation.
-      // Free users: this lets them reach /dashboard on next login.
-      // Paid users: /api/payment/verify sets this flag again on payment.
-      supabase.from('profiles').update({
+    // Save all answers + mark onboarding done
+    const { error: saveError } = await supabase
+      .from('profiles')
+      .update({
+        ...Object.fromEntries(
+          STEPS.map((s) => [s.field, answers[s.field] || ''])
+        ),
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
-      }).eq('id', user.id).then(({ error }) => {
-        if (error) console.warn('[onboarding] onboarding_completed update failed (non-fatal):', error.message);
-      });
+      })
+      .eq('id', user.id);
 
-      // 3. ML tagging — fire-and-forget, never blocks navigation
-      if (user.email) {
-        fetch('/api/checkout-pending', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: user.email,
-            name: profile.full_name || user.email.split('@')[0],
-            userId: user.id,
-          }),
-        }).catch(() => {});
-      }
-
-      // 4. Referral — fire-and-forget
-      try {
-        const storedRef = localStorage.getItem('ascentor_referral');
-        if (storedRef) {
-          fetch('/api/referral', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ referralCode: storedRef }),
-          }).catch(() => {});
-          localStorage.removeItem('ascentor_referral');
-        }
-      } catch { /* non-fatal */ }
-
-      // Navigate immediately — don't wait for non-critical operations
-      router.push('/dashboard');
-
-    } catch (err: any) {
-      console.error('[onboarding] handleGoalSave error:', err);
-      alert('Something went wrong. Please try again.');
+    if (saveError) {
+      console.error('Onboarding save error:', saveError);
+      setError('Failed to save your profile. Please try again.');
       setSaving(false);
+      return;
     }
+
+    // Redirect to wherever the user was heading (checkout or dashboard)
+    router.push(nextPath);
   };
 
-  const step1Valid = profile.full_name && profile.current_role && profile.industry && profile.goal_role;
-  const step2Valid = goal.goal_text;
+  const progress = ((step + 1) / STEPS.length) * 100;
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        .ob-root {
-          min-height: 100vh;
-          background: #0C0B08;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 24px 16px;
-          position: relative;
-          overflow: hidden;
-          font-family: 'Syne', sans-serif;
-        }
-
-        .ob-root::before {
-          content: '';
-          position: fixed;
-          top: -200px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 700px;
-          height: 700px;
-          background: radial-gradient(circle, rgba(232,160,32,0.06) 0%, transparent 65%);
-          pointer-events: none;
-        }
-
-        .ob-root::after {
-          content: '';
-          position: fixed;
-          inset: 0;
-          background-image:
-            linear-gradient(rgba(232,160,32,0.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(232,160,32,0.025) 1px, transparent 1px);
-          background-size: 48px 48px;
-          pointer-events: none;
-        }
-
-        .ob-card {
-          width: 100%;
-          max-width: 480px;
-          position: relative;
-          z-index: 1;
-          animation: ob-rise 0.5s cubic-bezier(0.22,1,0.36,1) both;
-        }
-
-        @keyframes ob-rise {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .ob-logo {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 40px;
-        }
-        .ob-logo-mark { width: 28px; height: 28px; }
-        .ob-logo-text {
-          font-family: 'Cormorant Garamond', serif;
-          font-weight: 700;
-          font-size: 20px;
-          color: #fff;
-          letter-spacing: -0.2px;
-        }
-
-        .ob-steps {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 36px;
-        }
-        .ob-step-bar {
-          flex: 1;
-          height: 2px;
-          border-radius: 2px;
-          background: #2E2A22;
-          overflow: hidden;
-          transition: background 0.4s;
-        }
-        .ob-step-bar.active { background: #E8A020; }
-        .ob-step-label {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.12em;
-          color: #7A7260;
-          white-space: nowrap;
-        }
-
-        .ob-eyebrow {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.16em;
-          color: #E8A020;
-          text-transform: uppercase;
-          margin-bottom: 10px;
-        }
-        .ob-heading {
-          font-family: 'Cormorant Garamond', serif;
-          font-weight: 700;
-          font-size: 36px;
-          line-height: 1.1;
-          color: #fff;
-          margin-bottom: 8px;
-          letter-spacing: -0.5px;
-        }
-        .ob-subheading {
-          font-size: 14px;
-          color: #7A7260;
-          margin-bottom: 32px;
-          line-height: 1.5;
-          font-weight: 400;
-        }
-
-        .ob-form { display: flex; flex-direction: column; gap: 14px; }
-
-        .ob-field { display: flex; flex-direction: column; gap: 6px; }
-        .ob-label {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.12em;
-          color: #4A4438;
-          text-transform: uppercase;
-        }
-
-        .ob-input,
-        .ob-textarea,
-        .ob-select {
-          width: 100%;
-          padding: 13px 16px;
-          background: #1E1C17;
-          border: 1px solid #2E2A22;
-          border-radius: 10px;
-          color: #D4CFC3;
-          font-family: 'Syne', sans-serif;
-          font-size: 14px;
-          font-weight: 400;
-          outline: none;
-          transition: border-color 0.2s, background 0.2s;
-          -webkit-appearance: none;
-        }
-        .ob-input::placeholder,
-        .ob-textarea::placeholder { color: #4A4438; }
-        .ob-input:focus,
-        .ob-textarea:focus,
-        .ob-select:focus {
-          border-color: rgba(232,160,32,0.5);
-          background: #2E2A22;
-        }
-        .ob-textarea { resize: none; line-height: 1.5; }
-        .ob-select { cursor: pointer; color: #D4CFC3; }
-        .ob-select option { background: #1E1C17; }
-
-        .ob-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        @media (max-width: 480px) { .ob-grid-2 { grid-template-columns: 1fr; } }
-
-        .ob-milestones-label {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.12em;
-          color: #4A4438;
-          text-transform: uppercase;
-          margin-bottom: 2px;
-        }
-        .ob-milestone-row { display: flex; align-items: center; gap: 12px; }
-        .ob-milestone-num {
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: #2E2A22;
-          border: 1px solid #4A4438;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          color: #7A7260;
-          flex-shrink: 0;
-        }
-
-        .ob-journey {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 12px 16px;
-          background: rgba(232,160,32,0.04);
-          border: 1px solid rgba(232,160,32,0.12);
-          border-radius: 10px;
-          font-size: 13px;
-        }
-        .ob-journey-from { color: #7A7260; }
-        .ob-journey-arrow { color: #4A4438; }
-        .ob-journey-to { color: #E8A020; font-weight: 600; }
-
-        .ob-btn {
-          width: 100%;
-          padding: 15px 24px;
-          background: #E8A020;
-          color: #0C0B08;
-          border: none;
-          border-radius: 10px;
-          font-family: 'Syne', sans-serif;
-          font-size: 14px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          cursor: pointer;
-          transition: background 0.2s, transform 0.15s;
-          margin-top: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-        .ob-btn:hover:not(:disabled) { background: #F5C55A; transform: translateY(-1px); }
-        .ob-btn:active:not(:disabled) { transform: translateY(0); }
-        .ob-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-        .ob-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px 12px;
-          background: rgba(232,160,32,0.08);
-          border: 1px solid rgba(232,160,32,0.18);
-          border-radius: 100px;
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.1em;
-          color: #E8A020;
-          margin-bottom: 20px;
-        }
-        .ob-badge-dot {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: #E8A020;
-        }
-
-        .ob-divider { height: 1px; background: #2E2A22; margin: 4px 0 8px; }
-      `}</style>
-
-      <div className="ob-root">
-        <div className="ob-card">
-
-          {/* Logo */}
-          <div className="ob-logo">
-            <svg className="ob-logo-mark" viewBox="0 0 32 32" fill="none">
-              <path d="M4 26L16 6l12 20H4z" stroke="#E8A020" strokeWidth="1.8" strokeLinejoin="round" fill="none"/>
-              <path d="M8 26L16 12l8 14H8z" stroke="#E8A020" strokeWidth="1.2" strokeLinejoin="round" fill="rgba(232,160,32,0.1)"/>
-              <path d="M4 26h24" stroke="#E8A020" strokeWidth="1.8" strokeLinecap="round"/>
-            </svg>
-            <span className="ob-logo-text">Ascentor</span>
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-16"
+      style={{ background: 'var(--bg)' }}
+    >
+      <div className="w-full max-w-lg">
+        {/* Progress bar */}
+        <div className="mb-8">
+          <div className="flex justify-between text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
+            <span>Setting up your profile</span>
+            <span>{step + 1} of {STEPS.length}</span>
           </div>
-
-          {/* Step bars */}
-          <div className="ob-steps">
-            <div className={`ob-step-bar ${step >= 1 ? 'active' : ''}`} />
-            <div className={`ob-step-bar ${step >= 2 ? 'active' : ''}`} />
-            <div className={`ob-step-bar ${step >= 3 ? 'active' : ''}`} />
-            <span className="ob-step-label">STEP {step} OF 3</span>
+          <div
+            className="h-1 rounded-full overflow-hidden"
+            style={{ background: 'var(--border)' }}
+          >
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${progress}%`, background: 'var(--accent)' }}
+            />
           </div>
-
-          {/* ─── STEP 1: Profile ─── */}
-          {step === 1 && (
-            <>
-              <p className="ob-eyebrow">Your Profile</p>
-              <h1 className="ob-heading">Let's meet<br/>your mentor.</h1>
-              <p className="ob-subheading">
-                Sage is trained on African career context. The more it knows about you, the sharper the guidance.
-              </p>
-
-              <div className="ob-form">
-                <div className="ob-field">
-                  <label className="ob-label">Full Name</label>
-                  <input
-                    className="ob-input"
-                    placeholder="e.g. Amara Osei"
-                    value={profile.full_name}
-                    onChange={e => setProfile({ ...profile, full_name: e.target.value })}
-                  />
-                </div>
-
-                <div className="ob-grid-2">
-                  <div className="ob-field">
-                    <label className="ob-label">Current Role</label>
-                    <input
-                      className="ob-input"
-                      placeholder="e.g. Software Engineer"
-                      value={profile.current_role}
-                      onChange={e => setProfile({ ...profile, current_role: e.target.value })}
-                    />
-                  </div>
-                  <div className="ob-field">
-                    <label className="ob-label">Goal Role</label>
-                    <input
-                      className="ob-input"
-                      placeholder="e.g. Engineering Manager"
-                      value={profile.goal_role}
-                      onChange={e => setProfile({ ...profile, goal_role: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="ob-grid-2">
-                  <div className="ob-field">
-                    <label className="ob-label">Industry</label>
-                    <select
-                      className="ob-select"
-                      value={profile.industry}
-                      onChange={e => setProfile({ ...profile, industry: e.target.value })}
-                    >
-                      <option value="">Select</option>
-                      {industries.map(i => <option key={i} value={i}>{i}</option>)}
-                    </select>
-                  </div>
-                  <div className="ob-field">
-                    <label className="ob-label">Daily Time</label>
-                    <select
-                      className="ob-select"
-                      value={profile.time_commitment}
-                      onChange={e => setProfile({ ...profile, time_commitment: e.target.value })}
-                    >
-                      {timeOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="ob-field">
-                  <label className="ob-label">Biggest Career Challenge Right Now</label>
-                  <textarea
-                    className="ob-textarea"
-                    placeholder="Be specific — Sage can only help as well as you share."
-                    rows={3}
-                    value={profile.biggest_challenge}
-                    onChange={e => setProfile({ ...profile, biggest_challenge: e.target.value })}
-                  />
-                </div>
-
-                {(profile.current_role || profile.goal_role) && (
-                  <div className="ob-journey">
-                    <span className="ob-journey-from">{profile.current_role || '...'}</span>
-                    <span className="ob-journey-arrow">→</span>
-                    <span className="ob-journey-to">{profile.goal_role || '...'}</span>
-                  </div>
-                )}
-
-                <button
-                  className="ob-btn"
-                  onClick={handleProfileSave}
-                  disabled={!step1Valid || saving}
-                >
-                  {saving ? 'Saving...' : <>Continue <span>→</span></>}
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* ─── STEP 2: 90-Day Goal ─── */}
-          {step === 2 && (
-            <>
-              <p className="ob-eyebrow">Your 90-Day Goal</p>
-              <h1 className="ob-heading">What will your<br/>mentor help you achieve?</h1>
-              <p className="ob-subheading">
-                Members who set a 90-day goal with their mentor are 3x more likely to hit a measurable career outcome.
-              </p>
-
-              <div className="ob-badge">
-                <div className="ob-badge-dot" />
-                BUILDER STAGE · 90-DAY PLAN
-              </div>
-
-              <div className="ob-form">
-                <div className="ob-field">
-                  <label className="ob-label">Your Goal</label>
-                  <textarea
-                    className="ob-textarea"
-                    placeholder="e.g. Get promoted to Engineering Manager at my current company"
-                    rows={3}
-                    value={goal.goal_text}
-                    onChange={e => setGoal({ ...goal, goal_text: e.target.value })}
-                  />
-                </div>
-
-                <div className="ob-divider" />
-
-                <p className="ob-milestones-label">3 Milestones to get there</p>
-
-                {(['milestone_1', 'milestone_2', 'milestone_3'] as const).map((key, i) => (
-                  <div key={key} className="ob-milestone-row">
-                    <div className="ob-milestone-num">{i + 1}</div>
-                    <input
-                      className="ob-input"
-                      style={{ flex: 1 }}
-                      placeholder={
-                        i === 0 ? 'e.g. Lead my first cross-team project'
-                        : i === 1 ? 'e.g. Present roadmap to senior leadership'
-                        : 'e.g. Request formal promotion review'
-                      }
-                      value={goal[key]}
-                      onChange={e => setGoal({ ...goal, [key]: e.target.value })}
-                    />
-                  </div>
-                ))}
-
-                <button
-                  className="ob-btn"
-                  onClick={handleGoalSave}
-                  disabled={!step2Valid || saving}
-                >
-                  {saving ? 'Preparing Sage...' : <>Meet Sage <span>→</span></>}
-                </button>
-              </div>
-            </>
-          )}
-
         </div>
+
+        {/* Card */}
+        <div
+          className="rounded-2xl p-8"
+          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+        >
+          <div className="text-center mb-8">
+            <div className="text-3xl mb-3">⬆</div>
+            <h1
+              className="text-2xl font-semibold mb-2"
+              style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}
+            >
+              {currentStep.question}
+            </h1>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              This helps your AI coach personalise every session for you.
+            </p>
+          </div>
+
+          {/* Input */}
+          {currentStep.type === 'textarea' ? (
+            <textarea
+              value={currentValue}
+              onChange={(e) =>
+                setAnswers((prev) => ({ ...prev, [currentStep.field]: e.target.value }))
+              }
+              placeholder={currentStep.placeholder}
+              rows={4}
+              disabled={saving}
+              className="w-full rounded-lg px-4 py-3 text-sm focus:outline-none transition resize-none mb-4"
+              style={{
+                background: 'var(--input-bg, rgba(255,255,255,0.05))',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
+              }}
+            />
+          ) : (
+            <input
+              type="text"
+              value={currentValue}
+              onChange={(e) =>
+                setAnswers((prev) => ({ ...prev, [currentStep.field]: e.target.value }))
+              }
+              onKeyDown={(e) => e.key === 'Enter' && handleNext()}
+              placeholder={currentStep.placeholder}
+              disabled={saving}
+              className="w-full rounded-lg px-4 py-3 text-sm focus:outline-none transition mb-4"
+              style={{
+                background: 'var(--input-bg, rgba(255,255,255,0.05))',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
+              }}
+            />
+          )}
+
+          {error && (
+            <div
+              className="rounded-lg p-3 mb-4 text-sm"
+              style={{ background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', color: '#f87171' }}
+            >
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleNext}
+            disabled={saving}
+            className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all"
+            style={{
+              background: saving ? 'rgba(255,255,255,0.06)' : 'var(--accent)',
+              color: saving ? 'var(--text-muted)' : '#000',
+              cursor: saving ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {saving ? 'Saving...' : isLast ? 'Complete setup →' : 'Continue →'}
+          </button>
+
+          {/* Skip option — goes to next destination but marks onboarding done */}
+          {!saving && (
+            <button
+              onClick={async () => {
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                  await supabase
+                    .from('profiles')
+                    .update({ onboarding_completed: true, updated_at: new Date().toISOString() })
+                    .eq('id', user.id);
+                }
+                router.push(nextPath);
+              }}
+              className="w-full text-center text-xs mt-4 transition-colors"
+              style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              Skip for now →
+            </button>
+          )}
+        </div>
+
+        <p className="text-center text-xs mt-4" style={{ color: 'var(--text-muted)' }}>
+          You can update these answers anytime in your profile settings.
+        </p>
       </div>
-    </>
+    </div>
   );
 }
