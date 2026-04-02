@@ -1,8 +1,10 @@
 'use client'
 
-// app/pricing/components/B2CPlanCard.tsx — v4
-// Uses CSS classes from PricingClient.tsx <style> block.
-// No JS breakpoint detection — pure CSS media queries.
+// app/pricing/components/B2CPlanCard.tsx — v5
+// FIX: Free → /signup?plan=free (routes to onboarding, not checkout)
+// FIX: Climber mailto removed — all paid plans go through checkout flow
+// FIX: Unauthenticated paid users sent to /signup?plan=X&billing=Y&currency=Z
+//      so plan intent is preserved through the full signup → onboarding → checkout flow
 
 import { B2CTier, BillingCycle, Currency, formatPrice, getAnnualLabel } from '../data'
 import { useRouter } from 'next/navigation'
@@ -42,24 +44,53 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
     : (!isFree ? `${getAnnualLabel(tier, currency).replace(/·.*/, '').trim()} if billed annually` : '')
 
   function handleCTA() {
-    if (isFree) { router.push('/signup'); return }
-    if (tier.id === 'elite') {
-      window.location.href = 'mailto:hello@ascentorbi.com?subject=Climber Plan Enquiry'
+    // ── Free plan ──────────────────────────────────────────────────
+    // Route to signup with plan=free so signup page knows to go to
+    // onboarding directly instead of checkout.
+    if (isFree) {
+      router.push('/signup?plan=free')
       return
     }
+
+    // ── All paid plans (Explorer, Builder, Climber) ────────────────
+    // NGN → Paystack inline popup (user must be authenticated)
+    // USD → Lemonsqueezy redirect (user must be authenticated)
+    // If variant/plan code is missing, send to signup carrying intent
+    // so the plan is pre-selected when they reach checkout after onboarding.
+
     if (currency === 'ngn') {
+      const planCode = billing === 'annual'
+        ? tier.paystackPlanCode.annual
+        : tier.paystackPlanCode.monthly
+
+      if (!planCode) {
+        // Plan code not configured — preserve intent through signup flow
+        router.push(`/signup?plan=${tier.id}&billing=${billing}&currency=ngn`)
+        return
+      }
+
       initiateCheckout({
-        planName: tier.name, currency, billing,
-        paystackPlanCode: billing === 'annual'
-          ? tier.paystackPlanCode.annual
-          : tier.paystackPlanCode.monthly,
+        planName: tier.name,
+        currency,
+        billing,
+        paystackPlanCode: planCode,
       })
     } else {
+      const variantId = billing === 'annual'
+        ? tier.lemonVariantId.annual
+        : tier.lemonVariantId.monthly
+
+      if (!variantId) {
+        // Variant not yet configured — preserve intent through signup flow
+        router.push(`/signup?plan=${tier.id}&billing=${billing}&currency=usd`)
+        return
+      }
+
       initiateCheckout({
-        planName: tier.name, currency, billing,
-        lemonVariantId: billing === 'annual'
-          ? tier.lemonVariantId.annual
-          : tier.lemonVariantId.monthly,
+        planName: tier.name,
+        currency,
+        billing,
+        lemonVariantId: variantId,
       })
     }
   }

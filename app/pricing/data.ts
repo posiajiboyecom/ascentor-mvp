@@ -1,7 +1,8 @@
-// app/pricing/data.ts — v4
-// Plan display names updated: Starter→Free, Builder→Explorer, Pro→Builder, Elite→Climber
+// app/pricing/data.ts — v5
+// Plan display names: Free, Explorer (id=builder), Builder (id=pro), Climber (id=elite)
 // Backend IDs (id field) are UNCHANGED — they map to subscription_plan in Supabase.
 // Currency is auto-detected server-side via x-currency header (NG→ngn, rest→usd).
+// All 6 NGN Paystack plan codes verified 2026-04-02.
 
 export type Currency = 'ngn' | 'usd'
 export type BillingCycle = 'monthly' | 'annual'
@@ -25,12 +26,12 @@ export interface B2CTier {
   badge: string
   ctaLabel: string
   ctaVariant: 'primary' | 'secondary'
-  // Paystack plan codes (NGN)
+  // Paystack plan codes (NGN) — verified 2026-04-02
   paystackPlanCode: {
     monthly: string
     annual: string
   }
-  // Lemonsqueezy variant IDs (USD) — get from LS dashboard → Products → Variants
+  // Lemonsqueezy variant IDs (USD) — paste from LS dashboard when ready
   lemonVariantId: {
     monthly: string
     annual: string
@@ -67,7 +68,7 @@ export interface B2BTier {
 export const B2C_TIERS: B2CTier[] = [
   {
     id: 'free',
-    name: 'Free',         // display name
+    name: 'Free',
     label: 'Starter',
     priceMonthly: { ngn: 0, usd: 0 },
     annualTotal: { ngn: null, usd: null },
@@ -89,7 +90,7 @@ export const B2C_TIERS: B2CTier[] = [
   },
   {
     id: 'builder',
-    name: 'Explorer',    // ← display name
+    name: 'Explorer',
     label: 'Popular',
     priceMonthly: { ngn: 12000, usd: 19 },
     annualTotal: { ngn: 115200, usd: 180 },
@@ -98,6 +99,7 @@ export const B2C_TIERS: B2CTier[] = [
     badge: '',
     ctaLabel: 'Start 7-day trial',
     ctaVariant: 'secondary',
+    // Verified NGN plan codes
     paystackPlanCode: { monthly: 'PLN_4v5qnnjk9rt6cdk', annual: 'PLN_vxl1wn9nirjic5j' },
     lemonVariantId: { monthly: '', annual: '' },
     features: [
@@ -110,8 +112,8 @@ export const B2C_TIERS: B2CTier[] = [
     ],
   },
   {
-    id: 'pro',           // ← Supabase subscription_plan value — do NOT change
-    name: 'Builder',     // ← display name
+    id: 'pro',
+    name: 'Builder',
     label: 'Recommended',
     priceMonthly: { ngn: 25000, usd: 39 },
     annualTotal: { ngn: 240000, usd: 372 },
@@ -120,6 +122,7 @@ export const B2C_TIERS: B2CTier[] = [
     badge: 'Most value',
     ctaLabel: 'Start 7-day trial',
     ctaVariant: 'primary',
+    // Verified NGN plan codes
     paystackPlanCode: { monthly: 'PLN_4gok25gn1vz20i0', annual: 'PLN_73hl3c3n3zxhh79' },
     lemonVariantId: { monthly: '', annual: '' },
     features: [
@@ -132,8 +135,8 @@ export const B2C_TIERS: B2CTier[] = [
     ],
   },
   {
-    id: 'elite',         // ← Supabase subscription_plan value — do NOT change
-    name: 'Climber',     // ← display name
+    id: 'elite',
+    name: 'Climber',
     label: 'High-touch',
     priceMonthly: { ngn: 60000, usd: 99 },
     annualTotal: { ngn: 576000, usd: 948 },
@@ -142,7 +145,8 @@ export const B2C_TIERS: B2CTier[] = [
     badge: '',
     ctaLabel: 'Book a call',
     ctaVariant: 'secondary',
-    paystackPlanCode: { monthly: 'PLN_ve92id76obworr6', annual: 'PLN_4gbyspguka7qn0h' }, // ⚠️ VERIFY: annual code may be wrong — two monthly codes were provided
+    // Verified NGN plan codes
+    paystackPlanCode: { monthly: 'PLN_ve92id76obworr6', annual: 'PLN_4gbyspguka7qn0h' },
     lemonVariantId: { monthly: '', annual: '' },
     features: [
       { enabled: true, text: 'Everything in Builder' },
@@ -171,7 +175,6 @@ export const B2B_TIERS: B2BTier[] = [
     badge: '',
     ctaLabel: 'Get started',
     ctaVariant: 'secondary',
-    // ↓ paste from Lemonsqueezy dashboard
     lemonVariantId: { monthly: '', annual: '' },
     features: [
       { enabled: true,  text: 'Branded AI coaching (Sage)' },
@@ -194,7 +197,6 @@ export const B2B_TIERS: B2BTier[] = [
     badge: 'Most popular',
     ctaLabel: 'Start 14-day trial',
     ctaVariant: 'primary',
-    // ↓ paste from Lemonsqueezy dashboard
     lemonVariantId: { monthly: '', annual: '' },
     features: [
       { enabled: true,  text: 'Everything in Starter' },

@@ -1,27 +1,24 @@
 // ============================================================
-// AUTH CALLBACK — app/auth/callback/route.ts
+// AUTH CALLBACK — app/auth/callback/route.ts — v2
 //
-// Handles the OAuth/magic-link redirect after Supabase auth.
+// FIX: Respects ?next param explicitly when set to /onboarding
+//      (free plan email confirmation — skip checkout entirely)
+// FIX: Respects ?next=/checkout?plan=X... so paid plan email
+//      confirmations land at checkout with plan pre-selected
 //
-// PARTNER WHITELIST CHECK (new):
-// If the callback includes a `partner_subdomain` param (set by
-// the partner signup/login pages), the user's email is checked
-// against partner_members for that partner before they are
-// allowed into the partner dashboard.
+// Main Ascentor flow routing priority:
+//   1. onboarding_completed=true             → next (usually /dashboard)
+//   2. hasPaid but not onboarded             → /dashboard
+//   3. next=/onboarding explicitly set       → /onboarding  (free plan)
+//   4. next=/checkout?plan=X explicitly set  → /checkout?plan=X (paid intent)
+//   5. completedStep2 (both onboarding steps done, unpaid) → /checkout
+//   6. completedStep1 (partially onboarded)  → /onboarding?step=2
+//   7. Fresh user                            → /onboarding
 //
-// Partner flow:
-//   - Email in partner_members + status active/invited → allowed
-//     (invited rows are auto-activated here)
-//   - Email NOT in partner_members → redirect to access-denied
-//   - Email in partner_members but suspended/removed → redirect to access-denied
-//
-// Main Ascentor flow (no partner_subdomain param):
-//   - Onboarding complete → /dashboard (or ?next= param if set)
-//   - Paid but not onboarded → /dashboard
-//   - Onboarded, not paid, ?next=/checkout → /checkout (paid plan selected on pricing)
-//   - Onboarded, not paid, no next → /dashboard (free tier, gating handles the rest)
-//   - Partially onboarded → /onboarding?step=2
-//   - Fresh user → /onboarding
+// PARTNER WHITELIST CHECK:
+// If the callback includes a `partner_subdomain` param, the user's
+// email is checked against partner_members before entering the
+// partner dashboard.
 // ============================================================
 
 import { createClient }        from '@/lib/supabase/server';
@@ -69,8 +66,6 @@ export async function GET(request: Request) {
     .single();
 
   // ── MAILERLITE SYNC — fire for every user on every login ──
-  // Upsert is idempotent — safe to call on every auth callback.
-  // This catches OAuth users (Google/LinkedIn) who bypass /signup.
   try {
     const userEmail = user.email || profile?.email;
     if (userEmail) {
@@ -90,42 +85,52 @@ export async function GET(request: Request) {
           source: 'app_login',
           plan: profile?.subscription_plan || 'free',
         },
-        resubscribe: false, // don't resubscribe if they unsubscribed
+        resubscribe: false,
       });
     }
   } catch (mlErr: any) {
-    // Non-fatal — never block the redirect
     console.error('[auth/callback] MailerLite sync error (non-fatal):', mlErr.message);
   }
 
-  // Case 1: Fully set up user (onboarding_completed=true)
+  // ── ROUTING PRIORITY ──────────────────────────────────────
+
+  // 1. Fully set up user (onboarding_completed includes free users who
+  //    completed onboarding — set by /api/onboarding/complete)
   if (profile?.onboarding_completed === true) {
-    return NextResponse.redirect(`${origin}${next}`);
+    return NextResponse.redirect(`${origin}${next.startsWith('/checkout') || next === '/onboarding' ? '/dashboard' : next}`);
   }
 
-  // Check payment status
+  // 2. Paid but onboarding flag not set — send to dashboard
   const hasPaid =
     profile?.subscription_status === 'active' ||
     profile?.subscription_status === 'trialing';
 
-  // Edge case: paid but onboarding flag not set — send to dashboard
   if (hasPaid && !profile?.onboarding_completed) {
     return NextResponse.redirect(`${origin}/dashboard`);
   }
 
-  // Check how far through onboarding the user is
+  // 3. Free plan explicit intent — next=/onboarding was set by signup page.
+  //    Route directly to onboarding, bypassing checkout entirely.
+  if (next === '/onboarding') {
+    return NextResponse.redirect(`${origin}/onboarding`);
+  }
+
+  // 4. Paid plan explicit intent — next=/checkout?plan=X was set by signup.
+  //    Route to checkout with plan pre-selected so user doesn't have to
+  //    re-pick the plan they already chose on the pricing page.
+  if (next.startsWith('/checkout')) {
+    return NextResponse.redirect(`${origin}${next}`);
+  }
+
+  // 5–7. Standard onboarding routing for users who came through
+  //      other paths (direct /signup, OAuth, etc.)
+
   const completedStep1 = !!(profile?.full_name && profile?.current_role);
   const completedStep2 = !!(profile?.full_name && profile?.current_role && profile?.goal_role && profile?.industry);
 
-  // Both onboarding steps done — user is fully onboarded
   if (completedStep2) {
-    // FIX: If `next` param carries a checkout destination (e.g. from OAuth on pricing page
-    // when user picked a paid plan), honour it. Otherwise go straight to dashboard.
-    // Free users no longer need to pass through /checkout — the app gates features.
-    if (next && next.startsWith('/checkout')) {
-      return NextResponse.redirect(`${origin}${next}`);
-    }
-    return NextResponse.redirect(`${origin}/dashboard`);
+    // Both steps done, not paid — send to checkout
+    return NextResponse.redirect(`${origin}/checkout`);
   }
 
   if (completedStep1) {
@@ -133,7 +138,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/onboarding?step=2`);
   }
 
-  // Fresh user — start onboarding from the beginning
+  // Fresh user — start onboarding from beginning
   return NextResponse.redirect(`${origin}/onboarding`);
 }
 
@@ -147,13 +152,11 @@ async function handlePartnerCallback(
   const email = user.email;
 
   if (!email) {
-    // OAuth accounts with no email — shouldn't happen but guard anyway
     return NextResponse.redirect(
       `${origin}/p/${subdomain}/access-denied?reason=no_email`
     );
   }
 
-  // Look up this partner by subdomain
   const { data: partner } = await supabaseService
     .from('partners')
     .select('id, name')
@@ -162,11 +165,9 @@ async function handlePartnerCallback(
     .single();
 
   if (!partner) {
-    // Partner doesn't exist or isn't active — send to main Ascentor
     return NextResponse.redirect(`${origin}/dashboard`);
   }
 
-  // Check membership
   const { data: membership } = await supabaseService
     .from('partner_members')
     .select('id, status')
@@ -192,7 +193,6 @@ async function handlePartnerCallback(
     );
   }
 
-  // Auto-activate invited members who completed OAuth
   if (membership.status === 'invited') {
     await supabaseService
       .from('partner_members')
@@ -204,7 +204,6 @@ async function handlePartnerCallback(
       .eq('id', membership.id);
   }
 
-  // Allowed — redirect to intended destination inside partner shell
   const destination = next.startsWith(`/p/${subdomain}`)
     ? next
     : `/p/${subdomain}/dashboard`;

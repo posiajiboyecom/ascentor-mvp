@@ -5,16 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { PLAN_PRICING, MAX_YEARLY_SAVINGS } from '@/lib/pricing';
-import { B2C_TIERS } from '@/app/pricing/data';
-
-// Plan code lookup from data.ts — single source of truth
-function getPaystackCode(supabasePlanId: string, billing: 'monthly' | 'yearly'): string {
-  const tier = B2C_TIERS.find(t => t.id === supabasePlanId);
-  if (!tier) return '';
-  return billing === 'yearly'
-    ? tier.paystackPlanCode.annual
-    : tier.paystackPlanCode.monthly;
-}
 
 
 // Renders SVG icon strings safely  
@@ -109,16 +99,15 @@ function yearlySavings(plan: Plan): number {
 
 export default function CheckoutPage() {
   const [isDark, setIsDark]             = useState(true); // synced with app theme
-  const [billing, setBilling]           = useState<BillingCycle>('monthly');
   const [promoCode, setPromoCode]       = useState('');
   const [promoApplied, setPromoApplied] = useState<{ discount: number; label: string } | null>(null);
   const [promoError, setPromoError]     = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [loading, setLoading]           = useState(false);
   const [user, setUser]                 = useState<any>(null);
   const [profile, setProfile]           = useState<any>(null);
   const [error, setError]               = useState('');
   const [success, setSuccess]           = useState('');
+  const [goingFree, setGoingFree]       = useState(false);
   const [autoPromo, setAutoPromo]       = useState<{ code: string; discount: number; label: string; expires_at: string | null } | null>(null);
   const [countdown, setCountdown]       = useState<string>('');
   const [offerExpired, setOfferExpired] = useState(false);
@@ -127,6 +116,16 @@ export default function CheckoutPage() {
   const searchParams  = useSearchParams();
   const upgradeReason = searchParams.get('reason');
   const fromPage      = searchParams.get('from');
+
+  // ── Plan intent from pricing page ─────────────────────────────────────────
+  // Set when user clicks a paid plan CTA on /pricing while unauthenticated.
+  // 'builder' = Explorer display, 'pro' = Builder display, 'elite' = Climber display
+  const planFromUrl    = searchParams.get('plan');
+  const billingFromUrl = (searchParams.get('billing') ?? 'monthly') as BillingCycle;
+
+  // Pre-select the plan from URL and set billing cycle from URL
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(planFromUrl ?? null);
+  const [billing, setBilling]           = useState<BillingCycle>(billingFromUrl);
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
@@ -155,26 +154,6 @@ export default function CheckoutPage() {
     };
     loadUser();
   }, [supabase, router]);
-
-  // FIX: Auto-select plan from pricing page intent (set in useCheckout when not logged in)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const raw = localStorage.getItem('ascentor_plan_intent');
-    if (!raw) return;
-    try {
-      const intent = JSON.parse(raw);
-      // Map planName back to Supabase plan ID
-      const nameToId: Record<string, string> = {
-        'explorer': 'builder',
-        'builder':  'pro',
-        'climber':  'elite',
-      };
-      const planId = nameToId[intent.planName?.toLowerCase()] || null;
-      if (planId) setSelectedPlan(planId);
-      if (intent.billing === 'yearly') setBilling('yearly');
-      localStorage.removeItem('ascentor_plan_intent'); // consume once
-    } catch {}
-  }, []);
 
   // Fetch active auto-apply promo on page load
   useEffect(() => {
@@ -305,7 +284,21 @@ export default function CheckoutPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          plan: getPaystackCode(planId, billing),
+          plan: (() => {
+            // Map display planId to Paystack plan code
+            const codeMap: Record<string, string> = {
+              'builder': 'PLN_4v5qnnjk9rt6cdk',   // Explorer Monthly
+              'pro':     'PLN_4gok25gn1vz20i0',   // Builder Monthly
+              'elite':   'PLN_ve92id76obworr6',   // Climber Monthly
+            };
+            // For yearly billing, use yearly codes
+            const yearlyMap: Record<string, string> = {
+              'builder': 'PLN_vxl1wn9nirjic5j',   // Explorer Annual
+              'pro':     'PLN_73hl3c3n3zxhh79',   // Builder Annual
+              'elite':   'PLN_4gbyspguka7qn0h',   // Climber Annual
+            };
+            return billing === 'yearly' ? yearlyMap[planId] : codeMap[planId];
+          })(),
           currency: 'NGN',
           email: user.email,
           metadata: { planName: planId, userId: user.id, billing_cycle: billing, is_trial: true },
@@ -1022,6 +1015,36 @@ export default function CheckoutPage() {
             );
           })}
         </div>
+
+        {/* GO FREE — escape hatch for users not ready to pay */}
+        {!profile?.subscription_plan || profile?.subscription_plan === 'free' ? (
+          <div style={{ textAlign: 'center', marginTop: '20px' }}>
+            <button
+              onClick={async () => {
+                setGoingFree(true);
+                try {
+                  await fetch('/api/onboarding/complete', { method: 'POST' });
+                } catch { /* non-fatal — dashboard will re-check */ }
+                router.push('/dashboard');
+              }}
+              disabled={goingFree}
+              style={{
+                background:    'none',
+                border:        'none',
+                cursor:        goingFree ? 'not-allowed' : 'pointer',
+                fontFamily:    "'DM Mono', monospace",
+                fontSize:      '11px',
+                letterSpacing: '0.05em',
+                color:         '#4A4438',
+                textDecoration:'underline',
+                opacity:       goingFree ? 0.5 : 1,
+                padding:       '4px 0',
+              }}
+            >
+              {goingFree ? 'Taking you to your dashboard…' : 'Not ready yet? Continue with the free plan →'}
+            </button>
+          </div>
+        ) : null}
 
         {/* AUTO-APPLY OFFER BANNER */}
         {autoPromo && !offerExpired && (
