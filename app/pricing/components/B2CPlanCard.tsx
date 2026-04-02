@@ -1,12 +1,15 @@
 'use client'
 
-// app/pricing/components/B2CPlanCard.tsx — v4
-// Uses CSS classes from PricingClient.tsx <style> block.
-// No JS breakpoint detection — pure CSS media queries.
+// app/pricing/components/B2CPlanCard.tsx — v5
+// FIX 1: Free plan → /dashboard (not /signup)
+// FIX 2: Paid plans → /checkout?plan=X&billing=Y (not inline Paystack on pricing page)
+//         → eliminates the infinite "Loading…" caused by auth redirect not resetting state
+// FIX 3: Unauthenticated users clicking paid plans → /signup?plan=X (they need an account first)
 
 import { B2CTier, BillingCycle, Currency, formatPrice, getAnnualLabel } from '../data'
 import { useRouter } from 'next/navigation'
-import { useCheckout } from './useCheckout'
+import { createClient } from '@/lib/supabase/client'
+import { useState } from 'react'
 
 interface Props {
   tier: B2CTier
@@ -16,14 +19,14 @@ interface Props {
 
 const STAGE_COLOR: Record<string, string> = {
   free:    'rgba(232,160,32,0.4)',
-  builder: 'var(--teal,    #14B8A6)',  // id=builder → display=Explorer
-  pro:     'var(--gold,    #E8A020)',  // id=pro     → display=Builder
-  elite:   'var(--purple,  #8B5CF6)',  // id=elite   → display=Climber
+  builder: 'var(--teal,    #14B8A6)',
+  pro:     'var(--gold,    #E8A020)',
+  elite:   'var(--purple,  #8B5CF6)',
 }
 
 export default function B2CPlanCard({ tier, currency, billing }: Props) {
-  const { initiateCheckout, loading } = useCheckout()
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
 
   const monthlyPrice = tier.priceMonthly[currency]
   const isFree       = monthlyPrice === 0
@@ -41,26 +44,42 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
     ? getAnnualLabel(tier, currency)
     : (!isFree ? `${getAnnualLabel(tier, currency).replace(/·.*/, '').trim()} if billed annually` : '')
 
-  function handleCTA() {
-    if (isFree) { router.push('/signup'); return }
+  async function handleCTA() {
+    // Climber → email enquiry
     if (tier.id === 'elite') {
       window.location.href = 'mailto:hello@ascentorbi.com?subject=Climber Plan Enquiry'
       return
     }
-    if (currency === 'ngn') {
-      initiateCheckout({
-        planName: tier.name, currency, billing,
-        paystackPlanCode: billing === 'annual'
-          ? tier.paystackPlanCode.annual
-          : tier.paystackPlanCode.monthly,
-      })
-    } else {
-      initiateCheckout({
-        planName: tier.name, currency, billing,
-        lemonVariantId: billing === 'annual'
-          ? tier.lemonVariantId.annual
-          : tier.lemonVariantId.monthly,
-      })
+
+    setLoading(true)
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      // FIX: Free plan → dashboard directly (gating handles restrictions)
+      if (isFree) {
+        if (user) {
+          router.push('/dashboard')
+        } else {
+          router.push('/signup?plan=free')
+        }
+        return
+      }
+
+      // FIX: Paid plans → don't trigger Paystack here on pricing page.
+      // Route to checkout page instead. This removes the infinite loading
+      // caused by auth redirect not resetting the loading state.
+      if (!user) {
+        // Not logged in → signup first, checkout after
+        router.push(`/signup?plan=${tier.id}&billing=${billing}`)
+        return
+      }
+
+      // Logged in → go straight to checkout with plan pre-selected
+      router.push(`/checkout?plan=${tier.id}&billing=${billing === 'annual' ? 'yearly' : 'monthly'}`)
+    } catch {
+      setLoading(false)
     }
   }
 
@@ -143,7 +162,7 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
             : undefined
         }
       >
-        {loading ? 'Loading…' : tier.ctaLabel}
+        {loading ? 'One moment…' : tier.ctaLabel}
       </button>
     </div>
   )

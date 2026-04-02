@@ -16,9 +16,12 @@
 //   - Email in partner_members but suspended/removed → redirect to access-denied
 //
 // Main Ascentor flow (no partner_subdomain param):
-//   - Onboarding complete → /dashboard
-//   - Paid but not onboarded → /onboarding
-//   - No payment → /checkout
+//   - Onboarding complete → /dashboard (or ?next= param if set)
+//   - Paid but not onboarded → /dashboard
+//   - Onboarded, not paid, ?next=/checkout → /checkout (paid plan selected on pricing)
+//   - Onboarded, not paid, no next → /dashboard (free tier, gating handles the rest)
+//   - Partially onboarded → /onboarding?step=2
+//   - Fresh user → /onboarding
 // ============================================================
 
 import { createClient }        from '@/lib/supabase/server';
@@ -95,7 +98,7 @@ export async function GET(request: Request) {
     console.error('[auth/callback] MailerLite sync error (non-fatal):', mlErr.message);
   }
 
-  // Case 1: Fully set up paying user (onboarding_completed only set after payment)
+  // Case 1: Fully set up user (onboarding_completed=true)
   if (profile?.onboarding_completed === true) {
     return NextResponse.redirect(`${origin}${next}`);
   }
@@ -105,27 +108,24 @@ export async function GET(request: Request) {
     profile?.subscription_status === 'active' ||
     profile?.subscription_status === 'trialing';
 
-  // Edge case: paid but onboarding flag not set — mark complete and send to dashboard
+  // Edge case: paid but onboarding flag not set — send to dashboard
   if (hasPaid && !profile?.onboarding_completed) {
     return NextResponse.redirect(`${origin}/dashboard`);
   }
 
   // Check how far through onboarding the user is
-  // Step 1 = has name + role (profile info)
-  // Step 2 = has goal (stored in user_goals table) — check via profile field
   const completedStep1 = !!(profile?.full_name && profile?.current_role);
-
-  // Step 2 requires goal_role to be set (set during goal-setting step)
   const completedStep2 = !!(profile?.full_name && profile?.current_role && profile?.goal_role && profile?.industry);
 
-  // Both onboarding steps done
+  // Both onboarding steps done — user is fully onboarded
   if (completedStep2) {
-    // Not paid — check if they've already been set as onboarding_completed
-    // (free users who completed onboarding should reach dashboard, not loop at checkout).
-    // Route to checkout so they can choose a plan (including free/trial flow).
-    // NOTE: onboarding/page.tsx sets onboarding_completed via /api/onboarding/complete
-    // for free users. Until that flag is set, route to checkout once.
-    return NextResponse.redirect(`${origin}/checkout`);
+    // FIX: If `next` param carries a checkout destination (e.g. from OAuth on pricing page
+    // when user picked a paid plan), honour it. Otherwise go straight to dashboard.
+    // Free users no longer need to pass through /checkout — the app gates features.
+    if (next && next.startsWith('/checkout')) {
+      return NextResponse.redirect(`${origin}${next}`);
+    }
+    return NextResponse.redirect(`${origin}/dashboard`);
   }
 
   if (completedStep1) {
@@ -133,7 +133,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/onboarding?step=2`);
   }
 
-  // Case 3: Fresh user — start onboarding from the beginning
+  // Fresh user — start onboarding from the beginning
   return NextResponse.redirect(`${origin}/onboarding`);
 }
 
