@@ -6,6 +6,11 @@
 //
 // H-1 fix: canonical routes are /api/payment/ (singular) — has HMAC
 // verification, audit logs, and rate limiting.
+//
+// BUILD FIX (line 23 in B2CPlanCard.tsx):
+//   Added `error` to state and return value.
+//   B2CPlanCard destructures { initiateCheckout, loading, error } —
+//   the hook now satisfies that type contract.
 
 import { useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -34,11 +39,13 @@ function loadPaystackScript(): Promise<void> {
 
 export function useCheckout() {
   const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState<string | null>(null)   // ← BUILD FIX: added
   const supabase = createClient()
 
   const initiateCheckout = useCallback(async (opts: CheckoutOptions) => {
     const provider = getProvider(opts.currency)
     setLoading(true)
+    setError(null)                                               // ← reset on each attempt
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -48,9 +55,9 @@ export function useCheckout() {
         // Store plan intent so checkout page can auto-select it after signup
         if (typeof window !== 'undefined') {
           localStorage.setItem('ascentor_plan_intent', JSON.stringify({
-            planName:        opts.planName,
-            billing:         opts.billing,
-            currency:        opts.currency,
+            planName:         opts.planName,
+            billing:          opts.billing,
+            currency:         opts.currency,
             paystackPlanCode: opts.paystackPlanCode || '',
           }))
         }
@@ -72,13 +79,13 @@ export function useCheckout() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             variantId: opts.lemonVariantId,
-            email: user?.email ?? '',
-            userId: user?.id ?? '',
-            planName: opts.planName,
+            email:     user?.email ?? '',
+            userId:    user?.id    ?? '',
+            planName:  opts.planName,
           }),
         })
-        const { checkoutUrl, error } = await res.json()
-        if (error) throw new Error(error)
+        const { checkoutUrl, error: lemonError } = await res.json()
+        if (lemonError) throw new Error(lemonError)
         window.location.href = checkoutUrl
         return
       }
@@ -94,35 +101,37 @@ export function useCheckout() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          plan: opts.paystackPlanCode,
+          plan:     opts.paystackPlanCode,
           currency: 'NGN',
-          email: user?.email ?? '',
+          email:    user?.email ?? '',
           metadata: { planName: opts.planName, userId: user?.id },
         }),
       })
 
-      const { access_code, reference, error } = await res.json()
-      if (error) throw new Error(error)
+      const { access_code, reference, error: initError } = await res.json()
+      if (initError) throw new Error(initError)
 
       await loadPaystackScript()
 
       const handler = (window as any).PaystackPop.setup({
-        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
+        key:         process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
         access_code,
-        ref: reference,
-        onClose: () => setLoading(false),
-        callback: (response: { reference: string }) => {
+        ref:         reference,
+        onClose:     () => setLoading(false),
+        callback:    (response: { reference: string }) => {
           // H-1 fix: /api/payment/verify (singular)
           window.location.href = `/api/payment/verify?reference=${response.reference}&redirect=/dashboard`
         },
       })
 
       handler.openIframe()
-    } catch (err) {
+
+    } catch (err: any) {
       console.error('[checkout]', err)
+      setError(err?.message ?? 'Something went wrong. Please try again.')  // ← BUILD FIX: set error
       setLoading(false)
     }
   }, [supabase])
 
-  return { initiateCheckout, loading }
+  return { initiateCheckout, loading, error }   // ← BUILD FIX: error now returned
 }
