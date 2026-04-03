@@ -34,9 +34,18 @@ const AUTH_ROUTES = [
 ];
 
 const PROTECTED_API_PREFIXES = [
-  '/api/coach', '/api/coaching', '/api/payment',
-  '/api/referral', '/api/subscription', '/api/usage',
-  '/api/push', '/api/admin', '/api/partner',
+  '/api/pay',           // ← ADDED: payment init + confirm (webhook excluded below)
+  '/api/coach',
+  '/api/coaching',
+  '/api/payment',
+  '/api/referral',
+  '/api/subscription',
+  '/api/usage',
+  '/api/push',
+  '/api/admin',
+  '/api/partner',
+  '/api/guardsmann',    // ← ADDED: Guardsmann job search + alerts
+  '/api/intel',         // ← ADDED: BI command center
 ];
 
 const PUBLIC_ROUTES = [
