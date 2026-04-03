@@ -87,10 +87,10 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('[pay/start] plan codes loaded:', {
-  explorer_monthly: !!process.env.PAYSTACK_PLAN_CODE_EXPLORER_MONTHLY,
-  builder_monthly:  !!process.env.PAYSTACK_PLAN_CODE_BUILDER_MONTHLY,
-  climber_monthly:  !!process.env.PAYSTACK_PLAN_CODE_CLIMBER_MONTHLY,
-})
+      explorer_monthly: !!process.env.PAYSTACK_PLAN_CODE_EXPLORER_MONTHLY,
+      builder_monthly:  !!process.env.PAYSTACK_PLAN_CODE_BUILDER_MONTHLY,
+      climber_monthly:  !!process.env.PAYSTACK_PLAN_CODE_CLIMBER_MONTHLY,
+    })
 
     // ── 4. Paystack key check ────────────────────────────────────────────────
     const secret = process.env.PAYSTACK_SECRET_KEY
@@ -101,6 +101,15 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       )
     }
+
+    // ── DEBUG BLOCK ──────────────────────────────────────────────────────────
+    console.log('[pay/start] DEBUG', {
+      planId,
+      billing,
+      planCode,
+      secretKeyPrefix: process.env.PAYSTACK_SECRET_KEY?.slice(0, 12),
+      email: user.email,
+    })
 
     // ── 5. Initialize Paystack transaction ───────────────────────────────────
     // CRITICAL: Only send { email, plan } — no amount, no currency.
