@@ -83,11 +83,25 @@ export function usePaystack() {
       // IMPORTANT: We only send planId + billing. The server resolves the
       // Paystack plan code from env vars and never passes amount/currency to
       // Paystack — that's what was causing "Invalid Amount Sent".
+      //
+      // ID MAPPING: data.ts uses old Supabase IDs (builder/pro/elite) as tier.id
+      // but /api/pay/start expects the new display-aligned IDs (explorer/builder/climber).
+      // Map here so both systems stay consistent without a DB migration.
+      const PLAN_ID_MAP: Record<string, string> = {
+        builder: 'explorer',  // data.ts 'builder' tier → Explorer plan
+        pro:     'builder',   // data.ts 'pro' tier → Builder plan
+        elite:   'climber',   // data.ts 'elite' tier → Climber plan
+        // pass-through for new IDs (already correct)
+        explorer: 'explorer',
+        climber:  'climber',
+      }
+      const resolvedPlanId = PLAN_ID_MAP[opts.planId] ?? opts.planId
+
       const startRes = await fetch('/api/pay/start', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          planId:  opts.planId,
+          planId:  resolvedPlanId,
           billing: opts.billing,
         }),
       })
