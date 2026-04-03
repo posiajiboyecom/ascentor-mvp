@@ -1,28 +1,31 @@
 'use client'
 
-// app/pricing/components/B2CPlanCard.tsx — v6
-// PAYSTACK ONLY — no LemonSqueezy, no getProvider(), no lemonVariantId.
-// All plans and all currencies go through Paystack.
+// ================================================================
+// B2CPlanCard.tsx  — NEW PAYMENT SYSTEM
+// ================================================================
+// Uses usePaystack() instead of old useCheckout().
+// Drop-in replacement — all styling preserved.
+// ================================================================
 
 import { B2CTier, BillingCycle, Currency, formatPrice, getAnnualLabel } from '../data'
 import { useRouter } from 'next/navigation'
-import { useCheckout } from './useCheckout'
+import { usePaystack } from '@/hooks/usePaystack'
 
 interface Props {
-  tier: B2CTier
+  tier:     B2CTier
   currency: Currency
-  billing: BillingCycle
+  billing:  BillingCycle
 }
 
 const STAGE_COLOR: Record<string, string> = {
   free:    'rgba(232,160,32,0.4)',
-  builder: 'var(--teal,    #14B8A6)',
-  pro:     'var(--gold,    #E8A020)',
-  elite:   'var(--purple,  #8B5CF6)',
+  builder: 'var(--teal,   #14B8A6)',
+  pro:     'var(--gold,   #E8A020)',
+  elite:   'var(--purple, #8B5CF6)',
 }
 
 export default function B2CPlanCard({ tier, currency, billing }: Props) {
-  const { initiateCheckout, loading, error } = useCheckout()
+  const { pay, loading, error, clearError } = usePaystack()
   const router = useRouter()
 
   const monthlyPrice = tier.priceMonthly[currency]
@@ -42,6 +45,8 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
     : (!isFree ? `${getAnnualLabel(tier, currency).replace(/·.*/, '').trim()} if billed annually` : '')
 
   function handleCTA() {
+    clearError()
+
     if (isFree) {
       router.push('/signup?plan=free')
       return
@@ -56,12 +61,11 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
       return
     }
 
-    initiateCheckout({
-      planName:         tier.name,
-      planId:           tier.id,
-      currency,
+    pay({
+      planCode,
+      planId:   tier.id,
+      planName: tier.name,
       billing,
-      paystackPlanCode: planCode,
     })
   }
 
@@ -70,7 +74,7 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
       className={`pr-card ${tier.hot ? 'pr-card-hot' : ''}`}
       style={{
         borderColor: tier.hot ? accentColor : undefined,
-        boxShadow: tier.hot
+        boxShadow:   tier.hot
           ? `0 0 0 1px ${accentColor}22, 0 8px 32px rgba(0,0,0,0.4)`
           : undefined,
       }}
@@ -125,7 +129,12 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
       </ul>
 
       {error && (
-        <p style={{ fontSize: '11px', color: 'var(--error, #EF4444)', margin: '0 0 8px', fontFamily: 'var(--font-ui)' }}>
+        <p style={{
+          fontSize: '11px',
+          color: 'var(--error, #EF4444)',
+          margin: '0 0 8px',
+          fontFamily: 'var(--font-ui)',
+        }}>
           {error}
         </p>
       )}
@@ -140,7 +149,7 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
             : undefined
         }
       >
-        {loading ? 'Loading…' : tier.ctaLabel}
+        {loading ? 'Opening payment…' : tier.ctaLabel}
       </button>
     </div>
   )

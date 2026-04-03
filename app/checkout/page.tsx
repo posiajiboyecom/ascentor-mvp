@@ -1,41 +1,50 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import Link from 'next/link';
-import { PLAN_PRICING, MAX_YEARLY_SAVINGS } from '@/lib/pricing';
+// ================================================================
+// app/checkout/page.tsx  — NEW PAYMENT SYSTEM v2
+// ================================================================
+// Flow: Signup → Onboarding → /checkout → /dashboard
+//
+// Features:
+//   • B2C plans only (Explorer, Builder, Climber)
+//   • Monthly / Annual billing toggle
+//   • Promo codes (manual entry + auto-apply from DB)
+//   • 100% promo → instant free activation, no Paystack popup
+//   • Partial promo → price shown discounted, Paystack still opens
+//   • After payment → /dashboard (no intermediate page)
+//   • "Continue with free plan" escape hatch
+//   • Dark/light theme synced with app
+// ================================================================
 
+import { useState, useEffect, useRef } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
+import { PLAN_PRICING, MAX_YEARLY_SAVINGS } from '@/lib/pricing'
 
-// Renders SVG icon strings safely  
-function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
-  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
-}
-
-type BillingCycle = 'monthly' | 'yearly';
+type BillingCycle = 'monthly' | 'annual'
 
 interface Plan {
-  id: string;
-  name: string;
-  description: string;
-  stage: string;
-  stageColor: string;
-  monthlyPrice: number;
-  yearlyPrice: number;
-  features: string[];
-  highlighted?: boolean;
-  cta: string;
+  id:           string
+  name:         string
+  description:  string
+  stage:        string
+  stageColor:   string
+  monthlyPrice: number
+  yearlyPrice:  number
+  features:     string[]
+  highlighted?: boolean
 }
 
 const PLANS: Plan[] = [
   {
-    id: 'builder',       // CRIT-2 FIX: Supabase canonical ID (was 'explorer')
-    name: 'Explorer',
-    description: 'For those 15–22 just starting to find their path.',
-    stage: 'EXPLORER',
-    stageColor: '#14B8A6',
+    id:           'builder',
+    name:         'Explorer',
+    description:  'For those just starting to find their path.',
+    stage:        'EXPLORER',
+    stageColor:   '#14B8A6',
     monthlyPrice: PLAN_PRICING[0].monthlyPrice,
-    yearlyPrice: PLAN_PRICING[0].yearlyPrice,
+    yearlyPrice:  PLAN_PRICING[0].yearlyPrice,
     features: [
       'Sage — 10 sessions/month',
       '1 mentorship circle',
@@ -44,16 +53,15 @@ const PLANS: Plan[] = [
       'Goal tracking (3 active goals)',
       'Weekly reflection prompts',
     ],
-    cta: 'Start Now',
   },
   {
-    id: 'pro',           // CRIT-2 FIX: Supabase canonical ID (was 'builder')
-    name: 'Builder',
-    description: 'For professionals 22–32 building their career edge.',
-    stage: 'BUILDER',
-    stageColor: '#E8A020',
+    id:           'pro',
+    name:         'Builder',
+    description:  'For professionals building their career edge.',
+    stage:        'BUILDER',
+    stageColor:   '#E8A020',
     monthlyPrice: PLAN_PRICING[1].monthlyPrice,
-    yearlyPrice: PLAN_PRICING[1].yearlyPrice,
+    yearlyPrice:  PLAN_PRICING[1].yearlyPrice,
     features: [
       'Sage — unlimited sessions',
       'Up to 3 mentorship circles',
@@ -65,16 +73,15 @@ const PLANS: Plan[] = [
       'Analytics dashboard',
     ],
     highlighted: true,
-    cta: 'Start Now',
   },
   {
-    id: 'elite',         // CRIT-2 FIX: Supabase canonical ID (was 'climber')
-    name: 'Climber',
-    description: 'For leaders 32–50 scaling teams and building legacy.',
-    stage: 'CLIMBER',
-    stageColor: '#8B5CF6',
+    id:           'elite',
+    name:         'Climber',
+    description:  'For leaders scaling teams and building legacy.',
+    stage:        'CLIMBER',
+    stageColor:   '#8B5CF6',
     monthlyPrice: PLAN_PRICING[2].monthlyPrice,
-    yearlyPrice: PLAN_PRICING[2].yearlyPrice,
+    yearlyPrice:  PLAN_PRICING[2].yearlyPrice,
     features: [
       'Everything in Builder',
       'Unlimited mentorship circles',
@@ -85,803 +92,549 @@ const PLANS: Plan[] = [
       'Dedicated account manager',
       'Quarterly strategy reviews',
     ],
-    cta: 'Start Now',
   },
-];
+]
 
-// Promo codes are validated SERVER-SIDE ONLY (see /api/payment/initialize)
-// They are intentionally NOT present in this client file — S4 security fix.
+// Paystack global type
+declare global {
+  interface Window {
+    PaystackPop?: {
+      setup: (cfg: Record<string, unknown>) => { openIframe: () => void }
+    }
+  }
+}
 
-// Yearly savings computed from centralised pricing lib
-function yearlySavings(plan: Plan): number {
-  return Math.round(plan.monthlyPrice * 12 - plan.yearlyPrice);
+function yearlySavings(plan: Plan) {
+  return Math.round(plan.monthlyPrice * 12 - plan.yearlyPrice)
 }
 
 export default function CheckoutPage() {
-  const [isDark, setIsDark]             = useState(true); // synced with app theme
-  const [promoCode, setPromoCode]       = useState('');
-  const [promoApplied, setPromoApplied] = useState<{ discount: number; label: string } | null>(null);
-  const [promoError, setPromoError]     = useState('');
-  const [loading, setLoading]           = useState(false);
-  const [user, setUser]                 = useState<any>(null);
-  const [profile, setProfile]           = useState<any>(null);
-  const [error, setError]               = useState('');
-  const [success, setSuccess]           = useState('');
-  const [goingFree, setGoingFree]       = useState(false);
-  const [autoPromo, setAutoPromo]       = useState<{ code: string; discount: number; label: string; expires_at: string | null } | null>(null);
-  const [countdown, setCountdown]       = useState<string>('');
-  const [offerExpired, setOfferExpired] = useState(false);
+  const router       = useRouter()
+  const searchParams = useSearchParams()
+  const supabase     = useRef(createClient()).current
 
-  const router        = useRouter();
-  const searchParams  = useSearchParams();
-  const upgradeReason = searchParams.get('reason');
-  const fromPage      = searchParams.get('from');
+  // ── State ─────────────────────────────────────────────────────
+  const [isDark,    setIsDark]    = useState(true)
+  const [user,      setUser]      = useState<any>(null)
+  const [profile,   setProfile]   = useState<any>(null)
 
-  // ── Plan intent from pricing page ─────────────────────────────────────────
-  // Set when user clicks a paid plan CTA on /pricing while unauthenticated.
-  // 'builder' = Explorer display, 'pro' = Builder display, 'elite' = Climber display
-  const planFromUrl    = searchParams.get('plan');
-  const billingFromUrl = (searchParams.get('billing') ?? 'monthly') as BillingCycle;
+  const planFromUrl    = searchParams.get('plan')
+  const billingFromUrl = (searchParams.get('billing') ?? 'monthly') as BillingCycle
+  const [billing,      setBilling]      = useState<BillingCycle>(billingFromUrl)
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(planFromUrl)
 
-  // Pre-select the plan from URL and set billing cycle from URL
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(planFromUrl ?? null);
-  const [billing, setBilling]           = useState<BillingCycle>(billingFromUrl);
-  const supabaseRef = useRef(createClient());
-  const supabase = supabaseRef.current;
+  // Promo state
+  const [promoInput,   setPromoInput]   = useState('')
+  const [promoApplied, setPromoApplied] = useState<{ code: string; discount: number; label: string; isFree: boolean } | null>(null)
+  const [promoError,   setPromoError]   = useState('')
+  const [promoLoading, setPromoLoading] = useState(false)
+  const [autoPromo,    setAutoPromo]    = useState<{ code: string; discount: number; label: string; expires_at: string | null } | null>(null)
+  const [countdown,    setCountdown]    = useState('')
+  const [offerExpired, setOfferExpired] = useState(false)
 
-  // Sync theme with app-wide preference (same key as AppThemeProvider)
+  // Payment state
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState('')
+  const [success,  setSuccess]  = useState('')
+  const [goingFree, setGoingFree] = useState(false)
+
+  // ── Theme ──────────────────────────────────────────────────────
   useEffect(() => {
-    const stored = localStorage.getItem('asc-theme');
-    const dark = stored ? stored === 'dark'
-      : window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setIsDark(dark);
-
-    // Listen for theme changes from other tabs / the dashboard toggle
+    const stored = localStorage.getItem('asc-theme')
+    setIsDark(stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches)
     const onStorage = (e: StorageEvent) => {
-      if (e.key === 'asc-theme') setIsDark(e.newValue === 'dark');
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/login?redirect=/checkout'); return; }
-      setUser(user);
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      setProfile(profile);
-    };
-    loadUser();
-  }, [supabase, router]);
-
-  // Fetch active auto-apply promo on page load
-  useEffect(() => {
-    const fetchAutoPromo = async () => {
-      const res  = await fetch('/api/payments/active-promo'); // HIGH-1 FIX: consolidated route
-      const data = await res.json();
-      if (data.promo) {
-        setAutoPromo(data.promo);
-        // Auto-apply it — pre-fill and apply
-        setPromoCode(data.promo.code);
-        setPromoApplied({ discount: data.promo.discount, label: data.promo.label });
-      }
-    };
-    fetchAutoPromo();
-  }, []); // eslint-disable-line
-
-  // Live countdown ticker
-  useEffect(() => {
-    if (!autoPromo?.expires_at) return;
-
-    const tick = () => {
-      const now  = Date.now();
-      const end  = new Date(autoPromo.expires_at!).getTime();
-      const diff = end - now;
-
-      if (diff <= 0) {
-        setOfferExpired(true);
-        setCountdown('00:00:00');
-        setPromoApplied(null);
-        setPromoCode('');
-        setAutoPromo(null);
-        return;
-      }
-
-      const days    = Math.floor(diff / 86400000);
-      const hours   = Math.floor((diff % 86400000) / 3600000);
-      const minutes = Math.floor((diff % 3600000)  / 60000);
-      const seconds = Math.floor((diff % 60000)    / 1000);
-
-      const pad = (n: number) => String(n).padStart(2, '0');
-      if (days > 0) {
-        setCountdown(`${days}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
-      } else {
-        setCountdown(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
-      }
-    };
-
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [autoPromo]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !document.getElementById('paystack-script')) {
-      const s = document.createElement('script');
-      s.id = 'paystack-script'; s.src = 'https://js.paystack.co/v1/inline.js'; // standardised to v1 — v2 API differs s.async = true;
-      document.head.appendChild(s);
+      if (e.key === 'asc-theme') setIsDark(e.newValue === 'dark')
     }
-  }, []);
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
-  // S4: Promo codes are validated server-side — no client-side PROMO_CODES object
-  const [promoValidating, setPromoValidating] = useState(false);
+  // ── Auth + profile ────────────────────────────────────────────
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/login?redirect=/checkout'); return }
+      setUser(user)
+      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      setProfile(data)
+    }
+    load()
+  }, [supabase, router])
 
-  const applyPromo = async () => {
-    const code = promoCode.trim().toUpperCase();
-    if (!code) return;
-    setPromoError(''); setPromoApplied(null); setPromoValidating(true);
+  // ── Auto-apply promo ──────────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/pay/promo').then(r => r.json()).then(({ promo }) => {
+      if (promo) {
+        setAutoPromo(promo)
+        setPromoApplied({ code: promo.code, discount: promo.discount, label: promo.label, isFree: promo.discount >= 1.0 })
+      }
+    }).catch(() => {})
+  }, [])
+
+  // ── Countdown timer ───────────────────────────────────────────
+  useEffect(() => {
+    if (!autoPromo?.expires_at) return
+    const tick = () => {
+      const diff = new Date(autoPromo.expires_at!).getTime() - Date.now()
+      if (diff <= 0) {
+        setOfferExpired(true); setCountdown('00:00:00')
+        setPromoApplied(null); setAutoPromo(null); return
+      }
+      const d = Math.floor(diff / 86400000)
+      const h = Math.floor((diff % 86400000) / 3600000)
+      const m = Math.floor((diff % 3600000)  / 60000)
+      const s = Math.floor((diff % 60000)    / 1000)
+      const p = (n: number) => String(n).padStart(2, '0')
+      setCountdown(d > 0 ? `${d}d ${p(h)}:${p(m)}:${p(s)}` : `${p(h)}:${p(m)}:${p(s)}`)
+    }
+    tick()
+    const t = setInterval(tick, 1000)
+    return () => clearInterval(t)
+  }, [autoPromo])
+
+  // ── Preload Paystack script ───────────────────────────────────
+  useEffect(() => {
+    if (!document.getElementById('ps-script')) {
+      const s = document.createElement('script')
+      s.id = 'ps-script'; s.src = 'https://js.paystack.co/v1/inline.js'; s.async = true
+      document.head.appendChild(s)
+    }
+  }, [])
+
+  // ── Helpers ───────────────────────────────────────────────────
+  function getDisplayPrice(plan: Plan): number {
+    const base = billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
+    if (promoApplied) return Math.round(base * (1 - promoApplied.discount))
+    return base
+  }
+
+  function getOriginalPrice(plan: Plan): number {
+    return billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
+  }
+
+  function getMonthlyDisplay(plan: Plan): number {
+    return billing === 'monthly' ? getDisplayPrice(plan) : Math.round(getDisplayPrice(plan) / 12)
+  }
+
+  // ── Promo validation ──────────────────────────────────────────
+  async function applyPromo() {
+    const code = promoInput.trim().toUpperCase()
+    if (!code) return
+    setPromoError(''); setPromoApplied(null); setPromoLoading(true)
     try {
-      // validate=true means: check the code and return discount info only
-      // — do NOT activate the account yet (that happens when user picks a plan)
-      const res = await fetch('/api/payments/initialize', { // HIGH-1 FIX: use rate-limited route
-        method: 'POST',
+      const res  = await fetch('/api/pay/promo', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ promoCode: code, validateOnly: true }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setPromoError(data.error || 'Invalid promo code');
+        body:    JSON.stringify({ code }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.valid) {
+        setPromoError(data.error || 'Invalid promo code.')
       } else {
-        setPromoApplied({ discount: data.discount, label: data.label || 'Discount applied' });
+        setPromoApplied({ code: data.code, discount: data.discount, label: data.label, isFree: data.isFree })
       }
     } catch {
-      setPromoError('Could not validate code. Please try again.');
+      setPromoError('Could not validate code. Please try again.')
     } finally {
-      setPromoValidating(false);
+      setPromoLoading(false)
     }
-  };
+  }
 
-  const getPrice = (plan: Plan) => {
-    const base = billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
-    if (promoApplied) {
-      return Math.round(base * (1 - promoApplied.discount) * 100) / 100;
-    }
-    return base;
-  };
-
-  const getOriginalPrice = (plan: Plan) => {
-    return billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
-  };
-
-  const handleSelectPlan = async (planId: string) => {
-    if (!user) { router.push('/login?redirect=/checkout'); return; }
-    setSelectedPlan(planId); setLoading(true); setError(''); setSuccess('');
-    const plan = PLANS.find(p => p.id === planId)!;
-    const finalPrice = getPrice(plan);
-
-    if (finalPrice === 0 && promoApplied?.discount === 1) {
-      try {
-        // userId intentionally omitted — server reads it from session (S2 fix)
-        const res = await fetch('/api/payments/initialize', { // HIGH-1 FIX: consolidated route
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ promoCode: promoCode.trim().toUpperCase(), plan: planId }),
-        });
-        const data = await res.json();
-        if (data.free) { setSuccess('Account activated! Taking you to your dashboard…'); setTimeout(() => router.push('/dashboard'), 2000); }
-        else setError(data.error || 'Failed to activate promo');
-      } catch { setError('Failed to process. Please try again.'); }
-      setLoading(false); return;
-    }
-
-    const amountKobo = Math.round(finalPrice * 100);
-    const reference = `asc_${user.id.slice(0, 8)}_${Date.now()}`;
+  // ── 100% promo: free activation, no Paystack ──────────────────
+  async function activateFree(planId: string) {
+    if (!promoApplied?.code) return
+    setLoading(true); setError('')
     try {
-      // @ts-ignore
-      // CRIT-2 + MED-3 FIX: Use PaystackPop.setup() (v1 API) — consistent with useCheckout.tsx
-      // First initialize transaction server-side to get access_code
-      const initRes = await fetch('/api/payments/initialize', {
-        method: 'POST',
+      const res  = await fetch('/api/pay/activate-free', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan: (() => {
-            // Map display planId to Paystack plan code
-            const codeMap: Record<string, string> = {
-              'builder': 'PLN_4v5qnnjk9rt6cdk',   // Explorer Monthly
-              'pro':     'PLN_4gok25gn1vz20i0',   // Builder Monthly
-              'elite':   'PLN_ve92id76obworr6',   // Climber Monthly
-            };
-            // For yearly billing, use yearly codes
-            const yearlyMap: Record<string, string> = {
-              'builder': 'PLN_vxl1wn9nirjic5j',   // Explorer Annual
-              'pro':     'PLN_73hl3c3n3zxhh79',   // Builder Annual
-              'elite':   'PLN_4gbyspguka7qn0h',   // Climber Annual
-            };
-            return billing === 'yearly' ? yearlyMap[planId] : codeMap[planId];
-          })(),
-          currency: 'NGN',
-          email: user.email,
-          metadata: { planName: planId, userId: user.id, billing_cycle: billing, is_trial: true },
-        }),
-      });
-      const initData = await initRes.json();
-      if (!initRes.ok || initData.error) throw new Error(initData.error || 'Failed to initialize payment');
+        body:    JSON.stringify({ planId, promoCode: promoApplied.code }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setSuccess('Account activated! Taking you to your dashboard…')
+        setTimeout(() => router.push('/dashboard'), 1500)
+      } else {
+        setError(data.error || 'Activation failed. Please try again.')
+        setLoading(false)
+      }
+    } catch {
+      setError('Activation failed. Please try again.')
+      setLoading(false)
+    }
+  }
 
-      const handler = (window as any).PaystackPop.setup({
-        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
-        access_code: initData.access_code,
-        ref: initData.reference,
-        onClose: () => { setLoading(false); setSelectedPlan(null); },
-        callback: async (transaction: any) => {
+  // ── Main payment handler ──────────────────────────────────────
+  async function handleSelectPlan(planId: string) {
+    if (!user) { router.push('/login?redirect=/checkout'); return }
+    setSelectedPlan(planId); setLoading(true); setError(''); setSuccess('')
+
+    // 100% promo → free activation, skip Paystack entirely
+    if (promoApplied?.isFree) {
+      await activateFree(planId)
+      return
+    }
+
+    try {
+      // Step 1: Initialize on server
+      const startRes = await fetch('/api/pay/start', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ planId, billing }),
+      })
+
+      if (!startRes.ok) {
+        const err = await startRes.json().catch(() => ({}))
+        throw new Error(err.error || `Payment setup failed (${startRes.status})`)
+      }
+
+      const { accessCode, reference } = await startRes.json()
+      if (!accessCode || !reference) {
+        throw new Error('Payment setup returned incomplete data. Please try again.')
+      }
+
+      // Step 2: Wait for Paystack to be ready
+      if (!window.PaystackPop) {
+        await new Promise<void>((resolve, reject) => {
+          const el = document.getElementById('ps-script') as HTMLScriptElement
+          if (el) { el.onload = () => resolve(); el.onerror = () => reject(new Error('Paystack failed to load')) }
+          else reject(new Error('Paystack script not found'))
+        })
+      }
+
+      if (!window.PaystackPop) {
+        throw new Error('Payment system unavailable. Please refresh and try again.')
+      }
+
+      // Step 3: Open popup
+      const handler = window.PaystackPop.setup({
+        key:         process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
+        access_code: accessCode,
+        ref:         reference,
+        onClose: () => {
+          setLoading(false)
+          setSelectedPlan(null)
+          setError('Payment was not completed. Try again whenever you\'re ready.')
+        },
+        callback: async (response: { reference: string }) => {
+          // Step 4: Confirm on server
           try {
-            const res = await fetch('/api/payments/verify', {
-              method: 'POST',
+            const confirmRes = await fetch('/api/pay/confirm', {
+              method:  'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ reference: transaction.reference, plan: planId, billing }),
-            });
-            const data = await res.json();
-            if (data.success) {
-              setSuccess('Payment confirmed! Taking you to your dashboard…');
-              setTimeout(() => router.push('/dashboard?welcome=1'), 2000);
+              body:    JSON.stringify({ reference: response.reference }),
+            })
+            const confirmData = await confirmRes.json()
+
+            if (confirmRes.ok && confirmData.success) {
+              setSuccess('Payment confirmed! Taking you to your dashboard…')
+              setTimeout(() => router.push('/dashboard'), 1500)
             } else {
-              setError('Payment received but verification failed. Contact support.');
+              // Payment went through but confirm had an issue — webhook will reconcile
+              router.push('/dashboard?payment=processing')
             }
           } catch {
-            setError('Payment may have succeeded. Contact support if not reflected.');
+            // Same — webhook will reconcile
+            router.push('/dashboard?payment=processing')
+          } finally {
+            setLoading(false)
           }
-          setLoading(false);
         },
-      });
-      handler.openIframe();
-    } catch {
-      setError('Payment system unavailable. Please try again later.');
-      setLoading(false);
+      })
+
+      handler.openIframe()
+
+    } catch (err: any) {
+      console.error('[checkout]', err)
+      setError(err.message || 'Something went wrong. Please try again.')
+      setLoading(false)
+      setSelectedPlan(null)
     }
-  };
+  }
 
-  const isCurrentPlan = (planId: string) => profile?.subscription_plan === planId;
+  const isCurrentPlan = (planId: string) => profile?.subscription_plan === planId
 
+  // ── Render ────────────────────────────────────────────────────
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* ── THEME VARIABLES ── */
-        .co-root[data-co-theme="light"] {
-          --co-bg:        #FAF7F2;
-          --co-bg2:       #F2EDE4;
-          --co-card:      #FFFFFF;
-          --co-nav-bg:    rgba(250,247,242,0.94);
-          --co-nav-bord:  rgba(42,40,32,0.1);
-          --co-text:      #2A2820;
-          --co-text-mid:  #4A4438;
-          --co-text-muted:#6B6456;
-          --co-text-faint:#9A9080;
-          --co-bord:      rgba(42,40,32,0.1);
-          --co-bord-med:  rgba(42,40,32,0.18);
-          --co-input-bg:  #FAF7F2;
-          --co-input-text:#0C0B08;
-          --co-plan-bord: rgba(42,40,32,0.1);
-          --co-toggle-bg: #EDE9E0;
-          --co-save-bg:   rgba(12,11,8,0.25);
-          --co-save-col:  #0C0B08;
-          --co-trust-bord:rgba(42,40,32,0.08);
-          --co-promo-bg:  #FFFFFF;
-          --co-promo-bord:rgba(42,40,32,0.1);
-          --co-price-col: #0C0B08;
-          --co-heading:   #0C0B08;
-          --co-plan-name: #0C0B08;
-          --co-grid-line: rgba(232,160,32,0.04);
-          --co-glow:      rgba(232,160,32,0.08);
-          --co-shadow:    0 2px 16px rgba(42,40,32,0.04);
-        }
         .co-root[data-co-theme="dark"] {
-          --co-bg:        #0C0B08;
-          --co-bg2:       #1E1C17;
-          --co-card:      #141310;
-          --co-nav-bg:    rgba(12,11,8,0.9);
-          --co-nav-bord:  #2E2A22;
-          --co-text:      #D4CFC3;
-          --co-text-mid:  #A09880;
-          --co-text-muted:#7A7260;
-          --co-text-faint:#4A4438;
-          --co-bord:      #2E2A22;
-          --co-bord-med:  #3E3A32;
-          --co-input-bg:  #1E1C17;
-          --co-input-text:#D4CFC3;
-          --co-plan-bord: rgba(255,255,255,0.06);
-          --co-toggle-bg: #1E1C17;
-          --co-save-bg:   rgba(12,11,8,0.25);
-          --co-save-col:  #0C0B08;
-          --co-trust-bord:#1E1C17;
-          --co-promo-bg:  #141310;
-          --co-promo-bord:#2E2A22;
-          --co-price-col: #FFFFFF;
-          --co-heading:   #FFFFFF;
-          --co-plan-name: #FFFFFF;
-          --co-grid-line: rgba(232,160,32,0.02);
-          --co-glow:      rgba(232,160,32,0.045);
-          --co-shadow:    none;
+          --bg: #0C0B08; --bg2: #1E1C17; --card: #141310;
+          --text: #D4CFC3; --text-mid: #A09880; --text-muted: #7A7260; --text-faint: #4A4438;
+          --bord: #2E2A22; --bord-med: #3E3A32;
+          --input-bg: #1E1C17; --input-text: #D4CFC3;
+          --toggle-bg: #1E1C17; --price: #FFFFFF; --heading: #FFFFFF;
+          --glow: rgba(232,160,32,0.045); --grid: rgba(232,160,32,0.02);
+          --shadow: none;
+        }
+        .co-root[data-co-theme="light"] {
+          --bg: #FAF7F2; --bg2: #F2EDE4; --card: #FFFFFF;
+          --text: #2A2820; --text-mid: #4A4438; --text-muted: #6B6456; --text-faint: #9A9080;
+          --bord: rgba(42,40,32,0.1); --bord-med: rgba(42,40,32,0.18);
+          --input-bg: #FAF7F2; --input-text: #0C0B08;
+          --toggle-bg: #EDE9E0; --price: #0C0B08; --heading: #0C0B08;
+          --glow: rgba(232,160,32,0.08); --grid: rgba(232,160,32,0.04);
+          --shadow: 0 2px 16px rgba(42,40,32,0.04);
         }
 
         .co-root {
-          min-height: 100vh;
-          background: var(--co-bg);
-          font-family: 'Syne', sans-serif;
-          color: var(--co-text);
-          position: relative;
-          overflow-x: hidden;
-          transition: background 0.2s, color 0.2s;
+          min-height: 100vh; background: var(--bg); font-family: 'Syne', sans-serif;
+          color: var(--text); position: relative; overflow-x: hidden;
         }
-
-        /* Ambient glow */
         .co-root::before {
-          content: '';
-          position: fixed;
-          top: -200px; left: 50%;
-          transform: translateX(-50%);
+          content: ''; position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
           width: 900px; height: 900px;
-          background: radial-gradient(circle, var(--co-glow) 0%, transparent 60%);
+          background: radial-gradient(circle, var(--glow) 0%, transparent 60%);
           pointer-events: none; z-index: 0;
         }
-        /* Grid texture */
         .co-root::after {
-          content: '';
-          position: fixed; inset: 0;
-          background-image:
-            linear-gradient(var(--co-grid-line) 1px, transparent 1px),
-            linear-gradient(90deg, var(--co-grid-line) 1px, transparent 1px);
-          background-size: 48px 48px;
-          pointer-events: none; z-index: 0;
+          content: ''; position: fixed; inset: 0;
+          background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+          background-size: 48px 48px; pointer-events: none; z-index: 0;
         }
 
-        /* ── NAV ── */
+        /* Nav */
         .co-nav {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 16px 32px;
-          border-bottom: 1px solid var(--co-nav-bord);
-          background: var(--co-nav-bg);
-          backdrop-filter: blur(16px);
-          position: sticky; top: 0; z-index: 20;
+          padding: 16px 32px; border-bottom: 1px solid var(--bord);
+          background: var(--bg); position: sticky; top: 0; z-index: 20;
         }
-        .co-nav-logo {
-          display: flex; align-items: center; gap: 10px; text-decoration: none;
-        }
-        .co-nav-logo-text {
-          font-family: 'Cormorant Garamond', serif;
-          font-weight: 700; font-size: 20px; color: var(--co-heading);
-        }
-        .co-nav-back {
-          font-family: 'DM Mono', monospace;
-          font-size: 11px; letter-spacing: 0.08em;
-          color: var(--co-text-muted); text-decoration: none;
-          padding: 7px 14px; border-radius: 8px;
-          border: 1px solid var(--co-bord);
-          transition: color 0.2s, border-color 0.2s;
-        }
-        .co-nav-back:hover { color: var(--co-text); border-color: var(--co-bord-med); }
 
-        /* ── HERO ── */
-        .co-upgrade-banner {
-          background: rgba(232,160,32,0.08);
-          border: 1px solid rgba(232,160,32,0.25);
-          border-radius: 12px;
-          padding: 14px 20px;
-          text-align: center;
-          margin-bottom: 24px;
-          font-family: 'DM Mono', monospace;
-          font-size: 12px;
-          color: var(--co-text-muted);
-          letter-spacing: 0.04em;
-        }
-        .co-upgrade-banner strong { color: var(--co-heading); }
-        .co-hero {
-          max-width: 680px; margin: 0 auto;
-          padding: 64px 24px 0;
-          text-align: center;
-          position: relative; z-index: 1;
-        }
+        /* Hero */
+        .co-hero { max-width: 680px; margin: 0 auto; padding: 64px 24px 0; text-align: center; position: relative; z-index: 1; }
         .co-hero-badge {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 6px 16px; border-radius: 100px; margin-bottom: 28px;
-          font-family: 'DM Mono', monospace;
-          font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
-          background: rgba(20,184,166,0.08);
-          border: 1px solid rgba(20,184,166,0.2);
-          color: #14B8A6;
-        }
-        .co-hero-badge-dot {
-          width: 5px; height: 5px; border-radius: 50%; background: #14B8A6;
+          display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px;
+          border-radius: 100px; margin-bottom: 28px;
+          font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+          background: rgba(20,184,166,0.08); border: 1px solid rgba(20,184,166,0.2); color: #14B8A6;
         }
         .co-hero-heading {
-          font-family: 'Cormorant Garamond', serif;
-          font-weight: 700; font-size: clamp(36px, 6vw, 54px);
-          line-height: 1.05; letter-spacing: -0.5px;
-          color: var(--co-heading); margin-bottom: 16px;
+          font-family: 'Cormorant Garamond', serif; font-weight: 700;
+          font-size: clamp(36px, 6vw, 54px); line-height: 1.05;
+          color: var(--heading); margin-bottom: 16px;
         }
-        .co-hero-heading em {
-          font-style: italic; color: #E8A020;
-        }
-        .co-hero-sub {
-          font-size: 15px; color: var(--co-text-muted); line-height: 1.65;
-          max-width: 460px; margin: 0 auto 40px;
-        }
+        .co-hero-heading em { font-style: italic; color: #E8A020; }
+        .co-hero-sub { font-size: 15px; color: var(--text-muted); line-height: 1.65; max-width: 460px; margin: 0 auto 40px; }
 
-        /* ── BILLING TOGGLE ── */
+        /* Billing toggle */
         .co-billing {
-          display: inline-flex;
-          background: var(--co-toggle-bg);
-          border: 1px solid var(--co-bord);
-          border-radius: 12px; padding: 4px;
-          margin-bottom: 56px;
+          display: inline-flex; background: var(--toggle-bg); border: 1px solid var(--bord);
+          border-radius: 12px; padding: 4px; margin-bottom: 56px;
         }
         .co-billing-btn {
           padding: 10px 24px; border-radius: 9px; border: none; cursor: pointer;
-          font-family: 'Syne', sans-serif;
-          font-size: 13px; font-weight: 600;
-          transition: all 0.2s;
+          font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.2s;
         }
-        .co-billing-btn.active {
-          background: #E8A020; color: #0C0B08;
-        }
-        .co-billing-btn.inactive {
-          background: transparent; color: var(--co-text-muted);
-        }
-        .co-save-pill {
-          display: inline-block;
-          margin-left: 6px; padding: 2px 8px;
-          border-radius: 4px;
-          font-family: 'DM Mono', monospace;
-          font-size: 9px; letter-spacing: 0.08em; font-weight: 500;
-        }
-        .active .co-save-pill { background: rgba(12,11,8,0.25); color: #0C0B08; }
-        .inactive .co-save-pill { background: rgba(232,160,32,0.1); color: #E8A020; }
+        .co-billing-btn.on  { background: #E8A020; color: #0C0B08; }
+        .co-billing-btn.off { background: transparent; color: var(--text-muted); }
+        .co-save-pill { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.08em; }
+        .on  .co-save-pill { background: rgba(12,11,8,0.25); color: #0C0B08; }
+        .off .co-save-pill { background: rgba(232,160,32,0.1); color: #E8A020; }
 
-        /* ── PLANS GRID ── */
+        /* Plans */
         .co-plans {
-          max-width: 1080px; margin: 0 auto;
-          padding: 0 24px 48px;
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 20px;
-          position: relative; z-index: 1;
+          max-width: 1080px; margin: 0 auto; padding: 0 24px 48px;
+          display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; position: relative; z-index: 1;
         }
-        @media (max-width: 860px) {
-          .co-plans { grid-template-columns: 1fr; max-width: 460px; }
-        }
+        @media (max-width: 860px) { .co-plans { grid-template-columns: 1fr; max-width: 460px; } }
 
         .co-plan {
-          background: var(--co-card);
-          border-radius: 20px;
-          border: 1px solid var(--co-plan-bord);
-          padding: 32px 28px;
-          display: flex; flex-direction: column;
-          position: relative; overflow: hidden;
-          transition: transform 0.22s, box-shadow 0.22s, background 0.2s;
-          box-shadow: var(--co-shadow);
+          background: var(--card); border-radius: 20px; border: 1px solid var(--bord);
+          padding: 32px 28px; display: flex; flex-direction: column;
+          position: relative; overflow: hidden; transition: transform 0.22s; box-shadow: var(--shadow);
         }
         .co-plan:hover { transform: translateY(-4px); }
-        .co-plan-highlighted {
-          border: 2px solid rgba(232,160,32,0.35) !important;
-        }
-        .co-plan-glow {
-          position: absolute; top: -80px; right: -80px;
-          width: 200px; height: 200px; border-radius: 50%;
-          filter: blur(60px); pointer-events: none;
-        }
+        .co-plan-hl    { border: 2px solid rgba(232,160,32,0.35) !important; }
+        .co-plan-glow  { position: absolute; top: -80px; right: -80px; width: 200px; height: 200px; border-radius: 50%; filter: blur(60px); pointer-events: none; }
 
         .co-popular {
           position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
           padding: 4px 16px; border-radius: 100px; white-space: nowrap;
-          font-family: 'DM Mono', monospace;
-          font-size: 9px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+          font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
           background: #E8A020; color: #0C0B08;
         }
 
-        /* Stage pill */
         .co-stage {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 4px 10px; border-radius: 100px; margin-bottom: 20px;
-          width: fit-content;
-          font-family: 'DM Mono', monospace;
-          font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+          display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+          border-radius: 100px; margin-bottom: 20px; width: fit-content;
+          font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
         }
-        .co-stage-dot { width: 5px; height: 5px; border-radius: 50%; }
+        .co-plan-name { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 28px; color: var(--heading); margin-bottom: 6px; }
+        .co-plan-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; }
 
-        .co-plan-name {
-          font-family: 'Cormorant Garamond', serif;
-          font-weight: 700; font-size: 28px; color: var(--co-plan-name);
-          letter-spacing: -0.3px; margin-bottom: 6px;
-        }
-        .co-plan-desc { font-size: 13px; color: var(--co-text-muted); margin-bottom: 24px; line-height: 1.5; }
+        .co-price-row { display: flex; align-items: baseline; gap: 3px; }
+        .co-price-sym { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; color: #7A7260; align-self: flex-start; margin-top: 6px; }
+        .co-price-num { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 700; color: var(--price); line-height: 1; letter-spacing: -1px; }
+        .co-price-per { font-size: 13px; color: var(--text-muted); align-self: flex-end; margin-bottom: 4px; }
+        .co-price-note { font-size: 11px; color: var(--text-faint); margin-top: 5px; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; }
+        .co-price-strike { font-family: 'DM Mono', monospace; font-size: 13px; color: #4A4438; text-decoration: line-through; letter-spacing: 0.04em; }
 
-        /* Price */
-        .co-price-wrap { margin-bottom: 24px; }
-        .co-price-main {
-          display: flex; align-items: baseline; gap: 3px;
-        }
-        .co-price-dollar {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 20px; font-weight: 600; color: #7A7260;
-          align-self: flex-start; margin-top: 6px;
-        }
-        .co-price-num {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 48px; font-weight: 700; color: var(--co-price-col);
-          line-height: 1; letter-spacing: -1px;
-        }
-        .co-price-per { font-size: 13px; color: var(--co-text-muted); align-self: flex-end; margin-bottom: 4px; }
-        .co-price-note { font-size: 11px; color: var(--co-text-faint); margin-top: 5px; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; }
-        .co-price-promo { font-size: 12px; margin-top: 6px; }
+        .co-features { list-style: none; flex: 1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+        .co-feature  { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text-mid); line-height: 1.5; }
+        .co-feat-chk { width: 17px; height: 17px; border-radius: 5px; flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
 
-        /* Features */
-        .co-features {
-          list-style: none; flex: 1;
-          display: flex; flex-direction: column; gap: 10px;
-          margin-bottom: 28px;
+        .co-trial-box {
+          text-align: center; padding: 14px 20px; margin-bottom: 14px; border-radius: 10px;
+          background: var(--toggle-bg); border: 1px solid var(--bord);
+          font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: var(--text-muted); line-height: 1.6;
         }
-        .co-feature {
-          display: flex; align-items: flex-start; gap: 10px;
-          font-size: 13px; color: var(--co-text-mid); line-height: 1.5;
-        }
-        .co-feature-check {
-          width: 17px; height: 17px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 9px; font-weight: 700;
-        }
+        .co-trial-box strong { color: var(--heading); }
 
-        /* CTA */
         .co-cta {
           padding: 14px 24px; border-radius: 10px; border: none;
-          font-family: 'Syne', sans-serif;
-          font-size: 14px; font-weight: 700; letter-spacing: 0.02em;
+          font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
           cursor: pointer; width: 100%; transition: all 0.2s;
         }
         .co-cta:disabled { opacity: 0.4; cursor: not-allowed; }
-        .co-trial-notice {
-          text-align: center;
-          padding: 14px 20px;
-          margin: 0 auto 20px;
-          max-width: 480px;
-          border-radius: 10px;
-          background: var(--co-toggle-bg);
-          border: 1px solid var(--co-bord);
-          font-family: 'DM Mono', monospace;
-          font-size: 11px;
-          letter-spacing: 0.06em;
-          color: var(--co-text-muted);
-          line-height: 1.6;
-        }
-        .co-trial-notice strong {
-          color: var(--co-heading);
-          font-weight: 600;
-        }
-        .co-cta-note {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px; letter-spacing: 0.06em; color: #4A4438;
-          text-align: center; margin-top: 8px;
-        }
+        .co-cta-note { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: #4A4438; text-align: center; margin-top: 8px; }
 
-        /* ── PROMO ── */
-        /* ── OFFER BANNER ── */
-        .co-offer-banner {
-          max-width: 880px; margin: 0 auto 28px; padding: 0 24px;
-          position: relative; z-index: 1;
-        }
-        .co-offer-inner {
-          background: linear-gradient(135deg, rgba(232,160,32,0.12) 0%, rgba(232,160,32,0.06) 100%);
-          border: 1.5px solid rgba(232,160,32,0.35);
-          border-radius: 16px; padding: 20px 24px;
-          display: flex; align-items: center; justify-content: space-between;
-          gap: 16px; flex-wrap: wrap;
-          box-shadow: 0 0 32px rgba(232,160,32,0.08);
-          position: relative; overflow: hidden;
-        }
-        .co-offer-inner::before {
-          content: '';
-          position: absolute; inset: 0;
-          background: linear-gradient(90deg, rgba(232,160,32,0.04), transparent);
-          pointer-events: none;
-        }
-        .co-offer-left { display: flex; align-items: center; gap: 14px; }
-        .co-offer-badge {
-          background: #E8A020; color: #0C0B08;
-          font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700;
-          padding: 6px 14px; border-radius: 8px; letter-spacing: 0.06em;
-          white-space: nowrap; flex-shrink: 0;
-        }
-        .co-offer-text { flex: 1; }
-        .co-offer-label {
-          font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
-          color: var(--co-heading); margin-bottom: 3px;
-        }
-        .co-offer-sub {
-          font-family: 'DM Mono', monospace; font-size: 10px;
-          color: #E8A020; letter-spacing: 0.08em; text-transform: uppercase;
-        }
-        .co-offer-code {
-          font-family: 'DM Mono', monospace; font-size: 11px;
-          color: rgba(232,160,32,0.7); letter-spacing: 0.1em;
-          margin-top: 2px;
-        }
-        .co-offer-countdown { text-align: right; flex-shrink: 0; }
-        .co-offer-timer-label {
-          font-family: 'DM Mono', monospace; font-size: 9px;
-          color: var(--co-text-muted); letter-spacing: 0.12em; text-transform: uppercase;
-          margin-bottom: 6px;
-        }
-        .co-offer-timer {
-          font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 700;
-          color: #E8A020; letter-spacing: 0.06em; line-height: 1;
-        }
-        .co-offer-timer.urgent { color: #EF4444; animation: co-pulse 1s ease infinite; }
-        @keyframes co-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
-        .co-offer-expired {
-          max-width: 880px; margin: 0 auto 20px; padding: 0 24px;
-        }
-
-        .co-promo-wrap {
-          max-width: 440px; margin: 0 auto 28px; padding: 0 24px;
-          position: relative; z-index: 1;
-        }
-        .co-promo-card {
-          background: var(--co-promo-bg); border: 1px solid var(--co-promo-bord);
-          border-radius: 14px; padding: 20px 22px;
-        }
-        .co-promo-label {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
-          color: var(--co-text-faint); margin-bottom: 12px;
-        }
-        .co-promo-row { display: flex; gap: 8px; }
+        /* Promo */
+        .co-promo-wrap { max-width: 440px; margin: 0 auto 28px; padding: 0 24px; position: relative; z-index: 1; }
+        .co-promo-card { background: var(--card); border: 1px solid var(--bord); border-radius: 14px; padding: 20px 22px; }
+        .co-promo-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 12px; }
+        .co-promo-row   { display: flex; gap: 8px; }
         .co-promo-input {
-          flex: 1; padding: 11px 14px; border-radius: 9px;
-          border: 1px solid var(--co-bord); background: var(--co-input-bg);
-          color: var(--co-input-text); font-family: 'DM Mono', monospace;
-          font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+          flex: 1; padding: 11px 14px; border-radius: 9px; border: 1px solid var(--bord);
+          background: var(--input-bg); color: var(--input-text);
+          font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
           outline: none; transition: border-color 0.2s;
         }
-        .co-promo-input::placeholder { color: var(--co-text-faint); }
         .co-promo-input:focus { border-color: rgba(232,160,32,0.5); }
-        .co-promo-btn {
-          padding: 11px 18px; border-radius: 9px; border: none;
-          background: #E8A020; color: #0C0B08;
-          font-family: 'Syne', sans-serif;
-          font-size: 13px; font-weight: 700; cursor: pointer;
-          transition: background 0.2s;
-        }
-        .co-promo-btn:hover { background: #F5C55A; }
-        .co-promo-success { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: #14B8A6; margin-top: 8px; }
-        .co-promo-error   { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: #EF4444; margin-top: 8px; }
+        .co-promo-btn { padding: 11px 18px; border-radius: 9px; border: none; background: #E8A020; color: #0C0B08; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .co-promo-ok  { font-family: 'DM Mono', monospace; font-size: 11px; color: #14B8A6; margin-top: 8px; }
+        .co-promo-err { font-family: 'DM Mono', monospace; font-size: 11px; color: #EF4444; margin-top: 8px; }
 
-        /* ── ALERTS ── */
-        .co-alert-wrap { max-width: 440px; margin: 0 auto 20px; padding: 0 24px; position: relative; z-index: 1; }
-        .co-alert-error   { padding: 13px 16px; border-radius: 10px; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); color: #EF4444; font-size: 13px; }
-        .co-alert-success { padding: 13px 16px; border-radius: 10px; background: rgba(20,184,166,0.06); border: 1px solid rgba(20,184,166,0.2); color: #14B8A6; font-size: 13px; }
+        /* Offer banner */
+        .co-offer { max-width: 880px; margin: 0 auto 28px; padding: 0 24px; position: relative; z-index: 1; }
+        .co-offer-inner {
+          background: linear-gradient(135deg, rgba(232,160,32,0.12), rgba(232,160,32,0.06));
+          border: 1.5px solid rgba(232,160,32,0.35); border-radius: 16px; padding: 20px 24px;
+          display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+        }
+        .co-offer-badge { background: #E8A020; color: #0C0B08; font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; }
+        .co-offer-label { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--heading); margin-bottom: 3px; }
+        .co-offer-sub   { font-family: 'DM Mono', monospace; font-size: 10px; color: #E8A020; letter-spacing: 0.08em; }
+        .co-offer-timer { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 700; color: #E8A020; }
 
-        /* ── TRUST ── */
-        .co-trust {
-          max-width: 680px; margin: 0 auto;
-          padding: 28px 24px 72px; text-align: center;
-          position: relative; z-index: 1;
-          border-top: 1px solid var(--co-trust-bord);
-        }
-        .co-trust-items {
-          display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 18px;
-        }
-        .co-trust-item {
-          display: flex; align-items: center; gap: 7px;
-          font-family: 'DM Mono', monospace;
-          font-size: 10px; letter-spacing: 0.06em; color: var(--co-text-muted);
-        }
-        .co-trust-note { font-size: 12px; color: var(--co-text-muted); line-height: 1.65; }
-        .co-trust-link { color: #E8A020; text-decoration: none; }
-        .co-trust-link:hover { color: #F5C55A; }
+        /* Alerts */
+        .co-alerts { max-width: 440px; margin: 0 auto 20px; padding: 0 24px; position: relative; z-index: 1; }
+        .co-error   { padding: 13px 16px; border-radius: 10px; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); color: #EF4444; font-size: 13px; }
+        .co-success { padding: 13px 16px; border-radius: 10px; background: rgba(20,184,166,0.06); border: 1px solid rgba(20,184,166,0.2); color: #14B8A6; font-size: 13px; }
+
+        /* Trust */
+        .co-trust { max-width: 680px; margin: 0 auto; padding: 28px 24px 72px; text-align: center; position: relative; z-index: 1; border-top: 1px solid var(--bord); }
+        .co-trust-items { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 18px; }
+        .co-trust-item  { display: flex; align-items: center; gap: 7px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: var(--text-muted); }
+        .co-trust-note  { font-size: 12px; color: var(--text-muted); line-height: 1.65; }
+        .co-trust-link  { color: #E8A020; text-decoration: none; }
       `}</style>
 
       <div className="co-root" data-co-theme={isDark ? 'dark' : 'light'}>
 
-        {/* NAV */}
+        {/* Nav */}
         <nav className="co-nav">
-          <Link href="/" className="lp-nav-logo">
-  <img
-    src="/ascentor-color-for-light-pages.svg"
-    alt="Ascentor"
-    style={{ height: '32px', width: 'auto' }}
-  />
-</Link>
-          <a href="/onboarding" className="co-nav-back">← Back</a>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+            <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+              <path d="M4 26L16 6l12 20H4z" stroke="#E8A020" strokeWidth="1.8" strokeLinejoin="round"/>
+              <path d="M8 26L16 12l8 14H8z" stroke="#E8A020" strokeWidth="1.2" strokeLinejoin="round" fill="rgba(232,160,32,0.1)"/>
+              <path d="M4 26h24" stroke="#E8A020" strokeWidth="1.8" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 20, color: 'var(--heading)' }}>
+              Ascentor
+            </span>
+          </Link>
+          <a href="/onboarding" style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: 'var(--text-muted)', textDecoration: 'none', padding: '7px 14px', borderRadius: 8, border: '1px solid var(--bord)' }}>
+            ← Back
+          </a>
           <button
-            onClick={() => {
-              const next = isDark ? 'light' : 'dark';
-              setIsDark(!isDark);
-              localStorage.setItem('asc-theme', next);
-              document.documentElement.setAttribute('data-app-theme', next);
-            }}
-            aria-label="Toggle theme"
-            style={{
-              background: 'none', border: '1px solid var(--co-bord)',
-              borderRadius: 8, padding: '7px 10px', cursor: 'pointer',
-              color: 'var(--co-text-muted)', display: 'flex', alignItems: 'center',
-              transition: 'border-color 0.2s',
-            }}
+            onClick={() => { const n = isDark ? 'light' : 'dark'; setIsDark(!isDark); localStorage.setItem('asc-theme', n) }}
+            style={{ background: 'none', border: '1px solid var(--bord)', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
           >
             {isDark
-              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             }
           </button>
         </nav>
 
-        {/* HERO */}
+        {/* Hero */}
         <div className="co-hero">
-          {upgradeReason === 'upgrade_required' && (
-            <div className="co-upgrade-banner">
-              <strong>This feature requires a paid plan.</strong><br/>
-              Choose a plan below to continue. Your 7-day trial starts today — no charge until Day 8.
-            </div>
-          )}
           <div className="co-hero-badge">
-            <div className="co-hero-badge-dot" />
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#14B8A6' }} />
             Start today — cancel anytime
           </div>
           <h1 className="co-hero-heading">
-            Everyone who made it<br/>
-            had <em>someone.</em>
+            Everyone who made it<br/>had <em>someone.</em>
           </h1>
           <p className="co-hero-sub">
-            Sage, expert sessions, and peer accountability — for ambitious professionals worldwide. Choose your stage.
+            Sage, expert sessions, and peer accountability — for ambitious professionals. Choose your stage.
           </p>
 
-          {/* Billing toggle — U6: enhanced with savings callout */}
           <div className="co-billing">
-            {(['monthly', 'yearly'] as BillingCycle[]).map(cycle => (
-              <button
-                key={cycle}
-                onClick={() => setBilling(cycle)}
-                className={`co-billing-btn ${billing === cycle ? 'active' : 'inactive'}`}
-              >
-                {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
-                {cycle === 'yearly' && <span className="co-save-pill">SAVE 40%</span>}
+            {(['monthly', 'annual'] as BillingCycle[]).map(c => (
+              <button key={c} onClick={() => setBilling(c)} className={`co-billing-btn ${billing === c ? 'on' : 'off'}`}>
+                {c === 'monthly' ? 'Monthly' : 'Annual'}
+                {c === 'annual' && <span className="co-save-pill">SAVE 20%</span>}
               </button>
             ))}
           </div>
-          {/* U6: Nudge text below toggle when user is on monthly */}
+
           {billing === 'monthly' && (
             <p style={{ fontSize: 12, color: '#7A7260', marginTop: 10 }}>
-              <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg> Switch to yearly and save up to{' '}
-              <span style={{ color: '#E8A020', fontWeight: 600 }}>
-                ₦{MAX_YEARLY_SAVINGS.toLocaleString()}/year
-              </span>
+              Switch to annual and save up to{' '}
+              <span style={{ color: '#E8A020', fontWeight: 600 }}>₦{MAX_YEARLY_SAVINGS.toLocaleString()}/year</span>
             </p>
           )}
         </div>
 
-        {/* PLANS */}
+        {/* Auto-promo banner */}
+        {autoPromo && !offerExpired && (
+          <div className="co-offer">
+            <div className="co-offer-inner">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div className="co-offer-badge">{Math.round(autoPromo.discount * 100)}% OFF</div>
+                <div>
+                  <div className="co-offer-label">{autoPromo.label}</div>
+                  <div className="co-offer-sub">Limited time · prices shown already discounted</div>
+                </div>
+              </div>
+              {autoPromo.expires_at && countdown && (
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.12em', marginBottom: 6 }}>OFFER EXPIRES IN</div>
+                  <div className="co-offer-timer">{countdown}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Alerts */}
+        {(error || success) && (
+          <div className="co-alerts">
+            {error   && <div className="co-error">{error}</div>}
+            {success && <div className="co-success">✓ {success}</div>}
+          </div>
+        )}
+
+        {/* Plans */}
         <div className="co-plans">
           {PLANS.map(plan => {
-            const price    = getPrice(plan);
-            const current  = isCurrentPlan(plan.id);
-            const isHL     = plan.highlighted;
-            // promoApplied comes from server — applies to all plans
-            const hasPromo = !!promoApplied;
-            const monthlyDisplay = billing === 'monthly' ? price : Math.round(price / 12);
+            const monthly  = getMonthlyDisplay(plan)
+            const hasPromo = !!promoApplied
+            const origMo   = billing === 'monthly' ? plan.monthlyPrice : Math.round(plan.yearlyPrice / 12)
+            const current  = isCurrentPlan(plan.id)
+            const spinning = loading && selectedPlan === plan.id
 
             return (
-              <div
-                key={plan.id}
-                className={`co-plan ${isHL ? 'co-plan-highlighted' : ''}`}
-                style={{ border: `1px solid ${isHL ? 'rgba(232,160,32,0.3)' : '#2E2A22'}` }}
-              >
-                {/* Glow */}
+              <div key={plan.id} className={`co-plan ${plan.highlighted ? 'co-plan-hl' : ''}`}>
                 <div className="co-plan-glow" style={{ background: `radial-gradient(circle, ${plan.stageColor}22, transparent 70%)` }} />
+                {plan.highlighted && <div className="co-popular">Most Popular</div>}
 
-                {isHL && <div className="co-popular">Most Popular</div>}
-
-                {/* Stage pill */}
                 <div className="co-stage" style={{ background: `${plan.stageColor}12`, border: `1px solid ${plan.stageColor}25` }}>
-                  <div className="co-stage-dot" style={{ background: plan.stageColor }} />
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: plan.stageColor }} />
                   <span style={{ color: plan.stageColor }}>{plan.stage}</span>
                 </div>
 
@@ -889,76 +642,34 @@ export default function CheckoutPage() {
                 <p className="co-plan-desc">{plan.description}</p>
 
                 {/* Price */}
-                <div className="co-price-wrap">
-                  {/* Strikethrough original price when promo applied */}
+                <div style={{ marginBottom: 24 }}>
                   {hasPromo && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{
-                        fontFamily: "'DM Mono', monospace", fontSize: 13,
-                        color: '#4A4438', textDecoration: 'line-through', letterSpacing: '0.04em',
-                      }}>
-                        ₦{(billing === 'monthly'
-                          ? getOriginalPrice(plan)
-                          : Math.round(getOriginalPrice(plan) / 12)).toLocaleString()}/mo
-                      </span>
-                      <span style={{
-                        fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700,
-                        padding: '2px 8px', borderRadius: 20,
-                        background: 'rgba(232,160,32,0.12)', color: '#E8A020',
-                        border: '1px solid rgba(232,160,32,0.25)', letterSpacing: '0.06em',
-                      }}>
+                      <span className="co-price-strike">₦{origMo.toLocaleString()}/mo</span>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: 'rgba(232,160,32,0.12)', color: '#E8A020', border: '1px solid rgba(232,160,32,0.25)', letterSpacing: '0.06em' }}>
                         -{Math.round(promoApplied!.discount * 100)}% OFF
                       </span>
                     </div>
                   )}
-
-                  <div className="co-price-main">
-                    <span className="co-price-dollar">₦</span>
+                  <div className="co-price-row">
+                    <span className="co-price-sym">₦</span>
                     <span className="co-price-num" style={{ color: hasPromo ? '#E8A020' : undefined }}>
-                      {monthlyDisplay}
+                      {monthly.toLocaleString()}
                     </span>
                     <span className="co-price-per">/mo</span>
                   </div>
-
-                  {billing === 'yearly' && (
-                    <>
-                      <p className="co-price-note">
-                        {hasPromo ? (
-                          <>
-                            <span style={{ textDecoration: 'line-through', color: '#4A4438', marginRight: 6 }}>
-                              ₦{getOriginalPrice(plan).toLocaleString()}
-                            </span>
-                            <span style={{ color: '#E8A020' }}>₦{price.toLocaleString()} BILLED ANNUALLY</span>
-                          </>
-                        ) : (
-                          <>₦{price.toLocaleString()} BILLED ANNUALLY</>
-                        )}
-                      </p>
-                      {!hasPromo && (
-                        <div style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          marginTop: 6, padding: '3px 10px', borderRadius: 20,
-                          background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
-                        }}>
-                          <span style={{ color: '#10B981', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "'DM Mono', monospace" }}>
-                            ✓ YOU SAVE ₦{yearlySavings(plan).toLocaleString()}/YR
-                          </span>
-                        </div>
-                      )}
-                    </>
+                  {billing === 'annual' && (
+                    <p className="co-price-note">
+                      {hasPromo
+                        ? <><span style={{ textDecoration: 'line-through', color: '#4A4438', marginRight: 6 }}>₦{plan.yearlyPrice.toLocaleString()}</span><span style={{ color: '#E8A020' }}>₦{getDisplayPrice(plan).toLocaleString()} BILLED ANNUALLY</span></>
+                        : <>₦{plan.yearlyPrice.toLocaleString()} BILLED ANNUALLY</>
+                      }
+                    </p>
                   )}
-
-                  {hasPromo && (
-                    <div style={{
-                      marginTop: 8, padding: '6px 10px', borderRadius: 8,
-                      background: 'rgba(232,160,32,0.06)', border: '1px solid rgba(232,160,32,0.15)',
-                      display: 'flex', alignItems: 'center', gap: 6,
-                    }}>
-                      <span style={{ color: '#E8A020', fontSize: 10, fontFamily: "'DM Mono', monospace", letterSpacing: '0.06em' }}>
-                        ✓ {promoApplied!.label}
-                      </span>
-                      <span style={{ color: '#E8A020', fontSize: 10, fontFamily: "'DM Mono', monospace", marginLeft: 'auto' }}>
-                        You save ₦{Math.round((getOriginalPrice(plan) - price) * (billing === 'yearly' ? 1 : 12) * 10) / 10}/yr
+                  {!hasPromo && billing === 'annual' && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6, padding: '3px 10px', borderRadius: 20, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                      <span style={{ color: '#10B981', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "'DM Mono', monospace" }}>
+                        ✓ SAVE ₦{yearlySavings(plan).toLocaleString()}/YR
                       </span>
                     </div>
                   )}
@@ -968,121 +679,53 @@ export default function CheckoutPage() {
                 <ul className="co-features">
                   {plan.features.map((f, i) => (
                     <li key={i} className="co-feature">
-                      <span className="co-feature-check" style={{ background: `${plan.stageColor}12`, color: plan.stageColor }}>
-                        ✓
-                      </span>
+                      <span className="co-feat-chk" style={{ background: `${plan.stageColor}12`, color: plan.stageColor }}>✓</span>
                       {f}
                     </li>
                   ))}
                 </ul>
 
-                {/* Trial notice + CTA */}
-                <div className="co-trial-notice">
-                  <strong>Start today — explore free.</strong><br/>
-                  You will not be billed until your 7-day trial ends.<br/>
-                  Cancel any time before Day 7 and you will not be charged.
+                {/* Trial notice */}
+                <div className="co-trial-box">
+                  <strong>7-day free trial.</strong> No charge until Day 8.<br/>Cancel before then and pay nothing.
                 </div>
+
                 <button
                   className="co-cta"
                   onClick={() => handleSelectPlan(plan.id)}
-                  disabled={current || (loading && selectedPlan === plan.id)}
+                  disabled={current || spinning}
                   style={
-                    current ? {
-                      background: 'transparent',
-                      color: '#4A4438',
-                      border: '1px solid #2E2A22',
-                    } : isHL ? {
-                      background: '#E8A020',
-                      color: '#0C0B08',
-                    } : {
-                      background: `${plan.stageColor}14`,
-                      color: plan.stageColor,
-                      border: `1px solid ${plan.stageColor}25`,
-                    }
+                    current ? { background: 'transparent', color: '#4A4438', border: '1px solid #2E2A22' }
+                    : plan.highlighted ? { background: '#E8A020', color: '#0C0B08' }
+                    : { background: `${plan.stageColor}14`, color: plan.stageColor, border: `1px solid ${plan.stageColor}25` }
                   }
                 >
-                  {loading && selectedPlan === plan.id
-                    ? 'Processing…'
-                    : current
-                      ? '✓ Current Plan'
-                      : plan.cta}
+                  {spinning ? 'Opening payment…' : current ? '✓ Current Plan' : promoApplied?.isFree ? 'Activate Free' : 'Start 7-day trial'}
                 </button>
 
-                {!current && (
-                  <p className="co-cta-note">7-DAY FREE TRIAL · CANCEL ANYTIME</p>
-                )}
+                {!current && <p className="co-cta-note">7-DAY FREE TRIAL · CANCEL ANYTIME</p>}
               </div>
-            );
+            )
           })}
         </div>
 
-        {/* GO FREE — escape hatch for users not ready to pay */}
-        {!profile?.subscription_plan || profile?.subscription_plan === 'free' ? (
-          <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        {/* Free escape hatch */}
+        {(!profile?.subscription_plan || profile?.subscription_plan === 'free') && (
+          <div style={{ textAlign: 'center', marginTop: 20, marginBottom: 32, position: 'relative', zIndex: 1 }}>
             <button
               onClick={async () => {
-                setGoingFree(true);
-                try {
-                  await fetch('/api/onboarding/complete', { method: 'POST' });
-                } catch { /* non-fatal — dashboard will re-check */ }
-                router.push('/dashboard');
+                setGoingFree(true)
+                router.push('/dashboard')
               }}
               disabled={goingFree}
-              style={{
-                background:    'none',
-                border:        'none',
-                cursor:        goingFree ? 'not-allowed' : 'pointer',
-                fontFamily:    "'DM Mono', monospace",
-                fontSize:      '11px',
-                letterSpacing: '0.05em',
-                color:         '#4A4438',
-                textDecoration:'underline',
-                opacity:       goingFree ? 0.5 : 1,
-                padding:       '4px 0',
-              }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: '0.05em', color: '#4A4438', textDecoration: 'underline', opacity: goingFree ? 0.5 : 1 }}
             >
-              {goingFree ? 'Taking you to your dashboard…' : 'Not ready yet? Continue with the free plan →'}
+              {goingFree ? 'Going to dashboard…' : 'Not ready yet? Continue with the free plan →'}
             </button>
           </div>
-        ) : null}
-
-        {/* AUTO-APPLY OFFER BANNER */}
-        {autoPromo && !offerExpired && (
-          <div className="co-offer-banner">
-            <div className="co-offer-inner">
-              <div className="co-offer-left">
-                <div className="co-offer-badge">
-                  {Math.round(autoPromo.discount * 100)}% OFF
-                </div>
-                <div className="co-offer-text">
-                  <div className="co-offer-label">{autoPromo.label}</div>
-                  <div className="co-offer-sub">
-                    {autoPromo.expires_at ? 'Limited time offer — prices shown already discounted' : 'Special offer — prices shown already discounted'}
-                  </div>
-                  <div className="co-offer-code">Code: {autoPromo.code}</div>
-                </div>
-              </div>
-              {autoPromo.expires_at && countdown && (
-                <div className="co-offer-countdown">
-                  <div className="co-offer-timer-label">Offer expires in</div>
-                  <div className={`co-offer-timer${countdown.startsWith('00:0') ? ' urgent' : ''}`}>
-                    {countdown}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         )}
 
-        {offerExpired && (
-          <div className="co-offer-expired">
-            <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#EF4444', letterSpacing: '0.06em' }}>
-              ✗ This offer has expired — standard pricing applies
-            </div>
-          </div>
-        )}
-
-        {/* PROMO — manual code entry (hidden if auto-promo already applied) */}
+        {/* Manual promo code entry (hidden if auto-promo applied) */}
         {!autoPromo && (
           <div className="co-promo-wrap">
             <div className="co-promo-card">
@@ -1090,48 +733,41 @@ export default function CheckoutPage() {
               <div className="co-promo-row">
                 <input
                   type="text"
-                  value={promoCode}
-                  onChange={e => { setPromoCode(e.target.value); setPromoError(''); if (!e.target.value) setPromoApplied(null); }}
+                  value={promoInput}
+                  onChange={e => { setPromoInput(e.target.value); setPromoError(''); if (!e.target.value) setPromoApplied(null) }}
                   placeholder="ENTER CODE"
                   className="co-promo-input"
                   onKeyDown={e => e.key === 'Enter' && applyPromo()}
                 />
-                <button onClick={applyPromo} disabled={promoValidating} className="co-promo-btn">
-                  {promoValidating ? '…' : 'Apply'}
+                <button onClick={applyPromo} disabled={promoLoading} className="co-promo-btn">
+                  {promoLoading ? '…' : 'Apply'}
                 </button>
               </div>
-              {promoApplied && <p className="co-promo-success">✓ {promoApplied.label}</p>}
-              {promoError   && <p className="co-promo-error">✗ {promoError}</p>}
+              {promoApplied && !autoPromo && <p className="co-promo-ok">✓ {promoApplied.label}</p>}
+              {promoError && <p className="co-promo-err">✗ {promoError}</p>}
             </div>
           </div>
         )}
-
-        {/* Alerts */}
-        {error   && <div className="co-alert-wrap"><div className="co-alert-error">{error}</div></div>}
-        {success && <div className="co-alert-wrap"><div className="co-alert-success">✓ {success}</div></div>}
 
         {/* Trust */}
         <div className="co-trust">
           <div className="co-trust-items">
             {[
-              { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>', text: '7-DAY MONEY BACK' },
-              { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>', text: 'PAYSTACK SECURED' },
-              { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>', text: 'CANCEL ANYTIME' },
-              { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>', text: 'CARD · BANK · USSD' },
+              { icon: '🎁', text: '7-DAY MONEY BACK' },
+              { icon: '🔒', text: 'PAYSTACK SECURED' },
+              { icon: '↩', text: 'CANCEL ANYTIME' },
+              { icon: '💳', text: 'CARD · BANK · USSD' },
             ].map((t, i) => (
-              <div key={i} className="co-trust-item">
-                <span dangerouslySetInnerHTML={{ __html: t.icon }} />{t.text}
-              </div>
+              <div key={i} className="co-trust-item">{t.icon} {t.text}</div>
             ))}
           </div>
           <p className="co-trust-note">
             Prices in NGN · 7-day money-back guarantee.{' '}
-            Questions?{' '}
-            <a href="mailto:asamuel@ascentorbi.com" className="co-trust-link">hello@ascentorbi.com</a>
+            Questions? <a href="mailto:asamuel@ascentorbi.com" className="co-trust-link">hello@ascentorbi.com</a>
           </p>
         </div>
 
       </div>
     </>
-  );
+  )
 }

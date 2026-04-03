@@ -136,6 +136,7 @@ const PUBLIC_API_ROUTES = [
   '/api/payments/webhook',     // New payments dir webhook (C-1 fix)
   '/api/partner/webhook',
   '/api/survey',
+  '/api/pay/webhook',
 ];
 
 const PLAN_RANK: Record<string, number> = {
