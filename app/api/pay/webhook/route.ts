@@ -82,13 +82,15 @@ export async function POST(req: NextRequest) {
           updated_at:          new Date().toISOString(),
         }).eq('id', profile.id)
 
-        await supabaseAdmin.from('notifications').insert({
-          user_id: profile.id,
-          type:    'warning',
-          title:   'Subscription Cancelled',
-          message: 'Your subscription was cancelled. Access continues until the end of your billing period.',
-          link:    '/account',
-        }).catch(() => {})
+        try {
+          await supabaseAdmin.from('notifications').insert({
+            user_id: profile.id,
+            type:    'warning',
+            title:   'Subscription Cancelled',
+            message: 'Your subscription was cancelled. Access continues until the end of your billing period.',
+            link:    '/account',
+          })
+        } catch (_) {}
 
         console.log(`[pay/webhook] ⚠️ subscription.disable — ${email}`)
         break
@@ -114,15 +116,17 @@ export async function POST(req: NextRequest) {
           updated_at:          new Date().toISOString(),
         }).eq('id', profile.id)
 
-        await supabaseAdmin.from('payments').insert({
-          user_id:    profile.id,
-          reference:  data.transaction?.reference ?? `renewal-${Date.now()}`,
-          amount:     data.amount ? data.amount / 100 : 0,
-          currency:   data.currency ?? 'NGN',
-          provider:   'paystack',
-          status:     'success',
-          created_at: new Date().toISOString(),
-        }).catch(() => {})
+        try {
+          await supabaseAdmin.from('payments').insert({
+            user_id:    profile.id,
+            reference:  data.transaction?.reference ?? `renewal-${Date.now()}`,
+            amount:     data.amount ? data.amount / 100 : 0,
+            currency:   data.currency ?? 'NGN',
+            provider:   'paystack',
+            status:     'success',
+            created_at: new Date().toISOString(),
+          })
+        } catch (_) {}
 
         console.log(`[pay/webhook] 🔄 invoice.payment_success — ${email} renewed`)
         break
@@ -139,13 +143,15 @@ export async function POST(req: NextRequest) {
           updated_at:          new Date().toISOString(),
         }).eq('id', profile.id)
 
-        await supabaseAdmin.from('notifications').insert({
-          user_id: profile.id,
-          type:    'error',
-          title:   '⚠️ Payment Failed',
-          message: 'Your renewal payment failed. Update your payment method to keep your access.',
-          link:    '/account',
-        }).catch(() => {})
+        try {
+          await supabaseAdmin.from('notifications').insert({
+            user_id: profile.id,
+            type:    'error',
+            title:   '⚠️ Payment Failed',
+            message: 'Your renewal payment failed. Update your payment method to keep your access.',
+            link:    '/account',
+          })
+        } catch (_) {}
 
         console.log(`[pay/webhook] ❌ invoice.payment_failed — ${email}`)
         break

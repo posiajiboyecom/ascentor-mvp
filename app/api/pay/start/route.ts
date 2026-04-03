@@ -80,16 +80,18 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 5. Log pending attempt ────────────────────────────────────
-    await supabaseAdmin.from('payment_attempts').upsert({
-      user_id:    user.id,
-      reference:  psData.data.reference,
-      plan_id:    planId,
-      billing,
-      status:     'pending',
-      created_at: new Date().toISOString(),
-    }, { onConflict: 'reference' }).catch(e =>
+    try {
+      await supabaseAdmin.from('payment_attempts').upsert({
+        user_id:    user.id,
+        reference:  psData.data.reference,
+        plan_id:    planId,
+        billing,
+        status:     'pending',
+        created_at: new Date().toISOString(),
+      }, { onConflict: 'reference' })
+    } catch (e) {
       console.warn('[pay/start] Could not log attempt (non-critical):', e)
-    )
+    }
 
     return NextResponse.json({
       accessCode: psData.data.access_code,

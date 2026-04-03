@@ -109,50 +109,61 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 8. Record payment ─────────────────────────────────────────
-    await supabaseAdmin.from('payments').insert({
-      user_id:       userId,
-      reference,
-      amount:        psTx.amount ? psTx.amount / 100 : 0,
-      currency:      psTx.currency || 'NGN',
-      plan_id:       planId,
-      billing,
-      provider:      'paystack',
-      status:        'success',
-      paystack_data: psTx,
-      created_at:    now.toISOString(),
-    }).catch(e => console.warn('[pay/confirm] payments insert non-critical:', e))
+    try {
+      await supabaseAdmin.from('payments').insert({
+        user_id:       userId,
+        reference,
+        amount:        psTx.amount ? psTx.amount / 100 : 0,
+        currency:      psTx.currency || 'NGN',
+        plan_id:       planId,
+        billing,
+        provider:      'paystack',
+        status:        'success',
+        paystack_data: psTx,
+        created_at:    now.toISOString(),
+      })
+    } catch (e) {
+      console.warn('[pay/confirm] payments insert non-critical:', e)
+    }
 
     // Mark attempt completed
-    await supabaseAdmin.from('payment_attempts')
-      .update({ status: 'completed', completed_at: now.toISOString() })
-      .eq('reference', reference)
-      .catch(() => {})
+    try {
+      await supabaseAdmin.from('payment_attempts')
+        .update({ status: 'completed', completed_at: now.toISOString() })
+        .eq('reference', reference)
+    } catch (_) {}
 
     // ── 9. Welcome notification ───────────────────────────────────
     const planNames: Record<string, string> = { builder: 'Explorer', pro: 'Builder', elite: 'Climber' }
     const planName = planNames[planId] || planId
 
-    await supabaseAdmin.from('notifications').insert({
-      user_id: userId,
-      type:    'payment',
-      title:   '🎉 Welcome to Ascentor!',
-      message: `Your 7-day free trial has started on the ${planName} plan. You won't be charged until day 8.`,
-      link:    '/dashboard',
-    }).catch(() => {})
+    try {
+      await supabaseAdmin.from('notifications').insert({
+        user_id: userId,
+        type:    'payment',
+        title:   '🎉 Welcome to Ascentor!',
+        message: `Your 7-day free trial has started on the ${planName} plan. You won't be charged until day 8.`,
+        link:    '/dashboard',
+      })
+    } catch (_) {}
 
     // ── 10. Audit log ─────────────────────────────────────────────
-    await supabaseAdmin.from('audit_logs').insert({
-      user_id:     userId,
-      action:      'payment_confirmed',
-      entity_type: 'payment',
-      entity_id:   reference,
-      details:     { planId, billing, amount: psTx.amount, currency: psTx.currency },
-    }).catch(() => {})
+    try {
+      await supabaseAdmin.from('audit_logs').insert({
+        user_id:     userId,
+        action:      'payment_confirmed',
+        entity_type: 'payment',
+        entity_id:   reference,
+        details:     { planId, billing, amount: psTx.amount, currency: psTx.currency },
+      })
+    } catch (_) {}
 
     // ── 11. Referral rewards ──────────────────────────────────────
-    await processReferral(userId).catch(e =>
+    try {
+      await processReferral(userId)
+    } catch (e) {
       console.warn('[pay/confirm] Referral non-critical:', e)
-    )
+    }
 
     return NextResponse.json({
       success:          true,
@@ -215,11 +226,13 @@ async function processReferral(userId: string) {
     .update({ status: 'rewarded', rewarded_at: new Date().toISOString() })
     .eq('id', referral.id)
 
-  await supabaseAdmin.from('notifications').insert({
-    user_id: referral.referrer_id,
-    type:    'referral_reward',
-    title:   '🎉 Referral reward unlocked!',
-    message: `Someone you referred just subscribed. You both received ${BONUS} bonus days.`,
-    link:    '/referral',
-  }).catch(() => {})
+  try {
+    await supabaseAdmin.from('notifications').insert({
+      user_id: referral.referrer_id,
+      type:    'referral_reward',
+      title:   '🎉 Referral reward unlocked!',
+      message: `Someone you referred just subscribed. You both received ${BONUS} bonus days.`,
+      link:    '/referral',
+    })
+  } catch (_) {}
 }
