@@ -80,12 +80,11 @@ export function useCheckout() {
       }
 
       // ── 3. Initialize transaction on server ───────────────────────────
-      const initRes = await fetch('/api/payments/initialize', {
+      const initRes = await fetch('/api/pay/start', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan:     opts.paystackPlanCode,
-          currency: opts.currency === 'ngn' ? 'NGN' : 'USD',
           email:    user.email ?? '',
           metadata: {
             planName: opts.planName,
