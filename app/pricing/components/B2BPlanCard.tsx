@@ -6,7 +6,7 @@
 // Enterprise/custom → mailto enquiry
 
 import { B2BTier, BillingCycle } from '../data'
-import { useCheckout } from './useCheckout'
+import { usePaystack } from '@/hooks/usePaystack'
 
 interface Props {
   tier:    B2BTier
@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default function B2BPlanCard({ tier, billing }: Props) {
-  const { initiateCheckout, loading, error } = useCheckout()
+  const { pay, loading, error } = usePaystack()
   const isCustom = tier.flatMonthly === null
 
   function handleCTA() {
@@ -34,11 +34,11 @@ export default function B2BPlanCard({ tier, billing }: Props) {
       return
     }
 
-    initiateCheckout({
-      planName:        tier.name,
-      currency:        'ngn',
+    pay({
+      planCode,
+      planId:   tier.id,
+      planName: tier.name,
       billing,
-      paystackPlanCode: planCode,
     })
   }
 
