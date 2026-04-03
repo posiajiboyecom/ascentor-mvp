@@ -1,158 +1,142 @@
 'use client'
 
-// ================================================================
-// usePaystack.ts  — NEW PAYMENT SYSTEM (clean rewrite)
-// ================================================================
-// Logic:
-//   1. Check user is logged in via Supabase session
-//   2. POST to /api/pay/start  → gets Paystack access_code + reference
-//   3. Open Paystack popup with access_code
-//   4. On popup success → POST to /api/pay/confirm with reference
-//   5. Redirect to /dashboard on success
+// hooks/usePaystack.ts — PAYMENT SYSTEM v3
+// ─────────────────────────────────────────────────────────────────────────────
+// Used by: app/pricing/components/B2CPlanCard.tsx
 //
-// NO amount sent. NO currency sent. Plan code carries everything.
-// Paystack reads amount + currency directly from the plan object.
-// ================================================================
+// Calls /api/pay/start (NOT the deleted /api/payments/initialize).
+// CRITICAL: Never sends `amount` or `currency` to Paystack when using a plan
+// code — Paystack will reject with "Invalid Amount Sent". The plan code already
+// encodes currency and amount on the Paystack side.
+// ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-export interface PayOptions {
-  planCode: string   // Paystack plan code e.g. PLN_4v5qnnjk9rt6cdk
-  planId:   string   // Your internal ID: 'builder' | 'pro' | 'elite'
-  planName: string   // Display name e.g. 'Explorer'
-  billing:  'monthly' | 'annual'
+export interface PaystackOptions {
+  planCode:  string            // Paystack plan code e.g. PLN_xxx
+  planId:    string            // Supabase plan id: 'builder' | 'pro' | 'elite'
+  planName:  string            // display name e.g. 'Explorer'
+  billing:   'monthly' | 'annual'
 }
 
-export interface UsePaystackReturn {
-  pay:     (opts: PayOptions) => Promise<void>
-  loading: boolean
-  error:   string | null
-  clearError: () => void
-}
-
-// Declare global PaystackPop type
 declare global {
   interface Window {
     PaystackPop?: {
-      setup: (config: Record<string, unknown>) => { openIframe: () => void }
+      setup: (opts: Record<string, unknown>) => { openIframe: () => void }
     }
   }
 }
 
-// Load Paystack script once — idempotent
-function ensurePaystackScript(): Promise<void> {
+function loadPaystackScript(): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (window.PaystackPop) return resolve()
-    if (document.getElementById('ps-inline-script')) {
-      // Script tag exists but not yet loaded — wait for it
-      const existing = document.getElementById('ps-inline-script') as HTMLScriptElement
-      existing.addEventListener('load',  () => resolve())
-      existing.addEventListener('error', () => reject(new Error('Paystack script failed to load')))
+    if (window.PaystackPop) { resolve(); return }
+    const existing = document.querySelector('script[src="https://js.paystack.co/v1/inline.js"]')
+    if (existing) {
+      existing.addEventListener('load', () => resolve())
+      existing.addEventListener('error', () => reject(new Error('Paystack script failed')))
       return
     }
-    const s    = document.createElement('script')
-    s.id       = 'ps-inline-script'
-    s.src      = 'https://js.paystack.co/v1/inline.js'
-    s.async    = true
-    s.onload   = () => resolve()
-    s.onerror  = () => reject(new Error('Could not load payment system. Check your internet connection.'))
-    document.head.appendChild(s)
+    const script = document.createElement('script')
+    script.src     = 'https://js.paystack.co/v1/inline.js'
+    script.async   = true
+    script.onload  = () => resolve()
+    script.onerror = () => reject(new Error('Failed to load Paystack'))
+    document.head.appendChild(script)
   })
 }
 
-export function usePaystack(): UsePaystackReturn {
+export function usePaystack() {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState<string | null>(null)
   const supabase = createClient()
 
-  // Pre-warm the Paystack script on mount so it's ready on first click
+  // Preload Paystack script so it's ready when user clicks
   useEffect(() => {
-    ensurePaystackScript().catch(() => {
-      // Silent — will retry on click
+    loadPaystackScript().catch(() => {
+      console.warn('[usePaystack] Paystack preload failed — will retry on click')
     })
   }, [])
 
-  const pay = useCallback(async (opts: PayOptions) => {
+  const clearError = useCallback(() => setError(null), [])
+
+  const pay = useCallback(async (opts: PaystackOptions) => {
     setLoading(true)
     setError(null)
 
     try {
-      // ── Step 1: Verify user is logged in ─────────────────────────
-      const { data: { user }, error: authErr } = await supabase.auth.getUser()
-
-      if (authErr || !user?.email) {
-        // Not logged in — send to login with return path
+      // ── 1. Auth check ──────────────────────────────────────────────────────
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
         window.location.href = '/login?redirect=/pricing'
         return
       }
 
-      // ── Step 2: Create transaction on server ──────────────────────
+      // ── 2. Guard — plan code must be set ───────────────────────────────────
+      if (!opts.planCode) {
+        setError('This plan is not yet available. Please contact support.')
+        setLoading(false)
+        return
+      }
+
+      // ── 3. Initialize transaction via /api/pay/start ───────────────────────
+      // IMPORTANT: We only send planId + billing. The server resolves the
+      // Paystack plan code from env vars and never passes amount/currency to
+      // Paystack — that's what was causing "Invalid Amount Sent".
       const startRes = await fetch('/api/pay/start', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          planCode: opts.planCode,
-          planId:   opts.planId,
-          planName: opts.planName,
-          billing:  opts.billing,
+        body:    JSON.stringify({
+          planId:  opts.planId,
+          billing: opts.billing,
         }),
-        // Include session cookie automatically (same-origin)
       })
 
       if (!startRes.ok) {
-        const err = await startRes.json().catch(() => ({}))
-        throw new Error(err.error || `Failed to start payment (${startRes.status})`)
+        const body = await startRes.json().catch(() => ({}))
+        throw new Error(body.error || `Payment setup failed (${startRes.status})`)
       }
 
-      const { accessCode, reference } = await startRes.json()
-
+      const { accessCode, reference, error: startError } = await startRes.json()
+      if (startError) throw new Error(startError)
       if (!accessCode || !reference) {
-        throw new Error('Payment setup failed — no access code returned. Please try again.')
+        throw new Error('Payment initialization returned no access code. Please try again.')
       }
 
-      // ── Step 3: Load Paystack script ─────────────────────────────
-      await ensurePaystackScript()
-
+      // ── 4. Ensure Paystack script is ready ────────────────────────────────
+      await loadPaystackScript()
       if (!window.PaystackPop) {
-        throw new Error('Payment system unavailable. Please refresh the page and try again.')
+        throw new Error('Payment system failed to load. Please refresh and try again.')
       }
 
-      // ── Step 4: Open Paystack popup ───────────────────────────────
+      // ── 5. Open Paystack inline popup ─────────────────────────────────────
       const handler = window.PaystackPop.setup({
         key:         process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
         access_code: accessCode,
         ref:         reference,
 
         onClose: () => {
-          // User closed popup without paying
           setLoading(false)
-          setError('Payment was not completed. Try again whenever you\'re ready.')
         },
 
         callback: async (response: { reference: string }) => {
-          // ── Step 5: Confirm payment on server ──────────────────
           try {
+            // Confirm payment on server
             const confirmRes = await fetch('/api/pay/confirm', {
               method:  'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ reference: response.reference }),
+              body:    JSON.stringify({ reference: response.reference }),
             })
-
             const confirmData = await confirmRes.json()
 
             if (confirmRes.ok && confirmData.success) {
-              // ✅ Success — redirect to dashboard
               window.location.href = '/dashboard?welcome=1'
             } else {
-              // Payment went through but confirmation had an issue.
-              // Webhook will reconcile. Don't leave user stranded.
-              console.error('[usePaystack] confirm error:', confirmData)
+              // Payment went through but confirm had an issue.
+              // Webhook will reconcile — don't leave user stranded.
               window.location.href = '/dashboard?payment=processing'
             }
-          } catch (confirmErr) {
-            console.error('[usePaystack] confirm fetch error:', confirmErr)
-            // Payment likely succeeded — webhook will reconcile
+          } catch {
             window.location.href = '/dashboard?payment=processing'
           } finally {
             setLoading(false)
@@ -164,12 +148,10 @@ export function usePaystack(): UsePaystackReturn {
 
     } catch (err: any) {
       console.error('[usePaystack]', err)
-      setError(err.message || 'Something went wrong. Please try again or contact support.')
+      setError(err.message || 'Something went wrong. Please try again.')
       setLoading(false)
     }
   }, [supabase])
-
-  const clearError = useCallback(() => setError(null), [])
 
   return { pay, loading, error, clearError }
 }
