@@ -115,26 +115,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Activation failed. Please contact support.' }, { status: 500 })
     }
 
-    // ── 5. Notifications + audit ──────────────────────────────────
-    const planNames: Record<string, string> = { builder: 'Explorer', pro: 'Builder', elite: 'Climber' }
+// ── 5. Notifications + audit ──────────────────────────────────
+const planNames: Record<string, string> = { builder: 'Explorer', pro: 'Builder', elite: 'Climber' }
 
-    await supabaseAdmin.from('notifications').insert({
-      user_id: userId,
-      type:    'payment',
-      title:   '🎉 Account Activated!',
-      message: `Your ${planNames[planId]} plan is active with promo code ${code}. Enjoy 30 days of full access.`,
-      link:    '/dashboard',
-    }).catch(() => {})
+try {
+  await supabaseAdmin.from('notifications').insert({
+    user_id: userId,
+    type:    'payment',
+    title:   '🎉 Account Activated!',
+    message: `Your ${planNames[planId]} plan is active with promo code ${code}. Enjoy 30 days of full access.`,
+    link:    '/dashboard',
+  })
+} catch (_) {}
 
-    await supabaseAdmin.from('audit_logs').insert({
-      user_id:     userId,
-      action:      'promo_activation',
-      entity_type: 'payment',
-      entity_id:   code,
-      details:     { planId, promoCode: code, discount: '100%' },
-    }).catch(() => {})
+try {
+  await supabaseAdmin.from('audit_logs').insert({
+    user_id:     userId,
+    action:      'promo_activation',
+    entity_type: 'payment',
+    entity_id:   code,
+    details:     { planId, promoCode: code, discount: '100%' },
+  })
+} catch (_) {}
 
-    return NextResponse.json({ success: true, plan: planId })
+return NextResponse.json({ success: true, plan: planId })
 
   } catch (err: any) {
     console.error('[pay/activate-free]', err)
