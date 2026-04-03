@@ -37,7 +37,6 @@ const PROTECTED_API_PREFIXES = [
   '/api/pay',           // ← ADDED: payment init + confirm (webhook excluded below)
   '/api/coach',
   '/api/coaching',
-  '/api/payment',
   '/api/referral',
   '/api/subscription',
   '/api/usage',
