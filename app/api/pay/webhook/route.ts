@@ -1,175 +1,329 @@
 // ================================================================
-// POST /api/pay/webhook  — NEW PAYMENT SYSTEM v2
+// POST /api/pay/webhook  — PAYMENT SYSTEM v3
 // ================================================================
-// Paystack calls this server-to-server for subscription lifecycle.
-// This is your safety net — handles renewals, cancellations, failures.
+// Paystack calls this server-to-server for ALL subscription events.
+// This is the SOURCE OF TRUTH for renewals, cancellations, failures.
 //
-// ⚠️ IMPORTANT: Add '/api/pay/webhook' to PUBLIC_API_ROUTES in proxy.ts
-// Paystack has no session cookie — the route must be publicly reachable.
+// ⚠️  REQUIRED SETUP — Two things you must do:
+//
+// 1. Register this URL in Paystack Dashboard:
+//    Settings → API Keys & Webhooks → Webhook URL
+//    → https://ascentorbi.com/api/pay/webhook
+//
+// 2. Whitelist in proxy.ts PUBLIC_API_ROUTES (Paystack has no cookie):
+//    '/api/pay/webhook'
 //
 // Events handled:
-//   subscription.create       → Subscription started
-//   subscription.disable      → Cancelled
-//   invoice.payment_success   → Renewal succeeded
-//   invoice.payment_failed    → Renewal failed
+//   charge.success          → First-time charge (backup for confirm)
+//   subscription.create     → Subscription started (saves sub code)
+//   subscription.disable    → Cancelled
+//   invoice.payment_success → Renewal succeeded
+//   invoice.payment_failed  → Renewal failed → mark past_due
+//
+// Security: HMAC-SHA512 signature verified on every request.
 // ================================================================
 
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import crypto from 'crypto'
 
-const SECRET = process.env.PAYSTACK_SECRET_KEY!
+const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!
 
-function verifySignature(raw: string, sig: string): boolean {
-  const expected = crypto.createHmac('sha512', SECRET).update(raw).digest('hex')
+// ── Signature verification ────────────────────────────────────────────────────
+function verifySignature(rawBody: string, sig: string): boolean {
+  const expected = crypto.createHmac('sha512', PAYSTACK_SECRET).update(rawBody).digest('hex')
   return expected === sig
 }
 
-async function getProfile(email: string) {
+// ── Profile lookup ────────────────────────────────────────────────────────────
+// Prefer user_id from metadata (most reliable).
+// Fall back to email lookup for events where metadata may be missing.
+async function getProfileByEmail(email: string) {
   const { data } = await supabaseAdmin
     .from('profiles')
     .select('id, subscription_plan, subscription_status, subscription_end')
     .eq('email', email)
     .maybeSingle()
-  return data
+
+  if (!data) {
+    console.warn(`[pay/webhook] No profile for email: ${email}`)
+  }
+  return data ?? null
 }
 
-export async function POST(req: NextRequest) {
-  let raw = ''
+async function getProfileById(userId: string) {
+  const { data } = await supabaseAdmin
+    .from('profiles')
+    .select('id, subscription_plan, subscription_status, subscription_end')
+    .eq('id', userId)
+    .maybeSingle()
+  return data ?? null
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function nextPeriodEnd(currentEnd: string | null, billing: string): string {
+  const base = currentEnd ? new Date(currentEnd) : new Date()
+  if (billing === 'annual') {
+    base.setFullYear(base.getFullYear() + 1)
+  } else {
+    base.setMonth(base.getMonth() + 1)
+  }
+  return base.toISOString()
+}
+
+async function notify(
+  userId: string,
+  type: string,
+  title: string,
+  message: string,
+  link = '/account'
+) {
   try {
-    raw = await req.text()
+    await supabaseAdmin.from('notifications').insert({ user_id: userId, type, title, message, link })
+  } catch (_) {}
+}
+
+async function auditLog(userId: string, action: string, details: object) {
+  try {
+    await supabaseAdmin.from('audit_logs').insert({
+      user_id:     userId,
+      action,
+      entity_type: 'payment',
+      entity_id:   action,
+      details,
+    })
+  } catch (_) {}
+}
+
+// ── EVENT HANDLERS ────────────────────────────────────────────────────────────
+
+/**
+ * charge.success
+ * Fires for every successful charge including first-time and renewals.
+ * Acts as a backup for /api/pay/confirm — if the user's browser closed
+ * before confirm ran, this still activates their account.
+ */
+async function handleChargeSuccess(data: any) {
+  const metadata = data.metadata ?? {}
+  const userId   = metadata.user_id
+  const planId   = metadata.plan_id
+  const billing  = metadata.billing ?? 'monthly'
+  const email    = data.customer?.email
+
+  // Prefer userId from metadata; fall back to email lookup
+  const profile = userId
+    ? await getProfileById(userId)
+    : email
+    ? await getProfileByEmail(email)
+    : null
+
+  if (!profile) {
+    console.warn('[pay/webhook] charge.success — could not find profile', { userId, email })
+    return
+  }
+
+  // Only activate if not already active — avoid overwriting a working subscription
+  if (profile.subscription_status === 'active') {
+    console.log(`[pay/webhook] charge.success — profile already active, skipping (${profile.id})`)
+    return
+  }
+
+  const now             = new Date()
+  const subscriptionEnd = new Date(now)
+  subscriptionEnd.setDate(subscriptionEnd.getDate() + 7) // trial
+  if (billing === 'annual') {
+    subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1)
+  } else {
+    subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1)
+  }
+
+  await supabaseAdmin.from('profiles').update({
+    subscription_plan:    planId ?? profile.subscription_plan ?? 'explorer',
+    subscription_status:  'trialing',
+    subscription_start:   now.toISOString(),
+    subscription_end:     subscriptionEnd.toISOString(),
+    payment_method:       'paystack',
+    onboarding_completed: true,
+    updated_at:           now.toISOString(),
+  }).eq('id', profile.id)
+
+  await auditLog(profile.id, 'webhook_charge_success', {
+    reference: data.reference,
+    amount:    data.amount,
+    planId,
+    billing,
+  })
+
+  console.log(`[pay/webhook] ✅ charge.success → activated ${profile.id} on ${planId}`)
+}
+
+/**
+ * subscription.create
+ * Fires when Paystack creates the recurring subscription object.
+ * We store the subscription_code — needed to cancel later.
+ */
+async function handleSubscriptionCreate(data: any) {
+  const email = data.customer?.email
+  if (!email) return
+
+  const profile = await getProfileByEmail(email)
+  if (!profile) return
+
+  await supabaseAdmin.from('profiles').update({
+    subscription_status:  'active',
+    paystack_sub_code:    data.subscription_code,
+    updated_at:           new Date().toISOString(),
+  }).eq('id', profile.id)
+
+  console.log(`[pay/webhook] ✅ subscription.create → sub code saved for ${email}`)
+}
+
+/**
+ * subscription.disable
+ * User cancelled or card expired — access continues until period end.
+ */
+async function handleSubscriptionDisable(data: any) {
+  const email = data.customer?.email
+  if (!email) return
+
+  const profile = await getProfileByEmail(email)
+  if (!profile) return
+
+  await supabaseAdmin.from('profiles').update({
+    subscription_status: 'cancelled',
+    updated_at:          new Date().toISOString(),
+  }).eq('id', profile.id)
+
+  await notify(
+    profile.id,
+    'warning',
+    'Subscription Cancelled',
+    'Your subscription was cancelled. You keep access until your current period ends.',
+    '/account'
+  )
+
+  console.log(`[pay/webhook] ⚠️  subscription.disable → ${email} cancelled`)
+}
+
+/**
+ * invoice.payment_success
+ * Recurring renewal succeeded — extend subscription period.
+ */
+async function handleRenewalSuccess(data: any) {
+  const email = data.customer?.email
+  if (!email) return
+
+  const profile = await getProfileByEmail(email)
+  if (!profile) return
+
+  const billing  = data.subscription?.metadata?.billing ?? data.metadata?.billing ?? 'monthly'
+  const newEnd   = nextPeriodEnd(profile.subscription_end, billing)
+
+  await supabaseAdmin.from('profiles').update({
+    subscription_status: 'active',
+    subscription_end:    newEnd,
+    updated_at:          new Date().toISOString(),
+  }).eq('id', profile.id)
+
+  // Record renewal payment
+  try {
+    await supabaseAdmin.from('payments').insert({
+      user_id:    profile.id,
+      reference:  data.transaction?.reference ?? `renewal-${Date.now()}`,
+      plan_id:    profile.subscription_plan,
+      amount:     data.amount ? data.amount / 100 : 0,
+      currency:   data.currency ?? 'NGN',
+      provider:   'paystack',
+      status:     'success',
+      created_at: new Date().toISOString(),
+    })
+  } catch (_) {}
+
+  await notify(
+    profile.id,
+    'payment',
+    'Subscription Renewed',
+    `Your subscription has been renewed. Access extended to ${new Date(newEnd).toLocaleDateString()}.`,
+    '/account'
+  )
+
+  console.log(`[pay/webhook] 🔄 invoice.payment_success → ${email} renewed until ${newEnd}`)
+}
+
+/**
+ * invoice.payment_failed
+ * Renewal failed — mark past_due, notify user to update payment.
+ */
+async function handleRenewalFailed(data: any) {
+  const email = data.customer?.email
+  if (!email) return
+
+  const profile = await getProfileByEmail(email)
+  if (!profile) return
+
+  await supabaseAdmin.from('profiles').update({
+    subscription_status: 'past_due',
+    updated_at:          new Date().toISOString(),
+  }).eq('id', profile.id)
+
+  await notify(
+    profile.id,
+    'error',
+    'Payment Failed',
+    'Your renewal payment failed. Update your payment method to keep your access.',
+    '/account'
+  )
+
+  console.log(`[pay/webhook] ❌ invoice.payment_failed → ${email} marked past_due`)
+}
+
+// ── Main Route ────────────────────────────────────────────────────────────────
+
+export async function POST(req: NextRequest) {
+  let rawBody = ''
+  try {
+    rawBody = await req.text()
     const sig = req.headers.get('x-paystack-signature') ?? ''
 
-    if (!verifySignature(raw, sig)) {
-      console.error('[pay/webhook] Invalid signature')
+    if (!verifySignature(rawBody, sig)) {
+      console.error('[pay/webhook] Invalid HMAC signature — rejected')
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
-    const { event, data } = JSON.parse(raw)
+    const { event, data } = JSON.parse(rawBody)
     console.log(`[pay/webhook] 📥 ${event}`)
 
     switch (event) {
-
-      case 'subscription.create': {
-        const email = data.customer?.email
-        if (!email) break
-        const profile = await getProfile(email)
-        if (!profile) { console.warn(`[pay/webhook] No profile: ${email}`); break }
-
-        const billing = data.metadata?.billing ?? 'monthly'
-        const end     = new Date()
-        if (billing === 'annual') end.setFullYear(end.getFullYear() + 1)
-        else end.setMonth(end.getMonth() + 1)
-
-        await supabaseAdmin.from('profiles').update({
-          subscription_status: 'active',
-          subscription_end:    end.toISOString(),
-          updated_at:          new Date().toISOString(),
-        }).eq('id', profile.id)
-
-        console.log(`[pay/webhook] ✅ subscription.create — ${email}`)
+      case 'charge.success':
+        await handleChargeSuccess(data)
         break
-      }
-
-      case 'subscription.disable': {
-        const email = data.customer?.email
-        if (!email) break
-        const profile = await getProfile(email)
-        if (!profile) break
-
-        await supabaseAdmin.from('profiles').update({
-          subscription_status: 'cancelled',
-          updated_at:          new Date().toISOString(),
-        }).eq('id', profile.id)
-
-        try {
-          await supabaseAdmin.from('notifications').insert({
-            user_id: profile.id,
-            type:    'warning',
-            title:   'Subscription Cancelled',
-            message: 'Your subscription was cancelled. Access continues until the end of your billing period.',
-            link:    '/account',
-          })
-        } catch (_) {}
-
-        console.log(`[pay/webhook] ⚠️ subscription.disable — ${email}`)
+      case 'subscription.create':
+        await handleSubscriptionCreate(data)
         break
-      }
-
-      case 'invoice.payment_success': {
-        const email = data.customer?.email
-        if (!email) break
-        const profile = await getProfile(email)
-        if (!profile) break
-
-        const billing    = data.subscription?.metadata?.billing ?? 'monthly'
-        const currentEnd = profile.subscription_end
-          ? new Date(profile.subscription_end)
-          : new Date()
-
-        if (billing === 'annual') currentEnd.setFullYear(currentEnd.getFullYear() + 1)
-        else currentEnd.setMonth(currentEnd.getMonth() + 1)
-
-        await supabaseAdmin.from('profiles').update({
-          subscription_status: 'active',
-          subscription_end:    currentEnd.toISOString(),
-          updated_at:          new Date().toISOString(),
-        }).eq('id', profile.id)
-
-        try {
-          await supabaseAdmin.from('payments').insert({
-            user_id:    profile.id,
-            reference:  data.transaction?.reference ?? `renewal-${Date.now()}`,
-            amount:     data.amount ? data.amount / 100 : 0,
-            currency:   data.currency ?? 'NGN',
-            provider:   'paystack',
-            status:     'success',
-            created_at: new Date().toISOString(),
-          })
-        } catch (_) {}
-
-        console.log(`[pay/webhook] 🔄 invoice.payment_success — ${email} renewed`)
+      case 'subscription.disable':
+        await handleSubscriptionDisable(data)
         break
-      }
-
-      case 'invoice.payment_failed': {
-        const email = data.customer?.email
-        if (!email) break
-        const profile = await getProfile(email)
-        if (!profile) break
-
-        await supabaseAdmin.from('profiles').update({
-          subscription_status: 'past_due',
-          updated_at:          new Date().toISOString(),
-        }).eq('id', profile.id)
-
-        try {
-          await supabaseAdmin.from('notifications').insert({
-            user_id: profile.id,
-            type:    'error',
-            title:   '⚠️ Payment Failed',
-            message: 'Your renewal payment failed. Update your payment method to keep your access.',
-            link:    '/account',
-          })
-        } catch (_) {}
-
-        console.log(`[pay/webhook] ❌ invoice.payment_failed — ${email}`)
+      case 'invoice.payment_success':
+        await handleRenewalSuccess(data)
         break
-      }
-
+      case 'invoice.payment_failed':
+        await handleRenewalFailed(data)
+        break
       default:
-        console.log(`[pay/webhook] Unhandled: ${event}`)
+        console.log(`[pay/webhook] Unhandled event: ${event}`)
     }
 
     // Always 200 — Paystack retries on non-2xx
     return NextResponse.json({ received: true })
 
   } catch (err: any) {
-    console.error('[pay/webhook] Fatal:', err)
+    console.error('[pay/webhook] Fatal error:', err)
+    // Still return 200 so Paystack doesn't retry endlessly on a parse error
     return NextResponse.json({ received: true, warning: 'Processing error logged' })
   }
 }
 
+// Health check — useful to confirm the route is reachable
 export async function GET() {
-  return NextResponse.json({ status: 'Ascentor payment webhook active ✅' })
+  return NextResponse.json({ status: 'Ascentor pay/webhook active ✅' })
 }

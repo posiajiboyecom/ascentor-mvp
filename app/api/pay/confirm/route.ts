@@ -1,17 +1,15 @@
 // ================================================================
-// POST /api/pay/confirm  — NEW PAYMENT SYSTEM v2
+// POST /api/pay/confirm  — PAYMENT SYSTEM v3
 // ================================================================
-// Called by checkout/page.tsx after Paystack popup fires callback.
+// Called by checkout/page.tsx immediately after PaystackPop fires
+// its success callback with a reference.
 //
-// Rules:
-//   • Auth: user MUST be logged in (session cookie)
-//   • Verifies reference with Paystack
+// Security model:
+//   • userId taken from session cookie — never from request body
+//   • planId taken from payment_attempts DB record — never from client
 //   • Idempotent: safe to call twice with same reference
-//   • Reads planId from payment_attempts (server-side — never trusts client)
-//   • Activates subscription in profiles
-//   • Records payment in payments table
-//   • Fires referral rewards if applicable
-//   • Sends welcome notification
+//   • Webhook (/api/pay/webhook) is the SOURCE OF TRUTH for renewals
+//     This route handles first-time activation only
 // ================================================================
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -22,7 +20,7 @@ const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!
 
 export async function POST(req: NextRequest) {
   try {
-    // ── 1. Auth ───────────────────────────────────────────────────
+    // ── 1. Auth ──────────────────────────────────────────────────────────────
     const auth = await createAuthClient()
     const { data: { user }, error: authErr } = await auth.auth.getUser()
     if (authErr || !user) {
@@ -30,63 +28,75 @@ export async function POST(req: NextRequest) {
     }
     const userId = user.id
 
-    // ── 2. Parse body ─────────────────────────────────────────────
-    const { reference } = await req.json()
+    // ── 2. Parse reference ───────────────────────────────────────────────────
+    const body = await req.json().catch(() => ({}))
+    const { reference } = body as { reference?: string }
+
     if (!reference || typeof reference !== 'string') {
       return NextResponse.json({ error: 'Payment reference is required.' }, { status: 400 })
     }
 
-    // ── 3. Idempotency check ──────────────────────────────────────
-    const { data: existing } = await supabaseAdmin
+    // ── 3. Idempotency check ─────────────────────────────────────────────────
+    // If this reference was already processed, return success immediately.
+    // This prevents double-activation if user clicks back or network retries.
+    const { data: existingPayment } = await supabaseAdmin
       .from('payments')
-      .select('id')
+      .select('id, plan_id')
       .eq('reference', reference)
       .maybeSingle()
 
-    if (existing) {
+    if (existingPayment) {
       console.log(`[pay/confirm] ${reference} already processed — returning success`)
       return NextResponse.json({ success: true, alreadyProcessed: true })
     }
 
-    // ── 4. Verify with Paystack ───────────────────────────────────
+    // ── 4. Verify with Paystack ──────────────────────────────────────────────
     const verifyRes = await fetch(
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
-      { headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` } }
+      {
+        headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` },
+        cache: 'no-store',
+      }
     )
     const verifyData = await verifyRes.json()
 
     if (!verifyData.status || verifyData.data?.status !== 'success') {
       console.error('[pay/confirm] Paystack verification failed:', verifyData.message)
       return NextResponse.json(
-        { error: 'Payment could not be verified. If you were charged, contact support with reference: ' + reference },
+        {
+          error:
+            'Payment could not be verified. If you were charged, contact support with reference: ' +
+            reference,
+        },
         { status: 400 }
       )
     }
 
     const psTx = verifyData.data
 
-    // ── 5. Read plan from DB (NOT from client) ────────────────────
+    // ── 5. Read plan from DB — never trust client ────────────────────────────
     const { data: attempt } = await supabaseAdmin
       .from('payment_attempts')
       .select('plan_id, billing')
       .eq('reference', reference)
       .maybeSingle()
 
-    // Fallback to Paystack metadata if attempt record missing
-    const planId  = attempt?.plan_id  ?? psTx.metadata?.plan_id  ?? 'builder'
+    // Fallback to Paystack metadata if attempt record somehow missing
+    const planId  = attempt?.plan_id  ?? psTx.metadata?.plan_id  ?? 'explorer'
     const billing = attempt?.billing  ?? psTx.metadata?.billing  ?? 'monthly'
 
-    // ── 6. Subscription end date ──────────────────────────────────
+    // ── 6. Calculate subscription end date ───────────────────────────────────
     const now             = new Date()
     const subscriptionEnd = new Date(now)
-    subscriptionEnd.setDate(subscriptionEnd.getDate() + 7) // 7-day trial
+    // 7-day trial grace period always applied
+    subscriptionEnd.setDate(subscriptionEnd.getDate() + 7)
     if (billing === 'annual') {
       subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1)
     } else {
       subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1)
     }
 
-    // ── 7. Activate subscription ──────────────────────────────────
+    // ── 7. Activate subscription in profiles ─────────────────────────────────
     const { error: profileErr } = await supabaseAdmin
       .from('profiles')
       .update({
@@ -103,51 +113,59 @@ export async function POST(req: NextRequest) {
     if (profileErr) {
       console.error('[pay/confirm] Profile update failed:', profileErr)
       return NextResponse.json(
-        { error: 'Payment verified but account activation failed. Contact support with reference: ' + reference },
+        {
+          error:
+            'Payment verified but account activation failed. Contact support with reference: ' +
+            reference,
+        },
         { status: 500 }
       )
     }
 
-    // ── 8. Record payment ─────────────────────────────────────────
+    // ── 8. Record payment (idempotency anchor) ───────────────────────────────
     try {
       await supabaseAdmin.from('payments').insert({
         user_id:       userId,
         reference,
-        amount:        psTx.amount ? psTx.amount / 100 : 0,
-        currency:      psTx.currency || 'NGN',
         plan_id:       planId,
         billing,
+        amount:        psTx.amount ? psTx.amount / 100 : 0,
+        currency:      psTx.currency || 'NGN',
         provider:      'paystack',
         status:        'success',
         paystack_data: psTx,
         created_at:    now.toISOString(),
       })
     } catch (e) {
-      console.warn('[pay/confirm] payments insert non-critical:', e)
+      // Non-critical — idempotency check above already prevents double-activation
+      console.warn('[pay/confirm] payments insert error (non-critical):', e)
     }
 
-    // Mark attempt completed
+    // ── 9. Mark attempt as completed ────────────────────────────────────────
     try {
-      await supabaseAdmin.from('payment_attempts')
+      await supabaseAdmin
+        .from('payment_attempts')
         .update({ status: 'completed', completed_at: now.toISOString() })
         .eq('reference', reference)
     } catch (_) {}
 
-    // ── 9. Welcome notification ───────────────────────────────────
-    const planNames: Record<string, string> = { builder: 'Explorer', pro: 'Builder', elite: 'Climber' }
-    const planName = planNames[planId] || planId
-
+    // ── 10. Welcome notification ─────────────────────────────────────────────
+    const planDisplayNames: Record<string, string> = {
+      explorer: 'Explorer',
+      builder:  'Builder',
+      climber:  'Climber',
+    }
     try {
       await supabaseAdmin.from('notifications').insert({
         user_id: userId,
         type:    'payment',
-        title:   '🎉 Welcome to Ascentor!',
-        message: `Your 7-day free trial has started on the ${planName} plan. You won't be charged until day 8.`,
+        title:   'Welcome to Ascentor! 🎉',
+        message: `Your 7-day free trial on the ${planDisplayNames[planId] ?? planId} plan has started. You won't be charged until Day 8.`,
         link:    '/dashboard',
       })
     } catch (_) {}
 
-    // ── 10. Audit log ─────────────────────────────────────────────
+    // ── 11. Audit log ────────────────────────────────────────────────────────
     try {
       await supabaseAdmin.from('audit_logs').insert({
         user_id:     userId,
@@ -158,11 +176,11 @@ export async function POST(req: NextRequest) {
       })
     } catch (_) {}
 
-    // ── 11. Referral rewards ──────────────────────────────────────
+    // ── 12. Referral rewards ─────────────────────────────────────────────────
     try {
-      await processReferral(userId)
+      await processReferral(userId, subscriptionEnd)
     } catch (e) {
-      console.warn('[pay/confirm] Referral non-critical:', e)
+      console.warn('[pay/confirm] Referral processing error (non-critical):', e)
     }
 
     return NextResponse.json({
@@ -181,8 +199,8 @@ export async function POST(req: NextRequest) {
 }
 
 // ── Referral helper ───────────────────────────────────────────────────────────
-async function processReferral(userId: string) {
-  const BONUS = 7
+async function processReferral(userId: string, subscriptionEnd: Date) {
+  const BONUS_DAYS = 7
 
   const { data: referral } = await supabaseAdmin
     .from('referrals')
@@ -193,36 +211,43 @@ async function processReferral(userId: string) {
 
   if (!referral) return
 
-  // Extend referred user
-  const { data: me } = await supabaseAdmin
-    .from('profiles').select('subscription_end').eq('id', userId).maybeSingle()
-  if (me?.subscription_end) {
-    const d = new Date(me.subscription_end)
-    d.setDate(d.getDate() + BONUS)
-    await supabaseAdmin.from('profiles').update({ subscription_end: d.toISOString() }).eq('id', userId)
-  }
+  // Extend referred user's subscription
+  const extendedEnd = new Date(subscriptionEnd)
+  extendedEnd.setDate(extendedEnd.getDate() + BONUS_DAYS)
+  await supabaseAdmin
+    .from('profiles')
+    .update({ subscription_end: extendedEnd.toISOString() })
+    .eq('id', userId)
 
   // Extend referrer
   const { data: referrer } = await supabaseAdmin
     .from('profiles')
     .select('subscription_end, subscription_status, referral_bonus_days, referral_count')
-    .eq('id', referral.referrer_id).maybeSingle()
+    .eq('id', referral.referrer_id)
+    .maybeSingle()
 
   if (referrer?.subscription_end && referrer.subscription_status !== 'inactive') {
-    const d = new Date(referrer.subscription_end)
-    d.setDate(d.getDate() + BONUS)
-    await supabaseAdmin.from('profiles').update({
-      subscription_end: d.toISOString(),
-      referral_count: (referrer.referral_count || 0) + 1,
-    }).eq('id', referral.referrer_id)
+    const refEnd = new Date(referrer.subscription_end)
+    refEnd.setDate(refEnd.getDate() + BONUS_DAYS)
+    await supabaseAdmin
+      .from('profiles')
+      .update({
+        subscription_end: refEnd.toISOString(),
+        referral_count:   (referrer.referral_count || 0) + 1,
+      })
+      .eq('id', referral.referrer_id)
   } else {
-    await supabaseAdmin.from('profiles').update({
-      referral_bonus_days: (referrer?.referral_bonus_days || 0) + BONUS,
-      referral_count:      (referrer?.referral_count || 0) + 1,
-    }).eq('id', referral.referrer_id)
+    await supabaseAdmin
+      .from('profiles')
+      .update({
+        referral_bonus_days: (referrer?.referral_bonus_days || 0) + BONUS_DAYS,
+        referral_count:      (referrer?.referral_count || 0) + 1,
+      })
+      .eq('id', referral.referrer_id)
   }
 
-  await supabaseAdmin.from('referrals')
+  await supabaseAdmin
+    .from('referrals')
     .update({ status: 'rewarded', rewarded_at: new Date().toISOString() })
     .eq('id', referral.id)
 
@@ -230,8 +255,8 @@ async function processReferral(userId: string) {
     await supabaseAdmin.from('notifications').insert({
       user_id: referral.referrer_id,
       type:    'referral_reward',
-      title:   '🎉 Referral reward unlocked!',
-      message: `Someone you referred just subscribed. You both received ${BONUS} bonus days.`,
+      title:   'Referral reward unlocked! 🎉',
+      message: `Someone you referred just subscribed. You both received ${BONUS_DAYS} bonus days.`,
       link:    '/referral',
     })
   } catch (_) {}

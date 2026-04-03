@@ -1,19 +1,16 @@
 'use client'
 
 // ================================================================
-// app/checkout/page.tsx  — NEW PAYMENT SYSTEM v2
+// app/checkout/page.tsx  — PAYMENT SYSTEM v3
 // ================================================================
-// Flow: Signup → Onboarding → /checkout → /dashboard
+// Flow:  /onboarding → /checkout → PaystackPop popup → /dashboard
 //
-// Features:
-//   • B2C plans only (Explorer, Builder, Climber)
-//   • Monthly / Annual billing toggle
-//   • Promo codes (manual entry + auto-apply from DB)
-//   • 100% promo → instant free activation, no Paystack popup
-//   • Partial promo → price shown discounted, Paystack still opens
-//   • After payment → /dashboard (no intermediate page)
-//   • "Continue with free plan" escape hatch
-//   • Dark/light theme synced with app
+// API calls:
+//   POST /api/pay/start   → { accessCode, reference }
+//   POST /api/pay/confirm → { success, plan }
+//
+// Plan IDs (match profiles.subscription_plan):
+//   explorer | builder | climber
 // ================================================================
 
 import { useState, useEffect, useRef } from 'react'
@@ -25,8 +22,8 @@ import { PLAN_PRICING, MAX_YEARLY_SAVINGS } from '@/lib/pricing'
 type BillingCycle = 'monthly' | 'annual'
 
 interface Plan {
-  id:           string
-  name:         string
+  id:           string   // matches profiles.subscription_plan
+  name:         string   // display name
   description:  string
   stage:        string
   stageColor:   string
@@ -36,9 +33,11 @@ interface Plan {
   highlighted?: boolean
 }
 
+// Plan order: explorer → builder → climber
+// Prices pulled from lib/pricing.ts (single source of truth)
 const PLANS: Plan[] = [
   {
-    id:           'builder',
+    id:           'explorer',
     name:         'Explorer',
     description:  'For those just starting to find their path.',
     stage:        'EXPLORER',
@@ -46,7 +45,7 @@ const PLANS: Plan[] = [
     monthlyPrice: PLAN_PRICING[0].monthlyPrice,
     yearlyPrice:  PLAN_PRICING[0].yearlyPrice,
     features: [
-      'Sage — 10 sessions/month',
+      'Sage AI — 10 sessions/month',
       '1 mentorship circle',
       'Mentor session recordings',
       'Playbooks & frameworks library',
@@ -55,7 +54,7 @@ const PLANS: Plan[] = [
     ],
   },
   {
-    id:           'pro',
+    id:           'builder',
     name:         'Builder',
     description:  'For professionals building their career edge.',
     stage:        'BUILDER',
@@ -63,7 +62,7 @@ const PLANS: Plan[] = [
     monthlyPrice: PLAN_PRICING[1].monthlyPrice,
     yearlyPrice:  PLAN_PRICING[1].yearlyPrice,
     features: [
-      'Sage — unlimited sessions',
+      'Sage AI — unlimited sessions',
       'Up to 3 mentorship circles',
       'Live mentor sessions (monthly)',
       'Human mentor matching',
@@ -75,7 +74,7 @@ const PLANS: Plan[] = [
     highlighted: true,
   },
   {
-    id:           'elite',
+    id:           'climber',
     name:         'Climber',
     description:  'For leaders scaling teams and building legacy.',
     stage:        'CLIMBER',
@@ -95,7 +94,6 @@ const PLANS: Plan[] = [
   },
 ]
 
-// Paystack global type
 declare global {
   interface Window {
     PaystackPop?: {
@@ -113,32 +111,22 @@ export default function CheckoutPage() {
   const searchParams = useSearchParams()
   const supabase     = useRef(createClient()).current
 
-  // ── State ─────────────────────────────────────────────────────
-  const [isDark,    setIsDark]    = useState(true)
-  const [user,      setUser]      = useState<any>(null)
-  const [profile,   setProfile]   = useState<any>(null)
+  // ── State ──────────────────────────────────────────────────────
+  const [isDark,       setIsDark]       = useState(true)
+  const [user,         setUser]         = useState<any>(null)
+  const [profile,      setProfile]      = useState<any>(null)
+  const [billing,      setBilling]      = useState<BillingCycle>(
+    (searchParams.get('billing') as BillingCycle) ?? 'monthly'
+  )
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(
+    searchParams.get('plan')
+  )
+  const [loading,      setLoading]      = useState(false)
+  const [error,        setError]        = useState('')
+  const [success,      setSuccess]      = useState('')
+  const [goingFree,    setGoingFree]    = useState(false)
 
-  const planFromUrl    = searchParams.get('plan')
-  const billingFromUrl = (searchParams.get('billing') ?? 'monthly') as BillingCycle
-  const [billing,      setBilling]      = useState<BillingCycle>(billingFromUrl)
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(planFromUrl)
-
-  // Promo state
-  const [promoInput,   setPromoInput]   = useState('')
-  const [promoApplied, setPromoApplied] = useState<{ code: string; discount: number; label: string; isFree: boolean } | null>(null)
-  const [promoError,   setPromoError]   = useState('')
-  const [promoLoading, setPromoLoading] = useState(false)
-  const [autoPromo,    setAutoPromo]    = useState<{ code: string; discount: number; label: string; expires_at: string | null } | null>(null)
-  const [countdown,    setCountdown]    = useState('')
-  const [offerExpired, setOfferExpired] = useState(false)
-
-  // Payment state
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState('')
-  const [success,  setSuccess]  = useState('')
-  const [goingFree, setGoingFree] = useState(false)
-
-  // ── Theme ──────────────────────────────────────────────────────
+  // ── Theme sync ─────────────────────────────────────────────────
   useEffect(() => {
     const stored = localStorage.getItem('asc-theme')
     setIsDark(stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -149,7 +137,7 @@ export default function CheckoutPage() {
     return () => window.removeEventListener('storage', onStorage)
   }, [])
 
-  // ── Auth + profile ────────────────────────────────────────────
+  // ── Auth + profile ─────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -161,38 +149,7 @@ export default function CheckoutPage() {
     load()
   }, [supabase, router])
 
-  // ── Auto-apply promo ──────────────────────────────────────────
-  useEffect(() => {
-    fetch('/api/pay/promo').then(r => r.json()).then(({ promo }) => {
-      if (promo) {
-        setAutoPromo(promo)
-        setPromoApplied({ code: promo.code, discount: promo.discount, label: promo.label, isFree: promo.discount >= 1.0 })
-      }
-    }).catch(() => {})
-  }, [])
-
-  // ── Countdown timer ───────────────────────────────────────────
-  useEffect(() => {
-    if (!autoPromo?.expires_at) return
-    const tick = () => {
-      const diff = new Date(autoPromo.expires_at!).getTime() - Date.now()
-      if (diff <= 0) {
-        setOfferExpired(true); setCountdown('00:00:00')
-        setPromoApplied(null); setAutoPromo(null); return
-      }
-      const d = Math.floor(diff / 86400000)
-      const h = Math.floor((diff % 86400000) / 3600000)
-      const m = Math.floor((diff % 3600000)  / 60000)
-      const s = Math.floor((diff % 60000)    / 1000)
-      const p = (n: number) => String(n).padStart(2, '0')
-      setCountdown(d > 0 ? `${d}d ${p(h)}:${p(m)}:${p(s)}` : `${p(h)}:${p(m)}:${p(s)}`)
-    }
-    tick()
-    const t = setInterval(tick, 1000)
-    return () => clearInterval(t)
-  }, [autoPromo])
-
-  // ── Preload Paystack script ───────────────────────────────────
+  // ── Preload Paystack script ────────────────────────────────────
   useEffect(() => {
     if (!document.getElementById('ps-script')) {
       const s = document.createElement('script')
@@ -201,82 +158,22 @@ export default function CheckoutPage() {
     }
   }, [])
 
-  // ── Helpers ───────────────────────────────────────────────────
-  function getDisplayPrice(plan: Plan): number {
-    const base = billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
-    if (promoApplied) return Math.round(base * (1 - promoApplied.discount))
-    return base
-  }
-
-  function getOriginalPrice(plan: Plan): number {
-    return billing === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
-  }
-
+  // ── Price helpers ──────────────────────────────────────────────
   function getMonthlyDisplay(plan: Plan): number {
-    return billing === 'monthly' ? getDisplayPrice(plan) : Math.round(getDisplayPrice(plan) / 12)
+    return billing === 'monthly' ? plan.monthlyPrice : Math.round(plan.yearlyPrice / 12)
   }
 
-  // ── Promo validation ──────────────────────────────────────────
-  async function applyPromo() {
-    const code = promoInput.trim().toUpperCase()
-    if (!code) return
-    setPromoError(''); setPromoApplied(null); setPromoLoading(true)
-    try {
-      const res  = await fetch('/api/pay/promo', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ code }),
-      })
-      const data = await res.json()
-      if (!res.ok || !data.valid) {
-        setPromoError(data.error || 'Invalid promo code.')
-      } else {
-        setPromoApplied({ code: data.code, discount: data.discount, label: data.label, isFree: data.isFree })
-      }
-    } catch {
-      setPromoError('Could not validate code. Please try again.')
-    } finally {
-      setPromoLoading(false)
-    }
-  }
-
-  // ── 100% promo: free activation, no Paystack ──────────────────
-  async function activateFree(planId: string) {
-    if (!promoApplied?.code) return
-    setLoading(true); setError('')
-    try {
-      const res  = await fetch('/api/pay/activate-free', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ planId, promoCode: promoApplied.code }),
-      })
-      const data = await res.json()
-      if (res.ok && data.success) {
-        setSuccess('Account activated! Taking you to your dashboard…')
-        setTimeout(() => router.push('/dashboard'), 1500)
-      } else {
-        setError(data.error || 'Activation failed. Please try again.')
-        setLoading(false)
-      }
-    } catch {
-      setError('Activation failed. Please try again.')
-      setLoading(false)
-    }
-  }
-
-  // ── Main payment handler ──────────────────────────────────────
+  // ── Main payment handler ───────────────────────────────────────
   async function handleSelectPlan(planId: string) {
     if (!user) { router.push('/login?redirect=/checkout'); return }
-    setSelectedPlan(planId); setLoading(true); setError(''); setSuccess('')
 
-    // 100% promo → free activation, skip Paystack entirely
-    if (promoApplied?.isFree) {
-      await activateFree(planId)
-      return
-    }
+    setSelectedPlan(planId)
+    setLoading(true)
+    setError('')
+    setSuccess('')
 
     try {
-      // Step 1: Initialize on server
+      // ── Step 1: Initialize on server ─────────────────────────────
       const startRes = await fetch('/api/pay/start', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -289,16 +186,18 @@ export default function CheckoutPage() {
       }
 
       const { accessCode, reference } = await startRes.json()
+
       if (!accessCode || !reference) {
         throw new Error('Payment setup returned incomplete data. Please try again.')
       }
 
-      // Step 2: Wait for Paystack to be ready
+      // ── Step 2: Wait for Paystack script ─────────────────────────
       if (!window.PaystackPop) {
         await new Promise<void>((resolve, reject) => {
-          const el = document.getElementById('ps-script') as HTMLScriptElement
-          if (el) { el.onload = () => resolve(); el.onerror = () => reject(new Error('Paystack failed to load')) }
-          else reject(new Error('Paystack script not found'))
+          const el = document.getElementById('ps-script') as HTMLScriptElement | null
+          if (!el) { reject(new Error('Paystack script not found')); return }
+          el.onload = () => resolve()
+          el.onerror = () => reject(new Error('Paystack script failed to load'))
         })
       }
 
@@ -306,18 +205,20 @@ export default function CheckoutPage() {
         throw new Error('Payment system unavailable. Please refresh and try again.')
       }
 
-      // Step 3: Open popup
+      // ── Step 3: Open Paystack inline popup ───────────────────────
       const handler = window.PaystackPop.setup({
         key:         process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
         access_code: accessCode,
         ref:         reference,
+
         onClose: () => {
           setLoading(false)
           setSelectedPlan(null)
-          setError('Payment was not completed. Try again whenever you\'re ready.')
+          setError("Payment was not completed. Try again whenever you're ready.")
         },
+
         callback: async (response: { reference: string }) => {
-          // Step 4: Confirm on server
+          // ── Step 4: Confirm on server ─────────────────────────────
           try {
             const confirmRes = await fetch('/api/pay/confirm', {
               method:  'POST',
@@ -328,13 +229,14 @@ export default function CheckoutPage() {
 
             if (confirmRes.ok && confirmData.success) {
               setSuccess('Payment confirmed! Taking you to your dashboard…')
-              setTimeout(() => router.push('/dashboard'), 1500)
+              setTimeout(() => router.push('/dashboard?welcome=1'), 1500)
             } else {
-              // Payment went through but confirm had an issue — webhook will reconcile
+              // Payment went through but confirm had an issue.
+              // Webhook will reconcile — send user to dashboard.
               router.push('/dashboard?payment=processing')
             }
           } catch {
-            // Same — webhook will reconcile
+            // Same — webhook is the safety net
             router.push('/dashboard?payment=processing')
           } finally {
             setLoading(false)
@@ -354,7 +256,7 @@ export default function CheckoutPage() {
 
   const isCurrentPlan = (planId: string) => profile?.subscription_plan === planId
 
-  // ── Render ────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────
   return (
     <>
       <style>{`
@@ -396,14 +298,11 @@ export default function CheckoutPage() {
           background-size: 48px 48px; pointer-events: none; z-index: 0;
         }
 
-        /* Nav */
         .co-nav {
           display: flex; align-items: center; justify-content: space-between;
           padding: 16px 32px; border-bottom: 1px solid var(--bord);
           background: var(--bg); position: sticky; top: 0; z-index: 20;
         }
-
-        /* Hero */
         .co-hero { max-width: 680px; margin: 0 auto; padding: 64px 24px 0; text-align: center; position: relative; z-index: 1; }
         .co-hero-badge {
           display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px;
@@ -419,7 +318,6 @@ export default function CheckoutPage() {
         .co-hero-heading em { font-style: italic; color: #E8A020; }
         .co-hero-sub { font-size: 15px; color: var(--text-muted); line-height: 1.65; max-width: 460px; margin: 0 auto 40px; }
 
-        /* Billing toggle */
         .co-billing {
           display: inline-flex; background: var(--toggle-bg); border: 1px solid var(--bord);
           border-radius: 12px; padding: 4px; margin-bottom: 56px;
@@ -434,7 +332,6 @@ export default function CheckoutPage() {
         .on  .co-save-pill { background: rgba(12,11,8,0.25); color: #0C0B08; }
         .off .co-save-pill { background: rgba(232,160,32,0.1); color: #E8A020; }
 
-        /* Plans */
         .co-plans {
           max-width: 1080px; margin: 0 auto; padding: 0 24px 48px;
           display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; position: relative; z-index: 1;
@@ -449,14 +346,12 @@ export default function CheckoutPage() {
         .co-plan:hover { transform: translateY(-4px); }
         .co-plan-hl    { border: 2px solid rgba(232,160,32,0.35) !important; }
         .co-plan-glow  { position: absolute; top: -80px; right: -80px; width: 200px; height: 200px; border-radius: 50%; filter: blur(60px); pointer-events: none; }
-
         .co-popular {
           position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
           padding: 4px 16px; border-radius: 100px; white-space: nowrap;
           font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
           background: #E8A020; color: #0C0B08;
         }
-
         .co-stage {
           display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
           border-radius: 100px; margin-bottom: 20px; width: fit-content;
@@ -470,7 +365,6 @@ export default function CheckoutPage() {
         .co-price-num { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 700; color: var(--price); line-height: 1; letter-spacing: -1px; }
         .co-price-per { font-size: 13px; color: var(--text-muted); align-self: flex-end; margin-bottom: 4px; }
         .co-price-note { font-size: 11px; color: var(--text-faint); margin-top: 5px; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; }
-        .co-price-strike { font-family: 'DM Mono', monospace; font-size: 13px; color: #4A4438; text-decoration: line-through; letter-spacing: 0.04em; }
 
         .co-features { list-style: none; flex: 1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
         .co-feature  { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text-mid); line-height: 1.5; }
@@ -491,40 +385,10 @@ export default function CheckoutPage() {
         .co-cta:disabled { opacity: 0.4; cursor: not-allowed; }
         .co-cta-note { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: #4A4438; text-align: center; margin-top: 8px; }
 
-        /* Promo */
-        .co-promo-wrap { max-width: 440px; margin: 0 auto 28px; padding: 0 24px; position: relative; z-index: 1; }
-        .co-promo-card { background: var(--card); border: 1px solid var(--bord); border-radius: 14px; padding: 20px 22px; }
-        .co-promo-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 12px; }
-        .co-promo-row   { display: flex; gap: 8px; }
-        .co-promo-input {
-          flex: 1; padding: 11px 14px; border-radius: 9px; border: 1px solid var(--bord);
-          background: var(--input-bg); color: var(--input-text);
-          font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
-          outline: none; transition: border-color 0.2s;
-        }
-        .co-promo-input:focus { border-color: rgba(232,160,32,0.5); }
-        .co-promo-btn { padding: 11px 18px; border-radius: 9px; border: none; background: #E8A020; color: #0C0B08; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
-        .co-promo-ok  { font-family: 'DM Mono', monospace; font-size: 11px; color: #14B8A6; margin-top: 8px; }
-        .co-promo-err { font-family: 'DM Mono', monospace; font-size: 11px; color: #EF4444; margin-top: 8px; }
-
-        /* Offer banner */
-        .co-offer { max-width: 880px; margin: 0 auto 28px; padding: 0 24px; position: relative; z-index: 1; }
-        .co-offer-inner {
-          background: linear-gradient(135deg, rgba(232,160,32,0.12), rgba(232,160,32,0.06));
-          border: 1.5px solid rgba(232,160,32,0.35); border-radius: 16px; padding: 20px 24px;
-          display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-        }
-        .co-offer-badge { background: #E8A020; color: #0C0B08; font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; }
-        .co-offer-label { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--heading); margin-bottom: 3px; }
-        .co-offer-sub   { font-family: 'DM Mono', monospace; font-size: 10px; color: #E8A020; letter-spacing: 0.08em; }
-        .co-offer-timer { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 700; color: #E8A020; }
-
-        /* Alerts */
         .co-alerts { max-width: 440px; margin: 0 auto 20px; padding: 0 24px; position: relative; z-index: 1; }
         .co-error   { padding: 13px 16px; border-radius: 10px; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); color: #EF4444; font-size: 13px; }
         .co-success { padding: 13px 16px; border-radius: 10px; background: rgba(20,184,166,0.06); border: 1px solid rgba(20,184,166,0.2); color: #14B8A6; font-size: 13px; }
 
-        /* Trust */
         .co-trust { max-width: 680px; margin: 0 auto; padding: 28px 24px 72px; text-align: center; position: relative; z-index: 1; border-top: 1px solid var(--bord); }
         .co-trust-items { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 18px; }
         .co-trust-item  { display: flex; align-items: center; gap: 7px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: var(--text-muted); }
@@ -547,7 +411,7 @@ export default function CheckoutPage() {
             </span>
           </Link>
           <a href="/onboarding" style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: 'var(--text-muted)', textDecoration: 'none', padding: '7px 14px', borderRadius: 8, border: '1px solid var(--bord)' }}>
-            ← Back
+            Back
           </a>
           <button
             onClick={() => { const n = isDark ? 'light' : 'dark'; setIsDark(!isDark); localStorage.setItem('asc-theme', n) }}
@@ -585,37 +449,16 @@ export default function CheckoutPage() {
           {billing === 'monthly' && (
             <p style={{ fontSize: 12, color: '#7A7260', marginTop: 10 }}>
               Switch to annual and save up to{' '}
-              <span style={{ color: '#E8A020', fontWeight: 600 }}>₦{MAX_YEARLY_SAVINGS.toLocaleString()}/year</span>
+              <span style={{ color: '#E8A020', fontWeight: 600 }}>&#8358;{MAX_YEARLY_SAVINGS.toLocaleString()}/year</span>
             </p>
           )}
         </div>
-
-        {/* Auto-promo banner */}
-        {autoPromo && !offerExpired && (
-          <div className="co-offer">
-            <div className="co-offer-inner">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div className="co-offer-badge">{Math.round(autoPromo.discount * 100)}% OFF</div>
-                <div>
-                  <div className="co-offer-label">{autoPromo.label}</div>
-                  <div className="co-offer-sub">Limited time · prices shown already discounted</div>
-                </div>
-              </div>
-              {autoPromo.expires_at && countdown && (
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.12em', marginBottom: 6 }}>OFFER EXPIRES IN</div>
-                  <div className="co-offer-timer">{countdown}</div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Alerts */}
         {(error || success) && (
           <div className="co-alerts">
             {error   && <div className="co-error">{error}</div>}
-            {success && <div className="co-success">✓ {success}</div>}
+            {success && <div className="co-success">&#10003; {success}</div>}
           </div>
         )}
 
@@ -623,8 +466,6 @@ export default function CheckoutPage() {
         <div className="co-plans">
           {PLANS.map(plan => {
             const monthly  = getMonthlyDisplay(plan)
-            const hasPromo = !!promoApplied
-            const origMo   = billing === 'monthly' ? plan.monthlyPrice : Math.round(plan.yearlyPrice / 12)
             const current  = isCurrentPlan(plan.id)
             const spinning = loading && selectedPlan === plan.id
 
@@ -643,33 +484,18 @@ export default function CheckoutPage() {
 
                 {/* Price */}
                 <div style={{ marginBottom: 24 }}>
-                  {hasPromo && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span className="co-price-strike">₦{origMo.toLocaleString()}/mo</span>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: 'rgba(232,160,32,0.12)', color: '#E8A020', border: '1px solid rgba(232,160,32,0.25)', letterSpacing: '0.06em' }}>
-                        -{Math.round(promoApplied!.discount * 100)}% OFF
-                      </span>
-                    </div>
-                  )}
                   <div className="co-price-row">
-                    <span className="co-price-sym">₦</span>
-                    <span className="co-price-num" style={{ color: hasPromo ? '#E8A020' : undefined }}>
-                      {monthly.toLocaleString()}
-                    </span>
+                    <span className="co-price-sym">&#8358;</span>
+                    <span className="co-price-num">{monthly.toLocaleString()}</span>
                     <span className="co-price-per">/mo</span>
                   </div>
                   {billing === 'annual' && (
-                    <p className="co-price-note">
-                      {hasPromo
-                        ? <><span style={{ textDecoration: 'line-through', color: '#4A4438', marginRight: 6 }}>₦{plan.yearlyPrice.toLocaleString()}</span><span style={{ color: '#E8A020' }}>₦{getDisplayPrice(plan).toLocaleString()} BILLED ANNUALLY</span></>
-                        : <>₦{plan.yearlyPrice.toLocaleString()} BILLED ANNUALLY</>
-                      }
-                    </p>
+                    <p className="co-price-note">&#8358;{plan.yearlyPrice.toLocaleString()} BILLED ANNUALLY</p>
                   )}
-                  {!hasPromo && billing === 'annual' && (
+                  {billing === 'annual' && (
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6, padding: '3px 10px', borderRadius: 20, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
                       <span style={{ color: '#10B981', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "'DM Mono', monospace" }}>
-                        ✓ SAVE ₦{yearlySavings(plan).toLocaleString()}/YR
+                        &#10003; SAVE &#8358;{yearlySavings(plan).toLocaleString()}/YR
                       </span>
                     </div>
                   )}
@@ -679,7 +505,7 @@ export default function CheckoutPage() {
                 <ul className="co-features">
                   {plan.features.map((f, i) => (
                     <li key={i} className="co-feature">
-                      <span className="co-feat-chk" style={{ background: `${plan.stageColor}12`, color: plan.stageColor }}>✓</span>
+                      <span className="co-feat-chk" style={{ background: `${plan.stageColor}12`, color: plan.stageColor }}>&#10003;</span>
                       {f}
                     </li>
                   ))}
@@ -700,7 +526,7 @@ export default function CheckoutPage() {
                     : { background: `${plan.stageColor}14`, color: plan.stageColor, border: `1px solid ${plan.stageColor}25` }
                   }
                 >
-                  {spinning ? 'Opening payment…' : current ? '✓ Current Plan' : promoApplied?.isFree ? 'Activate Free' : 'Start 7-day trial'}
+                  {spinning ? 'Opening payment…' : current ? '&#10003; Current Plan' : 'Start 7-day trial'}
                 </button>
 
                 {!current && <p className="co-cta-note">7-DAY FREE TRIAL · CANCEL ANYTIME</p>}
@@ -713,43 +539,16 @@ export default function CheckoutPage() {
         {(!profile?.subscription_plan || profile?.subscription_plan === 'free') && (
           <div style={{ textAlign: 'center', marginTop: 20, marginBottom: 32, position: 'relative', zIndex: 1 }}>
             <button
-              onClick={async () => {
-                setGoingFree(true)
-                router.push('/dashboard')
-              }}
+              onClick={() => { setGoingFree(true); router.push('/dashboard') }}
               disabled={goingFree}
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: '0.05em', color: '#4A4438', textDecoration: 'underline', opacity: goingFree ? 0.5 : 1 }}
             >
-              {goingFree ? 'Going to dashboard…' : 'Not ready yet? Continue with the free plan →'}
+              {goingFree ? 'Going to dashboard…' : 'Not ready yet? Continue with the free plan'}
             </button>
           </div>
         )}
 
-        {/* Manual promo code entry (hidden if auto-promo applied) */}
-        {!autoPromo && (
-          <div className="co-promo-wrap">
-            <div className="co-promo-card">
-              <p className="co-promo-label">Have a promo code?</p>
-              <div className="co-promo-row">
-                <input
-                  type="text"
-                  value={promoInput}
-                  onChange={e => { setPromoInput(e.target.value); setPromoError(''); if (!e.target.value) setPromoApplied(null) }}
-                  placeholder="ENTER CODE"
-                  className="co-promo-input"
-                  onKeyDown={e => e.key === 'Enter' && applyPromo()}
-                />
-                <button onClick={applyPromo} disabled={promoLoading} className="co-promo-btn">
-                  {promoLoading ? '…' : 'Apply'}
-                </button>
-              </div>
-              {promoApplied && !autoPromo && <p className="co-promo-ok">✓ {promoApplied.label}</p>}
-              {promoError && <p className="co-promo-err">✗ {promoError}</p>}
-            </div>
-          </div>
-        )}
-
-        {/* Trust */}
+        {/* Trust bar */}
         <div className="co-trust">
           <div className="co-trust-items">
             {[
@@ -763,7 +562,7 @@ export default function CheckoutPage() {
           </div>
           <p className="co-trust-note">
             Prices in NGN · 7-day money-back guarantee.{' '}
-            Questions? <a href="mailto:asamuel@ascentorbi.com" className="co-trust-link">hello@ascentorbi.com</a>
+            Questions? <a href="mailto:hello@ascentorbi.com" className="co-trust-link">hello@ascentorbi.com</a>
           </p>
         </div>
 

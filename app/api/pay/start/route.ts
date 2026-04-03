@@ -1,70 +1,123 @@
 // ================================================================
-// POST /api/pay/start  — NEW PAYMENT SYSTEM v2
+// POST /api/pay/start  — PAYMENT SYSTEM v3 (CLEAN REBUILD)
 // ================================================================
-// Called by checkout/page.tsx before opening the Paystack popup.
+// Single entry point for all B2C checkout.
+// Used by: app/checkout/page.tsx
 //
-// Rules:
-//   • Auth: user MUST be logged in (session cookie)
-//   • Sends ONLY { email, plan } to Paystack — NO currency, NO amount
-//   • Returns { accessCode, reference } to the client
-//   • Logs the attempt in payment_attempts for plan reconciliation
+// Flow:
+//   1. Auth check (session cookie — never trust body)
+//   2. Validate planId + billing
+//   3. Call Paystack initialize with plan code + metadata
+//   4. Log pending attempt to payment_attempts
+//   5. Return { accessCode, reference } to client
 //
-// Why no currency/amount?
-//   Paystack plan codes carry amount + currency from the dashboard.
-//   Sending currency alongside a plan code triggers "Invalid Amount Sent".
+// Client then opens PaystackPop.setup({ access_code, ref }) inline popup.
+// After payment: POST /api/pay/confirm
 // ================================================================
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
-// Plan code map — single source of truth for Paystack plan codes
-const PLAN_CODES: Record<string, { monthly: string; annual: string }> = {
-  builder: { monthly: 'PLN_4v5qnnjk9rt6cdk', annual: 'PLN_vxl1wn9nirjic5j' },
-  pro:     { monthly: 'PLN_4gok25gn1vz20i0', annual: 'PLN_73hl3c3n3zxhh79' },
-  elite:   { monthly: 'PLN_ve92id76obworr6', annual: 'PLN_4gbyspguka7qn0h' },
+// ── Single source of truth for plan codes ────────────────────────────────────
+// Plan ID convention (matches profiles.subscription_plan and lib/pricing.ts):
+//   explorer → Explorer tier  (was 'builder' in old code)
+//   builder  → Builder tier   (was 'pro' in old code)
+//   climber  → Climber tier   (was 'elite' in old code)
+//
+// To get your plan codes: Paystack Dashboard → Products → Plans
+// Then add them to your .env.local:
+//   PAYSTACK_PLAN_CODE_EXPLORER_MONTHLY=PLN_xxx
+//   PAYSTACK_PLAN_CODE_EXPLORER_ANNUAL=PLN_xxx
+//   PAYSTACK_PLAN_CODE_BUILDER_MONTHLY=PLN_xxx
+//   PAYSTACK_PLAN_CODE_BUILDER_ANNUAL=PLN_xxx
+//   PAYSTACK_PLAN_CODE_CLIMBER_MONTHLY=PLN_xxx
+//   PAYSTACK_PLAN_CODE_CLIMBER_ANNUAL=PLN_xxx
+// ─────────────────────────────────────────────────────────────────────────────
+const PLAN_CODES: Record<string, Record<string, string | undefined>> = {
+  explorer: {
+    monthly: process.env.PAYSTACK_PLAN_CODE_EXPLORER_MONTHLY,
+    annual:  process.env.PAYSTACK_PLAN_CODE_EXPLORER_ANNUAL,
+  },
+  builder: {
+    monthly: process.env.PAYSTACK_PLAN_CODE_BUILDER_MONTHLY,
+    annual:  process.env.PAYSTACK_PLAN_CODE_BUILDER_ANNUAL,
+  },
+  climber: {
+    monthly: process.env.PAYSTACK_PLAN_CODE_CLIMBER_MONTHLY,
+    annual:  process.env.PAYSTACK_PLAN_CODE_CLIMBER_ANNUAL,
+  },
 }
+
+const VALID_PLANS   = ['explorer', 'builder', 'climber'] as const
+const VALID_BILLING = ['monthly', 'annual'] as const
 
 export async function POST(req: NextRequest) {
   try {
-    // ── 1. Auth ───────────────────────────────────────────────────
+    // ── 1. Auth ──────────────────────────────────────────────────────────────
     const auth = await createAuthClient()
     const { data: { user }, error: authErr } = await auth.auth.getUser()
     if (authErr || !user?.email) {
-      return NextResponse.json({ error: 'You must be logged in to subscribe.' }, { status: 401 })
+      return NextResponse.json(
+        { error: 'You must be logged in to subscribe.' },
+        { status: 401 }
+      )
     }
 
-    // ── 2. Parse body ─────────────────────────────────────────────
-    const { planId, billing } = await req.json()
+    // ── 2. Validate body ─────────────────────────────────────────────────────
+    const body = await req.json().catch(() => ({}))
+    const { planId, billing } = body as { planId: string; billing: string }
 
-    if (!planId || !PLAN_CODES[planId]) {
+    if (!VALID_PLANS.includes(planId as any)) {
       return NextResponse.json({ error: 'Invalid plan selected.' }, { status: 400 })
     }
-    if (billing !== 'monthly' && billing !== 'annual') {
+    if (!VALID_BILLING.includes(billing as any)) {
       return NextResponse.json({ error: 'Invalid billing cycle.' }, { status: 400 })
     }
 
-    const planCode = PLAN_CODES[planId][billing as 'monthly' | 'annual']
+    // ── 3. Resolve Paystack plan code ────────────────────────────────────────
+    const planCode = PLAN_CODES[planId]?.[billing]
 
-    // ── 3. Paystack key check ─────────────────────────────────────
-    const secret = process.env.PAYSTACK_SECRET_KEY
-    if (!secret) {
-      console.error('[pay/start] PAYSTACK_SECRET_KEY not configured')
-      return NextResponse.json({ error: 'Payment system is not configured. Contact support.' }, { status: 500 })
+    if (!planCode) {
+      console.error(`[pay/start] Missing env var for ${planId}/${billing}`)
+      return NextResponse.json(
+        { error: 'This plan is not yet available. Please contact support.' },
+        { status: 400 }
+      )
     }
 
-    // ── 4. Initialize Paystack transaction ────────────────────────
-    // CRITICAL: Only { email, plan } — no currency, no amount
+    // ── 4. Paystack key check ────────────────────────────────────────────────
+    const secret = process.env.PAYSTACK_SECRET_KEY
+    if (!secret) {
+      console.error('[pay/start] PAYSTACK_SECRET_KEY not set')
+      return NextResponse.json(
+        { error: 'Payment system is misconfigured. Contact support.' },
+        { status: 500 }
+      )
+    }
+
+    // ── 5. Initialize Paystack transaction ───────────────────────────────────
+    // CRITICAL: Only send { email, plan } — no amount, no currency.
+    // Paystack derives amount + currency from the plan code itself.
+    // Sending currency alongside a plan code causes "Invalid Amount Sent".
     const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
       method:  'POST',
-      headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
+      headers: {
+        Authorization:  `Bearer ${secret}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
         email: user.email,
         plan:  planCode,
         metadata: {
-          user_id: user.id,
-          plan_id: planId,
+          user_id:  user.id,
+          plan_id:  planId,
           billing,
+          // custom_fields render in Paystack dashboard receipts
+          custom_fields: [
+            { display_name: 'Plan',    variable_name: 'plan_id', value: planId },
+            { display_name: 'Billing', variable_name: 'billing', value: billing },
+          ],
         },
       }),
     })
@@ -79,11 +132,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── 5. Log pending attempt ────────────────────────────────────
+    const { access_code, reference } = psData.data
+
+    // ── 6. Log pending attempt (best-effort) ─────────────────────────────────
     try {
       await supabaseAdmin.from('payment_attempts').upsert({
         user_id:    user.id,
-        reference:  psData.data.reference,
+        reference,
         plan_id:    planId,
         billing,
         status:     'pending',
@@ -93,13 +148,14 @@ export async function POST(req: NextRequest) {
       console.warn('[pay/start] Could not log attempt (non-critical):', e)
     }
 
-    return NextResponse.json({
-      accessCode: psData.data.access_code,
-      reference:  psData.data.reference,
-    })
+    // ── 7. Return to client ──────────────────────────────────────────────────
+    return NextResponse.json({ accessCode: access_code, reference })
 
   } catch (err: any) {
     console.error('[pay/start] Unexpected error:', err)
-    return NextResponse.json({ error: 'An unexpected error occurred. Please try again.' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'An unexpected error occurred. Please try again.' },
+      { status: 500 }
+    )
   }
 }
