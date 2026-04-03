@@ -1,20 +1,24 @@
-// Ascentor Service Worker v2 — with Web Push
-const CACHE_NAME  = 'ascentor-v2';
+// Ascentor Service Worker v4
+// v4 changes: explicitly skip ALL non-GET requests (fixes POST /api/pay/start being swallowed)
+//             explicitly skip js.paystack.co (fixes CSP violation on SW fetch intercept)
+//             bumped CACHE_NAME so all v3 clients re-install immediately
+
+const CACHE_NAME  = 'ascentor-v4';   // <-- bumped from v3 — forces old SW to die
 const OFFLINE_URL = '/offline';
+const APP_ICON    = '/icons/icon-192.png';
+const BADGE_ICON  = '/icons/icon-96.png';
 
-const PRECACHE_URLS = ['/', '/dashboard', '/coach', '/offline', '/manifest.json'];
+const PRECACHE = ['/', '/dashboard', '/coach', '/offline', '/manifest.json'];
 
-// ═══ INSTALL ═══
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
-  );
-  self.skipWaiting();
+// ── Install ───────────────────────────────────────────────────
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(PRECACHE)));
+  self.skipWaiting();   // activate immediately, replacing any v3 SW
 });
 
-// ═══ ACTIVATE ═══
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
+// ── Activate ──────────────────────────────────────────────────
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
     caches.keys().then((names) =>
       Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)))
     )
@@ -22,23 +26,46 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// ═══ FETCH ═══
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
+// ── Fetch — network-first for HTML, cache-first for assets ────
+self.addEventListener('fetch', (e) => {
+  const { request } = e;
   const url = new URL(request.url);
 
+  // ── CRITICAL: Never intercept non-GET requests ────────────────
+  // POST /api/pay/start (and any other mutations) must go straight
+  // to the network. If the SW intercepts them it either returns a
+  // cached GET response or a body-already-used error, which the
+  // server receives as an empty body → planCode undefined →
+  // Paystack returns "Invalid Amount Sent".
+  if (request.method !== 'GET') return;
+
+  // ── Skip all API / auth routes ────────────────────────────────
   if (
-    request.method !== 'GET' ||
     url.pathname.startsWith('/api/') ||
-    url.pathname.startsWith('/auth/') ||
-    url.hostname.includes('supabase') ||
-    url.hostname.includes('anthropic')
+    url.pathname.startsWith('/auth/')
   ) return;
 
-  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|gif|webp|woff2?|ttf|ico)$/)) {
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
+  // ── Skip all external third-party origins ─────────────────────
+  // js.paystack.co must be fetched directly — the SW has no
+  // permission to cache cross-origin scripts and attempting to do
+  // so triggers a CSP violation that blocks the Paystack popup.
+  const PASSTHROUGH_HOSTS = [
+    'supabase.co',
+    'anthropic.com',
+    'googleapis.com',
+    'gstatic.com',
+    'paystack.co',     // <-- was missing in v3 — caused CSP violation
+    'plausible.io',
+    'bufferapp.com',
+    'cloudflare.com',
+  ];
+  if (PASSTHROUGH_HOSTS.some((h) => url.hostname.includes(h))) return;
+
+  // ── Static assets → cache-first ──────────────────────────────
+  if (/\.(js|css|png|jpg|jpeg|svg|gif|webp|woff2?|ttf|ico)$/.test(url.pathname)) {
+    e.respondWith(
+      caches.match(request).then((hit) => {
+        if (hit) return hit;
         return fetch(request).then((res) => {
           if (res.ok) caches.open(CACHE_NAME).then((c) => c.put(request, res.clone()));
           return res;
@@ -48,75 +75,98 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // ── HTML pages → network-first, fallback to cache / offline ──
   if (request.headers.get('accept')?.includes('text/html')) {
-    event.respondWith(
+    e.respondWith(
       fetch(request)
         .then((res) => {
           if (res.ok) caches.open(CACHE_NAME).then((c) => c.put(request, res.clone()));
           return res;
         })
-        .catch(() => caches.match(request).then((c) => c || caches.match(OFFLINE_URL)))
+        .catch(() =>
+          caches.match(request).then((hit) => hit || caches.match(OFFLINE_URL))
+        )
     );
     return;
   }
 
-  event.respondWith(fetch(request).catch(() => caches.match(request)));
+  // ── Everything else → network, fallback to cache ──────────────
+  e.respondWith(fetch(request).catch(() => caches.match(request)));
 });
 
-// ═══ PUSH — fires when server sends a push message ═══
-self.addEventListener('push', (event) => {
-  if (!event.data) return;
-
-  let data = {};
-  try { data = event.data.json(); } catch { data = { title: 'Ascentor', body: event.data.text() }; }
-
-  const { title = 'Ascentor', body = '', icon, url, tag, badge } = data;
-
-  const options = {
-    body,
-    icon:    icon  || '/icons/icon-192.png',
-    badge:         '/icons/icon-96.png',
-    tag:     tag   || 'ascentor-default',
-    data:    { url: url || '/dashboard' },
-    vibrate: [100, 50, 100],
-    requireInteraction: false,
-    actions: url ? [{ action: 'open', title: 'View' }] : [],
+// ── Push — show a native OS notification ──────────────────────
+// The server sends a JSON payload: { title, body, url, icon, tag }
+self.addEventListener('push', (e) => {
+  let payload = {
+    title: 'Ascentor',
+    body:  'You have a new update',
+    url:   '/dashboard',
+    icon:  APP_ICON,
+    tag:   'ascentor',
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
-});
+  try {
+    if (e.data) Object.assign(payload, e.data.json());
+  } catch {
+    if (e.data) payload.body = e.data.text();
+  }
 
-// ═══ NOTIFICATION CLICK ═══
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  const targetUrl = event.notification.data?.url || '/dashboard';
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If app is already open, focus it and navigate
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.focus();
-          client.navigate(targetUrl);
-          return;
-        }
-      }
-      // Otherwise open a new window
-      if (clients.openWindow) return clients.openWindow(targetUrl);
+  e.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body:               payload.body,
+      icon:               payload.icon || APP_ICON,
+      badge:              BADGE_ICON,
+      tag:                payload.tag,
+      renotify:           true,
+      requireInteraction: false,
+      data:               { url: payload.url },
+      vibrate:            [100, 60, 100],
+      actions: [
+        { action: 'open',    title: 'Open'    },
+        { action: 'dismiss', title: 'Dismiss' },
+      ],
     })
   );
 });
 
-// ═══ PUSH SUBSCRIPTION CHANGE (auto-renew) ═══
-self.addEventListener('pushsubscriptionchange', (event) => {
-  event.waitUntil(
-    self.registration.pushManager.subscribe({ userVisibleOnly: true })
+// ── Notification click — focus/open the app ───────────────────
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  if (e.action === 'dismiss') return;
+
+  const target = e.notification.data?.url || '/dashboard';
+
+  e.waitUntil(
+    clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((wins) => {
+        const existing = wins.find((w) => {
+          try { return new URL(w.url).origin === self.location.origin; }
+          catch { return false; }
+        });
+
+        if (existing) {
+          existing.navigate(target);
+          return existing.focus();
+        }
+        return clients.openWindow(target);
+      })
+  );
+});
+
+// ── Push subscription change — browser rotated keys ──────────
+self.addEventListener('pushsubscriptionchange', (e) => {
+  e.waitUntil(
+    self.registration.pushManager
+      .subscribe({ userVisibleOnly: true })
       .then((sub) =>
         fetch('/api/push/subscribe', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ subscription: sub }),
+          method:      'POST',
+          headers:     { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body:        JSON.stringify({ subscription: sub.toJSON() }),
         })
       )
+      .catch((err) => console.error('[sw] pushsubscriptionchange error:', err))
   );
 });

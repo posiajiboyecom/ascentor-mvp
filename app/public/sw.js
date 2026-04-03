@@ -1,6 +1,9 @@
-// Ascentor Service Worker v3
-// v3 changes: push + notificationclick handlers, subscription rotation
-const CACHE_NAME  = 'ascentor-v3';
+// Ascentor Service Worker v4
+// v4 changes: explicitly skip ALL non-GET requests (fixes POST /api/pay/start being swallowed)
+//             explicitly skip js.paystack.co (fixes CSP violation on SW fetch intercept)
+//             bumped CACHE_NAME so all v3 clients re-install immediately
+
+const CACHE_NAME  = 'ascentor-v4';   // <-- bumped from v3 — forces old SW to die
 const OFFLINE_URL = '/offline';
 const APP_ICON    = '/icons/icon-192.png';
 const BADGE_ICON  = '/icons/icon-96.png';
@@ -10,7 +13,7 @@ const PRECACHE = ['/', '/dashboard', '/coach', '/offline', '/manifest.json'];
 // ── Install ───────────────────────────────────────────────────
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(PRECACHE)));
-  self.skipWaiting();
+  self.skipWaiting();   // activate immediately, replacing any v3 SW
 });
 
 // ── Activate ──────────────────────────────────────────────────
@@ -28,17 +31,37 @@ self.addEventListener('fetch', (e) => {
   const { request } = e;
   const url = new URL(request.url);
 
-  // Skip: non-GET, API, auth, external services
+  // ── CRITICAL: Never intercept non-GET requests ────────────────
+  // POST /api/pay/start (and any other mutations) must go straight
+  // to the network. If the SW intercepts them it either returns a
+  // cached GET response or a body-already-used error, which the
+  // server receives as an empty body → planCode undefined →
+  // Paystack returns "Invalid Amount Sent".
+  if (request.method !== 'GET') return;
+
+  // ── Skip all API / auth routes ────────────────────────────────
   if (
-    request.method !== 'GET' ||
     url.pathname.startsWith('/api/') ||
-    url.pathname.startsWith('/auth/') ||
-    url.hostname.includes('supabase') ||
-    url.hostname.includes('anthropic') ||
-    url.hostname.includes('googleapis')
+    url.pathname.startsWith('/auth/')
   ) return;
 
-  // Static assets → cache-first
+  // ── Skip all external third-party origins ─────────────────────
+  // js.paystack.co must be fetched directly — the SW has no
+  // permission to cache cross-origin scripts and attempting to do
+  // so triggers a CSP violation that blocks the Paystack popup.
+  const PASSTHROUGH_HOSTS = [
+    'supabase.co',
+    'anthropic.com',
+    'googleapis.com',
+    'gstatic.com',
+    'paystack.co',     // <-- was missing in v3 — caused CSP violation
+    'plausible.io',
+    'bufferapp.com',
+    'cloudflare.com',
+  ];
+  if (PASSTHROUGH_HOSTS.some((h) => url.hostname.includes(h))) return;
+
+  // ── Static assets → cache-first ──────────────────────────────
   if (/\.(js|css|png|jpg|jpeg|svg|gif|webp|woff2?|ttf|ico)$/.test(url.pathname)) {
     e.respondWith(
       caches.match(request).then((hit) => {
@@ -52,7 +75,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // HTML pages → network-first, fallback to cache, then offline page
+  // ── HTML pages → network-first, fallback to cache / offline ──
   if (request.headers.get('accept')?.includes('text/html')) {
     e.respondWith(
       fetch(request)
@@ -67,6 +90,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
+  // ── Everything else → network, fallback to cache ──────────────
   e.respondWith(fetch(request).catch(() => caches.match(request)));
 });
 
@@ -97,7 +121,6 @@ self.addEventListener('push', (e) => {
       requireInteraction: false,
       data:               { url: payload.url },
       vibrate:            [100, 60, 100],
-      // action buttons (visible on Android, ignored on iOS)
       actions: [
         { action: 'open',    title: 'Open'    },
         { action: 'dismiss', title: 'Dismiss' },
@@ -117,7 +140,6 @@ self.addEventListener('notificationclick', (e) => {
     clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((wins) => {
-        // Focus any open window from this origin
         const existing = wins.find((w) => {
           try { return new URL(w.url).origin === self.location.origin; }
           catch { return false; }
@@ -133,8 +155,6 @@ self.addEventListener('notificationclick', (e) => {
 });
 
 // ── Push subscription change — browser rotated keys ──────────
-// This fires when the browser invalidates the old subscription
-// (rare but happens). We re-subscribe and save the new endpoint.
 self.addEventListener('pushsubscriptionchange', (e) => {
   e.waitUntil(
     self.registration.pushManager
