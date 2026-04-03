@@ -14,7 +14,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
-const VALID_PLANS = ['builder', 'pro', 'elite']
+// Accepts both legacy IDs (builder/pro/elite) and new v3 IDs (explorer/builder/climber)
+const VALID_PLANS = ['builder', 'pro', 'elite', 'explorer', 'climber']
 
 export async function POST(req: NextRequest) {
   try {
@@ -116,7 +117,13 @@ export async function POST(req: NextRequest) {
     }
 
 // ── 5. Notifications + audit ──────────────────────────────────
-const planNames: Record<string, string> = { builder: 'Explorer', pro: 'Builder', elite: 'Climber' }
+const planNames: Record<string, string> = {
+  builder:  'Explorer',
+  pro:      'Builder',
+  elite:    'Climber',
+  explorer: 'Explorer',
+  climber:  'Climber',
+}
 
 try {
   await supabaseAdmin.from('notifications').insert({

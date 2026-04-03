@@ -86,6 +86,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    console.log('[pay/start] plan codes loaded:', {
+  explorer_monthly: !!process.env.PAYSTACK_PLAN_CODE_EXPLORER_MONTHLY,
+  builder_monthly:  !!process.env.PAYSTACK_PLAN_CODE_BUILDER_MONTHLY,
+  climber_monthly:  !!process.env.PAYSTACK_PLAN_CODE_CLIMBER_MONTHLY,
+})
+
     // ── 4. Paystack key check ────────────────────────────────────────────────
     const secret = process.env.PAYSTACK_SECRET_KEY
     if (!secret) {

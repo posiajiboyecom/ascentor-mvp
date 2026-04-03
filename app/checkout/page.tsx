@@ -13,7 +13,7 @@
 //   explorer | builder | climber
 // ================================================================
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
@@ -109,7 +109,7 @@ function yearlySavings(plan: Plan) {
 export default function CheckoutPage() {
   const router       = useRouter()
   const searchParams = useSearchParams()
-  const supabase     = useRef(createClient()).current
+  const supabase = useMemo(() => createClient(), [])
 
   // ── State ──────────────────────────────────────────────────────
   const [isDark,       setIsDark]       = useState(true)
