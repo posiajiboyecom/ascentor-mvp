@@ -79,15 +79,14 @@ export async function POST(req: NextRequest) {
 
       // Atomic increment with optimistic concurrency check:
       // Only increment if current_uses hasn't changed since we read it.
-      // AFTER (correct)
-const { data: updated, error: updateError } = await supabase
-  .from('promo_codes')
-  .update({ current_uses: promo.current_uses + 1 })
-  .eq('id', promo.id)
-  .eq('current_uses', promo.current_uses) // optimistic lock
-  .select('id')
+      const { data: updated, error: updateError } = await supabaseAdmin
+        .from('promo_codes')
+        .update({ current_uses: promo.current_uses + 1 })
+        .eq('id', promo.id)
+        .eq('current_uses', promo.current_uses) // optimistic lock
+        .select('id')
 
-const count = updated?.length ?? 0
+      const count = updated?.length ?? 0
 
       if (!count || count === 0) {
         // Another request claimed the last use — re-check
