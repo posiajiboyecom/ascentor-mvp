@@ -4,9 +4,10 @@ import BottomNav from './BottomNav';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NotificationBell } from '@/components/Notifications';
 import { AppThemeProvider, useAppTheme } from '@/components/AppThemeProvider';
+import { usePlanSync } from '@/hooks/usePlanSync';
 
 // ─────────────────────────────────────────────────────────────────
 // ASCENTOR · AppShell · Brand Book v1.0 · 2026
@@ -65,16 +66,24 @@ function Shell({
   initials,
   isAdmin,
   chatLayout,
+  userId,
 }: {
   children: React.ReactNode;
   initials: string;
   isAdmin?: boolean;
   chatLayout?: boolean;
+  userId?: string;
 }) {
   const supabase        = createClient();
   const router          = useRouter();
   const { isDark }      = useAppTheme();
   const [showMenu, setShowMenu] = useState(false);
+
+  // ── Plan sync: detects admin-driven plan changes via Realtime ──
+  // When admin updates this user's subscription_plan in profiles,
+  // the hook calls router.refresh() + window.location.reload()
+  // so the user immediately gains (or loses) access to tiered routes.
+  usePlanSync(userId);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -221,15 +230,19 @@ export default function AppShell({
   initials = 'U',
   isAdmin = false,
   chatLayout = false,
+  userId,
 }: {
   children: React.ReactNode;
   initials?: string;
   isAdmin?: boolean;
   chatLayout?: boolean;
+  userId?: string;
 }) {
   return (
     <AppThemeProvider>
-      <Shell initials={initials} isAdmin={isAdmin} chatLayout={chatLayout}>{children}</Shell>
+      <Shell initials={initials} isAdmin={isAdmin} chatLayout={chatLayout} userId={userId}>
+        {children}
+      </Shell>
     </AppThemeProvider>
   );
 }

@@ -1,3 +1,8 @@
+// FILE: app/(app)/layout.tsx
+// Updated to pass userId to AppShell so the usePlanSync hook
+// can subscribe to Realtime profile changes for this specific user.
+// All other behaviour is unchanged.
+
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AppShell from '@/components/AppShell';
@@ -23,7 +28,7 @@ export default async function CoachLayout({ children }: { children: React.ReactN
   const isAdmin = ['admin', 'moderator'].includes(profile?.role || '');
 
   return (
-    <AppShell initials={initials} isAdmin={isAdmin}>
+    <AppShell initials={initials} isAdmin={isAdmin} userId={user.id}>
       {children}
     </AppShell>
   );
