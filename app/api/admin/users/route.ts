@@ -1,9 +1,10 @@
 // FILE: app/api/admin/users/route.ts
-// 'delete' action already implemented — no changes needed.
-// Cleans up: coaching_sessions, cohort_members, cohort_posts, cohort_replies,
-// cohort_votes, notifications, push_subscriptions, referrals,
-// session_registrations, goal_entries, then profiles, then auth.users.
-// Self-delete is blocked. Action is audit-logged.
+// FIX: change_plan action now:
+//   - Validates against explorer/builder/climber (not basic/standard/premium)
+//   - Sets subscription_end 1 year from today (was 30 days — expired too fast)
+//   - Sets billing_cycle = 'manual' to mark admin-granted access
+//   - Handles downgrade to 'free' correctly (nulls subscription_end)
+//   - Writes audit log entry with expiry date
 
 // ============================================================
 // ADMIN USERS API — /api/admin/users
@@ -175,16 +176,45 @@ export async function PATCH(req: NextRequest) {
       }
 
       case 'change_plan': {
+        const validPlans = ['free', 'explorer', 'builder', 'climber'];
+        if (!validPlans.includes(value)) {
+          return NextResponse.json({ error: 'Invalid plan. Must be: free, explorer, builder, or climber' }, { status: 400 });
+        }
+
+        if (value === 'free') {
+          // Downgrade to free — cancel subscription immediately
+          await supabase.from('profiles').update({
+            subscription_plan:   'free',
+            subscription_status: 'free',
+            subscription_end:    null,
+            updated_at:          new Date().toISOString(),
+          }).eq('id', targetUserId);
+          return NextResponse.json({ success: true, message: 'User moved to free plan' });
+        }
+
+        // Grant paid plan — set 1 year from today so access doesn't expire soon
         const subscriptionEnd = new Date();
-        subscriptionEnd.setDate(subscriptionEnd.getDate() + 30);
+        subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
+
         await supabase.from('profiles').update({
-          subscription_plan: value,
-          subscription_status: 'active',
-          subscription_end: subscriptionEnd.toISOString(),
-          updated_at: new Date().toISOString(),
+          subscription_plan:    value,
+          subscription_status:  'active',
+          subscription_end:     subscriptionEnd.toISOString(),
+          billing_cycle:        'manual',   // marks it as admin-granted, not a payment
+          updated_at:           new Date().toISOString(),
         }).eq('id', targetUserId);
 
-        return NextResponse.json({ success: true, message: `Plan updated to ${value}` });
+        try {
+          await supabase.from('audit_logs').insert({
+            user_id:     user.id,
+            action:      'user_plan_changed',
+            entity_type: 'user',
+            entity_id:   targetUserId,
+            details:     { new_plan: value, granted_by: user.email, expires: subscriptionEnd.toISOString() },
+          });
+        } catch { /* ignore */ }
+
+        return NextResponse.json({ success: true, message: `Plan set to ${value} (active until ${subscriptionEnd.toLocaleDateString()})` });
       }
 
       case 'delete': {

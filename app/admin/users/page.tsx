@@ -1,8 +1,5 @@
 // FILE: app/admin/users/page.tsx
-// ADDED: Delete button in table row (desktop + mobile) and inside user detail modal.
-//        Modal delete has a type-to-confirm safety guard (must type 'DELETE').
-//        Table row delete uses a two-step confirm() dialog.
-//        After delete: modal closes, list refreshes, success message shown.
+// FIX: Plan dropdown now shows explorer / builder / climber (not basic/standard/premium).
 
 'use client';
 
@@ -34,7 +31,7 @@ interface User {
 
 const ROLES = ['member', 'moderator', 'admin'];
 const STATUSES = ['', 'free', 'trialing', 'active', 'cancelled', 'past_due'];
-const PLANS = ['', 'free', 'basic', 'standard', 'premium'];
+const PLANS = ['', 'explorer', 'builder', 'climber'];
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);

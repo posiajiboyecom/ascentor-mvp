@@ -1,22 +1,21 @@
+// FILE: app/middleware/subscription-gate.ts
+// FIX: Replaced basic/standard/premium plan names with explorer/builder/climber.
+//      Added PLAN_ALIAS map so old DB values (basic→explorer, standard→builder,
+//      premium→climber) still resolve correctly for existing users.
+//      Plan limits updated to match subscriptionGuard.ts and session-limits.ts.
+
 // ============================================================
 // SUBSCRIPTION GATING MIDDLEWARE
 // Protects paid routes and enforces usage limits.
-// Wire into Next.js middleware.ts or use per-route.
 //
-// Free tier limits:
-//   - No /learn access
-//   - Max 3 community cohorts
-//   - Max 10 AI coaching sessions per day
-//
-// Trial users (trialing status) get full access.
-// Referral extends trial by +7 days per referral.
+// Canonical plan IDs: free | explorer | builder | climber
 // ============================================================
 
 import { createClient } from '@supabase/supabase-js';
 
 export interface SubscriptionStatus {
   hasAccess: boolean;
-  plan: string;             // 'free' | 'basic' | 'standard' | 'premium'
+  plan: string;             // 'free' | 'explorer' | 'builder' | 'climber'
   status: string;           // 'free' | 'trialing' | 'active' | 'cancelled' | 'past_due'
   isTrialing: boolean;
   trialDaysLeft: number;
@@ -34,33 +33,34 @@ export interface PlanLimits {
   advancedAnalytics: boolean;
 }
 
+// Canonical plan limits — aligned with subscriptionGuard.ts and session-limits.ts
 const PLAN_LIMITS: Record<string, PlanLimits> = {
   free: {
-    coachingSessionsPerDay: 10,
-    maxCommunities: 3,
+    coachingSessionsPerDay: 5,
+    maxCommunities: 1,
     learnAccess: false,
     expertSessionAccess: false,
     exportData: false,
     advancedAnalytics: false,
   },
-  basic: {
+  explorer: {
     coachingSessionsPerDay: 30,
-    maxCommunities: 10,
+    maxCommunities: 1,
     learnAccess: true,
     expertSessionAccess: true,
     exportData: false,
     advancedAnalytics: false,
   },
-  standard: {
-    coachingSessionsPerDay: 100,
-    maxCommunities: -1, // unlimited
+  builder: {
+    coachingSessionsPerDay: -1, // unlimited
+    maxCommunities: 3,
     learnAccess: true,
     expertSessionAccess: true,
     exportData: true,
     advancedAnalytics: true,
   },
-  premium: {
-    coachingSessionsPerDay: -1, // unlimited
+  climber: {
+    coachingSessionsPerDay: -1,
     maxCommunities: -1,
     learnAccess: true,
     expertSessionAccess: true,
@@ -68,6 +68,21 @@ const PLAN_LIMITS: Record<string, PlanLimits> = {
     advancedAnalytics: true,
   },
 };
+
+// Legacy aliases — maps old plan names to canonical ones
+const PLAN_ALIAS: Record<string, string> = {
+  basic:    'explorer',
+  standard: 'builder',
+  premium:  'climber',
+  pro:      'builder',
+  elite:    'climber',
+  tester:   'builder',
+};
+
+function resolvePlan(raw: string | null | undefined): string {
+  if (!raw) return 'free';
+  return PLAN_ALIAS[raw] ?? raw;
+}
 
 // Routes that require a paid subscription
 const PAID_ROUTES = ['/learn', '/courses'];
@@ -105,6 +120,7 @@ export async function getSubscriptionStatus(
 
   const { subscription_plan, subscription_status, subscription_end } = profile;
   const now = new Date();
+  const plan = resolvePlan(subscription_plan);
 
   // Check if subscription is active or trialing
   if (subscription_status === 'active' || subscription_status === 'trialing') {
@@ -112,7 +128,6 @@ export async function getSubscriptionStatus(
       const endDate = new Date(subscription_end);
       if (endDate > now) {
         const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        const plan = subscription_plan || 'standard';
         return {
           hasAccess: true,
           plan,
@@ -120,13 +135,12 @@ export async function getSubscriptionStatus(
           isTrialing: subscription_status === 'trialing',
           trialDaysLeft: subscription_status === 'trialing' ? daysLeft : 0,
           subscriptionEnd: subscription_end,
-          limits: PLAN_LIMITS[plan] || PLAN_LIMITS.standard,
+          limits: PLAN_LIMITS[plan] || PLAN_LIMITS.explorer,
         };
       }
       // Subscription expired — fall through to free
     } else {
-      // No end date but active — treat as active
-      const plan = subscription_plan || 'standard';
+      // No end date but active — treat as active (admin-granted or legacy)
       return {
         hasAccess: true,
         plan,
@@ -134,7 +148,7 @@ export async function getSubscriptionStatus(
         isTrialing: false,
         trialDaysLeft: 0,
         subscriptionEnd: null,
-        limits: PLAN_LIMITS[plan] || PLAN_LIMITS.standard,
+        limits: PLAN_LIMITS[plan] || PLAN_LIMITS.explorer,
       };
     }
   }
@@ -143,7 +157,6 @@ export async function getSubscriptionStatus(
   if (subscription_status === 'cancelled' && subscription_end) {
     const endDate = new Date(subscription_end);
     if (endDate > now) {
-      const plan = subscription_plan || 'standard';
       return {
         hasAccess: true,
         plan,
@@ -151,7 +164,7 @@ export async function getSubscriptionStatus(
         isTrialing: false,
         trialDaysLeft: 0,
         subscriptionEnd: subscription_end,
-        limits: PLAN_LIMITS[plan] || PLAN_LIMITS.standard,
+        limits: PLAN_LIMITS[plan] || PLAN_LIMITS.explorer,
         message: 'Your subscription is cancelled but active until the end of your billing period.',
       };
     }

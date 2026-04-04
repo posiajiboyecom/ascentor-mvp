@@ -1,3 +1,9 @@
+// FILE: app/onboarding/page.tsx
+// FIX: Added required WhatsApp phone number field to Step 1.
+//      Button stays disabled until whatsapp_phone is filled.
+//      Field is saved to profiles table via the existing upsert.
+//      NOTE: Run the SQL migration below if whatsapp_phone column doesn't exist.
+
 'use client';
 
 import { useState } from 'react';
@@ -31,6 +37,7 @@ export default function OnboardingPage() {
     goal_role: '',
     biggest_challenge: '',
     time_commitment: '15min',
+    whatsapp_phone: '',
   });
 
   const [goal, setGoal] = useState({
@@ -150,7 +157,7 @@ export default function OnboardingPage() {
     }
   };
 
-  const step1Valid = profile.full_name && profile.current_role && profile.industry && profile.goal_role;
+  const step1Valid = profile.full_name && profile.current_role && profile.industry && profile.goal_role && profile.whatsapp_phone;
   const step2Valid = goal.goal_text;
 
   return (
@@ -394,6 +401,27 @@ export default function OnboardingPage() {
                       {timeOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   </div>
+                </div>
+
+                <div className="ob-field">
+                  <label className="ob-label">WhatsApp Number <span style={{ color: '#E8A020' }}>*</span></label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{
+                      position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+                      fontSize: 18, pointerEvents: 'none', lineHeight: 1,
+                    }}>📱</span>
+                    <input
+                      className="ob-input"
+                      style={{ paddingLeft: 44 }}
+                      type="tel"
+                      placeholder="+234 800 000 0000"
+                      value={profile.whatsapp_phone}
+                      onChange={e => setProfile({ ...profile, whatsapp_phone: e.target.value })}
+                    />
+                  </div>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#4A4438', letterSpacing: '0.06em' }}>
+                    Used for community updates and accountability nudges
+                  </span>
                 </div>
 
                 <div className="ob-field">
