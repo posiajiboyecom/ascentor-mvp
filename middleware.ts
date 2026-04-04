@@ -32,9 +32,9 @@ const RESERVED_SUBDOMAINS = ['www', 'app', 'api', 'admin', 'mail', 'cdn', 'stati
 // net for any rows not yet migrated.
 const PLAN_RANK: Record<string, number> = {
   free:     0,
-  explorer: 1,
-  builder:  2,
-  climber:  3,
+  explorer: 1,  basic:    1,   // legacy alias
+  builder:  2,  standard: 2,   // legacy alias
+  climber:  3,  premium:  3,   // legacy alias
 }
 
 // ── Tiered route gates ────────────────────────────────────────

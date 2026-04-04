@@ -167,7 +167,13 @@ export default function CheckoutPage() {
   }, [supabase, router])
 
   // Derived subscription state
-  const currentPlan   = profile?.subscription_plan || 'free'
+  // Normalise legacy plan names (basic→explorer, standard→builder, premium→climber)
+  // so PLANS.find() and PLAN_RANK always resolve correctly regardless of what's in the DB.
+  const PLAN_ALIAS: Record<string, string> = {
+    basic: 'explorer', standard: 'builder', premium: 'climber',
+  }
+  const rawPlan       = profile?.subscription_plan || 'free'
+  const currentPlan   = PLAN_ALIAS[rawPlan] ?? rawPlan
   const subStatus     = profile?.subscription_status
   const subEnd        = profile?.subscription_end
   const isActivePaid  = ['active', 'trialing'].includes(subStatus) &&
