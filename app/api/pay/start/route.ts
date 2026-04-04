@@ -1,6 +1,3 @@
-// FILE: app/api/pay/start/route.ts
-// FIX: Added 'bank_transfer' (Pay by Transfer) and 'mobile_money' (Opay) to Paystack channels
-
 // ================================================================
 // POST /api/pay/start  — PAYMENT SYSTEM v4 (HOSTED PAGE)
 // ================================================================
@@ -31,22 +28,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
-const PLAN_CODES: Record<string, Record<string, string | undefined>> = {
-  explorer: {
-    monthly: process.env.PAYSTACK_PLAN_CODE_EXPLORER_MONTHLY,
-    annual:  process.env.PAYSTACK_PLAN_CODE_EXPLORER_ANNUAL,
-  },
-  builder: {
-    monthly: process.env.PAYSTACK_PLAN_CODE_BUILDER_MONTHLY,
-    annual:  process.env.PAYSTACK_PLAN_CODE_BUILDER_ANNUAL,
-  },
-  climber: {
-    monthly: process.env.PAYSTACK_PLAN_CODE_CLIMBER_MONTHLY,
-    annual:  process.env.PAYSTACK_PLAN_CODE_CLIMBER_ANNUAL,
-  },
-}
-
-// Add this after PLAN_CODES definition (around line 44)
+// Plan amounts in kobo (NGN × 100)
+// These are used directly — no Paystack plan codes needed.
 const PLAN_AMOUNTS: Record<string, Record<string, number>> = {
   explorer: { monthly: 1200000,  annual: 11520000  }, // ₦12,000 / ₦115,200 in kobo
   builder:  { monthly: 2500000,  annual: 24000000  }, // ₦25,000 / ₦240,000 in kobo
@@ -81,33 +64,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid billing cycle.' }, { status: 400 })
     }
 
-    // ── 3. Resolve plan code ─────────────────────────────────────────────────
-const planCode = PLAN_CODES[planId]?.[billing]
-if (!planCode) {
-  console.error(`[pay/start] Missing env var for ${planId}/${billing}`)
-  return NextResponse.json(
-    { error: 'This plan is not yet available. Please contact support.' },
-    { status: 400 }
-  )
-}
+    // ── 3. Resolve plan amount ────────────────────────────────────────────────
+    // Plan codes (PLN_xxx) are no longer passed to Paystack — they lock channels.
+    // Amount is derived directly from PLAN_AMOUNTS instead.
+    const planAmount = PLAN_AMOUNTS[planId]?.[billing]
+    if (!planAmount) {
+      console.error(`[pay/start] Missing amount for ${planId}/${billing}`)
+      return NextResponse.json(
+        { error: 'Plan pricing not configured. Please contact support.' },
+        { status: 400 }
+      )
+    }
 
-// ── DEBUG (remove after confirming) ─────────────────────────────────────
-const secret = process.env.PAYSTACK_SECRET_KEY  // ← KEEP THIS ONE ONLY
-console.log('[pay/start] planId:', planId, 'billing:', billing, 'planCode:', planCode)
-console.log('[pay/start] secret key prefix:', secret?.substring(0, 10))
+    // ── DEBUG (remove after confirming) ─────────────────────────────────────
+    const secret = process.env.PAYSTACK_SECRET_KEY
+    console.log('[pay/start] planId:', planId, 'billing:', billing, 'amount:', planAmount)
+    console.log('[pay/start] secret key prefix:', secret?.substring(0, 10))
 
-// ── 4. Paystack key check ────────────────────────────────────────────────
-// ❌ DELETE: const secret = process.env.PAYSTACK_SECRET_KEY  ← REMOVE THIS
-if (!secret) {
-  console.error('[pay/start] PAYSTACK_SECRET_KEY not set')
-  return NextResponse.json(
-    { error: 'Payment system misconfigured. Contact support.' },
-    { status: 500 }
-  )
-}
+    // ── 4. Paystack key check ────────────────────────────────────────────────
+    if (!secret) {
+      console.error('[pay/start] PAYSTACK_SECRET_KEY not set')
+      return NextResponse.json(
+        { error: 'Payment system misconfigured. Contact support.' },
+        { status: 500 }
+      )
+    }
 
     // ── 5. Initialize Paystack transaction ───────────────────────────────────
-    // callback_url: Paystack redirects here after payment — server-side verify
+    // IMPORTANT: We do NOT pass `plan` (PLN_xxx) here. When a Paystack plan code
+    // is attached, Paystack locks channels to whatever was configured on that plan
+    // in the dashboard — ignoring the `channels` array entirely.
+    // Instead we pass `amount` directly and track the plan in metadata.
+    // Subscription renewal is handled by our webhook (charge.success events).
     const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
       method:  'POST',
       headers: {
@@ -116,7 +104,6 @@ if (!secret) {
       },
       body: JSON.stringify({
         email:        user.email,
-        plan:         planCode,
         amount:       PLAN_AMOUNTS[planId]?.[billing],
         callback_url: `${APP_URL}/api/pay/callback`,
         channels:     ['card', 'bank', 'bank_transfer', 'mobile_money', 'ussd', 'qr'],
@@ -134,7 +121,7 @@ if (!secret) {
 
     const psData = await psRes.json()
 
-    if (!psData.status || !psData.data?.authorization_url) {
+    if (!psData.status || !psData.data) {
       console.error('[pay/start] Paystack error:', psData.message)
       return NextResponse.json(
         { error: psData.message || 'Payment initialization failed. Please try again.' },
@@ -142,7 +129,7 @@ if (!secret) {
       )
     }
 
-    const { authorization_url, reference } = psData.data
+    const { authorization_url, access_code, reference } = psData.data
 
     // ── 6. Log pending attempt ───────────────────────────────────────────────
     try {
@@ -158,8 +145,14 @@ if (!secret) {
       console.warn('[pay/start] Could not log attempt (non-critical):', e)
     }
 
-    // ── 7. Return authorization URL to client ────────────────────────────────
-    return NextResponse.json({ authorizationUrl: authorization_url, reference })
+    // ── 7. Return both access_code (inline popup) and authorizationUrl (hosted page) ──
+    // useCheckout + usePaystack hooks use access_code with PaystackPop.setup()
+    // app/checkout/page.tsx uses authorizationUrl for window.location.href redirect
+    return NextResponse.json({
+      accessCode:       access_code,
+      authorizationUrl: authorization_url,
+      reference,
+    })
 
   } catch (err: any) {
     console.error('[pay/start] Unexpected error:', err)
