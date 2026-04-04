@@ -1,3 +1,8 @@
+// FILE: app/(app)/account/AccountClient.tsx
+// FIX: #4 — plan button labels (Choose a Plan / Reactivate Plan / Upgrade to X)
+//      #5a — billing date shows for active, trialing AND cancelled states
+//      #5b — displays rich card info (Visa •••• 4081 · 12/2027) from card_details
+
 'use client';
 
 import { useState, useRef } from 'react';
@@ -594,7 +599,9 @@ export default function AccountClient({ profile, email, authProvider, userId, no
                   <a href="/checkout"
                     className="block w-full py-2.5 rounded-lg text-sm font-semibold text-center transition-all mt-4"
                     style={{ background: meta.color, color: plan === 'free' || !isActive ? '#000' : '#fff' }}>
-                    {!isActive ? 'Start Free Trial' : `Upgrade to ${plan === 'explorer' ? 'Builder' : 'Climber'}`}
+                    {!isActive
+                      ? (plan === 'free' ? 'Choose a Plan →' : 'Reactivate Plan →')
+                      : `Upgrade to ${plan === 'explorer' ? 'Builder' : 'Climber'} →`}
                   </a>
                 )}
               </div>
@@ -605,18 +612,35 @@ export default function AccountClient({ profile, email, authProvider, userId, no
           <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Billing</h2>
             <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>
-              {profile?.subscription_status === 'active'
+              {['active', 'trialing'].includes(profile?.subscription_status)
                 ? 'Your subscription renews automatically.'
+                : profile?.subscription_status === 'cancelled'
+                ? 'Subscription cancelled — no future charges.'
                 : 'No active subscription. Upgrade to access all features.'}
             </p>
-            {profile?.subscription_status === 'active' && (
+            {['active', 'trialing', 'cancelled'].includes(profile?.subscription_status) && (
               <div className="flex flex-col gap-2">
-                <InfoRow label="Next billing date" value={
-                  profile?.subscription_end
-                    ? new Date(profile.subscription_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                    : 'N/A'
-                } />
-                <InfoRow label="Payment method" value={profile?.payment_method || 'Card ending in ****'} />
+                {profile?.subscription_end && (
+                  <InfoRow
+                    label={profile?.subscription_status === 'cancelled' ? 'Access until' : 'Next billing date'}
+                    value={new Date(profile.subscription_end).toLocaleDateString('en-NG', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  />
+                )}
+                {profile?.billing_cycle && (
+                  <InfoRow label="Billing cycle" value={profile.billing_cycle === 'annual' ? 'Annual' : 'Monthly'} />
+                )}
+                {(() => {
+                  const card = profile?.card_details;
+                  if (card?.last4) {
+                    const brand = (card.card_type || card.channel || 'Card').replace(/^\w/, (c: string) => c.toUpperCase());
+                    const expiry = card.exp_month && card.exp_year ? ` · ${card.exp_month}/${card.exp_year}` : '';
+                    return <InfoRow label="Payment method" value={`${brand} •••• ${card.last4}${expiry}`} />;
+                  }
+                  if (profile?.payment_method) {
+                    return <InfoRow label="Payment method" value={profile.payment_method} />;
+                  }
+                  return null;
+                })()}
               </div>
             )}
           </div>

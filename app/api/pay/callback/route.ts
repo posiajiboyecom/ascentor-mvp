@@ -1,3 +1,6 @@
+// FILE: app/api/pay/callback/route.ts
+// FIX: #5b — saves Paystack card details (last4, brand, expiry) to profiles.card_details on first payment
+
 // ================================================================
 // GET /api/pay/callback  — PAYMENT SYSTEM v5
 // ================================================================
@@ -93,6 +96,18 @@ export async function GET(req: NextRequest) {
       subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1)
     }
 
+    // Extract and save card details from Paystack authorization
+    const auth = tx.authorization
+    const cardDetails = auth ? {
+      last4:      auth.last4 || null,
+      card_type:  auth.card_type || auth.brand || null,
+      exp_month:  auth.exp_month || null,
+      exp_year:   auth.exp_year || null,
+      bank:       auth.bank || null,
+      channel:    auth.channel || tx.channel || 'card',
+      auth_code:  auth.authorization_code || null,
+    } : null
+
     await supabaseAdmin
       .from('profiles')
       .update({
@@ -101,7 +116,8 @@ export async function GET(req: NextRequest) {
         subscription_start:   now.toISOString(),
         subscription_end:     subscriptionEnd.toISOString(),
         billing_cycle:        billing,
-        payment_method:       'paystack',
+        payment_method:       tx.channel || 'paystack',
+        ...(cardDetails ? { card_details: cardDetails } : {}),
         onboarding_completed: true,
         updated_at:           now.toISOString(),
       })

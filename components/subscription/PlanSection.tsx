@@ -1,3 +1,8 @@
+// FILE: components/subscription/PlanSection.tsx
+// FIX: #5a — Next billing date visible for active/trialing/cancelled
+//      #5b — displays rich card info from card_details JSONB column
+//            also shows billing_cycle row (Monthly / Annual)
+
 // ============================================================
 // PLAN SECTION — Drop into AccountClient.tsx
 //
@@ -228,9 +233,21 @@ export function PlanSection({ profile, userId }: PlanSectionProps) {
                 value={endDateFormatted}
               />
             )}
-            {profile?.payment_method && (
-              <InfoRow label="Payment method" value={profile.payment_method} />
+            {profile?.billing_cycle && (
+              <InfoRow label="Billing cycle" value={profile.billing_cycle === 'annual' ? 'Annual' : 'Monthly'} />
             )}
+            {(() => {
+              const card = profile?.card_details;
+              if (card?.last4) {
+                const brand = (card.card_type || card.channel || 'Card').replace(/^\w/, (c: string) => c.toUpperCase());
+                const expiry = card.exp_month && card.exp_year ? ` · ${card.exp_month}/${card.exp_year}` : '';
+                return <InfoRow label="Payment method" value={`${brand} •••• ${card.last4}${expiry}`} />;
+              }
+              if (profile?.payment_method) {
+                return <InfoRow label="Payment method" value={profile.payment_method} />;
+              }
+              return null;
+            })()}
           </div>
         )}
       </div>

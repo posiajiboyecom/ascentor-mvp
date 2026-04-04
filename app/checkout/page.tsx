@@ -1,3 +1,6 @@
+// FILE: app/checkout/page.tsx
+// FIXES: #1 theme-aware logo · #2 global theme toggle sync · #3 Most Popular badge visible
+
 'use client'
 
 // ================================================================
@@ -124,15 +127,30 @@ export default function CheckoutPage() {
   const [error,         setError]         = useState('')
   const [goingFree,     setGoingFree]     = useState(false)
 
-  // Theme
+  // Theme — reads from localStorage/html attr and keeps in sync with AppThemeProvider
   useEffect(() => {
-    const stored = localStorage.getItem('asc-theme')
-    setIsDark(stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches)
+    const attr = document.documentElement.getAttribute('data-app-theme')
+    if (attr === 'light' || attr === 'dark') {
+      setIsDark(attr === 'dark')
+    } else {
+      const stored = localStorage.getItem('asc-theme')
+      setIsDark(stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches)
+    }
+    // Listen for theme changes made by AppThemeProvider on other pages
     const onStorage = (e: StorageEvent) => {
       if (e.key === 'asc-theme') setIsDark(e.newValue === 'dark')
     }
+    // Also listen for same-page changes via custom event
+    const onThemeChange = () => {
+      const a = document.documentElement.getAttribute('data-app-theme')
+      if (a === 'light' || a === 'dark') setIsDark(a === 'dark')
+    }
     window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
+    window.addEventListener('asc-theme-change', onThemeChange)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('asc-theme-change', onThemeChange)
+    }
   }, [])
 
   // Auth + profile
@@ -210,7 +228,7 @@ export default function CheckoutPage() {
         <div className="co-root" data-co-theme={isDark ? 'dark' : 'light'}>
           <nav className="co-nav">
             <Link href="/dashboard" className="co-nav-logo">
-              <LogoSVG />
+              <LogoImg isDark={isDark} />
               <span className="co-logo-text">Ascentor</span>
             </Link>
             <Link href="/dashboard" className="co-back-btn">← Dashboard</Link>
@@ -334,14 +352,20 @@ export default function CheckoutPage() {
 
         <nav className="co-nav">
           <Link href="/" className="co-nav-logo">
-            <LogoSVG />
+            <LogoImg isDark={isDark} />
             <span className="co-logo-text">Ascentor</span>
           </Link>
           {!fromOnboarding && (
             <Link href="/dashboard" className="co-back-btn">← Dashboard</Link>
           )}
           <button
-            onClick={() => { const n = isDark ? 'light' : 'dark'; setIsDark(!isDark); localStorage.setItem('asc-theme', n) }}
+            onClick={() => {
+              const next = isDark ? 'light' : 'dark'
+              setIsDark(!isDark)
+              localStorage.setItem('asc-theme', next)
+              document.documentElement.setAttribute('data-app-theme', next)
+              window.dispatchEvent(new Event('asc-theme-change'))
+            }}
             className="co-theme-btn"
           >
             {isDark
@@ -488,13 +512,14 @@ export default function CheckoutPage() {
 
 // ── Shared components ──────────────────────────────────────────
 
-function LogoSVG() {
+function LogoImg({ isDark }: { isDark: boolean }) {
   return (
-    <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-      <path d="M4 26L16 6l12 20H4z" stroke="#E8A020" strokeWidth="1.8" strokeLinejoin="round"/>
-      <path d="M8 26L16 12l8 14H8z" stroke="#E8A020" strokeWidth="1.2" strokeLinejoin="round" fill="rgba(232,160,32,0.1)"/>
-      <path d="M4 26h24" stroke="#E8A020" strokeWidth="1.8" strokeLinecap="round"/>
-    </svg>
+    <img
+      src={isDark ? '/ascentor-color-for-dark-pages.svg' : '/ascentor-color-for-light-pages.svg'}
+      alt="Ascentor"
+      onError={(e) => { (e.target as HTMLImageElement).src = '/ascentor-color-for-dark-pages.svg'; }}
+      style={{ height: 30, width: 'auto' }}
+    />
   )
 }
 
@@ -633,13 +658,15 @@ function checkoutStyles(isDark: boolean): string {
     .co-plan {
       background: var(--card); border-radius: 20px; border: 1px solid var(--bord);
       padding: 32px 28px; display: flex; flex-direction: column;
-      position: relative; overflow: hidden; transition: transform 0.22s; box-shadow: var(--shadow);
+      position: relative; overflow: visible; transition: transform 0.22s; box-shadow: var(--shadow);
+      margin-top: 14px;
     }
     .co-plan:hover { transform: translateY(-4px); }
     .co-plan-hl   { border: 2px solid rgba(232,160,32,0.35) !important; }
     .co-plan-glow {
       position: absolute; top: -80px; right: -80px; width: 200px; height: 200px;
       border-radius: 50%; filter: blur(60px); pointer-events: none;
+      overflow: hidden;
     }
     .co-popular {
       position: absolute; top: -13px; left: 50%; transform: translateX(-50%);

@@ -1,3 +1,8 @@
+// FILE: components/AppThemeProvider.tsx
+// FIX: #2 — fires 'asc-theme-change' custom event on toggle so checkout page
+//            (and any other non-AppThemeProvider page) stays in sync
+//          — listens for the same event so changes from checkout page sync back
+
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
@@ -32,6 +37,14 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
       : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     setTheme(resolved);
     document.documentElement.setAttribute('data-app-theme', resolved);
+
+    // Keep in sync if another component (e.g. checkout page) changes the theme
+    const onThemeChange = () => {
+      const attr = document.documentElement.getAttribute('data-app-theme') as AppTheme | null;
+      if (attr === 'light' || attr === 'dark') setTheme(attr);
+    };
+    window.addEventListener('asc-theme-change', onThemeChange);
+    return () => window.removeEventListener('asc-theme-change', onThemeChange);
   }, []);
 
   const toggle = () =>
@@ -39,6 +52,7 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
       const next = prev === 'dark' ? 'light' : 'dark';
       localStorage.setItem('asc-theme', next);
       document.documentElement.setAttribute('data-app-theme', next);
+      window.dispatchEvent(new Event('asc-theme-change'));
       return next;
     });
 
