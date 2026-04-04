@@ -1,3 +1,6 @@
+// FILE: app/api/pay/start/route.ts
+// FIX: Added 'bank_transfer' (Pay by Transfer) and 'mobile_money' (Opay) to Paystack channels
+
 // ================================================================
 // POST /api/pay/start  — PAYMENT SYSTEM v4 (HOSTED PAGE)
 // ================================================================
@@ -114,8 +117,9 @@ if (!secret) {
       body: JSON.stringify({
         email:        user.email,
         plan:         planCode,
-          amount:       PLAN_AMOUNTS[planId]?.[billing],  // ← ADD THIS LINE
+        amount:       PLAN_AMOUNTS[planId]?.[billing],
         callback_url: `${APP_URL}/api/pay/callback`,
+        channels:     ['card', 'bank', 'bank_transfer', 'mobile_money', 'ussd', 'qr'],
         metadata: {
           user_id:  user.id,
           plan_id:  planId,

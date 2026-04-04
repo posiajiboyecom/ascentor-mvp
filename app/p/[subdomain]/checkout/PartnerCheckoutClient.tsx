@@ -1,3 +1,8 @@
+// FILE: app/p/[subdomain]/checkout/PartnerCheckoutClient.tsx
+// FIX: Added channels array to PaystackPop.setup() — previously omitted entirely,
+//      causing Paystack to show only Card + Bank.
+//      Now includes: card, bank, bank_transfer (Transfer), mobile_money (Opay), ussd, qr
+
 // ============================================================
 // FILE LOCATION: app/p/[subdomain]/checkout/PartnerCheckoutClient.tsx
 //
@@ -120,6 +125,7 @@ export default function PartnerCheckoutClient({
         amount:   priceNGN * 100,
         currency: currency,
         ref:      `partner_${partner.id}_${Date.now()}`,
+        channels: ['card', 'bank', 'bank_transfer', 'mobile_money', 'ussd', 'qr'],
         metadata: {
           user_id:       userId,
           partner_id:    partner.id,
