@@ -487,4 +487,13 @@ export default function CheckoutPage() {
       </div>
     </>
   )
+
+  useEffect(() => {
+  // Force SW update — kills any stale v3 worker intercepting payment POSTs
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistration().then(reg => {
+      if (reg) reg.update()
+    })
+  }
+}, [])
 }

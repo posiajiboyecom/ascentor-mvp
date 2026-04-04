@@ -72,24 +72,29 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 3. Resolve plan code ─────────────────────────────────────────────────
-    const planCode = PLAN_CODES[planId]?.[billing]
-    if (!planCode) {
-      console.error(`[pay/start] Missing env var for ${planId}/${billing}`)
-      return NextResponse.json(
-        { error: 'This plan is not yet available. Please contact support.' },
-        { status: 400 }
-      )
-    }
+const planCode = PLAN_CODES[planId]?.[billing]
+if (!planCode) {
+  console.error(`[pay/start] Missing env var for ${planId}/${billing}`)
+  return NextResponse.json(
+    { error: 'This plan is not yet available. Please contact support.' },
+    { status: 400 }
+  )
+}
 
-    // ── 4. Paystack key check ────────────────────────────────────────────────
-    const secret = process.env.PAYSTACK_SECRET_KEY
-    if (!secret) {
-      console.error('[pay/start] PAYSTACK_SECRET_KEY not set')
-      return NextResponse.json(
-        { error: 'Payment system misconfigured. Contact support.' },
-        { status: 500 }
-      )
-    }
+// ── DEBUG (remove after confirming) ─────────────────────────────────────
+const secret = process.env.PAYSTACK_SECRET_KEY  // ← KEEP THIS ONE ONLY
+console.log('[pay/start] planId:', planId, 'billing:', billing, 'planCode:', planCode)
+console.log('[pay/start] secret key prefix:', secret?.substring(0, 10))
+
+// ── 4. Paystack key check ────────────────────────────────────────────────
+// ❌ DELETE: const secret = process.env.PAYSTACK_SECRET_KEY  ← REMOVE THIS
+if (!secret) {
+  console.error('[pay/start] PAYSTACK_SECRET_KEY not set')
+  return NextResponse.json(
+    { error: 'Payment system misconfigured. Contact support.' },
+    { status: 500 }
+  )
+}
 
     // ── 5. Initialize Paystack transaction ───────────────────────────────────
     // callback_url: Paystack redirects here after payment — server-side verify
