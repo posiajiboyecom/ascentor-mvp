@@ -1,15 +1,15 @@
 'use client'
 
 // ================================================================
-// B2CPlanCard.tsx  — NEW PAYMENT SYSTEM
+// B2CPlanCard.tsx  — PAYMENT SYSTEM v4 (HOSTED PAGE)
 // ================================================================
-// Uses usePaystack() instead of old useCheckout().
-// Drop-in replacement — all styling preserved.
+// Removed usePaystack() — now uses direct fetch + window.location
+// redirect to Paystack hosted payment page. No popup, no CSP.
 // ================================================================
 
+import { useState } from 'react'
 import { B2CTier, BillingCycle, Currency, formatPrice, getAnnualLabel } from '../data'
 import { useRouter } from 'next/navigation'
-import { usePaystack } from '@/hooks/usePaystack'
 
 interface Props {
   tier:     B2CTier
@@ -24,8 +24,18 @@ const STAGE_COLOR: Record<string, string> = {
   elite:   'var(--purple, #8B5CF6)',
 }
 
+// Map data.ts tier IDs → /api/pay/start plan IDs
+const PLAN_ID_MAP: Record<string, string> = {
+  builder:  'explorer',
+  pro:      'builder',
+  elite:    'climber',
+  explorer: 'explorer',
+  climber:  'climber',
+}
+
 export default function B2CPlanCard({ tier, currency, billing }: Props) {
-  const { pay, loading, error, clearError } = usePaystack()
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState<string | null>(null)
   const router = useRouter()
 
   const monthlyPrice = tier.priceMonthly[currency]
@@ -44,29 +54,41 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
     ? getAnnualLabel(tier, currency)
     : (!isFree ? `${getAnnualLabel(tier, currency).replace(/·.*/, '').trim()} if billed annually` : '')
 
-  function handleCTA() {
-    clearError()
+  async function handleCTA() {
+    setError(null)
 
     if (isFree) {
       router.push('/signup?plan=free')
       return
     }
 
-    const planCode = billing === 'annual'
-      ? tier.paystackPlanCode.annual
-      : tier.paystackPlanCode.monthly
+    const resolvedPlanId = PLAN_ID_MAP[tier.id] ?? tier.id
 
-    if (!planCode) {
-      router.push(`/signup?plan=${tier.id}&billing=${billing}&currency=${currency}`)
-      return
+    setLoading(true)
+    try {
+      const res = await fetch('/api/pay/start', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ planId: resolvedPlanId, billing }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Payment setup failed (${res.status})`)
+      }
+
+      const { authorizationUrl, error: apiError } = await res.json()
+      if (apiError) throw new Error(apiError)
+      if (!authorizationUrl) throw new Error('No payment URL returned. Please try again.')
+
+      // Full page redirect — Paystack hosts the payment page
+      window.location.href = authorizationUrl
+
+    } catch (err: any) {
+      console.error('[B2CPlanCard]', err)
+      setError(err.message || 'Something went wrong. Please try again.')
+      setLoading(false)
     }
-
-    pay({
-      planCode,
-      planId:   tier.id,
-      planName: tier.name,
-      billing,
-    })
   }
 
   return (
@@ -149,7 +171,7 @@ export default function B2CPlanCard({ tier, currency, billing }: Props) {
             : undefined
         }
       >
-        {loading ? 'Opening payment…' : tier.ctaLabel}
+        {loading ? 'Redirecting to payment…' : tier.ctaLabel}
       </button>
     </div>
   )

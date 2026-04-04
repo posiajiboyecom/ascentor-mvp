@@ -1,12 +1,12 @@
 'use client'
 
-// app/pricing/components/B2BPlanCard.tsx — v6
-// Paystack-only. Lemonsqueezy fully removed.
-// Starter/Growth → Paystack inline popup (when plan codes configured)
-// Enterprise/custom → mailto enquiry
+// app/pricing/components/B2BPlanCard.tsx — v7
+// PAYMENT SYSTEM v4: Removed usePaystack() entirely.
+// B2B plan codes are all empty in data.ts — all tiers route to
+// partner enquiry email. When B2B Paystack plans are configured,
+// swap handleCTA to use the same fetch + redirect pattern as B2CPlanCard.
 
 import { B2BTier, BillingCycle } from '../data'
-import { usePaystack } from '@/hooks/usePaystack'
 
 interface Props {
   tier:    B2BTier
@@ -14,32 +14,16 @@ interface Props {
 }
 
 export default function B2BPlanCard({ tier, billing }: Props) {
-  const { pay, loading, error } = usePaystack()
   const isCustom = tier.flatMonthly === null
 
   function handleCTA() {
-    // Enterprise or no flat price → email enquiry
-    if (isCustom || tier.id === 'enterprise') {
-      window.location.href = 'mailto:partners@ascentorbi.com?subject=Enterprise Partner Enquiry'
-      return
-    }
+    // All B2B tiers → partner enquiry email
+    // (B2B Paystack plan codes not yet live — see data.ts paystackPlanCode fields)
+    const subject = tier.id === 'enterprise'
+      ? 'Enterprise Partner Enquiry'
+      : `${tier.name} Partner Enquiry`
 
-    const planCode = billing === 'annual'
-      ? tier.paystackPlanCode.annual
-      : tier.paystackPlanCode.monthly
-
-    if (!planCode) {
-      // B2B plan codes not yet configured — send to enquiry
-      window.location.href = `mailto:partners@ascentorbi.com?subject=${encodeURIComponent(tier.name + ' Enquiry')}`
-      return
-    }
-
-    pay({
-      planCode,
-      planId:   tier.id,
-      planName: tier.name,
-      billing,
-    })
+    window.location.href = `mailto:partners@ascentorbi.com?subject=${encodeURIComponent(subject)}`
   }
 
   return (
@@ -62,7 +46,6 @@ export default function B2BPlanCard({ tier, billing }: Props) {
         <p className="text-sm font-semibold text-foreground">{tier.name}</p>
       </div>
 
-      {/* Pricing display */}
       <div className="mb-1">
         <span className="text-4xl font-bold tracking-tight text-foreground">
           {isCustom ? 'Custom' : `$${tier.flatMonthly}`}
@@ -112,22 +95,16 @@ export default function B2BPlanCard({ tier, billing }: Props) {
         ))}
       </ul>
 
-      {error && (
-        <p className="mb-2 text-[11px] text-red-500">{error}</p>
-      )}
-
       <button
         onClick={handleCTA}
-        disabled={loading}
         className={[
           'w-full rounded-xl py-2.5 text-[13px] font-medium transition-all duration-150',
           tier.ctaVariant === 'primary'
             ? 'bg-foreground text-background hover:opacity-90'
             : 'border border-border bg-transparent text-foreground hover:bg-muted',
-          loading ? 'opacity-60 cursor-not-allowed' : '',
         ].join(' ')}
       >
-        {loading ? 'Loading…' : tier.ctaLabel}
+        {tier.ctaLabel}
       </button>
     </div>
   )
