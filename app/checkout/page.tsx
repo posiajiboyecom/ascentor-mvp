@@ -1,19 +1,18 @@
 'use client'
 
 // ================================================================
-// app/checkout/page.tsx  — PAYMENT SYSTEM v3
+// app/checkout/page.tsx  — PAYMENT SYSTEM v4 (HOSTED PAGE)
 // ================================================================
-// Flow:  /onboarding → /checkout → PaystackPop popup → /dashboard
+// RADICAL FIX: Removed ALL Paystack inline popup code.
+// No PaystackPop, no inline.js script, no CSP headaches,
+// no SW interference. Just a clean server redirect.
 //
-// API calls:
-//   POST /api/pay/start   → { accessCode, reference }
-//   POST /api/pay/confirm → { success, plan }
-//
-// Plan IDs (match profiles.subscription_plan):
-//   explorer | builder | climber
+// Flow: click plan → POST /api/pay/start → redirect to
+//       Paystack hosted page → pay → redirect to /api/pay/callback
+//       → subscription activated → /dashboard?welcome=1
 // ================================================================
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
@@ -22,8 +21,8 @@ import { PLAN_PRICING, MAX_YEARLY_SAVINGS } from '@/lib/pricing'
 type BillingCycle = 'monthly' | 'annual'
 
 interface Plan {
-  id:           string   // matches profiles.subscription_plan
-  name:         string   // display name
+  id:           string
+  name:         string
   description:  string
   stage:        string
   stageColor:   string
@@ -33,8 +32,6 @@ interface Plan {
   highlighted?: boolean
 }
 
-// Plan order: explorer → builder → climber
-// Prices pulled from lib/pricing.ts (single source of truth)
 const PLANS: Plan[] = [
   {
     id:           'explorer',
@@ -94,14 +91,6 @@ const PLANS: Plan[] = [
   },
 ]
 
-declare global {
-  interface Window {
-    PaystackPop?: {
-      setup: (cfg: Record<string, unknown>) => { openIframe: () => void }
-    }
-  }
-}
-
 function yearlySavings(plan: Plan) {
   return Math.round(plan.monthlyPrice * 12 - plan.yearlyPrice)
 }
@@ -109,9 +98,9 @@ function yearlySavings(plan: Plan) {
 export default function CheckoutPage() {
   const router       = useRouter()
   const searchParams = useSearchParams()
-  const supabase = useMemo(() => createClient(), [])
+  // useMemo prevents new Supabase client on every render (fixes WebSocket spam)
+  const supabase     = useMemo(() => createClient(), [])
 
-  // ── State ──────────────────────────────────────────────────────
   const [isDark,       setIsDark]       = useState(true)
   const [user,         setUser]         = useState<any>(null)
   const [profile,      setProfile]      = useState<any>(null)
@@ -123,10 +112,9 @@ export default function CheckoutPage() {
   )
   const [loading,      setLoading]      = useState(false)
   const [error,        setError]        = useState('')
-  const [success,      setSuccess]      = useState('')
   const [goingFree,    setGoingFree]    = useState(false)
 
-  // ── Theme sync ─────────────────────────────────────────────────
+  // Theme sync
   useEffect(() => {
     const stored = localStorage.getItem('asc-theme')
     setIsDark(stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -137,7 +125,7 @@ export default function CheckoutPage() {
     return () => window.removeEventListener('storage', onStorage)
   }, [])
 
-  // ── Auth + profile ─────────────────────────────────────────────
+  // Auth + profile
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -149,102 +137,38 @@ export default function CheckoutPage() {
     load()
   }, [supabase, router])
 
-  // ── Preload Paystack script ────────────────────────────────────
-  useEffect(() => {
-    if (!document.getElementById('ps-script')) {
-      const s = document.createElement('script')
-      s.id = 'ps-script'; s.src = 'https://js.paystack.co/v1/inline.js'; s.async = true
-      document.head.appendChild(s)
-    }
-  }, [])
-
-  // ── Price helpers ──────────────────────────────────────────────
   function getMonthlyDisplay(plan: Plan): number {
     return billing === 'monthly' ? plan.monthlyPrice : Math.round(plan.yearlyPrice / 12)
   }
 
-  // ── Main payment handler ───────────────────────────────────────
+  // ── RADICAL FIX: Simple redirect — no popup, no inline.js ─────────────────
   async function handleSelectPlan(planId: string) {
     if (!user) { router.push('/login?redirect=/checkout'); return }
 
     setSelectedPlan(planId)
     setLoading(true)
     setError('')
-    setSuccess('')
 
     try {
-      // ── Step 1: Initialize on server ─────────────────────────────
-      const startRes = await fetch('/api/pay/start', {
+      const res = await fetch('/api/pay/start', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ planId, billing }),
       })
 
-      if (!startRes.ok) {
-        const err = await startRes.json().catch(() => ({}))
-        throw new Error(err.error || `Payment setup failed (${startRes.status})`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || `Payment setup failed (${res.status})`)
       }
 
-      const { accessCode, reference } = await startRes.json()
+      const { authorizationUrl, error: apiError } = await res.json()
 
-      if (!accessCode || !reference) {
-        throw new Error('Payment setup returned incomplete data. Please try again.')
-      }
+      if (apiError) throw new Error(apiError)
+      if (!authorizationUrl) throw new Error('No payment URL returned. Please try again.')
 
-      // ── Step 2: Wait for Paystack script ─────────────────────────
-      if (!window.PaystackPop) {
-        await new Promise<void>((resolve, reject) => {
-          const el = document.getElementById('ps-script') as HTMLScriptElement | null
-          if (!el) { reject(new Error('Paystack script not found')); return }
-          el.onload = () => resolve()
-          el.onerror = () => reject(new Error('Paystack script failed to load'))
-        })
-      }
-
-      if (!window.PaystackPop) {
-        throw new Error('Payment system unavailable. Please refresh and try again.')
-      }
-
-      // ── Step 3: Open Paystack inline popup ───────────────────────
-      const handler = window.PaystackPop.setup({
-        key:         process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
-        access_code: accessCode,
-        ref:         reference,
-
-        onClose: () => {
-          setLoading(false)
-          setSelectedPlan(null)
-          setError("Payment was not completed. Try again whenever you're ready.")
-        },
-
-        callback: async (response: { reference: string }) => {
-          // ── Step 4: Confirm on server ─────────────────────────────
-          try {
-            const confirmRes = await fetch('/api/pay/confirm', {
-              method:  'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body:    JSON.stringify({ reference: response.reference }),
-            })
-            const confirmData = await confirmRes.json()
-
-            if (confirmRes.ok && confirmData.success) {
-              setSuccess('Payment confirmed! Taking you to your dashboard…')
-              setTimeout(() => router.push('/dashboard?welcome=1'), 1500)
-            } else {
-              // Payment went through but confirm had an issue.
-              // Webhook will reconcile — send user to dashboard.
-              router.push('/dashboard?payment=processing')
-            }
-          } catch {
-            // Same — webhook is the safety net
-            router.push('/dashboard?payment=processing')
-          } finally {
-            setLoading(false)
-          }
-        },
-      })
-
-      handler.openIframe()
+      // FULL PAGE REDIRECT — Paystack hosts the payment page entirely
+      // No popup, no inline script, no CSP, no SW issues
+      window.location.href = authorizationUrl
 
     } catch (err: any) {
       console.error('[checkout]', err)
@@ -256,7 +180,6 @@ export default function CheckoutPage() {
 
   const isCurrentPlan = (planId: string) => profile?.subscription_plan === planId
 
-  // ── Render ─────────────────────────────────────────────────────
   return (
     <>
       <style>{`
@@ -387,7 +310,6 @@ export default function CheckoutPage() {
 
         .co-alerts { max-width: 440px; margin: 0 auto 20px; padding: 0 24px; position: relative; z-index: 1; }
         .co-error   { padding: 13px 16px; border-radius: 10px; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); color: #EF4444; font-size: 13px; }
-        .co-success { padding: 13px 16px; border-radius: 10px; background: rgba(20,184,166,0.06); border: 1px solid rgba(20,184,166,0.2); color: #14B8A6; font-size: 13px; }
 
         .co-trust { max-width: 680px; margin: 0 auto; padding: 28px 24px 72px; text-align: center; position: relative; z-index: 1; border-top: 1px solid var(--bord); }
         .co-trust-items { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 18px; }
@@ -455,10 +377,9 @@ export default function CheckoutPage() {
         </div>
 
         {/* Alerts */}
-        {(error || success) && (
+        {error && (
           <div className="co-alerts">
-            {error   && <div className="co-error">{error}</div>}
-            {success && <div className="co-success">&#10003; {success}</div>}
+            <div className="co-error">{error}</div>
           </div>
         )}
 
@@ -482,7 +403,6 @@ export default function CheckoutPage() {
                 <h3 className="co-plan-name">{plan.name}</h3>
                 <p className="co-plan-desc">{plan.description}</p>
 
-                {/* Price */}
                 <div style={{ marginBottom: 24 }}>
                   <div className="co-price-row">
                     <span className="co-price-sym">&#8358;</span>
@@ -501,7 +421,6 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                {/* Features */}
                 <ul className="co-features">
                   {plan.features.map((f, i) => (
                     <li key={i} className="co-feature">
@@ -511,7 +430,6 @@ export default function CheckoutPage() {
                   ))}
                 </ul>
 
-                {/* Trial notice */}
                 <div className="co-trial-box">
                   <strong>7-day free trial.</strong> No charge until Day 8.<br/>Cancel before then and pay nothing.
                 </div>
@@ -526,7 +444,7 @@ export default function CheckoutPage() {
                     : { background: `${plan.stageColor}14`, color: plan.stageColor, border: `1px solid ${plan.stageColor}25` }
                   }
                 >
-                  {spinning ? 'Opening payment…' : current ? '&#10003; Current Plan' : 'Start 7-day trial'}
+                  {spinning ? 'Redirecting to payment…' : current ? '✓ Current Plan' : 'Start 7-day trial'}
                 </button>
 
                 {!current && <p className="co-cta-note">7-DAY FREE TRIAL · CANCEL ANYTIME</p>}

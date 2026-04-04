@@ -1,39 +1,33 @@
 // ================================================================
-// POST /api/pay/start  — PAYMENT SYSTEM v3 (CLEAN REBUILD)
+// POST /api/pay/start  — PAYMENT SYSTEM v4 (HOSTED PAGE)
 // ================================================================
-// Single entry point for all B2C checkout.
-// Used by: app/checkout/page.tsx
+// RADICAL FIX: Switched from Paystack inline popup to Paystack
+// hosted payment page. No inline.js, no CSP issues, no SW
+// interference, no popup blockers. Paystack hosts the entire
+// checkout on their domain.
 //
 // Flow:
-//   1. Auth check (session cookie — never trust body)
-//   2. Validate planId + billing
-//   3. Call Paystack initialize with plan code + metadata
-//   4. Log pending attempt to payment_attempts
-//   5. Return { accessCode, reference } to client
+//   1. Client POSTs { planId, billing }
+//   2. Server calls Paystack /transaction/initialize
+//   3. Returns { authorizationUrl, reference } to client
+//   4. Client does window.location.href = authorizationUrl
+//   5. User pays on Paystack's hosted page
+//   6. Paystack redirects to /api/pay/callback?reference=xxx
+//   7. /api/pay/callback verifies + activates → redirect /dashboard
 //
-// Client then opens PaystackPop.setup({ access_code, ref }) inline popup.
-// After payment: POST /api/pay/confirm
-// ================================================================
-
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createAuthClient } from '@/lib/supabase/server'
-import { supabaseAdmin } from '@/lib/supabase/admin'
-
-// ── Single source of truth for plan codes ────────────────────────────────────
-// Plan ID convention (matches profiles.subscription_plan and lib/pricing.ts):
-//   explorer → Explorer tier  (was 'builder' in old code)
-//   builder  → Builder tier   (was 'pro' in old code)
-//   climber  → Climber tier   (was 'elite' in old code)
-//
-// To get your plan codes: Paystack Dashboard → Products → Plans
-// Then add them to your .env.local:
+// Paystack plan codes in env vars:
 //   PAYSTACK_PLAN_CODE_EXPLORER_MONTHLY=PLN_xxx
 //   PAYSTACK_PLAN_CODE_EXPLORER_ANNUAL=PLN_xxx
 //   PAYSTACK_PLAN_CODE_BUILDER_MONTHLY=PLN_xxx
 //   PAYSTACK_PLAN_CODE_BUILDER_ANNUAL=PLN_xxx
 //   PAYSTACK_PLAN_CODE_CLIMBER_MONTHLY=PLN_xxx
 //   PAYSTACK_PLAN_CODE_CLIMBER_ANNUAL=PLN_xxx
-// ─────────────────────────────────────────────────────────────────────────────
+// ================================================================
+
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient as createAuthClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+
 const PLAN_CODES: Record<string, Record<string, string | undefined>> = {
   explorer: {
     monthly: process.env.PAYSTACK_PLAN_CODE_EXPLORER_MONTHLY,
@@ -51,6 +45,8 @@ const PLAN_CODES: Record<string, Record<string, string | undefined>> = {
 
 const VALID_PLANS   = ['explorer', 'builder', 'climber'] as const
 const VALID_BILLING = ['monthly', 'annual'] as const
+
+const APP_URL = process.env.NEXT_PUBLIC_URL || 'https://ascentorbi.com'
 
 export async function POST(req: NextRequest) {
   try {
@@ -75,9 +71,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid billing cycle.' }, { status: 400 })
     }
 
-    // ── 3. Resolve Paystack plan code ────────────────────────────────────────
+    // ── 3. Resolve plan code ─────────────────────────────────────────────────
     const planCode = PLAN_CODES[planId]?.[billing]
-
     if (!planCode) {
       console.error(`[pay/start] Missing env var for ${planId}/${billing}`)
       return NextResponse.json(
@@ -86,35 +81,18 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    console.log('[pay/start] plan codes loaded:', {
-      explorer_monthly: !!process.env.PAYSTACK_PLAN_CODE_EXPLORER_MONTHLY,
-      builder_monthly:  !!process.env.PAYSTACK_PLAN_CODE_BUILDER_MONTHLY,
-      climber_monthly:  !!process.env.PAYSTACK_PLAN_CODE_CLIMBER_MONTHLY,
-    })
-
     // ── 4. Paystack key check ────────────────────────────────────────────────
     const secret = process.env.PAYSTACK_SECRET_KEY
     if (!secret) {
       console.error('[pay/start] PAYSTACK_SECRET_KEY not set')
       return NextResponse.json(
-        { error: 'Payment system is misconfigured. Contact support.' },
+        { error: 'Payment system misconfigured. Contact support.' },
         { status: 500 }
       )
     }
 
-    // ── DEBUG BLOCK ──────────────────────────────────────────────────────────
-    console.log('[pay/start] DEBUG', {
-      planId,
-      billing,
-      planCode,
-      secretKeyPrefix: process.env.PAYSTACK_SECRET_KEY?.slice(0, 12),
-      email: user.email,
-    })
-
     // ── 5. Initialize Paystack transaction ───────────────────────────────────
-    // CRITICAL: Only send { email, plan } — no amount, no currency.
-    // Paystack derives amount + currency from the plan code itself.
-    // Sending currency alongside a plan code causes "Invalid Amount Sent".
+    // callback_url: Paystack redirects here after payment — server-side verify
     const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
       method:  'POST',
       headers: {
@@ -122,13 +100,13 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: user.email,
-        plan:  planCode,
+        email:        user.email,
+        plan:         planCode,
+        callback_url: `${APP_URL}/api/pay/callback`,
         metadata: {
           user_id:  user.id,
           plan_id:  planId,
           billing,
-          // custom_fields render in Paystack dashboard receipts
           custom_fields: [
             { display_name: 'Plan',    variable_name: 'plan_id', value: planId },
             { display_name: 'Billing', variable_name: 'billing', value: billing },
@@ -139,7 +117,7 @@ export async function POST(req: NextRequest) {
 
     const psData = await psRes.json()
 
-    if (!psData.status || !psData.data?.access_code) {
+    if (!psData.status || !psData.data?.authorization_url) {
       console.error('[pay/start] Paystack error:', psData.message)
       return NextResponse.json(
         { error: psData.message || 'Payment initialization failed. Please try again.' },
@@ -147,9 +125,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { access_code, reference } = psData.data
+    const { authorization_url, reference } = psData.data
 
-    // ── 6. Log pending attempt (best-effort) ─────────────────────────────────
+    // ── 6. Log pending attempt ───────────────────────────────────────────────
     try {
       await supabaseAdmin.from('payment_attempts').upsert({
         user_id:    user.id,
@@ -163,8 +141,8 @@ export async function POST(req: NextRequest) {
       console.warn('[pay/start] Could not log attempt (non-critical):', e)
     }
 
-    // ── 7. Return to client ──────────────────────────────────────────────────
-    return NextResponse.json({ accessCode: access_code, reference })
+    // ── 7. Return authorization URL to client ────────────────────────────────
+    return NextResponse.json({ authorizationUrl: authorization_url, reference })
 
   } catch (err: any) {
     console.error('[pay/start] Unexpected error:', err)

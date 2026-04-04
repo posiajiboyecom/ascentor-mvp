@@ -56,7 +56,11 @@ const PUBLIC_ROUTES = [
 ];
 
 const PUBLIC_API_ROUTES = [
-  '/api/waitlist', '/api/newsletter', '/api/welcome', '/api/auth',
+  '/api/waitlist', 
+  '/api/newsletter', 
+  '/api/welcome', 
+  '/api/auth',
+  '/api/pay/callback',
   '/api/subscription/webhook',
   '/api/partner/webhook',    // partner-specific Paystack webhook
   '/api/pay/webhook',        // v3 main Paystack webhook — Paystack has no session cookie
