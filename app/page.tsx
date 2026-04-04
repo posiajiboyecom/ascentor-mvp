@@ -478,7 +478,6 @@ export default function LandingPage() {
             <li><Link href="/who-its-for">Who It's For</Link></li>
             <li><Link href="/how-it-works">How It Works</Link></li>
             <li><Link href="/products">Products</Link></li>
-            <li><Link href="/pricing">Pricing</Link></li>
             <li><Link href="/blog">Blog</Link></li>
           </ul>
           <div className="lp-nav-right">
