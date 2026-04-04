@@ -43,6 +43,13 @@ const PLAN_CODES: Record<string, Record<string, string | undefined>> = {
   },
 }
 
+// Add this after PLAN_CODES definition (around line 44)
+const PLAN_AMOUNTS: Record<string, Record<string, number>> = {
+  explorer: { monthly: 1200000,  annual: 11520000  }, // ₦12,000 / ₦115,200 in kobo
+  builder:  { monthly: 2500000,  annual: 24000000  }, // ₦25,000 / ₦240,000 in kobo
+  climber:  { monthly: 6000000,  annual: 57600000  }, // ₦60,000 / ₦576,000 in kobo
+}
+
 const VALID_PLANS   = ['explorer', 'builder', 'climber'] as const
 const VALID_BILLING = ['monthly', 'annual'] as const
 
@@ -107,6 +114,7 @@ if (!secret) {
       body: JSON.stringify({
         email:        user.email,
         plan:         planCode,
+          amount:       PLAN_AMOUNTS[planId]?.[billing],  // ← ADD THIS LINE
         callback_url: `${APP_URL}/api/pay/callback`,
         metadata: {
           user_id:  user.id,
