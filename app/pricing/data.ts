@@ -1,76 +1,74 @@
-// app/pricing/data.ts — v6
-// PAYSTACK ONLY — lemonVariantId and getProvider() removed entirely.
-// All B2C plans use Paystack plan codes (NGN). USD users pay via Paystack multi-currency.
-// All 6 NGN plan codes verified 2026-04-03.
+// app/pricing/data.ts — v7
+// ─────────────────────────────────────────────────────────────────
+// Canonical plan IDs: explorer | builder | climber
+// Legacy IDs (builder/pro/elite from old data.ts) are removed.
+// The DB migration in HOW_TO_FILE.md converts any remaining rows.
+//
+// Paystack plan codes are kept here for the pricing display UI only.
+// The actual payment initialisation reads plan codes from env vars
+// in /api/pay/start — these values in data.ts are informational.
+// ─────────────────────────────────────────────────────────────────
 
-export type Currency = 'ngn' | 'usd'
+export type Currency     = 'ngn' | 'usd'
 export type BillingCycle = 'monthly' | 'annual'
 
 export interface PlanFeature {
   enabled: boolean
-  text: string
+  text:    string
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
 // B2C TYPES
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
 export interface B2CTier {
-  id: string
-  name: string
-  label: string
+  id:           string    // profiles.subscription_plan value
+  name:         string    // display name
+  label:        string
   priceMonthly: { ngn: number | null; usd: number | null }
-  annualTotal: { ngn: number | null; usd: number | null }
-  annualSavings: { ngn: number | null; usd: number | null }
-  hot: boolean
-  badge: string
-  ctaLabel: string
-  ctaVariant: 'primary' | 'secondary'
-  // Paystack plan codes (used for all currencies via Paystack multi-currency)
-  paystackPlanCode: {
-    monthly: string
-    annual: string
-  }
-  features: PlanFeature[]
+  annualTotal:  { ngn: number | null; usd: number | null }
+  annualSavings:{ ngn: number | null; usd: number | null }
+  hot:          boolean
+  badge:        string
+  ctaLabel:     string
+  ctaVariant:   'primary' | 'secondary'
+  paystackPlanCode: { monthly: string; annual: string }
+  features:     PlanFeature[]
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
 // B2B TYPES
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
 export interface B2BTier {
-  id: string
-  name: string
-  label: string
-  flatMonthly: number | null
-  seatPrice: number | null
-  maxSeats: string
-  annualText: string
-  hot: boolean
-  badge: string
-  ctaLabel: string
-  ctaVariant: 'primary' | 'secondary'
-  // B2B uses Paystack as well — fill in when B2B checkout is built
-  paystackPlanCode: {
-    monthly: string
-    annual: string
-  }
-  features: PlanFeature[]
+  id:           string
+  name:         string
+  label:        string
+  flatMonthly:  number | null
+  seatPrice:    number | null
+  maxSeats:     string
+  annualText:   string
+  hot:          boolean
+  badge:        string
+  ctaLabel:     string
+  ctaVariant:   'primary' | 'secondary'
+  paystackPlanCode: { monthly: string; annual: string }
+  features:     PlanFeature[]
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
 // B2C TIERS
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
 export const B2C_TIERS: B2CTier[] = [
   {
-    id: 'free',
-    name: 'Free',
-    label: 'Starter',
+    id:           'free',
+    name:         'Free',
+    label:        'Starter',
     priceMonthly: { ngn: 0, usd: 0 },
-    annualTotal: { ngn: null, usd: null },
-    annualSavings: { ngn: null, usd: null },
-    hot: false,
-    badge: '',
-    ctaLabel: 'Get started',
-    ctaVariant: 'secondary',
+    annualTotal:  { ngn: null, usd: null },
+    annualSavings:{ ngn: null, usd: null },
+    hot:          false,
+    badge:        '',
+    ctaLabel:     'Get started',
+    ctaVariant:   'secondary',
     paystackPlanCode: { monthly: '', annual: '' },
     features: [
       { enabled: true,  text: '5 AI coaching sessions/month' },
@@ -82,16 +80,16 @@ export const B2C_TIERS: B2CTier[] = [
     ],
   },
   {
-    id: 'builder',       // Supabase subscription_plan value — DO NOT CHANGE
-    name: 'Explorer',    // display name
-    label: 'Popular',
+    id:           'explorer',
+    name:         'Explorer',
+    label:        'Popular',
     priceMonthly: { ngn: 12000, usd: 19 },
-    annualTotal: { ngn: 115200, usd: 180 },
-    annualSavings: { ngn: 28800, usd: 48 },
-    hot: false,
-    badge: '',
-    ctaLabel: 'Start 7-day trial',
-    ctaVariant: 'secondary',
+    annualTotal:  { ngn: 115200, usd: 180 },
+    annualSavings:{ ngn: 28800,  usd: 48  },
+    hot:          false,
+    badge:        '',
+    ctaLabel:     'Start 7-day trial',
+    ctaVariant:   'secondary',
     paystackPlanCode: { monthly: 'PLN_4v5qnnjk9rt6cdk', annual: 'PLN_vxl1wn9nirjic5j' },
     features: [
       { enabled: true,  text: 'Unlimited AI coaching' },
@@ -103,16 +101,16 @@ export const B2C_TIERS: B2CTier[] = [
     ],
   },
   {
-    id: 'pro',           // Supabase subscription_plan value — DO NOT CHANGE
-    name: 'Builder',     // display name
-    label: 'Recommended',
+    id:           'builder',
+    name:         'Builder',
+    label:        'Recommended',
     priceMonthly: { ngn: 25000, usd: 39 },
-    annualTotal: { ngn: 240000, usd: 372 },
-    annualSavings: { ngn: 60000, usd: 96 },
-    hot: true,
-    badge: 'Most value',
-    ctaLabel: 'Start 7-day trial',
-    ctaVariant: 'primary',
+    annualTotal:  { ngn: 240000, usd: 372 },
+    annualSavings:{ ngn: 60000,  usd: 96  },
+    hot:          true,
+    badge:        'Most value',
+    ctaLabel:     'Start 7-day trial',
+    ctaVariant:   'primary',
     paystackPlanCode: { monthly: 'PLN_4gok25gn1vz20i0', annual: 'PLN_73hl3c3n3zxhh79' },
     features: [
       { enabled: true,  text: 'Everything in Explorer' },
@@ -124,16 +122,16 @@ export const B2C_TIERS: B2CTier[] = [
     ],
   },
   {
-    id: 'elite',         // Supabase subscription_plan value — DO NOT CHANGE
-    name: 'Climber',     // display name
-    label: 'High-touch',
-    priceMonthly: { ngn: 60000, usd: 99 },
-    annualTotal: { ngn: 576000, usd: 948 },
-    annualSavings: { ngn: 144000, usd: 240 },
-    hot: false,
-    badge: '',
-    ctaLabel: 'Book a call',
-    ctaVariant: 'secondary',
+    id:           'climber',
+    name:         'Climber',
+    label:        'High-touch',
+    priceMonthly: { ngn: 60000, usd: 99  },
+    annualTotal:  { ngn: 576000, usd: 948 },
+    annualSavings:{ ngn: 144000, usd: 240 },
+    hot:          false,
+    badge:        '',
+    ctaLabel:     'Book a call',
+    ctaVariant:   'secondary',
     paystackPlanCode: { monthly: 'PLN_ve92id76obworr6', annual: 'PLN_4gbyspguka7qn0h' },
     features: [
       { enabled: true, text: 'Everything in Builder' },
@@ -146,22 +144,22 @@ export const B2C_TIERS: B2CTier[] = [
   },
 ]
 
-// ─────────────────────────────────────────────────────────────────────────────
-// B2B TIERS
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// B2B TIERS (unchanged — partner plans don't use B2C IDs)
+// ─────────────────────────────────────────────────────────────────
 export const B2B_TIERS: B2BTier[] = [
   {
-    id: 'partner_starter',
-    name: 'Starter Partner',
-    label: 'For small communities',
-    flatMonthly: 199,
-    seatPrice: 5,
-    maxSeats: 'Up to 50 active members',
-    annualText: 'Save $398/yr billed annually',
-    hot: false,
-    badge: '',
-    ctaLabel: 'Get started',
-    ctaVariant: 'secondary',
+    id:           'partner_starter',
+    name:         'Starter Partner',
+    label:        'For small communities',
+    flatMonthly:  199,
+    seatPrice:    5,
+    maxSeats:     'Up to 50 active members',
+    annualText:   'Save $398/yr billed annually',
+    hot:          false,
+    badge:        '',
+    ctaLabel:     'Get started',
+    ctaVariant:   'secondary',
     paystackPlanCode: { monthly: '', annual: '' },
     features: [
       { enabled: true,  text: 'Branded AI coaching (Sage)' },
@@ -173,17 +171,17 @@ export const B2B_TIERS: B2BTier[] = [
     ],
   },
   {
-    id: 'partner_growth',
-    name: 'Growth Partner',
-    label: 'For scaling communities',
-    flatMonthly: 499,
-    seatPrice: 4,
-    maxSeats: 'Up to 200 active members',
-    annualText: 'Save $998/yr billed annually',
-    hot: true,
-    badge: 'Most popular',
-    ctaLabel: 'Start 14-day trial',
-    ctaVariant: 'primary',
+    id:           'partner_growth',
+    name:         'Growth Partner',
+    label:        'For scaling communities',
+    flatMonthly:  499,
+    seatPrice:    4,
+    maxSeats:     'Up to 200 active members',
+    annualText:   'Save $998/yr billed annually',
+    hot:          true,
+    badge:        'Most popular',
+    ctaLabel:     'Start 14-day trial',
+    ctaVariant:   'primary',
     paystackPlanCode: { monthly: '', annual: '' },
     features: [
       { enabled: true,  text: 'Everything in Starter' },
@@ -195,17 +193,17 @@ export const B2B_TIERS: B2BTier[] = [
     ],
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise',
-    label: 'For large organisations',
-    flatMonthly: null,
-    seatPrice: null,
-    maxSeats: 'Unlimited members',
-    annualText: 'Custom pricing — contact us',
-    hot: false,
-    badge: '',
-    ctaLabel: 'Contact us',
-    ctaVariant: 'secondary',
+    id:           'enterprise',
+    name:         'Enterprise',
+    label:        'For large organisations',
+    flatMonthly:  null,
+    seatPrice:    null,
+    maxSeats:     'Unlimited members',
+    annualText:   'Custom pricing — contact us',
+    hot:          false,
+    badge:        '',
+    ctaLabel:     'Contact us',
+    ctaVariant:   'secondary',
     paystackPlanCode: { monthly: '', annual: '' },
     features: [
       { enabled: true, text: 'Everything in Growth' },
@@ -218,15 +216,15 @@ export const B2B_TIERS: B2BTier[] = [
   },
 ]
 
-// ─────────────────────────────────────────────────────────────────────────────
-// REVENUE MODEL ROWS
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────
 export interface RevenueRow {
-  label: string
-  b2cMRR: string
-  b2bMRR: string
+  label:    string
+  b2cMRR:   string
+  b2bMRR:   string
   totalMRR: string
-  arr: string
+  arr:      string
 }
 
 export const REVENUE_ROWS: RevenueRow[] = [
@@ -237,12 +235,9 @@ export const REVENUE_ROWS: RevenueRow[] = [
   { label: 'Month 24', b2cMRR: '$22,250', b2bMRR: '$41,725', totalMRR: '$63,975', arr: '$767,700' },
 ]
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
 export function formatPrice(amount: number | null, currency: Currency): string {
   if (amount === null) return 'Custom'
-  if (amount === 0) return currency === 'ngn' ? '₦0' : '$0'
+  if (amount === 0)    return currency === 'ngn' ? '₦0' : '$0'
   if (currency === 'ngn') return `₦${amount.toLocaleString('en-NG')}`
   return `$${amount}`
 }

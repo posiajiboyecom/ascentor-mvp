@@ -1,92 +1,88 @@
-// ============================================================
-// SERVER-SIDE SUBSCRIPTION GUARD
+// ================================================================
 // lib/subscriptionGuard.ts
+// ================================================================
+// Server-side subscription guard for API routes.
+// Plan IDs: explorer | builder | climber (canonical)
 //
-// Plan ID mapping (Supabase subscription_plan → display name):
-//   free    → Free
-//   builder → Explorer  (₦12,000/mo)
-//   pro     → Builder   (₦25,000/mo)
-//   elite   → Climber   (₦60,000/mo)
-// ============================================================
+// Usage in an API route:
+//   const guard = await requireSubscription('builder')
+//   if (guard.error) return guard.error
+//   const { user, effectivePlan } = guard
+// ================================================================
 
-import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
+// ── Plan hierarchy ────────────────────────────────────────────
 const PLAN_RANK: Record<string, number> = {
   free:     0,
-  // Current Supabase IDs
-  builder:  1,   // Explorer
-  pro:      2,   // Builder
-  elite:    3,   // Climber
-  // Legacy aliases
   explorer: 1,
-  standard: 2,
-  tester:   2,
+  builder:  2,
   climber:  3,
-};
+}
 
-export type MinPlan = 'free' | 'explorer' | 'builder' | 'pro' | 'elite' | 'climber';
+export type MinPlan = 'free' | 'explorer' | 'builder' | 'climber'
 
 export interface GuardSuccess {
-  error: null;
-  user: { id: string; email: string };
-  effectivePlan: string;
-  planRank: number;
+  error:         null
+  user:          { id: string; email: string }
+  effectivePlan: string
+  planRank:      number
 }
 
 export interface GuardFailure {
-  error: NextResponse;
-  user: null;
-  effectivePlan: null;
-  planRank: null;
+  error:         NextResponse
+  user:          null
+  effectivePlan: null
+  planRank:      null
 }
 
-export type GuardResult = GuardSuccess | GuardFailure;
+export type GuardResult = GuardSuccess | GuardFailure
 
 export async function requireSubscription(minPlan: MinPlan = 'free'): Promise<GuardResult> {
-  const supabase = await createClient();
+  const supabase = await createClient()
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return {
       error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
       user: null, effectivePlan: null, planRank: null,
-    };
+    }
   }
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('subscription_plan, subscription_status, subscription_end')
     .eq('id', user.id)
-    .single();
+    .single()
 
-  const plan   = profile?.subscription_plan || 'free';
-  const status = profile?.subscription_status || 'free';
+  const plan   = profile?.subscription_plan || 'free'
+  const status = profile?.subscription_status || 'free'
 
   const isActive =
     status === 'active' ||
     status === 'trialing' ||
     (status === 'cancelled' &&
       profile?.subscription_end &&
-      new Date(profile.subscription_end) > new Date());
+      new Date(profile.subscription_end) > new Date())
 
-  const effectivePlan = isActive ? plan : 'free';
-  const userRank = PLAN_RANK[effectivePlan] ?? 0;
-  const minRank  = PLAN_RANK[minPlan] ?? 0;
+  const effectivePlan = isActive ? plan : 'free'
+  const userRank = PLAN_RANK[effectivePlan] ?? 0
+  const minRank  = PLAN_RANK[minPlan] ?? 0
 
   if (userRank < minRank) {
     return {
       error: NextResponse.json(
         {
-          error: 'Subscription required',
+          error:       'Subscription required',
           requiredPlan: minPlan,
-          currentPlan: effectivePlan,
-          upgradeUrl: `/checkout?required=${minPlan}`,
+          currentPlan:  effectivePlan,
+          upgradeUrl:   `/checkout?required=${minPlan}`,
         },
         { status: 403 }
       ),
       user: null, effectivePlan: null, planRank: null,
-    };
+    }
   }
 
   return {
@@ -94,116 +90,109 @@ export async function requireSubscription(minPlan: MinPlan = 'free'): Promise<Gu
     user: { id: user.id, email: user.email || '' },
     effectivePlan,
     planRank: userRank,
-  };
+  }
 }
 
-// ── Coach session limit check ─────────────────────────────────────────────
-// -1 = unlimited. Matches PLAN_LIMITS in session-limits.ts.
+// ── Coach session monthly limit ───────────────────────────────
+// -1 = unlimited
 const COACH_LIMITS: Record<string, number> = {
-  free:     5,   // 5/month
-  builder:  30,  // Explorer: 30/month
-  pro:      -1,  // Builder: unlimited
-  elite:    -1,  // Climber: unlimited
-  // Legacy aliases
+  free:     5,
   explorer: 30,
-  standard: -1,
-  tester:   -1,
+  builder:  -1,
   climber:  -1,
-};
+}
 
 export async function checkCoachSessionLimit(userId: string, effectivePlan: string): Promise<{
-  allowed: boolean;
-  used: number;
-  limit: number;
-  error?: NextResponse;
+  allowed: boolean
+  used:    number
+  limit:   number
+  error?:  NextResponse
 }> {
-  const limit = COACH_LIMITS[effectivePlan] ?? 5;
-  if (limit === -1) return { allowed: true, used: 0, limit: -1 };
+  const limit = COACH_LIMITS[effectivePlan] ?? 5
+  if (limit === -1) return { allowed: true, used: 0, limit: -1 }
 
-  const supabase = await createClient();
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  const supabase = await createClient()
+  const startOfMonth = new Date()
+  startOfMonth.setDate(1)
+  startOfMonth.setHours(0, 0, 0, 0)
 
   const { count } = await supabase
     .from('coaching_sessions')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .gte('created_at', startOfMonth.toISOString());
+    .gte('created_at', startOfMonth.toISOString())
 
-  const used = count || 0;
+  const used = count || 0
 
   if (used >= limit) {
-    const nextPlan = effectivePlan === 'free' ? 'builder' : 'pro';
+    const nextPlan = effectivePlan === 'free' ? 'explorer' : 'builder'
     return {
       allowed: false,
       used,
       limit,
       error: NextResponse.json(
         {
-          error: 'Monthly session limit reached',
+          error:      'Monthly session limit reached',
           used,
           limit,
           upgradeUrl: `/checkout?required=${nextPlan}&feature=coach`,
-          message: `You've used all ${limit} Sage sessions this month. Upgrade for more.`,
+          message:    `You've used all ${limit} Sage sessions this month. Upgrade for more.`,
         },
         { status: 429 }
       ),
-    };
+    }
   }
 
-  return { allowed: true, used, limit };
+  return { allowed: true, used, limit }
 }
 
-// ── Expert session monthly limit check ───────────────────────────────────
-// Free: 0 paid sessions (is_free only). builder=1, pro=2, elite=unlimited.
+// ── Expert session monthly limit ──────────────────────────────
+// free=0, explorer=1, builder=2, climber=unlimited
 const EXPERT_LIMITS: Record<string, number> = {
   free:     0,
-  builder:  1,
-  pro:      2,
-  elite:    -1,
   explorer: 1,
-  standard: 2,
-  tester:   2,
+  builder:  2,
   climber:  -1,
-};
+}
 
 export async function checkExpertSessionLimit(userId: string, effectivePlan: string): Promise<{
-  allowed: boolean;
-  used: number;
-  limit: number;
-  error?: NextResponse;
+  allowed: boolean
+  used:    number
+  limit:   number
+  error?:  NextResponse
 }> {
-  const limit = EXPERT_LIMITS[effectivePlan] ?? 0;
-  if (limit === -1) return { allowed: true, used: 0, limit: -1 };
+  const limit = EXPERT_LIMITS[effectivePlan] ?? 0
+
+  if (limit === -1) return { allowed: true, used: 0, limit: -1 }
+
   if (limit === 0) {
     return {
       allowed: false,
-      used: 0,
-      limit: 0,
-      error: NextResponse.json(
+      used:    0,
+      limit:   0,
+      error:   NextResponse.json(
         {
-          error: 'Expert sessions require a paid plan',
-          upgradeUrl: '/checkout?required=builder&feature=experts',
-          message: 'Upgrade to Explorer or higher to register for expert sessions.',
+          error:      'Expert sessions require a paid plan',
+          upgradeUrl: '/checkout?required=explorer&feature=experts',
+          message:    'Upgrade to Explorer or higher to register for expert sessions.',
         },
         { status: 403 }
       ),
-    };
+    }
   }
 
-  const supabase = await createClient();
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  const supabase = await createClient()
+  const startOfMonth = new Date()
+  startOfMonth.setDate(1)
+  startOfMonth.setHours(0, 0, 0, 0)
 
   const { count } = await supabase
     .from('session_registrations')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .gte('created_at', startOfMonth.toISOString());
+    .gte('created_at', startOfMonth.toISOString())
 
-  const used = count || 0;
+  const used = count || 0
 
   if (used >= limit) {
     return {
@@ -212,16 +201,16 @@ export async function checkExpertSessionLimit(userId: string, effectivePlan: str
       limit,
       error: NextResponse.json(
         {
-          error: 'Monthly expert session limit reached',
+          error:      'Monthly expert session limit reached',
           used,
           limit,
-          upgradeUrl: '/checkout?required=pro&feature=experts',
-          message: `You've used your ${limit} expert session${limit > 1 ? 's' : ''} this month. Upgrade to Builder for more.`,
+          upgradeUrl: '/checkout?required=builder&feature=experts',
+          message:    `You've used your ${limit} expert session${limit > 1 ? 's' : ''} this month. Upgrade to Builder for more.`,
         },
         { status: 429 }
       ),
-    };
+    }
   }
 
-  return { allowed: true, used, limit };
+  return { allowed: true, used, limit }
 }

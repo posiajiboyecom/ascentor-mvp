@@ -1,15 +1,14 @@
 // ================================================================
-// GET /api/pay/callback  — PAYMENT SYSTEM v4 (HOSTED PAGE)
+// GET /api/pay/callback  — PAYMENT SYSTEM v5
 // ================================================================
-// Paystack redirects to this URL after the user pays on their
-// hosted payment page. We verify the reference server-side,
-// activate the subscription, then redirect to /dashboard.
-//
-// This is a GET route (browser redirect from Paystack).
-// Reference comes in as a query param: ?reference=xxx&trxref=xxx
+// Paystack redirects here after the user pays on their hosted page.
+// We verify the reference server-side, activate the subscription,
+// then redirect to /dashboard.
 //
 // Security: reference is verified against Paystack API —
 // never trust client-supplied data to activate a subscription.
+//
+// Plan IDs: explorer | builder | climber (canonical — no legacy)
 // ================================================================
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -19,24 +18,29 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!
 const APP_URL = process.env.NEXT_PUBLIC_URL || 'https://ascentorbi.com'
 
-// Map planId → subscription_plan stored in profiles table
-const PLAN_ID_TO_SUBSCRIPTION: Record<string, string> = {
-  explorer: 'explorer',
-  builder:  'builder',
-  climber:  'climber',
+// Legacy plan ID normalisation — safe net for any old references
+// After the DB migration, plan codes will always be canonical
+const LEGACY_PLAN_MAP: Record<string, string> = {
+  pro:   'builder',
+  elite: 'climber',
+}
+
+function normalisePlanId(raw: string | null | undefined): string {
+  if (!raw) return 'explorer'
+  return LEGACY_PLAN_MAP[raw] ?? raw
 }
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const reference = searchParams.get('reference') || searchParams.get('trxref')
 
-  // ── 1. Reference must exist ──────────────────────────────────────────────
+  // ── 1. Reference must exist ──────────────────────────────────
   if (!reference) {
     return NextResponse.redirect(`${APP_URL}/checkout?error=missing_reference`)
   }
 
   try {
-    // ── 2. Verify with Paystack ────────────────────────────────────────────
+    // ── 2. Verify with Paystack ────────────────────────────────
     const verifyRes = await fetch(
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
       {
@@ -53,18 +57,18 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const tx       = verifyData.data
-    const userId   = tx.metadata?.user_id
-    const planId   = tx.metadata?.plan_id
-    const billing  = tx.metadata?.billing
+    const tx      = verifyData.data
+    const userId  = tx.metadata?.user_id
+    const rawPlan = tx.metadata?.plan_id
+    const billing = tx.metadata?.billing ?? 'monthly'
 
-    if (!userId || !planId) {
+    if (!userId || !rawPlan) {
       console.error('[pay/callback] Missing metadata in transaction:', tx.metadata)
       // Payment succeeded but metadata missing — webhook will reconcile
       return NextResponse.redirect(`${APP_URL}/dashboard?payment=processing`)
     }
 
-    // ── 3. Idempotency — already processed? ───────────────────────────────
+    // ── 3. Idempotency — already processed? ───────────────────
     const { data: existing } = await supabaseAdmin
       .from('payments')
       .select('id')
@@ -76,50 +80,61 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${APP_URL}/dashboard?welcome=1`)
     }
 
-    // ── 4. Activate subscription in profiles ──────────────────────────────
-    const subscriptionPlan = PLAN_ID_TO_SUBSCRIPTION[planId] || planId
-    const trialEnd = new Date()
-    trialEnd.setDate(trialEnd.getDate() + 7) // 7-day trial period
+    // ── 4. Normalise plan ID to canonical set ──────────────────
+    const planId = normalisePlanId(rawPlan)
+
+    // ── 5. Activate subscription ───────────────────────────────
+    const now             = new Date()
+    const subscriptionEnd = new Date(now)
+    subscriptionEnd.setDate(subscriptionEnd.getDate() + 7) // 7-day trial grace
+    if (billing === 'annual') {
+      subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1)
+    } else {
+      subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1)
+    }
 
     await supabaseAdmin
       .from('profiles')
       .update({
-        subscription_plan:   subscriptionPlan,
-        subscription_status: 'trialing',
-        subscription_end:    trialEnd.toISOString(),
-        billing_cycle:       billing || 'monthly',
-        updated_at:          new Date().toISOString(),
+        subscription_plan:    planId,
+        subscription_status:  'trialing',
+        subscription_start:   now.toISOString(),
+        subscription_end:     subscriptionEnd.toISOString(),
+        billing_cycle:        billing,
+        payment_method:       'paystack',
+        onboarding_completed: true,
+        updated_at:           now.toISOString(),
       })
       .eq('id', userId)
 
-    // ── 5. Log payment ────────────────────────────────────────────────────
+    // ── 6. Log payment ─────────────────────────────────────────
     try {
       await supabaseAdmin.from('payments').insert({
         user_id:   userId,
         reference,
         plan_id:   planId,
-        billing:   billing || 'monthly',
+        billing,
         amount:    tx.amount ? tx.amount / 100 : 0,
         currency:  tx.currency || 'NGN',
+        provider:  'paystack',
         status:    'success',
-        paid_at:   tx.paid_at || new Date().toISOString(),
+        paid_at:   tx.paid_at || now.toISOString(),
       })
 
       await supabaseAdmin.from('payment_attempts').update({
         status:     'success',
-        updated_at: new Date().toISOString(),
+        updated_at: now.toISOString(),
       }).eq('reference', reference)
     } catch (e) {
       console.warn('[pay/callback] Could not log payment (non-critical):', e)
     }
 
-    // ── 6. Redirect to dashboard ──────────────────────────────────────────
-    console.log(`[pay/callback] Success — user ${userId} activated on ${subscriptionPlan}`)
+    // ── 7. Redirect to dashboard ───────────────────────────────
+    console.log(`[pay/callback] ✅ Success — user ${userId} activated on ${planId} (${billing})`)
     return NextResponse.redirect(`${APP_URL}/dashboard?welcome=1`)
 
   } catch (err: any) {
     console.error('[pay/callback] Unexpected error:', err)
-    // Don't leave user stranded — webhook is the safety net
     return NextResponse.redirect(`${APP_URL}/dashboard?payment=processing`)
   }
 }
