@@ -227,10 +227,6 @@ export default function CheckoutPage() {
         <style>{checkoutStyles(isDark)}</style>
         <div className="co-root" data-co-theme={isDark ? 'dark' : 'light'}>
           <nav className="co-nav">
-            <Link href="/dashboard" className="co-nav-logo">
-              <LogoImg isDark={isDark} />
-              <span className="co-logo-text">Ascentor</span>
-            </Link>
             <Link href="/dashboard" className="co-back-btn">← Dashboard</Link>
           </nav>
 
