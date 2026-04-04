@@ -1,3 +1,9 @@
+// FILE: app/admin/users/page.tsx
+// ADDED: Delete button in table row (desktop + mobile) and inside user detail modal.
+//        Modal delete has a type-to-confirm safety guard (must type 'DELETE').
+//        Table row delete uses a two-step confirm() dialog.
+//        After delete: modal closes, list refreshes, success message shown.
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -87,6 +93,7 @@ export default function AdminUsersPage() {
       const data = await res.json();
       if (data.success) {
         setMessage(data.message);
+        if (action === 'delete') setSelectedUser(null);
         fetchUsers();
       } else {
         setMessage(`Error: ${data.error}`);
@@ -381,6 +388,26 @@ export default function AdminUsersPage() {
                                 Ban
                               </button>
                             )}
+                            <button
+                              onClick={() => {
+                                if (confirm(`⚠️ PERMANENTLY DELETE "${u.full_name || u.email}"?\n\nThis will erase their account, profile, sessions, and all data. This cannot be undone.`)) {
+                                  doAction(u.id, 'delete');
+                                }
+                              }}
+                              disabled={actionLoading}
+                              className="asc-btn-danger"
+                              style={{
+                                ...inputBase,
+                                padding: '5px 12px',
+                                fontSize: '11px',
+                                cursor: 'pointer',
+                                color: '#EF4444',
+                                borderColor: 'rgba(239,68,68,0.3)',
+                                background: 'rgba(239,68,68,0.06)',
+                              }}
+                            >
+                              Delete
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -481,6 +508,18 @@ export default function AdminUsersPage() {
                           Ban
                         </button>
                       )}
+                      <button
+                        onClick={() => {
+                          if (confirm(`⚠️ PERMANENTLY DELETE "${u.full_name || u.email}"?\n\nThis will erase their account, profile, sessions, and all data. This cannot be undone.`)) {
+                            doAction(u.id, 'delete');
+                          }
+                        }}
+                        disabled={actionLoading}
+                        className="asc-btn-danger"
+                        style={{ ...inputBase, padding: '6px 14px', fontSize: '12px', cursor: 'pointer', color: '#EF4444', borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)' }}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 );
@@ -653,6 +692,74 @@ export default function AdminUsersPage() {
                   Ban
                 </button>
               )}
+            </div>
+
+            {/* Delete Zone */}
+            <div style={{
+              marginTop: '24px',
+              padding: '16px',
+              borderRadius: '10px',
+              background: 'rgba(239,68,68,0.04)',
+              border: '1px solid rgba(239,68,68,0.2)',
+            }}>
+              <p style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: '10px',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: '#EF4444',
+                margin: '0 0 8px',
+              }}>
+                Danger Zone — Permanent Delete
+              </p>
+              <p style={{ fontSize: '12px', color: 'var(--admin-text-muted)', margin: '0 0 12px', lineHeight: 1.6 }}>
+                Erases this account, profile, sessions, and all associated data from auth and database. <strong style={{ color: 'var(--admin-text)' }}>Cannot be undone.</strong>
+              </p>
+              <p style={{ fontSize: '11px', color: 'var(--admin-text-faint)', margin: '0 0 8px' }}>
+                Type <strong style={{ color: 'var(--admin-text)' }}>DELETE</strong> to confirm:
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  id="delete-confirm-input"
+                  type="text"
+                  placeholder="Type DELETE"
+                  className="asc-input"
+                  style={{ ...inputBase, flex: 1, fontSize: '12px', borderColor: 'rgba(239,68,68,0.3)' }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = (e.target as HTMLInputElement).value;
+                      if (val === 'DELETE') {
+                        doAction(selectedUser.id, 'delete');
+                        setSelectedUser(null);
+                      }
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    const input = document.getElementById('delete-confirm-input') as HTMLInputElement;
+                    if (input?.value === 'DELETE') {
+                      doAction(selectedUser.id, 'delete');
+                      setSelectedUser(null);
+                    } else {
+                      input?.focus();
+                    }
+                  }}
+                  disabled={actionLoading}
+                  className="asc-btn-danger"
+                  style={{
+                    ...inputBase,
+                    cursor: 'pointer',
+                    color: '#EF4444',
+                    borderColor: 'rgba(239,68,68,0.4)',
+                    background: 'rgba(239,68,68,0.1)',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Delete Account
+                </button>
+              </div>
             </div>
           </div>
         </>

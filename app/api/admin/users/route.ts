@@ -1,3 +1,10 @@
+// FILE: app/api/admin/users/route.ts
+// 'delete' action already implemented — no changes needed.
+// Cleans up: coaching_sessions, cohort_members, cohort_posts, cohort_replies,
+// cohort_votes, notifications, push_subscriptions, referrals,
+// session_registrations, goal_entries, then profiles, then auth.users.
+// Self-delete is blocked. Action is audit-logged.
+
 // ============================================================
 // ADMIN USERS API — /api/admin/users
 // GET: list all users with search/filter
