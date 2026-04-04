@@ -79,7 +79,6 @@ export default function OnboardingPage() {
   const handleGoalSave = async () => {
     setSaving(true);
 
-    // Use the user already authenticated — single getUser call
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       alert('Session expired. Please sign in again.');
@@ -99,7 +98,6 @@ export default function OnboardingPage() {
       });
 
       if (goalError) {
-        // Duplicate goal is fine (user hit back and resubmitted) — ignore unique violations
         if (!goalError.message.includes('duplicate') && goalError.code !== '23505') {
           alert(`Error saving goal: ${goalError.message}`);
           setSaving(false);
@@ -107,9 +105,7 @@ export default function OnboardingPage() {
         }
       }
 
-      // 2. Mark onboarding complete — fire-and-forget, never blocks navigation.
-      // Free users: this lets them reach /dashboard on next login.
-      // Paid users: /api/payment/verify sets this flag again on payment.
+      // 2. Mark onboarding complete — fire-and-forget
       supabase.from('profiles').update({
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
@@ -117,7 +113,7 @@ export default function OnboardingPage() {
         if (error) console.warn('[onboarding] onboarding_completed update failed (non-fatal):', error.message);
       });
 
-      // 3. ML tagging — fire-and-forget, never blocks navigation
+      // 3. ML tagging — fire-and-forget
       if (user.email) {
         fetch('/api/checkout-pending', {
           method: 'POST',
@@ -143,8 +139,9 @@ export default function OnboardingPage() {
         }
       } catch { /* non-fatal */ }
 
-      // Navigate immediately — don't wait for non-critical operations
-      router.push('/dashboard');
+      // ── CHANGED: Send to /checkout instead of /dashboard ──────────
+      // User chooses free or paid plan after completing profile setup.
+      router.push('/checkout?from=onboarding');
 
     } catch (err: any) {
       console.error('[onboarding] handleGoalSave error:', err);
@@ -211,103 +208,55 @@ export default function OnboardingPage() {
           to   { opacity: 1; transform: translateY(0); }
         }
 
-        .ob-logo {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 40px;
-        }
+        .ob-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
         .ob-logo-mark { width: 28px; height: 28px; }
         .ob-logo-text {
           font-family: 'Cormorant Garamond', serif;
-          font-weight: 700;
-          font-size: 20px;
-          color: #fff;
-          letter-spacing: -0.2px;
+          font-weight: 700; font-size: 20px; color: #fff; letter-spacing: -0.2px;
         }
 
-        .ob-steps {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 36px;
-        }
+        .ob-steps { display: flex; align-items: center; gap: 8px; margin-bottom: 36px; }
         .ob-step-bar {
-          flex: 1;
-          height: 2px;
-          border-radius: 2px;
-          background: #2E2A22;
-          overflow: hidden;
-          transition: background 0.4s;
+          flex: 1; height: 2px; border-radius: 2px;
+          background: #2E2A22; overflow: hidden; transition: background 0.4s;
         }
         .ob-step-bar.active { background: #E8A020; }
         .ob-step-label {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.12em;
-          color: #7A7260;
-          white-space: nowrap;
+          font-family: 'DM Mono', monospace; font-size: 10px;
+          letter-spacing: 0.12em; color: #7A7260; white-space: nowrap;
         }
 
         .ob-eyebrow {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.16em;
-          color: #E8A020;
-          text-transform: uppercase;
-          margin-bottom: 10px;
+          font-family: 'DM Mono', monospace; font-size: 10px;
+          letter-spacing: 0.16em; color: #E8A020; text-transform: uppercase; margin-bottom: 10px;
         }
         .ob-heading {
-          font-family: 'Cormorant Garamond', serif;
-          font-weight: 700;
-          font-size: 36px;
-          line-height: 1.1;
-          color: #fff;
-          margin-bottom: 8px;
-          letter-spacing: -0.5px;
+          font-family: 'Cormorant Garamond', serif; font-weight: 700;
+          font-size: 36px; line-height: 1.1; color: #fff;
+          margin-bottom: 8px; letter-spacing: -0.5px;
         }
         .ob-subheading {
-          font-size: 14px;
-          color: #7A7260;
-          margin-bottom: 32px;
-          line-height: 1.5;
-          font-weight: 400;
+          font-size: 14px; color: #7A7260; margin-bottom: 32px;
+          line-height: 1.5; font-weight: 400;
         }
 
         .ob-form { display: flex; flex-direction: column; gap: 14px; }
-
         .ob-field { display: flex; flex-direction: column; gap: 6px; }
         .ob-label {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.12em;
-          color: #4A4438;
-          text-transform: uppercase;
+          font-family: 'DM Mono', monospace; font-size: 10px;
+          letter-spacing: 0.12em; color: #4A4438; text-transform: uppercase;
         }
 
-        .ob-input,
-        .ob-textarea,
-        .ob-select {
-          width: 100%;
-          padding: 13px 16px;
-          background: #1E1C17;
-          border: 1px solid #2E2A22;
-          border-radius: 10px;
-          color: #D4CFC3;
-          font-family: 'Syne', sans-serif;
-          font-size: 14px;
-          font-weight: 400;
-          outline: none;
-          transition: border-color 0.2s, background 0.2s;
+        .ob-input, .ob-textarea, .ob-select {
+          width: 100%; padding: 13px 16px;
+          background: #1E1C17; border: 1px solid #2E2A22; border-radius: 10px;
+          color: #D4CFC3; font-family: 'Syne', sans-serif; font-size: 14px;
+          font-weight: 400; outline: none; transition: border-color 0.2s, background 0.2s;
           -webkit-appearance: none;
         }
-        .ob-input::placeholder,
-        .ob-textarea::placeholder { color: #4A4438; }
-        .ob-input:focus,
-        .ob-textarea:focus,
-        .ob-select:focus {
-          border-color: rgba(232,160,32,0.5);
-          background: #2E2A22;
+        .ob-input::placeholder, .ob-textarea::placeholder { color: #4A4438; }
+        .ob-input:focus, .ob-textarea:focus, .ob-select:focus {
+          border-color: rgba(232,160,32,0.5); background: #2E2A22;
         }
         .ob-textarea { resize: none; line-height: 1.5; }
         .ob-select { cursor: pointer; color: #D4CFC3; }
@@ -317,87 +266,47 @@ export default function OnboardingPage() {
         @media (max-width: 480px) { .ob-grid-2 { grid-template-columns: 1fr; } }
 
         .ob-milestones-label {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.12em;
-          color: #4A4438;
-          text-transform: uppercase;
-          margin-bottom: 2px;
+          font-family: 'DM Mono', monospace; font-size: 10px;
+          letter-spacing: 0.12em; color: #4A4438;
+          text-transform: uppercase; margin-bottom: 2px;
         }
         .ob-milestone-row { display: flex; align-items: center; gap: 12px; }
         .ob-milestone-num {
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: #2E2A22;
-          border: 1px solid #4A4438;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          color: #7A7260;
-          flex-shrink: 0;
+          width: 24px; height: 24px; border-radius: 50%;
+          background: #2E2A22; border: 1px solid #4A4438;
+          display: flex; align-items: center; justify-content: center;
+          font-family: 'DM Mono', monospace; font-size: 10px; color: #7A7260; flex-shrink: 0;
         }
 
         .ob-journey {
-          display: flex;
-          align-items: center;
-          gap: 10px;
+          display: flex; align-items: center; gap: 10px;
           padding: 12px 16px;
-          background: rgba(232,160,32,0.04);
-          border: 1px solid rgba(232,160,32,0.12);
-          border-radius: 10px;
-          font-size: 13px;
+          background: rgba(232,160,32,0.04); border: 1px solid rgba(232,160,32,0.12);
+          border-radius: 10px; font-size: 13px;
         }
         .ob-journey-from { color: #7A7260; }
         .ob-journey-arrow { color: #4A4438; }
         .ob-journey-to { color: #E8A020; font-weight: 600; }
 
         .ob-btn {
-          width: 100%;
-          padding: 15px 24px;
-          background: #E8A020;
-          color: #0C0B08;
-          border: none;
-          border-radius: 10px;
-          font-family: 'Syne', sans-serif;
-          font-size: 14px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          cursor: pointer;
-          transition: background 0.2s, transform 0.15s;
-          margin-top: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
+          width: 100%; padding: 15px 24px;
+          background: #E8A020; color: #0C0B08; border: none; border-radius: 10px;
+          font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+          letter-spacing: 0.04em; cursor: pointer; transition: background 0.2s, transform 0.15s;
+          margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 8px;
         }
         .ob-btn:hover:not(:disabled) { background: #F5C55A; transform: translateY(-1px); }
         .ob-btn:active:not(:disabled) { transform: translateY(0); }
         .ob-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
         .ob-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
+          display: inline-flex; align-items: center; gap: 6px;
           padding: 6px 12px;
-          background: rgba(232,160,32,0.08);
-          border: 1px solid rgba(232,160,32,0.18);
-          border-radius: 100px;
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.1em;
-          color: #E8A020;
-          margin-bottom: 20px;
+          background: rgba(232,160,32,0.08); border: 1px solid rgba(232,160,32,0.18);
+          border-radius: 100px; font-family: 'DM Mono', monospace;
+          font-size: 10px; letter-spacing: 0.1em; color: #E8A020; margin-bottom: 20px;
         }
-        .ob-badge-dot {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: #E8A020;
-        }
-
+        .ob-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: #E8A020; }
         .ob-divider { height: 1px; background: #2E2A22; margin: 4px 0 8px; }
       `}</style>
 
@@ -414,11 +323,11 @@ export default function OnboardingPage() {
             <span className="ob-logo-text">Ascentor</span>
           </div>
 
-          {/* Step bars */}
+          {/* Step bars — 3 steps: Profile, Goal, Choose Plan */}
           <div className="ob-steps">
             <div className={`ob-step-bar ${step >= 1 ? 'active' : ''}`} />
             <div className={`ob-step-bar ${step >= 2 ? 'active' : ''}`} />
-            <div className={`ob-step-bar ${step >= 3 ? 'active' : ''}`} />
+            <div className="ob-step-bar" /> {/* Step 3 = /checkout */}
             <span className="ob-step-label">STEP {step} OF 3</span>
           </div>
 
@@ -523,12 +432,12 @@ export default function OnboardingPage() {
               <p className="ob-eyebrow">Your 90-Day Goal</p>
               <h1 className="ob-heading">What will your<br/>mentor help you achieve?</h1>
               <p className="ob-subheading">
-                Members who set a 90-day goal with their mentor are 3x more likely to hit a measurable career outcome.
+                Members who set a 90-day goal are 3x more likely to hit a measurable career outcome.
               </p>
 
               <div className="ob-badge">
                 <div className="ob-badge-dot" />
-                BUILDER STAGE · 90-DAY PLAN
+                STEP 2 OF 3 · GOAL SETTING
               </div>
 
               <div className="ob-form">
@@ -569,7 +478,20 @@ export default function OnboardingPage() {
                   onClick={handleGoalSave}
                   disabled={!step2Valid || saving}
                 >
-                  {saving ? 'Preparing Sage...' : <>Meet Sage <span>→</span></>}
+                  {saving ? 'Setting up your plan...' : <>Choose Your Plan <span>→</span></>}
+                </button>
+
+                {/* Step back */}
+                <button
+                  onClick={() => setStep(1)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontFamily: "'DM Mono', monospace", fontSize: 11,
+                    letterSpacing: '0.06em', color: '#4A4438', textAlign: 'center',
+                    marginTop: 4,
+                  }}
+                >
+                  ← Back
                 </button>
               </div>
             </>

@@ -6,12 +6,13 @@
 //
 // Handles:
 //   1. Static file passthrough
-//   2. White-label subdomain rewriting  (john.ascentorbi.com → /p/john/…)
-//   3. Custom domain rewriting          (coaching.john.com → /p/custom/…)
-//   4. Public route passthrough
-//   5. API authentication guard
-//   6. Page authentication guard
-//   7. Subscription tier gate           (explorer / builder / climber)
+//   2. /pricing → /checkout redirect
+//   3. White-label subdomain rewriting  (john.ascentorbi.com → /p/john/…)
+//   4. Custom domain rewriting          (coaching.john.com → /p/custom/…)
+//   5. Public route passthrough
+//   6. API authentication guard
+//   7. Page authentication guard
+//   8. Subscription tier gate           (explorer / builder / climber)
 // ============================================================
 
 import { createServerClient } from '@supabase/ssr'
@@ -70,7 +71,7 @@ const PROTECTED_API_PREFIXES = [
 const PUBLIC_ROUTES = [
   '/login', '/signup', '/checkout',
   '/auth/callback',
-  '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
+  '/', '/about', '/blog', '/privacy', '/terms',
   '/how-it-works', '/who-its-for', '/waitlist', '/newsletter',
   '/mentor-apply', '/offline', '/free',
 ]
@@ -119,7 +120,14 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // 2. White-label subdomain routing
+  // 2. Redirect /pricing → /checkout
+  // /pricing is no longer a standalone page — the checkout page
+  // is the single entry point for plan selection.
+  if (pathname === '/pricing' || pathname.startsWith('/pricing/')) {
+    return NextResponse.redirect(new URL('/checkout', request.url))
+  }
+
+  // 3. White-label subdomain routing
   if (host.endsWith(`.${MAIN_DOMAIN}`)) {
     const subdomain = host.replace(`.${MAIN_DOMAIN}`, '')
     if (subdomain && !RESERVED_SUBDOMAINS.includes(subdomain)) {
@@ -131,7 +139,7 @@ export default async function middleware(request: NextRequest) {
     }
   }
 
-  // 3. Custom domain routing
+  // 4. Custom domain routing
   if (
     !host.endsWith(MAIN_DOMAIN) &&
     host !== MAIN_DOMAIN &&
@@ -145,7 +153,7 @@ export default async function middleware(request: NextRequest) {
     return response
   }
 
-  // 4. Public routes — no auth needed
+  // 5. Public routes — no auth needed
   if (PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     return NextResponse.next()
   }
@@ -153,7 +161,7 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // 5. Build Supabase client for session checks
+  // 6. Build Supabase client for session checks
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -174,20 +182,20 @@ export default async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // 6. Protect API routes
+  // 7. Protect API routes
   if (PROTECTED_API_PREFIXES.some(p => pathname.startsWith(p))) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     return response
   }
 
-  // 7. Protect page routes
+  // 8. Protect page routes
   if (!user && AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  // 8. Subscription tier gate
+  // 9. Subscription tier gate
   if (user) {
     const matchedTier = TIERED_ROUTES.find(r =>
       pathname === r.prefix || pathname.startsWith(r.prefix + '/')
