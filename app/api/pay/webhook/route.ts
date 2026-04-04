@@ -39,17 +39,6 @@ function verifySignature(rawBody: string, sig: string): boolean {
 }
 
 // ── Idempotency — prevent double-processing on Paystack retries ───────────────
-// Requires this table (run once in Supabase SQL editor):
-//
-//   CREATE TABLE IF NOT EXISTS processed_webhook_events (
-//     id          text PRIMARY KEY,   -- Paystack event id or reference+event
-//     processed_at timestamptz DEFAULT now()
-//   );
-//   CREATE INDEX ON processed_webhook_events (processed_at);
-//   -- Optional: auto-purge after 30 days
-//   -- SELECT cron.schedule('purge-webhooks', '0 3 * * *',
-//   --   $$DELETE FROM processed_webhook_events WHERE processed_at < now() - interval '30 days'$$);
-//
 async function isAlreadyProcessed(idempotencyKey: string): Promise<boolean> {
   const { data } = await supabaseAdmin
     .from('processed_webhook_events')
@@ -62,9 +51,7 @@ async function isAlreadyProcessed(idempotencyKey: string): Promise<boolean> {
 async function markProcessed(idempotencyKey: string): Promise<void> {
   await supabaseAdmin
     .from('processed_webhook_events')
-    .insert({ id: idempotencyKey })
-    .onConflict('id')
-    .ignore()
+    .upsert({ id: idempotencyKey }, { onConflict: 'id', ignoreDuplicates: true })
 }
 
 // ── Profile lookup ────────────────────────────────────────────────────────────
@@ -90,8 +77,6 @@ async function getProfileByEmail(email: string) {
 }
 
 // ── Normalise plan ID to canonical set ───────────────────────────────────────
-// Legacy IDs from old data.ts: builder→explorer, pro→builder, elite→climber.
-// After the DB migration these should never appear, but kept as a safety net.
 const LEGACY_PLAN_MAP: Record<string, string> = {
   pro:   'builder',
   elite: 'climber',
@@ -103,7 +88,6 @@ function normalisePlanId(raw: string | null | undefined): string {
 }
 
 // ── Billing period helper ─────────────────────────────────────────────────────
-// Correctly extends by 1 month OR 1 year depending on the billing cycle.
 function nextPeriodEnd(currentEnd: string | null, billing: string): string {
   const base = currentEnd ? new Date(currentEnd) : new Date()
   if (billing === 'annual') {
@@ -136,13 +120,6 @@ async function auditLog(userId: string, action: string, details: object) {
 
 // ── EVENT HANDLERS ────────────────────────────────────────────────────────────
 
-/**
- * charge.success
- * Safety net: fires for every successful charge.
- * - If user is already active/trialing → skip (callback already handled it)
- * - If user is past_due / inactive → this is a recovery, activate them
- * - For renewals where subscription.create has already set status → also skip
- */
 async function handleChargeSuccess(data: any) {
   const metadata = data.metadata ?? {}
   const userId   = metadata.user_id
@@ -161,18 +138,15 @@ async function handleChargeSuccess(data: any) {
     return
   }
 
-  // Skip if already active or trialing — callback/confirm already handled this
   if (profile.subscription_status === 'active' || profile.subscription_status === 'trialing') {
     console.log(`[pay/webhook] charge.success — already active, skipping (${profile.id})`)
     return
   }
 
-  // This is either a first-charge recovery (metadata missing callback) or
-  // a past_due recovery. Activate with correct billing period.
   const planId = normalisePlanId(rawPlan)
   const now    = new Date()
   const subEnd = new Date(now)
-  subEnd.setDate(subEnd.getDate() + 7) // 7-day trial grace
+  subEnd.setDate(subEnd.getDate() + 7)
   if (billing === 'annual') {
     subEnd.setFullYear(subEnd.getFullYear() + 1)
   } else {
@@ -199,12 +173,6 @@ async function handleChargeSuccess(data: any) {
   console.log(`[pay/webhook] ✅ charge.success recovery → ${profile.id} on ${planId}`)
 }
 
-/**
- * subscription.create
- * Paystack created the recurring subscription object.
- * Store the subscription_code — needed to cancel via API.
- * Also transitions from trialing → active.
- */
 async function handleSubscriptionCreate(data: any) {
   const email = data.customer?.email
   if (!email) return
@@ -221,10 +189,6 @@ async function handleSubscriptionCreate(data: any) {
   console.log(`[pay/webhook] ✅ subscription.create → sub code saved for ${email}`)
 }
 
-/**
- * subscription.disable
- * User cancelled or card expired. Access continues until period end.
- */
 async function handleSubscriptionDisable(data: any) {
   const email = data.customer?.email
   if (!email) return
@@ -232,7 +196,6 @@ async function handleSubscriptionDisable(data: any) {
   const profile = await getProfileByEmail(email)
   if (!profile) return
 
-  // Only update if currently in a cancellable state
   if (!['active', 'trialing', 'past_due'].includes(profile.subscription_status)) return
 
   await supabaseAdmin.from('profiles').update({
@@ -257,12 +220,6 @@ async function handleSubscriptionDisable(data: any) {
   console.log(`[pay/webhook] ⚠️  subscription.disable → ${email} cancelled`)
 }
 
-/**
- * invoice.payment_success
- * Recurring renewal succeeded.
- * Reads billing cycle from subscription metadata to correctly extend
- * by 1 month (monthly) or 1 year (annual).
- */
 async function handleRenewalSuccess(data: any) {
   const email = data.customer?.email
   if (!email) return
@@ -270,7 +227,6 @@ async function handleRenewalSuccess(data: any) {
   const profile = await getProfileByEmail(email)
   if (!profile) return
 
-  // Resolve billing cycle: subscription metadata is most reliable source
   const billing = (
     data.subscription?.metadata?.billing ??
     data.metadata?.billing ??
@@ -285,7 +241,6 @@ async function handleRenewalSuccess(data: any) {
     updated_at:          new Date().toISOString(),
   }).eq('id', profile.id)
 
-  // Record renewal payment
   try {
     await supabaseAdmin.from('payments').insert({
       user_id:    profile.id,
@@ -310,10 +265,6 @@ async function handleRenewalSuccess(data: any) {
   console.log(`[pay/webhook] 🔄 invoice.payment_success → ${email} renewed (${billing}) until ${newEnd}`)
 }
 
-/**
- * invoice.payment_failed
- * Renewal failed. Mark past_due, notify user.
- */
 async function handleRenewalFailed(data: any) {
   const email = data.customer?.email
   if (!email) return
@@ -352,8 +303,6 @@ export async function POST(req: NextRequest) {
 
     const { event, data } = JSON.parse(rawBody)
 
-    // Build an idempotency key from event name + Paystack reference
-    // Falls back to event + timestamp if no reference present
     const idempotencyKey = `${event}::${data?.reference ?? data?.subscription_code ?? data?.id ?? Date.now()}`
 
     if (await isAlreadyProcessed(idempotencyKey)) {
@@ -384,15 +333,12 @@ export async function POST(req: NextRequest) {
         console.log(`[pay/webhook] Unhandled event: ${event}`)
     }
 
-    // Mark processed AFTER successful handling
     await markProcessed(idempotencyKey)
 
-    // Always 200 — Paystack retries on non-2xx
     return NextResponse.json({ received: true })
 
   } catch (err: any) {
     console.error('[pay/webhook] Fatal error:', err)
-    // Return 200 to prevent infinite Paystack retries on a parse error
     return NextResponse.json({ received: true, warning: 'Processing error logged' })
   }
 }
