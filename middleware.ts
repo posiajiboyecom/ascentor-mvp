@@ -60,7 +60,6 @@ const PROTECTED_API_PREFIXES = [
   '/api/coaching',
   '/api/pay',          // was /api/payment — now covers all /api/pay/* routes
   '/api/referral',
-  '/api/subscription',
   '/api/usage',
   '/api/push',
   '/api/admin',
