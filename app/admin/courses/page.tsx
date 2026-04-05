@@ -293,6 +293,7 @@ function AdminCoursesInner() {
   const emptyForm = {
     title: '', description: '', category: 'General', difficulty: 'beginner' as string,
     lessons: 1, duration: '', emoji: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', youtube_id: '', is_published: true,
+    plan_tier: 'free' as string,
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -360,6 +361,7 @@ function AdminCoursesInner() {
       emoji:        course.emoji        || '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
       youtube_id:   course.youtube_id   || '',
       is_published: course.is_published ?? true,
+      plan_tier:    course.plan_tier    || 'free',
     });
     setEditing(course);
     setShowForm(true);
@@ -672,6 +674,22 @@ function AdminCoursesInner() {
               </div>
             </div>
 
+            {/* Plan tier — controls who can access this course */}
+            <div>
+              <FieldLabel>Plan Access</FieldLabel>
+              <select
+                className="asc-field"
+                value={form.plan_tier}
+                onChange={e => setForm({ ...form, plan_tier: e.target.value })}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: B.dark700, color: B.dark200, border: `1px solid ${B.border}`, fontFamily: B.fontUI, fontSize: '13px', outline: 'none' }}
+              >
+                <option value="free">Free — all users can access</option>
+                <option value="explorer">Explorer and above</option>
+                <option value="builder">Builder and above</option>
+                <option value="climber">Climber only</option>
+              </select>
+            </div>
+
             {/* Published toggle — custom branded, not raw <input type="checkbox"> */}
             <div>
               <FieldLabel>Visibility</FieldLabel>
@@ -843,6 +861,26 @@ function AdminCoursesInner() {
                         Draft
                       </span>
                     )}
+                    {/* Plan tier badge */}
+                    {c.plan_tier && c.plan_tier !== 'free' && (() => {
+                      const tierColors: Record<string, { color: string; bg: string; border: string }> = {
+                        explorer: { color: B.explorer, bg: 'rgba(20,184,166,0.10)', border: 'rgba(20,184,166,0.22)' },
+                        builder:  { color: B.gold,     bg: B.goldMuted,             border: B.goldBorder             },
+                        climber:  { color: B.climber,  bg: 'rgba(139,92,246,0.10)', border: 'rgba(139,92,246,0.22)' },
+                      };
+                      const t = tierColors[c.plan_tier] || tierColors.explorer;
+                      return (
+                        <span style={{
+                          fontFamily: B.fontMono, fontSize: '9px', fontWeight: 500,
+                          letterSpacing: '0.07em', textTransform: 'uppercase' as const,
+                          padding: '2px 7px', borderRadius: '999px',
+                          background: t.bg, color: t.color, border: `1px solid ${t.border}`,
+                          flexShrink: 0,
+                        }}>
+                          {c.plan_tier}+
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     <MonoLabel color={B.dark500}>{c.category}</MonoLabel>

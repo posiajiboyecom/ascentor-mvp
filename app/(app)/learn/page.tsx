@@ -1,10 +1,12 @@
 'use client';
 
 import SageLoader from '@/components/SageLoader';
+import TierUpgradeModal from '@/components/TierUpgradeModal';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { analytics } from '@/lib/analytics';
+import { canAccess, effectivePlan, TIER_META, type PlanTier } from '@/lib/planTier';
 
 
 // Renders SVG icon strings safely  
@@ -146,13 +148,14 @@ function ContinueBanner({ course, onResume }: { course: Course; onResume: () => 
 
 // ─── Section Accordion ───────────────────────────────────────
 function SectionAccordion({
-  section, isOpen, onToggle, onOpenCourse, isPreview,
+  section, isOpen, onToggle, onOpenCourse, isPreview, userPlan,
 }: {
   section: Section;
   isOpen: boolean;
   onToggle: () => void;
   onOpenCourse: (id: string) => void;
   isPreview?: boolean;
+  userPlan: PlanTier;
 }) {
   const total = section.courses.length;
   const done  = section.totalCompleted;
@@ -230,15 +233,21 @@ function SectionAccordion({
         transition: 'max-height 0.4s cubic-bezier(0.16,1,0.3,1)',
       }}>
         <div style={{ padding: '4px 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {section.courses.map((course, idx) => (
-              <CourseCard
-                key={course.id}
-                course={course}
-                idx={idx}
-                onOpen={() => onOpenCourse(course.id)}
-                isLocked={!!isPreview && !course.is_free_preview}
-              />
-            ))}
+          {section.courses.map((course, idx) => {
+              const required = ((course as any).plan_tier || 'free') as PlanTier;
+              const planTierLocked = !canAccess(userPlan, required);
+              return (
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  idx={idx}
+                  onOpen={() => onOpenCourse(course.id)}
+                  isLocked={!!isPreview && !course.is_free_preview}
+                  planTierLocked={planTierLocked}
+                  requiredTier={required}
+                />
+              );
+            })}
         </div>
       </div>
     </div>
@@ -246,19 +255,24 @@ function SectionAccordion({
 }
 
 // ─── Course Card ─────────────────────────────────────────────
-function CourseCard({ course, idx, onOpen, isLocked }: { course: Course; idx: number; onOpen: () => void; isLocked?: boolean }) {
+function CourseCard({ course, idx, onOpen, isLocked, planTierLocked, requiredTier }: {
+  course: Course; idx: number; onOpen: () => void;
+  isLocked?: boolean; planTierLocked?: boolean; requiredTier?: PlanTier;
+}) {
   const pct = Math.round(course.progress);
   const isNew = course.progress === 0 && !course.completed;
   const isInProgress = course.progress > 0 && !course.completed;
+  const fullyLocked = isLocked || planTierLocked;
+  const tm = requiredTier ? TIER_META[requiredTier] : null;
 
   return (
-    <div onClick={isLocked ? undefined : onOpen} style={{
+    <div onClick={fullyLocked ? undefined : onOpen} style={{
       display: 'flex', gap: 12, alignItems: 'center',
       padding: '10px 12px',
       borderRadius: 10,
       background: B.dark700,
-      border: `1px solid ${isLocked ? B.border : course.completed ? 'rgba(16,185,129,0.18)' : B.border}`,
-      cursor: isLocked ? 'default' : 'pointer',
+      border: `1px solid ${planTierLocked && tm ? tm.border : fullyLocked ? B.border : course.completed ? 'rgba(16,185,129,0.18)' : B.border}`,
+      cursor: fullyLocked ? (planTierLocked ? 'pointer' : 'default') : 'pointer',
       opacity: isLocked ? 0.45 : 1,
       filter: isLocked ? 'blur(0.5px)' : 'none',
       position: 'relative' as const,
@@ -266,8 +280,8 @@ function CourseCard({ course, idx, onOpen, isLocked }: { course: Course; idx: nu
       animation: 'fade-in-up 0.25s ease both',
       animationDelay: `${idx * 0.04}s`,
     }}
-    onMouseEnter={e => (e.currentTarget.style.borderColor = B.goldBorder)}
-    onMouseLeave={e => (e.currentTarget.style.borderColor = course.completed ? 'rgba(16,185,129,0.18)' : B.border)}
+    onMouseEnter={e => !fullyLocked && (e.currentTarget.style.borderColor = B.goldBorder)}
+    onMouseLeave={e => !fullyLocked && (e.currentTarget.style.borderColor = course.completed ? 'rgba(16,185,129,0.18)' : B.border)}
     >
       {/* Thumbnail */}
       <div style={{
@@ -318,14 +332,27 @@ function CourseCard({ course, idx, onOpen, isLocked }: { course: Course; idx: nu
           color: B.dark200, margin: '0 0 3px',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{course.title}</p>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: isInProgress ? 5 : 0 }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: isInProgress ? 5 : 0, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: B.fontMono, fontSize: 9, color: diffColor(course.difficulty), letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             {course.difficulty}
           </span>
           <span style={{ color: B.dark600, fontSize: 9 }}>·</span>
           <span style={{ fontFamily: B.fontMono, fontSize: 9, color: B.dark400 }}>{course.duration}</span>
+          {/* Plan tier badge */}
+          {tm && requiredTier !== 'free' && (
+            <>
+              <span style={{ color: B.dark600, fontSize: 9 }}>·</span>
+              <span style={{
+                fontFamily: B.fontMono, fontSize: 9, letterSpacing: '0.08em',
+                textTransform: 'uppercase', padding: '1px 5px', borderRadius: 100,
+                background: tm.bg, color: tm.color, border: `1px solid ${tm.border}`,
+              }}>
+                {tm.label}+
+              </span>
+            </>
+          )}
         </div>
-        {isInProgress && (
+        {isInProgress && !planTierLocked && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ flex: 1, height: 3, borderRadius: 2, background: B.dark600, overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${pct}%`, background: `linear-gradient(90deg, ${B.goldDark}, ${B.gold})`, borderRadius: 2 }} />
@@ -333,9 +360,13 @@ function CourseCard({ course, idx, onOpen, isLocked }: { course: Course; idx: nu
             <span style={{ fontFamily: B.fontMono, fontSize: 9, color: B.dark400, flexShrink: 0 }}>{pct}%</span>
           </div>
         )}
-        {isNew && (
+        {planTierLocked && tm ? (
+          <span style={{ fontFamily: B.fontMono, fontSize: 9, color: tm.color, letterSpacing: '0.06em' }}>
+            UNLOCK — {tm.label.toUpperCase()} PLAN →
+          </span>
+        ) : isNew ? (
           <span style={{ fontFamily: B.fontMono, fontSize: 9, color: B.gold, letterSpacing: '0.06em' }}>START →</span>
-        )}
+        ) : null}
         {course.completed && (
           <span style={{ fontFamily: B.fontMono, fontSize: 9, color: B.success, letterSpacing: '0.06em' }}>✓ COMPLETED</span>
         )}
@@ -701,6 +732,8 @@ export default function LearnPage() {
   const [loading, setLoading]         = useState(true);
   const [hasAccess, setHasAccess]     = useState<boolean | 'preview' | null>(null);
   const [userId, setUserId]           = useState<string | null>(null);
+  const [userPlan, setUserPlan]       = useState<PlanTier>('free');
+  const [lockedCourse, setLockedCourse] = useState<Course | null>(null);
   // Stable ref — never recreate on re-renders (same fix as community page)
   const supabaseRef = useRef(createClient());
   const supabase    = supabaseRef.current;
@@ -723,6 +756,8 @@ export default function LearnPage() {
     const cancelledActive =
       profile && profile.subscription_status === 'cancelled' &&
       profile.subscription_end && new Date(profile.subscription_end) > new Date();
+
+    setUserPlan(effectivePlan(profile));
 
     if (!active && !cancelledActive) {
       // Free users get preview access (1 unlocked course)
@@ -833,6 +868,15 @@ export default function LearnPage() {
   }
 
   const openCourse = (id: string) => {
+    const course = courses.find(c => c.id === id);
+    // ── Tier gate ──────────────────────────────────────────────
+    if (course) {
+      const required = ((course as any).plan_tier || 'free') as PlanTier;
+      if (!canAccess(userPlan, required)) {
+        setLockedCourse(course);
+        return;
+      }
+    }
     setActiveCourse(id);
     analytics.courseViewed(id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -871,6 +915,16 @@ export default function LearnPage() {
           to   { opacity:1; transform:translateY(0); }
         }
       `}</style>
+
+      {/* Tier upgrade modal */}
+      {lockedCourse && (
+        <TierUpgradeModal
+          requiredTier={((lockedCourse as any).plan_tier || 'explorer') as PlanTier}
+          contentType="course"
+          contentName={lockedCourse.title}
+          onClose={() => setLockedCourse(null)}
+        />
+      )}
 
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
@@ -922,14 +976,15 @@ export default function LearnPage() {
               openSection === section.category ? null : section.category
             )}
             onOpenCourse={(id) => {
+              const course = sections.flatMap(s => s.courses).find(c => c.id === id);
               if (isPreview) {
                 // In preview mode, only allow courses marked is_free_preview in the DB
-                const course = sections.flatMap(s => s.courses).find(c => c.id === id);
                 if (!course?.is_free_preview) return;
               }
               openCourse(id);
             }}
             isPreview={isPreview}
+            userPlan={userPlan}
           />
         ))
       )}

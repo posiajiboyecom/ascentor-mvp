@@ -216,7 +216,7 @@ function AdminCohortsInner() {
   const [saving,   setSaving]   = useState(false);
   const [loadError, setLoadError] = useState('');
 
-  const emptyForm = { name: '', description: '', category: 'Technology', customCategory: '', icon: 'users', max_members: 1000, is_free: false, is_general: false };
+  const emptyForm = { name: '', description: '', category: 'Technology', customCategory: '', icon: 'users', max_members: 1000, is_free: false, is_general: false, plan_tier: 'free' };
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => { loadCohorts(); }, []);
@@ -257,6 +257,7 @@ function AdminCohortsInner() {
       max_members:    cohort.max_members  || 1000,
       is_free:        cohort.is_free      || false,
       is_general:     cohort.is_general   || false,
+      plan_tier:      cohort.plan_tier    || (cohort.is_free || cohort.is_general ? 'free' : 'explorer'),
     });
     setEditing(cohort);
     setShowForm(true);
@@ -287,8 +288,9 @@ function AdminCohortsInner() {
       category:    resolvedCategory,
       icon:        form.icon,
       max_members: form.max_members,
-      is_free:     form.is_free,
-      is_general:  form.is_general,
+      plan_tier:   form.plan_tier || 'free',
+      is_free:     form.plan_tier === 'free',      // keep in sync for any legacy code
+      is_general:  form.plan_tier === 'free',      // keep in sync for any legacy code
     };
 
     let errorMsg = '';
@@ -537,64 +539,40 @@ function AdminCohortsInner() {
               </div>
             </div>
 
-            {/* Access toggles */}
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              {/* is_free toggle */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                <div
-                  onClick={() => setForm({ ...form, is_free: !form.is_free })}
-                  style={{
-                    width: 40, height: 22, borderRadius: 11, position: 'relative', cursor: 'pointer',
-                    background: form.is_free ? B.gold : B.dark600,
-                    border: `1px solid ${form.is_free ? B.gold : B.border}`,
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <div style={{
-                    position: 'absolute', top: 2,
-                    left: form.is_free ? 20 : 2,
-                    width: 16, height: 16, borderRadius: '50%',
-                    background: 'white', transition: 'left 0.15s',
-                  }} />
-                </div>
-                <div>
-                  <div style={{ fontFamily: B.fontUI, fontSize: 13, fontWeight: 600, color: B.dark200 }}>
-                    Free access
-                  </div>
-                  <div style={{ fontFamily: B.fontMono, fontSize: 10, color: B.dark500 }}>
-                    Free plan users can join this cohort
-                  </div>
-                </div>
-              </label>
-
-              {/* is_general toggle */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                <div
-                  onClick={() => setForm({ ...form, is_general: !form.is_general })}
-                  style={{
-                    width: 40, height: 22, borderRadius: 11, position: 'relative', cursor: 'pointer',
-                    background: form.is_general ? B.explorer : B.dark600,
-                    border: `1px solid ${form.is_general ? B.explorer : B.border}`,
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <div style={{
-                    position: 'absolute', top: 2,
-                    left: form.is_general ? 20 : 2,
-                    width: 16, height: 16, borderRadius: '50%',
-                    background: 'white', transition: 'left 0.15s',
-                  }} />
-                </div>
-                <div>
-                  <div style={{ fontFamily: B.fontUI, fontSize: 13, fontWeight: 600, color: B.dark200 }}>
-                    General community
-                  </div>
-                  <div style={{ fontFamily: B.fontMono, fontSize: 10, color: B.dark500 }}>
-                    Default landing cohort for new users
-                  </div>
-                </div>
-              </label>
+            {/* Plan tier — single source of truth for access control */}
+            <div>
+              <div style={{ fontFamily: B.fontMono, fontSize: 11, fontWeight: 600, color: B.dark400, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+                Plan Access
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+                {([
+                  { value: 'free',     label: 'Free',     desc: 'All users',          color: B.dark400,  bg: B.dark700,   border: B.border      },
+                  { value: 'explorer', label: 'Explorer', desc: 'Explorer and above',  color: B.explorer, bg: 'rgba(20,184,166,0.09)',  border: 'rgba(20,184,166,0.25)' },
+                  { value: 'builder',  label: 'Builder',  desc: 'Builder and above',   color: B.gold,     bg: B.goldMuted, border: B.goldBorder  },
+                  { value: 'climber',  label: 'Climber',  desc: 'Climber only',        color: B.climber,  bg: 'rgba(139,92,246,0.09)', border: 'rgba(139,92,246,0.25)' },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setForm({ ...form, plan_tier: opt.value })}
+                    style={{
+                      padding: '8px 14px', borderRadius: 10, cursor: 'pointer',
+                      background: form.plan_tier === opt.value ? opt.bg : B.dark800,
+                      border: `1px solid ${form.plan_tier === opt.value ? opt.border : B.border}`,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ fontFamily: B.fontUI, fontSize: 13, fontWeight: 600, color: form.plan_tier === opt.value ? opt.color : B.dark400, marginBottom: 2 }}>
+                      {opt.label}
+                    </div>
+                    <div style={{ fontFamily: B.fontMono, fontSize: 10, color: form.plan_tier === opt.value ? opt.color : B.dark500, opacity: 0.8 }}>
+                      {opt.desc}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
+
 
             {/* Save error */}
             {saveError && (

@@ -5,6 +5,7 @@ import SageLoader from '@/components/SageLoader';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
+import { TIER_OPTIONS, TIER_META, type PlanTier } from '@/lib/planTier';
 
 const STATUSES = ['scheduled', 'live', 'completed', 'cancelled'] as const;
 
@@ -23,7 +24,7 @@ export default function AdminExpertsPageInner() {
     title: '', description: '', expert_name: '', expert_bio: '',
     scheduled_at: '', duration_minutes: 60, max_participants: 50,
     status: 'scheduled' as string, join_url: '', registration_url: '',
-    access_tier: 'paid' as string, // 'free' | 'paid' | 'explorer' | 'builder' | 'climber'
+    plan_tier: 'free' as string,
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -45,6 +46,7 @@ export default function AdminExpertsPageInner() {
       status: event.status || 'scheduled',
       join_url: event.join_url || '', registration_url: event.registration_url || '',
       access_tier: event.access_tier || (event.is_free ? 'free' : 'paid'),
+      plan_tier: event.plan_tier || (['free','explorer','builder','climber'].includes(event.access_tier) ? event.access_tier : 'free'),
     });
     setEditing(event);
     setShowForm(true);
