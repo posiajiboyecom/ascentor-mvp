@@ -18,7 +18,7 @@ interface Course {
   category: string | null;
   difficulty: string | null;
   duration: string | null;
-  access_tier: string | null;
+  plan_tier: string | null;
   sort_order: number;
 }
 

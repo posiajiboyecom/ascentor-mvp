@@ -44,9 +44,9 @@ export default function AdminExpertsPageInner() {
       duration_minutes: event.duration_minutes || 60,
       max_participants: event.max_participants || 50,
       status: event.status || 'scheduled',
-      join_url: event.join_url || '', registration_url: event.registration_url || '',
-      access_tier: event.access_tier || (event.is_free ? 'free' : 'paid'),
-      plan_tier: event.plan_tier || (['free','explorer','builder','climber'].includes(event.access_tier) ? event.access_tier : 'free'),
+      join_url: event.join_url || '',
+      registration_url: event.registration_url || '',
+      plan_tier: event.plan_tier || 'free',
     });
     setEditing(event);
     setShowForm(true);
@@ -73,8 +73,8 @@ export default function AdminExpertsPageInner() {
       status: form.status,
       join_url: form.join_url || null,
       registration_url: form.registration_url || null,
-      access_tier: form.access_tier || 'paid',
-      is_free: form.access_tier === 'free',
+      plan_tier: form.plan_tier || 'free',
+is_free: form.plan_tier === 'free',
     };
 
     let error;
@@ -193,8 +193,8 @@ export default function AdminExpertsPageInner() {
               <select
                 className="px-3.5 py-2.5 text-sm rounded-xl w-full"
                 style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                value={form.access_tier}
-                onChange={(e) => setForm({ ...form, access_tier: e.target.value })}
+                value={form.plan_tier}
+onChange={(e) => setForm({ ...form, plan_tier: e.target.value })}
               >
                 <option value="free">Free — all users (including free plan)</option>
                 <option value="paid">Paid only — any active subscription</option>

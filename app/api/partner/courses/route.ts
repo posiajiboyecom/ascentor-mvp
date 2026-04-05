@@ -208,7 +208,8 @@ export async function PATCH(req: NextRequest) {
 
     // Sanitise updates — only allow known fields
     const allowed = ['title', 'description', 'youtube_id', 'category', 'difficulty',
-                     'duration', 'thumbnail_url', 'is_published', 'sort_order', 'access_tier'];
+                     'duration', 'thumbnail_url', 'is_published', 'sort_order', 'plan_tier'];
+
     const safe: Record<string, any> = { updated_at: new Date().toISOString() };
     for (const key of allowed) {
       if (key in updates) safe[key] = updates[key];

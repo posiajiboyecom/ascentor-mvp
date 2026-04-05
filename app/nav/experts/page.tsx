@@ -224,8 +224,9 @@ export default function ExpertsPage() {
             const isFull         = spotsLeft === 0 && !isRegistered;
             const isToggling     = toggling === expert.id;
             const fillPct        = Math.min(100, (spotsUsed / maxSpots) * 100);
-            // Access control based on admin-set access_tier
-            const tier = expert.access_tier || (expert.is_free ? 'free' : 'paid');
+            // Access control based on admin-set plan_tier
+            const tier = expert.plan_tier || (expert.is_free ? 'free' : 'free');
+
             const canAccess = (() => {
               if (tier === 'free') return true; // everyone
               if (!isPaid) return false;         // all paid tiers require payment
@@ -295,7 +296,8 @@ export default function ExpertsPage() {
                         <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold"
                           style={{ background: 'rgba(232,160,32,0.08)', border: '1px solid rgba(232,160,32,0.2)', color: 'var(--accent)', cursor: 'default' }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                          {expert.access_tier === 'free' || expert.is_free ? 'Open' : `${(expert.access_tier || 'paid').charAt(0).toUpperCase() + (expert.access_tier || 'paid').slice(1)} plan`}
+                          {expert.plan_tier === 'free' || expert.is_free ? 'Open' : `${(expert.plan_tier || 'explorer').charAt(0).toUpperCase() + (expert.plan_tier || 'explorer').slice(1)} plan`}
+
                         </div>
                       )}
                       {canAccess && <button
