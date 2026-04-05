@@ -112,24 +112,22 @@ export default function LoginPage() {
 
         .asc-page {
           min-height: 100vh;
-          display: grid;
-          grid-template-columns: 3fr 7fr;
+          display: flex;
           background: ${B.dark};
-        }
-        @media (max-width: 768px) {
-          .asc-page { grid-template-columns: 1fr; }
-          .asc-brand-panel { display: none; }
         }
 
         /* ── LEFT BRAND PANEL ── */
         .asc-brand-panel {
+          display: none;
+          width: 420px;
+          flex-shrink: 0;
           background: ${B.dark700};
           border-right: 1px solid ${B.border};
-          padding: 48px 40px;
-          display: flex;
+          padding: 60px 48px;
           flex-direction: column;
           justify-content: space-between;
         }
+        @media (min-width: 1024px) { .asc-brand-panel { display: flex; } }
         .asc-brand-tiers {
           display: flex;
           flex-direction: column;
@@ -162,10 +160,11 @@ export default function LoginPage() {
 
         /* ── RIGHT FORM PANEL ── */
         .asc-form-panel {
+          flex: 1;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 48px 32px;
+          padding: 40px 24px;
           background: ${B.dark};
         }
         .asc-form-inner {
