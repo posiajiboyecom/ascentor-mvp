@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 
 const supabase = createClient();
 
-type Tab           = 'content' | 'briefs' | 'queue' | 'personal' | 'carousel';
+type Tab           = 'content' | 'briefs' | 'queue' | 'personal' | 'carousel' | 'assigned';
 type ContentFilter = 'all' | 'Blog Post' | 'LinkedIn Post' | 'Twitter Thread' | 'Twitter Single' | 'Email Newsletter' | 'Personal Brand';
 type StatusFilter  = 'all' | 'draft' | 'approved' | 'scheduled' | 'published';
 
@@ -23,6 +23,7 @@ interface CalItem {
   published_at:   string | null;
   publish_notes:  string | null;
   created_at:     string;
+  assigned_to:    string | null;
 }
 
 const TYPE_META: Record<string, { icon: string; color: string; bg: string }> = {
@@ -100,17 +101,24 @@ export default function AdminContentPage() {
   const [pbCopied,     setPbCopied]     = useState<string | null>(null);
   // Used to switch filter AFTER patchItem state update completes
   const [pendingFilter, setPendingFilter] = useState<StatusFilter | null>(null);
+  // ── Team members for assignment ──────────────────────────────
+  const [teamMembers,    setTeamMembers]    = useState<{ id: string; full_name: string | null; email: string }[]>([]);
+  const [currentUserId,  setCurrentUserId]  = useState<string | null>(null);
 
   async function loadAll() {
     setLoading(true);
-    const [cal, b, q] = await Promise.all([
+    const [cal, b, q, team, authData] = await Promise.all([
       supabase.from('content_calendar').select('*').order('created_at', { ascending: false }).limit(200),
       supabase.from('research_briefs').select('*').order('created_at', { ascending: false }).limit(30),
       supabase.from('social_queue').select('*').order('scheduled_for', { ascending: true }).limit(50),
+      supabase.from('profiles').select('id, full_name, email').in('role', ['admin', 'moderator']).order('full_name'),
+      supabase.auth.getUser(),
     ]);
     setItems((cal.data ?? []) as CalItem[]);
     setBriefs(b.data ?? []);
     setQueue(q.data ?? []);
+    setTeamMembers(team.data ?? []);
+    setCurrentUserId(authData.data.user?.id ?? null);
     setLoading(false);
   }
 
@@ -355,6 +363,30 @@ export default function AdminContentPage() {
     if (!error) patchItem(id, { publish_notes: notes });
   }
 
+  async function handleAssign(contentId: string, assigneeId: string | null, contentTitle: string) {
+    // Optimistic local update
+    patchItem(contentId, { assigned_to: assigneeId });
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/admin/content/assign', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token ?? ''}`,
+      },
+      body: JSON.stringify({ contentId, assigneeId, contentTitle }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      showToast('Assignment failed: ' + err.error, false);
+      // Revert
+      patchItem(contentId, { assigned_to: null });
+    } else {
+      showToast(assigneeId ? '✓ Task assigned' : '✓ Assignment removed');
+    }
+  }
+
   async function triggerResearcher() {
     setRunning(true);
     try {
@@ -381,9 +413,13 @@ export default function AdminContentPage() {
     published: items.filter(i => i.status === 'published').length,
   };
 
+  const assignedToMe = items.filter(i => i.assigned_to === currentUserId).length;
+
   const filtered = items.filter(it => {
     // Always show the currently selected item so panel never loses its content
     if (selectedItem && it.id === selectedItem.id) return true;
+    // My Tasks tab — show only items assigned to current user
+    if (tab === 'assigned') return it.assigned_to === currentUserId;
     if (typeFilter === 'Personal Brand') {
       if (!it.content_data?.isPersonalBrand) return false;
     } else if (typeFilter !== 'all' && it.type !== typeFilter) return false;
@@ -423,35 +459,49 @@ export default function AdminContentPage() {
         </div>
 
         <div className="cp-tabs">
-          {(['content', 'briefs', 'queue', 'personal', 'carousel'] as Tab[]).map(t => (
+          {(['content', 'briefs', 'queue', 'personal', 'carousel', 'assigned'] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)} className={"cp-tab " + (tab === t ? 'on' : 'off')}>
-              {t === 'content' ? ('Content' + (counts.draft > 0 ? ' (' + counts.draft + ')' : '')) : t === 'briefs' ? 'Research' : t === 'queue' ? 'Social Queue' : t === 'personal' ? '⚡ Personal Brand' : '🎠 Carousel'}
+              {t === 'content'  ? ('Content' + (counts.draft > 0 ? ' (' + counts.draft + ')' : ''))
+               : t === 'briefs'   ? 'Research'
+               : t === 'queue'    ? 'Social Queue'
+               : t === 'personal' ? '⚡ Personal Brand'
+               : t === 'carousel' ? '🎠 Carousel'
+               : '📋 My Tasks' + (assignedToMe > 0 ? ' (' + assignedToMe + ')' : '')}
             </button>
           ))}
         </div>
 
         {loading && <div className="cp-loading">Loading pipeline…</div>}
 
-        {!loading && tab === 'content' && (
+        {!loading && (tab === 'content' || tab === 'assigned') && (
           <>
             <div className="cp-filters">
-              {(['all', 'Blog Post', 'LinkedIn Post', 'Twitter Thread', 'Twitter Single', 'Email Newsletter', 'Personal Brand'] as ContentFilter[]).map(f => (
+              {tab !== 'assigned' && (['all', 'Blog Post', 'LinkedIn Post', 'Twitter Thread', 'Twitter Single', 'Email Newsletter', 'Personal Brand'] as ContentFilter[]).map(f => (
                 <button key={f} onClick={() => setTypeFilter(f)} className={"cp-fbtn " + (typeFilter === f ? 'on' : '')}>
                   {f === 'all' ? 'All Types' : f}
                 </button>
               ))}
-              <div className="cp-fsep" />
-              {(['all', 'draft', 'approved', 'scheduled', 'published'] as StatusFilter[]).map(s => (
+              {tab !== 'assigned' && <div className="cp-fsep" />}
+              {tab !== 'assigned' && (['all', 'draft', 'approved', 'scheduled', 'published'] as StatusFilter[]).map(s => (
                 <button key={s} onClick={() => setStatusFilter(s)} className={"cp-fbtn " + (statusFilter === s ? 'on' : '')}>
                   {s === 'all' ? 'All' : s[0].toUpperCase() + s.slice(1)}
                   {s === 'draft' && counts.draft > 0 && ' (' + counts.draft + ')'}
                   {s === 'scheduled' && counts.scheduled > 0 && ' (' + counts.scheduled + ')'}
                 </button>
               ))}
+              {tab === 'assigned' && (
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)', letterSpacing: '0.08em' }}>
+                  Showing {assignedToMe} item{assignedToMe !== 1 ? 's' : ''} assigned to you
+                </div>
+              )}
             </div>
 
             {filtered.length === 0 ? (
-              <div className="cp-empty"><p className="cp-empty-text">No content matches these filters</p></div>
+              <div className="cp-empty">
+                <p className="cp-empty-text">
+                  {tab === 'assigned' ? 'No tasks assigned to you' : 'No content matches these filters'}
+                </p>
+              </div>
             ) : (
               <div className="cp-grid">
                 <div className="cp-list">
@@ -472,6 +522,14 @@ export default function AdminContentPage() {
                           <span className="cp-muted" style={{ color: sc }}>{item.status}</span>
                           {item.week ? <span className="cp-muted">Wk {item.week}</span> : null}
                           <span className="cp-muted">{timeAgo(item.created_at)}</span>
+                          {item.assigned_to && (() => {
+                            const m = teamMembers.find(t => t.id === item.assigned_to);
+                            return m ? (
+                              <span className="cp-muted" style={{ color: '#8B5CF6', marginLeft: 'auto' }}>
+                                👤 {m.full_name || m.email}
+                              </span>
+                            ) : null;
+                          })()}
                         </div>
                       </div>
                     );
@@ -488,6 +546,8 @@ export default function AdminContentPage() {
                       key={selectedItem.id}
                       item={selectedItem}
                       saving={saving}
+                      teamMembers={teamMembers}
+                      onAssign={(assigneeId) => handleAssign(selectedItem.id, assigneeId, selectedItem.title)}
                       onApprove={handleApprove}
                       onSchedule={handleSchedule}
                       onPublishBlog={handlePublishBlog}
@@ -653,8 +713,10 @@ export default function AdminContentPage() {
   );
 }
 
-function DetailPanel({ item, saving, onApprove, onSchedule, onPublishBlog, onQueueSocial, onReject, onCopy, onSaveNotes }: {
+function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedule, onPublishBlog, onQueueSocial, onReject, onCopy, onSaveNotes }: {
   item: CalItem; saving: boolean;
+  teamMembers: { id: string; full_name: string | null; email: string }[];
+  onAssign: (assigneeId: string | null) => void;
   onApprove: () => void;
   onSchedule: (date: string) => void;
   onPublishBlog: (item: CalItem) => void;
@@ -826,6 +888,30 @@ function DetailPanel({ item, saving, onApprove, onSchedule, onPublishBlog, onQue
           {!isDraft && !isDone && (
             <button className="cp-btn-pub cp-btn-outline" style={{ marginTop: 2 }} onClick={() => onReject(item.id)} disabled={saving}>← Back to Draft</button>
           )}
+
+          <div className="cp-divider" />
+          <p className="cp-section-lbl" style={{ marginTop: 0 }}>Assign to team member</p>
+          <select
+            className="cp-select"
+            value={item.assigned_to ?? ''}
+            onChange={e => onAssign(e.target.value || null)}
+            style={{ fontSize: 12 }}
+          >
+            <option value="">— Unassigned —</option>
+            {teamMembers.map(m => (
+              <option key={m.id} value={m.id}>
+                {m.full_name || m.email}
+              </option>
+            ))}
+          </select>
+          {item.assigned_to && (() => {
+            const assignee = teamMembers.find(t => t.id === item.assigned_to);
+            return assignee ? (
+              <p className="cp-kbd" style={{ color: '#8B5CF6' }}>
+                👤 Assigned · {assignee.full_name || assignee.email}
+              </p>
+            ) : null;
+          })()}
 
           <div className="cp-divider" />
           <p className="cp-section-lbl" style={{ marginTop: 0 }}>Internal notes</p>
