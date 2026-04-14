@@ -603,7 +603,7 @@ export function RemotionRoot() {
   return (
     <Composition
       id="AscentorKineticVideo"
-      component={AscentorKineticVideo as ComponentType<Record<string, unknown>>}
+      component={AscentorKineticVideo as unknown as ComponentType<Record<string, unknown>>}
       durationInFrames={totalFrames}
       fps={30}
       width={1080}
