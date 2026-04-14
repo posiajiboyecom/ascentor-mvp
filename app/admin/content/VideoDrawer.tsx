@@ -394,11 +394,13 @@ export default function VideoDrawer({ open, onClose, showToast }: VideoDrawerPro
                 />
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                   <a
-                    href={jobStatus.video_url}
+                    href={`/api/admin/video/download?jobId=${jobStatus.id}`}
                     download
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ ...MONO, fontSize: 10, padding: '6px 14px', borderRadius: 6, border: `1px solid ${BORDER}`, color: AMBER_BRIGHT, textDecoration: 'none', background: WARM }}
+                    style={{
+                      ...MONO, fontSize: 10, padding: '6px 14px',
+                      borderRadius: 6, border: `1px solid ${BORDER}`,
+                      color: AMBER_BRIGHT, textDecoration: 'none', background: WARM
+                    }}
                   >
                     ↓ Download MP4
                   </a>
