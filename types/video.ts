@@ -64,6 +64,8 @@ export interface VideoJobPayload {
   audioMode: AudioMode
   trackMood?: string
   voiceoverScript?: string
+  voiceoverUrl?: string       // resolved ElevenLabs/storage URL for Remotion mixing
+  soundtrackUrl?: string      // resolved music track URL for Remotion mixing
   totalDurationSeconds: number
 }
 
