@@ -11,7 +11,7 @@
 // To render locally:
 //   npx remotion render AscentorKineticVideo out/video.mp4 --props='{"jobId":"test",...}'
 // ═══════════════════════════════════════════════════════════
-import React from 'react'
+import React, { type ComponentType } from 'react'
 import {
   Composition,
   AbsoluteFill,
@@ -603,7 +603,7 @@ export function RemotionRoot() {
   return (
     <Composition
       id="AscentorKineticVideo"
-      component={AscentorKineticVideo}
+      component={AscentorKineticVideo as ComponentType<Record<string, unknown>>}
       durationInFrames={totalFrames}
       fps={30}
       width={1080}
