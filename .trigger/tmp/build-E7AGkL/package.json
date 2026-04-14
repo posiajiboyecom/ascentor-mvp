@@ -1,0 +1,30 @@
+{
+  "dependencies": {
+    "@rspack/binding-win32-x64-msvc": "1.7.6",
+    "import-in-the-middle": "1.11.0",
+    "sharp": "0.34.5"
+  },
+  "devDependencies": {
+  },
+  "name": "ascentor",
+  "peerDependencies": {
+  },
+  "private": true,
+  "scripts": {
+  },
+  "supportedArchitectures": {
+    "cpu": [
+      "x64"
+    ],
+    "os": [
+      "win32",
+      "linux"
+    ]
+  },
+  "trustedDependencies": [
+    "@rspack/binding-win32-x64-msvc",
+    "import-in-the-middle",
+    "sharp"
+  ],
+  "version": "0.1.0"
+}
