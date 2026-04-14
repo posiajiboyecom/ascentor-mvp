@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import VideoDrawer from './VideoDrawer';
+
 
 const supabase = createClient();
 
@@ -104,6 +106,8 @@ export default function AdminContentPage() {
   // ── Team members for assignment ──────────────────────────────
   const [teamMembers,    setTeamMembers]    = useState<{ id: string; full_name: string | null; email: string }[]>([]);
   const [currentUserId,  setCurrentUserId]  = useState<string | null>(null);
+  const [videoDrawer, setVideoDrawer] = useState(false);
+
 
   async function loadAll() {
     setLoading(true);
@@ -439,7 +443,31 @@ export default function AdminContentPage() {
           <div className="cp-topbtns">
             <button className="cp-runbtn" onClick={() => setRunModal(true)}>▶ Run Researcher</button>
             <button className="cp-refbtn" onClick={loadAll}>↻ Refresh</button>
+            <button
+                onClick={() => setVideoDrawer(true)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontFamily: "'DM Mono', monospace",
+                  border: '1px solid #A0720A',
+                  background: '#A0720A',
+                  color: '#fff',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                ▶ Video Engine
+            </button>
           </div>
+          <VideoDrawer
+              open={videoDrawer}
+              onClose={() => setVideoDrawer(false)}
+              showToast={(msg, ok = true) => {
+                setToast({ msg, ok });
+                setTimeout(() => setToast(null), 4000);
+              }}
+          />
         </div>
 
         <div className="cp-stats">
