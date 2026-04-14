@@ -74,5 +74,8 @@
     "cpu": [
       "x64"
     ]
+  },
+  "overrides": {
+    "@rspack/binding-win32-x64-msvc": "npm:@rspack/binding-linux-x64-gnu@1.7.6"
   }
 }
