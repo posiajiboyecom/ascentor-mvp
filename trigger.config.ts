@@ -18,4 +18,7 @@ export default defineConfig({
       "@rspack/binding",
     ],
   },
+  additionalFiles: [
+    "./remotion/**",
+  ],
 });
