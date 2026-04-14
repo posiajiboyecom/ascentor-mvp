@@ -100,11 +100,14 @@ async function renderVideo(payload: VideoJobPayload): Promise<Buffer> {
 
   console.log('[video-generator] Bundling Remotion composition...')
 
-  // Bundle the Remotion project — this compiles the React components
+  // Bundle the Remotion project — force webpack (rspack crashes in Trigger.dev containers)
   const bundleLocation = await bundle({
     entryPoint: path.resolve(process.cwd(), 'remotion/src/index.ts'),
-    // Webpack override — ensures Next.js aliases work inside Remotion bundle
-    webpackOverride: (config) => config,
+    webpackOverride: (config) => {
+      // Force webpack mode — disable rspack which fails in Linux containers
+      config.experiments = { ...config.experiments, rspack: false }
+      return config
+    },
   })
 
   console.log('[video-generator] Selecting composition...')
