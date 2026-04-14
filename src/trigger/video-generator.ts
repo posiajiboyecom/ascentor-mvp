@@ -113,7 +113,7 @@ async function renderVideo(payload: VideoJobPayload): Promise<Buffer> {
   const composition = await selectComposition({
     serveUrl: bundleLocation,
     id: 'AscentorKineticVideo',
-    inputProps: payload,
+    inputProps: payload as unknown as Record<string, unknown>,
   })
 
   // Write output to a temp file
@@ -126,7 +126,7 @@ async function renderVideo(payload: VideoJobPayload): Promise<Buffer> {
     serveUrl: bundleLocation,
     codec: 'h264',
     outputLocation: tmpFile,
-    inputProps: payload,
+    inputProps: payload as unknown as Record<string, unknown>,
     // Quality settings — balance between file size and quality
     crf: 22,
     // Concurrency: 1 is safe inside Trigger.dev container, 2 if you have medium-2x
