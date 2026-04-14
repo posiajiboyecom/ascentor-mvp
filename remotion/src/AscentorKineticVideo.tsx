@@ -609,10 +609,11 @@ export function RemotionRoot() {
       width={1080}
       height={1920}
       defaultProps={defaultProps}
-      calculateMetadata={async ({ props }: { props: VideoJobPayload }) => {
+      calculateMetadata={async ({ props }) => {
         // Dynamic duration based on actual scenes
-        const sceneDuration = props.scenes.reduce((s, sc) => s + sc.durationSeconds, 0)
-        const total = sceneDuration + props.ctaScreen.durationSeconds
+        const typedProps = props as unknown as VideoJobPayload
+        const sceneDuration = typedProps.scenes.reduce((s, sc) => s + sc.durationSeconds, 0)
+        const total = sceneDuration + typedProps.ctaScreen.durationSeconds
         return { durationInFrames: Math.round(total * 30) }
       }}
     />
