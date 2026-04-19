@@ -28,7 +28,7 @@ export const Root: React.FC = () => {
         // LooseComponentType<Record<string, unknown>>, which won't
         // accept our strictly-typed FC<VideoJobPayload>. Casting is
         // the pattern Remotion uses in its own examples.
-        component={AscentorKineticVideo as React.FC<Record<string, unknown>>}
+        component={AscentorKineticVideo as unknown as React.FC<Record<string, unknown>>}
         // Fallback duration — real value comes from calculateMetadata.
         durationInFrames={300}
         fps={FPS}
