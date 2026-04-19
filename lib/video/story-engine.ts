@@ -213,10 +213,10 @@ ${audienceVoice}
 ${narrativeArc}
 
 CRITICAL INSTRUCTIONS:
-- Write as many scenes as the story genuinely needs. Do not pad. Do not cut short.
-- A 30-second video might be 5 scenes. A 90-second story might be 16 scenes. Let the story decide.
+- Write exactly 6–8 scenes. Hard maximum: 8 scenes. No more.
+- Every scene must earn its place — if it can be cut without losing the arc, cut it.
 - Each scene has 1–4 lines. No scene should feel crowded.
-- durationSeconds: assign based on emotional weight. A heavy beat needs 4–6 seconds. A punchy line needs 2–3.
+- durationSeconds: assign based on emotional weight. Hard maximum: 4 seconds per scene. Most scenes: 3–4s. A single punchy line: 2–3s.
 - For emphasis: "bold" = strong statement, "accent" = the emotional peak of a scene (use sparingly — max 1 per scene), "whisper" = quiet/reflective, "normal" = everything else
 - For animation: "fade-up" for most scenes, "word-by-word" for high-impact single lines, "fade-in" for quiet moments, "slide-left" for contrast/shift scenes
 

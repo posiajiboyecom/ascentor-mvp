@@ -227,6 +227,19 @@ export const videoGeneratorTask = task({
         console.log(`[video-generator] Story: ${ms}ms, $${costUsdClaude.toFixed(5)}`)
       }
 
+      // ── Scene cap: max 8 scenes, max 4s each ─────────────────────────────
+      // Keeps render time ~168s on a medium-2x machine (well under the
+      // 300s maxDuration kill limit, even if the browser retries once).
+      const RAW_SCENE_COUNT = story.scenes.length
+      story.scenes = story.scenes
+        .slice(0, 8)
+        .map(s => ({ ...s, durationSeconds: Math.min(s.durationSeconds, 4) }))
+      if (RAW_SCENE_COUNT !== story.scenes.length) {
+        console.warn(
+          `[video-generator] Scene cap applied: ${RAW_SCENE_COUNT} → ${story.scenes.length} scenes`
+        )
+      }
+
       // ── 3. Deterministic duration ────────────────────────────
       const CTA_DURATION_SECONDS = 8
       const totalDurationSeconds =
