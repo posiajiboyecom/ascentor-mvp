@@ -24,7 +24,7 @@ export const Root: React.FC = () => {
     <>
       <Composition
         id="AscentorKineticVideo"
-        component={AscentorKineticVideo as unknown as React.FC<Record<string, unknown>>}
+        component={AscentorKineticVideo}
         // Fallback duration — real value comes from calculateMetadata.
         durationInFrames={300}
         fps={FPS}
@@ -48,7 +48,10 @@ export const Root: React.FC = () => {
           totalDurationSeconds: 10,
         } as VideoJobPayload}
         calculateMetadata={({ props }) => {
-          const payload = props as VideoJobPayload;
+          // Cast through `unknown` — Remotion types `props` as
+          // Record<string, unknown>, which TS (correctly) refuses to
+          // narrow directly to VideoJobPayload.
+          const payload = props as unknown as VideoJobPayload;
           const sceneSeconds = (payload.scenes ?? []).reduce(
             (sum, s) => sum + (s.durationSeconds || 0),
             0,
