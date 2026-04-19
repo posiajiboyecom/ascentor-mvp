@@ -30,6 +30,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// ── Supabase Storage bucket names ───────────────────────────
+// `public` is NOT used as a bucket name — the URL path
+// /storage/v1/object/public/<bucket>/... already contains 'public',
+// so a bucket literally named `public` creates confusing //public/public//
+// URLs and Supabase itself warns against it.
+// (The `video-assets` bucket exists too — it holds admin-uploaded CTA
+// images — but only the /generate route writes to it.)
+const BUCKET_LOGOS         = 'logos'          // pre-uploaded logo assets
+const BUCKET_VIDEO_RENDERS = 'video-renders'  // final MP4s, voiceovers (outputs)
+
 // Configurable cost per 1K characters for ElevenLabs.
 // multilingual_v2 is ~$0.30/1K chars at the Creator tier as of 2026.
 function elevenLabsCostPer1K(): number {
@@ -39,12 +49,15 @@ function elevenLabsCostPer1K(): number {
 }
 
 async function resolveLogoUrl(theme: 'dark' | 'light'): Promise<string> {
+  // Bucket: `logos` (public). Files at the bucket root.
+  // "on-dark" = logo variant that reads on dark backgrounds (usually light-colored).
+  // "on-light" = logo variant that reads on light backgrounds (usually dark-colored).
   const fileName = theme === 'dark'
-    ? 'ascentor-logo-dark.png'
-    : 'ascentor-logo-light.png'
+    ? 'ascentor-color-on-dark.png'
+    : 'ascentor-color-on-light.png'
   const { data } = supabase.storage
-    .from('public')
-    .getPublicUrl(`logos/${fileName}`)
+    .from(BUCKET_LOGOS)
+    .getPublicUrl(fileName)
   return data.publicUrl
 }
 
@@ -82,12 +95,12 @@ async function generateVoiceover(
     throw new Error(`ElevenLabs error ${res.status}: ${errBody}`)
   }
   const buf = await res.arrayBuffer()
-  const path = `video-jobs/${jobId}/voiceover.mp3`
+  const path = `${jobId}/voiceover.mp3`
   const { error } = await supabase.storage
-    .from('public')
+    .from(BUCKET_VIDEO_RENDERS)
     .upload(path, new Uint8Array(buf), { contentType: 'audio/mpeg', upsert: true })
   if (error) throw new Error(`Voiceover upload failed: ${error.message}`)
-  return supabase.storage.from('public').getPublicUrl(path).data.publicUrl
+  return supabase.storage.from(BUCKET_VIDEO_RENDERS).getPublicUrl(path).data.publicUrl
 }
 
 async function resolveSoundtrack(mood: string): Promise<string | null> {
@@ -276,17 +289,17 @@ export const videoGeneratorTask = task({
       console.log(`[video-generator] Render: ${renderMs}ms, ${(videoBuffer.length / 1024 / 1024).toFixed(1)}MB`)
 
       // ── 8. Upload final MP4 ──────────────────────────────────
-      const videoPath = `video-jobs/${jobId}/final.mp4`
+      const videoPath = `${jobId}/final.mp4`
       const [_uploadResult, uploadMs] = await timed(async () => {
         const { error: uploadErr } = await supabase.storage
-          .from('public')
+          .from(BUCKET_VIDEO_RENDERS)
           .upload(videoPath, videoBuffer, { contentType: 'video/mp4', upsert: true })
         if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`)
       })
       timings.upload_ms = uploadMs
 
       const { data: { publicUrl: finalVideoUrl } } = supabase.storage
-        .from('public')
+        .from(BUCKET_VIDEO_RENDERS)
         .getPublicUrl(videoPath)
 
       // ── 9. Save to video_jobs ────────────────────────────────

@@ -1,28 +1,35 @@
 // ═══════════════════════════════════════════════════════════
-// Ascentor Video Engine — Generate route (Phase 3 patched)
+// Ascentor Video Engine — Generate route (patched, Phase 1)
+//
 // Drop in: app/api/admin/video/generate/route.ts
 //
-// Phase 3 change:
-//   • Accepts optional `presetStory: StoryEngineResponse`.
-//     When present, stored on the video_jobs row and forwarded
-//     to the Trigger task, which skips its Claude call.
-//     This is the approved/edited output of /preview.
+// POST { formInput, ctaImageBase64?, ctaImageMimeType?,
+//        scheduleToBuffer?, bufferScheduledFor?, clientRequestId? }
 //
-// All Phase 1 fixes preserved (jobId unified, idempotency,
-// image validation, trigger-failure rollback).
+// Changes from previous version:
+//   • Single jobId minted at top of handler — previously one UUID
+//     was used for the CTA image path and a different one for the
+//     DB row, orphaning images in storage.
+//   • clientRequestId stored on the row → idempotent double-click
+//     protection (returns existing jobId if the same clientRequestId
+//     is resubmitted within 5 minutes).
+//   • Image size guard (5MB) before decoding.
+//   • Rollback: if Trigger.dev enqueue fails, the DB row is marked
+//     'failed' instead of left 'queued' forever.
 // ═══════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { videoGeneratorTask } from '@/src/trigger/video-generator'
-import type { VideoFormInput, StoryEngineResponse } from '@/types/video'
+import type { VideoFormInput } from '@/types/video'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Max 5MB decoded — matches the UI copy. Enforce server-side too.
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 export async function POST(req: NextRequest) {
@@ -53,7 +60,6 @@ export async function POST(req: NextRequest) {
       scheduleToBuffer,
       bufferScheduledFor,
       clientRequestId,
-      presetStory,
     }: {
       formInput:         VideoFormInput
       ctaImageBase64?:   string
@@ -61,7 +67,6 @@ export async function POST(req: NextRequest) {
       scheduleToBuffer?: boolean
       bufferScheduledFor?: string
       clientRequestId?:  string
-      presetStory?:      StoryEngineResponse
     } = body
 
     if (!formInput?.goal || !formInput?.keyMessage) {
@@ -77,31 +82,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // If presetStory is provided, sanity-check its shape
-    if (presetStory) {
-      if (!Array.isArray(presetStory.scenes) || presetStory.scenes.length === 0) {
-        return NextResponse.json(
-          { success: false, error: 'presetStory must include at least one scene' },
-          { status: 400 }
-        )
-      }
-      for (const s of presetStory.scenes) {
-        if (!Array.isArray(s.lines) || s.lines.length === 0) {
-          return NextResponse.json(
-            { success: false, error: `Scene "${s.id ?? '?'}" has no lines` },
-            { status: 400 }
-          )
-        }
-        if (typeof s.durationSeconds !== 'number' || s.durationSeconds <= 0) {
-          return NextResponse.json(
-            { success: false, error: `Scene "${s.id ?? '?'}" has invalid duration` },
-            { status: 400 }
-          )
-        }
-      }
-    }
-
     // ── Idempotency check ─────────────────────────────────────
+    // If the same clientRequestId was submitted in the last 5 minutes by this
+    // user, return the existing job instead of creating a new one. Protects
+    // against accidental double-submit / network retries.
     if (clientRequestId) {
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
       const { data: existing } = await supabase
@@ -128,6 +112,7 @@ export async function POST(req: NextRequest) {
     let ctaImageStorageUrl: string | undefined
 
     if (ctaImageBase64 && ctaImageMimeType) {
+      // Validate mime type
       if (!/^image\/(png|jpe?g|webp)$/i.test(ctaImageMimeType)) {
         return NextResponse.json(
           { success: false, error: `Unsupported image type: ${ctaImageMimeType}` },
@@ -145,10 +130,13 @@ export async function POST(req: NextRequest) {
       }
 
       const ext = ctaImageMimeType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg'
-      const imagePath = `video-jobs/${jobId}/cta-image.${ext}`
+      // Bucket: `video-assets` (public) — admin-uploaded inputs, separate from
+      // rendered outputs. The `public` bucket name is avoided because Supabase
+      // warns against it (creates confusing /public/public/ URLs).
+      const imagePath = `${jobId}/cta-image.${ext}`
 
       const { error: imgErr } = await supabase.storage
-        .from('public')
+        .from('video-assets')
         .upload(imagePath, imageBytes, {
           contentType: ctaImageMimeType,
           upsert: true,
@@ -161,7 +149,7 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      const { data: imgData } = supabase.storage.from('public').getPublicUrl(imagePath)
+      const { data: imgData } = supabase.storage.from('video-assets').getPublicUrl(imagePath)
       ctaImageStorageUrl = imgData.publicUrl
     }
 
@@ -184,8 +172,6 @@ export async function POST(req: NextRequest) {
         cta_image_url:     ctaImageStorageUrl ?? null,
         audio_mode:        formInput.audioMode,
         track_mood:        formInput.trackMood ?? null,
-        preset_story:      presetStory ?? null,          // ← Phase 3: store the approved story
-        used_preset:       presetStory ? true : false,   // ← Phase 3: audit flag
         created_at:        new Date().toISOString(),
       })
 
@@ -206,25 +192,20 @@ export async function POST(req: NextRequest) {
           ctaImageStorageUrl,
           scheduleToBuffer,
           bufferScheduledFor,
-          presetStory, // ← Phase 3: when present, task skips Claude
         }
       )
 
-      console.log(
-        `[video/generate] Job ${jobId} queued. ` +
-        `Trigger run: ${handle.id}. ` +
-        `Preset story: ${presetStory ? 'YES' : 'no'}.`
-      )
+      console.log(`[video/generate] Job ${jobId} queued. Trigger run: ${handle.id}`)
 
       return NextResponse.json({
         success:       true,
         jobId,
         triggerRunId:  handle.id,
-        usedPreset:    !!presetStory,
         message:       'Video generation started. Poll /api/admin/video/status?jobId=... for updates.',
       })
 
     } catch (triggerErr: any) {
+      // Rollback: mark the row as failed so it doesn't sit in 'queued' forever.
       console.error('[video/generate] Trigger.dev enqueue failed:', triggerErr)
       await supabase
         .from('video_jobs')
