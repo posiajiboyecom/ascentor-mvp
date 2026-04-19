@@ -24,7 +24,7 @@ export const Root: React.FC = () => {
     <>
       <Composition
         id="AscentorKineticVideo"
-        component={AscentorKineticVideo}
+        component={AscentorKineticVideo as React.FC<Record<string, unknown>>}
         // Fallback duration — real value comes from calculateMetadata.
         durationInFrames={300}
         fps={FPS}
