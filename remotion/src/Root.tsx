@@ -24,7 +24,11 @@ export const Root: React.FC = () => {
     <>
       <Composition
         id="AscentorKineticVideo"
-        component={AscentorKineticVideo}
+        // Cast via `any` — Remotion types `component` as
+        // LooseComponentType<Record<string, unknown>>, which won't
+        // accept our strictly-typed FC<VideoJobPayload>. Casting is
+        // the pattern Remotion uses in its own examples.
+        component={AscentorKineticVideo as React.FC<Record<string, unknown>>}
         // Fallback duration — real value comes from calculateMetadata.
         durationInFrames={300}
         fps={FPS}
@@ -46,7 +50,7 @@ export const Root: React.FC = () => {
           },
           audioMode: 'none',
           totalDurationSeconds: 10,
-        } as VideoJobPayload}
+        } as unknown as Record<string, unknown>}
         calculateMetadata={({ props }) => {
           // Cast through `unknown` — Remotion types `props` as
           // Record<string, unknown>, which TS (correctly) refuses to
