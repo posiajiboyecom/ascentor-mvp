@@ -4,6 +4,11 @@
 //
 // Uses @remotion/media-utils which is bundled with Remotion.
 // If no audio is playing (audioMode === 'none'), nothing renders.
+//
+// Split into two components so the hook receives a guaranteed
+// non-null string (Remotion's useAudioData throws on falsy input
+// and is typed as (src: string) => ...). The outer guard handles
+// the nullable case; the inner component does the real work.
 // ═══════════════════════════════════════════════════════════
 import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { useAudioData, visualizeAudio } from '@remotion/media-utils';
@@ -15,13 +20,23 @@ interface Props {
 }
 
 export const Waveform: React.FC<Props> = ({ audioUrl, color, theme }) => {
+  if (!audioUrl) return null;
+  return <WaveformInner audioUrl={audioUrl} color={color} theme={theme} />;
+};
+
+// Inner component — only mounted when audioUrl is guaranteed non-null.
+// Because React unmounts/remounts this when audioUrl changes, the hook
+// call is fine.
+const WaveformInner: React.FC<{ audioUrl: string; color: string; theme: 'dark' | 'light' }> = ({
+  audioUrl, color, theme,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const audioData = useAudioData(audioUrl ?? null);
+  const audioData = useAudioData(audioUrl);
 
-  // If there's no audio, or it hasn't loaded yet, render nothing.
-  if (!audioUrl || !audioData) return null;
+  // Audio still fetching — render nothing until metadata is ready.
+  if (!audioData) return null;
 
   const NUM_BARS = 48;
   let visualization: number[] = [];
