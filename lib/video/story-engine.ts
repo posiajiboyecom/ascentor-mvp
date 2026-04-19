@@ -1,30 +1,42 @@
 // ═══════════════════════════════════════════════════════════
-// Ascentor Video Engine — Claude Story Engine
+// Ascentor Video Engine — Claude Story Engine (Phase 5 patched)
 // Drop in: lib/video/story-engine.ts
 //
-// Takes admin form input → returns fully structured scenes
-// ready for Remotion rendering.
-//
-// Uses claude-sonnet-4-6 (not Haiku) — this is creative work,
-// quality matters more than cost here.
-// Est cost per video: ~$0.008–0.015 per generation
+// Phase 5 change:
+//   • Now returns { story, cost } so the Trigger task can
+//     persist the actual Claude spend per job. Previous
+//     version only console.log'd the cost.
+//   • Public API: new `generateVideoStoryWithCost()` — returns
+//     both the story and the cost/usage metadata.
+//   • `generateVideoStory()` preserved as a backwards-compatible
+//     wrapper so existing callers (/preview route) still work.
 // ═══════════════════════════════════════════════════════════
 import Anthropic from '@anthropic-ai/sdk'
 import type {
   VideoFormInput,
   StoryEngineResponse,
-  NarrativeScene,
-  SceneLine,
-  SceneEmphasis,
-  SceneAnimation,
   AudienceTier,
   NarrativeStyle,
 } from '@/types/video'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// Sonnet 4.6 pricing (same as 4.5): $3/M input, $15/M output
+const CLAUDE_INPUT_COST_PER_M  = 3
+const CLAUDE_OUTPUT_COST_PER_M = 15
+
+export interface StoryEngineCost {
+  inputTokens:  number
+  outputTokens: number
+  costUsd:      number
+}
+
+export interface StoryEngineResult {
+  story: StoryEngineResponse
+  cost:  StoryEngineCost
+}
+
 // ── Audience voice profiles ──────────────────────────────────
-// These shape HOW Claude writes — not what it says
 const AUDIENCE_VOICE: Record<AudienceTier, string> = {
   explorer: `
 AUDIENCE: Early-career professionals, 22–30. Ambitious but uncertain.
@@ -80,7 +92,6 @@ VOICE RULES FOR THIS AUDIENCE:
 }
 
 // ── Narrative style templates ────────────────────────────────
-// These define the STRUCTURE of the story arc
 const NARRATIVE_ARC: Record<NarrativeStyle, string> = {
   'authentic-story': `
 STORY STRUCTURE — Authentic Story:
@@ -149,7 +160,7 @@ Final narrative scene (Bridge): What I wish I'd had. What I'm building so others
 CTA scene: Invitation, not pitch.`,
 }
 
-// ── The master system prompt ─────────────────────────────────
+// ── System prompt ────────────────────────────────────────────
 function buildSystemPrompt(): string {
   return `You are the narrative intelligence behind Ascentor — Africa's premier career mentorship platform.
 
@@ -186,10 +197,9 @@ WRITING RULES — NON-NEGOTIABLE:
 10. The last narrative scene before the CTA must be the most powerful line in the video.`
 }
 
-// ── The user prompt ──────────────────────────────────────────
 function buildUserPrompt(input: VideoFormInput): string {
   const audienceVoice = AUDIENCE_VOICE[input.audienceTier]
-  const narrativeArc = NARRATIVE_ARC[input.narrativeStyle]
+  const narrativeArc  = NARRATIVE_ARC[input.narrativeStyle]
 
   return `Write a complete kinetic text video script for Ascentor.
 
@@ -231,17 +241,17 @@ Respond ONLY with valid JSON, no markdown, no preamble, no explanation:
 }`
 }
 
-// ── Main export ──────────────────────────────────────────────
-export async function generateVideoStory(
+// ═══════════════════════════════════════════════════════════
+// PUBLIC — returns both the story AND the cost metadata
+// ═══════════════════════════════════════════════════════════
+export async function generateVideoStoryWithCost(
   input: VideoFormInput
-): Promise<StoryEngineResponse> {
+): Promise<StoryEngineResult> {
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',   // Sonnet — not Haiku. Creative work needs the full model.
+    model: 'claude-sonnet-4-6',
     max_tokens: 4000,
     system: buildSystemPrompt(),
-    messages: [
-      { role: 'user', content: buildUserPrompt(input) },
-    ],
+    messages: [{ role: 'user', content: buildUserPrompt(input) }],
   })
 
   const text = response.content
@@ -259,19 +269,34 @@ export async function generateVideoStory(
     throw new Error('Story engine returned invalid JSON')
   }
 
-  // Validate minimum structure
   if (!parsed.scenes || parsed.scenes.length === 0) {
     throw new Error('Story engine returned no scenes')
   }
 
-  // Log cost (Sonnet pricing: $3/M input, $15/M output)
-  const inputTokens = response.usage.input_tokens
+  const inputTokens  = response.usage.input_tokens
   const outputTokens = response.usage.output_tokens
-  const costUsd = (inputTokens / 1_000_000 * 3) + (outputTokens / 1_000_000 * 15)
+  const costUsd =
+    (inputTokens  / 1_000_000) * CLAUDE_INPUT_COST_PER_M +
+    (outputTokens / 1_000_000) * CLAUDE_OUTPUT_COST_PER_M
+
   console.log(
-    `[story-engine] Generated ${parsed.scenes.length} scenes. ` +
+    `[story-engine] ${parsed.scenes.length} scenes. ` +
     `Tokens: ${inputTokens}in/${outputTokens}out. Cost: $${costUsd.toFixed(5)}`
   )
 
-  return parsed
+  return {
+    story: parsed,
+    cost: { inputTokens, outputTokens, costUsd },
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PUBLIC — backwards-compatible wrapper (old signature)
+// Existing callers (/preview route, old trigger task) still work
+// ═══════════════════════════════════════════════════════════
+export async function generateVideoStory(
+  input: VideoFormInput
+): Promise<StoryEngineResponse> {
+  const result = await generateVideoStoryWithCost(input)
+  return result.story
 }

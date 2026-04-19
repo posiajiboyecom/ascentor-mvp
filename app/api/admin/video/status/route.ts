@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════
-// Ascentor Video Engine — Status Polling Route
+// Ascentor Video Engine — Status route (Phase 4+5 patched)
 // Drop in: app/api/admin/video/status/route.ts
 //
-// GET /api/admin/video/status?jobId=xxx
-// Returns current status + video URL when complete
+// Phase 4+5 changes:
+//   • Filters deleted_at IS NULL.
+//   • Returns costUsdClaude, costUsdElevenlabs, costUsdTotal,
+//     timings, retryCount so the UI can display them.
 // ═══════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
@@ -22,6 +24,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { data: profile } = await supabase
+      .from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const jobId = req.nextUrl.searchParams.get('jobId')
     if (!jobId) {
       return NextResponse.json({ error: 'jobId required' }, { status: 400 })
@@ -33,9 +41,12 @@ export async function GET(req: NextRequest) {
         id, status, video_url, voiceover_url, soundtrack_url,
         scene_count, total_duration_seconds, error_message,
         created_at, started_at, completed_at, duration_ms,
-        goal, narrative_style, theme, audio_mode
+        goal, narrative_style, theme, audio_mode,
+        retry_count, cancelled_at, deleted_at,
+        cost_usd_claude, cost_usd_elevenlabs, cost_usd_total, timings
       `)
       .eq('id', jobId)
+      .is('deleted_at', null)
       .single()
 
     if (error || !job) {
@@ -43,20 +54,26 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      jobId: job.id,
-      status: job.status,              // queued | processing | complete | failed
-      videoUrl: job.video_url,
-      sceneCount: job.scene_count,
+      jobId:                job.id,
+      status:               job.status,
+      videoUrl:             job.video_url,
+      sceneCount:           job.scene_count,
       totalDurationSeconds: job.total_duration_seconds,
-      errorMessage: job.error_message,
-      durationMs: job.duration_ms,
+      errorMessage:         job.error_message,
+      durationMs:           job.duration_ms,
+      retryCount:           job.retry_count,
+      cancelledAt:          job.cancelled_at,
+      costUsdClaude:        job.cost_usd_claude,
+      costUsdElevenlabs:    job.cost_usd_elevenlabs,
+      costUsdTotal:         job.cost_usd_total,
+      timings:              job.timings,
       meta: {
-        goal: job.goal,
+        goal:           job.goal,
         narrativeStyle: job.narrative_style,
-        theme: job.theme,
-        audioMode: job.audio_mode,
-        createdAt: job.created_at,
-        completedAt: job.completed_at,
+        theme:          job.theme,
+        audioMode:      job.audio_mode,
+        createdAt:      job.created_at,
+        completedAt:    job.completed_at,
       },
     })
 

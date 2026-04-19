@@ -7,8 +7,12 @@
     "build": "next build",
     "build:mobile": "next build && npx cap sync",
     "start": "next start",
+    "lint": "next lint",
     "cap:ios": "npx cap open ios",
-    "cap:android": "npx cap open android"
+    "cap:android": "npx cap open android",
+    "trigger:dev": "npx trigger.dev@latest dev",
+    "trigger:deploy": "npx trigger.dev@latest deploy",
+    "remotion:studio": "cd remotion && npx remotion studio src/index.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
@@ -28,6 +32,7 @@
     "@plausible-analytics/tracker": "^0.4.4",
     "@remotion/bundler": "^4.0.448",
     "@remotion/lambda": "^4.0.448",
+    "@remotion/media-utils": "^4.0.448",
     "@remotion/player": "^4.0.448",
     "@remotion/renderer": "^4.0.448",
     "@supabase/ssr": "^0.8.0",

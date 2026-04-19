@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════
+// Ascentor Video Engine — Download route (patched, Phase 1)
+//
 // Drop in: app/api/admin/video/download/route.ts
 //
-// GET /api/admin/video/download?jobId=xxx
-//
-// Proxies the MP4 from Supabase Storage through your Next.js
-// server so the browser sees it as same-origin and the
-// `Content-Disposition: attachment` header forces a download.
+// Changes from previous version:
+//   • (No change — admin role check was already present)
+//   • Slug falls back to "video" if goal contains only non-ASCII.
+//   • Proper Content-Disposition escaping for filenames.
 // ═══════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
@@ -57,20 +58,22 @@ export async function GET(req: NextRequest) {
     const videoBuffer = await videoRes.arrayBuffer()
 
     // ── Build a clean filename from the goal ─────────────────
-    const slug = (job.goal as string)
+    const slug = ((job.goal as string) || '')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '')
-      .slice(0, 40)
+      .slice(0, 40) || 'video'
+
     const date = new Date(job.created_at).toISOString().slice(0, 10)
     const filename = `ascentor-${slug}-${date}.mp4`
+    // Escape any stray quote/newline (defensive)
+    const safeFilename = filename.replace(/["\r\n]/g, '')
 
-    // ── Return with Content-Disposition: attachment ──────────
     return new NextResponse(videoBuffer, {
       status: 200,
       headers: {
         'Content-Type':        'video/mp4',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': `attachment; filename="${safeFilename}"`,
         'Content-Length':      String(videoBuffer.byteLength),
         'Cache-Control':       'no-store',
       },
