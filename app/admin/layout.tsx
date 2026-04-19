@@ -52,7 +52,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       profile = { ...fallback.data, permissions: null };
     }
   } else {
-    profile = fullQuery.data as typeof profile;
+    profile = fullQuery.data;
   }
 
   if (!profile || !['admin', 'moderator'].includes(profile.role)) {
