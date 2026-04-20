@@ -132,10 +132,11 @@ function JobRow({ job, onRetry, onDelete, onCancel, retrying }: JobRowProps) {
   return (
     <div style={{
       background: CARD_BG,
-      border: `1px solid ${BORDER}`,
+      border: '1px solid rgba(212,207,195,0.18)',
       borderRadius: 10,
       padding: '14px 16px',
       marginBottom: 10,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
     }}>
       {/* Top row: goal + status + download */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
