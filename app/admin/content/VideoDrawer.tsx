@@ -86,6 +86,15 @@ const MUTED = '#6B6860';
 const FAINT = '#9E9B94';
 const BORDER = '#E2DDD4';
 
+const GOAL_PRESETS = [
+  'Invite people to an event',
+  'Promote a product or service',
+  'Build personal authority',
+  'Drive sign-ups to Ascentor',
+  'Share a leadership insight',
+  'Announce something new',
+];
+
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_KEY_MESSAGE_CHARS = 300;
 const MAX_CTA_BUTTON_CHARS = 32;
@@ -835,15 +844,27 @@ export default function VideoDrawer({ open, onClose, showToast }: VideoDrawerPro
           <div style={{ padding: '20px 24px', flex: 1 }}>
             <Section>
               <Label>Goal of this video</Label>
-              <select value={goal} onChange={e => setGoal(e.target.value)} style={{ width: '100%', padding: '9px 12px', border: `1px solid ${BORDER}`, borderRadius: 8, background: WARM, fontSize: 13, ...MONO, color: DARK }}>
+              <select
+                value={GOAL_PRESETS.includes(goal) ? goal : goal ? '__custom__' : ''}
+                onChange={e => {
+                  if (e.target.value === '__custom__') setGoal('');
+                  else setGoal(e.target.value);
+                }}
+                style={{ width: '100%', padding: '9px 12px', border: `1px solid ${BORDER}`, borderRadius: 8, background: WARM, fontSize: 13, ...MONO, color: DARK, marginBottom: 8 }}
+              >
                 <option value="">Select a goal…</option>
-                <option>Invite people to an event</option>
-                <option>Promote a product or service</option>
-                <option>Build personal authority</option>
-                <option>Drive sign-ups to Ascentor</option>
-                <option>Share a leadership insight</option>
-                <option>Announce something new</option>
+                {GOAL_PRESETS.map(g => <option key={g} value={g}>{g}</option>)}
+                <option value="__custom__">✏ Write my own…</option>
               </select>
+              {(!GOAL_PRESETS.includes(goal)) && (
+                <input
+                  type="text"
+                  value={goal}
+                  onChange={e => setGoal(e.target.value)}
+                  placeholder="Describe your goal…"
+                  style={{ width: '100%', padding: '9px 12px', border: `1px solid ${AMBER}`, borderRadius: 8, background: WARM, fontSize: 13, ...MONO, color: DARK }}
+                />
+              )}
             </Section>
 
             <Section>

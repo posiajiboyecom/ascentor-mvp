@@ -14,13 +14,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import VideoDrawer from '../content/VideoDrawer';
 
 const MONO: React.CSSProperties = { fontFamily: "'DM Mono', monospace" };
-const AMBER       = '#A0720A';
-const AMBER_BRIGHT = '#E8A020';
-const DARK        = '#0C0B08';
-const WARM        = '#F5F3EE';
-const MUTED       = '#6B6860';
-const FAINT       = '#9E9B94';
-const BORDER      = '#E2DDD4';
+const AMBER        = 'var(--color-text-warning)';
+const AMBER_BRIGHT = 'var(--color-text-warning)';
+const DARK         = 'var(--color-text-primary)';
+const WARM         = 'var(--color-background-primary)';
+const MUTED        = 'var(--color-text-secondary)';
+const FAINT        = 'var(--color-text-tertiary)';
+const BORDER       = 'var(--color-border-tertiary)';
 
 interface VideoJob {
   id:                     string;
@@ -102,7 +102,7 @@ function DownloadButton({ url, jobId }: { url: string; jobId: string }) {
         padding: '5px 12px',
         borderRadius: 6,
         border: `1px solid ${AMBER}`,
-        background: WARM,
+        background: 'var(--color-background-secondary)',
         color: downloading ? FAINT : AMBER,
         cursor: downloading ? 'not-allowed' : 'pointer',
         whiteSpace: 'nowrap',
@@ -128,7 +128,7 @@ function JobRow({ job, onRetry, onDelete, onCancel, retrying }: JobRowProps) {
 
   return (
     <div style={{
-      background: '#fff',
+      background: 'var(--color-background-secondary)',
       border: `1px solid ${BORDER}`,
       borderRadius: 10,
       padding: '14px 16px',
@@ -318,7 +318,7 @@ export default function VideosAdminPage() {
   const failedJobs    = jobs.filter(j => j.status === 'failed');
 
   return (
-    <div style={{ minHeight: '100vh', background: WARM, padding: '40px 32px' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--color-background-tertiary)', padding: '40px 32px' }}>
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
 
         {/* Header */}
@@ -421,7 +421,7 @@ export default function VideosAdminPage() {
       {toast && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-          background: toast.ok ? DARK : '#7C2D2D',
+          background: toast.ok ? 'var(--color-background-inverse)' : 'var(--color-background-danger)',
           color: '#fff', padding: '10px 18px', borderRadius: 8,
           ...MONO, fontSize: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
           zIndex: 300, maxWidth: '80%',
