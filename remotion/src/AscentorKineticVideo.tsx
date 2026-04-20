@@ -208,6 +208,7 @@ function LogoWatermark({ logoUrl }: { logoUrl: string }) {
       <Img
         src={logoUrl}
         style={{ height: 32, width: 'auto' }}
+        pauseWhenLoading={false}
       />
     </div>
   )
@@ -380,6 +381,7 @@ function CTASceneComp({
             <Img
               src={cta.imageUrl}
               style={{ width: 280, height: 200, objectFit: 'cover', borderRadius: 12, marginBottom: 32 }}
+              pauseWhenLoading={false}
             />
           )}
           <div style={{ fontSize: 36, fontWeight: 700, color: t.textPrimary, fontFamily: 'Georgia, serif', textAlign: 'center', lineHeight: 1.3, marginBottom: 12 }}>
@@ -414,6 +416,7 @@ function CTASceneComp({
               <Img
                 src={cta.imageUrl}
                 style={{ width: '100%', height: 400, objectFit: 'cover', borderRadius: 12 }}
+                pauseWhenLoading={false}
               />
             ) : (
               <div style={{ width: '100%', height: 400, backgroundColor: '#222', borderRadius: 12 }} />

@@ -151,7 +151,8 @@ async function renderVideo(payload: VideoJobPayload): Promise<Buffer> {
       inputProps:     payload as unknown as Record<string, unknown>,
       crf:            22,
       concurrency:    1,
-      chromiumOptions: { disableWebSecurity: true, gl: 'swangle' },
+      scale:          0.5,
+      chromiumOptions: { disableWebSecurity: true, gl: 'angle' },
       onProgress: ({ progress }) => {
         if (Math.round(progress * 100) % 20 === 0) {
           console.log(`[video-generator] Render progress: ${Math.round(progress * 100)}%`)
@@ -176,7 +177,7 @@ async function timed<T>(fn: () => Promise<T>): Promise<[T, number]> {
 // ══════════════════════════════════════════════════════════════
 export const videoGeneratorTask = task({
   id: 'video-generator',
-  machine: { preset: 'medium-2x' },
+  machine: { preset: 'large-2x' },
 
   run: async (payload: {
     jobId:               string
