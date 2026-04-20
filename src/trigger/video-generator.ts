@@ -151,7 +151,6 @@ async function renderVideo(payload: VideoJobPayload): Promise<Buffer> {
       inputProps:     payload as unknown as Record<string, unknown>,
       crf:            22,
       concurrency:    1,
-      scale:          0.5,
       chromiumOptions: { disableWebSecurity: true, gl: 'angle' },
       onProgress: ({ progress }) => {
         if (Math.round(progress * 100) % 20 === 0) {
@@ -228,13 +227,14 @@ export const videoGeneratorTask = task({
         console.log(`[video-generator] Story: ${ms}ms, $${costUsdClaude.toFixed(5)}`)
       }
 
-      // ── Scene cap: max 8 scenes, max 4s each ─────────────────────────────
-      // Keeps render time ~168s on a medium-2x machine (well under the
-      // 300s maxDuration kill limit, even if the browser retries once).
+      // ── Scene cap: max 8 scenes, max 6s each ─────────────────────────────
+      // 1.5× slower: multiply durationSeconds so scenes linger longer.
+      // Max bumped from 4s → 6s to accommodate the slower pace.
+      const SLOW = 1.5
       const RAW_SCENE_COUNT = story.scenes.length
       story.scenes = story.scenes
         .slice(0, 8)
-        .map(s => ({ ...s, durationSeconds: Math.min(s.durationSeconds, 4) }))
+        .map(s => ({ ...s, durationSeconds: Math.min(Math.round((s.durationSeconds * SLOW) * 10) / 10, 6) }))
       if (RAW_SCENE_COUNT !== story.scenes.length) {
         console.warn(
           `[video-generator] Scene cap applied: ${RAW_SCENE_COUNT} → ${story.scenes.length} scenes`
