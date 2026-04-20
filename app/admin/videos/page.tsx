@@ -14,13 +14,16 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import VideoDrawer from '../content/VideoDrawer';
 
 const MONO: React.CSSProperties = { fontFamily: "'DM Mono', monospace" };
-const AMBER        = 'var(--color-text-warning)';
-const AMBER_BRIGHT = 'var(--color-text-warning)';
-const DARK         = 'var(--color-text-primary)';
-const WARM         = 'var(--color-background-primary)';
-const MUTED        = 'var(--color-text-secondary)';
-const FAINT        = 'var(--color-text-tertiary)';
-const BORDER       = 'var(--color-border-tertiary)';
+const SYNE: React.CSSProperties = { fontFamily: "'Syne', system-ui, sans-serif" };
+// Exact values from AdminShell — works in both dark and light admin theme
+const AMBER        = '#E8A020';
+const AMBER_BRIGHT = '#E8A020';
+const DARK         = 'var(--admin-text-heading)';
+const WARM         = 'var(--admin-bg)';
+const CARD_BG      = 'var(--admin-bg-card)';
+const MUTED        = 'var(--admin-text-muted)';
+const FAINT        = 'var(--admin-text-faint)';
+const BORDER       = 'rgba(212,207,195,0.12)';
 
 interface VideoJob {
   id:                     string;
@@ -102,7 +105,7 @@ function DownloadButton({ url, jobId }: { url: string; jobId: string }) {
         padding: '5px 12px',
         borderRadius: 6,
         border: `1px solid ${AMBER}`,
-        background: 'var(--color-background-secondary)',
+        background: 'transparent',
         color: downloading ? FAINT : AMBER,
         cursor: downloading ? 'not-allowed' : 'pointer',
         whiteSpace: 'nowrap',
@@ -128,7 +131,7 @@ function JobRow({ job, onRetry, onDelete, onCancel, retrying }: JobRowProps) {
 
   return (
     <div style={{
-      background: 'var(--color-background-secondary)',
+      background: CARD_BG,
       border: `1px solid ${BORDER}`,
       borderRadius: 10,
       padding: '14px 16px',
@@ -137,7 +140,7 @@ function JobRow({ job, onRetry, onDelete, onCancel, retrying }: JobRowProps) {
       {/* Top row: goal + status + download */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, color: DARK, fontWeight: 500, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 13, color: 'var(--admin-text)', fontWeight: 500, ...SYNE, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {job.goal}
           </div>
           <div style={{ ...MONO, fontSize: 9, color: FAINT, display: 'flex', flexWrap: 'wrap', gap: '0 10px' }}>
@@ -318,11 +321,11 @@ export default function VideosAdminPage() {
   const failedJobs    = jobs.filter(j => j.status === 'failed');
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-background-tertiary)', padding: '40px 32px' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--admin-bg)', padding: '32px 24px' }}>
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
 
         {/* Header */}
-        <div style={{ ...MONO, fontSize: 10, color: AMBER, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>
+        <div style={{ ...MONO, fontSize: 10, color: '#E8A020', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>
           Admin · Video Engine
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32, gap: 16, flexWrap: 'wrap' }}>
@@ -337,9 +340,9 @@ export default function VideosAdminPage() {
           <button
             onClick={() => setDrawerOpen(true)}
             style={{
-              padding: '12px 24px', borderRadius: 8, border: 'none',
-              background: DARK, color: '#fff', ...MONO,
-              fontSize: 13, letterSpacing: '0.04em', cursor: 'pointer', whiteSpace: 'nowrap',
+              padding: '10px 20px', borderRadius: 8, border: 'none',
+              background: '#E8A020', color: '#0C0B08', ...MONO,
+              fontSize: 12, letterSpacing: '0.04em', cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: 600,
             }}
           >
             ▶  Create new video
@@ -349,7 +352,7 @@ export default function VideosAdminPage() {
         {/* In-flight */}
         {inFlightJobs.length > 0 && (
           <div style={{ marginBottom: 32 }}>
-            <div style={{ ...MONO, fontSize: 10, color: AMBER_BRIGHT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
+            <div style={{ ...MONO, fontSize: 10, color: '#E8A020', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
               Rendering now
             </div>
             {inFlightJobs.map(job => (
@@ -386,7 +389,7 @@ export default function VideosAdminPage() {
 
         {/* Completed */}
         <div>
-          <div style={{ ...MONO, fontSize: 10, color: AMBER, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
+          <div style={{ ...MONO, fontSize: 10, color: '#E8A020', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
             {completedJobs.length > 0 ? `Completed (${completedJobs.length})` : 'Videos'}
           </div>
           {loading ? (
@@ -421,7 +424,7 @@ export default function VideosAdminPage() {
       {toast && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-          background: toast.ok ? 'var(--color-background-inverse)' : 'var(--color-background-danger)',
+          background: toast.ok ? '#1E1C17' : '#7C2D2D',
           color: '#fff', padding: '10px 18px', borderRadius: 8,
           ...MONO, fontSize: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
           zIndex: 300, maxWidth: '80%',
