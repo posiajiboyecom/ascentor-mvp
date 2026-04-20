@@ -109,17 +109,20 @@ async function resolveSoundtrack(mood: string): Promise<string | null> {
     .select('file_url')
     .eq('mood', mood)
     .eq('active', true)
-    .limit(1)
-    .maybeSingle()
+
   if (error) {
     console.warn(`[video-generator] Soundtrack lookup failed for mood "${mood}":`, error.message)
     return null
   }
-  if (!data?.file_url) {
+  if (!data || data.length === 0) {
     console.warn(`[video-generator] No active soundtrack for mood "${mood}" — rendering silent.`)
     return null
   }
-  return data.file_url
+
+  // Pick a random track from all active tracks for this mood
+  const track = data[Math.floor(Math.random() * data.length)]
+  console.log(`[video-generator] Picked soundtrack ${data.indexOf(track) + 1}/${data.length} for mood "${mood}"`)
+  return track.file_url
 }
 
 async function renderVideo(payload: VideoJobPayload): Promise<Buffer> {
