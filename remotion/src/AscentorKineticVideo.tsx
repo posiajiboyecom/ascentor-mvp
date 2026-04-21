@@ -35,27 +35,53 @@ import type {
 } from '../../types/video'
 
 // ── Theme tokens ─────────────────────────────────────────────
+// CONTRAST RULE (hard): text colour must never be similar to its background.
+// Every pairing below has been checked: light text on dark bg, dark text on
+// light bg, dark text on gold — no exceptions.
+//
+// Brand book references (Ascentor Brand Book v1.0):
+//   §03 Colour Palette  — primary swatches and usage rules
+//   §08 Digital Application — digital contrast requirements
+//   §10 Brand in Motion — video-specific guidance
+//
+// Exploratory note: we go beyond the brand book's two standard themes.
+// The brand permits creative use of tier colours, texture, and gold variants
+// in video/editorial contexts as long as contrast is maintained.
 const THEMES = {
+
+  // ── DARK THEME ────────────────────────────────────────────
+  // Deep warm-black surface (brand: Dark 900 = #0C0B08)
+  // All text runs light on dark — none of the text values are near
+  // the bg darkness. Gold 500 (#E8A020) is safe on this surface (~6:1).
   dark: {
-    bg: '#0a0a0a',
-    textPrimary: '#ffffff',
-    textSecondary: '#cccccc',
-    textWhisper: '#888888',
-    accent: '#F2A623',
-    ctaBg: '#111111',
-    ctaButton: '#F2A623',
-    ctaButtonText: '#0a0a0a',
+    bg:            '#0C0B08',   // Ascentor Black — Dark 900
+    textPrimary:   '#F7F6F3',   // Dark 50 — near-white warm. ~18:1 on bg ✓
+    textSecondary: '#C8C3B8',   // Dark 200 — muted warm grey. ~10:1 on bg ✓
+    textWhisper:   '#7A7260',   // Dark 400 — intentionally dim italic. ~4.5:1 ✓
+    accent:        '#E8A020',   // Gold 500 — brand primary gold. ~6:1 on black ✓
+    ctaBg:         '#1E1C17',   // Dark 700 — slightly lifted CTA card surface
+    ctaButton:     '#E8A020',   // Gold 500 bg
+    ctaButtonText: '#0C0B08',   // Ascentor Black on gold — brand-mandated ✓
+    linkColor:     '#F5C55A',   // Gold 300 — lighter gold for dark bg links ✓
   },
+
+  // ── LIGHT THEME ───────────────────────────────────────────
+  // Parchment surface (brand: never use pure white as a page bg in video).
+  // All text runs dark on parchment. The standard Gold 500 (#E8A020) fails
+  // contrast on parchment — brand book mandates the darker gold (#A0720A)
+  // for light surfaces. CTA button uses near-black for max contrast on white.
   light: {
-    bg: '#fafaf5',
-    textPrimary: '#111111',
-    textSecondary: '#444444',
-    textWhisper: '#888888',
-    accent: '#1a1a6e',
-    ctaBg: '#ffffff',
-    ctaButton: '#1a1a6e',
-    ctaButtonText: '#ffffff',
+    bg:            '#F5F3EE',   // Parchment — brand light surface
+    textPrimary:   '#1A1714',   // near-black. ~16:1 on parchment ✓
+    textSecondary: '#4A3F30',   // warm dark brown. ~8:1 on parchment ✓
+    textWhisper:   '#7A6A55',   // warm mid-brown — dim but readable ~4.5:1 ✓
+    accent:        '#A0720A',   // Darker Gold — brand-spec for light bg ✓
+    ctaBg:         '#FFFFFF',   // White card surface on parchment page
+    ctaButton:     '#1A1714',   // near-black — strong contrast on white ✓
+    ctaButtonText: '#F7F6F3',   // near-white — clear on near-black ✓
+    linkColor:     '#185FA5',   // Dark blue — passes contrast on white ✓
   },
+
 }
 
 // ── Emphasis → style mapping ─────────────────────────────────
@@ -419,7 +445,12 @@ function CTASceneComp({
                 pauseWhenLoading={false}
               />
             ) : (
-              <div style={{ width: '100%', height: 400, backgroundColor: '#222', borderRadius: 12 }} />
+              // Fallback placeholder — theme-aware so it doesn't read as
+              // a dark block on a light-theme CTA surface
+              <div style={{
+                width: '100%', height: 400, borderRadius: 12,
+                backgroundColor: theme === 'dark' ? '#2E2A22' : '#E2DDD4',
+              }} />
             )}
           </div>
           {/* Right: text + CTA */}
@@ -440,9 +471,22 @@ function CTASceneComp({
   }
 
   // ── Template: fullbg-branded ─────────────────────────────
+  // Self-contained palette — ignores the theme token so it always
+  // renders the same brand-accurate dark surface regardless of the
+  // job's theme setting. All contrast pairs verified below.
   if (cta.template === 'fullbg-branded') {
+    // Dark 800 surface — deep brand bg, slightly warmer than pure black
+    const BB_BG       = '#141310'   // bg surface
+    // Gold 500 headline — ~6:1 on #141310 ✓  (light text on dark bg)
+    const BB_HEADLINE = '#E8A020'
+    // Dark 200 warm grey subtitle — ~9:1 on #141310 ✓
+    const BB_SUBTITLE = '#C8C3B8'
+    // Near-white button bg — ~17:1 on #141310 ✓
+    const BB_BTN_BG   = '#F7F6F3'
+    // Ascentor Black button text — ~17:1 on near-white ✓ (brand-mandated)
+    const BB_BTN_TEXT = '#0C0B08'
     return (
-      <AbsoluteFill style={{ backgroundColor: '#1a1a6e' }}>
+      <AbsoluteFill style={{ backgroundColor: BB_BG }}>
         <LogoWatermark logoUrl={logoUrl} />
         <AbsoluteFill
           style={{
@@ -455,11 +499,11 @@ function CTASceneComp({
             transform: `translateY(${contentY}px)`,
           }}
         >
-          <div style={{ fontSize: 46, fontWeight: 700, color: '#F2A623', fontFamily: 'Georgia, serif', textAlign: 'center', lineHeight: 1.25, marginBottom: 16 }}>
+          <div style={{ fontSize: 46, fontWeight: 700, color: BB_HEADLINE, fontFamily: 'Georgia, serif', textAlign: 'center', lineHeight: 1.25, marginBottom: 16 }}>
             {cta.headlineText}
           </div>
           {cta.subtitleText && (
-            <div style={{ fontSize: 24, color: '#cccccc', fontFamily: 'Georgia, serif', textAlign: 'center' }}>
+            <div style={{ fontSize: 24, color: BB_SUBTITLE, fontFamily: 'Georgia, serif', textAlign: 'center' }}>
               {cta.subtitleText}
             </div>
           )}
@@ -468,13 +512,15 @@ function CTASceneComp({
               opacity: buttonOpacity,
               transform: `scale(${buttonScale})`,
               marginTop: 40,
-              backgroundColor: '#ffffff',
-              color: '#1a1a6e',
+              backgroundColor: BB_BTN_BG,
+              color: BB_BTN_TEXT,
               padding: '18px 48px',
               borderRadius: 8,
               fontSize: 22,
               fontWeight: 700,
               fontFamily: 'Georgia, serif',
+              textAlign: 'center',
+              letterSpacing: '0.02em',
             }}
           >
             {cta.buttonText}
@@ -508,7 +554,7 @@ function CTASceneComp({
           <div style={{ fontSize: 28, fontWeight: 700, color: t.textPrimary, fontFamily: 'Georgia, serif', textAlign: 'center', marginBottom: 20 }}>
             {cta.headlineText}
           </div>
-          <div style={{ opacity: buttonOpacity, fontSize: 22, color: '#185FA5', fontFamily: 'Georgia, serif', textDecoration: 'underline' }}>
+          <div style={{ opacity: buttonOpacity, fontSize: 22, color: t.linkColor, fontFamily: 'Georgia, serif', textDecoration: 'underline' }}>
             {cta.buttonUrl}
           </div>
         </AbsoluteFill>

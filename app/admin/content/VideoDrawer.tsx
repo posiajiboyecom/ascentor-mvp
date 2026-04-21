@@ -78,13 +78,14 @@ interface VideoJob {
 
 // ── Shared style helpers ─────────────────────────────────────
 const MONO: React.CSSProperties = { fontFamily: "'DM Mono', monospace" };
-const AMBER = '#A0720A';
-const AMBER_BRIGHT = '#E8A020';
-const DARK  = '#0C0B08';
-const WARM  = '#F5F3EE';
-const MUTED = '#6B6860';
-const FAINT = '#9E9B94';
-const BORDER = '#E2DDD4';
+// Brand-accurate constants — kept in sync with Remotion THEMES object
+const AMBER        = '#A0720A';   // Darker Gold — used for admin UI labels (on light bg)
+const AMBER_BRIGHT = '#E8A020';   // Gold 500 — used for active states, highlights
+const DARK         = '#0C0B08';   // Ascentor Black (Dark 900)
+const WARM         = '#F5F3EE';   // Parchment surface
+const MUTED        = '#6B6860';   // mid-grey — secondary UI text on parchment
+const FAINT        = '#9E9B94';   // very muted — hints, counters on parchment
+const BORDER       = '#E2DDD4';   // warm light border
 
 const GOAL_PRESETS = [
   'Invite people to an event',
@@ -143,58 +144,91 @@ function Section({ children }: { children: React.ReactNode }) {
   return <div style={{ marginBottom: 20 }}>{children}</div>;
 }
 
-// ── CTA previews (theme-aware, from Phase 2) ─────────────────
+// ── CTA previews ─────────────────────────────────────────────
+// These thumbnail previews must mirror the actual THEMES object in
+// AscentorKineticVideo.tsx so admins see an accurate representation.
+// CONTRAST RULE applies here too — every text/bg pairing is checked.
 function makeCtaPreviews(theme: VideoTheme) {
   const isDark = theme === 'dark';
-  const bg = isDark ? '#111' : '#fafaf5';
+
+  // Match the Remotion THEMES object exactly
+  const bg            = isDark ? '#0C0B08' : '#F5F3EE';
+  const ctaBg         = isDark ? '#1E1C17' : '#FFFFFF';
+  const textPrimary   = isDark ? '#F7F6F3' : '#1A1714';
+  const textSecondary = isDark ? '#C8C3B8' : '#4A3F30';
+  const textWhisper   = isDark ? '#7A7260' : '#7A6A55';
+  const accent        = isDark ? '#E8A020' : '#A0720A';
+  const ctaButton     = isDark ? '#E8A020' : '#1A1714';
+  const ctaButtonText = isDark ? '#0C0B08' : '#F7F6F3';
+  const linkColor     = isDark ? '#F5C55A' : '#185FA5';
+
+  // Image placeholder for templates that take an image
+  // dark: warm charcoal; light: warm greige — neither reads as "broken"
+  const imgPlaceholder  = isDark ? '#2E2A22' : '#E2DDD4';
+  const splitImagePanel = isDark ? '#252018' : '#EBE6DC';
+
+  // fullbg-branded is always the same palette regardless of theme toggle
+  const BB_BG       = '#141310';
+  const BB_HEADLINE = '#E8A020';
+  const BB_BTN_BG   = '#F7F6F3';
+  const BB_BTN_TEXT = '#0C0B08';
+
   const borderStyle = isDark ? 'none' : `1px solid ${BORDER}`;
-  const textColor = isDark ? '#ccc' : '#333';
-  const mutedTextColor = isDark ? '#aaa' : '#555';
-  const btnBg = isDark ? AMBER_BRIGHT : AMBER;
-  const btnFg = isDark ? '#111' : '#fff';
-  const imgPlaceholder = isDark ? '#333' : '#e6e1d7';
-  const splitImageBg = isDark ? '#222' : '#ebe6dc';
-  const linkColor = isDark ? '#E8C47A' : '#185FA5';
-  const fullBrandedBg = '#1a1a6e';
 
   return [
+    // dark-centered — always uses the dark theme surface regardless of toggle
+    // (template name makes the intent explicit)
     { id: 'dark-centered' as CTATemplate, label: 'Dark centered', preview: (
-      <div style={{ background: '#111', height: 64, borderRadius: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-        <div style={{ fontSize: 8, color: '#ccc', ...MONO }}>Headline · subtitle</div>
-        <div style={{ fontSize: 7, background: AMBER_BRIGHT, color: '#111', padding: '2px 8px', borderRadius: 3, ...MONO, fontWeight: 700 }}>CTA Button</div>
+      <div style={{ background: '#0C0B08', height: 64, borderRadius: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        <div style={{ fontSize: 8, color: '#C8C3B8', ...MONO }}>Headline · subtitle</div>
+        <div style={{ fontSize: 7, background: '#E8A020', color: '#0C0B08', padding: '2px 8px', borderRadius: 3, ...MONO, fontWeight: 700 }}>CTA Button</div>
       </div>
     )},
+
+    // image-top — theme-aware surface, theme-aware button
     { id: 'image-top' as CTATemplate, label: 'Image + CTA', preview: (
-      <div style={{ background: bg, border: borderStyle, height: 64, borderRadius: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
-        <div style={{ width: 28, height: 20, background: imgPlaceholder, borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 8 }}>🖼</span></div>
-        <div style={{ fontSize: 7, color: mutedTextColor, ...MONO }}>Headline</div>
-        <div style={{ fontSize: 7, background: btnBg, color: btnFg, padding: '1px 7px', borderRadius: 3, ...MONO, fontWeight: 700 }}>Register</div>
+      <div style={{ background: ctaBg, border: borderStyle, height: 64, borderRadius: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+        <div style={{ width: 28, height: 18, background: imgPlaceholder, borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 8 }}>🖼</span>
+        </div>
+        <div style={{ fontSize: 7, color: textSecondary, ...MONO }}>Headline</div>
+        <div style={{ fontSize: 7, background: ctaButton, color: ctaButtonText, padding: '1px 7px', borderRadius: 3, ...MONO, fontWeight: 700 }}>Register</div>
       </div>
     )},
+
+    // split — left panel is image area, right panel is text + button
     { id: 'split' as CTATemplate, label: 'Split image', preview: (
-      <div style={{ background: bg, border: borderStyle, height: 64, borderRadius: 6, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
-        <div style={{ flex: 1, background: splitImageBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 10 }}>🖼</span></div>
+      <div style={{ background: ctaBg, border: borderStyle, height: 64, borderRadius: 6, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
+        <div style={{ flex: 1, background: splitImagePanel, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 10 }}>🖼</span>
+        </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', padding: '0 6px', gap: 3 }}>
-          <div style={{ fontSize: 7, color: textColor, ...MONO }}>Bold headline</div>
-          <div style={{ fontSize: 7, background: btnBg, color: btnFg, padding: '1px 5px', borderRadius: 3, ...MONO, fontWeight: 700 }}>Go</div>
+          <div style={{ fontSize: 7, color: textPrimary, ...MONO }}>Bold headline</div>
+          <div style={{ fontSize: 7, background: ctaButton, color: ctaButtonText, padding: '1px 5px', borderRadius: 3, ...MONO, fontWeight: 700 }}>Go</div>
         </div>
       </div>
     )},
+
+    // light-centered — always uses the light theme surface regardless of toggle
     { id: 'light-centered' as CTATemplate, label: 'Light centered', preview: (
-      <div style={{ background: '#fafaf5', height: 64, borderRadius: 6, border: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-        <div style={{ fontSize: 8, color: '#333', ...MONO }}>Headline · subtitle</div>
-        <div style={{ fontSize: 7, background: AMBER, color: '#fff', padding: '2px 8px', borderRadius: 3, ...MONO, fontWeight: 700 }}>CTA Button</div>
+      <div style={{ background: '#F5F3EE', height: 64, borderRadius: 6, border: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        <div style={{ fontSize: 8, color: '#1A1714', ...MONO }}>Headline · subtitle</div>
+        <div style={{ fontSize: 7, background: '#1A1714', color: '#F7F6F3', padding: '2px 8px', borderRadius: 3, ...MONO, fontWeight: 700 }}>CTA Button</div>
       </div>
     )},
+
+    // fullbg-branded — always the same bespoke palette, no theme dependency
     { id: 'fullbg-branded' as CTATemplate, label: 'Full branded', preview: (
-      <div style={{ background: fullBrandedBg, height: 64, borderRadius: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-        <div style={{ fontSize: 8, color: AMBER_BRIGHT, ...MONO, fontWeight: 700 }}>Bold headline</div>
-        <div style={{ fontSize: 7, background: '#fff', color: fullBrandedBg, padding: '2px 8px', borderRadius: 3, ...MONO, fontWeight: 700 }}>Act now</div>
+      <div style={{ background: BB_BG, height: 64, borderRadius: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        <div style={{ fontSize: 8, color: BB_HEADLINE, ...MONO, fontWeight: 700 }}>Bold headline</div>
+        <div style={{ fontSize: 7, background: BB_BTN_BG, color: BB_BTN_TEXT, padding: '2px 8px', borderRadius: 3, ...MONO, fontWeight: 700 }}>Act now</div>
       </div>
     )},
+
+    // minimal-link — theme-aware bg, closing quote, underlined URL
     { id: 'minimal-link' as CTATemplate, label: 'Minimal link', preview: (
-      <div style={{ background: bg, border: borderStyle, height: 64, borderRadius: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '0 8px' }}>
-        <div style={{ fontSize: 7, color: mutedTextColor, fontStyle: 'italic', ...MONO, textAlign: 'center' }}>"closing line from story"</div>
+      <div style={{ background: ctaBg, border: borderStyle, height: 64, borderRadius: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '0 8px' }}>
+        <div style={{ fontSize: 7, color: textWhisper, fontStyle: 'italic', ...MONO, textAlign: 'center' }}>"closing line from story"</div>
         <div style={{ fontSize: 7, color: linkColor, textDecoration: 'underline', ...MONO }}>ascentorbi.com</div>
       </div>
     )},
@@ -902,13 +936,13 @@ export default function VideoDrawer({ open, onClose, showToast }: VideoDrawerPro
                 {(['dark','light'] as VideoTheme[]).map(t => (
                   <button key={t} onClick={() => setTheme(t)} style={{
                     flex: 1, padding: '10px 0', borderRadius: 8, cursor: 'pointer',
-                    border: `1px solid ${theme === t ? AMBER : BORDER}`,
-                    background: t === 'dark' ? (theme === t ? '#1a1a1a' : '#111') : (theme === t ? '#fafaf5' : WARM),
-                    color: t === 'dark' ? '#fff' : DARK,
+                    border: `1px solid ${theme === t ? AMBER_BRIGHT : BORDER}`,
+                    background: t === 'dark' ? (theme === t ? '#1E1C17' : '#0C0B08') : (theme === t ? '#F5F3EE' : WARM),
+                    color: t === 'dark' ? '#F7F6F3' : DARK,
                     ...MONO, fontSize: 12,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   }}>
-                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: t === 'dark' ? '#333' : '#ddd', border: `1px solid ${t === 'dark' ? '#555' : '#bbb'}` }} />
+                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: t === 'dark' ? '#2E2A22' : '#E2DDD4', border: `1px solid ${t === 'dark' ? '#4A4640' : '#C8C3B8'}` }} />
                     {t === 'dark' ? 'Dark cinematic' : 'Light minimal'}
                   </button>
                 ))}
