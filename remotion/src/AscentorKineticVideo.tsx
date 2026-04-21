@@ -133,12 +133,13 @@ function AnimatedLine({
 
   switch (animation) {
     case 'fade-up':
-      opacity = interpolate(localFrame, [0, 18], [0, 1], {
+      // 18 → 24 frames: drifts in over 0.8s instead of snapping in at 0.6s
+      opacity = interpolate(localFrame, [0, 24], [0, 1], {
         extrapolateLeft: 'clamp',
         extrapolateRight: 'clamp',
         easing: Easing.out(Easing.cubic),
       })
-      translateY = interpolate(localFrame, [0, 18], [24, 0], {
+      translateY = interpolate(localFrame, [0, 24], [24, 0], {
         extrapolateLeft: 'clamp',
         extrapolateRight: 'clamp',
         easing: Easing.out(Easing.cubic),
@@ -146,7 +147,8 @@ function AnimatedLine({
       break
 
     case 'fade-in':
-      opacity = interpolate(localFrame, [0, 20], [0, 1], {
+      // 20 → 28 frames: gentlest entry, now 0.93s — suits quiet/reflective scenes
+      opacity = interpolate(localFrame, [0, 28], [0, 1], {
         extrapolateLeft: 'clamp',
         extrapolateRight: 'clamp',
         easing: Easing.out(Easing.quad),
@@ -154,25 +156,26 @@ function AnimatedLine({
       break
 
     case 'word-by-word':
-      // Whole line snaps in with a slight scale
-      scale = interpolate(localFrame, [0, 10], [0.92, 1], {
+      // scale 10 → 18, opacity 8 → 14: still punchy but no longer a snap
+      scale = interpolate(localFrame, [0, 18], [0.92, 1], {
         extrapolateLeft: 'clamp',
         extrapolateRight: 'clamp',
         easing: Easing.out(Easing.back(1.5)),
       })
-      opacity = interpolate(localFrame, [0, 8], [0, 1], {
+      opacity = interpolate(localFrame, [0, 14], [0, 1], {
         extrapolateLeft: 'clamp',
         extrapolateRight: 'clamp',
       })
       break
 
     case 'slide-left':
-      opacity = interpolate(localFrame, [0, 16], [0, 1], {
+      // 16 → 22 frames: slides in over 0.73s instead of 0.53s
+      opacity = interpolate(localFrame, [0, 22], [0, 1], {
         extrapolateLeft: 'clamp',
         extrapolateRight: 'clamp',
         easing: Easing.out(Easing.cubic),
       })
-      translateX = interpolate(localFrame, [0, 16], [-40, 0], {
+      translateX = interpolate(localFrame, [0, 22], [-40, 0], {
         extrapolateLeft: 'clamp',
         extrapolateRight: 'clamp',
         easing: Easing.out(Easing.cubic),
@@ -197,7 +200,8 @@ function AnimatedLine({
 // ── Scene fade out ───────────────────────────────────────────
 function SceneFadeOut({ durationFrames }: { durationFrames: number }) {
   const frame = useCurrentFrame()
-  const fadeStart = durationFrames - 12
+  // 12 → 20 frames: black transition now 0.67s instead of 0.4s — more deliberate pause
+  const fadeStart = durationFrames - 20
 
   const opacity = interpolate(
     frame,

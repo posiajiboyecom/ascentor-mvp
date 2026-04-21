@@ -230,14 +230,22 @@ export const videoGeneratorTask = task({
         console.log(`[video-generator] Story: ${ms}ms, $${costUsdClaude.toFixed(5)}`)
       }
 
-      // ── Scene cap: max 8 scenes, max 6s each ─────────────────────────────
-      // 1.5× slower: multiply durationSeconds so scenes linger longer.
-      // Max bumped from 4s → 6s to accommodate the slower pace.
-      const SLOW = 1.5
+      // ── Scene cap: max 8 scenes, max 7s each ─────────────────────────────
+      // Speed control: multiply Claude's raw durationSeconds by SLOW so scenes
+      // linger longer on screen. Claude now generates 4–5s baseline; after
+      // the multiplier that becomes 7.2–9s, clamped to 7s max.
+      //
+      // Trigger.dev budget: 250s hard limit on large-2x.
+      // Worst-case timing (8 scenes × 7s = 56s video + 8s CTA = 64s total):
+      //   Story (Claude):  ~15s
+      //   Render (Remotion, ~1920 frames @ ~75ms/frame): ~145s
+      //   Voiceover + upload: ~20s
+      //   Total: ~180s  →  safe margin of ~70s
+      const SLOW = 1.8
       const RAW_SCENE_COUNT = story.scenes.length
       story.scenes = story.scenes
         .slice(0, 8)
-        .map(s => ({ ...s, durationSeconds: Math.min(Math.round((s.durationSeconds * SLOW) * 10) / 10, 6) }))
+        .map(s => ({ ...s, durationSeconds: Math.min(Math.round((s.durationSeconds * SLOW) * 10) / 10, 7) }))
       if (RAW_SCENE_COUNT !== story.scenes.length) {
         console.warn(
           `[video-generator] Scene cap applied: ${RAW_SCENE_COUNT} → ${story.scenes.length} scenes`
