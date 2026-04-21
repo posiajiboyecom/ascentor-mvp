@@ -51,6 +51,14 @@ const nextConfig: NextConfig = {
     'web-push',
   ],
 
+  // Allow large multipart uploads for the clip+CTA video tool.
+  // The default Next.js limit is 4MB — clips can be up to 100MB.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '110mb',
+    },
+  },
+
   async headers() {
     return [
       {

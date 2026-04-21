@@ -22,6 +22,12 @@ import { tasks } from '@trigger.dev/sdk/v3'
 import type { clipCTAGeneratorTask } from '@/src/trigger/clip-cta-generator'
 import type { ClipCTAFormInput } from '@/types/clip-cta'
 
+// Disable Next.js body size limit — clips can be up to 100MB.
+// Without this the default 4MB limit causes a "Request Entity Too Large" error.
+// In the App Router this is controlled via next.config.ts experimental.serverActions
+// or by streaming the request body directly (which req.formData() does).
+export const maxDuration = 60 // seconds — upload + Supabase write + enqueue
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
