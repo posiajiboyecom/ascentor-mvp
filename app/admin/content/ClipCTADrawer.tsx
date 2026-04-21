@@ -455,6 +455,9 @@ export default function ClipCTADrawer({ open, onClose, showToast, onJobCreated }
   }
 
   // ── Submit ───────────────────────────────────────────────
+  // Two-step upload to bypass Vercel's 4.5MB serverless body limit:
+  // 1. Get a signed URL from /upload-url, upload clip directly to Supabase
+  // 2. Send only the clip URL + form data to /generate (tiny payload)
   async function handleSubmit() {
     const err = validate();
     if (err) { showToast(err, false); return; }
@@ -462,24 +465,68 @@ export default function ClipCTADrawer({ open, onClose, showToast, onJobCreated }
     setGenError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('clip', clipFile!);
-      if (croppedBlob) formData.append('ctaImage', croppedBlob, 'cta-image.jpg');
+      // ── Step 1: Get signed upload URL ──────────────────────
+      const urlRes = await fetch('/api/admin/clip-cta/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename:    clipFile!.name,
+          contentType: clipFile!.type,
+        }),
+      });
+      if (!urlRes.ok) {
+        const e = await urlRes.json().catch(() => ({ error: 'Failed to get upload URL' }));
+        throw new Error(e.error ?? 'Failed to get upload URL');
+      }
+      const { signedUrl, publicUrl, jobId: uploadJobId } = await urlRes.json();
 
+      // ── Step 2: Upload clip directly to Supabase ───────────
+      // Uses the signed URL — bypasses Vercel entirely
+      const uploadRes = await fetch(signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': clipFile!.type },
+        body: clipFile!,
+      });
+      if (!uploadRes.ok) {
+        throw new Error(`Clip upload failed (${uploadRes.status})`);
+      }
+
+      // ── Step 3: Encode CTA image as base64 if present ──────
+      let ctaImageBase64: string | undefined;
+      let ctaImageMimeType: string | undefined;
+      if (croppedBlob) {
+        const buf = await croppedBlob.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let binary = '';
+        bytes.forEach(b => binary += String.fromCharCode(b));
+        ctaImageBase64    = btoa(binary);
+        ctaImageMimeType  = croppedBlob.type || 'image/jpeg';
+      }
+
+      // ── Step 4: Send metadata to generate route ─────────────
       const formInput: ClipCTAFormInput = {
         ctaTemplate:     template,
         ctaDurationS:    ctaDuration,
         transitionType:  transition,
-        ctaHeadline:     headline  || undefined,
-        ctaSubtitle:     subtitle  || undefined,
-        ctaButtonText:   buttonText|| undefined,
-        ctaButtonUrl:    buttonUrl || undefined,
-        ctaClosingLine:  closingLine || undefined,
+        ctaHeadline:     headline     || undefined,
+        ctaSubtitle:     subtitle     || undefined,
+        ctaButtonText:   buttonText   || undefined,
+        ctaButtonUrl:    buttonUrl    || undefined,
+        ctaClosingLine:  closingLine  || undefined,
         ctaAspectPreset: aspectPreset,
       };
-      formData.append('formData', JSON.stringify(formInput));
 
-      const res  = await fetch('/api/admin/clip-cta/generate', { method: 'POST', body: formData });
+      const res = await fetch('/api/admin/clip-cta/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clipUrl:         publicUrl,
+          jobId:           uploadJobId,
+          formInput,
+          ctaImageBase64,
+          ctaImageMimeType,
+        }),
+      });
       const data = await res.json();
 
       if (!data.success) {
