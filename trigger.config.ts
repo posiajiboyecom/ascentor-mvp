@@ -3,6 +3,9 @@ import { defineConfig } from '@trigger.dev/sdk/v3';
 export default defineConfig({
   project: 'proj_zwrdqutfrrdneuwbjvxi',
 
+  // Required by Trigger.dev 4.4.4+
+  maxDuration: 300, // 5 minutes — covers video render + stitch pipeline
+
   // ── Build configuration ───────────────────────────────────
   build: {
     // These packages ship native binaries that esbuild cannot bundle.
@@ -12,7 +15,6 @@ export default defineConfig({
       '@ffmpeg-installer/ffmpeg',
       '@ffprobe-installer/ffprobe',
       'fluent-ffmpeg',
-      // Remotion also uses native deps — already works but listed for clarity
       '@remotion/renderer',
       '@remotion/bundler',
     ],
