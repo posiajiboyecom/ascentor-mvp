@@ -8,6 +8,7 @@
 // ═══════════════════════════════════════════════════════════
 import { Composition } from 'remotion';
 import { AscentorKineticVideo } from './compositions/AscentorKineticVideo';
+import { CTAOnlyRoot } from './compositions/CTAOnlyComposition';
 import type { VideoJobPayload } from '../../types/video';
 
 // 30fps is plenty for kinetic text — 60fps doubles render time with no visible benefit.
@@ -70,6 +71,7 @@ export const Root: React.FC = () => {
           };
         }}
       />
+      <CTAOnlyRoot />
     </>
   );
 };
