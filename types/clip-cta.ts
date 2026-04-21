@@ -3,7 +3,9 @@
 // Drop in: types/clip-cta.ts
 // ═══════════════════════════════════════════════════════════
 
-// CTATemplate is defined in types/video.ts — re-exported here for convenience
+// CTATemplate is defined in types/video.ts — imported for use in this file
+// and re-exported for consumers who import from clip-cta.ts
+import type { CTATemplate } from './video'
 export type { CTATemplate } from './video'
 
 export type TransitionType = 'fade-black' | 'crossfade' | 'hard-cut'
