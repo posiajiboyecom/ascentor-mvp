@@ -1,5 +1,5 @@
 import { defineConfig } from '@trigger.dev/sdk/v3';
-import { ffmpeg } from '@trigger.dev/build/extensions/core';
+import { ffmpeg, additionalFiles } from '@trigger.dev/build/extensions/core';
 
 export default defineConfig({
   project: 'proj_zwrdqutfrrdneuwbjvxi',
@@ -12,6 +12,12 @@ export default defineConfig({
     extensions: [
       // Installs FFmpeg into the build image and sets FFMPEG_PATH + FFPROBE_PATH
       ffmpeg(),
+      // Include the entire remotion folder — both tasks call bundle() which
+      // needs remotion/src/index.ts and all composition files at runtime.
+      // Without this the folder is absent in the deployed container.
+      additionalFiles({
+        files: ['./remotion/**'],
+      }),
     ],
     external: [
       // Remotion uses native deps that esbuild cannot inline
