@@ -1,5 +1,5 @@
 import { defineConfig } from '@trigger.dev/sdk/v3';
-import { ffmpeg, additionalFiles } from '@trigger.dev/build/extensions/core';
+import { ffmpeg, additionalFiles, aptGet } from '@trigger.dev/build/extensions/core';
 
 export default defineConfig({
   project: 'proj_zwrdqutfrrdneuwbjvxi',
@@ -12,9 +12,27 @@ export default defineConfig({
     extensions: [
       // Installs FFmpeg into the build image and sets FFMPEG_PATH + FFPROBE_PATH
       ffmpeg(),
+      // Chromium system libraries required by Remotion's headless renderer.
+      // libnspr4 + libnss3 are the most commonly missing ones in slim images.
+      aptGet({
+        packages: [
+          'libnspr4',
+          'libnss3',
+          'libatk1.0-0',
+          'libatk-bridge2.0-0',
+          'libcups2',
+          'libdrm2',
+          'libxkbcommon0',
+          'libxcomposite1',
+          'libxdamage1',
+          'libxfixes3',
+          'libxrandr2',
+          'libgbm1',
+          'libasound2',
+        ],
+      }),
       // Include the entire remotion folder — both tasks call bundle() which
       // needs remotion/src/index.ts and all composition files at runtime.
-      // Without this the folder is absent in the deployed container.
       additionalFiles({
         files: ['./remotion/**'],
       }),
