@@ -289,28 +289,6 @@ export const CTAScreen: React.FC<Props> = ({ cta, theme, logoUrl }) => {
         </AbsoluteFill>
       );
 
-    // ── Template: fullbg-image ────────────────────────────────
-    // Image fills the entire screen edge-to-edge. No text overlay.
-    // Admin uploads a pre-composed image (e.g. a designed CTA card).
-    // The image fades in with the same entry motion as other templates.
-    case 'fullbg-image':
-      return (
-        <AbsoluteFill style={{ background: PALETTE.dark }}>
-          {cta.imageUrl ? (
-            <AbsoluteFill style={{ opacity: eased }}>
-              <Img
-                src={cta.imageUrl}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                pauseWhenLoading={false}
-              />
-            </AbsoluteFill>
-          ) : (
-            // Fallback if no image provided — dark surface so it's not a white flash
-            <AbsoluteFill style={{ background: PALETTE.darkSoft }} />
-          )}
-        </AbsoluteFill>
-      );
-
     default:
       return null;
   }
