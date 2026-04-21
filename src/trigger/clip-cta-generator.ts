@@ -9,8 +9,9 @@
 //   4. Upload final MP4 → video-renders bucket
 //   5. Update clip_cta_jobs row → complete
 //
-// FFmpeg is installed at task runtime via @ffmpeg-installer/ffmpeg
-// which ships a static binary — no system-level install needed.
+// FFmpeg is installed into the build image by the Trigger.dev ffmpeg() build
+// extension (trigger.config.ts). It sets FFMPEG_PATH and FFPROBE_PATH env vars
+// automatically — no npm packages needed.
 // ═══════════════════════════════════════════════════════════
 import { task } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
@@ -50,8 +51,8 @@ async function probeVideo(filePath: string): Promise<{
   hasAudio: boolean
 }> {
   const { execSync } = await import('child_process')
-  const ffprobeInstaller = await import('@ffprobe-installer/ffprobe')
-  const ffprobePath = ffprobeInstaller.path
+  // FFPROBE_PATH is set by the Trigger.dev ffmpeg() build extension
+  const ffprobePath = process.env.FFPROBE_PATH ?? 'ffprobe'
 
   const raw = execSync(
     `"${ffprobePath}" -v quiet -print_format json -show_streams -show_format "${filePath}"`
@@ -139,8 +140,8 @@ async function stitchVideos(params: {
   const fs    = await import('fs')
   const { execSync } = await import('child_process')
 
-  const ffmpegInstaller = await import('@ffmpeg-installer/ffmpeg')
-  const ffmpegPath      = ffmpegInstaller.path
+  // FFMPEG_PATH is set by the Trigger.dev ffmpeg() build extension
+  const ffmpegPath = process.env.FFMPEG_PATH ?? 'ffmpeg'
 
   const outPath = path.join(os.tmpdir(), `ascentor-final-${jobId}.mp4`)
 

@@ -49,9 +49,6 @@ const nextConfig: NextConfig = {
   // or native binaries that don't exist in the browser.
   serverExternalPackages: [
     'web-push',
-    'fluent-ffmpeg',
-    '@ffmpeg-installer/ffmpeg',
-    '@ffprobe-installer/ffprobe',
   ],
 
   async headers() {

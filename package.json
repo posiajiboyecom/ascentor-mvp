@@ -28,8 +28,6 @@
     "@capacitor/push-notifications": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
-    "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "@ffprobe-installer/ffprobe": "^1.4.1",
     "@pinecone-database/pinecone": "^7.0.0",
     "@plausible-analytics/tracker": "^0.4.4",
     "@remotion/bundler": "^4.0.448",

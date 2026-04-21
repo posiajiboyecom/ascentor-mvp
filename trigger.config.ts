@@ -1,4 +1,5 @@
 import { defineConfig } from '@trigger.dev/sdk/v3';
+import { ffmpeg } from '@trigger.dev/build/extensions/core';
 
 export default defineConfig({
   project: 'proj_zwrdqutfrrdneuwbjvxi',
@@ -8,13 +9,12 @@ export default defineConfig({
 
   // ── Build configuration ───────────────────────────────────
   build: {
-    // These packages ship native binaries that esbuild cannot bundle.
-    // Marking them external tells Trigger.dev to install them in the
-    // runtime environment rather than trying to inline them.
+    extensions: [
+      // Installs FFmpeg into the build image and sets FFMPEG_PATH + FFPROBE_PATH
+      ffmpeg(),
+    ],
     external: [
-      '@ffmpeg-installer/ffmpeg',
-      '@ffprobe-installer/ffprobe',
-      'fluent-ffmpeg',
+      // Remotion uses native deps that esbuild cannot inline
       '@remotion/renderer',
       '@remotion/bundler',
     ],
