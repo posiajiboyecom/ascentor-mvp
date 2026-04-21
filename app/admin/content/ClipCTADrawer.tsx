@@ -13,7 +13,8 @@
 // what the app already uses. Image cropping is pure canvas.
 // ═══════════════════════════════════════════════════════════
 import { useState, useRef, useEffect, useCallback } from 'react';
-import type { CTATemplate, TransitionType, AspectPreset, ClipCTAFormInput } from '@/types/clip-cta';
+import type { CTATemplate } from '@/types/video';
+import type { TransitionType, AspectPreset, ClipCTAFormInput } from '@/types/clip-cta';
 
 // ── Design tokens (matches VideoDrawer + admin shell) ────────
 const MONO: React.CSSProperties   = { fontFamily: "'DM Mono', monospace" };
@@ -310,14 +311,14 @@ interface ClipCTADrawerProps {
 
 type Step = 'upload' | 'build' | 'generating' | 'done';
 
-const TEMPLATES: { id: CTATemplate; label: string; icon: string; needsImage: boolean; hasText: boolean }[] = [
-  { id: 'dark-centered',  label: 'Dark centered',  icon: '◼',  needsImage: false, hasText: true  },
-  { id: 'light-centered', label: 'Light centered', icon: '◻',  needsImage: false, hasText: true  },
-  { id: 'fullbg-branded', label: 'Full branded',   icon: '★',  needsImage: false, hasText: true  },
-  { id: 'minimal-link',   label: 'Minimal link',   icon: '↗',  needsImage: false, hasText: true  },
-  { id: 'image-top',      label: 'Image + text',   icon: '🖼',  needsImage: true,  hasText: true  },
-  { id: 'split',          label: 'Split image',    icon: '⬛',  needsImage: true,  hasText: true  },
-  { id: 'fullbg-image',   label: 'Full image',     icon: '📷',  needsImage: true,  hasText: false },
+// Same 6 templates as the kinetic video CTA — uses the same Remotion CTAScreen component
+const TEMPLATES: { id: CTATemplate; label: string; icon: string; needsImage: boolean }[] = [
+  { id: 'dark-centered',  label: 'Dark centered',  icon: '◼', needsImage: false },
+  { id: 'light-centered', label: 'Light centered', icon: '◻', needsImage: false },
+  { id: 'fullbg-branded', label: 'Full branded',   icon: '★', needsImage: false },
+  { id: 'minimal-link',   label: 'Minimal link',   icon: '↗', needsImage: false },
+  { id: 'image-top',      label: 'Image + text',   icon: '🖼', needsImage: true  },
+  { id: 'split',          label: 'Split image',    icon: '⬛', needsImage: true  },
 ];
 
 const TRANSITIONS: { id: TransitionType; label: string; desc: string }[] = [
@@ -370,6 +371,7 @@ export default function ClipCTADrawer({ open, onClose, showToast, onJobCreated }
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const templateMeta = TEMPLATES.find(t => t.id === template)!;
+  // All 6 kinetic templates have text fields (minimal-link uses URL+closingLine instead of button)
   const aspectRatio  = ASPECT_PRESETS.find(a => a.id === aspectPreset)!.ratio;
 
   // ── Reset on close ───────────────────────────────────────
@@ -446,12 +448,9 @@ export default function ClipCTADrawer({ open, onClose, showToast, onJobCreated }
   function validate(): string | null {
     if (!clipFile) return 'No clip selected.';
     if (templateMeta.needsImage && !croppedBlob) return 'This template requires an image.';
-    if (templateMeta.hasText) {
-      if (!headline.trim()) return 'Headline is required.';
-      if (template !== 'minimal-link' && !buttonText.trim()) return 'Button text is required.';
-      if (template !== 'minimal-link' && !buttonUrl.trim()) return 'Button URL is required.';
-      if (template === 'minimal-link' && !buttonUrl.trim()) return 'URL is required for minimal link.';
-    }
+    if (!headline.trim()) return 'Headline is required.';
+    if (template !== 'minimal-link' && !buttonText.trim()) return 'Button text is required.';
+    if (!buttonUrl.trim()) return 'URL is required.';
     return null;
   }
 
@@ -758,43 +757,37 @@ export default function ClipCTADrawer({ open, onClose, showToast, onJobCreated }
               )}
 
               {/* Text fields */}
-              {templateMeta.hasText && (
-                <Section>
-                  <Label>CTA text</Label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {template !== 'fullbg-image' && (
-                      <>
-                        <div>
-                          <div style={{ ...MONO, fontSize: 9, color: FAINT, marginBottom: 4 }}>Headline *</div>
-                          <TextInput value={headline} onChange={setHeadline} placeholder="Your next level starts here." maxLength={80} />
-                        </div>
-                        {template !== 'minimal-link' && (
-                          <div>
-                            <div style={{ ...MONO, fontSize: 9, color: FAINT, marginBottom: 4 }}>Subtitle</div>
-                            <TextInput value={subtitle} onChange={setSubtitle} placeholder="One sentence to close the door." maxLength={120} />
-                          </div>
-                        )}
-                        {template === 'minimal-link' && (
-                          <div>
-                            <div style={{ ...MONO, fontSize: 9, color: FAINT, marginBottom: 4 }}>Closing line</div>
-                            <TextInput value={closingLine} onChange={setClosingLine} placeholder="The story line that echoes…" maxLength={120} />
-                          </div>
-                        )}
-                        {template !== 'minimal-link' && (
-                          <div>
-                            <div style={{ ...MONO, fontSize: 9, color: FAINT, marginBottom: 4 }}>Button text *</div>
-                            <TextInput value={buttonText} onChange={setButtonText} placeholder="Join free today" maxLength={32} />
-                          </div>
-                        )}
-                        <div>
-                          <div style={{ ...MONO, fontSize: 9, color: FAINT, marginBottom: 4 }}>URL *</div>
-                          <TextInput value={buttonUrl} onChange={setButtonUrl} placeholder="https://ascentorbi.com" />
-                        </div>
-                      </>
-                    )}
+              <Section>
+                <Label>CTA text</Label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div>
+                    <div style={{ ...MONO, fontSize: 9, color: FAINT, marginBottom: 4 }}>Headline *</div>
+                    <TextInput value={headline} onChange={setHeadline} placeholder="Your next level starts here." maxLength={80} />
                   </div>
-                </Section>
-              )}
+                  {template !== 'minimal-link' && (
+                    <div>
+                      <div style={{ ...MONO, fontSize: 9, color: FAINT, marginBottom: 4 }}>Subtitle</div>
+                      <TextInput value={subtitle} onChange={setSubtitle} placeholder="One sentence to close the door." maxLength={120} />
+                    </div>
+                  )}
+                  {template === 'minimal-link' && (
+                    <div>
+                      <div style={{ ...MONO, fontSize: 9, color: FAINT, marginBottom: 4 }}>Closing line</div>
+                      <TextInput value={closingLine} onChange={setClosingLine} placeholder="The story line that echoes…" maxLength={120} />
+                    </div>
+                  )}
+                  {template !== 'minimal-link' && (
+                    <div>
+                      <div style={{ ...MONO, fontSize: 9, color: FAINT, marginBottom: 4 }}>Button text *</div>
+                      <TextInput value={buttonText} onChange={setButtonText} placeholder="Join free today" maxLength={32} />
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ ...MONO, fontSize: 9, color: FAINT, marginBottom: 4 }}>URL *</div>
+                    <TextInput value={buttonUrl} onChange={setButtonUrl} placeholder="https://ascentorbi.com" />
+                  </div>
+                </div>
+              </Section>
 
               {/* Transition */}
               <Section>

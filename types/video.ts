@@ -20,7 +20,6 @@ export type CTATemplate =
   | 'light-centered'
   | 'fullbg-branded'
   | 'minimal-link'
-  | 'fullbg-image'   // clip+CTA tool: full-screen image, no text overlay
 export type SceneEmphasis = 'normal' | 'bold' | 'accent' | 'whisper'
 export type SceneAnimation =
   | 'fade-up'

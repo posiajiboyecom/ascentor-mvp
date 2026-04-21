@@ -3,14 +3,8 @@
 // Drop in: types/clip-cta.ts
 // ═══════════════════════════════════════════════════════════
 
-export type CTATemplate =
-  | 'dark-centered'
-  | 'light-centered'
-  | 'fullbg-branded'
-  | 'minimal-link'
-  | 'image-top'
-  | 'split'
-  | 'fullbg-image'   // new: full-screen image, no text overlay
+// CTATemplate is defined in types/video.ts — re-exported here for convenience
+export type { CTATemplate } from './video'
 
 export type TransitionType = 'fade-black' | 'crossfade' | 'hard-cut'
 
@@ -33,13 +27,12 @@ export interface ClipCTAFormInput {
   ctaTemplate:      CTATemplate
   ctaDurationS:     number          // 3–15 seconds
   transitionType:   TransitionType
-  // Text fields (null for fullbg-image which has no text)
   ctaHeadline?:     string
   ctaSubtitle?:     string
   ctaButtonText?:   string
   ctaButtonUrl?:    string
   ctaClosingLine?:  string          // for minimal-link
-  // Image (required for image-top, split, fullbg-image)
+  // Image (required for image-top and split templates)
   ctaImageBase64?:  string
   ctaImageMimeType?: string
   ctaAspectPreset?: AspectPreset
