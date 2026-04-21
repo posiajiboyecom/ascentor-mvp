@@ -395,11 +395,12 @@ export default function ClipCTADrawer({ open, onClose, showToast, onJobCreated }
       setClipError(`File too large (${(file.size / 1024 / 1024).toFixed(0)}MB). Max 100MB.`); return;
     }
 
-    // Accept the file immediately — never block on metadata.
-    // Many TikTok/Instagram clips use codec profiles that browsers
-    // cannot probe via <video>, but ffprobe on the server handles them fine.
-    // We attempt a background metadata read only to show duration in the UI.
+    // Accept immediately — create TWO separate object URLs:
+    // one for the visible <video> preview, one for the hidden probe element.
+    // Sharing a single object URL between two <video> elements causes
+    // some browsers to refuse playback on the visible one.
     const previewUrl = URL.createObjectURL(file);
+    const probeUrl   = URL.createObjectURL(file);
     setClipFile(file);
     setClipPreview(previewUrl);
     setClipDuration(null);
@@ -408,19 +409,20 @@ export default function ClipCTADrawer({ open, onClose, showToast, onJobCreated }
     vid.preload = 'metadata';
     vid.onloadedmetadata = () => {
       const dur = vid.duration;
-      URL.revokeObjectURL(vid.src);
+      URL.revokeObjectURL(probeUrl);
       if (!isNaN(dur) && isFinite(dur)) {
         if (dur > MAX_CLIP_S) {
-          // Only block if we can actually confirm it is too long
           setClipError(`Clip too long (${Math.round(dur)}s). Max 5 minutes.`);
-          setClipFile(null); setClipPreview(null);
+          setClipFile(null);
+          URL.revokeObjectURL(previewUrl);
+          setClipPreview(null);
           return;
         }
         setClipDuration(dur);
       }
     };
-    vid.onerror = () => { URL.revokeObjectURL(vid.src); };
-    vid.src = previewUrl;
+    vid.onerror = () => { URL.revokeObjectURL(probeUrl); };
+    vid.src = probeUrl;
   }
 
   // ── Image file selection ─────────────────────────────────
@@ -594,15 +596,31 @@ export default function ClipCTADrawer({ open, onClose, showToast, onJobCreated }
                   }}
                   style={{
                     border: `2px dashed ${clipFile ? '#10B981' : clipError ? '#EF4444' : BORDER}`,
-                    borderRadius: 10, padding: '28px 20px', textAlign: 'center',
-                    cursor: 'pointer', background: '#fff', marginBottom: 12,
+                    borderRadius: 10,
+                    // Remove padding when video is loaded so it fills naturally
+                    padding: clipPreview ? 0 : '28px 20px',
+                    textAlign: 'center',
+                    cursor: 'pointer', background: '#000', marginBottom: 12,
+                    overflow: 'hidden',
                   }}
                 >
                   {clipPreview ? (
+                    // Remove fixed padding from the drop zone when showing video
+                    // so portrait clips fill naturally without letterboxing.
+                    // max-height prevents very tall vertical clips from overflowing.
                     <video
                       src={clipPreview}
                       controls
-                      style={{ width: '100%', borderRadius: 8, maxHeight: 280, background: '#000' }}
+                      playsInline
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        maxHeight: '60dvh',
+                        borderRadius: 8,
+                        background: '#000',
+                        // Let the browser use the video's natural aspect ratio
+                        objectFit: 'contain',
+                      }}
                     />
                   ) : (
                     <>
