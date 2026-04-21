@@ -239,7 +239,7 @@ export const clipCTAGeneratorTask = task({
     const path = await import('path')
 
     const clipPath = path.join(os.tmpdir(), `clip-${jobId}.mp4`)
-    const ctaPath  = path.join(os.tmpdir(), `cta-${jobId}.mp4`)
+    let   ctaRenderedPath = ''
     let   outPath  = ''
 
     try {
@@ -262,31 +262,29 @@ export const clipCTAGeneratorTask = task({
 
       const ctaProps: Record<string, unknown> = {
         jobId,
-        template:   formInput.ctaTemplate,
-        durationS:  formInput.ctaDurationS,
+        template:    formInput.ctaTemplate,
+        durationS:   formInput.ctaDurationS,
         width,
         height,
         logoUrl,
-        headline:   formInput.ctaHeadline   ?? '',
-        subtitle:   formInput.ctaSubtitle   ?? '',
-        buttonText: formInput.ctaButtonText ?? '',
-        buttonUrl:  formInput.ctaButtonUrl  ?? '',
-        closingLine:formInput.ctaClosingLine ?? '',
-        imageUrl:   ctaImageUrl             ?? '',
+        headline:    formInput.ctaHeadline   ?? '',
+        subtitle:    formInput.ctaSubtitle   ?? '',
+        buttonText:  formInput.ctaButtonText ?? '',
+        buttonUrl:   formInput.ctaButtonUrl  ?? '',
+        closingLine: formInput.ctaClosingLine ?? '',
+        imageUrl:    ctaImageUrl             ?? '',
       }
 
       console.log('[clip-cta] Rendering CTA…')
-      await renderCTA(jobId, ctaProps, width, height, formInput.ctaDurationS)
-      // renderCTA writes to ctaPath via tmpFile logic; we pass ctaPath as dest
-      // (renderCTA returns the tmp path, reassign)
-      const renderedCtaPath = await renderCTA(jobId, ctaProps, width, height, formInput.ctaDurationS)
+      // renderCTA returns the temp file path it wrote to
+      ctaRenderedPath = await renderCTA(jobId, ctaProps, width, height, formInput.ctaDurationS)
 
       // ── 4. Stitch ────────────────────────────────────────────
       console.log(`[clip-cta] Stitching (${formInput.transitionType})…`)
       outPath = await stitchVideos({
         jobId,
         clipPath,
-        ctaPath:        renderedCtaPath,
+        ctaPath:        ctaRenderedPath,
         transitionType: formInput.transitionType,
         clipDurationS:  durationS,
         ctaDurationS:   formInput.ctaDurationS,
@@ -336,7 +334,7 @@ export const clipCTAGeneratorTask = task({
 
     } finally {
       // Clean up temp files
-      for (const f of [clipPath, ctaPath, outPath]) {
+      for (const f of [clipPath, ctaRenderedPath, outPath]) {
         if (f) try { fs.unlinkSync(f) } catch { /* already gone */ }
       }
     }

@@ -356,7 +356,7 @@ export default function ClipCTADrawer({ open, onClose, showToast, onJobCreated }
 
   // ── Image cropper ────────────────────────────────────────
   const [rawImageSrc,   setRawImageSrc]   = useState<string | null>(null);
-  const [croppedBlob,   setCroppedBlob]   = useState<Blob | null>(null);
+  const [croppedBlob,   setCroppedBlob]   = useState<File | null>(null);
   const [croppedPreview,setCroppedPreview]= useState<string | null>(null);
   const [aspectPreset,  setAspectPreset]  = useState<AspectPreset>('9:16');
   const [showCropper,   setShowCropper]   = useState(false);
@@ -422,8 +422,10 @@ export default function ClipCTADrawer({ open, onClose, showToast, onJobCreated }
   }
 
   function handleCropConfirm(blob: Blob) {
-    setCroppedBlob(blob);
-    setCroppedPreview(URL.createObjectURL(blob));
+    // Wrap in a File so FormData sends it with the correct mime type and filename
+    const file = new File([blob], 'cta-image.jpg', { type: 'image/jpeg' });
+    setCroppedBlob(file);
+    setCroppedPreview(URL.createObjectURL(file));
     setShowCropper(false);
   }
 
