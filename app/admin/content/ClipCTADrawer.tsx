@@ -394,22 +394,33 @@ export default function ClipCTADrawer({ open, onClose, showToast, onJobCreated }
     if (file.size > MAX_CLIP_BYTES) {
       setClipError(`File too large (${(file.size / 1024 / 1024).toFixed(0)}MB). Max 100MB.`); return;
     }
-    // Read duration via a hidden <video> element
-    const url  = URL.createObjectURL(file);
-    const vid  = document.createElement('video');
+
+    // Accept the file immediately — never block on metadata.
+    // Many TikTok/Instagram clips use codec profiles that browsers
+    // cannot probe via <video>, but ffprobe on the server handles them fine.
+    // We attempt a background metadata read only to show duration in the UI.
+    const previewUrl = URL.createObjectURL(file);
+    setClipFile(file);
+    setClipPreview(previewUrl);
+    setClipDuration(null);
+
+    const vid = document.createElement('video');
     vid.preload = 'metadata';
     vid.onloadedmetadata = () => {
       const dur = vid.duration;
-      URL.revokeObjectURL(url);
-      if (dur > MAX_CLIP_S) {
-        setClipError(`Clip too long (${Math.round(dur)}s). Max 5 minutes.`); return;
+      URL.revokeObjectURL(vid.src);
+      if (!isNaN(dur) && isFinite(dur)) {
+        if (dur > MAX_CLIP_S) {
+          // Only block if we can actually confirm it is too long
+          setClipError(`Clip too long (${Math.round(dur)}s). Max 5 minutes.`);
+          setClipFile(null); setClipPreview(null);
+          return;
+        }
+        setClipDuration(dur);
       }
-      setClipDuration(dur);
-      setClipFile(file);
-      setClipPreview(URL.createObjectURL(file));
     };
-    vid.onerror = () => { setClipError('Could not read video metadata. Try a different file.'); };
-    vid.src = url;
+    vid.onerror = () => { URL.revokeObjectURL(vid.src); };
+    vid.src = previewUrl;
   }
 
   // ── Image file selection ─────────────────────────────────
@@ -615,9 +626,9 @@ export default function ClipCTADrawer({ open, onClose, showToast, onJobCreated }
                 {clipError && (
                   <div style={{ ...MONO, fontSize: 10, color: '#EF4444', marginTop: 6 }}>{clipError}</div>
                 )}
-                {clipFile && clipDuration && (
+                {clipFile && (
                   <div style={{ ...MONO, fontSize: 10, color: '#10B981', marginTop: 6 }}>
-                    ✓ {clipFile.name} · {Math.round(clipDuration)}s · {(clipFile.size / 1024 / 1024).toFixed(1)}MB
+                    ✓ {clipFile.name}{clipDuration ? ` · ${Math.round(clipDuration)}s` : ''} · {(clipFile.size / 1024 / 1024).toFixed(1)}MB
                     <button
                       onClick={() => { setClipFile(null); setClipPreview(null); setClipDuration(null); }}
                       style={{ ...MONO, fontSize: 10, color: FAINT, background: 'none', border: 'none', cursor: 'pointer', marginLeft: 10 }}
