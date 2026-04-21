@@ -62,7 +62,6 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@trigger.dev/build": "4.4.4",
-    "@types/fluent-ffmpeg": "^2.1.27",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
