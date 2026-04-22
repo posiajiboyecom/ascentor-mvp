@@ -31,10 +31,15 @@ export default defineConfig({
           'libasound2',
         ],
       }),
-      // Include the entire remotion folder — both tasks call bundle() which
-      // needs remotion/src/index.ts and all composition files at runtime.
+      // Include the remotion SOURCE folder only — NOT node_modules.
+      // remotion/node_modules has 10k+ files and causes webpack to hang
+      // for 30+ minutes trying to bundle everything. The remotion npm
+      // packages are already in the root node_modules and resolve correctly.
       additionalFiles({
-        files: ['./remotion/**'],
+        files: [
+          './remotion/src/**',
+          './remotion/tsconfig.json',
+        ],
       }),
     ],
     external: [
