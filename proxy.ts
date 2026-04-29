@@ -133,9 +133,10 @@ export default async function middleware(request: NextRequest) {
     if (subdomain && !RESERVED_SUBDOMAINS.includes(subdomain)) {
       const rewrittenUrl = request.nextUrl.clone()
       rewrittenUrl.pathname = `/p/${subdomain}${pathname}`
-      const response = NextResponse.rewrite(rewrittenUrl)
-      response.headers.set('x-partner-subdomain', subdomain)
-      return response
+      const requestHeaders = new Headers(request.headers)
+      requestHeaders.set('x-partner-subdomain', subdomain)
+      requestHeaders.set('x-partner-pathname', pathname)
+      return NextResponse.rewrite(rewrittenUrl, { request: { headers: requestHeaders } })
     }
   }
 
@@ -148,9 +149,10 @@ export default async function middleware(request: NextRequest) {
   ) {
     const rewrittenUrl = request.nextUrl.clone()
     rewrittenUrl.pathname = `/p/custom${pathname}`
-    const response = NextResponse.rewrite(rewrittenUrl)
-    response.headers.set('x-partner-custom-domain', host)
-    return response
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-partner-custom-domain', host)
+    requestHeaders.set('x-partner-pathname', pathname)
+    return NextResponse.rewrite(rewrittenUrl, { request: { headers: requestHeaders } })
   }
 
   // 5. Public routes — no auth needed
