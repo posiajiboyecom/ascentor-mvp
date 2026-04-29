@@ -15,6 +15,8 @@
 //
 // All Phase 1+3 fixes preserved.
 // ═══════════════════════════════════════════════════════════
+import path from 'path'
+import os from 'os'
 import { task, runs } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { generateVideoStoryWithCost } from '@/lib/video/story-engine'
