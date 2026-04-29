@@ -61,17 +61,24 @@ export async function POST(req: NextRequest) {
     const story = await generateVideoStory(formInput)
     console.log(`[video/preview] ${story.scenes.length} scenes generated`)
 
-    // Recompute total duration deterministically (same logic as the Trigger task)
+    // Apply the same scene-duration transform the Trigger task uses so the
+    // preview duration matches the rendered video.
+    const SLOW = 1.8
     const CTA_DURATION_SECONDS = 8
+    const adjustedScenes = story.scenes
+      .slice(0, 8)
+      .map(s => ({ ...s, durationSeconds: Math.min(Math.round((s.durationSeconds * SLOW) * 10) / 10, 7) }))
+
     const totalDurationSeconds =
-      story.scenes.reduce((sum, s) => sum + (s.durationSeconds || 0), 0) +
+      adjustedScenes.reduce((sum, s) => sum + (s.durationSeconds || 0), 0) +
       CTA_DURATION_SECONDS
 
     return NextResponse.json({
       success: true,
       story: {
         ...story,
-        totalDurationSeconds, // corrected — don't trust Claude's arithmetic
+        scenes: adjustedScenes,
+        totalDurationSeconds,
       },
     })
 

@@ -200,6 +200,9 @@ export async function POST(req: NextRequest) {
         partnerSecret = decryptSecret((partner as any).paystack_secret_key_enc);
       } catch (decryptErr) {
         console.error(`[PartnerWebhook] Failed to decrypt secret for partner ${partnerId}:`, decryptErr);
+        // Do NOT fall back to Ascentor's global key — that would allow any
+        // Ascentor-signed webhook to pass HMAC verification for this partner.
+        return NextResponse.json({ error: 'Webhook configuration error' }, { status: 500 });
       }
     }
 

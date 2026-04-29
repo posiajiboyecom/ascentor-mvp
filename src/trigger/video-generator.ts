@@ -125,17 +125,26 @@ async function resolveSoundtrack(mood: string): Promise<string | null> {
   return track.file_url
 }
 
+let _bundleLocation: string | undefined
+
+async function getBundleLocation(): Promise<string> {
+  if (!_bundleLocation) {
+    const { bundle } = await import('@remotion/bundler')
+    const path       = await import('path')
+    _bundleLocation  = await bundle({
+      entryPoint: path.resolve(process.cwd(), 'remotion/src/index.ts'),
+      webpackOverride: (config) => config,
+    })
+  }
+  return _bundleLocation
+}
+
 async function renderVideo(payload: VideoJobPayload): Promise<Buffer> {
-  const { bundle }                         = await import('@remotion/bundler')
   const { renderMedia, selectComposition } = await import('@remotion/renderer')
-  const path                               = await import('path')
   const os                                 = await import('os')
   const fs                                 = await import('fs')
 
-  const bundleLocation = await bundle({
-    entryPoint: path.resolve(process.cwd(), 'remotion/src/index.ts'),
-    webpackOverride: (config) => config,
-  })
+  const bundleLocation = await getBundleLocation()
 
   const composition = await selectComposition({
     serveUrl:   bundleLocation,
@@ -347,6 +356,7 @@ export const videoGeneratorTask = task({
           duration_ms:            durationMs,
           cost_usd_claude:        costUsdClaude,
           cost_usd_elevenlabs:    costUsdElevenLabs,
+          cost_usd_total:         (costUsdClaude ?? 0) + (costUsdElevenLabs ?? 0),
           timings,
         })
         .eq('id', jobId)

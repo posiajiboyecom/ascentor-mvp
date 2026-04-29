@@ -22,7 +22,7 @@ import { createClient as createAuthClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { videoGeneratorTask } from '@/src/trigger/video-generator'
-import type { VideoFormInput } from '@/types/video'
+import type { VideoFormInput, StoryEngineResponse } from '@/types/video'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -60,13 +60,15 @@ export async function POST(req: NextRequest) {
       scheduleToBuffer,
       bufferScheduledFor,
       clientRequestId,
+      presetStory,
     }: {
-      formInput:         VideoFormInput
-      ctaImageBase64?:   string
-      ctaImageMimeType?: string
-      scheduleToBuffer?: boolean
+      formInput:          VideoFormInput
+      ctaImageBase64?:    string
+      ctaImageMimeType?:  string
+      scheduleToBuffer?:  boolean
       bufferScheduledFor?: string
-      clientRequestId?:  string
+      clientRequestId?:   string
+      presetStory?:       StoryEngineResponse
     } = body
 
     if (!formInput?.goal || !formInput?.keyMessage) {
@@ -78,6 +80,15 @@ export async function POST(req: NextRequest) {
     if (!formInput?.ctaButtonText || !formInput?.ctaButtonUrl) {
       return NextResponse.json(
         { success: false, error: 'ctaButtonText and ctaButtonUrl are required' },
+        { status: 400 }
+      )
+    }
+    try {
+      const parsed = new URL(formInput.ctaButtonUrl)
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') throw new Error()
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'ctaButtonUrl must be a valid http(s) URL' },
         { status: 400 }
       )
     }
@@ -192,6 +203,7 @@ export async function POST(req: NextRequest) {
           ctaImageStorageUrl,
           scheduleToBuffer,
           bufferScheduledFor,
+          presetStory,
         }
       )
 

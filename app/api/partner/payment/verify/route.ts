@@ -179,11 +179,16 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-    } else {
-      // Dev / test mode — no Paystack keys configured
-      console.warn('[PartnerVerify] No Paystack secret available — running in dev mode');
+    } else if (process.env.NODE_ENV === 'development') {
+      console.warn('[PartnerVerify] No Paystack secret — dev mode bypass');
       verified     = true;
       paystackData = { reference, status: 'success', amount: 0, currency: 'NGN' };
+    } else {
+      console.error('[PartnerVerify] No Paystack secret available in production');
+      return NextResponse.json(
+        { error: 'Payment system misconfigured. Please contact support.' },
+        { status: 503 }
+      );
     }
 
     // ── 6. Prevent double-activation (idempotency check) ─────

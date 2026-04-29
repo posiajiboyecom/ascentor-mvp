@@ -18,39 +18,18 @@
 // All Phase 1 + Phase 2 fixes preserved.
 // ═══════════════════════════════════════════════════════════
 import { useState, useEffect, useRef, useCallback } from 'react';
-
-// ── Types ────────────────────────────────────────────────────
-type VideoTheme      = 'dark' | 'light';
-type AudioMode       = 'voiceover' | 'soundtrack' | 'none';
-type NarrativeStyle  = 'authentic-story' | 'hard-truth' | 'contrast' | 'insight' | 'challenge' | 'journey';
-type AudienceTier    = 'explorer' | 'builder' | 'climber' | 'founders';
-type CTATemplate     =
-  | 'dark-centered' | 'image-top' | 'split'
-  | 'light-centered' | 'fullbg-branded' | 'minimal-link';
-type SceneEmphasis   = 'normal' | 'bold' | 'accent' | 'whisper';
-type SceneAnimation  = 'fade-up' | 'fade-in' | 'word-by-word' | 'slide-left';
-
-interface SceneLine {
-  text:      string;
-  emphasis:  SceneEmphasis;
-  delayMs:   number;
-}
-
-interface NarrativeScene {
-  id:               string;
-  lines:            SceneLine[];
-  durationSeconds:  number;
-  animation:        SceneAnimation;
-}
-
-interface StoryEngineResponse {
-  scenes:               NarrativeScene[];
-  ctaHeadline:          string;
-  ctaSubtitle:          string;
-  closingLine:          string;
-  voiceoverScript:      string;
-  totalDurationSeconds: number;
-}
+import type {
+  VideoTheme,
+  AudioMode,
+  NarrativeStyle,
+  AudienceTier,
+  CTATemplate,
+  SceneEmphasis,
+  SceneAnimation,
+  SceneLine,
+  NarrativeScene,
+  StoryEngineResponse,
+} from '@/types/video';
 
 interface VideoJob {
   id:                     string;
@@ -441,7 +420,7 @@ function SceneEditor({ scene, index, total, onChange, onDelete, onMoveUp, onMove
           <span style={{ ...MONO, fontSize: 9, color: FAINT }}>Duration</span>
           <input
             type="range"
-            min={1} max={10} step={0.5}
+            min={1} max={7} step={0.5}
             value={scene.durationSeconds}
             onChange={e => onChange({ ...scene, durationSeconds: parseFloat(e.target.value) })}
             style={{ width: 100 }}
@@ -541,7 +520,7 @@ export default function VideoDrawer({ open, onClose, showToast }: VideoDrawerPro
           }
         }
       } catch { /* transient — next tick will retry */ }
-    }, 4000);
+    }, 15000);
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -1104,6 +1083,10 @@ export default function VideoDrawer({ open, onClose, showToast }: VideoDrawerPro
 
             <button
               onClick={() => {
+                if (story.scenes.length >= 8) {
+                  showToast('Maximum 8 scenes allowed.', false);
+                  return;
+                }
                 const newScene: NarrativeScene = {
                   id: `scene_${Date.now()}`,
                   lines: [{ text: '', emphasis: 'normal', delayMs: 0 }],

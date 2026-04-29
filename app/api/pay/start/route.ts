@@ -76,12 +76,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── DEBUG (remove after confirming) ─────────────────────────────────────
-    const secret = process.env.PAYSTACK_SECRET_KEY
-    console.log('[pay/start] planId:', planId, 'billing:', billing, 'amount:', planAmount)
-    console.log('[pay/start] secret key prefix:', secret?.substring(0, 10))
-
     // ── 4. Paystack key check ────────────────────────────────────────────────
+    const secret = process.env.PAYSTACK_SECRET_KEY
     if (!secret) {
       console.error('[pay/start] PAYSTACK_SECRET_KEY not set')
       return NextResponse.json(

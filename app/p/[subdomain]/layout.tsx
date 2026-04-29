@@ -158,7 +158,7 @@ export default async function SubdomainLayout({
       if (membership.status === 'invited') {
         await supabaseService
           .from('partner_members')
-          .update({ status: 'active', joined_at: new Date().toISOString() })
+          .update({ status: 'active', user_id: user.id, joined_at: new Date().toISOString() })
           .eq('id', membership.id);
       }
     }

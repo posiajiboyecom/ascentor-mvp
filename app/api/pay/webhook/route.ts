@@ -67,7 +67,7 @@ async function getProfileById(userId: string) {
 async function getProfileByEmail(email: string) {
   const { data } = await supabaseAdmin
     .from('profiles')
-    .select('id, subscription_plan, subscription_status, subscription_end')
+    .select('id, subscription_plan, subscription_status, subscription_end, billing_cycle')
     .eq('email', email)
     .maybeSingle()
   if (!data) {
@@ -180,13 +180,20 @@ async function handleSubscriptionCreate(data: any) {
   const profile = await getProfileByEmail(email)
   if (!profile) return
 
+  // Persist billing_cycle so handleRenewalSuccess can extend by the correct period.
+  // Paystack puts billing metadata in data.metadata or data.plan.interval.
+  const billing =
+    data.metadata?.billing ??
+    (data.plan?.interval === 'annually' ? 'annual' : null)
+
   await supabaseAdmin.from('profiles').update({
     subscription_status: 'active',
     paystack_sub_code:   data.subscription_code,
+    ...(billing ? { billing_cycle: billing } : {}),
     updated_at:          new Date().toISOString(),
   }).eq('id', profile.id)
 
-  console.log(`[pay/webhook] ✅ subscription.create → sub code saved for ${email}`)
+  console.log(`[pay/webhook] ✅ subscription.create → sub code saved for ${email}${billing ? ` (${billing})` : ''}`)
 }
 
 async function handleSubscriptionDisable(data: any) {

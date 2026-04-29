@@ -173,7 +173,7 @@ ${knowledgeBlock ? `<knowledge_context>\nUse the following relevant frameworks a
 
     // 7. Call Claude (upgraded model)
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514', // ← UPGRADED from claude-3-5-sonnet-20240620
+      model: 'claude-sonnet-4-6',
       max_tokens: 500,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: context }],

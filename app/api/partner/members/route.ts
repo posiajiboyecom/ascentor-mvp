@@ -207,9 +207,6 @@ export async function POST(req: NextRequest) {
 
     const emails = rawEmails.map(e => e.toLowerCase().trim()).filter(Boolean);
 
-    const { data: authData } = await supabase.auth.admin.listUsers();
-    const authUsers = authData?.users || [];
-
     const results: { email: string; status: 'invited' | 'active' | 'already_member' | 'error'; error?: string }[] = [];
 
     for (const email of emails) {
@@ -227,19 +224,27 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        const existingUser  = authUsers.find(u => u.email === email);
-        const memberStatus  = existingUser ? 'active' : 'invited';
+        // Per-email profile lookup — avoids loading all platform users into memory.
+        // profiles.id is the auth user UUID so we get user_id from here.
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', email)
+          .maybeSingle();
+
+        const existingUserId = profileData?.id ?? null;
+        const memberStatus   = existingUserId ? 'active' : 'invited';
 
         const { error: insertError } = await supabase
           .from('partner_members')
           .upsert({
             partner_id: partner.id,
-            user_id:    existingUser?.id || null,
+            user_id:    existingUserId,
             email,
             role,
             status:     memberStatus,
             invited_at: new Date().toISOString(),
-            joined_at:  existingUser ? new Date().toISOString() : null,
+            joined_at:  existingUserId ? new Date().toISOString() : null,
           }, { onConflict: 'partner_id,email' });
 
         if (insertError) {
@@ -248,7 +253,7 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        if (!existingUser) {
+        if (!existingUserId) {
           try {
             const token     = createInviteToken(partner.id, email);
             const inviteUrl = `https://${partner.subdomain}.ascentorbi.com/join?token=${encodeURIComponent(token)}`;
