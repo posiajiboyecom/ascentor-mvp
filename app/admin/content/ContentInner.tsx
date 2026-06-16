@@ -443,7 +443,7 @@ export default function AdminContentPage() {
           <div className="cp-topbtns">
             <button className="cp-runbtn" onClick={() => setRunModal(true)}>▶ Run Researcher</button>
             <button className="cp-refbtn" onClick={loadAll}>↻ Refresh</button>
-          
+          </div>
         </div>
 
         <div className="cp-stats">
