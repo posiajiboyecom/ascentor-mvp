@@ -292,6 +292,7 @@ export default function LoginPage() {
             {/* OAuth */}
             <div className="asc-oauth">
               <OAuthButton provider="google"        onError={setError} />
+              <OAuthButton provider="discord"       onError={setError} />
               <OAuthButton provider="linkedin_oidc" onError={setError} />
             </div>
 
