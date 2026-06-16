@@ -70,7 +70,21 @@ export default function LoginPage() {
       const completedStep1 = !!(profile?.full_name && profile?.current_role);
       const completedStep2 = !!(profile?.full_name && profile?.current_role && profile?.goal_role && profile?.industry);
 
-      if (completedStep2) { router.push('/checkout'); return; }
+      if (completedStep2) {
+        // Check free mode before sending to checkout
+        try {
+          const { data: setting } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'checkout_enabled')
+            .single();
+          const checkoutOn = setting ? setting.value === 'true' : true;
+          router.push(checkoutOn ? '/checkout' : '/dashboard');
+        } catch {
+          router.push('/dashboard');
+        }
+        return;
+      }
       if (completedStep1) { router.push('/onboarding?step=2'); return; }
       router.push('/onboarding');
     } catch {
@@ -292,7 +306,6 @@ export default function LoginPage() {
             {/* OAuth */}
             <div className="asc-oauth">
               <OAuthButton provider="google"        onError={setError} />
-              <OAuthButton provider="discord"       onError={setError} />
               <OAuthButton provider="linkedin_oidc" onError={setError} />
             </div>
 

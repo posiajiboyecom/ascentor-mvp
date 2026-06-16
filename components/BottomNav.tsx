@@ -55,6 +55,9 @@ const navItems = [
 export default function BottomNav() {
   const pathname = usePathname();
 
+  // Hide entirely on community — chat needs full screen
+  if (pathname === '/community' || pathname?.startsWith('/community/')) return null;
+
   return (
     <>
       <style>{`

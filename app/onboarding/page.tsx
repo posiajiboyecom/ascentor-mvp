@@ -146,9 +146,20 @@ export default function OnboardingPage() {
         }
       } catch { /* non-fatal */ }
 
-      // ── CHANGED: Send to /checkout instead of /dashboard ──────────
-      // User chooses free or paid plan after completing profile setup.
-      router.push('/checkout?from=onboarding');
+      // ── Route after onboarding ─────────────────────────────
+      // Check if checkout is enabled (admin toggle). If free mode
+      // is on, skip checkout and go straight to dashboard.
+      try {
+        const { data: setting } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'checkout_enabled')
+          .single();
+        const checkoutOn = setting ? setting.value === 'true' : true;
+        router.push(checkoutOn ? '/checkout?from=onboarding' : '/dashboard');
+      } catch {
+        router.push('/dashboard');
+      }
 
     } catch (err: any) {
       console.error('[onboarding] handleGoalSave error:', err);

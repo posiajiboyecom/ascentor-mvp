@@ -3,7 +3,7 @@
 import BottomNav from './BottomNav';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { NotificationBell } from '@/components/Notifications';
 import { AppThemeProvider, useAppTheme } from '@/components/AppThemeProvider';
@@ -76,8 +76,12 @@ function Shell({
 }) {
   const supabase        = createClient();
   const router          = useRouter();
+  const pathname        = usePathname();
   const { isDark }      = useAppTheme();
   const [showMenu, setShowMenu] = useState(false);
+
+  // Community page gets full-screen immersive layout
+  const isCommunity = pathname === '/community' || pathname?.startsWith('/community/');
 
   // ── Plan sync: detects admin-driven plan changes via Realtime ──
   // When admin updates this user's subscription_plan in profiles,
@@ -98,20 +102,21 @@ function Shell({
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--app-bg)' }}>
 
-      {/* ── Header ── */}
-      <header style={{
-        position:             'sticky',
-        top:                  0,
-        zIndex:               50,
-        display:              'flex',
-        justifyContent:       'space-between',
-        alignItems:           'center',
-        padding:              '12px 20px',
-        borderBottom:         '1px solid var(--app-border)',
-        background:           'var(--app-bg-card)',
-        backdropFilter:       'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-      }}>
+      {/* ── Header — hidden on community (chat is fullscreen) ── */}
+      {!isCommunity && (
+        <header style={{
+          position:             'sticky',
+          top:                  0,
+          zIndex:               50,
+          display:              'flex',
+          justifyContent:       'space-between',
+          alignItems:           'center',
+          padding:              '12px 20px',
+          borderBottom:         '1px solid var(--app-border)',
+          background:           'var(--app-bg-card)',
+          backdropFilter:       'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}>
 
         {/* Logo */}
         <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
@@ -206,15 +211,18 @@ function Shell({
           </div>
         </div>
       </header>
+      )}
 
       {showMenu && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setShowMenu(false)} />
       )}
 
       {/* Page content */}
-      <main style={chatLayout
-        ? { flex: 1, width: '100%', maxWidth: '672px', margin: '0 auto', padding: '0 20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }
-        : { flex: 1, width: '100%', maxWidth: '672px', margin: '0 auto', padding: '0 20px 96px', overflowY: 'auto' }
+      <main style={isCommunity
+        ? { flex: 1, width: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }
+        : chatLayout
+          ? { flex: 1, width: '100%', maxWidth: '672px', margin: '0 auto', padding: '0 20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }
+          : { flex: 1, width: '100%', maxWidth: '672px', margin: '0 auto', padding: '0 20px 96px', overflowY: 'auto' }
       }>
         {children}
       </main>
