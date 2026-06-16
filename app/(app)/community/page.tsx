@@ -1,297 +1,383 @@
 'use client';
 
 // app/(app)/community/page.tsx
-// ── Community page — Discord invite model ──────────────────────
-// The iframe widget is unreliable (blocked by browsers, blank on
-// mobile). Instead: a clean landing page that communicates the
-// community value and sends users to Discord with one click.
-// Users who signed up with Discord are already linked — they just
-// tap Join and land in the right server.
-// ──────────────────────────────────────────────────────────────
+// ── Ascentor Community Chat — Supabase Realtime ───────────────
+// Channels are loaded from community_channels table (DB-driven).
+// Admin can create/rename/delete channels from admin panel.
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-const INVITE_CODE   = process.env.NEXT_PUBLIC_DISCORD_INVITE_CODE  ?? '';
-const SERVER_ID     = process.env.NEXT_PUBLIC_DISCORD_SERVER_ID     ?? '';
-const INVITE_URL    = INVITE_CODE ? `https://discord.gg/${INVITE_CODE}` : '#';
-
-// Brand tokens — matching Ascentor brand book
 const B = {
-  gold:       '#E8A020',
-  goldMuted:  'rgba(232,160,32,0.08)',
-  goldBorder: 'rgba(232,160,32,0.18)',
-  discord:    '#5865F2',
-  discordMuted: 'rgba(88,101,242,0.08)',
-  discordBorder: 'rgba(88,101,242,0.20)',
-  text:       'var(--text)',
-  textMuted:  'var(--text-muted)',
-  textDim:    'var(--text-dim)',
-  bg:         'var(--bg)',
-  bgCard:     'var(--bg-card)',
-  bgInput:    'var(--bg-input)',
-  border:     'var(--border)',
-  fontDisplay:"'Cormorant Garamond', Georgia, serif",
-  fontUI:     "'Syne', system-ui, sans-serif",
-  fontMono:   "'DM Mono', 'Courier New', monospace",
+  gold:        '#E8A020',
+  goldMuted:   'rgba(232,160,32,0.08)',
+  goldBorder:  'rgba(232,160,32,0.18)',
+  text:        'var(--text)',
+  textMuted:   'var(--text-muted)',
+  textDim:     'var(--text-dim, #666)',
+  bg:          'var(--bg)',
+  bgCard:      'var(--bg-card)',
+  bgInput:     'var(--bg-input)',
+  border:      'var(--border)',
+  fontDisplay: "'Cormorant Garamond', Georgia, serif",
+  fontUI:      "'Syne', system-ui, sans-serif",
+  fontMono:    "'DM Mono', 'Courier New', monospace",
 };
 
-const CHANNELS = [
-  { emoji: '👋', name: '# introductions',   desc: 'Tell the community who you are and what you\'re building toward' },
-  { emoji: '💼', name: '# career-wins',      desc: 'Share your offers, promotions, and milestones — big or small' },
-  { emoji: '🤝', name: '# accountability',   desc: 'Weekly check-ins, goal-setting, and keeping each other honest' },
-  { emoji: '🧠', name: '# industry-talk',    desc: 'Deep dives on tech, finance, consulting, and emerging sectors' },
-  { emoji: '📄', name: '# cv-review',        desc: 'Drop your CV for honest, constructive peer feedback' },
-  { emoji: '🎯', name: '# opportunities',    desc: 'Job openings, contract gigs, and referrals from the network' },
+interface Channel {
+  slug: string;
+  name: string;
+  emoji: string;
+  description: string;
+  sort_order: number;
+}
+
+interface Message {
+  id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  channel: string;
+  author_name: string;
+  is_own: boolean;
+}
+
+// Fallback if DB is empty or table not seeded yet
+const FALLBACK_CHANNELS: Channel[] = [
+  { slug: 'general',        name: 'General',        emoji: '💬', description: 'Open conversation',   sort_order: 1 },
+  { slug: 'introductions',  name: 'Introductions',  emoji: '👋', description: 'Introduce yourself',  sort_order: 2 },
+  { slug: 'career-wins',    name: 'Career Wins',    emoji: '💼', description: 'Share milestones',     sort_order: 3 },
+  { slug: 'accountability', name: 'Accountability', emoji: '🤝', description: 'Weekly check-ins',    sort_order: 4 },
+  { slug: 'industry-talk',  name: 'Industry Talk',  emoji: '🧠', description: 'Deep dives',           sort_order: 5 },
+  { slug: 'cv-review',      name: 'CV Review',      emoji: '📄', description: 'Get feedback',         sort_order: 6 },
+  { slug: 'opportunities',  name: 'Opportunities',  emoji: '🎯', description: 'Jobs & gigs',          sort_order: 7 },
 ];
 
-export default function CommunityPage() {
-  const [userName, setUserName]  = useState('');
-  const [hasDiscord, setHasDiscord] = useState(false);
-  const supabaseRef = useRef(createClient());
+function initials(name: string) {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+}
 
-  useEffect(() => {
-    (async () => {
-      const supabase = supabaseRef.current;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+function formatTime(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  return d.toDateString() === now.toDateString()
+    ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
-
-      if (profile?.full_name) setUserName(profile.full_name.split(' ')[0]);
-
-      // Check if user authenticated via Discord
-      const provider = user.app_metadata?.provider;
-      const identities = user.identities ?? [];
-      const linkedDiscord = identities.some((i: any) => i.provider === 'discord');
-      setHasDiscord(provider === 'discord' || linkedDiscord);
-    })();
-  }, []);
-
+function Avatar({ name, size = 32 }: { name: string; size?: number }) {
+  const colors = ['#E8A020','#14B8A6','#8B5CF6','#3B82F6','#EC4899','#F97316'];
+  const idx = name.split('').reduce((a,c) => a + c.charCodeAt(0), 0) % colors.length;
   return (
     <div style={{
-      minHeight: '100%',
-      background: B.bg,
-      fontFamily: B.fontUI,
+      width: size, height: size, borderRadius: '50%',
+      background: `${colors[idx]}20`, border: `1px solid ${colors[idx]}40`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexShrink: 0, fontFamily: B.fontMono, fontSize: size * 0.35,
+      fontWeight: 500, color: colors[idx],
     }}>
+      {initials(name)}
+    </div>
+  );
+}
 
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <div style={{
-        maxWidth: 680,
-        margin: '0 auto',
-        padding: '52px 24px 0',
-        textAlign: 'center',
-      }}>
-        {/* Discord logo mark */}
-        <div style={{
-          width: 56, height: 56,
-          borderRadius: 16,
-          background: B.discordMuted,
-          border: `1px solid ${B.discordBorder}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 24px',
-        }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill={B.discord}>
-            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-          </svg>
-        </div>
+export default function CommunityPage() {
+  const supabase = useRef(createClient()).current;
+  const [userId,      setUserId]      = useState<string|null>(null);
+  const [userName,    setUserName]    = useState('Member');
+  const [channels,    setChannels]    = useState<Channel[]>(FALLBACK_CHANNELS);
+  const [channel,     setChannel]     = useState('general');
+  const [messages,    setMessages]    = useState<Message[]>([]);
+  const [input,       setInput]       = useState('');
+  const [sending,     setSending]     = useState(false);
+  const [loading,     setLoading]     = useState(true);
+  const [online,      setOnline]      = useState(1);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const bottomRef  = useRef<HTMLDivElement>(null);
+  const inputRef   = useRef<HTMLTextAreaElement>(null);
+  const profileMap = useRef<Record<string,string>>({});
 
-        <h1 style={{
-          fontFamily: B.fontDisplay,
-          fontStyle: 'italic',
-          fontWeight: 700,
-          fontSize: 'clamp(32px, 5vw, 48px)',
-          color: B.text,
-          margin: '0 0 16px',
-          lineHeight: 1.15,
-        }}>
-          {userName ? `${userName}, meet your people.` : 'Meet your people.'}
-        </h1>
+  // ── Load current user ──────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setUserId(user.id);
+      const { data: p } = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
+      const name = p?.full_name || user.email?.split('@')[0] || 'Member';
+      setUserName(name);
+      profileMap.current[user.id] = name;
+    })();
+  }, [supabase]);
 
-        <p style={{
-          fontSize: 15,
-          color: B.textMuted,
-          lineHeight: 1.7,
-          margin: '0 0 32px',
-          maxWidth: 480,
-          marginLeft: 'auto',
-          marginRight: 'auto',
-        }}>
-          The Ascentor community lives on Discord — where real conversations happen,
-          opportunities get shared, and careers are built in public.
-        </p>
+  // ── Load channels from DB ──────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('community_channels')
+        .select('slug, name, emoji, description, sort_order')
+        .order('sort_order', { ascending: true });
+      if (data && data.length > 0) {
+        setChannels(data as Channel[]);
+        // If current channel no longer exists, fall back to first
+        setChannel(prev => data.some((c: Channel) => c.slug === prev) ? prev : data[0].slug);
+      }
+    })();
+  }, [supabase]);
 
-        {/* CTA */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-          <a
-            href={INVITE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '14px 32px',
-              borderRadius: 12,
-              background: B.discord,
-              color: '#fff',
-              fontFamily: B.fontUI,
-              fontSize: 15,
-              fontWeight: 700,
-              textDecoration: 'none',
-              letterSpacing: '0.01em',
-              transition: 'opacity 0.15s',
-              boxShadow: '0 4px 24px rgba(88,101,242,0.25)',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
-            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-            </svg>
-            Join the Community
-          </a>
+  // ── Realtime channel list updates (admin adds/removes channels) ──
+  useEffect(() => {
+    const sub = supabase
+      .channel('community-channels-watch')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'community_channels',
+      }, async () => {
+        // Re-fetch channels whenever admin makes changes
+        const { data } = await supabase
+          .from('community_channels')
+          .select('slug, name, emoji, description, sort_order')
+          .order('sort_order', { ascending: true });
+        if (data && data.length > 0) setChannels(data as Channel[]);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(sub); };
+  }, [supabase]);
 
-          {hasDiscord && (
-            <span style={{
-              fontFamily: B.fontMono,
-              fontSize: 11,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase' as const,
-              color: '#5865F2',
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#5865F2', display: 'inline-block' }} />
-              Your account is linked to Discord
-            </span>
-          )}
+  const enrichMessages = useCallback(async (raw: any[], uid: string|null): Promise<Message[]> => {
+    const unknownIds = [...new Set(raw.map(m => m.user_id))].filter(id => !profileMap.current[id]);
+    if (unknownIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', unknownIds);
+      (profiles || []).forEach((p: any) => { profileMap.current[p.id] = p.full_name || 'Member'; });
+    }
+    return raw.map(m => ({
+      ...m,
+      author_name: profileMap.current[m.user_id] || 'Member',
+      is_own: m.user_id === uid,
+    }));
+  }, [supabase]);
+
+  const loadMessages = useCallback(async (ch: string, uid: string|null) => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('community_messages')
+      .select('id, user_id, content, created_at, channel')
+      .eq('channel', ch).eq('deleted', false)
+      .order('created_at', { ascending: true }).limit(100);
+    setMessages(await enrichMessages(data || [], uid));
+    setLoading(false);
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+  }, [supabase, enrichMessages]);
+
+  useEffect(() => { loadMessages(channel, userId); }, [channel, userId, loadMessages]);
+
+  // ── Realtime messages ──────────────────────────────────────
+  useEffect(() => {
+    const msgCh = supabase
+      .channel(`community:${channel}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public',
+        table: 'community_messages', filter: `channel=eq.${channel}`,
+      }, async (payload: any) => {
+        if (payload.new.deleted) return;
+        const [enriched] = await enrichMessages([payload.new], userId);
+        setMessages(prev => prev.some(m => m.id === enriched.id) ? prev : [...prev, enriched]);
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public',
+        table: 'community_messages', filter: `channel=eq.${channel}`,
+      }, (payload: any) => {
+        if (payload.new.deleted) setMessages(prev => prev.filter(m => m.id !== payload.new.id));
+      })
+      .subscribe();
+
+    const presenceCh = supabase.channel(`presence:${channel}`);
+    presenceCh
+      .on('presence', { event: 'sync' }, () => {
+        setOnline(Object.keys(presenceCh.presenceState()).length || 1);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED' && userId) {
+          await presenceCh.track({ user_id: userId });
+        }
+      });
+
+    return () => { supabase.removeChannel(msgCh); supabase.removeChannel(presenceCh); };
+  }, [channel, userId, supabase, enrichMessages]);
+
+  async function sendMessage() {
+    const text = input.trim();
+    if (!text || !userId || sending) return;
+    setSending(true);
+    setInput('');
+    const { error } = await supabase.from('community_messages').insert({ user_id: userId, channel, content: text });
+    if (error) { setInput(text); console.error(error.message); }
+    setSending(false);
+    inputRef.current?.focus();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  async function deleteMessage(id: string) {
+    await supabase.from('community_messages').update({ deleted: true }).eq('id', id).eq('user_id', userId!);
+    setMessages(prev => prev.filter(m => m.id !== id));
+  }
+
+  function shouldShowHeader(i: number) {
+    if (i === 0) return true;
+    const prev = messages[i-1], curr = messages[i];
+    if (prev.user_id !== curr.user_id) return true;
+    return new Date(curr.created_at).getTime() - new Date(prev.created_at).getTime() > 5 * 60 * 1000;
+  }
+
+  const currentChannel = channels.find(c => c.slug === channel) || channels[0];
+
+  const SidebarContent = (
+    <div style={{
+      width: 220, flexShrink: 0, height: '100%',
+      background: B.bgCard, borderRight: `1px solid ${B.border}`,
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    }}>
+      <div style={{ padding: '16px 16px 12px', borderBottom: `1px solid ${B.border}` }}>
+        <div style={{ fontFamily: B.fontDisplay, fontStyle: 'italic', fontSize: 18, fontWeight: 700, color: B.text, marginBottom: 4 }}>Community</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
+          <span style={{ fontFamily: B.fontMono, fontSize: 10, letterSpacing: '0.06em', color: B.textDim }}>{online} online</span>
         </div>
       </div>
 
-      {/* ── Channels preview ─────────────────────────────────── */}
-      <div style={{
-        maxWidth: 680,
-        margin: '52px auto 0',
-        padding: '0 24px',
-      }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20,
-        }}>
-          <div style={{ flex: 1, height: 1, background: B.border }} />
-          <span style={{
-            fontFamily: B.fontMono,
-            fontSize: 10, letterSpacing: '0.12em',
-            textTransform: 'uppercase' as const,
-            color: B.textDim,
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+        <div style={{ fontFamily: B.fontMono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: B.textDim, padding: '8px 16px 4px' }}>
+          Channels
+        </div>
+        {channels.map(ch => (
+          <button key={ch.slug} onClick={() => { setChannel(ch.slug); setSidebarOpen(false); }} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            width: '100%', padding: '8px 16px',
+            background: channel === ch.slug ? B.goldMuted : 'transparent',
+            border: 'none',
+            borderLeft: channel === ch.slug ? `2px solid ${B.gold}` : '2px solid transparent',
+            cursor: 'pointer', textAlign: 'left' as const,
           }}>
-            What's inside
-          </span>
-          <div style={{ flex: 1, height: 1, background: B.border }} />
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {CHANNELS.map((ch) => (
-            <div
-              key={ch.name}
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 14,
-                padding: '14px 16px',
-                borderRadius: 10,
-                background: B.bgCard,
-                border: `1px solid ${B.border}`,
-              }}
-            >
-              <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0, marginTop: 1 }}>{ch.emoji}</span>
-              <div>
-                <div style={{
-                  fontFamily: B.fontMono,
-                  fontSize: 12, fontWeight: 500,
-                  color: B.text,
-                  marginBottom: 3,
-                }}>
-                  {ch.name}
-                </div>
-                <div style={{
-                  fontSize: 13,
-                  color: B.textMuted,
-                  lineHeight: 1.5,
-                }}>
-                  {ch.desc}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            <span style={{ fontSize: 14 }}>{ch.emoji}</span>
+            <span style={{ fontFamily: B.fontUI, fontSize: 13, color: channel === ch.slug ? B.gold : B.textMuted, fontWeight: channel === ch.slug ? 600 : 400 }}>
+              # {ch.name}
+            </span>
+          </button>
+        ))}
       </div>
 
-      {/* ── Bottom CTA strip ─────────────────────────────────── */}
-      <div style={{
-        maxWidth: 680,
-        margin: '40px auto 60px',
-        padding: '24px',
-        borderRadius: 16,
-        background: B.goldMuted,
-        border: `1px solid ${B.goldBorder}`,
-        textAlign: 'center',
-        marginLeft: 'auto',
-        marginRight: 'auto',
-      }}>
-        <p style={{
-          fontFamily: B.fontDisplay,
-          fontStyle: 'italic',
-          fontWeight: 600,
-          fontSize: 20,
-          color: B.text,
-          margin: '0 0 16px',
-          lineHeight: 1.4,
-        }}>
-          The people who make it rarely do it alone.
-        </p>
-        <a
-          href={INVITE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '11px 24px',
-            borderRadius: 10,
-            background: 'transparent',
-            border: `1px solid ${B.gold}`,
-            color: B.gold,
-            fontFamily: B.fontUI,
-            fontSize: 13,
-            fontWeight: 600,
-            textDecoration: 'none',
-            letterSpacing: '0.02em',
-            transition: 'background 0.15s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.background = B.goldMuted)}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-        >
-          Join on Discord →
-        </a>
+      <div style={{ padding: '12px 16px', borderTop: `1px solid ${B.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Avatar name={userName} size={28} />
+        <span style={{ fontFamily: B.fontUI, fontSize: 12, color: B.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+          {userName}
+        </span>
       </div>
+    </div>
+  );
 
-      {/* ── Not configured (dev only) ─────────────────────────── */}
-      {!INVITE_CODE && process.env.NODE_ENV !== 'production' && (
-        <div style={{
-          maxWidth: 480, margin: '0 auto 40px', padding: '16px 20px',
-          borderRadius: 10, background: 'rgba(239,68,68,0.06)',
-          border: '1px dashed rgba(239,68,68,0.3)', textAlign: 'center',
-        }}>
-          <p style={{ fontFamily: B.fontMono, fontSize: 11, color: '#EF4444', margin: 0 }}>
-            Dev: set NEXT_PUBLIC_DISCORD_INVITE_CODE in .env.local
-          </p>
+  return (
+    <div style={{ display: 'flex', height: 'calc(100vh - 64px)', overflow: 'hidden', background: B.bg, position: 'relative' }}>
+      <style>{`
+        @keyframes community-spin { to { transform: rotate(360deg); } }
+        .cmsg-row:hover { background: var(--bg-input, rgba(255,255,255,0.03)); }
+        .cmsg-row:hover .cmsg-del { display: flex !important; }
+        .community-sidebar { display: flex; }
+        .community-menu-btn { display: none !important; }
+        @media (max-width: 640px) {
+          .community-sidebar { display: none !important; }
+          .community-menu-btn { display: flex !important; }
+        }
+      `}</style>
+
+      <div className="community-sidebar">{SidebarContent}</div>
+
+      {sidebarOpen && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 20, display: 'flex' }} onClick={() => setSidebarOpen(false)}>
+          <div onClick={e => e.stopPropagation()}>{SidebarContent}</div>
+          <div style={{ flex: 1, background: 'rgba(0,0,0,0.5)' }} />
         </div>
       )}
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+        {/* Channel header */}
+        <div style={{ padding: '0 16px', height: 52, flexShrink: 0, borderBottom: `1px solid ${B.border}`, display: 'flex', alignItems: 'center', gap: 10, background: B.bgCard }}>
+          <button className="community-menu-btn" onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', color: B.textMuted, cursor: 'pointer', padding: 4, fontSize: 18 }}>☰</button>
+          <span style={{ fontSize: 18 }}>{currentChannel?.emoji}</span>
+          <span style={{ fontFamily: B.fontUI, fontSize: 14, fontWeight: 600, color: B.text }}># {currentChannel?.name}</span>
+          <span style={{ fontFamily: B.fontMono, fontSize: 10, color: B.textDim, letterSpacing: '0.04em' }}>{currentChannel?.description}</span>
+        </div>
+
+        {/* Messages */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px', display: 'flex', flexDirection: 'column' }}>
+          {loading ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+              <div style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid ${B.border}`, borderTopColor: B.gold, animation: 'community-spin 0.7s linear infinite' }} />
+              <span style={{ fontFamily: B.fontMono, fontSize: 11, color: B.textDim }}>Loading…</span>
+            </div>
+          ) : messages.length === 0 ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, padding: '40px 0' }}>
+              <span style={{ fontSize: 36 }}>{currentChannel?.emoji}</span>
+              <p style={{ fontFamily: B.fontDisplay, fontStyle: 'italic', fontSize: 20, color: B.text, margin: 0 }}>Be the first to say something.</p>
+              <p style={{ fontFamily: B.fontUI, fontSize: 13, color: B.textMuted, margin: 0 }}>{currentChannel?.description}</p>
+            </div>
+          ) : messages.map((msg, i) => {
+            const showHeader = shouldShowHeader(i);
+            return (
+              <div key={msg.id} className="cmsg-row" style={{ display: 'flex', gap: 10, padding: showHeader ? '12px 8px 2px' : '2px 8px 2px', borderRadius: 8, alignItems: 'flex-start', position: 'relative' }}>
+                <div style={{ width: 32, flexShrink: 0 }}>{showHeader && <Avatar name={msg.author_name} size={32} />}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {showHeader && (
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
+                      <span style={{ fontFamily: B.fontUI, fontSize: 13, fontWeight: 600, color: B.text }}>{msg.is_own ? 'You' : msg.author_name}</span>
+                      <span style={{ fontFamily: B.fontMono, fontSize: 10, color: B.textDim }}>{formatTime(msg.created_at)}</span>
+                    </div>
+                  )}
+                  <p style={{ fontFamily: B.fontUI, fontSize: 14, color: B.text, margin: 0, lineHeight: 1.55, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{msg.content}</p>
+                </div>
+                {msg.is_own && (
+                  <button className="cmsg-del" onClick={() => deleteMessage(msg.id)} style={{ display: 'none', background: 'none', border: 'none', color: 'rgba(239,68,68,0.6)', cursor: 'pointer', fontSize: 11, padding: '2px 6px', borderRadius: 4, fontFamily: B.fontMono, alignItems: 'center' }} title="Delete">✕</button>
+                )}
+              </div>
+            );
+          })}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Input */}
+        <div style={{ padding: '12px 16px', borderTop: `1px solid ${B.border}`, background: B.bgCard, flexShrink: 0 }}>
+          {!userId ? (
+            <div style={{ padding: '12px 16px', borderRadius: 10, background: B.bgInput, border: `1px solid ${B.border}`, fontFamily: B.fontUI, fontSize: 13, color: B.textMuted, textAlign: 'center' }}>
+              Sign in to join the conversation
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={`Message #${currentChannel?.name}…`}
+                rows={1}
+                maxLength={2000}
+                style={{ flex: 1, padding: '10px 14px', borderRadius: 10, border: `1px solid ${B.border}`, background: B.bgInput, color: B.text, fontFamily: B.fontUI, fontSize: 14, outline: 'none', resize: 'none', lineHeight: 1.5, minHeight: 42, maxHeight: 120 }}
+                onFocus={e => (e.target.style.borderColor = B.gold)}
+                onBlur={e => (e.target.style.borderColor = B.border)}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={!input.trim() || sending}
+                style={{ width: 42, height: 42, borderRadius: 10, border: 'none', background: input.trim() ? B.gold : B.bgInput, color: input.trim() ? '#0C0B08' : B.textDim, cursor: input.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s', fontSize: 16 }}
+              >{sending ? '…' : '↑'}</button>
+            </div>
+          )}
+          <div style={{ fontFamily: B.fontMono, fontSize: 9, color: B.textDim, marginTop: 6, textAlign: 'right' }}>
+            Enter to send · Shift+Enter for new line
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
