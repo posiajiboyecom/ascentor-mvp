@@ -114,16 +114,7 @@ const AGENT_REGISTRY = [
     requiresPayload: false,
     payloadSchema: { topic: "optional: override the auto-chosen topic", pillar: "optional: penetration_testing|offensive_security|vulnerability_research|red_team|exploit_technique|governance_risk_compliance|security_frameworks|compliance_regulation", intent: "optional: authority|career_signal|inbound_magnet" },
   },
-  {
-    id: "12",
-    name: "Guardsmann Job Alert",
-    triggerTaskId: "guardsmann-job-alert",
-    type: "scheduled",
-    description: "Scans for fresh GRC jobs (last 6 hours) 3× daily — 07:00, 13:00, 18:00 WAT. Sends push notification to Posi's phone when fresh roles are found. Zero manual action required.",
-    schedule: "Daily 06:00, 12:00, 17:00 UTC (07:00, 13:00, 18:00 WAT)",
-    toolStack: "Claude web search + Web Push + Supabase",
-    requiresPayload: false,
-  },
+
   {
     id: "13",
     name: "Carousel Agent",

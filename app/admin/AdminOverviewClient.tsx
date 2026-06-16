@@ -19,7 +19,7 @@
 //   • Added loadAll to useEffect deps (via useCallback) — fixes
 //     the React Hooks exhaustive-deps warning.
 // ═══════════════════════════════════════════════════════════
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import SageLoader from '@/components/SageLoader';
@@ -50,7 +50,6 @@ interface Stats {
   totalPosts: number;       posts7d: number;
   publishedCourses: number; upcomingEvents: number;
   openJobs: number;
-  totalVideos: number;      videos7d: number;
 }
 
 export default function AdminOverviewClient() {
@@ -64,7 +63,6 @@ export default function AdminOverviewClient() {
     totalPosts: 0, posts7d: 0,
     publishedCourses: 0, upcomingEvents: 0,
     openJobs: 0,
-    totalVideos: 0, videos7d: 0,
   });
   const [dailyActivity, setDailyActivity] = useState<{ day: string; users: number; sessions: number }[]>([]);
   const [topUsers, setTopUsers] = useState<any[]>([]);
@@ -87,7 +85,6 @@ export default function AdminOverviewClient() {
         postsAll, posts7d,
         coursesP, eventsUp,
         allSessions, cohorts, events, recentUsers, openJobs,
-        videosAll, videos7d,
       ] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
         supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', d7),
@@ -103,12 +100,6 @@ export default function AdminOverviewClient() {
         supabase.from('expert_sessions').select('*').eq('status', 'scheduled').order('scheduled_at').limit(3),
         supabase.from('profiles').select('id, full_name, email, current_role, industry, created_at').order('created_at', { ascending: false }).limit(8),
         supabase.from('job_listings').select('id', { count: 'exact', head: true }).eq('is_active', true),
-        // Video stats — new. `deleted_at is null` keeps soft-deleted videos out of the count.
-        // If video_jobs table doesn't exist yet, these queries error but the Promise.all
-        // still resolves (see safeCount helper below wouldn't work in Promise.all, so we
-        // just catch the error and default to 0 after this try block).
-        supabase.from('video_jobs').select('id', { count: 'exact', head: true }).is('deleted_at', null),
-        supabase.from('video_jobs').select('id', { count: 'exact', head: true }).is('deleted_at', null).gte('created_at', d7),
       ]);
 
       setStats({
@@ -122,8 +113,6 @@ export default function AdminOverviewClient() {
         publishedCourses: coursesP.count  || 0,
         upcomingEvents:   eventsUp.count  || 0,
         openJobs:         openJobs.count  || 0,
-        totalVideos:      videosAll.count || 0,
-        videos7d:         videos7d.count  || 0,
       });
 
       // ── Build daily activity chart (last 14 days) ──
@@ -229,8 +218,6 @@ export default function AdminOverviewClient() {
           { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', value: stats.publishedCourses, label: 'Courses', sub: 'Published', color: 'var(--purple)', href: '/admin/courses' },
           { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>', value: stats.upcomingEvents, label: 'Upcoming Events', sub: 'Scheduled', color: 'var(--success)', href: '/admin/experts' },
           { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>', value: stats.openJobs, label: 'Open Roles', sub: 'Live on /careers', color: 'var(--accent)', href: '/admin/careers' },
-          // NEW: Video stats card
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>', value: stats.totalVideos, label: 'Videos', sub: `+${stats.videos7d} this week`, color: 'var(--accent)', href: '/admin/videos' },
         ].map((s) => (
           <Link key={s.label} href={s.href}>
             <div className="rounded-xl p-3.5 transition-all hover:border-gray-600 cursor-pointer"
@@ -419,11 +406,8 @@ export default function AdminOverviewClient() {
               </p>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Quick Actions — now 7 columns to fit Create Video */}
-      <div className="grid grid-cols-2 lg:grid-cols-7 gap-2.5">
+        </div>\n      </div>\n\n      {/* Quick Actions */}
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-2.5">
         {[
           { label: 'Create Cohort',      href: '/admin/cohorts?action=create',  icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' },
           { label: 'Add Expert Event',   href: '/admin/experts?action=create',  icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>' },
@@ -431,8 +415,6 @@ export default function AdminOverviewClient() {
           { label: 'Manage Roles',       href: '/admin/users',                  icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>' },
           { label: 'Manage Careers',     href: '/admin/careers',                icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>' },
           { label: 'Master Marketing',   href: '/admin/master',                 icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>' },
-          // NEW: Create Video quick action
-          { label: 'Create Video',       href: '/admin/videos',                 icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>' },
         ].map((a) => (
           <Link key={a.label} href={a.href}>
             <div className="rounded-lg p-3 text-center transition-all hover:border-gray-600 cursor-pointer"
@@ -443,6 +425,158 @@ export default function AdminOverviewClient() {
           </Link>
         ))}
       </div>
+
+      {/* ── Checkout / Free Mode Toggle ────────────────────────── */}
+      <CheckoutToggle />
+    </div>
+  );
+}
+
+// ── Checkout Toggle Card ────────────────────────────────────────
+// Reads and writes `checkout_enabled` from the `platform_settings`
+// Supabase table. When OFF → the platform is free for all users
+// (middleware bypasses subscription gate, checkout page redirects
+// to /dashboard). When ON → normal paid access is enforced.
+//
+// SUPABASE SETUP (run once in the SQL editor):
+// ─────────────────────────────────────────────
+//   create table if not exists platform_settings (
+//     key   text primary key,
+//     value text not null,
+//     updated_at timestamptz default now()
+//   );
+//   -- Row Level Security: only service role can write; anon can read
+//   alter table platform_settings enable row level security;
+//   create policy "public read"  on platform_settings for select using (true);
+//   create policy "admin write"  on platform_settings for all
+//     using (auth.role() = 'service_role');
+//   -- Seed the default value
+//   insert into platform_settings (key, value)
+//   values ('checkout_enabled', 'true')
+//   on conflict (key) do nothing;
+// ──────────────────────────────────────────────────────────────
+function CheckoutToggle() {
+  const [enabled,  setEnabled]  = useState<boolean | null>(null); // null = loading
+  const [saving,   setSaving]   = useState(false);
+  const [toast,    setToast]    = useState<{ msg: string; ok: boolean } | null>(null);
+  const supabaseRef = useRef(createClient());
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabaseRef.current
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'checkout_enabled')
+        .single();
+      // Default to true (paid mode) if row doesn't exist yet
+      setEnabled(data ? data.value === 'true' : true);
+    })();
+  }, []);
+
+  async function toggle() {
+    if (enabled === null || saving) return;
+    const next = !enabled;
+    setSaving(true);
+    const { error } = await supabaseRef.current
+      .from('platform_settings')
+      .upsert({ key: 'checkout_enabled', value: String(next), updated_at: new Date().toISOString() });
+    setSaving(false);
+    if (error) {
+      setToast({ msg: 'Failed to save — check Supabase RLS policy', ok: false });
+    } else {
+      setEnabled(next);
+      setToast({ msg: next ? 'Checkout ON — paid access enforced' : 'Free Mode ON — all users get full access', ok: true });
+    }
+    setTimeout(() => setToast(null), 4000);
+  }
+
+  const isOn    = enabled === true;
+  const loading = enabled === null;
+
+  return (
+    <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+
+        {/* Left — label + description */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>
+              Checkout / Paid Access
+            </span>
+            {/* Live status pill */}
+            {!loading && (
+              <span style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
+                padding: '2px 8px', borderRadius: 100,
+                background: isOn ? 'rgba(16,185,129,0.08)' : 'rgba(232,160,32,0.10)',
+                border: `1px solid ${isOn ? 'rgba(16,185,129,0.25)' : 'rgba(232,160,32,0.30)'}`,
+                color: isOn ? '#10B981' : '#E8A020',
+              }}>
+                {isOn ? 'Paid' : 'Free'}
+              </span>
+            )}
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: "'Syne', sans-serif", lineHeight: 1.5 }}>
+            {loading
+              ? 'Loading…'
+              : isOn
+                ? 'Checkout is live. Users are required to subscribe to access paid features.'
+                : 'Free Mode is active. All users have full access — checkout is hidden.'}
+          </p>
+        </div>
+
+        {/* Right — toggle switch */}
+        <button
+          onClick={toggle}
+          disabled={loading || saving}
+          title={isOn ? 'Switch to Free Mode' : 'Enable Paid Access'}
+          style={{
+            flexShrink: 0,
+            width: 48, height: 26,
+            borderRadius: 13,
+            border: 'none',
+            cursor: loading || saving ? 'not-allowed' : 'pointer',
+            position: 'relative',
+            background: loading ? 'var(--bg-input)' : isOn ? '#10B981' : 'var(--bg-input)',
+            transition: 'background 0.2s',
+            opacity: loading ? 0.5 : 1,
+          }}
+          aria-label={isOn ? 'Disable checkout (enable free mode)' : 'Enable checkout (paid mode)'}
+        >
+          <span style={{
+            position: 'absolute',
+            top: 3, left: isOn ? 25 : 3,
+            width: 20, height: 20,
+            borderRadius: '50%',
+            background: '#fff',
+            transition: 'left 0.2s',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+          }} />
+          {saving && (
+            <span style={{
+              position: 'absolute', inset: 0, display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontSize: 10, color: 'rgba(255,255,255,0.8)',
+            }}>
+              …
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          marginTop: 10, padding: '8px 12px', borderRadius: 8, fontSize: 12,
+          background: toast.ok ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+          border: `1px solid ${toast.ok ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+          color: toast.ok ? '#10B981' : '#EF4444',
+          fontFamily: "'DM Mono', monospace", letterSpacing: '0.04em',
+        }}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
