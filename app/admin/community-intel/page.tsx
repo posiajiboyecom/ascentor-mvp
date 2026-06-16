@@ -365,9 +365,15 @@ function IntelPanel({supabase}:{supabase:ReturnType<typeof createClient>}){
 
   async function createCommunity(rec:CommunityRec){
     setCreating(c=>({...c,[rec.id]:true}));
-    const{data:{user}}=await supabase.auth.getUser();
-    const{error:err}=await supabase.from('cohorts').insert({name:rec.name.trim(),description:rec.description.trim(),category:rec.category,icon:'users',is_public:true,member_count:0,created_by:user?.id||null});
-    if(err){setGlobalMsg(`Error: ${err.message}`);}else{setCreated(c=>({...c,[rec.id]:true}));setGlobalMsg(`"${rec.name}" created!`);setTimeout(()=>setGlobalMsg(''),4000);}
+    // Create a chat channel from the AI recommendation
+    const slug=rec.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    const maxOrder=10; // Will be appended after existing channels
+    const{error:err}=await supabase.from('community_channels').insert({
+      slug, name:rec.name.trim(), emoji:'💬',
+      description:rec.description.trim(), sort_order:maxOrder,
+    });
+    if(err){setGlobalMsg(`Error: ${err.message}`);}
+    else{setCreated(c=>({...c,[rec.id]:true}));setGlobalMsg(`"${rec.name}" added as a chat channel!`);setTimeout(()=>setGlobalMsg(''),4000);}
     setCreating(c=>({...c,[rec.id]:false}));
   }
 

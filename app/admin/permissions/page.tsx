@@ -22,7 +22,7 @@ type Staff = { id: string; full_name: string|null; email: string; role: UserRole
 const ADMIN_ONLY: Permission[] = [
   'users.edit_role','users.delete','users.export',
   'content.blog.delete','content.courses.delete','content.courses.publish',
-  'experts.delete','community.cohorts.delete',
+  'experts.delete',
   'newsletter.send','newsletter.manage_subscribers',
   'audit.view_logs','security.view_sessions',
   'reports.export','payments.view','payments.refund',
