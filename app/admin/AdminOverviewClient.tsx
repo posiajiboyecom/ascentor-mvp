@@ -48,7 +48,6 @@ interface Stats {
   totalUsers: number;       newUsers7d: number;    newUsers30d: number;
   totalSessions: number;    sessions7d: number;
   publishedCourses: number; upcomingEvents: number;
-  publishedCourses: number; upcomingEvents: number;
   openJobs: number;
 }
 
