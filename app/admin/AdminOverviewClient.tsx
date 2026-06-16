@@ -60,7 +60,6 @@ export default function AdminOverviewClient() {
     totalUsers: 0, newUsers7d: 0, newUsers30d: 0,
     totalSessions: 0, sessions7d: 0,
     publishedCourses: 0, upcomingEvents: 0,
-    publishedCourses: 0, upcomingEvents: 0,
     openJobs: 0,
   });
   const [dailyActivity, setDailyActivity] = useState<{ day: string; users: number; sessions: number }[]>([]);
