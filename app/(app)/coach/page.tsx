@@ -351,6 +351,20 @@ export default function CoachPage() {
         .sage-scroll::-webkit-scrollbar { display: none; }
         .sage-scroll { scrollbar-width: none; }
 
+        /* Sage chat background — subtle geometric pattern, theme-aware */
+        .sage-chat-bg {
+          background-color: #EAE6DF;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cg fill='none' stroke='%23000' stroke-width='0.5' opacity='0.06'%3E%3Ccircle cx='40' cy='40' r='28'/%3E%3Ccircle cx='40' cy='40' r='16'/%3E%3Ccircle cx='40' cy='40' r='5'/%3E%3Cline x1='12' y1='40' x2='68' y2='40'/%3E%3Cline x1='40' y1='12' x2='40' y2='68'/%3E%3Cline x1='20' y1='20' x2='60' y2='60'/%3E%3Cline x1='60' y1='20' x2='20' y2='60'/%3E%3C/g%3E%3C/svg%3E");
+          background-size: 80px 80px;
+        }
+        [data-app-theme='dark'] .sage-chat-bg {
+          background-color: #0b141a;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cg fill='none' stroke='%23fff' stroke-width='0.5' opacity='0.04'%3E%3Ccircle cx='40' cy='40' r='28'/%3E%3Ccircle cx='40' cy='40' r='16'/%3E%3Ccircle cx='40' cy='40' r='5'/%3E%3Cline x1='12' y1='40' x2='68' y2='40'/%3E%3Cline x1='40' y1='12' x2='40' y2='68'/%3E%3Cline x1='20' y1='20' x2='60' y2='60'/%3E%3Cline x1='60' y1='20' x2='20' y2='60'/%3E%3C/g%3E%3C/svg%3E");
+        }
+        [data-app-theme='light'] .sage-chat-bg {
+          background-color: #EAE6DF;
+        }
+
         .tab-btn {
           flex-shrink: 0; white-space: nowrap;
           padding: 6px 14px; border-radius: 100px;
@@ -463,7 +477,7 @@ export default function CoachPage() {
       )}
 
       {/* ── MESSAGE AREA ──────────────────────────────────────────────────── */}
-      <div className="sage-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+      <div className="sage-scroll sage-chat-bg" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
 
         {/* Load earlier */}
         {historyLoaded < historyTotal && messages.length > 0 && (

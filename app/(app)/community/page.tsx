@@ -15,6 +15,7 @@ import React, {
   useState, useEffect, useRef, useCallback, useMemo,
 } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import Link from 'next/link';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -128,19 +129,7 @@ function getReactions(likes: string[], userId: string | null) {
   return Object.entries(map);
 }
 
-// ── Animated waveform bars (for recording) ────────────────────────────────────
-function RecordingWave() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 2.5, height: 24 }}>
-      {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => (
-        <div key={i} style={{
-          width: 3, borderRadius: 2, background: D.G, opacity: 0.85,
-          animation: `ac-wave 1.1s ease-in-out ${(i * 0.09).toFixed(2)}s infinite alternate`,
-        }} />
-      ))}
-    </div>
-  );
-}
+// RecordingWave replaced by live AnalyserNode bars from useVoiceRecorder hook
 
 // ═════════════════════════════════════════════════════════════════════════════
 export default function CommunityPage() {
@@ -163,8 +152,7 @@ export default function CommunityPage() {
   const [sheetIn,      setSheetIn]      = useState(false);
   const [longPress,    setLongPress]    = useState<Message | null>(null);
   const [longPressIn,  setLongPressIn]  = useState(false);
-  const [recording,    setRecording]    = useState(false);
-  const [recSec,       setRecSec]       = useState(0);
+  // recording state now from voice hook: voice.recording, voice.seconds, voice.bars
   const [emojiOpen,    setEmojiOpen]    = useState(false);
   const [emojiCat,     setEmojiCat]     = useState(0);
   const [uploadingVoice, setUploadingVoice] = useState(false);
@@ -174,8 +162,6 @@ export default function CommunityPage() {
   const inputRef      = useRef<HTMLTextAreaElement>(null);
   const profileMap    = useRef<Record<string, string>>({});
   const lpTimer       = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const mediaRec      = useRef<MediaRecorder | null>(null);
-  const recTimer      = useRef<ReturnType<typeof setInterval> | null>(null);
   const userIdRef     = useRef<string | null>(null);
   // For swipe-to-close sheet
   const sheetRef      = useRef<HTMLDivElement>(null);
@@ -293,25 +279,35 @@ export default function CommunityPage() {
         if (payload.new.deleted) return;
         const raw = payload.new;
         const uid = userIdRef.current;
-        // If this is our own optimistic message, swap it out by matching content+userId
+        const authorName = profileMap.current[raw.user_id] || 'Member';
+        const confirmed: Message = {
+          id: raw.id, user_id: raw.user_id, content: raw.content,
+          created_at: raw.created_at, channel: raw.channel,
+          author_name: authorName, is_own: raw.user_id === uid,
+          likes: raw.likes || [],
+          reply_to_id: raw.reply_to_id,
+        };
         setMessages(prev => {
-          const pendingIdx = uid === raw.user_id
-            ? prev.findIndex(m => m.pending && m.content === raw.content && m.user_id === uid)
-            : -1;
-          const authorName = profileMap.current[raw.user_id] || 'Member';
-          const confirmed: Message = {
-            id: raw.id, user_id: raw.user_id, content: raw.content,
-            created_at: raw.created_at, channel: raw.channel,
-            author_name: authorName, is_own: raw.user_id === uid,
-            likes: raw.likes || [],
-            reply_to_id: raw.reply_to_id,
-          };
-          if (pendingIdx !== -1) {
-            const next = [...prev];
-            next[pendingIdx] = confirmed;
-            return next;
-          }
+          // Already have this message ID (shouldn't happen but guard it)
           if (prev.some(m => m.id === raw.id)) return prev;
+
+          if (raw.user_id === uid) {
+            // OWN message — find the matching optimistic bubble and confirm it
+            // Match by content for text, or by the [voice:uploading] sentinel for voice
+            const isVoice = raw.content.startsWith('[voice:');
+            const pendingIdx = isVoice
+              ? prev.findIndex(m => m.pending && m.content === '[voice:uploading]' && m.user_id === uid)
+              : prev.findIndex(m => m.pending && m.content === raw.content && m.user_id === uid);
+            if (pendingIdx !== -1) {
+              const next = [...prev];
+              next[pendingIdx] = confirmed;
+              return next;
+            }
+            // No matching optimistic — add it (e.g. sent from another device/tab)
+            return [...prev, confirmed];
+          }
+
+          // OTHER user's message — always add
           return [...prev, confirmed];
         });
         // Scroll to bottom
@@ -426,91 +422,13 @@ export default function CommunityPage() {
     setMessages(prev => prev.filter(m => m.id !== id));
   }
 
-  // ── Voice recording ───────────────────────────────────────────────────────
-  // FIX: 4 root causes of failure addressed:
-  // 1. Use userIdRef (not userId) inside onstop closure — avoids stale null on PWA cold start
-  // 2. Capture recSecRef instead of recSec state — state is 0 by the time onstop fires
-  // 3. Remove sampleRate constraint — unsupported on iOS Safari / some Android PWA browsers
-  // 4. Remove audioBitsPerSecond from options — let browser choose; 16kbps caused silent
-  //    MediaRecorder construction failures on Chrome PWA. Use timeslice only.
-  // 5. Try/catch per codec to avoid crashing if webm unsupported (e.g. Firefox mobile)
-  const recSecRef = useRef(0); // mirrors recSec but readable inside closures
-
-  async function startRecording() {
+  // ── Voice recording — Telegram-style (useVoiceRecorder hook) ───────────────
+  async function handleVoiceStop(blob: Blob, mimeType: string, durationSec: number) {
     const uid = userIdRef.current;
-    if (!uid) { alert('Please sign in to send voice messages.'); return; }
-    try {
-      // Minimal constraints — widest browser support
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      // Pick best supported mime type
-      const mimeType = (
-        MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
-        MediaRecorder.isTypeSupported('audio/webm')             ? 'audio/webm' :
-        MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')  ? 'audio/ogg;codecs=opus' :
-        MediaRecorder.isTypeSupported('audio/mp4')              ? 'audio/mp4' :
-        ''
-      );
-
-      // Build options — only add mimeType if non-empty (empty string throws on some browsers)
-      const recOptions: MediaRecorderOptions = mimeType ? { mimeType } : {};
-      const rec = new MediaRecorder(stream, recOptions);
-      const chunks: Blob[] = [];
-
-      rec.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
-      rec.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        const finalDuration = recSecRef.current;      // read ref, not stale state
-        const finalUserId   = userIdRef.current;      // read ref, not stale closure
-        const actualMime    = mimeType || 'audio/webm';
-        const blob = new Blob(chunks, { type: actualMime });
-        if (blob.size === 0) { console.error('Voice recording: empty blob'); return; }
-        await uploadVoice(blob, actualMime, finalDuration, finalUserId);
-      };
-
-      rec.start(200); // timeslice 200ms — reliable on all browsers
-      mediaRec.current = rec;
-      recSecRef.current = 0;
-      setRecording(true);
-      setRecSec(0);
-      recTimer.current = setInterval(() => {
-        recSecRef.current += 1;
-        setRecSec(s => {
-          if (s >= 59) { stopRecording(true); return 59; }
-          return s + 1;
-        });
-      }, 1000);
-    } catch (err: any) {
-      console.error('Voice recording failed:', err);
-      const msg = err?.name === 'NotAllowedError'
-        ? 'Microphone permission denied. Please allow access in your browser settings.'
-        : err?.name === 'NotFoundError'
-          ? 'No microphone found on this device.'
-          : 'Could not start recording. Please try again.';
-      alert(msg);
-    }
-  }
-
-  function stopRecording(doSend = true) {
-    if (recTimer.current) { clearInterval(recTimer.current); recTimer.current = null; }
-    if (mediaRec.current && mediaRec.current.state !== 'inactive') {
-      if (!doSend) {
-        // Cancel: null out handlers before stopping so no upload fires
-        mediaRec.current.ondataavailable = null;
-        mediaRec.current.onstop = null;
-      }
-      mediaRec.current.stop();
-    }
-    setRecording(false);
-    setRecSec(0);
-    recSecRef.current = 0;
-  }
-
-  async function uploadVoice(blob: Blob, mimeType: string, durationSec: number, uid: string | null) {
-    if (!uid) { console.error('uploadVoice: no userId'); return; }
+    if (!uid) { console.error('handleVoiceStop: no userId'); return; }
     setUploadingVoice(true);
 
-    // Show optimistic bubble immediately
+    // Optimistic bubble — show immediately
     const optId = `opt-voice-${Date.now()}`;
     const optimistic: Message = {
       id: optId, user_id: uid, content: '[voice:uploading]',
@@ -518,12 +436,11 @@ export default function CommunityPage() {
       author_name: userName, is_own: true, likes: [], pending: true,
     };
     setMessages(prev => [...prev, optimistic]);
-    setTimeout(() => { if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight; }, 30);
+    setTimeout(() => { if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight; }, 20);
 
     try {
-      // Route through server API — uses service role key to bypass RLS on storage
       const dur = durationSec > 0 ? durationSec : 1;
-      const ext = mimeType.includes('ogg') ? 'ogg' : mimeType.includes('mp4') ? 'm4a' : 'webm';
+      const ext = mimeType.includes('mp4') ? 'm4a' : mimeType.includes('ogg') ? 'ogg' : 'webm';
       const form = new FormData();
       form.append('file', new File([blob], `voice.${ext}`, { type: mimeType }));
       form.append('channel', channel);
@@ -540,7 +457,7 @@ export default function CommunityPage() {
         return;
       }
 
-      // Swap optimistic bubble — realtime INSERT handles other users
+      // Swap optimistic bubble — realtime handles other users
       setMessages(prev => prev.map(m =>
         m.id === optId ? { ...m, content: json.content, pending: false } : m
       ));
@@ -549,9 +466,10 @@ export default function CommunityPage() {
       setMessages(prev => prev.filter(m => m.id !== optId));
       alert('Voice upload failed. Please try again.');
     }
-
     setUploadingVoice(false);
   }
+
+  const voice = useVoiceRecorder(handleVoiceStop);
 
   // ── Long press ────────────────────────────────────────────────────────────
   function onPressStart(msg: Message) {
@@ -925,9 +843,21 @@ export default function CommunityPage() {
           user-select: text;
         }
         /* Kill the blue flash on tap for the whole message list */
+        /* Chat background — WhatsApp/Telegram style geometric pattern */
         .ac-msglist {
           -webkit-tap-highlight-color: transparent;
           -webkit-touch-callout: none;
+          background-color: #EAE6DF;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cg fill='none' stroke='%23000' stroke-width='0.5' opacity='0.06'%3E%3Ccircle cx='40' cy='40' r='28'/%3E%3Ccircle cx='40' cy='40' r='16'/%3E%3Ccircle cx='40' cy='40' r='5'/%3E%3Cline x1='12' y1='40' x2='68' y2='40'/%3E%3Cline x1='40' y1='12' x2='40' y2='68'/%3E%3Cline x1='20' y1='20' x2='60' y2='60'/%3E%3Cline x1='60' y1='20' x2='20' y2='60'/%3E%3C/g%3E%3C/svg%3E");
+          background-size: 80px 80px;
+        }
+        [data-app-theme='dark'] .ac-msglist {
+          background-color: #0b141a;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cg fill='none' stroke='%23fff' stroke-width='0.5' opacity='0.04'%3E%3Ccircle cx='40' cy='40' r='28'/%3E%3Ccircle cx='40' cy='40' r='16'/%3E%3Ccircle cx='40' cy='40' r='5'/%3E%3Cline x1='12' y1='40' x2='68' y2='40'/%3E%3Cline x1='40' y1='12' x2='40' y2='68'/%3E%3Cline x1='20' y1='20' x2='60' y2='60'/%3E%3Cline x1='60' y1='20' x2='20' y2='60'/%3E%3C/g%3E%3C/svg%3E");
+        }
+        [data-app-theme='light'] .ac-msglist {
+          background-color: #EAE6DF;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cg fill='none' stroke='%23000' stroke-width='0.5' opacity='0.06'%3E%3Ccircle cx='40' cy='40' r='28'/%3E%3Ccircle cx='40' cy='40' r='16'/%3E%3Ccircle cx='40' cy='40' r='5'/%3E%3Cline x1='12' y1='40' x2='68' y2='40'/%3E%3Cline x1='40' y1='12' x2='40' y2='68'/%3E%3Cline x1='20' y1='20' x2='60' y2='60'/%3E%3Cline x1='60' y1='20' x2='20' y2='60'/%3E%3C/g%3E%3C/svg%3E");
         }
         .ac-ch-btn:hover { background: var(--app-bg-input, rgba(128,128,128,0.09)) !important; }
         .ac-rxn:hover { transform: scale(1.1); }
@@ -1188,19 +1118,29 @@ export default function CommunityPage() {
             </div>
           )}
           {/* Recording UI */}
-          {recording ? (
+          {voice.recording ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '10px 14px', background: D.bg2, borderRadius: 12, padding: '10px 14px', border: `1px solid ${D.border}` }}>
               <div style={{ width: 9, height: 9, borderRadius: '50%', background: D.red, animation: 'ac-pulse 1s ease-in-out infinite', flexShrink: 0 }} />
-              <RecordingWave />
-              <span style={{ fontFamily: D.MONO, fontSize: 13, color: D.G, flex: 1, paddingLeft: 4 }}>{fmtRec(recSec)}</span>
-              <button onClick={() => stopRecording(false)} title="Cancel"
+              {/* Live waveform from AnalyserNode */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 2.5, height: 24, flex: 1 }}>
+                {voice.bars.map((h, i) => (
+                  <div key={i} style={{ width: 3, borderRadius: 2, background: D.G, height: `${Math.round(h * 100)}%`, opacity: 0.85, transition: 'height 0.08s ease' }} />
+                ))}
+              </div>
+              <span style={{ fontFamily: D.MONO, fontSize: 13, color: D.G, paddingLeft: 4, flexShrink: 0 }}>{fmtRec(voice.seconds)}</span>
+              <button onClick={() => voice.stop(false)} title="Cancel"
                 style={{ background: 'none', border: 'none', color: D.text3, cursor: 'pointer', padding: '0 6px', fontSize: 20, lineHeight: 1 }}>✕</button>
-              <button onClick={() => stopRecording(true)} title="Send"
+              <button onClick={() => voice.stop(true)} title="Send"
                 style={{ width: 38, height: 38, borderRadius: '50%', background: D.G, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0C0B08" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </button>
             </div>
           ) : (
+            {voice.permError && (
+              <div style={{ margin: '0 14px 6px', padding: '7px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', fontFamily: D.MONO, fontSize: 11, color: '#EF4444' }}>
+                {voice.permError}
+              </div>
+            )}
             <div style={{ margin: '10px 14px', background: D.bg2, border: `1px solid ${D.border}`, borderRadius: 12, display: 'flex', alignItems: 'flex-end', gap: 6, padding: '8px 10px' }}>
               <button onClick={() => setEmojiOpen(o => !o)} title="Emoji"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, lineHeight: 1, padding: '1px 2px', fontSize: 20, opacity: emojiOpen ? 1 : 0.65, transition: 'opacity 0.15s' }}>
@@ -1218,7 +1158,7 @@ export default function CommunityPage() {
                     style={{ width: 34, height: 34, borderRadius: '50%', background: D.G, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: sending ? 0.6 : 1 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0C0B08" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                   </button>
-                : <button onClick={startRecording} title="Voice message" disabled={uploadingVoice}
+                : <button onClick={() => voice.start()} title="Voice message" disabled={uploadingVoice || voice.recording}
                     style={{ background: 'none', border: 'none', color: D.text2, cursor: uploadingVoice ? 'default' : 'pointer', flexShrink: 0, lineHeight: 1, padding: '1px 2px', opacity: uploadingVoice ? 0.4 : 0.75, transition: 'opacity 0.15s' }}>
                     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                   </button>
