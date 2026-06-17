@@ -192,15 +192,32 @@ export default function CommunityPage() {
 
   // ── Realtime messages + reactions ────────────────────────────
   useEffect(()=>{
-    // Use a single channel for both INSERT and UPDATE to avoid filter issues
     const rt=supabase.channel(`chat:${channel}`)
       .on('postgres_changes',{
         event:'INSERT',schema:'public',table:'community_messages',
         filter:`channel=eq.${channel}`,
       },async(payload:any)=>{
         if(payload.new.deleted)return;
-        const[enriched]=await enrich([payload.new],userId);
-        setMessages(prev=>prev.some(m=>m.id===enriched.id)?prev:[...prev,enriched]);
+        // Add immediately with author from cache (avoids race on userId closure)
+        const raw=payload.new;
+        const authorName=profileMap.current[raw.user_id]||'Member';
+        const isOwn=raw.user_id===userId;
+        // Resolve reply
+        let replyContent:string|undefined, replyAuthor:string|undefined;
+        if(raw.reply_to_id){
+          const{data:rd}=await supabase.from('community_messages').select('content,user_id').eq('id',raw.reply_to_id).single();
+          if(rd){replyContent=rd.content;replyAuthor=profileMap.current[rd.user_id]||'Member';}
+        }
+        const msg:Message={
+          id:raw.id,user_id:raw.user_id,content:raw.content,
+          created_at:raw.created_at,channel:raw.channel,
+          author_name:authorName,is_own:isOwn,
+          likes:raw.likes||[],
+          reply_to_id:raw.reply_to_id,
+          reply_to_content:replyContent,
+          reply_to_author:replyAuthor,
+        };
+        setMessages(prev=>prev.some(m=>m.id===msg.id)?prev:[...prev,msg]);
         setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:'smooth'}),60);
       })
       .on('postgres_changes',{
@@ -402,9 +419,14 @@ export default function CommunityPage() {
             {!isCollapsed&&catChs.map(ch=>{
               const active=ch.slug===channel;
               return(
-                <button key={ch.slug} onClick={()=>selectChannel(ch.slug)} style={{display:'flex',alignItems:'center',gap:7,padding:'5px 8px 5px 14px',margin:'1px 4px',borderRadius:4,width:'calc(100% - 8px)',background:active?D.bg5:'none',border:'none',borderLeft:active?`2px solid ${D.gold}`:'2px solid transparent',cursor:'pointer',textAlign:'left' as const}}>
-                  <span style={{color:active?D.gold:D.text3,flexShrink:0}}>{getIcon(ch.slug)}</span>
-                  <span style={{fontFamily:D.fontUI,fontSize:13,color:active?D.gold:D.text2,fontWeight:active?600:400,whiteSpace:'nowrap' as const,overflow:'hidden',textOverflow:'ellipsis'}}>{ch.name}</span>
+                <button key={ch.slug} onClick={()=>selectChannel(ch.slug)}
+                  className={active?'ch-btn active':'ch-btn'}
+                  style={{display:'flex',alignItems:'center',gap:8,padding:'6px 8px 6px 12px',margin:'1px 6px',borderRadius:6,width:'calc(100% - 12px)',background:active?D.bg5:'transparent',border:'none',borderLeft:active?`2px solid ${D.gold}`:'2px solid transparent',cursor:'pointer',textAlign:'left' as const,transition:'background 0.1s'}}>
+                  <span style={{color:active?D.gold:D.text2,flexShrink:0,transition:'color 0.1s'}}>{getIcon(ch.slug)}</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:D.fontUI,fontSize:13,color:active?D.gold:D.text1,fontWeight:active?600:400,whiteSpace:'nowrap' as const,overflow:'hidden',textOverflow:'ellipsis',lineHeight:1.3}}>{ch.name}</div>
+                    {ch.description&&!active&&<div style={{fontFamily:D.fontUI,fontSize:10,color:D.text3,whiteSpace:'nowrap' as const,overflow:'hidden',textOverflow:'ellipsis',marginTop:1,lineHeight:1.2}}>{ch.description}</div>}
+                  </div>
                 </button>
               );
             })}
@@ -511,18 +533,31 @@ export default function CommunityPage() {
                 :
                   <p style={{fontFamily:D.fontUI,fontSize:14,color:D.text1,margin:0,lineHeight:1.55,wordBreak:'break-word',whiteSpace:'pre-wrap'}}>{msg.content}</p>
                 }
-                {/* Reactions */}
+                {/* Reactions — WhatsApp style: pill bubbles below message */}
                 {(likeCount>0||rxns.length>0)&&(
-                  <div style={{display:'flex',flexWrap:'wrap',gap:4,marginTop:4}}>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:5,marginLeft:0}}>
                     {likeCount>0&&(
-                      <button onClick={()=>toggleLike(msg)} style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 7px',borderRadius:4,background:iLiked?'rgba(88,101,242,0.15)':'rgba(255,255,255,0.04)',border:`0.5px solid ${iLiked?'rgba(88,101,242,0.5)':'rgba(255,255,255,0.08)'}`,cursor:'pointer',fontFamily:D.fontMono,fontSize:12,color:iLiked?'#c9cdfb':D.text2}}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill={iLiked?'#5865f2':'none'} stroke={iLiked?'#5865f2':'currentColor'} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                        {likeCount}
+                      <button onClick={()=>toggleLike(msg)} style={{
+                        display:'inline-flex',alignItems:'center',gap:4,
+                        padding:'3px 8px 3px 6px',borderRadius:100,
+                        background:iLiked?'var(--color-background-info, rgba(88,101,242,0.18))':'var(--color-background-secondary, rgba(128,128,128,0.12))',
+                        border:`1.5px solid ${iLiked?'rgba(88,101,242,0.45)':'var(--color-border-tertiary, rgba(128,128,128,0.2))'}`,
+                        cursor:'pointer',transition:'all 0.15s',
+                      }}>
+                        <span style={{fontSize:14}}>❤️</span>
+                        <span style={{fontFamily:D.fontMono,fontSize:12,fontWeight:600,color:iLiked?'#818cf8':D.text2,lineHeight:1}}>{likeCount}</span>
                       </button>
                     )}
                     {rxns.map(([emoji,{count,hasMe}])=>(
-                      <button key={emoji} onClick={()=>addReaction(msg.id,emoji)} style={{display:'inline-flex',alignItems:'center',gap:3,padding:'2px 7px',borderRadius:4,background:hasMe?'rgba(232,160,32,0.12)':'rgba(255,255,255,0.04)',border:`0.5px solid ${hasMe?D.goldB:'rgba(255,255,255,0.08)'}`,cursor:'pointer',fontFamily:D.fontMono,fontSize:12,color:hasMe?D.gold:D.text2}}>
-                        {emoji} {count}
+                      <button key={emoji} onClick={()=>addReaction(msg.id,emoji)} style={{
+                        display:'inline-flex',alignItems:'center',gap:4,
+                        padding:'3px 8px 3px 6px',borderRadius:100,
+                        background:hasMe?'rgba(232,160,32,0.15)':'var(--color-background-secondary, rgba(128,128,128,0.12))',
+                        border:`1.5px solid ${hasMe?'rgba(232,160,32,0.45)':'var(--color-border-tertiary, rgba(128,128,128,0.2))'}`,
+                        cursor:'pointer',transition:'all 0.15s',
+                      }}>
+                        <span style={{fontSize:14}}>{emoji}</span>
+                        <span style={{fontFamily:D.fontMono,fontSize:12,fontWeight:600,color:hasMe?D.gold:D.text2,lineHeight:1}}>{count}</span>
                       </button>
                     ))}
                   </div>
@@ -573,7 +608,7 @@ export default function CommunityPage() {
   // INPUT BAR
   // ════════════════════════════════════════════════════════════
   const InputBar = (
-    <div style={{padding:'0 16px 16px',flexShrink:0,background:D.bg3,paddingBottom:'max(16px, env(safe-area-inset-bottom, 16px))'}}>
+    <div style={{padding:'0 16px 16px',flexShrink:0,background:'var(--app-bg,var(--bg))',paddingBottom:'max(16px, env(safe-area-inset-bottom, 16px))'}}>
       {replyTo&&(
         <div style={{display:'flex',alignItems:'center',gap:8,padding:'6px 12px',marginBottom:0,background:D.bg2,borderRadius:'8px 8px 0 0',borderBottom:`2px solid ${D.border}`}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={D.text3} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
@@ -593,16 +628,24 @@ export default function CommunityPage() {
           </button>
         </div>
       ):(
-        <div style={{background:D.bg4,border:`0.5px solid ${D.border}`,borderRadius:replyTo?'0 0 8px 8px':8,display:'flex',alignItems:'flex-end',gap:8,padding:'8px 12px'}}>
-          <button title="Attach" style={{background:'none',border:'none',color:D.text3,cursor:'pointer',flexShrink:0,lineHeight:1,padding:'0 2px'}}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          </button>
+        <div style={{background:D.bg4,border:`0.5px solid ${D.border}`,borderRadius:replyTo?'0 0 8px 8px':8,display:'flex',alignItems:'flex-end',gap:6,padding:'8px 10px'}}>
+          {/* Emoji — left of textarea */}
+          <button
+            onClick={()=>{
+              const picks=['😊','😂','🔥','👏','💯','🙏','💪','🎉','❤️','👍','😍','🤔','😎','🥳','✅'];
+              const cur=picks.findIndex(e=>input.endsWith(e));
+              const emoji=picks[(cur+1)%picks.length];
+              setInput(prev=>prev+emoji);
+              inputRef.current?.focus();
+            }}
+            title="Emoji"
+            style={{background:'none',border:'none',cursor:'pointer',flexShrink:0,lineHeight:1,padding:'0 2px',fontSize:18,opacity:0.7}}
+          >😊</button>
           <textarea
             ref={inputRef}
             value={input}
             onChange={e=>{
               setInput(e.target.value);
-              // Auto-resize
               e.target.style.height='auto';
               e.target.style.height=Math.min(e.target.scrollHeight,120)+'px';
             }}
@@ -613,28 +656,16 @@ export default function CommunityPage() {
             maxLength={2000}
             style={{flex:1,background:'none',border:'none',outline:'none',resize:'none',fontFamily:D.fontUI,fontSize:14,color:D.text0,lineHeight:1.5,minHeight:22,maxHeight:120,padding:0,overflow:'hidden'}}
           />
-          {/* Emoji — shows picker */}
-          <button
-            onClick={()=>{
-              const emoji=prompt('Type an emoji to add to your message (e.g. 😊)');
-              if(emoji)setInput(prev=>prev+emoji);
-              inputRef.current?.focus();
-            }}
-            title="Add emoji"
-            style={{background:'none',border:'none',color:D.text3,cursor:'pointer',flexShrink:0,lineHeight:1,padding:'0 2px'}}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-          </button>
-          {/* Mic / Send */}
-          {input.trim()?(
+          {/* Send — appears when typing */}
+          {input.trim()&&(
             <button onClick={send} disabled={sending} title="Send" style={{background:'none',border:'none',color:D.gold,cursor:'pointer',flexShrink:0,lineHeight:1,padding:'0 2px'}}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
-          ):(
-            <button onClick={startRecording} title="Voice message" style={{background:'none',border:'none',color:D.text3,cursor:'pointer',flexShrink:0,lineHeight:1,padding:'0 2px'}}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-            </button>
           )}
+          {/* Mic — always visible beside send */}
+          <button onClick={startRecording} title="Voice message" style={{background:'none',border:'none',color:D.text2,cursor:'pointer',flexShrink:0,lineHeight:1,padding:'0 2px'}}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
         </div>
       )}
     </div>
@@ -704,15 +735,25 @@ export default function CommunityPage() {
   // RENDER
   // ════════════════════════════════════════════════════════════
   return (
-    <div style={{display:'flex',height:'100dvh',overflow:'hidden',background:D.bg3}}>
+    <div style={{display:'flex',height:'100dvh',overflow:'hidden',background:'var(--app-bg,var(--bg))'}}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-        .msg-row:hover{background:rgba(232,160,32,0.02);}
-        textarea{color-scheme:dark;}
-        textarea::placeholder{color:${D.text4};}
+
+        /* Concept C — inherits system light/dark via CSS vars */
+        .msg-row{border-radius:4px;transition:background 0.08s;}
+        .msg-row:hover{background:var(--app-bg-input,var(--bg-input,rgba(128,128,128,0.06)));}
+
+        /* Channel buttons hover */
+        .ch-btn{transition:background 0.1s,border-left-color 0.1s;}
+        .ch-btn:hover{background:var(--app-bg-input,var(--bg-input,rgba(128,128,128,0.08)))!important;}
+        .ch-btn:hover span{color:var(--app-text-muted,var(--text-muted))!important;}
+        .ch-btn.active:hover{background:var(--app-bg-input,var(--bg-input))!important;}
+
+        textarea{color-scheme:light dark;}
+        textarea::placeholder{color:var(--app-text-dim,var(--text-dim,#888));}
         ::-webkit-scrollbar{width:4px;background:transparent;}
-        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:4px;}
+        ::-webkit-scrollbar-thumb{background:var(--app-border,rgba(128,128,128,0.15));border-radius:4px;}
 
         /* Desktop-only elements */
         .desktop-only{display:flex;}
@@ -723,6 +764,8 @@ export default function CommunityPage() {
           .desktop-only{display:none!important;}
           .mobile-only{display:flex!important;}
           .mobile-only-flex{display:flex!important;}
+          /* Fix: ensure chat doesn't overlap bottom nav */
+          .chat-main{padding-bottom:56px!important;}
         }
       `}</style>
 
@@ -764,10 +807,10 @@ export default function CommunityPage() {
       </div>
 
       {/* ── DESKTOP + MOBILE: chat area ── */}
-      <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minWidth:0,background:D.bg3}}>
+      <div className="chat-main" style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minWidth:0,background:'var(--app-bg,var(--bg))'}}>
 
         {/* Topbar */}
-        <div style={{height:48,borderBottom:`1px solid ${D.border}`,display:'flex',alignItems:'center',padding:'0 16px',gap:10,flexShrink:0,background:D.bg3}}>
+        <div style={{height:48,borderBottom:`1px solid ${D.border}`,display:'flex',alignItems:'center',padding:'0 16px',gap:10,flexShrink:0,background:'var(--app-bg-card,var(--bg-card))'}}>
           {/* Mobile: channels sheet trigger */}
           <button className="mobile-only" onClick={()=>setSheetOpen(true)} style={{display:'none',background:'none',border:'none',color:D.text2,cursor:'pointer',padding:'4px 6px 4px 0'}}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
