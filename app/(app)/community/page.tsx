@@ -303,8 +303,17 @@ export default function CommunityPage() {
         filter: `channel=eq.${channel}`,
       }, (payload: any) => {
         const u = payload.new;
-        if (u.deleted) setMessages(prev => prev.filter(m => m.id !== u.id));
-        else setMessages(prev => prev.map(m => m.id === u.id ? { ...m, likes: u.likes || [], content: u.content } : m));
+        if (!u) return;
+        if (u.deleted) {
+          setMessages(prev => prev.filter(m => m.id !== u.id));
+        } else {
+          // Update likes AND content in one pass — covers reactions, edits, deletes
+          setMessages(prev => prev.map(m =>
+            m.id === u.id
+              ? { ...m, likes: Array.isArray(u.likes) ? u.likes : [], content: u.content ?? m.content }
+              : m
+          ));
+        }
       })
       .subscribe();
 
@@ -399,75 +408,127 @@ export default function CommunityPage() {
   }
 
   // ── Voice recording ───────────────────────────────────────────────────────
+  // FIX: 4 root causes of failure addressed:
+  // 1. Use userIdRef (not userId) inside onstop closure — avoids stale null on PWA cold start
+  // 2. Capture recSecRef instead of recSec state — state is 0 by the time onstop fires
+  // 3. Remove sampleRate constraint — unsupported on iOS Safari / some Android PWA browsers
+  // 4. Remove audioBitsPerSecond from options — let browser choose; 16kbps caused silent
+  //    MediaRecorder construction failures on Chrome PWA. Use timeslice only.
+  // 5. Try/catch per codec to avoid crashing if webm unsupported (e.g. Firefox mobile)
+  const recSecRef = useRef(0); // mirrors recSec but readable inside closures
+
   async function startRecording() {
+    const uid = userIdRef.current;
+    if (!uid) { alert('Please sign in to send voice messages.'); return; }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true },
-      });
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
-          ? 'audio/ogg;codecs=opus' : 'audio/webm';
-      const rec = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 16000 });
+      // Minimal constraints — widest browser support
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Pick best supported mime type
+      const mimeType = (
+        MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
+        MediaRecorder.isTypeSupported('audio/webm')             ? 'audio/webm' :
+        MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')  ? 'audio/ogg;codecs=opus' :
+        MediaRecorder.isTypeSupported('audio/mp4')              ? 'audio/mp4' :
+        ''
+      );
+
+      // Build options — only add mimeType if non-empty (empty string throws on some browsers)
+      const recOptions: MediaRecorderOptions = mimeType ? { mimeType } : {};
+      const rec = new MediaRecorder(stream, recOptions);
       const chunks: Blob[] = [];
-      rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+      rec.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
       rec.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
-        await uploadVoice(new Blob(chunks, { type: mimeType }), mimeType);
+        const finalDuration = recSecRef.current;      // read ref, not stale state
+        const finalUserId   = userIdRef.current;      // read ref, not stale closure
+        const actualMime    = mimeType || 'audio/webm';
+        const blob = new Blob(chunks, { type: actualMime });
+        if (blob.size === 0) { console.error('Voice recording: empty blob'); return; }
+        await uploadVoice(blob, actualMime, finalDuration, finalUserId);
       };
-      rec.start(100); // collect every 100ms so ondataavailable fires reliably
+
+      rec.start(200); // timeslice 200ms — reliable on all browsers
       mediaRec.current = rec;
-      setRecording(true); setRecSec(0);
+      recSecRef.current = 0;
+      setRecording(true);
+      setRecSec(0);
       recTimer.current = setInterval(() => {
-        setRecSec(s => { if (s >= 59) { stopRecording(true); return 59; } return s + 1; });
+        recSecRef.current += 1;
+        setRecSec(s => {
+          if (s >= 59) { stopRecording(true); return 59; }
+          return s + 1;
+        });
       }, 1000);
-    } catch {
-      alert('Please allow microphone access to send voice messages.');
+    } catch (err: any) {
+      console.error('Voice recording failed:', err);
+      const msg = err?.name === 'NotAllowedError'
+        ? 'Microphone permission denied. Please allow access in your browser settings.'
+        : err?.name === 'NotFoundError'
+          ? 'No microphone found on this device.'
+          : 'Could not start recording. Please try again.';
+      alert(msg);
     }
   }
 
   function stopRecording(doSend = true) {
-    if (recTimer.current) clearInterval(recTimer.current);
+    if (recTimer.current) { clearInterval(recTimer.current); recTimer.current = null; }
     if (mediaRec.current && mediaRec.current.state !== 'inactive') {
-      if (!doSend) { mediaRec.current.ondataavailable = null; mediaRec.current.onstop = null; }
+      if (!doSend) {
+        // Cancel: null out handlers before stopping so no upload fires
+        mediaRec.current.ondataavailable = null;
+        mediaRec.current.onstop = null;
+      }
       mediaRec.current.stop();
     }
-    setRecording(false); setRecSec(0);
+    setRecording(false);
+    setRecSec(0);
+    recSecRef.current = 0;
   }
 
-  async function uploadVoice(blob: Blob, mimeType: string) {
-    if (!userId) return;
+  async function uploadVoice(blob: Blob, mimeType: string, durationSec: number, uid: string | null) {
+    if (!uid) { console.error('uploadVoice: no userId'); return; }
     setUploadingVoice(true);
 
-    // Optimistic voice bubble — show immediately
+    // Show optimistic bubble immediately
     const optId = `opt-voice-${Date.now()}`;
-    const durationSec = recSec || 1;
     const optimistic: Message = {
-      id: optId, user_id: userId, content: `[voice:uploading]`,
+      id: optId, user_id: uid, content: '[voice:uploading]',
       created_at: new Date().toISOString(), channel,
       author_name: userName, is_own: true, likes: [], pending: true,
     };
     setMessages(prev => [...prev, optimistic]);
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 20);
 
-    const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
-    const path = `voice/${userId}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('community-voice').upload(path, blob, { contentType: mimeType });
-    if (error) {
-      console.error('Voice upload failed', error.message);
+    // Upload to Supabase Storage
+    const ext = mimeType.includes('ogg') ? 'ogg' : mimeType.includes('mp4') ? 'm4a' : 'webm';
+    const path = `voice/${uid}/${Date.now()}.${ext}`;
+    const { error: uploadErr } = await supabase.storage
+      .from('community-voice')
+      .upload(path, blob, { contentType: mimeType, upsert: false });
+
+    if (uploadErr) {
+      console.error('Voice upload error:', uploadErr.message);
       setMessages(prev => prev.filter(m => m.id !== optId));
       setUploadingVoice(false);
+      alert('Voice upload failed: ' + uploadErr.message);
       return;
     }
+
     const { data: { publicUrl } } = supabase.storage.from('community-voice').getPublicUrl(path);
-    const voiceContent = `[voice:${publicUrl}:${durationSec}]`;
+    const dur = durationSec > 0 ? durationSec : 1;
+    const voiceContent = `[voice:${publicUrl}:${dur}]`;
 
-    // Replace optimistic with real content locally (realtime INSERT will confirm)
-    setMessages(prev => prev.map(m => m.id === optId ? { ...m, content: voiceContent } : m));
+    // Swap optimistic bubble to show real player
+    setMessages(prev => prev.map(m => m.id === optId ? { ...m, content: voiceContent, pending: false } : m));
 
-    await supabase.from('community_messages').insert({
-      user_id: userId, channel, content: voiceContent, likes: [],
+    // Persist to DB — realtime INSERT will confirm for other users
+    const { error: dbErr } = await supabase.from('community_messages').insert({
+      user_id: uid, channel, content: voiceContent, likes: [],
     });
+    if (dbErr) console.error('Voice DB insert error:', dbErr.message);
+
     setUploadingVoice(false);
   }
 
@@ -678,32 +739,49 @@ export default function CommunityPage() {
               </button>
             </div>
           </div>
-          {/* Channel cards */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* Discord-style channel list */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0 12px' }}>
             {categories.map(cat => {
               const catChs = channels.filter(c => c.category_id === cat.id).sort((a, b) => a.sort_order - b.sort_order);
               if (!catChs.length) return null;
+              const isColl = collapsed[cat.id];
               return (
-                <div key={cat.id}>
-                  <div style={{ fontFamily: D.MONO, fontSize: 10, fontWeight: 700, color: D.text3, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 4px 8px' }}>{cat.name}</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {catChs.map(ch => {
-                      const active = ch.slug === channel;
-                      return (
-                        <button key={ch.slug} onClick={() => selectChannel(ch.slug)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', borderRadius: 14, background: active ? D.goldBg : D.bg2, border: `1.5px solid ${active ? D.goldB : 'transparent'}`, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', width: '100%' }}>
-                          <div style={{ width: 42, height: 42, borderRadius: 12, background: active ? `${D.G}20` : 'var(--app-bg, var(--bg))', border: `1.5px solid ${active ? D.goldB : D.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: active ? D.G : D.text2, transition: 'all 0.15s' }}>
-                            {getIcon(ch.slug, 20)}
+                <div key={cat.id} style={{ marginTop: 16 }}>
+                  {/* Category header — clickable to collapse, Discord-style */}
+                  <button
+                    onClick={() => setCollapsed(c => ({ ...c, [cat.id]: !c[cat.id] }))}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 16px 6px', width: '100%', background: 'none', border: 'none', cursor: 'pointer' }}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={D.text3} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"
+                      style={{ transform: isColl ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                    <span style={{ fontFamily: D.MONO, fontSize: 11, fontWeight: 700, color: D.text3, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                      {cat.name}
+                    </span>
+                  </button>
+                  {/* Channel rows */}
+                  {!isColl && catChs.map(ch => {
+                    const active = ch.slug === channel;
+                    return (
+                      <button key={ch.slug} onClick={() => selectChannel(ch.slug)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 16px 8px 14px', background: active ? D.goldBg : 'transparent', border: 'none', borderLeft: `3px solid ${active ? D.G : 'transparent'}`, cursor: 'pointer', textAlign: 'left', transition: 'all 0.1s' }}>
+                        {/* # or custom icon */}
+                        <span style={{ color: active ? D.G : D.text3, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                          {getIcon(ch.slug, 16)}
+                        </span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: D.UI, fontSize: 15, color: active ? D.G : D.text2, fontWeight: active ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>
+                            {ch.name}
                           </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontFamily: D.UI, fontSize: 15, fontWeight: active ? 700 : 500, color: active ? D.G : D.text0, lineHeight: 1.3 }}>{ch.name}</div>
-                            {ch.description && <div style={{ fontFamily: D.UI, fontSize: 12, color: D.text3, marginTop: 2, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ch.description}</div>}
-                          </div>
-                          {active && <div style={{ width: 8, height: 8, borderRadius: '50%', background: D.G, flexShrink: 0 }} />}
-                        </button>
-                      );
-                    })}
-                  </div>
+                          {ch.description && !active && (
+                            <div style={{ fontFamily: D.UI, fontSize: 11.5, color: D.text3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1, lineHeight: 1.2 }}>
+                              {ch.description}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               );
             })}
@@ -713,25 +791,20 @@ export default function CommunityPage() {
               const uncat = channels.filter(c => !c.category_id || !catIds.has(c.category_id));
               if (!uncat.length) return null;
               return (
-                <div>
-                  <div style={{ fontFamily: D.MONO, fontSize: 10, fontWeight: 700, color: D.text3, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 4px 8px' }}>Other</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {uncat.map(ch => {
-                      const active = ch.slug === channel;
-                      return (
-                        <button key={ch.slug} onClick={() => selectChannel(ch.slug)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', borderRadius: 14, background: active ? D.goldBg : D.bg2, border: `1.5px solid ${active ? D.goldB : 'transparent'}`, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', width: '100%' }}>
-                          <div style={{ width: 42, height: 42, borderRadius: 12, background: active ? `${D.G}20` : 'var(--app-bg, var(--bg))', border: `1.5px solid ${active ? D.goldB : D.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: active ? D.G : D.text2 }}>
-                            {HashIcon(20)}
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontFamily: D.UI, fontSize: 15, fontWeight: active ? 700 : 500, color: active ? D.G : D.text0 }}>{ch.name}</div>
-                          </div>
-                          {active && <div style={{ width: 8, height: 8, borderRadius: '50%', background: D.G }} />}
-                        </button>
-                      );
-                    })}
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ padding: '2px 16px 6px' }}>
+                    <span style={{ fontFamily: D.MONO, fontSize: 11, fontWeight: 700, color: D.text3, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Channels</span>
                   </div>
+                  {uncat.map(ch => {
+                    const active = ch.slug === channel;
+                    return (
+                      <button key={ch.slug} onClick={() => selectChannel(ch.slug)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 16px 8px 14px', background: active ? D.goldBg : 'transparent', border: 'none', borderLeft: `3px solid ${active ? D.G : 'transparent'}`, cursor: 'pointer', textAlign: 'left', transition: 'all 0.1s' }}>
+                        <span style={{ color: active ? D.G : D.text3, flexShrink: 0, display: 'flex', alignItems: 'center' }}>{HashIcon(16)}</span>
+                        <span style={{ fontFamily: D.UI, fontSize: 15, color: active ? D.G : D.text2, fontWeight: active ? 600 : 400 }}>{ch.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               );
             })()}
@@ -741,7 +814,7 @@ export default function CommunityPage() {
       </div>
     );
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sheetOpen, sheetIn, categories, channels, channel, online]);
+  }, [sheetOpen, sheetIn, categories, channels, channel, online, collapsed]);
 
   // ── WhatsApp-style long-press reaction sheet ──────────────────────────────
   const LongPressSheet = longPress && (
@@ -814,8 +887,27 @@ export default function CommunityPage() {
         @keyframes ac-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.7); } }
         @keyframes ac-wave  { from { height: 20%; } to { height: 100%; } }
 
-        .ac-msg { border-radius: 4px; transition: background 0.07s; }
+        /* Prevent native highlight / text selection / callout on long-press */
+        .ac-msg {
+          border-radius: 4px;
+          transition: background 0.07s;
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          user-select: none;
+          -webkit-touch-callout: none;
+          -webkit-tap-highlight-color: transparent;
+        }
         .ac-msg:hover { background: var(--app-bg-input, rgba(128,128,128,0.07)); }
+        /* Allow selecting message text only (so copy still works via our sheet) */
+        .ac-msg p, .ac-msg span.selectable {
+          -webkit-user-select: text;
+          user-select: text;
+        }
+        /* Kill the blue flash on tap for the whole message list */
+        .ac-msglist {
+          -webkit-tap-highlight-color: transparent;
+          -webkit-touch-callout: none;
+        }
         .ac-ch-btn:hover { background: var(--app-bg-input, rgba(128,128,128,0.09)) !important; }
         .ac-rxn:hover { transform: scale(1.1); }
         .ac-nav:hover { background: rgba(128,128,128,0.12) !important; border-radius: 30% !important; }
@@ -827,6 +919,9 @@ export default function CommunityPage() {
 
         .desk { display: flex !important; }
         .mob  { display: none !important; }
+        @media (max-width: 640px) {
+          .input-area { padding-bottom: calc(56px + max(12px, env(safe-area-inset-bottom, 12px))) !important; }
+        }
         @media (max-width: 640px) {
           .desk { display: none !important; }
           .mob  { display: flex !important; }
@@ -895,7 +990,7 @@ export default function CommunityPage() {
         </div>
 
         {/* MESSAGES — only this scrolls */}
-        <div ref={msgListRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 8 }}
+        <div ref={msgListRef} className="ac-msglist" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 8 }}
           onClick={() => { setRxnTarget(null); setLongPress(null); setEmojiOpen(false); }}>
           {loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12 }}>
@@ -1030,7 +1125,7 @@ export default function CommunityPage() {
         </div>
 
         {/* INPUT AREA — stays at bottom, never pushed by keyboard (position in flow) */}
-        <div style={{ flexShrink: 0, background: D.bg0, borderTop: `1px solid ${D.border}`, paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))' }}>
+        <div style={{ flexShrink: 0, background: D.bg0, borderTop: `1px solid ${D.border}`, paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))' }} className="input-area">
           {/* Reply bar */}
           {replyTo && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px 6px' }}>
