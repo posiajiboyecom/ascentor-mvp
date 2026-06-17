@@ -68,152 +68,235 @@ export default function CommunityIntelPage(){
 // ════════════════════════════════════════════════════════════
 const EMOJIS=['💬','👋','💼','🤝','🧠','📄','🎯','🚀','💡','🔥','🌍','📢','🎓','💪','🏆','❓'];
 interface ChannelRow{slug:string;name:string;emoji:string;description:string;sort_order:number;}
-
 function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
-  const[channels,setChannels]=useState<ChannelRow[]>([]);
+  const[categories,setCategories]=useState<any[]>([]);
+  const[channels,setChannels]=useState<any[]>([]);
   const[loading,setLoading]=useState(true);
-  const[saving,setSaving]=useState<Record<string,boolean>>({});
-  const[deleting,setDeleting]=useState<Record<string,boolean>>({});
   const[toast,setToast]=useState<{msg:string;ok:boolean}|null>(null);
-  const[showForm,setShowForm]=useState(false);
-  const[form,setForm]=useState({name:'',emoji:'💬',description:'',slug:''});
   const[creating,setCreating]=useState(false);
+  const[creatingCat,setCreatingCat]=useState(false);
+  const[showChForm,setShowChForm]=useState(false);
+  const[showCatForm,setShowCatForm]=useState(false);
+  const[chForm,setChForm]=useState({name:'',slug:'',description:'',category_id:''});
+  const[catForm,setCatForm]=useState({name:''});
   const[editing,setEditing]=useState<string|null>(null);
-  const[editForm,setEditForm]=useState<Partial<ChannelRow>>({});
+  const[editForm,setEditForm]=useState<any>({});
+  const[deleting,setDeleting]=useState<Record<string,boolean>>({});
   const showToast=(msg:string,ok=true)=>{setToast({msg,ok});setTimeout(()=>setToast(null),3500);};
 
   const load=useCallback(async()=>{
     setLoading(true);
-    const{data}=await supabase.from('community_channels').select('*').order('sort_order',{ascending:true});
-    setChannels(data||[]);setLoading(false);
+    const[catRes,chRes]=await Promise.all([
+      supabase.from('community_categories').select('*').order('sort_order'),
+      supabase.from('community_channels').select('*').order('sort_order'),
+    ]);
+    setCategories(catRes.data||[]);
+    setChannels(chRes.data||[]);
+    setLoading(false);
   },[supabase]);
   useEffect(()=>{load();},[load]);
 
-  function slugify(name:string){return name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
+  function slugify(n:string){return n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
+
+  async function createCategory(){
+    if(!catForm.name.trim())return;
+    setCreatingCat(true);
+    const maxOrder=categories.reduce((m,c)=>Math.max(m,c.sort_order),0);
+    const{error}=await supabase.from('community_categories').insert({name:catForm.name.trim(),sort_order:maxOrder+1,collapsible:true});
+    if(error){showToast(error.message,false);}else{showToast(`Category "${catForm.name}" created`);setShowCatForm(false);setCatForm({name:''});load();}
+    setCreatingCat(false);
+  }
+
+  async function deleteCategory(id:string,name:string){
+    if(!confirm(`Delete category "${name}"? Channels in it will become uncategorised.`))return;
+    setDeleting(d=>({...d,[id]:true}));
+    await supabase.from('community_channels').update({category_id:null}).eq('category_id',id);
+    const{error}=await supabase.from('community_categories').delete().eq('id',id);
+    if(error){showToast(error.message,false);}else{showToast(`Category deleted`);load();}
+    setDeleting(d=>({...d,[id]:false}));
+  }
 
   async function createChannel(){
-    if(!form.name.trim())return;
+    if(!chForm.name.trim())return;
     setCreating(true);
-    const slug=form.slug.trim()||slugify(form.name);
+    const slug=chForm.slug.trim()||slugify(chForm.name);
     const maxOrder=channels.reduce((m,c)=>Math.max(m,c.sort_order),0);
-    const{error}=await supabase.from('community_channels').insert({slug,name:form.name.trim(),emoji:form.emoji,description:form.description.trim(),sort_order:maxOrder+1});
-    if(error){showToast(error.message,false);}
-    else{showToast(`#${slug} created`);setShowForm(false);setForm({name:'',emoji:'💬',description:'',slug:''});load();}
+    const payload:any={slug,name:chForm.name.trim(),description:chForm.description.trim(),sort_order:maxOrder+1};
+    if(chForm.category_id)payload.category_id=chForm.category_id;
+    const{error}=await supabase.from('community_channels').insert(payload);
+    if(error){showToast(error.message,false);}else{showToast(`#${slug} created`);setShowChForm(false);setChForm({name:'',slug:'',description:'',category_id:''});load();}
     setCreating(false);
   }
 
   async function saveEdit(slug:string){
-    setSaving(s=>({...s,[slug]:true}));
-    const{error}=await supabase.from('community_channels').update({name:editForm.name,emoji:editForm.emoji,description:editForm.description}).eq('slug',slug);
+    const{error}=await supabase.from('community_channels').update({name:editForm.name,description:editForm.description,category_id:editForm.category_id||null}).eq('slug',slug);
     if(error){showToast(error.message,false);}else{showToast('Channel updated');setEditing(null);load();}
-    setSaving(s=>({...s,[slug]:false}));
-  }
-
-  async function moveChannel(slug:string,dir:'up'|'down'){
-    const idx=channels.findIndex(c=>c.slug===slug);
-    if((dir==='up'&&idx===0)||(dir==='down'&&idx===channels.length-1))return;
-    const swapIdx=dir==='up'?idx-1:idx+1;
-    const a=channels[idx],b=channels[swapIdx];
-    await supabase.from('community_channels').update({sort_order:b.sort_order}).eq('slug',a.slug);
-    await supabase.from('community_channels').update({sort_order:a.sort_order}).eq('slug',b.slug);
-    load();
   }
 
   async function deleteChannel(slug:string){
-    if(!confirm(`Delete #${slug}? Messages in this channel will be hidden.`))return;
+    if(!confirm(`Delete #${slug}?`))return;
     setDeleting(d=>({...d,[slug]:true}));
     const{error}=await supabase.from('community_channels').delete().eq('slug',slug);
     if(error){showToast(error.message,false);}else{showToast(`#${slug} deleted`);load();}
     setDeleting(d=>({...d,[slug]:false}));
   }
 
+  async function moveCh(slug:string,dir:'up'|'down'){
+    const idx=channels.findIndex(c=>c.slug===slug);
+    if((dir==='up'&&idx===0)||(dir==='down'&&idx===channels.length-1))return;
+    const swap=dir==='up'?idx-1:idx+1;
+    const a=channels[idx],b=channels[swap];
+    await supabase.from('community_channels').update({sort_order:b.sort_order}).eq('slug',a.slug);
+    await supabase.from('community_channels').update({sort_order:a.sort_order}).eq('slug',b.slug);
+    load();
+  }
+
   const INPUT_S={width:'100%',padding:'8px 12px',borderRadius:7,border:'1px solid var(--admin-bg-input)',background:'var(--admin-bg-card)',color:'var(--admin-text)',fontSize:13,fontFamily:B.fontUI,outline:'none',boxSizing:'border-box' as const};
+  const SEL_S={...INPUT_S,cursor:'pointer'};
 
   return(
     <div>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20,flexWrap:'wrap',gap:10}}>
+      {/* Header */}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16,flexWrap:'wrap',gap:10}}>
         <div>
-          <h2 style={{fontFamily:B.fontDisplay,fontSize:22,fontWeight:700,color:'var(--admin-text-heading)',margin:0}}>Chat Channels</h2>
-          <p style={{fontFamily:B.fontMono,fontSize:10,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--admin-text-faint)',marginTop:4,marginBottom:0}}>{channels.length} channels · changes reflect instantly in the app</p>
+          <h2 style={{fontFamily:B.fontDisplay,fontSize:22,fontWeight:700,color:'var(--admin-text-heading)',margin:0}}>Channels & Categories</h2>
+          <p style={{fontFamily:B.fontMono,fontSize:10,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--admin-text-faint)',marginTop:4,marginBottom:0}}>{categories.length} categories · {channels.length} channels · live</p>
         </div>
-        <button onClick={()=>setShowForm(f=>!f)} style={{padding:'10px 20px',borderRadius:9,border:'none',background:showForm?'var(--admin-bg-input)':B.gold,color:showForm?'var(--admin-text-muted)':'#0C0B08',fontFamily:B.fontUI,fontWeight:700,fontSize:13,cursor:'pointer'}}>
-          {showForm?'✕ Cancel':'+ New Channel'}
-        </button>
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={()=>{setShowCatForm(f=>!f);setShowChForm(false);}} style={{padding:'9px 16px',borderRadius:8,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontUI,fontWeight:600,fontSize:12,cursor:'pointer'}}>
+            {showCatForm?'✕ Cancel':'+ Category'}
+          </button>
+          <button onClick={()=>{setShowChForm(f=>!f);setShowCatForm(false);}} style={{padding:'9px 16px',borderRadius:8,border:'none',background:showChForm?'var(--admin-bg-input)':B.gold,color:showChForm?'var(--admin-text-muted)':'#0C0B08',fontFamily:B.fontUI,fontWeight:700,fontSize:12,cursor:'pointer'}}>
+            {showChForm?'✕ Cancel':'+ Channel'}
+          </button>
+        </div>
       </div>
 
       {toast&&<div style={{padding:'9px 14px',borderRadius:8,marginBottom:14,background:toast.ok?'rgba(34,197,94,0.08)':'rgba(239,68,68,0.08)',border:`1px solid ${toast.ok?'rgba(34,197,94,0.2)':'rgba(239,68,68,0.2)'}`,color:toast.ok?B.green:B.red,fontFamily:B.fontMono,fontSize:11}}>{toast.msg}</div>}
 
-      {showForm&&(
-        <div style={{...CARD,padding:'20px 24px',marginBottom:20,borderColor:B.goldBorder}}>
-          <p style={{...MONO_LABEL,color:B.gold,marginBottom:16}}>New Channel</p>
+      {/* New category form */}
+      {showCatForm&&(
+        <div style={{...CARD,padding:'18px 22px',marginBottom:16,borderColor:B.goldBorder}}>
+          <p style={{...MONO_LABEL,color:B.gold,marginBottom:12}}>New Category</p>
+          <div style={{display:'flex',gap:10,alignItems:'flex-end'}}>
+            <div style={{flex:1}}><span style={MONO_LABEL}>Category Name</span><input value={catForm.name} onChange={e=>setCatForm({name:e.target.value})} placeholder="e.g. Voice Channels" style={INPUT_S}/></div>
+            <button onClick={createCategory} disabled={!catForm.name.trim()||creatingCat} style={{padding:'9px 20px',borderRadius:8,border:'none',background:catForm.name.trim()?B.gold:'var(--admin-bg-input)',color:catForm.name.trim()?'#0C0B08':'var(--admin-text-muted)',fontFamily:B.fontUI,fontWeight:700,fontSize:12,cursor:catForm.name.trim()?'pointer':'not-allowed',whiteSpace:'nowrap' as const}}>
+              {creatingCat?'Creating…':'Create'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* New channel form */}
+      {showChForm&&(
+        <div style={{...CARD,padding:'18px 22px',marginBottom:16,borderColor:B.goldBorder}}>
+          <p style={{...MONO_LABEL,color:B.gold,marginBottom:12}}>New Channel</p>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
-            <div><span style={MONO_LABEL}>Channel Name</span><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value,slug:slugify(e.target.value)}))} placeholder="e.g. Job Alerts" style={INPUT_S}/></div>
-            <div><span style={MONO_LABEL}>Slug (auto)</span><input value={form.slug} onChange={e=>setForm(f=>({...f,slug:e.target.value}))} placeholder="job-alerts" style={{...INPUT_S,fontFamily:B.fontMono}}/></div>
+            <div><span style={MONO_LABEL}>Name</span><input value={chForm.name} onChange={e=>setChForm(f=>({...f,name:e.target.value,slug:slugify(e.target.value)}))} placeholder="e.g. Job Alerts" style={INPUT_S}/></div>
+            <div><span style={MONO_LABEL}>Slug</span><input value={chForm.slug} onChange={e=>setChForm(f=>({...f,slug:e.target.value}))} placeholder="job-alerts" style={{...INPUT_S,fontFamily:B.fontMono}}/></div>
           </div>
-          <div style={{marginBottom:12}}><span style={MONO_LABEL}>Description</span><input value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="What is this channel for?" style={INPUT_S}/></div>
+          <div style={{marginBottom:12}}><span style={MONO_LABEL}>Description</span><input value={chForm.description} onChange={e=>setChForm(f=>({...f,description:e.target.value}))} placeholder="What is this channel for?" style={INPUT_S}/></div>
           <div style={{marginBottom:16}}>
-            <span style={MONO_LABEL}>Emoji</span>
-            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-              {EMOJIS.map(e=><button key={e} onClick={()=>setForm(f=>({...f,emoji:e}))} style={{width:36,height:36,borderRadius:8,border:`2px solid ${form.emoji===e?B.gold:'var(--admin-bg-input)'}`,background:form.emoji===e?B.goldMuted:'transparent',fontSize:18,cursor:'pointer'}}>{e}</button>)}
-            </div>
+            <span style={MONO_LABEL}>Category</span>
+            <select value={chForm.category_id} onChange={e=>setChForm(f=>({...f,category_id:e.target.value}))} style={SEL_S}>
+              <option value="">— No category —</option>
+              {categories.map(cat=><option key={cat.id} value={cat.id}>{cat.name}</option>)}
+            </select>
           </div>
-          <button onClick={createChannel} disabled={!form.name.trim()||creating} style={{padding:'10px 24px',borderRadius:8,border:'none',background:form.name.trim()?B.gold:'var(--admin-bg-input)',color:form.name.trim()?'#0C0B08':'var(--admin-text-muted)',fontFamily:B.fontUI,fontWeight:700,fontSize:13,cursor:form.name.trim()?'pointer':'not-allowed'}}>
-            {creating?'Creating…':`Create #${form.slug||slugify(form.name)||'channel'}`}
+          <button onClick={createChannel} disabled={!chForm.name.trim()||creating} style={{padding:'9px 24px',borderRadius:8,border:'none',background:chForm.name.trim()?B.gold:'var(--admin-bg-input)',color:chForm.name.trim()?'#0C0B08':'var(--admin-text-muted)',fontFamily:B.fontUI,fontWeight:700,fontSize:13,cursor:chForm.name.trim()?'pointer':'not-allowed'}}>
+            {creating?'Creating…':`Create #${chForm.slug||slugify(chForm.name)||'channel'}`}
           </button>
         </div>
       )}
 
       {loading?(<div style={{...CARD,padding:48,display:'flex',justifyContent:'center'}}><Spinner/></div>):(
-        <div style={{display:'flex',flexDirection:'column',gap:8}}>
-          {channels.map((ch,idx)=>(
-            <div key={ch.slug} style={{...CARD,padding:'14px 18px'}}>
-              {editing===ch.slug?(
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          {/* Categories with their channels */}
+          {categories.map(cat=>{
+            const catChannels=channels.filter(c=>c.category_id===cat.id).sort((a:any,b:any)=>a.sort_order-b.sort_order);
+            return(
+              <div key={cat.id} style={{...CARD,overflow:'hidden'}}>
+                {/* Category header */}
+                <div style={{padding:'12px 16px',borderBottom:'1px solid var(--admin-bg-input)',display:'flex',alignItems:'center',gap:10,background:'var(--admin-bg-card)'}}>
+                  <span style={{fontFamily:B.fontMono,fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase' as const,color:'var(--admin-text-faint)',flex:1}}>📁 {cat.name}</span>
+                  <span style={{fontFamily:B.fontMono,fontSize:10,color:'var(--admin-text-faint)'}}>{catChannels.length} channels</span>
+                  <button onClick={()=>deleteCategory(cat.id,cat.name)} disabled={deleting[cat.id]} style={{padding:'3px 10px',borderRadius:5,border:'1px solid rgba(239,68,68,0.25)',background:'transparent',color:B.red,fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>{deleting[cat.id]?'…':'Delete'}</button>
+                </div>
+                {/* Channels in category */}
                 <div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
-                    <div><span style={MONO_LABEL}>Name</span><input value={editForm.name||''} onChange={e=>setEditForm(f=>({...f,name:e.target.value}))} style={INPUT_S}/></div>
-                    <div><span style={MONO_LABEL}>Description</span><input value={editForm.description||''} onChange={e=>setEditForm(f=>({...f,description:e.target.value}))} style={INPUT_S}/></div>
-                  </div>
-                  <div style={{marginBottom:12}}>
-                    <span style={MONO_LABEL}>Emoji</span>
-                    <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
-                      {EMOJIS.map(e=><button key={e} onClick={()=>setEditForm(f=>({...f,emoji:e}))} style={{width:32,height:32,borderRadius:7,border:`2px solid ${editForm.emoji===e?B.gold:'var(--admin-bg-input)'}`,background:editForm.emoji===e?B.goldMuted:'transparent',fontSize:16,cursor:'pointer'}}>{e}</button>)}
+                  {catChannels.length===0&&<div style={{padding:'12px 16px',fontFamily:B.fontUI,fontSize:13,color:'var(--admin-text-muted)'}}>No channels yet — create one and assign this category.</div>}
+                  {catChannels.map((ch:any,idx:number)=>(
+                    <div key={ch.slug} style={{padding:'10px 16px',borderBottom:'1px solid var(--admin-bg-input)'}}>
+                      {editing===ch.slug?(
+                        <div>
+                          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
+                            <div><span style={MONO_LABEL}>Name</span><input value={editForm.name||''} onChange={e=>setEditForm((f:any)=>({...f,name:e.target.value}))} style={INPUT_S}/></div>
+                            <div><span style={MONO_LABEL}>Category</span>
+                              <select value={editForm.category_id||''} onChange={e=>setEditForm((f:any)=>({...f,category_id:e.target.value}))} style={SEL_S}>
+                                <option value="">— No category —</option>
+                                {categories.map((c:any)=><option key={c.id} value={c.id}>{c.name}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                          <div style={{marginBottom:8}}><span style={MONO_LABEL}>Description</span><input value={editForm.description||''} onChange={e=>setEditForm((f:any)=>({...f,description:e.target.value}))} style={INPUT_S}/></div>
+                          <div style={{display:'flex',gap:8}}>
+                            <button onClick={()=>saveEdit(ch.slug)} style={{padding:'6px 16px',borderRadius:6,border:'none',background:B.gold,color:'#0C0B08',fontFamily:B.fontUI,fontWeight:700,fontSize:12,cursor:'pointer'}}>Save</button>
+                            <button onClick={()=>setEditing(null)} style={{padding:'6px 14px',borderRadius:6,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:11,cursor:'pointer'}}>Cancel</button>
+                          </div>
+                        </div>
+                      ):(
+                        <div style={{display:'flex',alignItems:'center',gap:10}}>
+                          <span style={{fontFamily:B.fontMono,fontSize:13,color:'var(--admin-text)'}}># {ch.name}</span>
+                          <span style={{fontFamily:B.fontUI,fontSize:12,color:'var(--admin-text-muted)',flex:1}}>{ch.description}</span>
+                          <div style={{display:'flex',flexDirection:'column',gap:1}}>
+                            <button onClick={()=>moveCh(ch.slug,'up')} disabled={idx===0} style={{width:20,height:16,borderRadius:3,border:'1px solid var(--admin-bg-input)',background:'transparent',color:idx===0?'var(--admin-bg-input)':'var(--admin-text-muted)',fontSize:8,cursor:idx===0?'not-allowed':'pointer',lineHeight:1}}>▲</button>
+                            <button onClick={()=>moveCh(ch.slug,'down')} disabled={idx===catChannels.length-1} style={{width:20,height:16,borderRadius:3,border:'1px solid var(--admin-bg-input)',background:'transparent',color:idx===catChannels.length-1?'var(--admin-bg-input)':'var(--admin-text-muted)',fontSize:8,cursor:idx===catChannels.length-1?'not-allowed':'pointer',lineHeight:1}}>▼</button>
+                          </div>
+                          <button onClick={()=>{setEditing(ch.slug);setEditForm({name:ch.name,description:ch.description,category_id:ch.category_id||'',slug:ch.slug});}} style={{padding:'4px 10px',borderRadius:5,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>Edit</button>
+                          <button onClick={()=>deleteChannel(ch.slug)} disabled={deleting[ch.slug]} style={{padding:'4px 10px',borderRadius:5,border:'1px solid rgba(239,68,68,0.25)',background:'transparent',color:B.red,fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>{deleting[ch.slug]?'…':'Delete'}</button>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div style={{display:'flex',gap:8}}>
-                    <button onClick={()=>saveEdit(ch.slug)} disabled={saving[ch.slug]} style={{padding:'7px 16px',borderRadius:7,border:'none',background:B.gold,color:'#0C0B08',fontFamily:B.fontUI,fontWeight:700,fontSize:12,cursor:'pointer'}}>{saving[ch.slug]?'Saving…':'Save'}</button>
-                    <button onClick={()=>setEditing(null)} style={{padding:'7px 16px',borderRadius:7,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:11,cursor:'pointer'}}>Cancel</button>
-                  </div>
+                  ))}
                 </div>
-              ):(
-                <div style={{display:'flex',alignItems:'center',gap:12}}>
-                  <span style={{fontSize:22,flexShrink:0}}>{ch.emoji}</span>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
-                      <span style={{fontFamily:B.fontUI,fontSize:14,fontWeight:600,color:'var(--admin-text)'}}>#{ch.name}</span>
-                      <span style={{fontFamily:B.fontMono,fontSize:9,color:'var(--admin-text-faint)',letterSpacing:'0.08em'}}>{ch.slug}</span>
-                    </div>
-                    <span style={{fontFamily:B.fontUI,fontSize:12,color:'var(--admin-text-muted)'}}>{ch.description}</span>
-                  </div>
-                  <div style={{display:'flex',flexDirection:'column',gap:2,flexShrink:0}}>
-                    <button onClick={()=>moveChannel(ch.slug,'up')} disabled={idx===0} style={{width:24,height:20,borderRadius:4,border:'1px solid var(--admin-bg-input)',background:'transparent',color:idx===0?'var(--admin-bg-input)':'var(--admin-text-muted)',fontSize:10,cursor:idx===0?'not-allowed':'pointer',lineHeight:1}}>▲</button>
-                    <button onClick={()=>moveChannel(ch.slug,'down')} disabled={idx===channels.length-1} style={{width:24,height:20,borderRadius:4,border:'1px solid var(--admin-bg-input)',background:'transparent',color:idx===channels.length-1?'var(--admin-bg-input)':'var(--admin-text-muted)',fontSize:10,cursor:idx===channels.length-1?'not-allowed':'pointer',lineHeight:1}}>▼</button>
-                  </div>
-                  <button onClick={()=>{setEditing(ch.slug);setEditForm({name:ch.name,emoji:ch.emoji,description:ch.description});}} style={{padding:'5px 12px',borderRadius:6,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:11,cursor:'pointer',flexShrink:0}}>Edit</button>
-                  <button onClick={()=>deleteChannel(ch.slug)} disabled={deleting[ch.slug]} style={{padding:'5px 12px',borderRadius:6,border:'1px solid rgba(239,68,68,0.25)',background:'transparent',color:B.red,fontFamily:B.fontMono,fontSize:11,cursor:'pointer',flexShrink:0}}>{deleting[ch.slug]?'…':'Delete'}</button>
+              </div>
+            );
+          })}
+
+          {/* Uncategorised channels */}
+          {(()=>{
+            const catIds=new Set(categories.map((c:any)=>c.id));
+            const uncat=channels.filter((c:any)=>!c.category_id||!catIds.has(c.category_id));
+            if(!uncat.length)return null;
+            return(
+              <div style={{...CARD,overflow:'hidden'}}>
+                <div style={{padding:'12px 16px',borderBottom:'1px solid var(--admin-bg-input)',background:'var(--admin-bg-card)'}}>
+                  <span style={{fontFamily:B.fontMono,fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase' as const,color:'var(--admin-text-faint)'}}>Uncategorised</span>
                 </div>
-              )}
+                {uncat.map((ch:any)=>(
+                  <div key={ch.slug} style={{padding:'10px 16px',borderBottom:'1px solid var(--admin-bg-input)',display:'flex',alignItems:'center',gap:10}}>
+                    <span style={{fontFamily:B.fontMono,fontSize:13,color:'var(--admin-text)'}}># {ch.name}</span>
+                    <span style={{fontFamily:B.fontUI,fontSize:12,color:'var(--admin-text-muted)',flex:1}}>{ch.description}</span>
+                    <button onClick={()=>{setEditing(ch.slug);setEditForm({name:ch.name,description:ch.description,category_id:ch.category_id||'',slug:ch.slug});}} style={{padding:'4px 10px',borderRadius:5,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>Edit</button>
+                    <button onClick={()=>deleteChannel(ch.slug)} disabled={deleting[ch.slug]} style={{padding:'4px 10px',borderRadius:5,border:'1px solid rgba(239,68,68,0.25)',background:'transparent',color:B.red,fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>{deleting[ch.slug]?'…':'Delete'}</button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          {channels.length===0&&categories.length===0&&(
+            <div style={{...CARD,padding:48,textAlign:'center'}}>
+              <p style={{fontFamily:B.fontDisplay,fontSize:18,color:'var(--admin-text-heading)',margin:'0 0 8px'}}>No channels yet</p>
+              <p style={{fontFamily:B.fontUI,fontSize:13,color:'var(--admin-text-muted)',margin:0}}>Create a category first, then add channels to it.</p>
             </div>
-          ))}
-          {channels.length===0&&(<div style={{...CARD,padding:40,textAlign:'center'}}><p style={{fontFamily:B.fontDisplay,fontSize:18,color:'var(--admin-text-heading)',margin:'0 0 8px'}}>No channels yet</p><p style={{fontFamily:B.fontUI,fontSize:13,color:'var(--admin-text-muted)',margin:0}}>Click "New Channel" to create your first one.</p></div>)}
+          )}
         </div>
       )}
     </div>
   );
 }
 
-// ════════════════════════════════════════════════════════════
-// MESSAGE MONITOR TAB
-// ════════════════════════════════════════════════════════════
 function MessageMonitor({supabase}:{supabase:ReturnType<typeof createClient>}){
   const [messages,setMessages]=useState<AdminMessage[]>([]);
   const [loading,setLoading]=useState(true);
@@ -351,7 +434,15 @@ function IntelPanel({supabase}:{supabase:ReturnType<typeof createClient>}){
       const goalMap:Record<string,string>={};
       goals.forEach(g=>{goalMap[g.user_id]=g.goal_text;});
       const userSummaries=profiles.map(p=>({current_role:p.current_role||'Unknown',industry:p.industry||'Unknown',goal_role:p.goal_role||'Unknown',biggest_challenge:p.biggest_challenge||'None',time_commitment:p.time_commitment||'Unknown',goal_text:goalMap[p.id]||'No goal set'}));
-      const prompt=`You are an expert community strategist for Ascentor, an AI-powered leadership development platform for African professionals.\n\nAnalyse these ${profiles.length} user profiles and recommend 3-6 communities to create.\n\nUSER PROFILES:\n${JSON.stringify(userSummaries,null,2)}\n\nRespond ONLY with valid JSON, no markdown:\n{"total_users_analysed":<number>,"summary":"<overview>","recommendations":[{"id":"<slug>","name":"<name max 5 words>","description":"<1-2 sentences>","category":"<Technology|Finance|Leadership|Entrepreneurship|Consulting|Career Growth|Executive|Diversity|Other>","icon":"users","rationale":"<1 sentence>","estimated_members":<number>,"user_ids":[],"tags":["<tag>"],"editing":false}]}`;
+      const prompt=`You are an expert community strategist for Ascentor, an AI-powered leadership development platform for African professionals.
+
+Analyse these ${profiles.length} user profiles and recommend 3-6 communities to create.
+
+USER PROFILES:
+${JSON.stringify(userSummaries,null,2)}
+
+Respond ONLY with valid JSON, no markdown:
+{"total_users_analysed":<number>,"summary":"<overview>","recommendations":[{"id":"<slug>","name":"<name max 5 words>","description":"<1-2 sentences>","category":"<Technology|Finance|Leadership|Entrepreneurship|Consulting|Career Growth|Executive|Diversity|Other>","icon":"users","rationale":"<1 sentence>","estimated_members":<number>,"user_ids":[],"tags":["<tag>"],"editing":false}]}`;
       const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
       const data=await res.json();
       if(!res.ok)throw new Error(data?.error?.message||'API error');
