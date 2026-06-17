@@ -103,6 +103,20 @@ export default function CoachPage() {
   const textareaRef       = useRef<HTMLTextAreaElement>(null);
   const tabsRef           = useRef<HTMLDivElement>(null);
 
+  // ── iOS Safari keyboard: shift entire layout up when keyboard opens ──────
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    function onVVResize() {
+      const offset = window.innerHeight - vv!.height - vv!.offsetTop;
+      document.documentElement.style.setProperty('--coach-vv-offset', `${Math.max(0, offset)}px`);
+    }
+    vv.addEventListener('resize', onVVResize);
+    vv.addEventListener('scroll', onVVResize);
+    onVVResize();
+    return () => { vv.removeEventListener('resize', onVVResize); vv.removeEventListener('scroll', onVVResize); };
+  }, []);
+
   const availableTypes = getAvailableSessionTypes(userPlan);
   const activeSession  = availableTypes.find(t => t.id === sessionType) ?? availableTypes[0];
   const isEmpty        = messages.length === 0 && !loading;
@@ -310,10 +324,23 @@ export default function CoachPage() {
 
   return (
     <div style={{
-      display: 'flex', flexDirection: 'column',
-      height: 'calc(100dvh - 64px - 72px)',
-      maxWidth: 680, margin: '0 auto', width: '100%',
+      position: 'fixed',
+      top: 64,
+      bottom: 72,
+      left: 0,
+      right: 0,
+      display: 'flex',
+      flexDirection: 'column',
       overflow: 'hidden',
+      transform: 'translateY(calc(-1 * var(--coach-vv-offset, 0px)))',
+    }}>
+    {/* Inner centering wrapper */}
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      maxWidth: 680, width: '100%',
+      margin: '0 auto',
+      flex: 1, minHeight: 0, overflow: 'hidden',
+      padding: '0 16px',
     }}>
       <style>{`
         @keyframes sage-pulse { 0%,100%{opacity:.6;transform:scale(.95)} 50%{opacity:1;transform:scale(1)} }
@@ -703,6 +730,7 @@ export default function CoachPage() {
           </button>
         </div>
       </div>
-    </div>
+    </div>{/* inner centering wrapper */}
+    </div>{/* fixed outer */}
   );
 }

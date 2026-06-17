@@ -184,6 +184,23 @@ export default function CommunityPage() {
 
   useEffect(() => { userIdRef.current = userId; }, [userId]);
 
+  // ── iOS Safari keyboard fix ───────────────────────────────────────────────
+  // On iOS, the keyboard shrinks the visualViewport but NOT the layout viewport.
+  // We listen to visualViewport resize and shift the root element up by the
+  // difference, so the input always stays above the keyboard.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    function onResize() {
+      const offset = window.innerHeight - vv!.height - vv!.offsetTop;
+      document.documentElement.style.setProperty('--vv-offset', `${Math.max(0, offset)}px`);
+    }
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    onResize();
+    return () => { vv.removeEventListener('resize', onResize); vv.removeEventListener('scroll', onResize); };
+  }, []);
+
   // Sheet animation
   useEffect(() => {
     if (sheetOpen) requestAnimationFrame(() => setSheetIn(true));
@@ -881,7 +898,7 @@ export default function CommunityPage() {
   // RENDER
   // ═══════════════════════════════════════════════════════════════════════════
   return (
-    <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: D.bg0, position: 'fixed', inset: 0 }}>
+    <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: D.bg0, position: 'fixed', inset: 0, transform: 'translateY(calc(-1 * var(--vv-offset, 0px)))', transition: 'transform 0s' }}>
       <style>{`
         @keyframes ac-spin  { to { transform: rotate(360deg); } }
         @keyframes ac-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.7); } }
@@ -920,9 +937,10 @@ export default function CommunityPage() {
         .desk { display: flex !important; }
         .mob  { display: none !important; }
         @media (max-width: 640px) {
-          .input-area { padding-bottom: calc(56px + max(12px, env(safe-area-inset-bottom, 12px))) !important; }
-        }
-        @media (max-width: 640px) {
+          /* Reserve space above the fixed bottom nav */
+          .chat-col { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important; }
+          /* Input area needs no extra padding — chat-col handles the offset */
+          .input-area { padding-bottom: 0 !important; }
           .desk { display: none !important; }
           .mob  { display: flex !important; }
         }
@@ -965,7 +983,8 @@ export default function CommunityPage() {
       </div>
 
       {/* ── MAIN CHAT COLUMN — flex column, header fixed, messages scroll ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden', background: D.bg0 }}>
+      {/* On mobile, marginBottom = height of fixed bottom nav so input never hides under it */}
+      <div className="chat-col" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden', background: D.bg0 }}>
 
         {/* TOPBAR — never moves */}
         <div style={{ height: 49, borderBottom: `1px solid ${D.border}`, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 10, flexShrink: 0, background: D.bg1, zIndex: 10 }}>
