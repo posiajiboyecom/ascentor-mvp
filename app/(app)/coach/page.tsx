@@ -730,7 +730,7 @@ export default function CoachPage() {
           </button>
         </div>
       </div>
-    </div>{/* inner centering wrapper */}
-    </div>{/* fixed outer */}
+    </div>
+    </div>
   );
 }
