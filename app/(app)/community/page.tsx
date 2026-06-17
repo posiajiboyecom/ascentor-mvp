@@ -59,6 +59,16 @@ const getIcon = (slug: string) => ICONS[slug] || Hash;
 
 const REACTIONS = ['❤️','👍','🔥','👏','😮','💯'];
 
+// Full emoji picker categories
+const EMOJI_CATEGORIES = [
+  { label: 'Smileys', emojis: ['😀','😂','🤣','😊','😍','🥰','😘','😎','🤩','🥳','😏','😒','😢','😭','😤','😡','🤯','😱','🤔','🤗','😴','🥺','😇','🤭','🙄','😬','🫡','😤','😩','😫'] },
+  { label: 'Hands', emojis: ['👍','👎','👏','🙌','🤝','🫶','❤️','💪','🤜','🤛','✊','👊','🖐','✋','🤚','👋','🫱','🫲','🤲','🫵','☝️','👆','👇','👈','👉','🙏','🫶','💅','🤌','🤏'] },
+  { label: 'Hearts', emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','♥️','❤️‍🔥','❤️‍🩹','💌','💋','🫀'] },
+  { label: 'People', emojis: ['🎉','🎊','🎈','🏆','🥇','🌟','⭐','✨','💫','🔥','💥','🎯','🚀','💡','💎','👑','🎁','🎀','🎂','🍾','🥂','🍻','🌈','☀️','🌙','⚡','❄️','🌊','🌺','🌸'] },
+  { label: 'Objects', emojis: ['💯','✅','❌','⚠️','🔔','📢','💬','💭','🗨️','📌','🔑','🔒','🔓','💰','💵','📱','💻','⌚','📸','🎵','🎶','📚','📝','✏️','🖊️','📎','🔗','📊','📈','📉'] },
+];
+
+
 // Types
 interface Category { id: string; name: string; sort_order: number; }
 interface Channel  { slug: string; name: string; description: string; sort_order: number; category_id: string|null; }
@@ -112,6 +122,7 @@ export default function CommunityPage() {
   const [longPressMsg,setLongPressMsg]= useState<Message|null>(null); // mobile long-press
   const [recording,   setRecording]   = useState(false);
   const [recSeconds,  setRecSeconds]  = useState(0);
+  const [emojiOpen,   setEmojiOpen]   = useState(false);  // emoji picker
 
   const bottomRef    = useRef<HTMLDivElement>(null);
   const inputRef     = useRef<HTMLTextAreaElement>(null);
@@ -257,7 +268,7 @@ export default function CommunityPage() {
   async function send(){
     const text=input.trim();
     if(!text||!userId||sending)return;
-    setSending(true); setInput('');
+    setSending(true); setInput(''); setEmojiOpen(false);
     const payload:any={user_id:userId,channel,content:text,likes:[]};
     if(replyTo)payload.reply_to_id=replyTo.id;
     const{error}=await supabase.from('community_messages').insert(payload);
@@ -267,7 +278,7 @@ export default function CommunityPage() {
 
   function onKey(e:React.KeyboardEvent){
     if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}
-    if(e.key==='Escape'){setReplyTo(null);setRxnTarget(null);setLongPressMsg(null);}
+    if(e.key==='Escape'){setReplyTo(null);setRxnTarget(null);setLongPressMsg(null);setEmojiOpen(false);}
   }
 
   // ── Like ─────────────────────────────────────────────────────
@@ -462,7 +473,7 @@ export default function CommunityPage() {
   // CHAT MESSAGES
   // ════════════════════════════════════════════════════════════
   const Messages = (
-    <div style={{flex:1,overflowY:'auto',padding:'8px 0 4px'}} onClick={()=>{setRxnTarget(null);setLongPressMsg(null);}}>
+    <div style={{flex:1,overflowY:'auto',padding:'8px 0 4px'}} onClick={()=>{setRxnTarget(null);setLongPressMsg(null);setEmojiOpen(false);}}>
       {loading?(
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',flexDirection:'column',gap:10}}>
           <div style={{width:22,height:22,borderRadius:'50%',border:`2px solid ${D.border}`,borderTopColor:D.gold,animation:'spin 0.7s linear infinite'}}/>
@@ -628,18 +639,59 @@ export default function CommunityPage() {
           </button>
         </div>
       ):(
-        <div style={{background:D.bg4,border:`0.5px solid ${D.border}`,borderRadius:replyTo?'0 0 8px 8px':8,display:'flex',alignItems:'flex-end',gap:6,padding:'8px 10px'}}>
-          {/* Emoji — left of textarea */}
+        <div style={{position:'relative'}}>
+          {/* Emoji picker popup — sits ABOVE the input, not in keyboard space */}
+          {emojiOpen&&(
+            <div style={{
+              position:'absolute',bottom:'calc(100% + 6px)',left:0,right:0,
+              background:'var(--app-bg-card,var(--bg-card))',
+              border:`1px solid ${D.border}`,borderRadius:12,
+              overflow:'hidden',zIndex:50,
+              boxShadow:'0 -4px 24px rgba(0,0,0,0.2)',
+            }} onClick={e=>e.stopPropagation()}>
+              {/* Category tabs */}
+              <div style={{display:'flex',borderBottom:`1px solid ${D.border}`,overflowX:'auto',scrollbarWidth:'none'}}>
+                {EMOJI_CATEGORIES.map((cat,ci)=>(
+                  <button key={ci} onClick={()=>{
+                    document.getElementById(`emoji-cat-${ci}`)?.scrollIntoView({behavior:'smooth',block:'nearest'});
+                  }} style={{padding:'8px 14px',background:'none',border:'none',cursor:'pointer',fontFamily:D.fontMono,fontSize:10,color:D.text2,whiteSpace:'nowrap' as const,letterSpacing:'0.06em',textTransform:'uppercase' as const,flexShrink:0}}>
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+              {/* Emoji grid — scrollable */}
+              <div style={{maxHeight:200,overflowY:'auto',padding:'8px'}}>
+                {EMOJI_CATEGORIES.map((cat,ci)=>(
+                  <div key={ci} id={`emoji-cat-${ci}`}>
+                    <div style={{fontFamily:D.fontMono,fontSize:9,letterSpacing:'0.1em',textTransform:'uppercase' as const,color:D.text3,padding:'4px 2px 6px',marginTop:ci>0?8:0}}>{cat.label}</div>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(36px,1fr))',gap:2}}>
+                      {cat.emojis.map(emoji=>(
+                        <button key={emoji} onClick={()=>{
+                          setInput(prev=>prev+emoji);
+                          setEmojiOpen(false);
+                          inputRef.current?.focus();
+                        }} style={{
+                          background:'none',border:'none',cursor:'pointer',
+                          fontSize:22,padding:'4px',borderRadius:6,
+                          lineHeight:1,textAlign:'center' as const,
+                          transition:'background 0.1s',
+                        }}
+                        onMouseEnter={e=>(e.currentTarget.style.background='var(--app-bg-input,rgba(128,128,128,0.1))')}
+                        onMouseLeave={e=>(e.currentTarget.style.background='none')}
+                        >{emoji}</button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{background:D.bg4,border:`0.5px solid ${D.border}`,borderRadius:replyTo?'0 0 8px 8px':8,display:'flex',alignItems:'flex-end',gap:6,padding:'8px 10px'}}>
+          {/* Emoji button */}
           <button
-            onClick={()=>{
-              const picks=['😊','😂','🔥','👏','💯','🙏','💪','🎉','❤️','👍','😍','🤔','😎','🥳','✅'];
-              const cur=picks.findIndex(e=>input.endsWith(e));
-              const emoji=picks[(cur+1)%picks.length];
-              setInput(prev=>prev+emoji);
-              inputRef.current?.focus();
-            }}
+            onClick={()=>setEmojiOpen(o=>!o)}
             title="Emoji"
-            style={{background:'none',border:'none',cursor:'pointer',flexShrink:0,lineHeight:1,padding:'0 2px',fontSize:18,opacity:0.7}}
+            style={{background:'none',border:'none',cursor:'pointer',flexShrink:0,lineHeight:1,padding:'0 2px',fontSize:20,opacity:emojiOpen?1:0.6,transition:'opacity 0.15s'}}
           >😊</button>
           <textarea
             ref={inputRef}
@@ -666,6 +718,7 @@ export default function CommunityPage() {
           <button onClick={startRecording} title="Voice message" style={{background:'none',border:'none',color:D.text2,cursor:'pointer',flexShrink:0,lineHeight:1,padding:'0 2px'}}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
           </button>
+        </div>
         </div>
       )}
     </div>
@@ -749,6 +802,13 @@ export default function CommunityPage() {
         .ch-btn:hover{background:var(--app-bg-input,var(--bg-input,rgba(128,128,128,0.08)))!important;}
         .ch-btn:hover span{color:var(--app-text-muted,var(--text-muted))!important;}
         .ch-btn.active:hover{background:var(--app-bg-input,var(--bg-input))!important;}
+
+        /* Fix: prevent page jump when keyboard opens on mobile */
+        @supports (height: 100dvh) {
+          .chat-main { height: 100dvh; }
+        }
+        /* Hide scrollbar on emoji category tabs */
+        .emoji-tabs::-webkit-scrollbar { display: none; }
 
         textarea{color-scheme:light dark;}
         textarea::placeholder{color:var(--app-text-dim,var(--text-dim,#888));}
