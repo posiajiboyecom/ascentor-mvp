@@ -148,17 +148,6 @@ function Avatar({ name, size = 34 }: { name: string; size?: number }) {
 
 // ── Reaction helpers ──────────────────────────────────────────────────────────
 function getLikeIds(likes: string[]) { return likes.filter(l => !l.includes(':')); }
-function getEmojiReactions(likes: string[]) {
-  const map: Record<string, { count: number; hasMe: boolean }> = {};
-  for (const l of likes) {
-    if (!l.includes(':')) continue;
-    const [emoji, uid] = l.split(':');
-    if (!map[emoji]) map[emoji] = { count: 0, hasMe: false };
-    map[emoji].count++;
-    if (uid) map[emoji].hasMe = uid === map[emoji].hasMe ? map[emoji].hasMe : map[emoji].hasMe; // placeholder
-  }
-  return Object.entries(map);
-}
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function CommunityPage() {
