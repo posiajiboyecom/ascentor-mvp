@@ -44,8 +44,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               (function() {
                 try {
                   var stored = localStorage.getItem('asc-theme');
-                  // Light is the primary theme — only dark if explicitly chosen
-                  var theme = (stored === 'light' || stored === 'dark') ? stored : 'light';
+                  // Light is the primary theme.
+                  // 'asc-theme-explicit' is set only when the user actively clicks the toggle.
+                  // If dark was set by old default code (not by the user), revert to light.
+                  var explicit = localStorage.getItem('asc-theme-explicit');
+                  var theme = (stored === 'dark' && explicit === '1') ? 'dark'
+                            : (stored === 'light') ? 'light'
+                            : 'light';
                   document.documentElement.setAttribute('data-app-theme', theme);
                 } catch(e) {}
               })();

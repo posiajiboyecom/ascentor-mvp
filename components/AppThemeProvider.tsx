@@ -20,10 +20,10 @@ const Ctx = createContext<ThemeCtx>({ theme: 'light', toggle: () => {}, isDark: 
 // Read theme synchronously from <html> attr set by the blocking script in layout.tsx
 // This avoids flash-of-wrong-theme and the "return null" delay on first render.
 function getInitialTheme(): AppTheme {
-  if (typeof document === 'undefined') return 'light'; // SSR default — light is now primary
+  if (typeof document === 'undefined') return 'light'; // SSR — light is primary
   const attr = document.documentElement.getAttribute('data-app-theme');
   if (attr === 'light' || attr === 'dark') return attr;
-  return 'dark';
+  return 'light'; // fallback is always light — never dark
 }
 
 export function AppThemeProvider({ children }: { children: React.ReactNode }) {
@@ -31,11 +31,13 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Sync in case localStorage has a value that differs from HTML attr
-    const stored = localStorage.getItem('asc-theme') as AppTheme | null;
-    // Light is the primary theme. Only use dark if explicitly stored or system prefers dark.
-    const resolved = (stored === 'light' || stored === 'dark')
-      ? stored
-      : 'light';
+    const stored   = localStorage.getItem('asc-theme') as AppTheme | null;
+    const explicit = localStorage.getItem('asc-theme-explicit');
+    // Dark only if the user explicitly toggled it. Light is the default.
+    const resolved: AppTheme =
+      (stored === 'dark' && explicit === '1') ? 'dark' :
+      (stored === 'light')                    ? 'light' :
+                                                'light';
     setTheme(resolved);
     document.documentElement.setAttribute('data-app-theme', resolved);
 
@@ -52,6 +54,8 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme(prev => {
       const next = prev === 'dark' ? 'light' : 'dark';
       localStorage.setItem('asc-theme', next);
+      // Mark as explicitly chosen by the user — distinguishes from old system default
+      localStorage.setItem('asc-theme-explicit', '1');
       document.documentElement.setAttribute('data-app-theme', next);
       window.dispatchEvent(new Event('asc-theme-change'));
       return next;
