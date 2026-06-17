@@ -13,23 +13,23 @@ import Link from 'next/link';
 
 // ── Ascentor Premium Dark tokens ────────────────────────────
 const D = {
-  bg0:     '#0C0B08',   // icon rail
-  bg1:     '#111009',   // sidebar
-  bg2:     '#1A1810',   // input / hover
-  bg3:     '#0F0E0B',   // chat area
-  bg4:     '#1E1C14',   // message input box
-  bg5:     'rgba(232,160,32,0.08)', // active channel bg
-  text0:   '#F2EDD6',   // primary
-  text1:   '#C8B880',   // secondary
-  text2:   '#8A7D50',   // muted
-  text3:   '#5A4D20',   // dimmer
-  text4:   '#3A3520',   // placeholder
-  gold:    '#E8A020',
+  bg0:     'var(--app-bg, var(--bg))',                    // page / icon rail
+  bg1:     'var(--app-bg-card, var(--bg-card))',          // sidebar
+  bg2:     'var(--app-bg-input, var(--bg-input))',        // hover / input bg
+  bg3:     'var(--app-bg, var(--bg))',                    // chat area
+  bg4:     'var(--app-bg-input, var(--bg-input))',        // message input box
+  bg5:     'var(--app-bg-input, var(--bg-input))',        // active channel bg
+  text0:   'var(--app-text, var(--text))',                // primary
+  text1:   'var(--app-text, var(--text))',                // secondary
+  text2:   'var(--app-text-muted, var(--text-muted))',    // muted
+  text3:   'var(--app-text-dim, var(--text-dim, #888))',  // dimmer
+  text4:   'var(--app-text-dim, var(--text-dim, #888))',  // placeholder
+  gold:    'var(--app-accent, #E8A020)',                  // accent
   goldB:   'rgba(232,160,32,0.20)',
-  goldBg:  'rgba(232,160,32,0.08)',
+  goldBg:  'rgba(232,160,32,0.06)',
   green:   '#22C55E',
   red:     '#EF4444',
-  border:  '#1F1D18',
+  border:  'var(--app-border, var(--border))',
   fontUI:  "'Syne', system-ui, sans-serif",
   fontMono:"'DM Mono', monospace",
   fontDisp:"'Cormorant Garamond', Georgia, serif",
@@ -109,16 +109,16 @@ export default function CommunityPage() {
   const [replyTo,     setReplyTo]     = useState<Message|null>(null);
   const [rxnTarget,   setRxnTarget]   = useState<string|null>(null);
   const [sheetOpen,   setSheetOpen]   = useState(false);  // mobile channel sheet
+  const [longPressMsg,setLongPressMsg]= useState<Message|null>(null); // mobile long-press
   const [recording,   setRecording]   = useState(false);
   const [recSeconds,  setRecSeconds]  = useState(0);
-  const [longPressMsg,setLongPressMsg]= useState<Message|null>(null); // mobile long-press
 
   const bottomRef    = useRef<HTMLDivElement>(null);
   const inputRef     = useRef<HTMLTextAreaElement>(null);
   const profileMap   = useRef<Record<string,string>>({});
+  const longPressTimer = useRef<ReturnType<typeof setTimeout>|null>(null);
   const mediaRec     = useRef<MediaRecorder|null>(null);
-  const recTimer     = useRef<NodeJS.Timeout|null>(null);
-  const longPressTimer = useRef<NodeJS.Timeout|null>(null);
+  const recTimer     = useRef<ReturnType<typeof setInterval>|null>(null);
 
   // ── Load user ────────────────────────────────────────────────
   useEffect(()=>{
@@ -298,62 +298,6 @@ export default function CommunityPage() {
     return Object.entries(map);
   }
 
-  // ── Voice recording ──────────────────────────────────────────
-  async function startRecording(){
-    try{
-      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-      const rec=new MediaRecorder(stream);
-      const chunks:Blob[]=[];
-      rec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
-      rec.onstop=async()=>{
-        stream.getTracks().forEach(t=>t.stop());
-        const blob=new Blob(chunks,{type:'audio/webm'});
-        await uploadVoiceMessage(blob);
-      };
-      rec.start();
-      mediaRec.current=rec;
-      setRecording(true);
-      setRecSeconds(0);
-      recTimer.current=setInterval(()=>setRecSeconds(s=>s+1),1000);
-    }catch(err){
-      console.error('Mic permission denied',err);
-      alert('Please allow microphone access to send voice messages.');
-    }
-  }
-
-  function stopRecording(send_=true){
-    if(recTimer.current)clearInterval(recTimer.current);
-    if(mediaRec.current&&mediaRec.current.state!=='inactive'){
-      if(!send_){
-        mediaRec.current.ondataavailable=null;
-        mediaRec.current.onstop=null;
-      }
-      mediaRec.current.stop();
-    }
-    setRecording(false); setRecSeconds(0);
-  }
-
-  async function uploadVoiceMessage(blob:Blob){
-    if(!userId)return;
-    const fileName=`voice/${userId}/${Date.now()}.webm`;
-    const{data,error}=await supabase.storage.from('community-voice').upload(fileName,blob,{contentType:'audio/webm',upsert:false});
-    if(error){console.error('Voice upload failed',error.message);return;}
-    const{data:{publicUrl}}=supabase.storage.from('community-voice').getPublicUrl(fileName);
-    await supabase.from('community_messages').insert({
-      user_id:userId,channel,content:`[voice:${publicUrl}]`,likes:[],
-    });
-  }
-
-  function fmtRec(s:number){return`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;}
-
-  // ── Long press (mobile) ──────────────────────────────────────
-  function onMsgPressStart(msg:Message){
-    longPressTimer.current=setTimeout(()=>{setLongPressMsg(msg);},500);
-  }
-  function onMsgPressEnd(){
-    if(longPressTimer.current)clearTimeout(longPressTimer.current);
-  }
-
   // ── Layout helpers ───────────────────────────────────────────
   function showHeader(i:number){
     if(i===0)return true;
@@ -373,6 +317,65 @@ export default function CommunityPage() {
     setRxnTarget(null);
     setReplyTo(null);
   }
+
+  // ── Voice recording ──────────────────────────────────────────
+  // Compressed: mono 16kHz opus at 16kbps → ~60KB/min (8x smaller)
+  // 60s cap prevents large files on free Supabase storage (1GB limit)
+  async function startRecording(){
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:{
+        channelCount:1, sampleRate:16000,
+        echoCancellation:true, noiseSuppression:true,
+      }});
+      const mimeType=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ?'audio/webm;codecs=opus'
+        :MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
+          ?'audio/ogg;codecs=opus':'audio/webm';
+      const rec=new MediaRecorder(stream,{mimeType,audioBitsPerSecond:16000});
+      const chunks:Blob[]=[];
+      rec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+      rec.onstop=async()=>{
+        stream.getTracks().forEach(t=>t.stop());
+        await uploadVoiceMessage(new Blob(chunks,{type:mimeType}));
+      };
+      rec.start();
+      mediaRec.current=rec;
+      setRecording(true); setRecSeconds(0);
+      recTimer.current=setInterval(()=>{
+        setRecSeconds(s=>{
+          if(s>=59){stopRecording(true);return 59;}
+          return s+1;
+        });
+      },1000);
+    }catch(err){
+      alert('Please allow microphone access to send voice messages.');
+    }
+  }
+
+  function stopRecording(doSend=true){
+    if(recTimer.current)clearInterval(recTimer.current);
+    if(mediaRec.current&&mediaRec.current.state!=='inactive'){
+      if(!doSend){mediaRec.current.ondataavailable=null;mediaRec.current.onstop=null;}
+      mediaRec.current.stop();
+    }
+    setRecording(false); setRecSeconds(0);
+  }
+
+  async function uploadVoiceMessage(blob:Blob){
+    if(!userId)return;
+    const ext=blob.type.includes('ogg')?'ogg':'webm';
+    const path=`voice/${userId}/${Date.now()}.${ext}`;
+    const{error}=await supabase.storage.from('community-voice').upload(path,blob,{contentType:blob.type,upsert:false});
+    if(error){console.error('Voice upload failed',error.message);return;}
+    const{data:{publicUrl}}=supabase.storage.from('community-voice').getPublicUrl(path);
+    await supabase.from('community_messages').insert({user_id:userId,channel,content:`[voice:${publicUrl}]`,likes:[]});
+  }
+
+  function fmtRec(s:number){return`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;}
+
+  // ── Long press ───────────────────────────────────────────────
+  function onMsgPressStart(msg:Message){longPressTimer.current=setTimeout(()=>setLongPressMsg(msg),500);}
+  function onMsgPressEnd(){if(longPressTimer.current)clearTimeout(longPressTimer.current);}
 
   const currentCh=channels.find(c=>c.slug===channel);
 
