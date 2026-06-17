@@ -1136,12 +1136,13 @@ export default function CommunityPage() {
               </button>
             </div>
           ) : (
-            {voice.permError && (
-              <div style={{ margin: '0 14px 6px', padding: '7px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', fontFamily: D.MONO, fontSize: 11, color: '#EF4444' }}>
-                {voice.permError}
-              </div>
-            )}
-            <div style={{ margin: '10px 14px', background: D.bg2, border: `1px solid ${D.border}`, borderRadius: 12, display: 'flex', alignItems: 'flex-end', gap: 6, padding: '8px 10px' }}>
+            <>
+              {voice.permError && (
+                <div style={{ margin: '0 14px 6px', padding: '7px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', fontFamily: D.MONO, fontSize: 11, color: '#EF4444' }}>
+                  {voice.permError}
+                </div>
+              )}
+              <div style={{ margin: '10px 14px', background: D.bg2, border: `1px solid ${D.border}`, borderRadius: 12, display: 'flex', alignItems: 'flex-end', gap: 6, padding: '8px 10px' }}>
               <button onClick={() => setEmojiOpen(o => !o)} title="Emoji"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, lineHeight: 1, padding: '1px 2px', fontSize: 20, opacity: emojiOpen ? 1 : 0.65, transition: 'opacity 0.15s' }}>
                 😊
@@ -1163,7 +1164,8 @@ export default function CommunityPage() {
                     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                   </button>
               }
-            </div>
+              </div>
+            </>
           )}
         </div>
       </div>
