@@ -133,7 +133,7 @@ export default function CoachPage() {
   }, []); // eslint-disable-line
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    (() => { const el = messagesEndRef.current?.parentElement; if (el) el.scrollTop = el.scrollHeight; })();
   }, [messages, loading]);
 
   async function checkUsageLimit() {

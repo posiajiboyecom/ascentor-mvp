@@ -15,12 +15,12 @@ interface ThemeCtx {
   isDark: boolean;
 }
 
-const Ctx = createContext<ThemeCtx>({ theme: 'dark', toggle: () => {}, isDark: true });
+const Ctx = createContext<ThemeCtx>({ theme: 'light', toggle: () => {}, isDark: false });
 
 // Read theme synchronously from <html> attr set by the blocking script in layout.tsx
 // This avoids flash-of-wrong-theme and the "return null" delay on first render.
 function getInitialTheme(): AppTheme {
-  if (typeof document === 'undefined') return 'dark'; // SSR default
+  if (typeof document === 'undefined') return 'light'; // SSR default — light is now primary
   const attr = document.documentElement.getAttribute('data-app-theme');
   if (attr === 'light' || attr === 'dark') return attr;
   return 'dark';
@@ -32,9 +32,10 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Sync in case localStorage has a value that differs from HTML attr
     const stored = localStorage.getItem('asc-theme') as AppTheme | null;
+    // Light is the primary theme. Only use dark if explicitly stored or system prefers dark.
     const resolved = (stored === 'light' || stored === 'dark')
       ? stored
-      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      : 'light';
     setTheme(resolved);
     document.documentElement.setAttribute('data-app-theme', resolved);
 

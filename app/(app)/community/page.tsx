@@ -276,7 +276,9 @@ export default function CommunityPage() {
       .order('created_at', { ascending: true }).limit(100);
     setMessages(await enrich(data || [], uid));
     setLoading(false);
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'instant' }), 30);
+    setTimeout(() => {
+      if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
+    }, 30);
   }, [supabase, enrich]);
 
   useEffect(() => { loadMessages(channel, userId); }, [channel, userId, loadMessages]);
@@ -313,7 +315,7 @@ export default function CommunityPage() {
           return [...prev, confirmed];
         });
         // Scroll to bottom
-        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 30);
+        setTimeout(() => { if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight; }, 30);
       })
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'community_messages',
@@ -374,7 +376,7 @@ export default function CommunityPage() {
       pending: true,
     };
     setMessages(prev => [...prev, optimistic]);
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 20);
+    setTimeout(() => { if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight; }, 30);
 
     const payload: any = { user_id: userId, channel, content: text, likes: [] };
     if (replyTo) payload.reply_to_id = replyTo.id;
@@ -516,35 +518,37 @@ export default function CommunityPage() {
       author_name: userName, is_own: true, likes: [], pending: true,
     };
     setMessages(prev => [...prev, optimistic]);
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 20);
+    setTimeout(() => { if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight; }, 30);
 
-    // Upload to Supabase Storage
-    const ext = mimeType.includes('ogg') ? 'ogg' : mimeType.includes('mp4') ? 'm4a' : 'webm';
-    const path = `voice/${uid}/${Date.now()}.${ext}`;
-    const { error: uploadErr } = await supabase.storage
-      .from('community-voice')
-      .upload(path, blob, { contentType: mimeType, upsert: false });
+    try {
+      // Route through server API — uses service role key to bypass RLS on storage
+      const dur = durationSec > 0 ? durationSec : 1;
+      const ext = mimeType.includes('ogg') ? 'ogg' : mimeType.includes('mp4') ? 'm4a' : 'webm';
+      const form = new FormData();
+      form.append('file', new File([blob], `voice.${ext}`, { type: mimeType }));
+      form.append('channel', channel);
+      form.append('duration', String(dur));
 
-    if (uploadErr) {
-      console.error('Voice upload error:', uploadErr.message);
+      const res = await fetch('/api/community/voice-upload', { method: 'POST', body: form });
+      const json = await res.json();
+
+      if (!res.ok) {
+        console.error('Voice upload failed:', json.error);
+        setMessages(prev => prev.filter(m => m.id !== optId));
+        alert(`Voice upload failed: ${json.error}`);
+        setUploadingVoice(false);
+        return;
+      }
+
+      // Swap optimistic bubble — realtime INSERT handles other users
+      setMessages(prev => prev.map(m =>
+        m.id === optId ? { ...m, content: json.content, pending: false } : m
+      ));
+    } catch (err: any) {
+      console.error('Voice upload error:', err);
       setMessages(prev => prev.filter(m => m.id !== optId));
-      setUploadingVoice(false);
-      alert('Voice upload failed: ' + uploadErr.message);
-      return;
+      alert('Voice upload failed. Please try again.');
     }
-
-    const { data: { publicUrl } } = supabase.storage.from('community-voice').getPublicUrl(path);
-    const dur = durationSec > 0 ? durationSec : 1;
-    const voiceContent = `[voice:${publicUrl}:${dur}]`;
-
-    // Swap optimistic bubble to show real player
-    setMessages(prev => prev.map(m => m.id === optId ? { ...m, content: voiceContent, pending: false } : m));
-
-    // Persist to DB — realtime INSERT will confirm for other users
-    const { error: dbErr } = await supabase.from('community_messages').insert({
-      user_id: uid, channel, content: voiceContent, likes: [],
-    });
-    if (dbErr) console.error('Voice DB insert error:', dbErr.message);
 
     setUploadingVoice(false);
   }

@@ -1,410 +1,294 @@
-// FILE: app/admin/users/page.tsx
-// FIX: Plan dropdown now shows explorer / builder / climber (not basic/standard/premium).
-
 'use client';
+// app/admin/users/page.tsx — enhanced with permissions management
+// View, search, filter, edit roles, assign granular permissions,
+// change plan, ban/unban, hard delete with confirmation
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-// ============================================================
-// ADMIN USER MANAGEMENT — /admin/users
-// View, search, filter, edit roles, ban/unban users
-// Ascentor brand: Dark var(--admin-bg) · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
-// ============================================================
-
 interface User {
-  id: string;
-  full_name: string | null;
-  email: string;
-  role: string;
-  subscription_plan: string | null;
-  subscription_status: string | null;
-  subscription_end: string | null;
-  created_at: string;
-  referral_code: string | null;
-  referral_count: number;
-  current_role: string | null;
-  industry: string | null;
-  banned: boolean;
-  last_sign_in: string | null;
+  id: string; full_name: string | null; email: string;
+  role: string; subscription_plan: string | null;
+  subscription_status: string | null; subscription_end: string | null;
+  created_at: string; referral_code: string | null; referral_count: number;
+  current_role: string | null; industry: string | null; banned: boolean;
+  last_sign_in: string | null; permissions: string[] | null;
 }
 
 const ROLES = ['member', 'moderator', 'admin'];
-const STATUSES = ['', 'free', 'trialing', 'active', 'cancelled', 'past_due'];
 const PLANS = ['', 'explorer', 'builder', 'climber'];
+const STATUSES = ['', 'free', 'trialing', 'active', 'cancelled', 'past_due'];
+
+// Granular permissions — matches Permission type in lib/permissions.ts
+const PERMISSION_GROUPS = [
+  {
+    label: 'Community',
+    perms: [
+      { key: 'community:moderate', label: 'Moderate community', desc: 'Delete messages, pin, broadcast' },
+      { key: 'community:read_all', label: 'Read all channels', desc: 'Access private channels' },
+    ],
+  },
+  {
+    label: 'Users',
+    perms: [
+      { key: 'users:view',   label: 'View users',   desc: 'See user list and profiles' },
+      { key: 'users:edit',   label: 'Edit users',   desc: 'Change roles, plans, ban/unban' },
+      { key: 'users:delete', label: 'Delete users', desc: 'Permanently delete accounts' },
+    ],
+  },
+  {
+    label: 'Content',
+    perms: [
+      { key: 'content:manage', label: 'Manage content', desc: 'Create, edit, delete posts' },
+      { key: 'content:publish', label: 'Publish content', desc: 'Publish to production' },
+    ],
+  },
+  {
+    label: 'Intelligence',
+    perms: [
+      { key: 'intel:view', label: 'View intelligence', desc: 'Run AI analyses' },
+    ],
+  },
+  {
+    label: 'Finance',
+    perms: [
+      { key: 'finance:view', label: 'View revenue data', desc: 'See subscription and payment data' },
+    ],
+  },
+];
+
+const G = '#E8A020';
+const mono: React.CSSProperties = { fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.1em', textTransform:'uppercase' as const, color:'var(--admin-text-faint)' };
+const inp: React.CSSProperties  = { padding:'10px 14px', borderRadius:8, border:'1px solid var(--admin-bg-input)', background:'var(--admin-bg-card)', color:'var(--admin-text)', fontSize:13, fontFamily:"'Syne',sans-serif", outline:'none', transition:'border-color 0.2s' };
+const cardSt: React.CSSProperties = { background:'var(--admin-bg-deep)', border:'1px solid var(--admin-bg-input)', borderRadius:12 };
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
+  const [users,        setUsers]        = useState<User[]>([]);
+  const [total,        setTotal]        = useState(0);
+  const [loading,      setLoading]      = useState(true);
+  const [search,       setSearch]       = useState('');
+  const [roleFilter,   setRoleFilter]   = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [page, setPage] = useState(0);
+  const [page,         setPage]         = useState(0);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [message, setMessage] = useState('');
-
+  const [activeTab,    setActiveTab]    = useState<'details'|'permissions'>('details');
+  const [actionLoading,setActionLoading]= useState(false);
+  const [toast,        setToast]        = useState('');
+  const [deleteConfirm,setDeleteConfirm]= useState('');
   const supabase = createClient();
+
+  const showToast = (msg: string, err = false) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3500);
+  };
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (roleFilter) params.set('role', roleFilter);
       if (statusFilter) params.set('status', statusFilter);
       params.set('page', String(page));
-
       const res = await fetch(`/api/admin/users?${params}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const data = await res.json();
       setUsers(data.users || []);
       setTotal(data.total || 0);
-    } catch (err) {
-      console.error('Failed to fetch users:', err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    setLoading(false);
   }, [search, roleFilter, statusFilter, page, supabase]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
   const doAction = async (userId: string, action: string, value?: string) => {
     setActionLoading(true);
-    setMessage('');
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/admin/users', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session!.access_token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session!.access_token}` },
         body: JSON.stringify({ targetUserId: userId, action, value }),
       });
       const data = await res.json();
       if (data.success) {
-        setMessage(data.message);
-        if (action === 'delete') setSelectedUser(null);
+        showToast(data.message);
+        if (action === 'delete') { setSelectedUser(null); }
         fetchUsers();
       } else {
-        setMessage(`Error: ${data.error}`);
+        showToast(`Error: ${data.error}`, true);
       }
-    } catch { setMessage('Action failed'); }
-    finally { setActionLoading(false); }
+    } catch { showToast('Action failed', true); }
+    setActionLoading(false);
   };
 
-  const formatDate = (d: string | null) =>
-    d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+  // Update permissions directly in Supabase
+  const setPermissions = async (userId: string, permissions: string[]) => {
+    setActionLoading(true);
+    const { error } = await supabase.from('profiles').update({ permissions }).eq('id', userId);
+    if (error) { showToast('Failed to update permissions', true); }
+    else {
+      showToast('Permissions updated');
+      setSelectedUser(prev => prev ? { ...prev, permissions } : null);
+      fetchUsers();
+    }
+    setActionLoading(false);
+  };
+
+  const togglePerm = (userId: string, perm: string, current: string[]) => {
+    const next = current.includes(perm)
+      ? current.filter(p => p !== perm)
+      : [...current, perm];
+    setPermissions(userId, next);
+  };
+
+  const fmtDate = (d: string | null) =>
+    d ? new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—';
 
   const statusBadge = (status: string | null, banned: boolean) => {
-    if (banned) return { color: '#EF4444', bg: 'rgba(239,68,68,0.1)', label: 'Banned' };
-    const map: Record<string, { color: string; bg: string; label: string }> = {
-      active:    { color: '#14B8A6', bg: 'rgba(20,184,166,0.1)',  label: 'Active' },
-      trialing:  { color: '#E8A020', bg: 'rgba(232,160,32,0.1)',  label: 'Trial' },
-      cancelled: { color: 'var(--admin-text-muted)', bg: 'var(--admin-border)', label: 'Cancelled' },
-      past_due:  { color: '#EF4444', bg: 'rgba(239,68,68,0.1)',   label: 'Past Due' },
+    if (banned) return { color:'#EF4444', bg:'rgba(239,68,68,0.1)', label:'Banned' };
+    const map: Record<string, any> = {
+      active:    { color:'#14B8A6', bg:'rgba(20,184,166,0.1)',  label:'Active' },
+      trialing:  { color:G,         bg:'rgba(232,160,32,0.1)',  label:'Trial' },
+      cancelled: { color:'var(--admin-text-muted)', bg:'var(--admin-border)', label:'Cancelled' },
+      past_due:  { color:'#EF4444', bg:'rgba(239,68,68,0.1)',   label:'Past Due' },
     };
-    return map[status || ''] || { color: 'var(--admin-text-faint)', bg: 'var(--admin-border)', label: 'Free' };
-  };
-
-  // ─── Shared style tokens ──────────────────────────────────────────────────
-  const card: React.CSSProperties = {
-    background: 'var(--admin-bg-deep)',
-    border: '1px solid var(--admin-bg-input)',
-    borderRadius: '12px',
-  };
-
-  const inputBase: React.CSSProperties = {
-    padding: '10px 14px',
-    borderRadius: '8px',
-    border: '1px solid var(--admin-bg-input)',
-    background: 'var(--admin-bg-card)',
-    color: 'var(--admin-text)',
-    fontSize: '13px',
-    fontFamily: "'Syne', sans-serif",
-    outline: 'none',
-    transition: 'border-color 0.2s',
-  };
-
-  const monoLabel: React.CSSProperties = {
-    fontFamily: "'DM Mono', monospace",
-    fontSize: '10px',
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase' as const,
-    color: 'var(--admin-text-faint)',
+    return map[status || ''] || { color:'var(--admin-text-faint)', bg:'var(--admin-bg-input)', label:'Free' };
   };
 
   const totalPages = Math.ceil(total / 50) || 1;
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ maxWidth:1400, margin:'0 auto' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-
-        .asc-input:focus          { border-color: #E8A020 !important; }
-        .asc-input:hover          { border-color: var(--admin-text-faint) !important; }
-        .asc-tr:hover td          { background: var(--admin-bg-deep) !important; }
-        .asc-btn-ghost:hover      { border-color: #E8A020 !important; color: #E8A020 !important; }
-        .asc-btn-danger:hover     { background: rgba(239,68,68,0.08) !important; }
-        .asc-btn-safe:hover       { background: rgba(20,184,166,0.08) !important; }
-        .asc-modal-row:last-child { border-bottom: none !important; }
-
-        @media (min-width: 768px) {
-          .asc-table-desktop { display: block !important; }
-          .asc-table-mobile  { display: none !important; }
-          .asc-filters       { flex-direction: row !important; }
+        @keyframes asc-spin { to { transform:rotate(360deg); } }
+        .asc-input:focus  { border-color:${G} !important; }
+        .asc-input:hover  { border-color:var(--admin-text-faint) !important; }
+        .asc-tr:hover td  { background:var(--admin-bg-deep) !important; }
+        .asc-row-btn:hover { border-color:${G} !important; color:${G} !important; }
+        .perm-toggle { transition:all 0.15s; }
+        .perm-toggle:hover { border-color:${G} !important; }
+        * { box-sizing:border-box; }
+        @media(max-width:767px) {
+          .asc-desktop { display:none !important; }
+          .asc-mobile  { display:flex !important; }
         }
-        @media (max-width: 767px) {
-          .asc-table-desktop { display: none !important; }
-          .asc-table-mobile  { display: flex !important; }
-          .asc-filters       { flex-direction: column !important; }
-          .asc-filters input,
-          .asc-filters select { width: 100% !important; min-width: unset !important; }
-          .asc-page-header   { flex-direction: column !important; align-items: flex-start !important; }
+        @media(min-width:768px) {
+          .asc-desktop { display:block !important; }
+          .asc-mobile  { display:none !important; }
         }
-        * { box-sizing: border-box; }
       `}</style>
 
-      {/* ─── Page Header ────────────────────────────────────────────────── */}
-      <div className="asc-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h1 style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: '28px',
-            fontWeight: 700,
-            color: 'var(--admin-text-heading)',
-            margin: 0,
-            lineHeight: 1.1,
-            marginBottom: '6px',
-          }}>
-            User Management
-          </h1>
-          <p style={{ ...monoLabel }}>
-            {total.toLocaleString()} total users
-          </p>
-        </div>
-      </div>
-
-      {/* ─── Status Message ──────────────────────────────────────────────── */}
-      {message && (
-        <div style={{
-          padding: '12px 16px',
-          borderRadius: '8px',
-          background: message.startsWith('Error') ? 'rgba(239,68,68,0.08)' : 'rgba(20,184,166,0.08)',
-          color: message.startsWith('Error') ? '#EF4444' : '#14B8A6',
-          fontFamily: "'DM Mono', monospace",
-          fontSize: '12px',
-          letterSpacing: '0.04em',
-          border: `1px solid ${message.startsWith('Error') ? 'rgba(239,68,68,0.2)' : 'rgba(20,184,166,0.2)'}`,
-          marginBottom: '16px',
-        }}>
-          {message}
+      {/* Toast */}
+      {toast && (
+        <div style={{ position:'fixed', top:20, right:20, zIndex:9999, background:G, color:'#0C0B08', padding:'10px 20px', borderRadius:10, fontFamily:"'DM Mono',monospace", fontSize:12, fontWeight:600, boxShadow:'0 4px 20px rgba(0,0,0,0.4)' }}>
+          {toast}
         </div>
       )}
 
-      {/* ─── Filters ────────────────────────────────────────────────────── */}
-      <div className="asc-filters" style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          placeholder="Search name, email, referral code..."
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          className="asc-input"
-          style={{ ...inputBase, flex: '1', minWidth: '220px' }}
-        />
-        <select
-          value={roleFilter}
-          onChange={(e) => { setRoleFilter(e.target.value); setPage(0); }}
-          className="asc-input"
-          style={{ ...inputBase, cursor: 'pointer' }}
-        >
+      {/* Header */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
+        <div>
+          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:28, fontWeight:700, color:'var(--admin-text-heading)', margin:0, marginBottom:6 }}>
+            User Management
+          </h1>
+          <p style={{ ...mono }}>{total.toLocaleString()} total users</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap' }}>
+        <input type="text" placeholder="Search name, email, referral code..." value={search}
+          onChange={e => { setSearch(e.target.value); setPage(0); }}
+          className="asc-input" style={{ ...inp, flex:1, minWidth:220 }} />
+        <select value={roleFilter} onChange={e => { setRoleFilter(e.target.value); setPage(0); }}
+          className="asc-input" style={{ ...inp, cursor:'pointer' }}>
           <option value="">All Roles</option>
-          {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+          {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase()+r.slice(1)}</option>)}
         </select>
-        <select
-          value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
-          className="asc-input"
-          style={{ ...inputBase, cursor: 'pointer' }}
-        >
+        <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(0); }}
+          className="asc-input" style={{ ...inp, cursor:'pointer' }}>
           <option value="">All Statuses</option>
-          {STATUSES.filter(Boolean).map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+          {STATUSES.filter(Boolean).map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
         </select>
       </div>
 
-      {/* ─── Table ──────────────────────────────────────────────────────── */}
-      <div style={{ ...card, overflow: 'hidden', marginBottom: '16px' }}>
+      {/* Table */}
+      <div style={{ ...cardSt, overflow:'hidden', marginBottom:16 }}>
         {loading ? (
-          <div style={{ padding: '48px', textAlign: 'center' }}>
-            <div style={{
-              width: '32px', height: '32px', borderRadius: '50%',
-              border: '2px solid var(--admin-bg-input)', borderTopColor: '#E8A020',
-              animation: 'asc-spin 0.9s linear infinite',
-              margin: '0 auto 12px',
-            }} />
-            <p style={{ ...monoLabel }}>Loading users...</p>
-            <style>{`@keyframes asc-spin { to { transform: rotate(360deg); } }`}</style>
+          <div style={{ padding:48, textAlign:'center' }}>
+            <div style={{ width:28, height:28, borderRadius:'50%', border:'2px solid var(--admin-bg-input)', borderTopColor:G, animation:'asc-spin 0.9s linear infinite', margin:'0 auto 12px' }} />
+            <p style={{ ...mono }}>Loading users…</p>
           </div>
         ) : (
           <>
             {/* Desktop table */}
-            <div className="asc-table-desktop" style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <div className="asc-desktop" style={{ overflowX:'auto' }}>
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--admin-bg-input)' }}>
-                    {['User', 'Role', 'Plan', 'Status', 'Joined', 'Actions'].map(h => (
-                      <th key={h} style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontFamily: "'DM Mono', monospace",
-                        fontSize: '10px',
-                        letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
-                        color: 'var(--admin-text-faint)',
-                        fontWeight: 500,
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {h}
-                      </th>
+                  <tr style={{ borderBottom:'1px solid var(--admin-bg-input)' }}>
+                    {['User','Role','Plan','Status','Permissions','Joined','Actions'].map(h => (
+                      <th key={h} style={{ padding:'12px 16px', textAlign:'left', ...mono, fontWeight:500, whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {users.map(u => {
                     const badge = statusBadge(u.subscription_status, u.banned);
+                    const permCount = u.permissions?.length || 0;
                     return (
-                      <tr key={u.id} className="asc-tr" style={{ borderBottom: '1px solid var(--admin-bg-input)', opacity: u.banned ? 0.55 : 1 }}>
-
-                        {/* User */}
-                        <td style={{ padding: '13px 16px' }}>
-                          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: '13px', color: 'var(--admin-text)', marginBottom: '2px' }}>
-                            {u.full_name || 'Unnamed'}
-                          </div>
-                          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: 'var(--admin-text-faint)' }}>{u.email}</div>
-                          {u.current_role && (
-                            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: 'var(--admin-text-faint)', marginTop: '2px', letterSpacing: '0.04em' }}>
-                              {u.current_role}{u.industry ? ` · ${u.industry}` : ''}
-                            </div>
-                          )}
+                      <tr key={u.id} className="asc-tr" style={{ borderBottom:'1px solid var(--admin-bg-input)', opacity:u.banned ? 0.55 : 1 }}>
+                        <td style={{ padding:'13px 16px' }}>
+                          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:600, fontSize:13, color:'var(--admin-text)', marginBottom:2 }}>{u.full_name || 'Unnamed'}</div>
+                          <div style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:'var(--admin-text-faint)' }}>{u.email}</div>
+                          {u.current_role && <div style={{ ...mono, fontSize:10, marginTop:2 }}>{u.current_role}{u.industry ? ` · ${u.industry}` : ''}</div>}
                         </td>
-
-                        {/* Role */}
-                        <td style={{ padding: '13px 16px' }}>
-                          <select
-                            value={u.role}
-                            onChange={(e) => doAction(u.id, 'change_role', e.target.value)}
-                            disabled={actionLoading}
-                            className="asc-input"
-                            style={{ ...inputBase, padding: '5px 10px', fontSize: '11px', cursor: 'pointer' }}
-                          >
+                        <td style={{ padding:'13px 16px' }}>
+                          <select value={u.role} onChange={e => doAction(u.id, 'change_role', e.target.value)} disabled={actionLoading}
+                            className="asc-input" style={{ ...inp, padding:'5px 10px', fontSize:11, cursor:'pointer' }}>
                             {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                           </select>
                         </td>
-
-                        {/* Plan */}
-                        <td style={{ padding: '13px 16px' }}>
-                          <span style={{ ...monoLabel, fontSize: '11px', color: 'var(--admin-text-muted)' }}>
-                            {u.subscription_plan || 'free'}
-                          </span>
+                        <td style={{ padding:'13px 16px' }}>
+                          <span style={{ ...mono, fontSize:11, color:'var(--admin-text-muted)' }}>{u.subscription_plan || 'free'}</span>
                         </td>
-
-                        {/* Status */}
-                        <td style={{ padding: '13px 16px' }}>
-                          <span style={{
-                            padding: '3px 10px',
-                            borderRadius: '100px',
-                            fontFamily: "'DM Mono', monospace",
-                            fontSize: '10px',
-                            fontWeight: 500,
-                            letterSpacing: '0.06em',
-                            textTransform: 'uppercase',
-                            background: badge.bg,
-                            color: badge.color,
-                          }}>
+                        <td style={{ padding:'13px 16px' }}>
+                          <span style={{ padding:'3px 10px', borderRadius:100, fontFamily:"'DM Mono',monospace", fontSize:10, fontWeight:500, letterSpacing:'0.06em', textTransform:'uppercase', background:badge.bg, color:badge.color }}>
                             {badge.label}
                           </span>
                         </td>
-
-                        {/* Joined */}
-                        <td style={{ padding: '13px 16px', whiteSpace: 'nowrap' }}>
-                          <span style={{ ...monoLabel, fontSize: '11px' }}>{formatDate(u.created_at)}</span>
+                        <td style={{ padding:'13px 16px' }}>
+                          <span style={{ ...mono, fontSize:11, color: permCount > 0 ? G : 'var(--admin-text-faint)' }}>
+                            {permCount > 0 ? `${permCount} granted` : 'default'}
+                          </span>
                         </td>
-
-                        {/* Actions */}
-                        <td style={{ padding: '13px 16px' }}>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button
-                              onClick={() => setSelectedUser(u)}
-                              className="asc-btn-ghost"
-                              style={{
-                                ...inputBase,
-                                padding: '5px 12px',
-                                fontSize: '11px',
-                                cursor: 'pointer',
-                                color: 'var(--admin-text-muted)',
-                              }}
-                            >
-                              View
+                        <td style={{ padding:'13px 16px', whiteSpace:'nowrap' }}>
+                          <span style={{ ...mono, fontSize:11 }}>{fmtDate(u.created_at)}</span>
+                        </td>
+                        <td style={{ padding:'13px 16px' }}>
+                          <div style={{ display:'flex', gap:6 }}>
+                            <button onClick={() => { setSelectedUser(u); setActiveTab('details'); setDeleteConfirm(''); }}
+                              className="asc-row-btn" style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'var(--admin-text-muted)' }}>
+                              Details
+                            </button>
+                            <button onClick={() => { setSelectedUser(u); setActiveTab('permissions'); }}
+                              className="asc-row-btn" style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'var(--admin-text-muted)' }}>
+                              Perms
                             </button>
                             {u.banned ? (
-                              <button
-                                onClick={() => doAction(u.id, 'unban')}
-                                disabled={actionLoading}
-                                className="asc-btn-safe"
-                                style={{
-                                  ...inputBase,
-                                  padding: '5px 12px',
-                                  fontSize: '11px',
-                                  cursor: 'pointer',
-                                  color: '#14B8A6',
-                                  borderColor: 'rgba(20,184,166,0.3)',
-                                }}
-                              >
+                              <button onClick={() => doAction(u.id, 'unban')} disabled={actionLoading}
+                                style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'#14B8A6', borderColor:'rgba(20,184,166,0.3)' }}>
                                 Unban
                               </button>
                             ) : (
-                              <button
-                                onClick={() => { if (confirm(`Ban ${u.full_name || u.email}?`)) doAction(u.id, 'ban'); }}
-                                disabled={actionLoading}
-                                className="asc-btn-danger"
-                                style={{
-                                  ...inputBase,
-                                  padding: '5px 12px',
-                                  fontSize: '11px',
-                                  cursor: 'pointer',
-                                  color: '#EF4444',
-                                  borderColor: 'rgba(239,68,68,0.3)',
-                                }}
-                              >
+                              <button onClick={() => { if (confirm(`Ban ${u.full_name || u.email}?`)) doAction(u.id, 'ban'); }} disabled={actionLoading}
+                                style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'#EF4444', borderColor:'rgba(239,68,68,0.3)' }}>
                                 Ban
                               </button>
                             )}
-                            <button
-                              onClick={() => {
-                                if (confirm(`⚠️ PERMANENTLY DELETE "${u.full_name || u.email}"?\n\nThis will erase their account, profile, sessions, and all data. This cannot be undone.`)) {
-                                  doAction(u.id, 'delete');
-                                }
-                              }}
-                              disabled={actionLoading}
-                              className="asc-btn-danger"
-                              style={{
-                                ...inputBase,
-                                padding: '5px 12px',
-                                fontSize: '11px',
-                                cursor: 'pointer',
-                                color: '#EF4444',
-                                borderColor: 'rgba(239,68,68,0.3)',
-                                background: 'rgba(239,68,68,0.06)',
-                              }}
-                            >
-                              Delete
-                            </button>
                           </div>
                         </td>
                       </tr>
@@ -413,110 +297,24 @@ export default function AdminUsersPage() {
                 </tbody>
               </table>
             </div>
-
-            {/* Mobile card list */}
-            <div className="asc-table-mobile" style={{ display: 'none', flexDirection: 'column' }}>
+            {/* Mobile cards */}
+            <div className="asc-mobile" style={{ display:'none', flexDirection:'column' }}>
               {users.map(u => {
                 const badge = statusBadge(u.subscription_status, u.banned);
                 return (
-                  <div
-                    key={u.id}
-                    style={{
-                      padding: '16px',
-                      borderBottom: '1px solid var(--admin-bg-input)',
-                      opacity: u.banned ? 0.6 : 1,
-                    }}
-                  >
-                    {/* Top row: name + status badge */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                  <div key={u.id} style={{ padding:16, borderBottom:'1px solid var(--admin-bg-input)', opacity:u.banned ? 0.6 : 1 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
                       <div>
-                        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: '14px', color: 'var(--admin-text)' }}>
-                          {u.full_name || 'Unnamed'}
-                        </div>
-                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: 'var(--admin-text-faint)', marginTop: '2px' }}>
-                          {u.email}
-                        </div>
+                        <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:600, fontSize:14, color:'var(--admin-text)' }}>{u.full_name || 'Unnamed'}</div>
+                        <div style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:'var(--admin-text-faint)', marginTop:2 }}>{u.email}</div>
                       </div>
-                      <span style={{
-                        padding: '3px 10px',
-                        borderRadius: '100px',
-                        fontFamily: "'DM Mono', monospace",
-                        fontSize: '10px',
-                        fontWeight: 500,
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase' as const,
-                        background: badge.bg,
-                        color: badge.color,
-                        flexShrink: 0,
-                        marginLeft: '8px',
-                      }}>
+                      <span style={{ padding:'3px 10px', borderRadius:100, fontFamily:"'DM Mono',monospace", fontSize:10, fontWeight:500, textTransform:'uppercase' as const, background:badge.bg, color:badge.color }}>
                         {badge.label}
                       </span>
                     </div>
-
-                    {/* Meta row */}
-                    <div style={{
-                      display: 'flex',
-                      gap: '10px',
-                      flexWrap: 'wrap',
-                      marginBottom: '12px',
-                    }}>
-                      {u.current_role && (
-                        <span style={{ ...monoLabel, fontSize: '10px' }}>{u.current_role}{u.industry ? ` · ${u.industry}` : ''}</span>
-                      )}
-                      <span style={{ ...monoLabel, fontSize: '10px' }}>{u.subscription_plan || 'free'}</span>
-                      <span style={{ ...monoLabel, fontSize: '10px' }}>{formatDate(u.created_at)}</span>
-                    </div>
-
-                    {/* Role select + actions */}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <select
-                        value={u.role}
-                        onChange={(e) => doAction(u.id, 'change_role', e.target.value)}
-                        disabled={actionLoading}
-                        className="asc-input"
-                        style={{ ...inputBase, padding: '6px 10px', fontSize: '12px', cursor: 'pointer', flex: '1', minWidth: '100px' }}
-                      >
-                        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                      </select>
-                      <button
-                        onClick={() => setSelectedUser(u)}
-                        className="asc-btn-ghost"
-                        style={{ ...inputBase, padding: '6px 14px', fontSize: '12px', cursor: 'pointer', color: 'var(--admin-text-muted)' }}
-                      >
-                        View
-                      </button>
-                      {u.banned ? (
-                        <button
-                          onClick={() => doAction(u.id, 'unban')}
-                          disabled={actionLoading}
-                          className="asc-btn-safe"
-                          style={{ ...inputBase, padding: '6px 14px', fontSize: '12px', cursor: 'pointer', color: '#14B8A6', borderColor: 'rgba(20,184,166,0.3)' }}
-                        >
-                          Unban
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => { if (confirm(`Ban ${u.full_name || u.email}?`)) doAction(u.id, 'ban'); }}
-                          disabled={actionLoading}
-                          className="asc-btn-danger"
-                          style={{ ...inputBase, padding: '6px 14px', fontSize: '12px', cursor: 'pointer', color: '#EF4444', borderColor: 'rgba(239,68,68,0.3)' }}
-                        >
-                          Ban
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          if (confirm(`⚠️ PERMANENTLY DELETE "${u.full_name || u.email}"?\n\nThis will erase their account, profile, sessions, and all data. This cannot be undone.`)) {
-                            doAction(u.id, 'delete');
-                          }
-                        }}
-                        disabled={actionLoading}
-                        className="asc-btn-danger"
-                        style={{ ...inputBase, padding: '6px 14px', fontSize: '12px', cursor: 'pointer', color: '#EF4444', borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)' }}
-                      >
-                        Delete
-                      </button>
+                    <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                      <button onClick={() => { setSelectedUser(u); setActiveTab('details'); }} style={{ ...inp, padding:'6px 14px', fontSize:12, cursor:'pointer', color:'var(--admin-text-muted)' }}>Details</button>
+                      <button onClick={() => { setSelectedUser(u); setActiveTab('permissions'); }} style={{ ...inp, padding:'6px 14px', fontSize:12, cursor:'pointer', color:'var(--admin-text-muted)' }}>Permissions</button>
                     </div>
                   </div>
                 );
@@ -526,237 +324,165 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      {/* ─── Pagination ──────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
-        <button
-          onClick={() => setPage(p => Math.max(0, p - 1))}
-          disabled={page === 0}
-          className="asc-btn-ghost"
-          style={{
-            ...inputBase,
-            cursor: page === 0 ? 'not-allowed' : 'pointer',
-            opacity: page === 0 ? 0.35 : 1,
-            color: 'var(--admin-text-muted)',
-          }}
-        >
+      {/* Pagination */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:16 }}>
+        <button onClick={() => setPage(p => Math.max(0,p-1))} disabled={page===0}
+          className="asc-row-btn" style={{ ...inp, cursor:page===0?'not-allowed':'pointer', opacity:page===0?0.35:1, color:'var(--admin-text-muted)' }}>
           Previous
         </button>
-        <span style={{ ...monoLabel }}>
-          Page {page + 1} of {totalPages}
-        </span>
-        <button
-          onClick={() => setPage(p => p + 1)}
-          disabled={users.length < 50}
-          className="asc-btn-ghost"
-          style={{
-            ...inputBase,
-            cursor: users.length < 50 ? 'not-allowed' : 'pointer',
-            opacity: users.length < 50 ? 0.35 : 1,
-            color: 'var(--admin-text-muted)',
-          }}
-        >
+        <span style={{ ...mono }}>Page {page+1} of {totalPages}</span>
+        <button onClick={() => setPage(p=>p+1)} disabled={users.length<50}
+          className="asc-row-btn" style={{ ...inp, cursor:users.length<50?'not-allowed':'pointer', opacity:users.length<50?0.35:1, color:'var(--admin-text-muted)' }}>
           Next
         </button>
       </div>
 
-      {/* ─── User Detail Modal ────────────────────────────────────────────── */}
+      {/* ── USER DETAIL MODAL ──────────────────────────────────────────────── */}
       {selectedUser && (
         <>
-          <div
-            onClick={() => setSelectedUser(null)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9998, backdropFilter: 'blur(2px)' }}
-          />
-          <div style={{
-            position: 'fixed',
-            top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            background: 'var(--admin-bg-deep)',
-            border: '1px solid var(--admin-bg-input)',
-            borderRadius: '14px',
-            padding: '28px',
-            width: '90%',
-            maxWidth: '520px',
-            zIndex: 9999,
-            maxHeight: '80vh',
-            overflowY: 'auto',
-          }}>
-            {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: '22px',
-                fontWeight: 700,
-                color: 'var(--admin-text-heading)',
-                margin: 0,
-              }}>
-                User Details
-              </h3>
-              <button
-                onClick={() => setSelectedUser(null)}
-                style={{
-                  background: 'none',
-                  border: '1px solid var(--admin-bg-input)',
-                  borderRadius: '6px',
-                  color: 'var(--admin-text-faint)',
-                  cursor: 'pointer',
-                  fontSize: '18px',
-                  lineHeight: 1,
-                  padding: '2px 8px',
-                  transition: 'border-color 0.15s, color 0.15s',
-                }}
-              >
-                x
-              </button>
+          <div onClick={() => setSelectedUser(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:9998, backdropFilter:'blur(3px)' }} />
+          <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'var(--admin-bg-deep)', border:'1px solid var(--admin-bg-input)', borderRadius:16, width:'90%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', zIndex:9999 }}>
+            {/* Modal header */}
+            <div style={{ position:'sticky', top:0, background:'var(--admin-bg-deep)', borderBottom:'1px solid var(--admin-bg-input)', padding:'18px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', zIndex:1 }}>
+              <div>
+                <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:'var(--admin-text-heading)', margin:0 }}>
+                  {selectedUser.full_name || selectedUser.email}
+                </h3>
+                <div style={{ ...mono, fontSize:9, marginTop:3 }}>{selectedUser.role} · {selectedUser.subscription_plan || 'free'}</div>
+              </div>
+              <button onClick={() => setSelectedUser(null)} style={{ background:'none', border:'1px solid var(--admin-bg-input)', borderRadius:8, color:'var(--admin-text-faint)', cursor:'pointer', fontSize:18, lineHeight:1, padding:'2px 10px', fontFamily:'monospace' }}>✕</button>
             </div>
 
-            {/* Detail Rows */}
-            {[
-              ['Name',         selectedUser.full_name || '—'],
-              ['Email',        selectedUser.email],
-              ['Role',         selectedUser.role],
-              ['Job Title',    selectedUser.current_role || '—'],
-              ['Industry',     selectedUser.industry || '—'],
-              ['Plan',         selectedUser.subscription_plan || 'free'],
-              ['Status',       selectedUser.subscription_status || 'free'],
-              ['Sub End',      formatDate(selectedUser.subscription_end)],
-              ['Referral Code',selectedUser.referral_code || '—'],
-              ['Referrals',    String(selectedUser.referral_count || 0)],
-              ['Joined',       formatDate(selectedUser.created_at)],
-              ['Last Login',   formatDate(selectedUser.last_sign_in)],
-              ['Banned',       selectedUser.banned ? 'Yes' : 'No'],
-              ['User ID',      selectedUser.id],
-            ].map(([label, value]) => (
-              <div
-                key={label}
-                className="asc-modal-row"
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '9px 0',
-                  borderBottom: '1px solid var(--admin-bg-input)',
-                }}
-              >
-                <span style={{ ...monoLabel }}>{label}</span>
-                <span style={{
-                  fontFamily: "'Syne', sans-serif",
-                  fontSize: '13px',
-                  color: 'var(--admin-text)',
-                  fontWeight: 500,
-                  textAlign: 'right',
-                  maxWidth: '60%',
-                  wordBreak: 'break-all',
-                }}>
-                  {value}
-                </span>
-              </div>
-            ))}
+            {/* Tabs */}
+            <div style={{ display:'flex', borderBottom:'1px solid var(--admin-bg-input)' }}>
+              {(['details','permissions'] as const).map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)}
+                  style={{ flex:1, padding:'12px', background:'none', border:'none', borderBottom:`2px solid ${activeTab===tab ? G : 'transparent'}`, color:activeTab===tab ? G : 'var(--admin-text-faint)', fontFamily:"'DM Mono',monospace", fontSize:11, letterSpacing:'0.08em', textTransform:'uppercase', cursor:'pointer', transition:'all 0.15s' }}>
+                  {tab}
+                </button>
+              ))}
+            </div>
 
-            {/* Modal Actions */}
-            <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
-              <select
-                onChange={(e) => { if (e.target.value) doAction(selectedUser.id, 'change_plan', e.target.value); }}
-                className="asc-input"
-                style={{ ...inputBase, flex: 1, cursor: 'pointer' }}
-                defaultValue=""
-              >
-                <option value="" disabled>Set plan...</option>
-                {PLANS.filter(Boolean).map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-              {selectedUser.banned ? (
-                <button
-                  onClick={() => { doAction(selectedUser.id, 'unban'); setSelectedUser(null); }}
-                  className="asc-btn-safe"
-                  style={{
-                    ...inputBase,
-                    cursor: 'pointer',
-                    color: '#14B8A6',
-                    borderColor: 'rgba(20,184,166,0.3)',
-                  }}
-                >
-                  Unban
-                </button>
-              ) : (
-                <button
-                  onClick={() => { doAction(selectedUser.id, 'ban'); setSelectedUser(null); }}
-                  className="asc-btn-danger"
-                  style={{
-                    ...inputBase,
-                    cursor: 'pointer',
-                    color: '#EF4444',
-                    borderColor: 'rgba(239,68,68,0.3)',
-                  }}
-                >
-                  Ban
-                </button>
+            <div style={{ padding:24 }}>
+              {/* DETAILS TAB */}
+              {activeTab === 'details' && (
+                <>
+                  {/* Detail rows */}
+                  {[
+                    ['Name',         selectedUser.full_name || '—'],
+                    ['Email',        selectedUser.email],
+                    ['Role',         selectedUser.role],
+                    ['Job Title',    selectedUser.current_role || '—'],
+                    ['Industry',     selectedUser.industry || '—'],
+                    ['Plan',         selectedUser.subscription_plan || 'free'],
+                    ['Sub Status',   selectedUser.subscription_status || 'free'],
+                    ['Sub End',      fmtDate(selectedUser.subscription_end)],
+                    ['Referral Code',selectedUser.referral_code || '—'],
+                    ['Referrals',    String(selectedUser.referral_count || 0)],
+                    ['Joined',       fmtDate(selectedUser.created_at)],
+                    ['Last Login',   fmtDate(selectedUser.last_sign_in)],
+                    ['Banned',       selectedUser.banned ? '⛔ Yes' : '✓ No'],
+                    ['User ID',      selectedUser.id],
+                  ].map(([label, value]) => (
+                    <div key={label} style={{ display:'flex', justifyContent:'space-between', padding:'9px 0', borderBottom:'1px solid var(--admin-bg-input)' }}>
+                      <span style={{ ...mono }}>{label}</span>
+                      <span style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:'var(--admin-text)', fontWeight:500, textAlign:'right', maxWidth:'60%', wordBreak:'break-all' }}>{value}</span>
+                    </div>
+                  ))}
+
+                  {/* Plan change */}
+                  <div style={{ display:'flex', gap:8, marginTop:20 }}>
+                    <select onChange={e => { if (e.target.value) doAction(selectedUser.id, 'change_plan', e.target.value); }}
+                      className="asc-input" style={{ ...inp, flex:1, cursor:'pointer' }} defaultValue="">
+                      <option value="" disabled>Change plan…</option>
+                      {PLANS.filter(Boolean).map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                    <select onChange={e => { if (e.target.value) doAction(selectedUser.id, 'change_role', e.target.value); }}
+                      className="asc-input" style={{ ...inp, flex:1, cursor:'pointer' }} value={selectedUser.role}>
+                      {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Ban/unban */}
+                  <div style={{ marginTop:10 }}>
+                    {selectedUser.banned ? (
+                      <button onClick={() => { doAction(selectedUser.id, 'unban'); setSelectedUser(null); }}
+                        style={{ ...inp, width:'100%', cursor:'pointer', color:'#14B8A6', borderColor:'rgba(20,184,166,0.3)', textAlign:'center' }}>
+                        ✓ Unban this user
+                      </button>
+                    ) : (
+                      <button onClick={() => { if (confirm('Ban this user?')) { doAction(selectedUser.id, 'ban'); setSelectedUser(null); } }}
+                        style={{ ...inp, width:'100%', cursor:'pointer', color:'#EF4444', borderColor:'rgba(239,68,68,0.3)', textAlign:'center' }}>
+                        ⛔ Ban this user
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Danger zone */}
+                  <div style={{ marginTop:24, padding:18, borderRadius:10, background:'rgba(239,68,68,0.04)', border:'1px solid rgba(239,68,68,0.2)' }}>
+                    <p style={{ ...mono, color:'#EF4444', marginBottom:8 }}>Danger zone — permanent delete</p>
+                    <p style={{ fontFamily:"'Syne',sans-serif", fontSize:12, color:'var(--admin-text-muted)', margin:'0 0 12px', lineHeight:1.6 }}>
+                      Erases account, profile, sessions, and all data. <strong style={{ color:'var(--admin-text)' }}>Cannot be undone.</strong> Type DELETE to confirm.
+                    </p>
+                    <div style={{ display:'flex', gap:8 }}>
+                      <input type="text" placeholder="Type DELETE" value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)}
+                        className="asc-input" style={{ ...inp, flex:1, fontSize:12, borderColor:'rgba(239,68,68,0.3)' }} />
+                      <button
+                        onClick={() => {
+                          if (deleteConfirm === 'DELETE') { doAction(selectedUser.id, 'delete'); setSelectedUser(null); setDeleteConfirm(''); }
+                        }}
+                        disabled={deleteConfirm !== 'DELETE' || actionLoading}
+                        style={{ ...inp, cursor:deleteConfirm==='DELETE'?'pointer':'default', color:'#EF4444', borderColor:'rgba(239,68,68,0.4)', background:'rgba(239,68,68,0.1)', fontWeight:700, whiteSpace:'nowrap', opacity:deleteConfirm==='DELETE'?1:0.4 }}>
+                        Delete Account
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
-            </div>
 
-            {/* Delete Zone */}
-            <div style={{
-              marginTop: '24px',
-              padding: '16px',
-              borderRadius: '10px',
-              background: 'rgba(239,68,68,0.04)',
-              border: '1px solid rgba(239,68,68,0.2)',
-            }}>
-              <p style={{
-                fontFamily: "'DM Mono', monospace",
-                fontSize: '10px',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: '#EF4444',
-                margin: '0 0 8px',
-              }}>
-                Danger Zone — Permanent Delete
-              </p>
-              <p style={{ fontSize: '12px', color: 'var(--admin-text-muted)', margin: '0 0 12px', lineHeight: 1.6 }}>
-                Erases this account, profile, sessions, and all associated data from auth and database. <strong style={{ color: 'var(--admin-text)' }}>Cannot be undone.</strong>
-              </p>
-              <p style={{ fontSize: '11px', color: 'var(--admin-text-faint)', margin: '0 0 8px' }}>
-                Type <strong style={{ color: 'var(--admin-text)' }}>DELETE</strong> to confirm:
-              </p>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  id="delete-confirm-input"
-                  type="text"
-                  placeholder="Type DELETE"
-                  className="asc-input"
-                  style={{ ...inputBase, flex: 1, fontSize: '12px', borderColor: 'rgba(239,68,68,0.3)' }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const val = (e.target as HTMLInputElement).value;
-                      if (val === 'DELETE') {
-                        doAction(selectedUser.id, 'delete');
-                        setSelectedUser(null);
-                      }
-                    }
-                  }}
-                />
-                <button
-                  onClick={() => {
-                    const input = document.getElementById('delete-confirm-input') as HTMLInputElement;
-                    if (input?.value === 'DELETE') {
-                      doAction(selectedUser.id, 'delete');
-                      setSelectedUser(null);
-                    } else {
-                      input?.focus();
-                    }
-                  }}
-                  disabled={actionLoading}
-                  className="asc-btn-danger"
-                  style={{
-                    ...inputBase,
-                    cursor: 'pointer',
-                    color: '#EF4444',
-                    borderColor: 'rgba(239,68,68,0.4)',
-                    background: 'rgba(239,68,68,0.1)',
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Delete Account
-                </button>
-              </div>
+              {/* PERMISSIONS TAB */}
+              {activeTab === 'permissions' && (
+                <>
+                  <p style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:'var(--admin-text-muted)', marginBottom:20, lineHeight:1.6 }}>
+                    Grant specific permissions beyond the user's base role. Changes take effect immediately.
+                  </p>
+
+                  {PERMISSION_GROUPS.map(group => (
+                    <div key={group.label} style={{ marginBottom:20 }}>
+                      <div style={{ ...mono, marginBottom:10 }}>{group.label}</div>
+                      {group.perms.map(perm => {
+                        const granted = (selectedUser.permissions || []).includes(perm.key);
+                        return (
+                          <button
+                            key={perm.key}
+                            className="perm-toggle"
+                            onClick={() => togglePerm(selectedUser.id, perm.key, selectedUser.permissions || [])}
+                            disabled={actionLoading}
+                            style={{ display:'flex', alignItems:'center', gap:12, width:'100%', padding:'10px 12px', marginBottom:6, borderRadius:8, border:`1px solid ${granted ? G : 'var(--admin-bg-input)'}`, background:granted ? 'rgba(232,160,32,0.06)' : 'var(--admin-bg-card)', cursor:'pointer', textAlign:'left' }}
+                          >
+                            {/* Toggle indicator */}
+                            <div style={{ width:18, height:18, borderRadius:5, background:granted ? G : 'var(--admin-bg-input)', border:`1.5px solid ${granted ? G : 'var(--admin-bg-input)'}`, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}>
+                              {granted && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0C0B08" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                            </div>
+                            <div>
+                              <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:600, color:granted ? G : 'var(--admin-text)', marginBottom:1 }}>{perm.label}</div>
+                              <div style={{ fontFamily:"'Syne',sans-serif", fontSize:11, color:'var(--admin-text-faint)' }}>{perm.desc}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+
+                  {/* Clear all */}
+                  {(selectedUser.permissions?.length || 0) > 0 && (
+                    <button onClick={() => setPermissions(selectedUser.id, [])} disabled={actionLoading}
+                      style={{ ...inp, width:'100%', cursor:'pointer', color:'var(--admin-text-faint)', marginTop:8, textAlign:'center', fontSize:12, fontFamily:"'DM Mono',monospace", letterSpacing:'0.06em' }}>
+                      Clear all custom permissions
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </>

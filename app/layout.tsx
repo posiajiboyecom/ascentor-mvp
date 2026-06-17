@@ -27,7 +27,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#0C0B08', // Ascentor Dark — Brand Book v1.0
+  themeColor: '#F5F3EE', // Ascentor Light — primary theme
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -44,9 +44,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               (function() {
                 try {
                   var stored = localStorage.getItem('asc-theme');
-                  var theme = (stored === 'light' || stored === 'dark')
-                    ? stored
-                    : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                  // Light is the primary theme — only dark if explicitly chosen
+                  var theme = (stored === 'light' || stored === 'dark') ? stored : 'light';
                   document.documentElement.setAttribute('data-app-theme', theme);
                 } catch(e) {}
               })();
