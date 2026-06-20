@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -158,7 +158,7 @@ export default async function BlogPostPage({ params }: Props) {
           <p className="text-sm mb-4" style={{ color: '#6B7280' }}>Ready to invest in your leadership growth?</p>
           <Link href="/signup" className="inline-block px-8 py-3.5 rounded-xl text-sm font-semibold"
             style={{ background: '#E8A020', color: '#000' }}>
-            Start Free Trial →
+            Join Ascentor Trial →
           </Link>
         </div>
       </article>

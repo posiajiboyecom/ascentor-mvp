@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // SEO METADATA — Root layout metadata for Ascentor
 // Place in: app/layout.tsx (merge with existing)
 //
@@ -30,11 +30,11 @@ export const metadata: Metadata = {
   },
 
   description:
-    'AI-powered leadership coaching built for African professionals. Get personalized coaching, join expert-led communities, and accelerate your career growth.',
+    'AI-powered leadership coaching built for purposeful individuals. Get personalized coaching, join expert-led communities, and accelerate your career growth.',
 
   keywords: [
-    'AI coaching', 'leadership coaching', 'African professionals',
-    'career development', 'executive coaching', 'AI mentor',
+    'AI coaching', 'leadership coaching', 'purposeful individuals',
+    'purposeful development', 'executive coaching', 'AI mentor',
     'professional development', 'leadership skills', 'African leaders',
     'coaching platform', 'career growth', 'management skills',
   ],
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Ascentor — AI Leadership Coaching for African Professionals',
     description:
-      'Personalized AI coaching built for African leaders. Start your 7-day free trial.',
+      'Personalized AI coaching n leaders. Start your .',
     images: [`${BASE_URL}/og-image.png`],
     creator: '@ascentorbi',
   },
@@ -167,7 +167,7 @@ export function getOrganizationSchema() {
     name: 'Ascentor',
     url: BASE_URL,
     logo: `${BASE_URL}/logo.png`,
-    description: 'AI-powered leadership coaching for African professionals',
+    description: 'AI-powered leadership coaching for purposeful individuals',
     sameAs: [
       'https://twitter.com/ascentorbi',
       'https://linkedin.com/company/ascentor',

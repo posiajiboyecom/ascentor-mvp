@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useState } from 'react';
@@ -34,7 +34,7 @@ export default function NewsletterPage() {
             <span className="text-lg font-semibold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Ascentor</span>
           </Link>
           <Link href="/signup" className="px-5 py-2 rounded-lg text-sm font-semibold" style={{ background: '#E8A020', color: '#000' }}>
-            Start Free Trial
+            Join Ascentor Trial
           </Link>
         </div>
       </nav>

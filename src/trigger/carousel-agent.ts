@@ -1,4 +1,4 @@
-// src/trigger/carousel-agent.ts
+﻿// src/trigger/carousel-agent.ts
 // ═══════════════════════════════════════════════════════════
 // Agent 13: Carousel Content Agent
 //
@@ -193,7 +193,7 @@ async function buildBrief(
     messages: [{
       role: "user",
       content:
-        `You are a world-class creative director and visual storyteller for a career platform serving ambitious African professionals globally.\n\n` +
+        `You are a world-class creative director and visual storyteller for a career platform serving ambitious purposeful individuals globally.\n\n` +
 
         `HOOK: "${hook}"\n` +
         `PILLAR: ${pillar} | PLATFORM: ${platform}\n\n` +
@@ -213,7 +213,7 @@ async function buildBrief(
 
         `IMAGE PROMPT RULES (apply to every imagePrompt):\n` +
         `- Be specific and cinematic — describe exact composition, angle, lighting, colour palette, mood\n` +
-        `- Feature Black African professionals in global professional settings\n` +
+        `- Feature Black purposeful individuals in global professional settings\n` +
         `- Vary the visual concept completely across slides — never repeat the same setting or angle\n` +
         `- Use documentary/editorial photography style — real moments, not posed stock photos\n` +
         `- Suggest specific lighting: golden hour, laptop screen glow, harsh fluorescent, soft window light, etc.\n` +

@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 
 export const metadata = {
   title: 'Blog — Ascentor',
-  description: 'Leadership insights and career strategies for ambitious professionals.',
+  description: 'Leadership insights and career strategies for purposeful individuals.',
 };
 
 export default async function BlogPage() {
@@ -35,14 +35,14 @@ export default async function BlogPage() {
         <div className="max-w-4xl mx-auto">
           <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#E8A020' }}>Blog</span>
           <h1 className="text-3xl lg:text-4xl font-bold mt-2 mb-3" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Leadership Insights</h1>
-          <p className="text-base mb-10" style={{ color: '#6B7280' }}>Actionable strategies for ambitious professionals building their leadership edge.</p>
+          <p className="text-base mb-10" style={{ color: '#6B7280' }}>Actionable strategies for purposeful individuals building their leadership edge.</p>
 
           {!hasPosts && (
             <div className="text-center py-20 rounded-2xl" style={{ background: '#FFF', border: '1px solid #E5E7EB' }}>
               <p className="text-4xl mb-4">✍️</p>
               <h2 className="text-xl font-bold mb-2" style={{ color: '#1A1A2E' }}>Content coming soon</h2>
               <p className="text-sm mb-6" style={{ color: '#9CA3AF', maxWidth: 320, margin: '0 auto 24px' }}>
-                We're preparing leadership insights and career strategies for ambitious professionals worldwide.
+                We're preparing leadership insights and career strategies for purposeful individuals worldwide.
               </p>
               <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-semibold"
                 style={{ background: '#E8A020', color: '#000' }}>

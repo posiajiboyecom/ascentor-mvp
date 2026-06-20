@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════
 // Agent 7: Analytics Reporter
 // Runs every Monday at 7am UTC.
 // Pulls weekly growth data from Supabase, generates a
@@ -93,7 +93,7 @@ export const analyticsReporterAgent = schedules.task({
       max_tokens: 400,
       messages: [{
         role: "user",
-        content: `You are writing a weekly business report email for the founder of Ascentor — an AI mentorship platform for African professionals.
+        content: `You are writing a weekly business report email for the founder of Ascentor — an AI mentorship platform for purposeful individuals.
 
 Here are this week's metrics:
 ${JSON.stringify(metrics, null, 2)}

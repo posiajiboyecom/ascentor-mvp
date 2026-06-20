@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRouter } from 'next/navigation';
 
@@ -12,7 +12,7 @@ interface UpgradePromptProps {
 const FEATURE_MESSAGES: Record<string, { title: string; desc: string; icon: string }> = {
   learn: {
     title: 'Unlock the Full Course Library',
-    desc: 'Access expert-curated courses on leadership, management, and career growth tailored for African professionals.',
+    desc: 'Access expert-curated courses on leadership, management, and career growth tailored for purposeful individuals.',
     icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
   },
   coaching: {
@@ -55,7 +55,7 @@ export default function UpgradePrompt({ feature, message, compact, onDismiss }: 
             {message || info?.title || 'Upgrade Required'}
           </p>
           <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-muted, #8B8A85)' }}>
-            {info?.desc || 'Start your 7-day free trial to unlock this feature.'}
+            {info?.desc || 'Start your  to unlock this feature.'}
           </p>
         </div>
         <button
@@ -123,7 +123,7 @@ export default function UpgradePrompt({ feature, message, compact, onDismiss }: 
           Start 7-Day Free Trial
         </button>
         <p style={{ fontSize: '12px', color: 'var(--text-dim, #6B6A65)' }}>
-          No charge for 7 days · Cancel anytime
+          No charge for 7 days · 
         </p>
         {onDismiss && (
           <button

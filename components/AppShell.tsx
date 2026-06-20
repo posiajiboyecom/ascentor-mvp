@@ -1,6 +1,7 @@
 'use client';
 
 import BottomNav from './BottomNav';
+import DesktopRail from './DesktopRail';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
@@ -64,12 +65,14 @@ function ThemeToggle() {
 function Shell({
   children,
   initials,
+  fullName,
   isAdmin,
   chatLayout,
   userId,
 }: {
   children: React.ReactNode;
   initials: string;
+  fullName?: string;
   isAdmin?: boolean;
   chatLayout?: boolean;
   userId?: string;
@@ -82,6 +85,8 @@ function Shell({
 
   // Community page gets full-screen immersive layout
   const isCommunity = pathname === '/community' || pathname?.startsWith('/community/');
+  // Coach page needs flex-column sizing so the input bar pins to viewport bottom
+  const isChatRoute  = chatLayout || pathname === '/coach' || pathname?.startsWith('/coach/');
 
   // ── Plan sync: detects admin-driven plan changes via Realtime ──
   // When admin updates this user's subscription_plan in profiles,
@@ -100,11 +105,17 @@ function Shell({
     : '/ascentor-color-for-light-pages.svg';
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--app-bg)' }}>
+    <div style={{ height: '100dvh', minHeight: '100vh', display: 'flex', flexDirection: 'row', background: 'var(--app-bg)', overflow: 'hidden' }}>
 
-      {/* ── Header — hidden on community (chat is fullscreen) ── */}
+      {/* ── Desktop left rail — ≥1024px only, replaces mobile header + BottomNav ── */}
+      <DesktopRail initials={initials} fullName={fullName} isAdmin={isAdmin} />
+
+      {/* ── Mobile/desktop content column ── */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+      {/* ── Mobile header — hidden on community (chat is fullscreen) and hidden ≥1024px (DesktopRail replaces it) ── */}
       {!isCommunity && (
-        <header style={{
+        <header className="lg:hidden" style={{
           position:             'sticky',
           top:                  0,
           zIndex:               50,
@@ -218,16 +229,20 @@ function Shell({
       )}
 
       {/* Page content */}
-      <main style={isCommunity
-        ? { flex: 1, width: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }
-        : chatLayout
-          ? { flex: 1, width: '100%', maxWidth: '672px', margin: '0 auto', padding: '0 20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }
-          : { flex: 1, width: '100%', maxWidth: '672px', margin: '0 auto', padding: '0 20px 96px', overflowY: 'auto' }
-      }>
+      <main
+        className={isCommunity || isChatRoute ? '' : 'asc-main-width'}
+        style={isCommunity
+          ? { flex: '1 1 0%', width: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)' }
+          : isChatRoute
+            ? { flex: '1 1 0%', width: '100%', margin: '0 auto', padding: '0 20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }
+            : { flex: 1, width: '100%', margin: '0 auto', padding: '0 20px 96px', overflowY: 'auto' }
+        }
+      >
         {children}
       </main>
 
       <BottomNav />
+      </div>
     </div>
   );
 }
@@ -236,19 +251,21 @@ function Shell({
 export default function AppShell({
   children,
   initials = 'U',
+  fullName,
   isAdmin = false,
   chatLayout = false,
   userId,
 }: {
   children: React.ReactNode;
   initials?: string;
+  fullName?: string;
   isAdmin?: boolean;
   chatLayout?: boolean;
   userId?: string;
 }) {
   return (
     <AppThemeProvider>
-      <Shell initials={initials} isAdmin={isAdmin} chatLayout={chatLayout} userId={userId}>
+      <Shell initials={initials} fullName={fullName} isAdmin={isAdmin} chatLayout={chatLayout} userId={userId}>
         {children}
       </Shell>
     </AppThemeProvider>

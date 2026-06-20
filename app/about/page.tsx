@@ -1,720 +1,313 @@
-'use client';
-
-import { useState, useEffect, useRef } from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 
-// ============================================================
-// ABOUT PAGE — /about
-// Ascentor Brand Book v1.0 · 2026
-// Gold #E8A020  Dark #0C0B08  Cormorant Garamond / Syne / DM Mono
-// ============================================================
-
-const TEAM = [
-  {
-    name: 'Gregory Cudjoe',
-    role: 'Founder & CEO',
-    bio: 'Former strategy consultant turned builder. Gregory founded Ascentor after watching exceptional professionals hit invisible ceilings — not for lack of talent, but for lack of the right guidance at the right moment.',
-    initials: 'GC',
-  },
-  {
-    name: 'Ama Owusu',
-    role: 'Head of Product',
-    bio: 'Product leader with 8 years across fintech and edtech. Ama architects how Sage learns, listens, and grows with each member on the platform.',
-    initials: 'AO',
-  },
-  {
-    name: 'Kofi Mensah',
-    role: 'Lead Engineer',
-    bio: 'Full-stack engineer and open source contributor. Kofi builds the infrastructure that makes Sage feel instant, private, and reliable — even on 3G.',
-    initials: 'KM',
-  },
-  {
-    name: 'Nadia Sall',
-    role: 'Head of Partnerships',
-    bio: 'Former investment banker who now connects Ascentor with the organisations, employers, and investors shaping the global professional landscape.',
-    initials: 'NS',
-  },
-];
-
-const VALUES = [
-  {
-    label: 'Built for Ambition',
-    body: 'We are not a generic tool. Every prompt, every framework, every metaphor is built from the ground up with real professional contexts in mind.',
-  },
-  {
-    label: 'Radical Accessibility',
-    body: 'World-class mentorship should not cost a fortune or require the right connections. We work relentlessly to lower every barrier — cost, language, bandwidth, confidence.',
-  },
-  {
-    label: 'Honest Guidance',
-    body: 'Sage will not flatter you. It will challenge your assumptions, push back on weak reasoning, and celebrate genuine progress. That\'s what great mentors do.',
-  },
-  {
-    label: 'Long-term Thinking',
-    body: 'Careers are marathons. We optimise for ten-year outcomes, not this week\'s feeling. Every feature is measured against whether it truly moves members forward.',
-  },
-];
-
-const STATS = [
-  { value: '12,000+', label: 'Members worldwide' },
-  { value: '47',      label: 'Countries represented' },
-  { value: '94%',     label: 'Report a career shift in 90 days' },
-  { value: '3×',      label: 'More likely to hit goals with Sage' },
-];
-
-// ── Animated number counter ──────────────────────────────────────────────────
-function useCountUp(target: string, duration = 1600, started = false) {
-  const [display, setDisplay] = useState('0');
-  useEffect(() => {
-    if (!started) return;
-    const num = parseFloat(target.replace(/[^0-9.]/g, ''));
-    const suffix = target.replace(/[0-9.,]/g, '');
-    if (isNaN(num)) { setDisplay(target); return; }
-    const start = performance.now();
-    const tick = (now: number) => {
-      const p = Math.min((now - start) / duration, 1);
-      const ease = 1 - Math.pow(1 - p, 3);
-      const current = Math.round(ease * num * 10) / 10;
-      setDisplay((Number.isInteger(num) ? Math.round(current) : current) + suffix);
-      if (p < 1) requestAnimationFrame(tick);
-      else setDisplay(target);
-    };
-    requestAnimationFrame(tick);
-  }, [started, target, duration]);
-  return display;
-}
-
-function StatCard({ value, label }: { value: string; label: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const display = useCountUp(value, 1800, visible);
-
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.4 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-
-  return (
-    <div ref={ref} style={{
-      padding: '32px 24px',
-      background: '#141310',
-      border: '1px solid #2E2A22',
-      borderRadius: 16,
-      textAlign: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-        width: 120, height: 1,
-        background: 'linear-gradient(90deg, transparent, #E8A020, transparent)',
-      }} />
-      <p style={{
-        fontFamily: "'Cormorant Garamond', serif",
-        fontSize: 48, fontWeight: 700, lineHeight: 1,
-        color: '#E8A020', margin: '0 0 10px',
-        letterSpacing: '-1px',
-      }}>{display}</p>
-      <p style={{
-        fontFamily: "'DM Mono', monospace",
-        fontSize: 10, letterSpacing: '0.12em',
-        textTransform: 'uppercase', color: '#4A4438', margin: 0,
-      }}>{label}</p>
-    </div>
-  );
-}
+export const metadata: Metadata = {
+  title: 'About',
+  description:
+    'Ascentor is the official platform of The Elevation Summit — a movement for purposeful individuals building lives of lasting impact. Learn who we are and why we exist.',
+};
 
 export default function AboutPage() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setTimeout(() => setMounted(true), 80); }, []);
-
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        body { background: #FAFAF8 !important; color: #0F0F0E !important; }
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        body { background: #0C0B08; }
-
-        .ab-root {
-          min-height: 100vh;
-          background: #0C0B08;
-          color: #D4CFC3;
-          font-family: 'Syne', sans-serif;
-          overflow-x: hidden;
-        }
-
-        /* ── Nav ── */
-        .ab-nav {
+        .about-nav {
           position: sticky; top: 0; z-index: 50;
+          background: rgba(250,250,248,0.95);
+          backdrop-filter: blur(12px);
+          border-bottom: 1px solid #E8E6E1;
+        }
+        .about-nav-inner {
+          max-width: 1200px; margin: 0 auto; padding: 0 1.5rem;
           display: flex; align-items: center; justify-content: space-between;
-          padding: 18px 48px;
-          background: rgba(12,11,8,0.88);
-          backdrop-filter: blur(16px);
-          border-bottom: 1px solid rgba(212,207,195,0.07);
+          height: 64px;
         }
-        .ab-nav-links { display: flex; gap: 32px; align-items: center; }
-        .ab-nav-link {
-          font-family: 'DM Mono', monospace; font-size: 11px;
+
+        .eyebrow {
+          font-family: var(--font-body, 'Inter', sans-serif);
+          font-size: 0.75rem; font-weight: 600;
           letter-spacing: 0.12em; text-transform: uppercase;
-          color: #4A4438; text-decoration: none;
-          transition: color 0.2s;
-        }
-        .ab-nav-link:hover { color: #D4CFC3; }
-        .ab-nav-cta {
-          padding: 9px 20px; border-radius: 8px;
-          background: #E8A020; color: #0C0B08;
-          font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700;
-          text-decoration: none; letter-spacing: 0.04em;
-          transition: background 0.15s;
-        }
-        .ab-nav-cta:hover { background: #F5C55A; }
-
-        @media (max-width: 640px) {
-          .ab-nav { padding: 16px 20px; }
-          .ab-nav-links { display: none; }
+          color: #C8A96E;
         }
 
-        /* ── Hero ── */
-        .ab-hero {
-          min-height: 88vh;
-          display: flex; flex-direction: column;
-          align-items: center; justify-content: center;
-          text-align: center;
-          padding: 80px 24px;
-          position: relative; overflow: hidden;
-        }
-        .ab-hero-grid {
-          position: absolute; inset: 0; pointer-events: none;
-          background-image:
-            linear-gradient(rgba(232,160,32,0.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(232,160,32,0.025) 1px, transparent 1px);
-          background-size: 60px 60px;
-        }
-        .ab-hero-glow {
-          position: absolute; top: -120px; left: 50%; transform: translateX(-50%);
-          width: 700px; height: 700px; pointer-events: none;
-          background: radial-gradient(circle, rgba(232,160,32,0.08) 0%, transparent 65%);
-        }
-        .ab-hero-inner {
-          position: relative; z-index: 1;
-          max-width: 780px; margin: 0 auto;
-          opacity: 0; transform: translateY(24px);
-          transition: opacity 0.7s ease, transform 0.7s ease;
-        }
-        .ab-hero-inner.visible { opacity: 1; transform: translateY(0); }
-
-        /* ── Section shared ── */
-        .ab-section { padding: 100px 24px; }
-        .ab-section-inner { max-width: 1040px; margin: 0 auto; }
-        .ab-eyebrow {
-          font-family: 'DM Mono', monospace; font-size: 10px;
-          letter-spacing: 0.18em; text-transform: uppercase;
-          color: #E8A020; margin-bottom: 16px; display: block;
-        }
-        .ab-section-title {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: clamp(32px, 5vw, 52px);
-          font-weight: 700; line-height: 1.1;
-          color: #FEF9EC; letter-spacing: -0.5px;
-        }
-        .ab-divider {
-          width: 48px; height: 2px; background: #E8A020;
-          border-radius: 2px; margin: 20px 0 28px;
-        }
-        .ab-body {
-          font-size: 16px; color: #7A7260; line-height: 1.85;
-          max-width: 580px;
+        .page-headline {
+          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+          font-size: clamp(2.5rem, 6vw, 4.5rem);
+          font-weight: 800; line-height: 1.05; letter-spacing: -0.03em;
+          color: #0F0F0E;
         }
 
-        /* ── Origin story ── */
-        .ab-origin {
-          display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
-          align-items: center;
-        }
-        @media (max-width: 768px) { .ab-origin { grid-template-columns: 1fr; gap: 40px; } }
-
-        .ab-origin-visual {
-          position: relative; aspect-ratio: 1;
-          max-width: 400px; margin: 0 auto;
-        }
-        .ab-origin-ring {
-          position: absolute; border-radius: 50%;
-          border: 1px solid rgba(232,160,32,0.15);
-        }
-        .ab-origin-center {
-          position: absolute; inset: 22%;
-          border-radius: 50%;
-          background: radial-gradient(circle at 38% 38%, rgba(245,197,90,0.14), rgba(232,160,32,0.04) 60%, transparent);
-          border: 1.5px solid rgba(232,160,32,0.3);
-          display: flex; align-items: center; justify-content: center;
-          animation: ab-pulse 3s ease-in-out infinite;
-        }
-        @keyframes ab-pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(232,160,32,0); }
-          50%       { box-shadow: 0 0 48px 8px rgba(232,160,32,0.1); }
+        .section-headline {
+          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+          font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+          font-weight: 700; line-height: 1.15; letter-spacing: -0.02em;
+          color: #0F0F0E;
         }
 
-        /* ── Stats grid ── */
-        .ab-stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 16px;
-        }
-        @media (max-width: 900px) { .ab-stats-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 480px) { .ab-stats-grid { grid-template-columns: 1fr; } }
-
-        /* ── Values ── */
-        .ab-values-grid {
-          display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
-          border: 1px solid #2E2A22; border-radius: 16px; overflow: hidden;
-          margin-top: 48px;
-        }
-        @media (max-width: 640px) { .ab-values-grid { grid-template-columns: 1fr; } }
-
-        .ab-value-cell {
-          padding: 36px 32px;
-          background: #0C0B08;
-          border-right: 1px solid #2E2A22;
-          border-bottom: 1px solid #2E2A22;
-          transition: background 0.2s;
-        }
-        .ab-value-cell:hover { background: #141310; }
-        .ab-value-cell:nth-child(even) { border-right: none; }
-        .ab-value-cell:nth-last-child(-n+2) { border-bottom: none; }
-
-        .ab-value-num {
-          font-family: 'Cormorant Garamond', serif; font-size: 13px;
-          color: #E8A020; opacity: 0.5; margin-bottom: 14px; display: block;
-          letter-spacing: 0.1em;
-        }
-        .ab-value-label {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 22px; font-weight: 700;
-          color: '#FEF9EC'; margin-bottom: 12px; line-height: 1.2;
-        }
-        .ab-value-body {
-          font-size: 13px; color: #4A4438; line-height: 1.75;
+        .gold-bar {
+          width: 2.5rem; height: 3px; background: #C8A96E;
+          border-radius: 2px; margin-bottom: 1rem;
         }
 
-        /* ── Team ── */
-        .ab-team-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 20px; margin-top: 48px;
+        .value-card {
+          background: #FFFFFF; border: 1px solid #E8E6E1;
+          border-radius: 1rem; padding: 1.75rem;
+          transition: box-shadow 0.2s, transform 0.2s;
         }
-        @media (max-width: 900px) { .ab-team-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 480px) { .ab-team-grid { grid-template-columns: 1fr; } }
-
-        .ab-team-card {
-          background: #141310; border: 1px solid #2E2A22;
-          border-radius: 14px; padding: 28px 24px;
-          transition: border-color 0.2s, transform 0.2s;
+        .value-card:hover {
+          box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+          transform: translateY(-2px);
         }
-        .ab-team-card:hover { border-color: rgba(232,160,32,0.3); transform: translateY(-3px); }
-
-        /* ── Mission strip ── */
-        .ab-mission {
-          background: #141310; border-top: 1px solid #2E2A22;
-          border-bottom: 1px solid #2E2A22;
-          padding: 100px 24px; text-align: center; position: relative;
-          overflow: hidden;
+        .value-card h3 {
+          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+          font-size: 1.0625rem; font-weight: 700;
+          color: #0F0F0E; margin-bottom: 0.625rem;
         }
-        .ab-mission::before {
-          content: '';
-          position: absolute; inset: 0; pointer-events: none;
-          background: radial-gradient(ellipse at center, rgba(232,160,32,0.05) 0%, transparent 65%);
+        .value-card p {
+          font-size: 0.9375rem; color: #6B7280; line-height: 1.7;
         }
 
-        /* ── Marquee ── */
-        .ab-marquee-wrap {
-          overflow: hidden; padding: 32px 0;
-          border-top: 1px solid #2E2A22;
-          border-bottom: 1px solid #2E2A22;
-          background: #0C0B08;
+        .team-card {
+          background: #FFFFFF; border: 1px solid #E8E6E1;
+          border-radius: 1rem; padding: 2rem;
         }
-        .ab-marquee-track {
-          display: flex; gap: 48px; width: max-content;
-          animation: ab-marquee 28s linear infinite;
-        }
-        @keyframes ab-marquee {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-        .ab-marquee-item {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 22px; font-style: italic;
-          color: #2E2A22; white-space: nowrap;
-          transition: color 0.3s;
-        }
-        .ab-marquee-item span { color: #E8A020; }
 
-        /* ── CTA ── */
-        .ab-cta { padding: 120px 24px; text-align: center; }
-        .ab-cta-btn {
-          display: inline-flex; align-items: center; gap: 10px;
-          padding: 16px 36px; background: #E8A020; color: #0C0B08;
-          border-radius: 12px; font-family: 'Syne', sans-serif;
-          font-size: 15px; font-weight: 700; text-decoration: none;
-          letter-spacing: 0.04em; transition: background 0.15s, transform 0.15s;
-        }
-        .ab-cta-btn:hover { background: #F5C55A; transform: translateY(-2px); }
-
-        /* ── Footer ── */
-        .ab-footer {
-          border-top: 1px solid #2E2A22; padding: 40px 48px;
-          display: flex; justify-content: space-between; align-items: center;
-          flex-wrap: wrap; gap: 16px;
-        }
-        @media (max-width: 640px) { .ab-footer { padding: 32px 20px; flex-direction: column; text-align: center; } }
+        footer a { color: #6B7280; text-decoration: none; font-size: 0.875rem; }
+        footer a:hover { color: #0F0F0E; }
       `}</style>
 
-      <div className="ab-root">
+      {/* Nav */}
+      <nav className="about-nav">
+        <div className="about-nav-inner">
+          <Link href="/" style={{
+            fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+            fontSize: '1.25rem', fontWeight: 800, color: '#0F0F0E',
+            letterSpacing: '-0.03em', textDecoration: 'none',
+          }}>Ascentor</Link>
 
-        {/* ── Nav ── */}
-        <nav className="ab-nav">
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: 28 }} />
-          </Link>
-          <div className="ab-nav-links">
-            <Link href="/careers" className="ab-nav-link">Careers</Link>
-            <Link href="/products" className="ab-nav-link">Products</Link>
-            <Link href="/login" className="ab-nav-cta">Get Started</Link>
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+            <Link href="/movement" style={{ fontSize: '0.875rem', color: '#374151', textDecoration: 'none', fontWeight: 500 }}>The Movement</Link>
+            <Link href="/elevation-summit" style={{ fontSize: '0.875rem', color: '#374151', textDecoration: 'none', fontWeight: 500 }}>The Summit</Link>
+            <Link href="/signup" style={{
+              padding: '0.5rem 1.25rem',
+              background: '#0F0F0E', color: '#FAFAF8',
+              borderRadius: '0.5rem', textDecoration: 'none',
+              fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+              fontWeight: 700, fontSize: '0.875rem',
+            }}>Join Ascentor →</Link>
           </div>
-        </nav>
+        </div>
+      </nav>
 
-        {/* ── Hero ── */}
-        <section className="ab-hero">
-          <div className="ab-hero-grid" />
-          <div className="ab-hero-glow" />
-          <div className={`ab-hero-inner ${mounted ? 'visible' : ''}`}>
-            <span className="ab-eyebrow" style={{ marginBottom: 24 }}>About Ascentor</span>
+      {/* Hero */}
+      <section style={{ padding: 'clamp(5rem, 10vw, 8rem) 1.5rem clamp(3rem, 6vw, 5rem)', maxWidth: '1200px', margin: '0 auto' }}>
+        <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>About Ascentor</p>
+        <h1 className="page-headline" style={{ maxWidth: '820px', marginBottom: '1.5rem' }}>
+          We exist because<br />
+          <span style={{ color: '#C8A96E' }}>drift is a choice.</span>
+        </h1>
+        <p style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: '#374151', lineHeight: 1.75, maxWidth: '620px' }}>
+          Ascentor is the official daily platform of The Elevation Summit movement — built for purposeful individuals who have decided to build lives of meaning, leadership, and lasting impact.
+        </p>
+      </section>
 
-            <h1 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 'clamp(44px, 8vw, 88px)',
-              fontWeight: 700, lineHeight: 1.0,
-              color: '#FEF9EC', letterSpacing: '-2px',
-              marginBottom: 28,
+      {/* What We Are */}
+      <section style={{ background: '#0F0F0E', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem', alignItems: 'center' }}>
+          <div>
+            <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>What We Are</p>
+            <h2 style={{
+              fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+              fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)',
+              fontWeight: 700, color: '#FAFAF8',
+              lineHeight: 1.15, letterSpacing: '-0.02em',
+              marginBottom: '1.5rem',
             }}>
-              The mentor the world<br />
-              <em style={{ color: '#E8A020', fontStyle: 'italic' }}>was never given.</em>
-            </h1>
-
-            <p style={{
-              fontSize: 17, color: '#7A7260', lineHeight: 1.8,
-              maxWidth: 520, margin: '0 auto 48px',
-            }}>
-              Ascentor exists because exceptional talent should not require exceptional luck.
-              We build AI-powered mentorship shaped entirely by real professional realities.
+              Not a platform.<br />
+              <span style={{ color: '#C8A96E' }}>A movement with a platform.</span>
+            </h2>
+            <p style={{ fontSize: '1.0625rem', color: '#9CA3AF', lineHeight: 1.8, marginBottom: '1.25rem' }}>
+              Most products optimize for engagement. Ascentor optimizes for transformation. We measure success not by time spent on the platform but by the quality of the lives being built by the people on it.
             </p>
-
-            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link href="/login" className="ab-cta-btn" style={{ padding: '13px 28px', fontSize: 14 }}>
-                Start for free →
-              </Link>
-              <Link href="/careers" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '12px 24px', border: '1px solid #2E2A22',
-                borderRadius: 12, color: '#7A7260',
-                fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 600,
-                textDecoration: 'none', transition: 'border-color 0.15s, color 0.15s',
-              }}>
-                We're hiring
-              </Link>
-            </div>
+            <p style={{ fontSize: '1.0625rem', color: '#9CA3AF', lineHeight: 1.8 }}>
+              The Elevation Summit is the annual gathering where the movement comes alive in person. Ascentor is where it lives every other day of the year.
+            </p>
           </div>
-        </section>
 
-        {/* ── Marquee ── */}
-        <div className="ab-marquee-wrap">
-          <div className="ab-marquee-track">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {[
-              'Navigate a challenge', '·', 'Prep a conversation', '·',
-              'Weekly reflection', '·', 'Accountability check', '·',
-              'Navigate a challenge', '·', 'Prep a conversation', '·',
-              'Weekly reflection', '·', 'Accountability check', '·',
-            ].map((item, i) => (
-              <span key={i} className="ab-marquee-item">
-                {item === '·' ? <span>·</span> : item}
-              </span>
+              { label: 'The Circle', desc: 'A global community of purposeful individuals holding each other accountable.' },
+              { label: 'The Coach', desc: 'AI-powered development support, available whenever you need to think clearly.' },
+              { label: 'The Resources', desc: 'Structured learning pathways built around the six dimensions of the total person.' },
+              { label: 'The Elevation Summit', desc: 'The annual gathering. The peak moment. February 2027, Lagos.' },
+            ].map((item) => (
+              <div key={item.label} style={{
+                padding: '1.25rem 1.5rem',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: '0.875rem',
+              }}>
+                <p style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontWeight: 700, fontSize: '0.9375rem', color: '#C8A96E', marginBottom: '0.375rem' }}>{item.label}</p>
+                <p style={{ fontSize: '0.875rem', color: '#6B7280', lineHeight: 1.6 }}>{item.desc}</p>
+              </div>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* ── Origin story ── */}
-        <section className="ab-section">
-          <div className="ab-section-inner">
-            <div className="ab-origin">
-              {/* Visual */}
-              <div className="ab-origin-visual">
-                {[0, 1, 2, 3].map(i => (
-                  <div key={i} className="ab-origin-ring" style={{
-                    inset: `${i * 11}%`,
-                    animation: `ab-pulse ${3 + i * 0.6}s ease-in-out infinite`,
-                    animationDelay: `${i * 0.4}s`,
-                  }} />
-                ))}
-                <div className="ab-origin-center">
-                  <span style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: 56, fontWeight: 700,
-                    color: '#E8A020', lineHeight: 1, userSelect: 'none',
-                  }}>S</span>
-                </div>
-
-                {/* Orbiting labels */}
-                {[
-                  { label: 'Clarity', angle: -30 },
-                  { label: 'Direction', angle: 60 },
-                  { label: 'Growth', angle: 150 },
-                  { label: 'Courage', angle: 240 },
-                ].map(({ label, angle }) => {
-                  const r = 42;
-                  const rad = (angle * Math.PI) / 180;
-                  const x = 50 + r * Math.cos(rad);
-                  const y = 50 + r * Math.sin(rad);
-                  return (
-                    <div key={label} style={{
-                      position: 'absolute',
-                      left: `${x}%`, top: `${y}%`,
-                      transform: 'translate(-50%, -50%)',
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: 9, letterSpacing: '0.12em',
-                      textTransform: 'uppercase', color: '#4A4438',
-                      padding: '4px 10px',
-                      background: '#141310',
-                      border: '1px solid #2E2A22',
-                      borderRadius: 100,
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {label}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Text */}
-              <div>
-                <span className="ab-eyebrow">Our Origin</span>
-                <h2 className="ab-section-title">
-                  Built from<br />lived experience.
-                </h2>
-                <div className="ab-divider" />
-                <p className="ab-body" style={{ marginBottom: 24 }}>
-                  Our founder spent years watching talented colleagues across Ghana, Nigeria, Kenya,
-                  and Senegal stall — not because they lacked ability, but because they lacked access
-                  to the candid, informed guidance that their peers in London or New York took for granted.
-                </p>
-                <p className="ab-body" style={{ marginBottom: 24 }}>
-                  Ascentor began as a question: what if every ambitious professional had a world-class
-                  mentor in their pocket — one that understood their context, spoke their language, and
-                  never ran out of time?
-                </p>
-                <p className="ab-body">
-                  Sage, our AI mentor, is the answer we built. It is trained not on generic career advice,
-                  but on the specific dynamics of professional life: how power works, how
-                  industries move, what ambition looks like here.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Stats ── */}
-        <section style={{ padding: '0 24px 100px' }}>
-          <div style={{ maxWidth: 1040, margin: '0 auto' }}>
-            <div className="ab-stats-grid">
-              {STATS.map(s => <StatCard key={s.label} {...s} />)}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Mission strip ── */}
-        <div className="ab-mission">
-          <div style={{ position: 'relative', zIndex: 1, maxWidth: 720, margin: '0 auto' }}>
-            <span className="ab-eyebrow" style={{ display: 'block', marginBottom: 24 }}>Our Mission</span>
-            <blockquote style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 'clamp(28px, 5vw, 52px)',
-              fontWeight: 700, fontStyle: 'italic',
-              lineHeight: 1.25, color: '#FEF9EC',
-              letterSpacing: '-0.5px', margin: 0,
-            }}>
-              "To make elite mentorship as accessible as a mobile connection — for every ambitious professional on the planet."
-            </blockquote>
-            <div style={{
-              marginTop: 32, display: 'inline-flex', alignItems: 'center', gap: 12,
-            }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: '50%',
-                background: 'rgba(232,160,32,0.1)',
-                border: '1.5px solid rgba(232,160,32,0.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <span style={{
-                  fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: 16, fontWeight: 700, color: '#E8A020',
-                }}>GC</span>
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: '#D4CFC3', margin: 0 }}>'Posi Ajiboye</p>
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#4A4438', margin: 0 }}>Founder & CEO</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Values ── */}
-        <section className="ab-section">
-          <div className="ab-section-inner">
-            <div style={{ maxWidth: 560 }}>
-              <span className="ab-eyebrow">What We Believe</span>
-              <h2 className="ab-section-title">Principles we<br />build everything on.</h2>
-              <div className="ab-divider" />
-            </div>
-            <div className="ab-values-grid">
-              {VALUES.map((v, i) => (
-                <div key={v.label} className="ab-value-cell">
-                  <span className="ab-value-num">0{i + 1}</span>
-                  <h3 style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: 22, fontWeight: 700,
-                    color: '#FEF9EC', marginBottom: 12, lineHeight: 1.2,
-                  }}>
-                    {v.label}
-                  </h3>
-                  <p className="ab-value-body">{v.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Team ── */}
-        <section className="ab-section" style={{ paddingTop: 0 }}>
-          <div className="ab-section-inner">
-            <div style={{ maxWidth: 560 }}>
-              <span className="ab-eyebrow">The Team</span>
-              <h2 className="ab-section-title">Built by people<br />who've lived it.</h2>
-              <div className="ab-divider" />
-              <p className="ab-body" style={{ marginBottom: 48 }}>
-                We are a small, distributed team — across Accra, Lagos, Nairobi, and Dakar.
-                Every person here chose this over something safer.
-              </p>
-            </div>
-            <div className="ab-team-grid">
-              {TEAM.map(member => (
-                <div key={member.name} className="ab-team-card">
-                  {/* Avatar */}
-                  <div style={{
-                    width: 52, height: 52, borderRadius: '50%',
-                    background: 'radial-gradient(circle at 38% 36%, rgba(245,197,90,0.2), rgba(232,160,32,0.06) 60%, transparent)',
-                    border: '1.5px solid rgba(232,160,32,0.35)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    marginBottom: 18,
-                  }}>
-                    <span style={{
-                      fontFamily: "'Cormorant Garamond', serif",
-                      fontSize: 18, fontWeight: 700, color: '#E8A020',
-                    }}>{member.initials}</span>
-                  </div>
-                  <p style={{
-                    fontFamily: "'Syne', sans-serif", fontSize: 15,
-                    fontWeight: 700, color: '#FEF9EC', marginBottom: 4,
-                  }}>{member.name}</p>
-                  <p style={{
-                    fontFamily: "'DM Mono', monospace", fontSize: 9,
-                    letterSpacing: '0.1em', textTransform: 'uppercase',
-                    color: '#E8A020', marginBottom: 14,
-                  }}>{member.role}</p>
-                  <p style={{
-                    fontSize: 12, color: '#4A4438', lineHeight: 1.7,
-                  }}>{member.bio}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Hiring nudge */}
-            <div style={{
-              marginTop: 20, padding: '20px 24px',
-              background: 'rgba(232,160,32,0.04)',
-              border: '1px dashed rgba(232,160,32,0.2)',
-              borderRadius: 12, display: 'flex',
-              alignItems: 'center', justifyContent: 'space-between',
-              gap: 16, flexWrap: 'wrap',
-            }}>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: '#7A7260', margin: 0 }}>
-                We're growing. Come build with us.
-              </p>
-              <Link href="/careers" style={{
-                fontFamily: "'DM Mono', monospace", fontSize: 10,
-                letterSpacing: '0.12em', textTransform: 'uppercase',
-                color: '#E8A020', textDecoration: 'none',
-                padding: '8px 16px', border: '1px solid rgba(232,160,32,0.3)',
-                borderRadius: 8, transition: 'background 0.15s',
-              }}>
-                View open roles →
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ── CTA ── */}
-        <section className="ab-cta">
-          <span className="ab-eyebrow" style={{ display: 'block', marginBottom: 20 }}>Get Started</span>
-          <h2 style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: 'clamp(36px, 6vw, 64px)',
-            fontWeight: 700, color: '#FEF9EC',
-            letterSpacing: '-1px', lineHeight: 1.1,
-            marginBottom: 20,
-          }}>
-            Your mentor is waiting.
+      {/* Our Values */}
+      <section style={{ padding: 'clamp(4rem, 8vw, 7rem) 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ marginBottom: '3.5rem' }}>
+          <p className="eyebrow" style={{ marginBottom: '1rem' }}>What We Believe</p>
+          <h2 className="section-headline" style={{ maxWidth: '560px' }}>
+            The convictions we build on.
           </h2>
-          <p style={{
-            fontSize: 16, color: '#7A7260', lineHeight: 1.7,
-            maxWidth: 420, margin: '0 auto 40px',
-          }}>
-            Join 12,000 professionals worldwide who are navigating their careers with clarity.
-          </p>
-          <Link href="/login" className="ab-cta-btn">
-            Start free today →
-          </Link>
-        </section>
+        </div>
 
-        {/* ── Footer ── */}
-        <footer className="ab-footer">
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: 22 }} />
-          </Link>
-          <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {[
-              { label: 'Careers', href: '/careers' },
-              { label: 'Privacy', href: '/privacy' },
-              { label: 'Terms', href: '/terms' },
-              { label: 'Contact', href: 'mailto:hello@ascentorbi.com' },
-            ].map(l => (
-              <Link key={l.label} href={l.href} style={{
-                fontFamily: "'DM Mono', monospace", fontSize: 10,
-                letterSpacing: '0.1em', textTransform: 'uppercase',
-                color: '#4A4438', textDecoration: 'none', transition: 'color 0.2s',
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+          {[
+            {
+              title: 'Purpose is built, not found',
+              body: 'We do not believe in waiting to "discover" your purpose. Purpose is constructed through deliberate confrontation with your own capacity and calling.',
+            },
+            {
+              title: 'Character is the foundation',
+              body: 'No strategy, skill, or network substitutes for character. We build around the conviction that who you are determines what you build.',
+            },
+            {
+              title: 'Community accelerates everything',
+              body: 'No person ascends alone. The quality of your community determines the ceiling of your growth. We are intentional about who is in The Circle.',
+            },
+            {
+              title: 'The individual and the nation rise together',
+              body: 'We believe that building purposeful individuals is the highest form of nation building. Africa needs built people, not just resourced ones.',
+            },
+            {
+              title: 'Think in centuries',
+              body: 'We orient everything toward legacy. Decisions made with great-grandchildren in mind are different decisions. We build that instinct into the platform.',
+            },
+            {
+              title: 'Mediocrity is a betrayal',
+              body: 'Not of some external standard — of your own potential. We hold each other to the standard of becoming who we were built to be.',
+            },
+          ].map((item) => (
+            <div key={item.title} className="value-card">
+              <div className="gold-bar" />
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* The Founder */}
+      <section style={{ background: '#F4F3EF', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ maxWidth: '760px' }}>
+            <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>The Founder</p>
+            <h2 className="section-headline" style={{ marginBottom: '2rem' }}>
+              Ajiboye Ayomiposi Samuel
+            </h2>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
+              {[
+                'Ajiboye is a Lagos-based technology and security professional, the founder of Guardsmann Technologies, and the creator of Ascentor — the official platform of The Elevation Summit.',
+                'He built Ascentor because he grew up inside the crisis it exists to solve. He watched people around him drift — not because they were incapable, but because no one had ever shown them what a built life looked like, or challenged them to think architecturally about their existence.',
+                'The Elevation Summit is not his career. It is not his brand. It is his life\'s purpose given organizational form — and he is building it to outlast him.',
+              ].map((para, i) => (
+                <p key={i} style={{ fontSize: '1.0625rem', color: '#374151', lineHeight: 1.8 }}>{para}</p>
+              ))}
+            </div>
+
+            <div style={{
+              background: '#0F0F0E',
+              borderRadius: '1rem',
+              padding: '1.5rem 2rem',
+              borderLeft: '4px solid #C8A96E',
+            }}>
+              <p style={{
+                fontFamily: 'var(--font-accent, "Playfair Display", serif)',
+                fontStyle: 'italic',
+                fontSize: '1.125rem',
+                color: '#C8A96E',
+                lineHeight: 1.65,
+                marginBottom: '0.75rem',
               }}>
-                {l.label}
-              </Link>
-            ))}
+                "I will not drift. And I will spend my life making it harder for others to drift."
+              </p>
+              <p style={{ fontSize: '0.8125rem', color: '#4B5563', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Ajiboye Ayomiposi Samuel · Founder, Ascentor
+              </p>
+            </div>
           </div>
-          <p style={{
-            fontFamily: "'DM Mono', monospace", fontSize: 9,
-            letterSpacing: '0.08em', color: '#2E2A22',
-          }}>
-            © 2026 ASCENTOR
-          </p>
-        </footer>
+        </div>
+      </section>
 
-      </div>
+      {/* Certifications / Credibility */}
+      <section style={{ padding: 'clamp(3rem, 6vw, 5rem) 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+          {[
+            { label: 'CISM', sub: 'Certified Information Security Manager' },
+            { label: 'CRISC', sub: 'Certified in Risk and Information Systems Control' },
+            { label: 'CIPP/C', sub: 'Certified Information Privacy Professional' },
+            { label: 'B.Tech', sub: 'Information Systems · FUTA' },
+          ].map((item) => (
+            <div key={item.label} style={{ padding: '1.25rem', background: '#FFFFFF', border: '1px solid #E8E6E1', borderRadius: '0.75rem', textAlign: 'center' }}>
+              <p style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontWeight: 800, fontSize: '1.125rem', color: '#C8A96E', marginBottom: '0.375rem' }}>{item.label}</p>
+              <p style={{ fontSize: '0.8125rem', color: '#6B7280', lineHeight: 1.5 }}>{item.sub}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* The Elevation Summit CTA */}
+      <section style={{ background: '#0F0F0E', padding: 'clamp(5rem, 10vw, 8rem) 1.5rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: '680px', margin: '0 auto' }}>
+          <p className="eyebrow" style={{ color: '#C8A96E', marginBottom: '1.5rem' }}>February 2027</p>
+          <h2 style={{
+            fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+            fontSize: 'clamp(2rem, 4vw, 3rem)',
+            fontWeight: 800, color: '#FAFAF8',
+            letterSpacing: '-0.03em', lineHeight: 1.1,
+            marginBottom: '1.25rem',
+          }}>
+            The inaugural Elevation Summit is coming.
+          </h2>
+          <p style={{ color: '#6B7280', fontSize: '1.0625rem', lineHeight: 1.75, marginBottom: '2.5rem' }}>
+            Lagos, Nigeria. One gathering. One decision. The rest of your life.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/elevation-summit" style={{
+              padding: '0.875rem 2rem',
+              background: '#C8A96E', color: '#0F0F0E',
+              fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+              fontWeight: 700, fontSize: '1rem',
+              borderRadius: '0.5rem', textDecoration: 'none',
+            }}>Register Interest →</Link>
+            <Link href="/signup" style={{
+              padding: '0.875rem 2rem',
+              background: 'transparent', color: '#FAFAF8',
+              fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+              fontWeight: 600, fontSize: '1rem',
+              borderRadius: '0.5rem', textDecoration: 'none',
+              border: '1.5px solid rgba(255,255,255,0.15)',
+            }}>Join Ascentor →</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{ background: '#0F0F0E', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '2rem 1.5rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+          <p style={{ fontFamily: 'var(--font-accent, "Playfair Display", serif)', fontStyle: 'italic', color: '#C8A96E', fontSize: '0.9375rem' }}>
+            "Build a life that outlasts you."
+          </p>
+          <p style={{ fontSize: '0.8125rem', color: '#4B5563' }}>© 2026 Ascentor. All rights reserved.</p>
+          <Link href="/" style={{ fontSize: '0.875rem', color: '#6B7280', textDecoration: 'none' }}>← Back to Ascentor</Link>
+        </div>
+      </footer>
     </>
   );
 }

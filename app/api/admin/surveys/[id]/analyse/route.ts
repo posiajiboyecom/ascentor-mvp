@@ -1,4 +1,4 @@
-// app/api/admin/surveys/[id]/analyse/route.ts
+﻿// app/api/admin/surveys/[id]/analyse/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
@@ -97,7 +97,7 @@ export async function POST(
     : 0;
 
   // Claude analysis
-  const prompt = `You are a product and growth analyst for Ascentor, an AI-powered career development platform. 
+  const prompt = `You are a product and growth analyst for Ascentor, an AI-powered purposeful development platform. 
 
 You have ${totalResponses} survey responses from active members. Here is the aggregated data:
 

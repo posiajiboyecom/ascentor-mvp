@@ -1,4 +1,4 @@
-// FILE: app/middleware/subscription-gate.ts
+﻿// FILE: app/middleware/subscription-gate.ts
 // FIX: Replaced basic/standard/premium plan names with explorer/builder/climber.
 //      Added PLAN_ALIAS map so old DB values (basic→explorer, standard→builder,
 //      premium→climber) still resolve correctly for existing users.
@@ -195,7 +195,7 @@ export function canAccessRoute(
       if (!subscription.hasAccess) {
         return {
           allowed: false,
-          reason: `The Learn section requires a subscription. Start your 7-day free trial to unlock all courses.`,
+          reason: `The Learn section requires a subscription. Start your  to unlock all courses.`,
         };
       }
     }

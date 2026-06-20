@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useState } from 'react';
@@ -89,7 +89,7 @@ export default function LeadMagnetPage({
           fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13,
           textDecoration: 'none',
         }}>
-          Start Free →
+          Join Ascentor →
         </Link>
       </nav>
 
@@ -169,7 +169,7 @@ export default function LeadMagnetPage({
               ))}
             </div>
             <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: '#7A7260', margin: 0 }}>
-              Used by ambitious professionals building their career edge
+              Used by purposeful individuals building their career edge
             </p>
           </div>
         </div>

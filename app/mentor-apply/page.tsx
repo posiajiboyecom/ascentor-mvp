@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
@@ -182,7 +182,7 @@ export default function MentorApplyPage() {
             Founding Mentors are the backbone of Ascentor. You've done the hard work of building a career worth sharing — now help the next generation do the same. Limited spots. Serious applicants only.
           </p>
           <div className="ma-hero-perks">
-            {['Recognized as a Founding Mentor', 'Shape the platform with your feedback', 'Connect with ambitious professionals worldwide', 'Flexible — 2–4 hrs/month commitment'].map(p => (
+            {['Recognized as a Founding Mentor', 'Shape the platform with your feedback', 'Connect with purposeful individuals worldwide', 'Flexible — 2–4 hrs/month commitment'].map(p => (
               <div key={p} className="ma-perk"><span className="ma-perk-check">✓</span>{p}</div>
             ))}
           </div>
@@ -299,7 +299,7 @@ export default function MentorApplyPage() {
                 </div>
                 <div className="ma-field">
                   <Label required>Why do you want to mentor?</Label>
-                  <p className="ma-field-hint">What motivates you to invest time in the next generation of ambitious professionals?</p>
+                  <p className="ma-field-hint">What motivates you to invest time in the next generation of purposeful individuals?</p>
                   <textarea className={inputClass} style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }}
                     placeholder="I remember how lost I felt when I was starting out..."
                     value={form.why_mentor} onChange={e => set('why_mentor', e.target.value)} />

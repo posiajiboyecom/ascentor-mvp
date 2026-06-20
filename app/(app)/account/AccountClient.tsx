@@ -1,7 +1,5 @@
 // FILE: app/(app)/account/AccountClient.tsx
-// FIX: #4 — plan button labels (Choose a Plan / Reactivate Plan / Upgrade to X)
-//      #5a — billing date shows for active, trialing AND cancelled states
-//      #5b — displays rich card info (Visa •••• 4081 · 12/2027) from card_details
+// ASCENTOR REBRAND v2 — Full rebuild with ascent_stage + what_building fields
 
 'use client';
 
@@ -40,13 +38,16 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 
   // ═══ PROFILE STATE ═══
   const [form, setForm] = useState({
-    full_name: profile?.full_name || '',
-    current_role: profile?.current_role || '',
-    industry: profile?.industry || '',
-    goal_role: profile?.goal_role || '',
+    full_name:         profile?.full_name || '',
+    current_role:      profile?.current_role || '',
+    industry:          profile?.industry || '',
+    goal_role:         profile?.goal_role || '',
     biggest_challenge: profile?.biggest_challenge || '',
-    time_commitment: profile?.time_commitment || '15min',
-    avatar_url: profile?.avatar_url || '',
+    time_commitment:   profile?.time_commitment || '15min',
+    avatar_url:        profile?.avatar_url || '',
+    // ── Day 4 — Movement fields ──
+    ascent_stage:      profile?.ascent_stage || '',
+    what_building:     profile?.what_building || '',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -60,12 +61,12 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 
   // ═══ NOTIFICATION STATE ═══
   const [notifs, setNotifs] = useState({
-    email_coaching_summary: notifications?.email_coaching_summary ?? true,
-    email_weekly_digest: notifications?.email_weekly_digest ?? true,
-    email_expert_reminders: notifications?.email_expert_reminders ?? true,
-    email_product_updates: notifications?.email_product_updates ?? true,
-    email_community_activity: notifications?.email_community_activity ?? false,
-    email_goal_reminders: notifications?.email_goal_reminders ?? true,
+    email_coaching_summary:  notifications?.email_coaching_summary  ?? true,
+    email_weekly_digest:     notifications?.email_weekly_digest     ?? true,
+    email_expert_reminders:  notifications?.email_expert_reminders  ?? true,
+    email_product_updates:   notifications?.email_product_updates   ?? true,
+    email_community_activity:notifications?.email_community_activity ?? false,
+    email_goal_reminders:    notifications?.email_goal_reminders    ?? true,
   });
   const [notifSaving, setNotifSaving] = useState(false);
   const [notifSaved, setNotifSaved] = useState(false);
@@ -73,8 +74,8 @@ export default function AccountClient({ profile, email, authProvider, userId, no
   // ═══ DANGER STATE ═══
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
-
   const [signingOut, setSigningOut] = useState(false);
+
   const isOAuth = authProvider !== 'email';
 
   const initials = (form.full_name || 'U')
@@ -121,14 +122,17 @@ export default function AccountClient({ profile, email, authProvider, userId, no
     const { error: dbError } = await supabase
       .from('profiles')
       .upsert({
-        id: userId,
-        full_name: form.full_name,
-        current_role: form.current_role,
-        industry: form.industry,
-        goal_role: form.goal_role,
+        id:                userId,
+        full_name:         form.full_name,
+        current_role:      form.current_role,
+        industry:          form.industry,
+        goal_role:         form.goal_role,
         biggest_challenge: form.biggest_challenge,
-        time_commitment: form.time_commitment,
-        updated_at: new Date().toISOString(),
+        time_commitment:   form.time_commitment,
+        // ── Day 4 — Movement fields ──
+        ascent_stage:      form.ascent_stage || null,
+        what_building:     form.what_building || null,
+        updated_at:        new Date().toISOString(),
       });
 
     if (dbError) { setError(dbError.message); }
@@ -140,7 +144,6 @@ export default function AccountClient({ profile, email, authProvider, userId, no
   const handlePasswordChange = async () => {
     setPwSaving(true); setPwResult(null);
 
-    // ── Client-side validation ────────────────────────────────────
     if (!passwords.current.trim()) {
       setPwResult({ success: false, message: 'Please enter your current password.' });
       setPwSaving(false); return;
@@ -158,9 +161,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
       setPwSaving(false); return;
     }
 
-    // ── S6 FIX: Verify current password before allowing update ────
-    // signInWithPassword re-authenticates the user with their current credentials.
-    // If this fails, we block the update — the current password field is real.
+    // Verify current password before allowing update
     const { error: verifyError } = await supabase.auth.signInWithPassword({
       email,
       password: passwords.current,
@@ -171,7 +172,6 @@ export default function AccountClient({ profile, email, authProvider, userId, no
       setPwSaving(false); return;
     }
 
-    // ── Current password verified — now update to new password ────
     const { error: updateError } = await supabase.auth.updateUser({
       password: passwords.newPassword,
     });
@@ -199,29 +199,24 @@ export default function AccountClient({ profile, email, authProvider, userId, no
     setTimeout(() => setNotifSaved(false), 3000);
     setNotifSaving(false);
   };
-  // ═══ DANGER HANDLERS ═══
 
+  // ═══ DANGER HANDLERS ═══
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== 'DELETE') return;
     setDeleting(true);
 
     try {
-      // 1. Insert deletion request record in DB
       const { error: reqError } = await supabase
         .from('deletion_requests')
         .insert({
-          user_id:    userId,
+          user_id:      userId,
           email,
-          status:     'pending',
+          status:       'pending',
           requested_at: new Date().toISOString(),
         });
 
-      if (reqError) {
-        console.error('Deletion request error:', reqError);
-        // Fallback: still audit log even if table doesn't exist yet
-      }
+      if (reqError) console.error('Deletion request error:', reqError);
 
-      // 2. Audit log
       try {
         await supabase.from('audit_logs').insert({
           user_id:     userId,
@@ -232,7 +227,6 @@ export default function AccountClient({ profile, email, authProvider, userId, no
         });
       } catch { /* non-critical */ }
 
-      // 3. Notify user via in-app notification
       try {
         await supabase.from('notifications').insert({
           user_id: userId,
@@ -243,7 +237,6 @@ export default function AccountClient({ profile, email, authProvider, userId, no
         });
       } catch { /* non-critical */ }
 
-      // 4. Show confirmation and sign out
       setDeleteConfirm('');
       setDeleting(false);
       alert(`Deletion request submitted for ${email}. Your account will be deleted within 48 hours. You will be signed out now.`);
@@ -264,25 +257,26 @@ export default function AccountClient({ profile, email, authProvider, userId, no
   };
 
   const sections: { key: Section; label: string }[] = [
-    { key: 'profile', label: 'Profile' },
-    { key: 'security', label: 'Security' },
-    { key: 'plan', label: 'Plan' },
+    { key: 'profile',       label: 'Profile' },
+    { key: 'security',      label: 'Security' },
+    { key: 'plan',          label: 'Plan' },
     { key: 'notifications', label: 'Alerts' },
-    { key: 'danger', label: 'Account' },
+    { key: 'danger',        label: 'Account' },
   ];
 
   return (
     <div className="animate-fade-up py-6 max-w-2xl mx-auto">
+
       {/* ═══ HEADER ═══ */}
       <div className="flex items-center gap-4 mb-6">
         <div className="relative group">
           {form.avatar_url ? (
             <img src={form.avatar_url} alt="Avatar"
               className="w-14 h-14 rounded-full object-cover"
-              style={{ border: '2px solid rgba(245,158,11,0.3)' }} />
+              style={{ border: '2px solid rgba(200,169,110,0.3)' }} />
           ) : (
             <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold"
-              style={{ background: 'rgba(245,158,11,0.12)', color: 'var(--accent)', border: '2px solid rgba(245,158,11,0.3)' }}>
+              style={{ background: 'rgba(200,169,110,0.12)', color: 'var(--accent)', border: '2px solid rgba(200,169,110,0.3)' }}>
               {initials}
             </div>
           )}
@@ -294,7 +288,10 @@ export default function AccountClient({ profile, email, authProvider, userId, no
           <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
         </div>
         <div>
-          <h1 className="text-xl font-semibold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
+          <h1 className="text-xl font-semibold" style={{
+            fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+            color: 'var(--text)',
+          }}>
             Settings
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -306,6 +303,11 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               </span>
             )}
           </p>
+          {form.ascent_stage && (
+            <p className="text-xs mt-0.5 capitalize" style={{ color: 'var(--accent)' }}>
+              {form.ascent_stage}
+            </p>
+          )}
         </div>
       </div>
 
@@ -331,11 +333,14 @@ export default function AccountClient({ profile, email, authProvider, userId, no
           <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>Personal Information</h2>
 
           <div className="flex flex-col gap-4">
+
+            {/* Full Name */}
             <Field label="Full Name" required>
               <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })}
                 placeholder="Your full name" className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
             </Field>
 
+            {/* Email */}
             <Field label="Email Address">
               <div className="flex items-center gap-2">
                 <input value={email} disabled className="w-full px-3.5 py-2.5 text-sm rounded-xl opacity-60" style={inputStyle} />
@@ -347,19 +352,77 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               </p>
             </Field>
 
+            {/* ── Day 4: What Are You Building ── */}
+            <Field label="What Are You Building?">
+              <textarea
+                value={form.what_building}
+                onChange={(e) => setForm({ ...form, what_building: e.target.value })}
+                placeholder="Describe what you are building with your life — not your job title."
+                rows={3}
+                className="w-full px-3.5 py-2.5 text-sm rounded-xl resize-none"
+                style={inputStyle}
+              />
+              <p className="text-[10px] mt-1" style={{ color: 'var(--text-dim)' }}>
+                This is how the community knows you.
+              </p>
+            </Field>
+
+            {/* ── Day 4: Ascent Stage ── */}
+            <Field label="Where Are You in Your Ascent?">
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { value: 'seeker',  label: 'The Seeker',  sub: 'Finding my purpose' },
+                  { value: 'builder', label: 'The Builder', sub: 'Building toward it' },
+                  { value: 'leader',  label: 'The Leader',  sub: 'Leading others' },
+                ].map((stage) => (
+                  <button
+                    key={stage.value}
+                    type="button"
+                    onClick={() => setForm({ ...form, ascent_stage: stage.value })}
+                    className="flex-1 px-3 py-2.5 rounded-xl text-left transition-all"
+                    style={{
+                      minWidth: '100px',
+                      border: form.ascent_stage === stage.value
+                        ? '2px solid var(--accent)'
+                        : '1.5px solid var(--border)',
+                      background: form.ascent_stage === stage.value
+                        ? 'rgba(200,169,110,0.08)'
+                        : 'var(--bg-input)',
+                    }}
+                  >
+                    <span style={{
+                      display: 'block',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      color: form.ascent_stage === stage.value ? 'var(--accent)' : 'var(--text)',
+                      marginBottom: '0.125rem',
+                      fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+                    }}>
+                      {stage.label}
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                      {stage.sub}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </Field>
+
+            {/* Current / Goal Role */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Current Role" required>
+              <Field label="Current Role">
                 <input value={form.current_role} onChange={(e) => setForm({ ...form, current_role: e.target.value })}
                   placeholder="e.g. Software Engineer" className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
               </Field>
-              <Field label="Goal Role" required>
+              <Field label="Goal Role">
                 <input value={form.goal_role} onChange={(e) => setForm({ ...form, goal_role: e.target.value })}
                   placeholder="e.g. Engineering Manager" className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
               </Field>
             </div>
 
+            {/* Industry / Time */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Industry" required>
+              <Field label="Industry">
                 <select value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })}
                   className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle}>
                   <option value="">Select industry</option>
@@ -374,23 +437,27 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               </Field>
             </div>
 
+            {/* Biggest Challenge */}
             <Field label="Biggest Challenge">
               <textarea value={form.biggest_challenge} onChange={(e) => setForm({ ...form, biggest_challenge: e.target.value })}
                 placeholder="What's your biggest professional challenge right now?"
                 rows={3} className="w-full px-3.5 py-2.5 text-sm rounded-xl resize-none" style={inputStyle} />
             </Field>
 
-            <div className="rounded-lg p-3" style={{ background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.12)' }}>
+            {/* Journey preview */}
+            <div className="rounded-lg p-3" style={{ background: 'rgba(200,169,110,0.04)', border: '1px solid rgba(200,169,110,0.12)' }}>
               <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-                Your journey: <span style={{ color: 'var(--text-muted)' }}>{form.current_role || '...'}</span>
+                Your journey:{' '}
+                <span style={{ color: 'var(--text-muted)' }}>{form.current_role || '...'}</span>
                 {' '}&rarr;{' '}
                 <span style={{ color: 'var(--accent)' }}>{form.goal_role || '...'}</span>
               </p>
             </div>
 
+            {/* Save button */}
             <div className="flex items-center gap-3">
               <button onClick={handleProfileSave}
-                disabled={saving || !form.full_name.trim() || !form.current_role.trim()}
+                disabled={saving || !form.full_name.trim()}
                 className="px-6 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40"
                 style={{ background: 'var(--accent)', color: '#000' }}>
                 {saving ? 'Saving...' : 'Save Changes'}
@@ -463,9 +530,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
                   {pwSaving ? 'Updating...' : 'Update Password'}
                 </button>
 
-                {pwResult && (
-                  <StatusBanner success={pwResult.success} message={pwResult.message} />
-                )}
+                {pwResult && <StatusBanner success={pwResult.success} message={pwResult.message} />}
               </div>
             )}
           </div>
@@ -490,7 +555,9 @@ export default function AccountClient({ profile, email, authProvider, userId, no
             <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
                 style={{ background: 'rgba(16,185,129,0.09)', color: 'var(--success)' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
               </div>
               <div className="flex-1">
                 <p className="text-xs font-medium" style={{ color: 'var(--text)' }}>Current session</p>
@@ -500,7 +567,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
             </div>
             <button onClick={handleSignOut} disabled={signingOut}
               className="mt-3 px-4 py-2 rounded-lg text-xs font-semibold disabled:opacity-40"
-              style={{ color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.04)' }}>
+              style={{ color: 'var(--error)', border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.04)' }}>
               {signingOut ? 'Signing out...' : 'Sign Out All Devices'}
             </button>
           </div>
@@ -512,57 +579,57 @@ export default function AccountClient({ profile, email, authProvider, userId, no
       {/* ═══════════════════════════════════════════ */}
       {section === 'plan' && (
         <div className="flex flex-col gap-4">
-          {/* Current Plan — B4 fix: features gated by actual plan tier */}
           {(() => {
             const plan = profile?.subscription_plan || 'free';
             const status = profile?.subscription_status;
             const isActive = ['active', 'trialing'].includes(status) &&
               (!profile?.subscription_end || new Date(profile.subscription_end) > new Date());
 
-            // Plan metadata by tier
             const planMeta: Record<string, { label: string; color: string; features: string[]; missing: string[] }> = {
               free: {
                 label: 'Free',
                 color: '#7A7260',
-                features: ['Sage (3 sessions/month)', '1 mentorship circle', 'Goal tracking'],
-                missing: ['Expert sessions', 'Courses & learning', 'Unlimited Sage'],
+                features: ['AI Coach (3 sessions/month)', '1 accountability circle', 'Goal tracking'],
+                missing: ['Expert sessions', 'Courses & resources', 'Unlimited coaching'],
               },
               explorer: {
                 label: 'Explorer',
                 color: '#14B8A6',
-                features: ['Sage (10 sessions/month)', '1 mentorship circle', 'Courses & learning', 'Goal tracking (3 goals)', 'Weekly reflection prompts'],
-                missing: ['Live mentor sessions', 'Priority support'],
+                features: ['AI Coach (10 sessions/month)', '1 accountability circle', 'Courses & resources', 'Goal tracking (3 goals)', 'Weekly reflection prompts'],
+                missing: ['Live expert sessions', 'Priority support'],
               },
               builder: {
                 label: 'Builder',
-                color: '#E8A020',
-                features: ['Sage (unlimited sessions)', 'Up to 3 mentorship circles', 'Live mentor sessions', 'Human mentor matching', 'Courses & learning', 'Priority support'],
-                missing: ['1-on-1 quarterly expert session', 'Executive peer circle', 'Team dashboard'],
+                color: '#C8A96E',
+                features: ['AI Coach (unlimited)', 'Up to 3 accountability circles', 'Live expert sessions', 'Human mentor matching', 'Courses & resources', 'Priority support'],
+                missing: ['1-on-1 quarterly expert session', 'Executive peer circle'],
               },
               climber: {
                 label: 'Climber',
                 color: '#8B5CF6',
-                features: ['Sage (unlimited + priority)', 'Unlimited mentorship circles', '1-on-1 expert session (quarterly)', 'Executive peer circle', 'Advanced analytics', 'Team dashboard (10 seats)', 'Dedicated account manager'],
+                features: ['AI Coach (unlimited + priority)', 'Unlimited accountability circles', '1-on-1 expert session (quarterly)', 'Executive peer circle', 'Advanced analytics', 'Team dashboard (10 seats)', 'Dedicated account manager'],
                 missing: [],
               },
-              // Legacy aliases
-              standard: { label: 'Builder', color: '#E8A020', features: ['Sage (unlimited)', 'Up to 3 circles', 'Courses & learning', 'Priority support'], missing: [] },
-              tester:   { label: 'Tester',  color: '#E8A020', features: ['Full access (beta tester)', 'All Builder features included'], missing: [] },
+              standard: { label: 'Builder', color: '#C8A96E', features: ['AI Coach (unlimited)', 'Up to 3 circles', 'Courses & resources', 'Priority support'], missing: [] },
+              tester:   { label: 'Tester',  color: '#C8A96E', features: ['Full access (beta tester)', 'All Builder features included'], missing: [] },
               pro:      { label: 'Pro',     color: '#8B5CF6', features: ['Full access', 'All features included'], missing: [] },
             };
 
             const meta = planMeta[plan] || planMeta.free;
             const statusLabel = !isActive ? 'Free Tier' : status === 'trialing' ? 'Trial' : 'Active';
             const statusColor = !isActive ? 'var(--accent)' : 'var(--success)';
-            const statusBg    = !isActive ? 'rgba(245,158,11,0.09)' : 'rgba(16,185,129,0.09)';
-            const statusBorder = !isActive ? 'rgba(245,158,11,0.19)' : 'rgba(16,185,129,0.19)';
+            const statusBg    = !isActive ? 'rgba(200,169,110,0.09)' : 'rgba(16,185,129,0.09)';
+            const statusBorder = !isActive ? 'rgba(200,169,110,0.19)' : 'rgba(16,185,129,0.19)';
 
             return (
               <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: `1px solid ${meta.color}40` }}>
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>Current Plan</span>
-                    <h2 className="text-lg font-bold mt-0.5" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: meta.color }}>
+                    <h2 className="text-lg font-bold mt-0.5" style={{
+                      fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+                      color: meta.color,
+                    }}>
                       {meta.label}
                     </h2>
                   </div>
@@ -572,7 +639,6 @@ export default function AccountClient({ profile, email, authProvider, userId, no
                   </span>
                 </div>
 
-                {/* Included features */}
                 <div className="flex flex-col gap-1.5 mb-2">
                   {meta.features.map((f) => (
                     <div key={f} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -582,7 +648,6 @@ export default function AccountClient({ profile, email, authProvider, userId, no
                   ))}
                 </div>
 
-                {/* Missing features */}
                 {meta.missing.length > 0 && (
                   <div className="flex flex-col gap-1.5 mb-4 mt-1">
                     {meta.missing.map((f) => (
@@ -594,11 +659,10 @@ export default function AccountClient({ profile, email, authProvider, userId, no
                   </div>
                 )}
 
-                {/* Upgrade CTA — only for non-climber non-active, or free users */}
                 {(!isActive || ['free', 'explorer', 'builder'].includes(plan)) && plan !== 'climber' && (
                   <a href="/checkout"
                     className="block w-full py-2.5 rounded-lg text-sm font-semibold text-center transition-all mt-4"
-                    style={{ background: meta.color, color: plan === 'free' || !isActive ? '#000' : '#fff' }}>
+                    style={{ background: meta.color, color: '#000' }}>
                     {!isActive
                       ? (plan === 'free' ? 'Choose a Plan →' : 'Reactivate Plan →')
                       : `Upgrade to ${plan === 'explorer' ? 'Builder' : 'Climber'} →`}
@@ -656,7 +720,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
           <p className="text-xs mb-4" style={{ color: 'var(--text-dim)' }}>Choose what emails you receive from Ascentor.</p>
 
           <div className="flex flex-col gap-1">
-            <Toggle label="Coaching session summaries" sub="Get a recap after each Sage session"
+            <Toggle label="Coaching session summaries" sub="Get a recap after each coaching session"
               checked={notifs.email_coaching_summary}
               onChange={(v) => setNotifs({ ...notifs, email_coaching_summary: v })} />
             <Toggle label="Weekly progress digest" sub="A summary of your goals, streaks, and activity"
@@ -668,7 +732,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
             <Toggle label="Goal reminders" sub="Nudges to keep you on track with your 90-day goal"
               checked={notifs.email_goal_reminders}
               onChange={(v) => setNotifs({ ...notifs, email_goal_reminders: v })} />
-            <Toggle label="Community activity" sub="Posts and replies in your cohorts"
+            <Toggle label="Circle activity" sub="Posts and replies in The Circle"
               checked={notifs.email_community_activity}
               onChange={(v) => setNotifs({ ...notifs, email_community_activity: v })} />
             <Toggle label="Product updates & tips" sub="New features, tips, and announcements"
@@ -702,6 +766,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
                 ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
                 : 'Unknown'
             } />
+            <InfoRow label="Ascent stage" value={form.ascent_stage ? form.ascent_stage.charAt(0).toUpperCase() + form.ascent_stage.slice(1) : 'Not set'} />
             <InfoRow label="Account role" value={profile?.role || 'member'} />
           </div>
 
@@ -717,7 +782,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
           </div>
 
           {/* Delete Account */}
-          <div className="rounded-xl p-5" style={{ background: 'rgba(239,68,68,0.02)', border: '1px solid rgba(239,68,68,0.15)' }}>
+          <div className="rounded-xl p-5" style={{ background: 'rgba(220,38,38,0.02)', border: '1px solid rgba(220,38,38,0.15)' }}>
             <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--error)' }}>Delete Account</h2>
             <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>
               Permanently delete your account and all associated data. This action cannot be undone.
@@ -726,11 +791,11 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               <input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)}
                 placeholder='Type "DELETE" to confirm'
                 className="px-3.5 py-2.5 text-sm rounded-xl flex-1"
-                style={{ ...inputStyle, borderColor: deleteConfirm === 'DELETE' ? 'rgba(239,68,68,0.5)' : 'var(--border)' }} />
+                style={{ ...inputStyle, borderColor: deleteConfirm === 'DELETE' ? 'rgba(220,38,38,0.5)' : 'var(--border)' }} />
               <button onClick={handleDeleteAccount}
                 disabled={deleteConfirm !== 'DELETE' || deleting}
                 className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-30 shrink-0"
-                style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)' }}>
+                style={{ background: 'rgba(220,38,38,0.1)', color: 'var(--error)', border: '1px solid rgba(220,38,38,0.3)' }}>
                 {deleting ? 'Processing...' : 'Delete My Account'}
               </button>
             </div>
@@ -744,8 +809,10 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 // ═══ SHARED COMPONENTS ═══
 
 const inputStyle: React.CSSProperties = {
-  background: 'var(--bg-input)', color: 'var(--text)',
-  border: '1px solid var(--border)', outline: 'none',
+  background: 'var(--bg-input)',
+  color: 'var(--text)',
+  border: '1px solid var(--border)',
+  outline: 'none',
 };
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
@@ -779,7 +846,10 @@ function Toggle({ label, sub, checked, onChange }: {
       </div>
       <button onClick={() => onChange(!checked)}
         className="w-10 h-5 rounded-full transition-all shrink-0 relative"
-        style={{ background: checked ? 'var(--accent)' : 'var(--bg-input)', border: `1px solid ${checked ? 'var(--accent)' : 'var(--border)'}` }}>
+        style={{
+          background: checked ? 'var(--accent)' : 'var(--bg-input)',
+          border: `1px solid ${checked ? 'var(--accent)' : 'var(--border)'}`,
+        }}>
         <div className="w-3.5 h-3.5 rounded-full transition-all absolute top-0.5"
           style={{ background: checked ? '#000' : 'var(--text-dim)', left: checked ? '20px' : '3px' }} />
       </button>
@@ -790,8 +860,8 @@ function Toggle({ label, sub, checked, onChange }: {
 function StatusBanner({ success, message }: { success?: boolean; message: string }) {
   return (
     <div className="rounded-lg p-3" style={{
-      background: success ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)',
-      border: `1px solid ${success ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+      background: success ? 'rgba(16,185,129,0.06)' : 'rgba(220,38,38,0.06)',
+      border: `1px solid ${success ? 'rgba(16,185,129,0.2)' : 'rgba(220,38,38,0.2)'}`,
     }}>
       <p className="text-xs" style={{ color: success ? 'var(--success)' : 'var(--error)' }}>{message}</p>
     </div>

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 
 
@@ -145,7 +145,7 @@ function Nav() {
           <Link href="/signup"
             className="px-5 py-2 rounded-lg text-sm font-semibold"
             style={{ background: '#E8A020', color: '#000' }}>
-            Start Free Trial
+            Join Ascentor Trial
           </Link>
         </div>
       </div>
@@ -280,7 +280,7 @@ export default function WhoItsForPage() {
                   <span className="text-xs font-normal ml-2" style={{ color: '#6B7280' }}>(~${p.priceUsd} USD)</span>
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
-                  7-day free trial · No credit card required · Cancel anytime
+                   ·  · 
                 </p>
               </div>
               <div className="flex gap-3">
@@ -292,7 +292,7 @@ export default function WhoItsForPage() {
                 <Link href={p.href}
                   className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-transform hover:scale-105"
                   style={{ background: p.color, color: '#000' }}>
-                  Start Free Trial →
+                  Join Ascentor Trial →
                 </Link>
               </div>
             </div>
@@ -309,7 +309,7 @@ export default function WhoItsForPage() {
           </p>
           <h2 className="text-3xl font-semibold mb-3"
             style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
-            Built for ambitious professionals, everywhere.
+            Built for purposeful individuals, everywhere.
           </h2>
           <p className="text-sm max-w-xl mx-auto mb-10" style={{ color: '#6B7280', lineHeight: 1.7 }}>
             Our mentors, peer circles, and AI context are specifically calibrated
@@ -341,7 +341,7 @@ export default function WhoItsForPage() {
             Everyone who made it<br />had someone who believed in them.
           </h2>
           <p className="text-sm mb-8 max-w-lg mx-auto" style={{ color: '#9CA3AF', lineHeight: 1.75 }}>
-            Join 247+ ambitious professionals already on the platform.
+            Join 247+ purposeful individuals already on the platform.
             Early members get <strong style={{ color: '#E8A020' }}>3 months free</strong> on launch.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">

@@ -51,6 +51,20 @@ const nextConfig: NextConfig = {
     'web-push',
   ],
 
+  // ── Redirects for deprecated pages ──────────────────────────────
+  async redirects() {
+    return [
+      { source: '/pricing',      destination: '/community',        permanent: false },
+      { source: '/who-its-for',  destination: '/movement',         permanent: false },
+      { source: '/how-it-works', destination: '/movement',         permanent: false },
+      { source: '/products',     destination: '/community',        permanent: false },
+      { source: '/mentor-apply', destination: '/elevation-summit', permanent: false },
+      { source: '/circle',       destination: '/community',        permanent: false },
+      { source: '/summit',       destination: '/elevation-summit', permanent: false },
+    ];
+  },
+
+  // ── Security headers ─────────────────────────────────────────────
   async headers() {
     return [
       {
@@ -59,6 +73,16 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
     ];
+  },
+
+  // ── Images ───────────────────────────────────────────────────────
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+      },
+    ],
   },
 };
 

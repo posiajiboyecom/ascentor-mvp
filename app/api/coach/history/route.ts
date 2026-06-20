@@ -1,38 +1,44 @@
+// app/api/coach/history/route.ts
+// ============================================================
+// GET /api/coach/history?sessionId=...
+// Returns the full message array for a single coaching session,
+// used when the user taps a card in "Recent Sessions" to resume it.
+// ============================================================
+
+import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { NextRequest, NextResponse } from 'next/server';
+import type { CoachMessage } from '@/types/coach';
 
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!user) return NextResponse.json({ sessions: [], total: 0 });
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const { searchParams } = new URL(req.url);
-  const limit  = Math.min(parseInt(searchParams.get('limit')  || '10', 10), 50);
-  const offset = Math.max(parseInt(searchParams.get('offset') || '0',  10), 0);
+  const sessionId = searchParams.get('sessionId');
 
-  // Get total count first (for "X earlier sessions" label)
-  const { count } = await supabase
+  if (!sessionId) {
+    return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
+  }
+
+  const { data: session, error } = await supabase
     .from('coaching_sessions')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id);
+    .select('id, user_id, session_type, messages')
+    .eq('id', sessionId)
+    .single();
 
-  const { data: sessions, error } = await supabase
-    .from('coaching_sessions')
-    .select('id, user_input, ai_response, session_type, created_at')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false }) // newest first, reversed in client
-    .range(offset, offset + limit - 1);
-
-  if (error) {
-    console.error('[coach/history]', error);
-    return NextResponse.json({ sessions: [], total: 0 });
+  if (error || !session || session.user_id !== user.id) {
+    return NextResponse.json({ error: 'Session not found' }, { status: 404 });
   }
 
   return NextResponse.json({
-    sessions: (sessions || []).reverse(), // chronological order for display
-    total: count || 0,
-    offset,
-    limit,
+    sessionId: session.id,
+    sessionTypeId: session.session_type,
+    messages: (session.messages as CoachMessage[]) ?? [],
   });
 }

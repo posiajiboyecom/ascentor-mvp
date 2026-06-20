@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 
 
@@ -49,7 +49,7 @@ const STEPS = [
     detail: "Our mentors are vetted senior professionals — CTOs, founders, directors, GPs. They've navigated the same systems, the same politics, and the same barriers you're facing right now.",
     icon:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>',
     color:  '#E8A020',
-    tags:   ['Verified mentors', 'ambitious professionals', '1-on-1 sessions'],
+    tags:   ['Verified mentors', 'purposeful individuals', '1-on-1 sessions'],
   },
   {
     number: '05',
@@ -93,7 +93,7 @@ const PILLARS = [
   },
   {
     emoji: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-    title: 'Mentorship Circles',
+    title: 'Accountability Circles',
     color: '#8B5CF6',
     bg:    'rgba(139,92,246,0.06)',
     border:'rgba(139,92,246,0.18)',
@@ -164,7 +164,7 @@ function Nav() {
           <Link href="/signup"
             className="px-5 py-2 rounded-lg text-sm font-semibold"
             style={{ background: '#E8A020', color: '#000' }}>
-            Start Free Trial
+            Join Ascentor Trial
           </Link>
         </div>
       </div>
@@ -191,7 +191,7 @@ export default function HowItWorksPage() {
         </h1>
         <p className="text-base max-w-2xl mx-auto" style={{ color: '#6B7280', lineHeight: 1.75 }}>
           Ascentor combines Sage,, human expertise, and peer accountability
-          into one system designed specifically for ambitious professionals.
+          into one system designed specifically for purposeful individuals.
         </p>
       </section>
 
@@ -355,14 +355,14 @@ export default function HowItWorksPage() {
             Your first session is free.<br />Your first breakthrough won&apos;t be far behind.
           </h2>
           <p className="text-sm mb-8 max-w-lg mx-auto" style={{ color: '#9CA3AF', lineHeight: 1.75 }}>
-            7-day free trial on every plan. No credit card required. Cancel anytime.
+             on every plan. . .
             Join 247+ professionals already on the waitlist.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/signup"
               className="px-8 py-3.5 rounded-xl text-sm font-semibold transition-transform hover:scale-105"
               style={{ background: '#E8A020', color: '#000' }}>
-              Start Free Trial →
+              Join Ascentor Trial →
             </Link>
             <Link href="/who-its-for"
               className="px-8 py-3.5 rounded-xl text-sm font-semibold"

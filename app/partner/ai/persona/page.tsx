@@ -1,4 +1,4 @@
-// app/partner/ai-persona/page.tsx
+﻿// app/partner/ai-persona/page.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 // Partner can configure their AI coach's persona here.
 // This replaces the hardcoded system prompt in /api/coach/session/route.ts
@@ -14,7 +14,7 @@ Be culturally aware of [YOUR CULTURAL CONTEXT] and the career challenges your us
 const PERSONA_TEMPLATES = [
   {
     name: 'African Professionals (default)',
-    prompt: `You are an expert leadership coach for African professionals aged 20-40.
+    prompt: `You are an expert leadership coach for purposeful individuals aged 20-40.
 Use the Socratic method. Max 150 words. Ask ONE question at a time.
 Be culturally aware of hierarchical cultures, ethnic/family networks,
 and that career decisions carry higher economic stakes.`,

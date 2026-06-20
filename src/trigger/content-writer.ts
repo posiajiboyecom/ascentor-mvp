@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════
 // Agent 2: Content Writer — Ambitious Professional Edition
 //
 // AUDIENCE SEGMENTS:
@@ -99,8 +99,8 @@ const SYSTEM =
 
 // ── ASCENTOR BRAND ────────────────────────────────────────────
 const ASCENTOR_BRAND =
-  "ABOUT ASCENTOR: We are an AI-powered mentorship and leadership development platform " +
-  "built for ambitious professionals worldwide. " +
+  "ABOUT ASCENTOR: We are an purposeful development and leadership development platform " +
+  "built for purposeful individuals worldwide. " +
   "We have worked with thousands of professionals across industries and continents. " +
   "We know what works because we have been in the room — not because we studied it from outside. " +
 
@@ -128,7 +128,7 @@ const SEGMENT_CTA: Record<string, string> = {
   builder:
     "CTA FRAMING FOR BUILDER: Ascentor is the edge that closes the gap between effort and recognition. " +
     "STRONG: 'Ascentor members are not waiting to be discovered — they are engineering their visibility. This is the playbook. Join them.' " +
-    "WEAK: 'Check out Ascentor for career development.'",
+    "WEAK: 'Check out Ascentor for purposeful development.'",
   climber:
     "CTA FRAMING FOR CLIMBER: Ascentor is the strategic thinking partner senior leaders deserve. " +
     "STRONG: 'The leaders making the right moves at this level are not doing it alone. This is the conversation Ascentor is built for.' " +
@@ -409,7 +409,7 @@ export const contentWriterAgent = task({
             `- A question post designed to get ${audienceMeta.label}s talking in the comments.\n` +
             `- The question must be specific enough that they feel personally called out.\n` +
             `  STRONG: "What is the one thing you wish someone had told you before your first salary negotiation? Drop it below — someone reading this needs it."\n` +
-            `  WEAK: "What do you think about career development? Let us know!"\n` +
+            `  WEAK: "What do you think about purposeful development? Let us know!"\n` +
             `  STRONG: "The moment you realised the job you thought you wanted was not actually the job you wanted — what happened next?"\n` +
             `  WEAK: "Have you ever faced challenges in your career journey?"\n` +
             `- CAPTION: 70–90 words. Set the question up in 2–3 sentences, then ask it. Max 2 emojis. ZERO corporate tone.\n` +

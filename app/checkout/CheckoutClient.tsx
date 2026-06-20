@@ -1,4 +1,4 @@
-// FILE: app/checkout/page.tsx
+﻿// FILE: app/checkout/page.tsx
 // FIXES: #1 theme-aware logo · #2 global theme toggle sync · #3 Most Popular badge visible
 
 'use client'
@@ -388,7 +388,7 @@ export default function CheckoutClient() {
             Everyone who made it<br/>had <em>someone.</em>
           </h1>
           <p className="co-hero-sub">
-            Sage, expert sessions, and peer accountability — for ambitious professionals. Start free, upgrade when ready.
+            Sage, expert sessions, and peer accountability — for purposeful individuals. Start free, upgrade when ready.
           </p>
 
           <div className="co-billing">
@@ -457,7 +457,7 @@ export default function CheckoutClient() {
                 </ul>
 
                 <div className="co-trial-box">
-                  <strong>7-day free trial.</strong> No charge until Day 8.<br/>Cancel before then and pay nothing.
+                  <strong>.</strong> No charge until Day 8.<br/>Cancel before then and pay nothing.
                 </div>
 
                 <button

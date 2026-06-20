@@ -9,9 +9,12 @@ export default function LandingPage() {
 
   const [email, setEmail] = useState('');
   const [hasBlogPosts, setHasBlogPosts] = useState(false);
-  const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+  const [subLoading, setSubLoading] = useState(false);
+  const [subError, setSubError] = useState('');
+  const [userCount, setUserCount] = useState<number | null>(null);
 
-  // B7: Check if blog has published posts — hide nav link when empty
   useEffect(() => {
     supabase
       .from('blog_posts')
@@ -20,18 +23,10 @@ export default function LandingPage() {
       .then(({ count }) => { if ((count || 0) > 0) setHasBlogPosts(true); });
 
     supabase
-      .from('products')
-      .select('id, name, tagline, price, currency, image_url, category, badge, cta_label')
-      .eq('published', true)
-      .eq('is_featured', true)
-      .order('sort_order', { ascending: true })
-      .limit(3)
-      .then(({ data }) => { if (data?.length) setFeaturedProducts(data); });
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .then(({ count }) => { if (count) setUserCount(count); });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [subscribed, setSubscribed] = useState(false);
-  const [subLoading, setSubLoading] = useState(false);
-  const [subError, setSubError] = useState('');
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +43,6 @@ export default function LandingPage() {
     setSubLoading(false);
     if (error) {
       if (error.message.includes('duplicate') || error.code === '23505') {
-        // Already in Supabase — still try to sync to MailerLite in case they were missed
         fetch('/api/newsletter', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -59,7 +53,6 @@ export default function LandingPage() {
         setSubError('Something went wrong. Please try again.');
       }
     } else {
-      // Sync to MailerLite via the newsletter API (handles ML + Supabase idempotently)
       fetch('/api/newsletter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -72,893 +65,630 @@ export default function LandingPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        /* ── Page-level overrides ── */
+        body { background: #FAFAF8 !important; color: #0F0F0E !important; }
 
-        :root {
-          --gold: #E8A020;
-          --gold-light: #F5C55A;
-          --gold-pale: #FDF3E0;
-          --dark: #0F0E0B;
-          --dark-2: #1A1914;
-          --dark-3: #252420;
-          --mid: #5C5947;
-          --light: #F7F4EE;
-          --white: #FDFCF9;
-          --text: #2A2820;
-          --text-light: #7A7560;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-
-        .lp-body {
-          font-family: 'Syne', system-ui, sans-serif;
-          background: var(--white);
-          color: var(--text);
-          overflow-x: hidden;
-        }
-
-        /* ── NAV ── */
-        .lp-nav {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-          display: flex; align-items: center; gap: 0;
-          padding: 14px 32px;
-          background: rgba(253,252,249,0.92);
-          backdrop-filter: blur(12px);
-          border-bottom: 1px solid rgba(232,160,32,0.12);
-        }
-        .lp-nav-logo {
-          display: flex; align-items: center; gap: 8px;
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: 22px; font-weight: 700;
-          color: var(--dark); text-decoration: none;
-        }
-        .lp-nav-logo span { color: var(--gold); }
-        .lp-nav-links { display: flex; align-items: center; gap: 20px; list-style: none; flex: 1; justify-content: center; }
-        .lp-nav-links a { text-decoration: none; color: var(--mid); font-size: 13px; font-weight: 500; transition: color 0.2s; white-space: nowrap; letter-spacing: -0.01em; }
-        .lp-nav-links a:hover { color: var(--dark); }
-        .lp-nav-right {
-          display: flex; align-items: center; gap: 12px; flex-shrink: 0;
-        }
-        .lp-nav-login {
-          text-decoration: none; color: var(--mid); font-size: 13px; font-weight: 500;
+        .nav-link {
+          font-family: var(--font-body, 'Inter', sans-serif);
+          font-size: 0.9rem;
+          font-weight: 500;
+          color: #374151;
+          text-decoration: none;
           transition: color 0.2s;
         }
-        .lp-nav-login:hover { color: var(--dark); }
-        .lp-nav-cta {
-          background: var(--gold) !important; color: var(--dark) !important;
-          padding: 8px 18px; border-radius: 8px;
-          font-weight: 600 !important; font-size: 13px !important;
-          transition: background 0.2s, transform 0.15s !important;
-          white-space: nowrap;
-        }
-        .lp-nav-cta:hover { background: var(--gold-light) !important; transform: translateY(-1px); }
+        .nav-link:hover { color: #0F0F0E; }
 
-        /* ── HERO ── */
-        .lp-hero {
-          min-height: 100vh; display: flex; flex-direction: column;
-          align-items: center; justify-content: center;
-          padding: 120px 24px 80px; position: relative; overflow: hidden;
-          background: var(--white);
-        }
-        .lp-hero-img {
-          position: absolute; inset: 0;
-          background-image: url('/hero-community.jpg');
-          background-size: cover;
-          background-position: center 35%;
-          opacity: 0.18;
-          z-index: 0;
-        }
-        .lp-hero-bg {
-          position: absolute; inset: 0; pointer-events: none; z-index: 1;
-          background:
-            linear-gradient(to bottom, rgba(253,252,249,0.72) 0%, rgba(253,252,249,0.25) 40%, rgba(253,252,249,0.82) 100%),
-            radial-gradient(ellipse 60% 50% at 15% 80%, rgba(232,160,32,0.14) 0%, transparent 70%),
-            radial-gradient(ellipse 40% 40% at 85% 20%, rgba(232,160,32,0.10) 0%, transparent 60%);
-        }
-        .lp-badge {
-          display: inline-flex; align-items: center; gap: 8px;
-          background: var(--gold-pale); border: 1px solid rgba(232,160,32,0.3);
-          border-radius: 100px; padding: 7px 16px;
-          font-size: 13px; font-weight: 500; color: #8B6010;
-          margin-bottom: 32px; animation: lp-fadeDown 0.6s ease both;
-          position: relative; z-index: 1;
-        }
-        .lp-badge-dot {
-          width: 7px; height: 7px; border-radius: 50%; background: var(--gold);
-          animation: lp-pulse 2s ease infinite;
-        }
-        @keyframes lp-pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.8); }
-        }
-        @keyframes lp-fadeDown {
-          from { opacity: 0; transform: translateY(-16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes lp-fadeUp {
-          from { opacity: 0; transform: translateY(24px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .lp-hero-headline {
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: clamp(44px, 7vw, 88px); font-weight: 900; line-height: 1.05;
-          text-align: center; max-width: 860px; color: var(--dark);
-          animation: lp-fadeUp 0.7s 0.15s ease both; position: relative; z-index: 1;
-        }
-        .lp-hero-headline .accent { color: var(--gold); }
-        .lp-hero-sub {
-          max-width: 560px; text-align: center; font-size: 18px; line-height: 1.7;
-          color: var(--text-light); margin-top: 24px; font-weight: 400;
-          animation: lp-fadeUp 0.7s 0.3s ease both; position: relative; z-index: 1;
-        }
-        .lp-hero-sub strong { color: var(--text); font-weight: 600; }
-        .lp-hero-actions {
-          display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
-          margin-top: 40px; animation: lp-fadeUp 0.7s 0.45s ease both;
-          position: relative; z-index: 1;
-        }
-        .lp-btn-primary {
-          background: var(--gold); color: var(--dark);
-          font-family: 'Syne', system-ui, sans-serif; font-size: 16px; font-weight: 700;
-          padding: 16px 32px; border-radius: 10px; border: none; cursor: pointer;
-          text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
-          transition: all 0.2s; box-shadow: 0 4px 20px rgba(232,160,32,0.35);
-        }
-        .lp-btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(232,160,32,0.45); }
-        .lp-btn-secondary {
-          background: transparent; color: #2A2820;
-          font-family: 'Syne', system-ui, sans-serif; font-size: 15px; font-weight: 600;
-          padding: 15px 28px; border-radius: 10px;
-          border: 1.5px solid rgba(42,40,32,0.35); cursor: pointer; text-decoration: none; transition: all 0.2s;
-          display: inline-flex; align-items: center; white-space: nowrap;
-        }
-        .lp-btn-secondary:hover { border-color: var(--gold); color: var(--gold); background: rgba(232,160,32,0.04); }
-        .lp-hero-trust {
-          margin-top: 16px; font-size: 13px; color: var(--text-light);
-          animation: lp-fadeUp 0.7s 0.55s ease both; position: relative; z-index: 1;
+        .eyebrow {
+          font-family: var(--font-body, 'Inter', sans-serif);
+          font-size: 0.75rem;
+          font-weight: 600;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #C8A96E;
         }
 
-        /* ── STATS BAR ── */
-        .lp-stats-bar { background: var(--dark); padding: 40px 48px; display: flex; justify-content: center; }
-        .lp-stat-item { text-align: center; padding: 0 60px; border-right: 1px solid rgba(255,255,255,0.08); }
-        .lp-stat-item:last-child { border-right: none; }
-        .lp-stat-number { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 44px; font-weight: 700; color: var(--gold); line-height: 1; }
-        .lp-stat-label { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 8px; }
-
-        /* ── SHARED ── */
-        .lp-section-label { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
-        .lp-section-headline { font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(32px, 4vw, 52px); font-weight: 700; text-align: center; color: var(--dark); max-width: 680px; line-height: 1.15; }
-        .lp-section-sub { text-align: center; font-size: 17px; line-height: 1.6; color: var(--text-light); max-width: 540px; margin-top: 16px; }
-
-        /* ── PROBLEM ── */
-        .lp-problem-section { padding: 100px 48px; background: var(--light); display: flex; flex-direction: column; align-items: center; }
-        .lp-problem-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1000px; margin-top: 60px; }
-        .lp-problem-card { background: var(--white); border-radius: 16px; padding: 36px 32px; border: 1px solid rgba(42,40,32,0.06); position: relative; overflow: hidden; }
-        .lp-problem-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--gold), transparent); }
-        .lp-problem-quote { font-size: 15px; line-height: 1.7; color: var(--text); font-style: italic; margin-bottom: 20px; }
-        .lp-problem-quote strong { color: var(--dark); font-style: normal; font-weight: 600; }
-        .lp-problem-persona { font-size: 13px; color: var(--text-light); font-weight: 500; }
-
-        /* ── FOR SECTION ── */
-        .lp-for-section { padding: 100px 48px; background: var(--white); display: flex; flex-direction: column; align-items: center; }
-        .lp-for-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1040px; margin-top: 56px; width: 100%; }
-        .lp-for-card { border-radius: 20px; padding: 40px 32px; position: relative; overflow: hidden; transition: transform 0.25s, box-shadow 0.25s; cursor: default; }
-        .lp-for-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.08); }
-        .lp-for-card.explorer { background: #F7F2E8; border: 1.5px solid rgba(232,160,32,0.2); }
-        .lp-for-card.builder { background: var(--dark-2); border: 1.5px solid rgba(232,160,32,0.15); }
-        .lp-for-card.climber { background: var(--gold); border: 1.5px solid transparent; }
-        .lp-for-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 12px; border-radius: 100px; margin-bottom: 20px; }
-        .explorer .lp-for-tag { background: rgba(232,160,32,0.15); color: #8B6010; }
-        .builder .lp-for-tag { background: rgba(232,160,32,0.15); color: var(--gold); }
-        .climber .lp-for-tag { background: rgba(15,14,11,0.12); color: var(--dark); }
-        .lp-for-age { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 36px; font-weight: 900; line-height: 1; margin-bottom: 8px; }
-        .explorer .lp-for-age { color: var(--dark); }
-        .builder .lp-for-age { color: var(--white); }
-        .climber .lp-for-age { color: var(--dark); }
-        .lp-for-title { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
-        .explorer .lp-for-title { color: var(--dark); }
-        .builder .lp-for-title { color: var(--white); }
-        .climber .lp-for-title { color: var(--dark); }
-        .lp-for-desc { font-size: 14px; line-height: 1.7; font-weight: 400; }
-        .explorer .lp-for-desc { color: var(--text-light); }
-        .builder .lp-for-desc { color: rgba(255,255,255,0.6); }
-        .climber .lp-for-desc { color: rgba(15,14,11,0.7); }
-        .lp-for-list { list-style: none; margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
-        .lp-for-list li { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
-        .explorer .lp-for-list li { color: var(--text); }
-        .builder .lp-for-list li { color: rgba(255,255,255,0.75); }
-        .climber .lp-for-list li { color: var(--dark); }
-        .lp-for-list li::before { content: '→'; font-size: 12px; opacity: 0.6; }
-
-        /* ── PILLARS ── */
-        .lp-pillars-section { padding: 100px 48px; background: var(--dark); display: flex; flex-direction: column; align-items: center; }
-        .lp-pillars-section .lp-section-headline { color: var(--white); }
-        .lp-pillars-section .lp-section-sub { color: rgba(255,255,255,0.5); }
-        .lp-pillars-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1040px; margin-top: 56px; width: 100%; }
-        .lp-pillar-card { background: var(--dark-2); border-radius: 20px; padding: 40px 32px; border: 1px solid rgba(255,255,255,0.06); position: relative; overflow: hidden; transition: border-color 0.25s, transform 0.25s; }
-        .lp-pillar-card:hover { border-color: rgba(232,160,32,0.3); transform: translateY(-3px); }
-        .lp-pillar-icon { width: 52px; height: 52px; background: rgba(232,160,32,0.12); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 24px; }
-        .lp-pillar-title { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; font-weight: 700; color: var(--white); margin-bottom: 12px; }
-        .lp-pillar-desc { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.5); margin-bottom: 24px; }
-        .lp-pillar-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-        .lp-pillar-features li { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.7); display: flex; align-items: flex-start; gap: 10px; }
-        .lp-pillar-features li::before { content: '✓'; color: var(--gold); font-size: 13px; flex-shrink: 0; margin-top: 1px; }
-
-        /* ── HOW IT WORKS ── */
-        .lp-how-section { padding: 100px 48px; background: var(--light); display: flex; flex-direction: column; align-items: center; }
-        .lp-steps-container { display: flex; align-items: flex-start; max-width: 900px; margin-top: 60px; width: 100%; position: relative; }
-        .lp-steps-container::before { content: ''; position: absolute; top: 32px; left: calc(33.33% / 2); right: calc(33.33% / 2); height: 1.5px; background: linear-gradient(90deg, var(--gold), rgba(232,160,32,0.2), var(--gold)); }
-        .lp-step { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 24px; }
-        .lp-step-number { width: 64px; height: 64px; background: var(--white); border: 2px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; font-weight: 700; color: var(--gold); margin-bottom: 24px; position: relative; z-index: 1; box-shadow: 0 0 0 6px var(--light); }
-        .lp-step-title { font-size: 17px; font-weight: 700; color: var(--dark); margin-bottom: 10px; }
-        .lp-step-desc { font-size: 14px; line-height: 1.7; color: var(--text-light); }
-
-        /* ── TESTIMONIALS ── */
-        .lp-testimonials-section { padding: 100px 48px; background: var(--white); display: flex; flex-direction: column; align-items: center; }
-        .lp-testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1040px; margin-top: 56px; width: 100%; }
-        .lp-testimonial-card { background: var(--light); border-radius: 20px; padding: 36px; border: 1px solid rgba(42,40,32,0.06); display: flex; flex-direction: column; transition: transform 0.25s, box-shadow 0.25s; }
-        .lp-testimonial-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.07); }
-        .lp-testimonial-card.featured { background: var(--dark); border-color: rgba(232,160,32,0.2); }
-        .lp-testimonial-stars { display: flex; gap: 4px; margin-bottom: 20px; align-items: center; }
-        .lp-star { display: flex; align-items: center; color: var(--gold); }
-        .lp-testimonial-quote { font-size: 15px; line-height: 1.75; color: var(--text); flex: 1; margin-bottom: 24px; }
-        .featured .lp-testimonial-quote { color: rgba(255,255,255,0.85); }
-        .lp-testimonial-author { display: flex; align-items: center; gap: 12px; }
-        .lp-author-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), var(--gold-light)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: var(--dark); flex-shrink: 0; }
-        .lp-author-name { font-size: 14px; font-weight: 700; color: var(--dark); }
-        .featured .lp-author-name { color: var(--white); }
-        .lp-author-role { font-size: 12px; color: var(--text-light); margin-top: 2px; }
-        .featured .lp-author-role { color: rgba(255,255,255,0.45); }
-
-        /* ── MENTORS ── */
-        .lp-mentors-section { padding: 100px 48px; background: var(--gold-pale); display: flex; flex-direction: column; align-items: center; }
-        .lp-mentors-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 900px; margin-top: 56px; width: 100%; }
-        .lp-mentor-card { background: var(--white); border-radius: 20px; padding: 32px; border: 1px solid rgba(232,160,32,0.12); text-align: center; transition: transform 0.25s, box-shadow 0.25s; }
-        .lp-mentor-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(232,160,32,0.12); }
-        .lp-mentor-avatar { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), #C87020); display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 26px; font-weight: 700; color: var(--white); margin: 0 auto 16px; border: 3px solid rgba(232,160,32,0.2); }
-        .lp-mentor-name { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
-        .lp-mentor-title { font-size: 13px; color: var(--text-light); margin-bottom: 16px; line-height: 1.5; }
-        .lp-mentor-badge { display: inline-block; background: rgba(232,160,32,0.12); color: #8B6010; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 12px; border-radius: 100px; }
-
-        /* ── CTA ── */
-        /* ── FREE RESOURCES ── */
-        .lp-free-section { padding: 80px 48px; background: var(--gold-pale); border-top: 1px solid rgba(232,160,32,0.15); }
-        .lp-free-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; max-width: 1080px; margin: 40px auto 0; }
-        @media (max-width: 860px) { .lp-free-grid { grid-template-columns: 1fr; max-width: 440px; } }
-        .lp-free-card { background: var(--white); border-radius: 16px; padding: 28px; border: 1px solid rgba(232,160,32,0.15); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; text-decoration: none; }
-        .lp-free-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(42,40,32,0.08); }
-        .lp-free-type { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); background: rgba(232,160,32,0.1); border: 1px solid rgba(232,160,32,0.2); border-radius: 100px; padding: 3px 10px; width: fit-content; margin-bottom: 14px; }
-        .lp-free-title { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 20px; font-weight: 700; color: var(--dark); line-height: 1.25; margin-bottom: 10px; }
-        .lp-free-desc { font-size: 13px; color: var(--text-light); line-height: 1.6; flex: 1; margin-bottom: 20px; }
-        .lp-free-cta { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 6px; }
-
-        .lp-cta-section { padding: 120px 48px; background: var(--white); display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; overflow: hidden; }
-        .lp-cta-section::before { content: ''; position: absolute; width: 800px; height: 800px; border-radius: 50%; background: radial-gradient(circle, rgba(232,160,32,0.07) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .lp-cta-headline { font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(38px, 5vw, 64px); font-weight: 900; color: var(--dark); max-width: 680px; line-height: 1.1; position: relative; z-index: 1; }
-        .lp-cta-headline .accent { color: var(--gold); }
-        .lp-cta-sub { font-size: 17px; line-height: 1.7; color: var(--text-light); max-width: 480px; margin-top: 20px; position: relative; z-index: 1; }
-        .lp-cta-actions { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 40px; position: relative; z-index: 1; }
-        .lp-cta-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
-        .lp-btn-whatsapp { background: #25D366; color: white; font-family: 'Syne', system-ui, sans-serif; font-size: 15px; font-weight: 700; padding: 14px 28px; border-radius: 10px; border: none; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
-        .lp-btn-whatsapp:hover { background: #1fba59; transform: translateY(-2px); }
-        .lp-email-form { display: flex; max-width: 420px; width: 100%; margin-top: 8px; border-radius: 10px; overflow: hidden; border: 1.5px solid rgba(42,40,32,0.12); }
-        .lp-email-form input { flex: 1; padding: 14px 18px; font-family: 'Syne', system-ui, sans-serif; font-size: 14px; color: var(--text); border: none; outline: none; background: var(--white); }
-        .lp-email-form button { background: var(--gold); color: var(--dark); border: none; padding: 14px 22px; font-family: 'Syne', system-ui, sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
-        .lp-email-form button:hover { background: var(--gold-light); }
-        .lp-cta-note { font-size: 12px; color: var(--text-light); margin-top: 12px; position: relative; z-index: 1; }
-
-        /* ── PRODUCTS ── */
-        .lp-products-section { padding: 100px 48px; background: var(--light); display: flex; flex-direction: column; align-items: center; }
-        .lp-products-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1000px; margin-top: 56px; width: 100%; }
-        .lp-product-card { background: var(--white); border-radius: 20px; overflow: hidden; border: 1px solid rgba(232,160,32,0.1); text-decoration: none; color: inherit; transition: transform 0.25s, box-shadow 0.25s; display: flex; flex-direction: column; }
-        .lp-product-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(232,160,32,0.1); }
-        .lp-product-img { aspect-ratio: 16/9; background: #EDE9E3; position: relative; overflow: hidden; }
-        .lp-product-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
-        .lp-product-card:hover .lp-product-img img { transform: scale(1.04); }
-        .lp-product-img-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 36px; }
-        .lp-product-badge { position: absolute; top: 10px; left: 10px; background: var(--dark); color: var(--gold); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; }
-        .lp-product-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
-        .lp-product-cat { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; display: block; }
-        .lp-product-name { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 20px; font-weight: 700; color: var(--dark); margin-bottom: 6px; line-height: 1.2; }
-        .lp-product-tagline { font-size: 13px; color: var(--text-light); line-height: 1.5; flex: 1; margin-bottom: 16px; }
-        .lp-product-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid rgba(232,160,32,0.1); }
-        .lp-product-price { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 700; color: var(--dark); }
-        .lp-product-price.free { color: #14B8A6; }
-        .lp-product-cta { font-size: 12px; font-weight: 700; color: var(--gold); }
-
-        /* ── FOOTER ── */
-        .lp-footer { background: var(--dark-2); padding: 60px 48px 32px; }
-        .lp-footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-        .lp-footer-brand { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 20px; font-weight: 700; color: var(--white); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .lp-footer-brand span { color: var(--gold); }
-        .lp-footer-tagline { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.4); max-width: 260px; }
-        .lp-footer-col-title { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-bottom: 20px; }
-        .lp-footer-links { list-style: none; display: flex; flex-direction: column; gap: 12px; }
-        .lp-footer-links a { text-decoration: none; font-size: 14px; color: rgba(255,255,255,0.4); transition: color 0.2s; }
-        .lp-footer-links a:hover { color: var(--gold); }
-        .lp-footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 28px; font-size: 13px; color: rgba(255,255,255,0.3); }
-
-        /* ── HAMBURGER BUTTON ── */
-        .lp-hamburger {
-          display: none;
-          align-items: center; justify-content: center;
-          width: 40px; height: 40px; border-radius: 8px;
-          background: rgba(232,160,32,0.08);
-          border: 1.5px solid rgba(232,160,32,0.35);
-          cursor: pointer; flex-direction: column; gap: 5px; padding: 10px;
-          transition: all 0.2s; margin-left: auto;
+        .hero-headline {
+          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+          font-size: clamp(2.75rem, 7vw, 5.5rem);
+          font-weight: 800;
+          line-height: 1.05;
+          letter-spacing: -0.03em;
+          color: #0F0F0E;
         }
-        .lp-hamburger:hover,
-        .lp-hamburger.open { background: rgba(232,160,32,0.15); border-color: var(--gold); }
-        .lp-hamburger span {
-          display: block; width: 18px; height: 1.5px;
-          background: var(--gold); border-radius: 2px; transition: all 0.25s;
-        }
-        .lp-hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
-        .lp-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
-        .lp-hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
 
-        /* ── MOBILE DRAWER ── */
-        .lp-mobile-drawer {
-          display: none; position: fixed; inset: 0; z-index: 300;
+        .section-headline {
+          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+          font-size: clamp(2rem, 4vw, 3.25rem);
+          font-weight: 700;
+          line-height: 1.15;
+          letter-spacing: -0.02em;
+          color: #0F0F0E;
         }
-        .lp-mobile-drawer.open { display: block; }
-        .lp-drawer-overlay {
-          position: absolute; inset: 0; background: rgba(15,14,11,0.55);
-          backdrop-filter: blur(4px);
-        }
-        .lp-drawer-panel {
-          position: absolute; top: 0; right: 0; bottom: 0;
-          width: min(300px, 88vw);
-          background: #FDFCF9; padding: 24px 16px;
-          display: flex; flex-direction: column; gap: 2px;
-          box-shadow: -20px 0 60px rgba(0,0,0,0.25);
-          animation: lp-slideIn 0.22s ease;
-          overflow-y: auto;
-        }
-        @keyframes lp-slideIn {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        .lp-drawer-close {
-          align-self: flex-end; background: none; border: none;
-          font-size: 20px; cursor: pointer; color: #5C5947 !important;
-          padding: 4px 8px; margin-bottom: 6px;
-        }
-        .lp-drawer-link {
-          display: block; padding: 12px 16px; border-radius: 8px;
-          text-decoration: none; font-family: 'Syne', sans-serif;
-          font-size: 16px; font-weight: 600; color: #2A2820 !important;
-          transition: background 0.15s, color 0.15s;
-        }
-        .lp-drawer-link:hover { background: #FDF3E0; color: #0F0E0B !important; }
-        .lp-drawer-divider { height: 1px; background: rgba(42,40,32,0.08); margin: 8px 0; }
-        .lp-drawer-cta {
-          display: block; margin-top: 12px; text-align: center;
-          background: #E8A020; color: #0F0E0B !important;
-          padding: 14px; border-radius: 10px;
-          font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
-          text-decoration: none; transition: background 0.2s;
-        }
-        .lp-drawer-cta:hover { background: #F5C55A; }
 
-        /* ── RESPONSIVE ── */
-        @media (max-width: 860px) {
-          .lp-nav { padding: 12px 16px; }
-          .lp-nav-links { display: none; }
-          .lp-nav-right { display: none; }
-          .lp-hamburger { display: flex; }
-          .lp-stats-bar { flex-direction: column; gap: 32px; padding: 48px 24px; }
-          .lp-stat-item { border-right: none; padding: 0; }
-          .lp-problem-grid, .lp-for-grid, .lp-pillars-grid,
-          .lp-testimonials-grid, .lp-mentors-grid, .lp-products-grid { grid-template-columns: 1fr; }
-          .lp-steps-container { flex-direction: column; gap: 40px; }
-          .lp-steps-container::before { display: none; }
-          .lp-footer-top { grid-template-columns: 1fr 1fr; }
-          .lp-problem-section, .lp-for-section, .lp-pillars-section, .lp-how-section,
-          .lp-testimonials-section, .lp-mentors-section,
-          .lp-products-section, .lp-cta-section { padding: 72px 24px; }
-          .lp-footer { padding: 48px 24px 24px; }
-          .lp-founding-grid { grid-template-columns: 1fr !important; }
+        .card {
+          background: #FFFFFF;
+          border: 1px solid #E8E6E1;
+          border-radius: 1rem;
+          padding: 2rem;
+          transition: box-shadow 0.2s, transform 0.2s;
         }
+        .card:hover {
+          box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+          transform: translateY(-2px);
+        }
+
+        .card-number {
+          font-family: var(--font-accent, 'Playfair Display', serif);
+          font-size: 3rem;
+          font-weight: 700;
+          color: #E8E6E1;
+          line-height: 1;
+          margin-bottom: 1rem;
+        }
+
+        .gold-bar {
+          width: 2.5rem;
+          height: 3px;
+          background: #C8A96E;
+          border-radius: 2px;
+          margin-bottom: 1rem;
+        }
+
+        .dimension-card {
+          background: #FFFFFF;
+          border: 1px solid #E8E6E1;
+          border-radius: 0.75rem;
+          padding: 1.5rem;
+        }
+        .dimension-card h3 {
+          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+          font-size: 1rem;
+          font-weight: 700;
+          color: #0F0F0E;
+          margin-bottom: 0.5rem;
+        }
+        .dimension-card p {
+          font-size: 0.875rem;
+          color: #6B7280;
+          line-height: 1.6;
+        }
+
+        .pillar-card {
+          border: 1px solid #E8E6E1;
+          border-radius: 1rem;
+          padding: 2rem;
+          background: #FAFAF8;
+          position: relative;
+        }
+        .pillar-card.featured {
+          background: #0F0F0E;
+          border-color: #C8A96E;
+        }
+        .pillar-card.featured h3,
+        .pillar-card.featured p {
+          color: #FAFAF8;
+        }
+        .pillar-card.featured p { color: #9CA3AF; }
+
+        .stage-badge {
+          display: inline-block;
+          padding: 0.375rem 0.875rem;
+          border-radius: 9999px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          background: #F4F3EF;
+          color: #6B7280;
+          margin-bottom: 1rem;
+        }
+
+        .quote-block {
+          font-family: var(--font-accent, 'Playfair Display', serif);
+          font-style: italic;
+          font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+          line-height: 1.5;
+          color: #0F0F0E;
+        }
+
+        .summit-banner {
+          background: #0F0F0E;
+          border-radius: 1rem;
+          padding: 1.25rem 1.75rem;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+
+        .input-field {
+          width: 100%;
+          padding: 0.875rem 1rem;
+          background: #FFFFFF;
+          border: 1.5px solid #E8E6E1;
+          border-radius: 0.5rem;
+          font-family: var(--font-body, 'Inter', sans-serif);
+          font-size: 0.9375rem;
+          color: #0F0F0E;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .input-field:focus { border-color: #C8A96E; }
+        .input-field::placeholder { color: #9CA3AF; }
+
+        footer a {
+          color: #6B7280;
+          text-decoration: none;
+          font-size: 0.875rem;
+          transition: color 0.2s;
+        }
+        footer a:hover { color: #0F0F0E; }
       `}</style>
 
-      <div className="lp-body">
+      {/* ── Navigation ── */}
+      <nav style={{
+        position: 'sticky', top: 0, zIndex: 50,
+        background: 'rgba(250,250,248,0.95)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid #E8E6E1',
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' }}>
+            {/* Logo */}
+            <Link href="/" style={{ textDecoration: 'none' }}>
+              <span style={{
+                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+                fontSize: '1.25rem',
+                fontWeight: 800,
+                color: '#0F0F0E',
+                letterSpacing: '-0.03em',
+              }}>Ascentor</span>
+            </Link>
 
-        {/* NAV */}
-        <nav className="lp-nav">
-          <Link href="/" className="lp-nav-logo">
-            <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: '32px', width: 'auto' }} />
-          </Link>
+            {/* Desktop Nav */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }} className="desktop-nav">
+              <Link href="/movement" className="nav-link">The Movement</Link>
+              <Link href="/community" className="nav-link">Community</Link>
+              <Link href="/elevation-summit" className="nav-link">The Elevation Summit</Link>
+              {hasBlogPosts && <Link href="/blog" className="nav-link">Resources</Link>}
+              <Link href="/about" className="nav-link">About</Link>
+            </div>
 
-          {/* Desktop links */}
-          <ul className="lp-nav-links">
-            <li><Link href="/about">About</Link></li>
-            <li><Link href="/who-its-for">Who It's For</Link></li>
-            <li><Link href="/how-it-works">How It Works</Link></li>
-            <li><Link href="/products">Products</Link></li>
-            <li><Link href="/blog">Blog</Link></li>
-          </ul>
-          <div className="lp-nav-right">
-            <Link href="/login" className="lp-nav-login">Log In</Link>
-            <Link href="/signup" className="lp-nav-cta">Start Free →</Link>
-          </div>
-
-          {/* Hamburger (mobile) */}
-          <button
-            className={`lp-hamburger ${mobileMenuOpen ? 'open' : ''}`}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            <span /><span /><span />
-          </button>
-        </nav>
-
-        {/* Mobile Drawer */}
-        <div className={`lp-mobile-drawer ${mobileMenuOpen ? 'open' : ''}`}>
-          <div className="lp-drawer-overlay" onClick={() => setMobileMenuOpen(false)} />
-          <div className="lp-drawer-panel">
-            <button className="lp-drawer-close" onClick={() => setMobileMenuOpen(false)}>✕</button>
-            <Link href="/about" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>About</Link>
-            <Link href="/who-its-for" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Who It's For</Link>
-            <Link href="/how-it-works" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>How It Works</Link>
-            <Link href="/products" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Products</Link>
-            <Link href="/blog" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Blog</Link>
-            <Link href="/pricing" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
-            <div className="lp-drawer-divider" />
-            <Link href="/login" className="lp-drawer-link" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
-            <Link href="/signup" className="lp-drawer-cta" onClick={() => setMobileMenuOpen(false)}>Start Free — 7 Days →</Link>
+            {/* CTAs */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Link href="/login" style={{
+                fontFamily: 'var(--font-body, "Inter", sans-serif)',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: '#374151',
+                textDecoration: 'none',
+              }}>Sign in</Link>
+              <Link href="/signup" className="btn-primary" style={{ padding: '0.625rem 1.25rem', fontSize: '0.875rem' }}>
+                Join Ascentor →
+              </Link>
+            </div>
           </div>
         </div>
+      </nav>
 
-        {/* HERO */}
-        <section className="lp-hero">
-          <img
-            src="/hero-community.jpg"
-            alt=""
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center 35%',
-              opacity: 0.18,
-              zIndex: 0,
-              pointerEvents: 'none',
-            }}
-          />
-          <div className="lp-hero-bg" />
-          <div className="lp-badge">
-            <div className="lp-badge-dot" />
-            Now accepting founding members — limited spots
-          </div>
-          <h1 className="lp-hero-headline">
-            Everyone who <span className="accent">made it</span><br />
-            had someone who believed in them.
+      {/* ── Hero ── */}
+      <section style={{ padding: 'clamp(5rem, 10vw, 8rem) 1.5rem clamp(4rem, 8vw, 6rem)', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '820px' }}>
+          <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>The Elevation Summit Movement</p>
+
+          <h1 className="hero-headline" style={{ marginBottom: '1.5rem' }}>
+            You were not built<br />to drift.
           </h1>
-          <p className="lp-hero-sub">
-            From figuring out your path to reaching the top of your career — Ascentor gives you an AI coach, expert mentors, and a peer circle. All in one place.
-          </p>
-          <div className="lp-hero-actions">
-            <Link href="/signup" className="lp-btn-primary">Start Free — 7 Days →</Link>
-            <Link href="/who-its-for" className="lp-btn-secondary">See who it's for</Link>
-          </div>
-          <p className="lp-hero-trust">No credit card required · Cancel anytime · 30-day money-back guarantee</p>
-        </section>
 
-        {/* VALUE PROPS BAR */}
-        <div className="lp-stats-bar">
+          <p style={{
+            fontSize: 'clamp(1.0625rem, 2vw, 1.25rem)',
+            color: '#374151',
+            lineHeight: 1.7,
+            maxWidth: '600px',
+            marginBottom: '2.5rem',
+          }}>
+            Ascentor is the daily platform of The Elevation Summit —
+            a global community of purposeful individuals building lives
+            of meaning, leadership, and lasting impact.
+          </p>
+
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+            <Link href="/signup" className="btn-primary">Join the Movement →</Link>
+            <Link href="/elevation-summit" className="btn-secondary">What is The Elevation Summit?</Link>
+          </div>
+
+          {userCount && userCount > 5 && (
+            <p style={{ fontSize: '0.875rem', color: '#9CA3AF' }}>
+              Join {userCount.toLocaleString()}+ people who chose direction over drift.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* ── Summit Banner ── */}
+      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem 5rem' }}>
+        <div className="summit-banner">
+          <div>
+            <p className="eyebrow" style={{ color: '#C8A96E', marginBottom: '0.25rem' }}>The Elevation Summit</p>
+            <p style={{
+              fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+              fontWeight: 700,
+              fontSize: '1.125rem',
+              color: '#FAFAF8',
+            }}>February 2027 · Lagos, Nigeria</p>
+            <p style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '0.25rem' }}>
+              The inaugural gathering. One defining moment.
+            </p>
+          </div>
+          <Link href="/elevation-summit" className="btn-gold">
+            Register Interest →
+          </Link>
+        </div>
+      </section>
+
+      {/* ── Problem Section ── */}
+      <section style={{
+        background: '#0F0F0E',
+        padding: 'clamp(4rem, 8vw, 7rem) 1.5rem',
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ maxWidth: '760px' }}>
+            <h2 className="section-headline" style={{ color: '#FAFAF8', marginBottom: '1.5rem' }}>
+              Most people don't fail because they lack talent.
+              <br />
+              <span style={{ color: '#C8A96E' }}>They fail because they lack architecture.</span>
+            </h2>
+
+            <p style={{ fontSize: '1.125rem', color: '#9CA3AF', lineHeight: 1.75, marginBottom: '1.5rem' }}>
+              No framework for their life. No community holding them accountable.
+              No ideology anchoring their decisions. Just reaction after reaction
+              to whatever the world demands of them.
+            </p>
+
+            <p style={{
+              fontSize: '1.125rem',
+              fontWeight: 600,
+              color: '#FAFAF8',
+            }}>
+              Ascentor exists for the ones who are done reacting.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Who It's For ── */}
+      <section style={{ padding: 'clamp(4rem, 8vw, 7rem) 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ marginBottom: '3.5rem' }}>
+          <p className="eyebrow" style={{ marginBottom: '1rem' }}>Who It's For</p>
+          <h2 className="section-headline">
+            One platform.<br />Every stage of ascent.
+          </h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
           {[
-            { number: '24/7', label: 'Sage — always available' },
-            { number: '$19', label: 'vs $200/hr executive coaching' },
-            { number: '90', label: 'Day structured goal system' },
-            { number: '5×', label: 'Weekly mentor-led sessions' },
-          ].map((s) => (
-            <div key={s.number} className="lp-stat-item">
-              <div className="lp-stat-number">{s.number}</div>
-              <div className="lp-stat-label">{s.label}</div>
+            {
+              stage: 'The Seeker',
+              description:
+                'Still finding the thread. You know there is more, but you have not named it yet. Ascentor helps you find your purpose framework and start building toward it.',
+            },
+            {
+              stage: 'The Builder',
+              description:
+                'You know where you are going. Now you are doing the daily work of getting there. Ascentor gives you community, accountability, and development to build faster.',
+            },
+            {
+              stage: 'The Leader',
+              description:
+                'You have built something. Now you are responsible for others. Ascentor connects you with people operating at your level — and challenges you toward the century-long impact you were built for.',
+            },
+          ].map((item, i) => (
+            <div key={item.stage} className="card">
+              <div className="card-number">{String(i + 1).padStart(2, '0')}</div>
+              <div className="gold-bar" />
+              <h3 style={{
+                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+                fontSize: '1.25rem',
+                fontWeight: 700,
+                color: '#0F0F0E',
+                marginBottom: '0.75rem',
+              }}>{item.stage}</h3>
+              <p style={{ color: '#6B7280', lineHeight: 1.7, fontSize: '0.9375rem' }}>{item.description}</p>
             </div>
           ))}
         </div>
+      </section>
 
-        {/* PROBLEM */}
-        <section className="lp-problem-section">
-          <div className="lp-section-label">The Problem We're Solving</div>
-          <h2 className="lp-section-headline">Talent is everywhere. Guidance isn't.</h2>
-          <div className="lp-problem-grid">
+      {/* ── Three Pillars ── */}
+      <section style={{ background: '#F4F3EF', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ marginBottom: '3.5rem' }}>
+            <p className="eyebrow" style={{ marginBottom: '1rem' }}>How It Works</p>
+            <h2 className="section-headline">Three forces.<br />One direction.</h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
             {[
-              { quote: '"I have a degree, I have the drive — but I genuinely don\'t know what to do next. Nobody in my family has been where I\'m trying to go."', persona: '— Temi, 24. NYSC graduate, Lagos' },
-              { quote: '"I\'ve been a manager for two years but I\'m still figuring it out alone. Executive mentorship costs more than my rent."', persona: '— Kwame, 31. Team Lead, Accra' },
-              { quote: '"The people who get ahead in this country aren\'t necessarily the most talented — they\'re the ones with the right connections and the right mentors."', persona: '— Amina, 28. Consultant, Nairobi' },
-            ].map((c, i) => (
-              <div key={i} className="lp-problem-card">
-                <p className="lp-problem-quote"><strong>{c.quote}</strong></p>
-                <div className="lp-problem-persona">{c.persona}</div>
+              {
+                pillar: 'Community',
+                description:
+                  'A global circle of purposeful individuals. Not a networking group. A brotherhood and sisterhood anchored by shared ideology and mutual accountability.',
+                featured: false,
+              },
+              {
+                pillar: 'Development',
+                description:
+                  'Structured pathways for becoming the total person — in mind, character, vocation, relationships, and civic impact.',
+                featured: false,
+              },
+              {
+                pillar: 'The Elevation Summit',
+                description:
+                  'Once a year, the community gathers. The annual Summit is the peak moment — inspiration, challenge, and the collective experience of people who chose to ascend.',
+                featured: true,
+                badge: 'Next gathering: February 2027',
+                cta: { label: 'Learn about The Elevation Summit →', href: '/elevation-summit' },
+              },
+            ].map((item) => (
+              <div key={item.pillar} className={`pillar-card ${item.featured ? 'featured' : ''}`}>
+                {item.badge && (
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    background: 'rgba(200,169,110,0.15)',
+                    color: '#C8A96E',
+                    marginBottom: '1rem',
+                  }}>{item.badge}</span>
+                )}
+                <div className="gold-bar" />
+                <h3 style={{
+                  fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  marginBottom: '0.75rem',
+                  color: item.featured ? '#FAFAF8' : '#0F0F0E',
+                }}>{item.pillar}</h3>
+                <p style={{
+                  fontSize: '0.9375rem',
+                  lineHeight: 1.7,
+                  marginBottom: item.cta ? '1.5rem' : 0,
+                  color: item.featured ? '#9CA3AF' : '#6B7280',
+                }}>{item.description}</p>
+                {item.cta && (
+                  <Link href={item.cta.href} style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    color: '#C8A96E',
+                    textDecoration: 'none',
+                  }}>{item.cta.label}</Link>
+                )}
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* WHO IT'S FOR */}
-        <section className="lp-for-section" id="for-section">
-          <div className="lp-section-label">Who Ascentor Is For</div>
-          <h2 className="lp-section-headline">One platform. Every stage of your journey.</h2>
-          <div className="lp-for-grid">
-            <div className="lp-for-card explorer">
-              <span className="lp-for-tag">The Explorer</span>
-              <div className="lp-for-age">15–22</div>
-              <div className="lp-for-title">Figuring it out</div>
-              <p className="lp-for-desc">Students and fresh graduates navigating the gap between school and a fulfilling career.</p>
-              <ul className="lp-for-list">
-                <li>AI-powered career discovery</li>
-                <li>Scholarship & opportunity board</li>
-                <li>Mentors who started where you are</li>
-                <li>Peer community of ambitious professionals</li>
-              </ul>
-            </div>
-            <div className="lp-for-card builder">
-              <span className="lp-for-tag">The Builder</span>
-              <div className="lp-for-age">22–32</div>
-              <div className="lp-for-title" style={{ color: 'var(--white)' }}>Building momentum</div>
-              <p className="lp-for-desc">Early-career professionals and young entrepreneurs making their first real moves.</p>
-              <ul className="lp-for-list">
-                <li>Career strategy & positioning</li>
-                <li>Access to industry mentors</li>
-                <li>Entrepreneur mentorship tracks</li>
-                <li>Live mentor masterclasses</li>
-              </ul>
-            </div>
-            <div className="lp-for-card climber">
-              <span className="lp-for-tag">The Climber</span>
-              <div className="lp-for-age">32–50</div>
-              <div className="lp-for-title">Going to the top</div>
-              <p className="lp-for-desc">Mid-career leaders, managers, and founders who are serious about reaching the summit.</p>
-              <ul className="lp-for-list">
-                <li>Executive-level mentorship</li>
-                <li>Leadership & management mentorship</li>
-                <li>Peer mentorship circles</li>
-                <li>Business strategy sessions</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* THREE PILLARS */}
-        <section className="lp-pillars-section" id="pillars">
-          <div className="lp-section-label" style={{ color: 'rgba(232,160,32,0.7)' }}>How It Works</div>
-          <h2 className="lp-section-headline">Three pillars. One powerful platform.</h2>
-          <p className="lp-section-sub">Everything you need to grow — AI, human mentors, and a community that holds you accountable.</p>
-          <div className="lp-pillars-grid">
-            <div className="lp-pillar-card">
-              <div className="lp-pillar-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{color:'var(--gold)'}}>
-                  <rect x="3" y="11" width="18" height="10" rx="2"/>
-                  <path d="M12 2a2 2 0 0 1 2 2v1H10V4a2 2 0 0 1 2-2z"/>
-                  <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
-                  <circle cx="9" cy="16" r="1" fill="currentColor" stroke="none"/>
-                  <circle cx="15" cy="16" r="1" fill="currentColor" stroke="none"/>
-                  <path d="M12 19v1"/>
-                </svg>
-              </div>
-              <div className="lp-pillar-title">Sage</div>
-              <p className="lp-pillar-desc">Your personal mentor, available at 2am before your big presentation. Trained on global career frameworks, business strategy, and life navigation.</p>
-              <ul className="lp-pillar-features">
-                <li>Personalized to your stage and goals</li>
-                <li>Remembers your conversations</li>
-                <li>Action plans after every session</li>
-                <li>Career, life, and business guidance</li>
-                <li>24/7 — never unavailable</li>
-              </ul>
-            </div>
-            <div className="lp-pillar-card" style={{ borderColor: 'rgba(232,160,32,0.2)' }}>
-              <div className="lp-pillar-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{color:'var(--gold)'}}>
-                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                  <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                </svg>
-              </div>
-              <div className="lp-pillar-title">Human Mentors &amp; Live Sessions</div>
-              <p className="lp-pillar-desc">Live sessions with seasoned professionals who've navigated the exact challenges you're facing. Real experience, not theory.</p>
-              <ul className="lp-pillar-features">
-                <li>Monthly live mentor sessions</li>
-                <li>1-on-1 mentor booking</li>
-                <li>Q&A with industry leaders</li>
-                <li>Mentors across every industry</li>
-                <li>Session recordings to revisit</li>
-              </ul>
-            </div>
-            <div className="lp-pillar-card">
-              <div className="lp-pillar-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{color:'var(--gold)'}}>
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-              </div>
-              <div className="lp-pillar-title">Mentorship Circles</div>
-              <p className="lp-pillar-desc">Matched with peers at your exact career stage and industry. Your personal board of advisors who get it — because they're living it too.</p>
-              <ul className="lp-pillar-features">
-                <li>Matched by industry & life stage</li>
-                <li>Weekly accountability check-ins</li>
-                <li>Private group discussions</li>
-                <li>Win sharing & honest feedback</li>
-                <li>Connections that last beyond the app</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* HOW IT WORKS */}
-        <section className="lp-how-section">
-          <div className="lp-section-label">Getting Started</div>
-          <h2 className="lp-section-headline">From sign-up to growth in 3 steps</h2>
-          <div className="lp-steps-container">
-            {[
-              { n: '01', title: 'Tell us where you are', desc: 'Share your life stage, goals, industry, and biggest challenge. Takes 3 minutes. No fluff.' },
-              { n: '02', title: 'Meet Sage', desc: 'Within 60 seconds, Sage gives you a personalized action plan and matches you to human mentors and circle.' },
-              { n: '03', title: 'Grow with your circle', desc: 'Join peers on the same journey. Share wins, get real feedback, and hold each other accountable every week.' },
-            ].map((s) => (
-              <div key={s.n} className="lp-step">
-                <div className="lp-step-number">{s.n}</div>
-                <div className="lp-step-title">{s.title}</div>
-                <p className="lp-step-desc">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* SOCIAL PROOF — honest founding member section */}
-        <section className="lp-testimonials-section">
-          <div className="lp-section-label">Be First</div>
-          <h2 className="lp-section-headline">Founding members shape the platform</h2>
-          <p className="lp-section-sub" style={{ marginTop: '16px', color: 'var(--text-light)', textAlign: 'center', maxWidth: '520px' }}>
-            We're building Ascentor with our founding members — not just for them. Early members get locked-in pricing, direct access to the founding team, and the chance to shape what gets built next.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', maxWidth: '900px', width: '100%', marginTop: '48px' }}
-  className="lp-founding-grid">
-            {[
-              { icon: 'lock',  title: 'Locked-in pricing', desc: 'Your founding rate is yours for life — never increases as the platform grows.' },
-              { icon: 'mic',   title: 'Shape the roadmap', desc: 'Direct line to the founding team. Your feedback ships in weeks, not quarters.' },
-              { icon: 'globe', title: 'Founding community', desc: 'The first circle of ambitious professionals building careers with intention.' },
-            ].map((card) => (
-              <div key={card.title} style={{ background: 'var(--light)', borderRadius: '20px', padding: '32px 28px', border: '1px solid rgba(42,40,32,0.06)' }}>
-                <div style={{ width: 44, height: 44, background: 'rgba(232,160,32,0.12)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                  {card.icon === 'lock' && (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                    </svg>
-                  )}
-                  {card.icon === 'mic' && (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                      <line x1="12" y1="19" x2="12" y2="23"/>
-                      <line x1="8" y1="23" x2="16" y2="23"/>
-                    </svg>
-                  )}
-                  {card.icon === 'globe' && (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"/>
-                      <line x1="2" y1="12" x2="22" y2="12"/>
-                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                    </svg>
-                  )}
-                </div>
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '20px', fontWeight: 700, color: 'var(--dark)', marginBottom: '10px' }}>{card.title}</div>
-                <p style={{ fontSize: '14px', lineHeight: 1.7, color: 'var(--text-light)' }}>{card.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* MENTOR SPOTLIGHT */}
-        <section className="lp-mentors-section">
-          <div className="lp-section-label">Founding Mentors</div>
-          <h2 className="lp-section-headline">Learn from people who've been there</h2>
-          <p className="lp-section-sub" style={{ color: 'var(--text-light)' }}>
-            Our founding mentors are experienced professionals who've navigated complex career landscapes — and are investing their time to help you do the same.
-          </p>
-          <div className="lp-mentors-grid">
-            {[
-              { initials: 'TA', name: 'Tunde Adeyemi', title: 'VP Engineering · 12 years in fintech & telecoms across Nigeria and UK' },
-              { initials: 'CN', name: 'Chioma Nwosu', title: 'Strategy Director · Former McKinsey · Now building her own firm in Lagos' },
-              { initials: 'EO', name: 'Emmanuel Osei', title: 'Startup Founder · 3 exits · Active angel investor across global markets' },
-            ].map((m) => (
-              <div key={m.initials} className="lp-mentor-card">
-                <div className="lp-mentor-avatar">{m.initials}</div>
-                <div className="lp-mentor-name">{m.name}</div>
-                <div className="lp-mentor-title">{m.title}</div>
-                <span className="lp-mentor-badge">Founding Mentor</span>
-              </div>
-            ))}
-          </div>
-          <p style={{ marginTop: '40px', fontSize: '14px', color: 'var(--text-light)', textAlign: 'center' }}>
-            Are you an experienced professional?{' '}
-            <Link href="/mentor-apply" style={{ color: 'var(--gold)', textDecoration: 'none', fontWeight: 600 }}>Apply to become a Founding Mentor →</Link>
-          </p>
-        </section>
-
-        {/* CTA */}
-        <section className="lp-cta-section">
-          <h2 className="lp-cta-headline">
-            Your mentor is <span className="accent">waiting.</span><br />
-            Your next level is waiting.
+      {/* ── The Total Person ── */}
+      <section style={{ padding: 'clamp(4rem, 8vw, 7rem) 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ marginBottom: '3.5rem', maxWidth: '640px' }}>
+          <p className="eyebrow" style={{ marginBottom: '1rem' }}>The Total Person</p>
+          <h2 className="section-headline">
+            Six dimensions.<br />One complete life.
           </h2>
-          <p className="lp-cta-sub">
-            Join thousands of ambitious professionals who stopped waiting for permission and started building the career and life they deserve.
+          <p style={{ color: '#6B7280', lineHeight: 1.7, marginTop: '1rem', fontSize: '1rem' }}>
+            Ascentor is built around a single conviction: that human development cannot be reduced to career outcomes. Every feature, every conversation, every resource is oriented toward these six dimensions.
           </p>
-          <div className="lp-cta-actions">
-            <div className="lp-cta-buttons">
-              <Link href="/signup" className="lp-btn-primary" style={{ fontSize: '17px', padding: '18px 36px' }}>
-                Start Free — 7 Days →
-              </Link>
-  
-            </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '8px' }}>Or get weekly mentorship insights — free</p>
-            {subscribed ? (
-              <p style={{ fontSize: '14px', color: 'var(--gold)', fontWeight: 600 }}>✓ You're in! Check your inbox.</p>
-            ) : (
-              <>
-                <form className="lp-email-form" onSubmit={handleSubscribe}>
-                  <input
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setSubError(''); }}
-                    required
-                  />
-                  <button type="submit" disabled={subLoading}>
-                    {subLoading ? 'Joining...' : 'Subscribe'}
-                  </button>
-                </form>
-                {subError && <p style={{ fontSize: '12px', color: '#E85020', marginTop: '6px' }}>{subError}</p>}
-              </>
-            )}
-            <p className="lp-cta-note">No credit card · Cancel anytime · 30-day money-back guarantee</p>
-          </div>
-        </section>
+        </div>
 
-        {/* PRODUCTS */}
-        {featuredProducts.length > 0 && (
-          <section className="lp-products-section">
-            <div className="lp-section-label">From the Shop</div>
-            <h2 className="lp-section-headline">Resources built for ambitious professionals</h2>
-            <p className="lp-section-sub">Playbooks, templates, and tools you can use today.</p>
-            <div className="lp-products-grid">
-              {featuredProducts.map(p => (
-                <Link key={p.id} href={`/products/${p.id}`} className="lp-product-card">
-                  <div className="lp-product-img">
-                    {p.image_url
-                      ? <img src={p.image_url} alt={p.name} />
-                      : <div className="lp-product-img-placeholder">
-                          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                            <line x1="12" y1="22.08" x2="12" y2="12"/>
-                          </svg>
-                        </div>
-                    }
-                    {p.badge && <span className="lp-product-badge">{p.badge}</span>}
-                  </div>
-                  <div className="lp-product-body">
-                    <span className="lp-product-cat">{p.category}</span>
-                    <h3 className="lp-product-name">{p.name}</h3>
-                    <p className="lp-product-tagline">{p.tagline}</p>
-                    <div className="lp-product-footer">
-                      <span className={`lp-product-price${p.price === 0 ? ' free' : ''}`}>
-                        {p.price === 0 ? 'Free' : `${p.currency} ${p.price}`}
-                      </span>
-                      <span className="lp-product-cta">
-                        {p.cta_label || (p.price === 0 ? 'Get Free →' : 'Buy Now →')}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+          {[
+            { dimension: 'Mind', description: 'How you think — independently, critically, and without the distortion of trend or fear.' },
+            { dimension: 'Character', description: 'How you live — your private and public life as one consistent, principled whole.' },
+            { dimension: 'Vocation', description: 'How you work — with purpose, not just productivity. For impact, not just income.' },
+            { dimension: 'Relationships', description: 'How you lead others — as a partner, parent, friend, mentor, and example.' },
+            { dimension: 'Community', description: 'What you build beyond yourself — civic contribution and national responsibility.' },
+            { dimension: 'Legacy', description: 'What remains when you are gone — the institutions, ideas, and people you set in motion.' },
+          ].map((item) => (
+            <div key={item.dimension} className="dimension-card">
+              <div className="gold-bar" style={{ marginBottom: '0.75rem' }} />
+              <h3>{item.dimension}</h3>
+              <p>{item.description}</p>
             </div>
-            <Link href="/products" className="lp-btn-secondary" style={{ marginTop: '40px' }}>
-              See all products →
-            </Link>
-          </section>
-        )}
+          ))}
+        </div>
+      </section>
 
-        {/* FREE RESOURCES */}
-        <section className="lp-free-section">
-          <div style={{ maxWidth: '1080px', margin: '0 auto', textAlign: 'center' }}>
-            <div className="lp-section-label">Free Resources</div>
-            <h2 className="lp-section-headline">Start here — completely free</h2>
-            <p className="lp-section-sub" style={{ margin: '16px auto 0' }}>Three guides used by ambitious professionals to accelerate their careers. No sign-up required.</p>
-          </div>
-          <div className="lp-free-grid">
-            {[
-              {
-                type: 'PDF Guide · 12 pages',
-                title: 'The 90-Day Leadership Playbook',
-                desc: 'The exact framework Sage uses. Set one goal, follow 13 weekly actions, make your progress visible to the people who decide your future.',
-                href: '/free/leadership-playbook',
-                cta: 'Get free playbook',
-              },
-              {
-                type: 'PDF Guide · 8 pages',
-                title: "Why Talented People Don't Get Promoted",
-                desc: 'The 3 real reasons promotions go to less talented people — and the 5 specific moves that change the outcome.',
-                href: '/free/promotion-blueprint',
-                cta: 'Get free guide',
-              },
-              {
-                type: 'Template Pack · 5 scripts',
-                title: 'The Salary Negotiation Script Pack',
-                desc: '5 word-for-word scripts for every salary conversation — opening, responding to a low offer, countering, following up after silence.',
-                href: '/free/salary-scripts',
-                cta: 'Get free scripts',
-              },
-            ].map((r, i) => (
-              <Link key={i} href={r.href} className="lp-free-card">
-                <span className="lp-free-type">{r.type}</span>
-                <p className="lp-free-title">{r.title}</p>
-                <p className="lp-free-desc">{r.desc}</p>
-                <span className="lp-free-cta">{r.cta} →</span>
-              </Link>
-            ))}
-          </div>
-        </section>
+      {/* ── Quote Section ── */}
+      <section style={{ background: '#F4F3EF', padding: 'clamp(4rem, 8vw, 6rem) 1.5rem' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+          <p className="quote-block" style={{ marginBottom: '1.5rem' }}>
+            "An unbuilt person cannot build anything that lasts."
+          </p>
+          <p style={{ fontSize: '0.875rem', color: '#9CA3AF', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
+            The founding conviction of Ascentor
+          </p>
+        </div>
+      </section>
 
-        {/* FOOTER */}
-        <footer className="lp-footer">
-          <div className="lp-footer-top">
-            <div>
-              <img
-                  src="/ascentor-color-for-dark-pages.svg"
-                  alt="Ascentor"
-                  style={{ height: '28px', width: 'auto', marginBottom: '12px' }}
-                />
-              <p className="lp-footer-tagline">AI-powered mentorship — from figuring it out to making it happen.</p>
-            </div>
-            <div>
-              <div className="lp-footer-col-title">Platform</div>
-              <ul className="lp-footer-links">
-                <li><Link href="/free/leadership-playbook">Free Playbook</Link></li>
-                <li><Link href="/free/promotion-blueprint">Free Promo Guide</Link></li>
-                <li><Link href="/free/salary-scripts">Free Salary Scripts</Link></li>
-                <li><Link href="/products">Products</Link></li>
-                {hasBlogPosts && <li><Link href="/blog">Blog</Link></li>}
-                <li><Link href="https://ascentor.zohobookings.com/#/4738058000000052054">For Teams</Link></li>
-                <li><Link href="/mentor-apply">Become a Mentor</Link></li>
-                <li><Link href="/signup">Start Free Trial</Link></li>
-              </ul>
-            </div>
-            <div>
-              <div className="lp-footer-col-title">Company</div>
-              <ul className="lp-footer-links">
-                <li><Link href="/about">About</Link></li>
-                <li><Link href="/terms">Terms & Conditions</Link></li>
-                <Link href="/privacy">Privacy Policy</Link>
-                <li><Link href="/newsletter">Newsletter</Link></li>
-                <li><Link href="/careers">Careers</Link></li>
-              </ul>
-            </div>
-            <div>
-              <div className="lp-footer-col-title">Connect</div>
-              <ul className="lp-footer-links">
-                <li><a href="mailto:asamuel@ascentorbi.com">hello@ascentorbi.com</a></li>
-                <li><a href="https://x.com/ascentorhq" target="_blank" rel="noreferrer">Twitter / X</a></li>
-                <li><a href="https://linkedin.com/company/ascentorhq" target="_blank" rel="noreferrer">LinkedIn</a></li>
-                <li><a href="https://www.instagram.com/ascentor.ai/" target="_blank" rel="noreferrer">Instagram</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="lp-footer-bottom">
-            <span>© 2026 Ascentor. All rights reserved.</span>
-            <span>Built with <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--gold)" stroke="none" style={{display:'inline',verticalAlign:'middle',margin:'0 2px'}}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> for you</span>
-          </div>
-        </footer>
+      {/* ── Newsletter / Join ── */}
+      <section style={{ padding: 'clamp(4rem, 8vw, 7rem) 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{
+          maxWidth: '640px',
+          margin: '0 auto',
+          textAlign: 'center',
+        }}>
+          <p className="eyebrow" style={{ marginBottom: '1rem' }}>Stay Connected</p>
+          <h2 className="section-headline" style={{ marginBottom: '1rem', fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)' }}>
+            Join the movement newsletter.
+          </h2>
+          <p style={{ color: '#6B7280', lineHeight: 1.7, marginBottom: '2rem', fontSize: '1rem' }}>
+            Insights on purposeful living, updates on The Elevation Summit, and the ideas shaping the movement — delivered weekly.
+          </p>
 
-      </div>
+          {subscribed ? (
+            <div style={{
+              background: '#F0FDF4',
+              border: '1px solid #BBF7D0',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+            }}>
+              <p style={{ fontWeight: 600, color: '#16A34A', marginBottom: '0.25rem' }}>You're in.</p>
+              <p style={{ fontSize: '0.875rem', color: '#374151' }}>Welcome to the movement. Watch your inbox.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubscribe} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+                className="input-field"
+                style={{ maxWidth: '360px' }}
+              />
+              <button type="submit" className="btn-primary" disabled={subLoading}>
+                {subLoading ? 'Joining...' : 'Join the Movement'}
+              </button>
+              {subError && <p style={{ width: '100%', fontSize: '0.875rem', color: '#DC2626' }}>{subError}</p>}
+            </form>
+          )}
+        </div>
+      </section>
+
+      {/* ── Final CTA ── */}
+      <section style={{ background: '#0F0F0E', padding: 'clamp(5rem, 10vw, 8rem) 1.5rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          <p className="eyebrow" style={{ color: '#C8A96E', marginBottom: '1.5rem' }}>
+            Your ascent begins here
+          </p>
+          <h2 style={{
+            fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+            fontSize: 'clamp(2.25rem, 5vw, 4rem)',
+            fontWeight: 800,
+            color: '#FAFAF8',
+            letterSpacing: '-0.03em',
+            lineHeight: 1.1,
+            marginBottom: '1.5rem',
+          }}>
+            Build a life that<br />outlasts you.
+          </h2>
+          <p style={{ color: '#6B7280', fontSize: '1.0625rem', marginBottom: '2.5rem', lineHeight: 1.7 }}>
+            Ascentor is not for everyone. It is for the ones who have decided.
+          </p>
+          <Link href="/signup" className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>
+            Join Ascentor →
+          </Link>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer style={{ background: '#0F0F0E', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '3rem 1.5rem 2rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
+            {/* Brand */}
+            <div>
+              <span style={{
+                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+                fontSize: '1.25rem',
+                fontWeight: 800,
+                color: '#FAFAF8',
+                letterSpacing: '-0.03em',
+                display: 'block',
+                marginBottom: '0.75rem',
+              }}>Ascentor</span>
+              <p style={{ fontSize: '0.875rem', color: '#6B7280', lineHeight: 1.6 }}>
+                The official platform of The Elevation Summit movement.
+              </p>
+            </div>
+
+            {/* The Movement */}
+            <div>
+              <h4 style={{
+                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                color: '#FAFAF8',
+                marginBottom: '1rem',
+              }}>The Movement</h4>
+              <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                <Link href="/movement">Our Ideology</Link>
+                <Link href="/movement#total-person">The Total Person</Link>
+                <Link href="/about">About Ascentor</Link>
+              </nav>
+            </div>
+
+            {/* Community */}
+            <div>
+              <h4 style={{
+                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                color: '#FAFAF8',
+                marginBottom: '1rem',
+              }}>Community</h4>
+              <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                <Link href="/signup">Join Free</Link>
+                <Link href="/community">The Circle</Link>
+                {hasBlogPosts && <Link href="/blog">Resources</Link>}
+                <Link href="/newsletter">Newsletter</Link>
+              </nav>
+            </div>
+
+            {/* The Elevation Summit */}
+            <div>
+              <h4 style={{
+                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                color: '#FAFAF8',
+                marginBottom: '1rem',
+              }}>The Elevation Summit</h4>
+              <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                <Link href="/elevation-summit">About the Summit</Link>
+                <Link href="/elevation-summit#register">February 2027</Link>
+                <Link href="/elevation-summit#speak">Become a Speaker</Link>
+                <Link href="/elevation-summit#partner">Partner with Us</Link>
+              </nav>
+            </div>
+          </div>
+
+          {/* Footer Bottom */}
+          <div style={{
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            paddingTop: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem',
+          }}>
+            <p style={{
+              fontFamily: 'var(--font-accent, "Playfair Display", serif)',
+              fontStyle: 'italic',
+              fontSize: '1rem',
+              color: '#C8A96E',
+            }}>
+              "Build a life that outlasts you."
+            </p>
+
+            <p style={{ fontSize: '0.8125rem', color: '#4B5563' }}>
+              © 2026 Ascentor. All rights reserved.
+            </p>
+
+            <div style={{ display: 'flex', gap: '1.5rem' }}>
+              <a href="https://x.com/ascentorhq" target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none' }}>X / Twitter</a>
+              <a href="https://linkedin.com/company/ascentorhq" target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none' }}>LinkedIn</a>
+              <a href="https://instagram.com/ascentorhq" target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none' }}>Instagram</a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </>
   );
 }

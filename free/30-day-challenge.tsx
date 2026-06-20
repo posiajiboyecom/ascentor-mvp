@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -310,7 +310,7 @@ export default function ChallengeOptInPage() {
             </h1>
             <p className="ch-desc">
               Every day for 30 days, you get one short leadership exercise
-              designed for African professionals. Takes 10 minutes. Builds habits that compound.
+              designed for purposeful individuals. Takes 10 minutes. Builds habits that compound.
             </p>
 
             <div className="ch-stats">

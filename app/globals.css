@@ -1,84 +1,119 @@
-/* ══════════════════════════════════════════════════════════════════
-   ASCENTOR GLOBAL STYLES · Brand Book v1.0 · 2026
-   Display  : Cormorant Garamond 700 / Italic 600
-   UI       : Syne 400–800
-   Mono     : DM Mono 400/500
-   Gold     : #E8A020   Dark: #0C0B08
-   ══════════════════════════════════════════════════════════════════ */
-
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-
 @import "tailwindcss";
 
-/* ── Brand token CSS variables ── */
 :root {
-  /* Core palette */
-  --dark:        #0C0B08;
-  --dark-900:    #0C0B08;
-  --dark-800:    #141310;
-  --dark-700:    #1E1C17;
-  --dark-600:    #2E2A22;
-  --dark-500:    #4A4438;
-  --dark-400:    #7A7260;
-  --dark-200:    #D4CFC3;
-  --dark-50:     #F7F6F3;
+  --color-summit-white:     #FAFAF8;
+  --color-summit-black:     #0F0F0E;
+  --color-ascent-blue:      #1B4FFF;
+  --color-ascent-blue-hover:#1440DD;
+  --color-morning-mist:     #F4F3EF;
+  --color-elevation-gold:   #C8A96E;
+  --color-horizon-gray:     #6B7280;
+  --color-border-light:     #E8E6E1;
 
-  /* Gold scale */
-  --gold:        #E8A020;
-  --gold-600:    #C87820;
-  --gold-400:    #F5C55A;
-  --gold-300:    #F9D97A;
-  --gold-muted:  rgba(232,160,32,0.10);
-  --gold-border: rgba(232,160,32,0.25);
+  --color-success:          #16A34A;
+  --color-warning:          #D97706;
+  --color-error:            #DC2626;
 
-  /* Stage colours */
-  --explorer:    #14B8A6;
-  --builder:     #E8A020;
-  --climber:     #8B5CF6;
+  --font-display:           'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body:              'Inter', system-ui, sans-serif;
+  --font-accent:            'Playfair Display', Georgia, serif;
 
-  /* Semantic aliases — used by components */
-  --bg:           #0C0B08;
-  --bg-card:      #1E1C17;
-  --bg-card-hover:#2E2A22;
-  --bg-input:     #1E1C17;
-  --accent:       #E8A020;
-  --accent-dim:   #C87820;
-  --accent-glow:  rgba(232,160,32,0.12);
-  --text:         #F7F6F3;    /* primary — near white */
-  --text-muted:   #C8C3B8;    /* secondary — warm light grey */
-  --text-dim:     #8A8272;    /* tertiary — readable mid-tone */
-  --border:       rgba(212,207,195,0.14);
-  --border-light: rgba(212,207,195,0.18);
-  --success:      #10B981;
-  --error:        #EF4444;
-  --blue:         #3B82F6;
-  --purple:       #8B5CF6;
-  --teal:         #14B8A6;
+  --space-xs:   0.25rem;
+  --space-sm:   0.5rem;
+  --space-md:   1rem;
+  --space-lg:   1.5rem;
+  --space-xl:   2rem;
+  --space-2xl:  3rem;
+  --space-3xl:  4rem;
 
-  /* Typography */
-  --font-display: 'Cormorant Garamond', Georgia, serif;
-  --font-ui:      'Syne', system-ui, sans-serif;
-  --font-mono:    'DM Mono', 'Courier New', monospace;
+  --bg:           var(--color-summit-white);
+  --bg-card:      #FFFFFF;
+  --bg-card-hover:#F4F3EF;
+  --bg-input:     #F4F3EF;
+  --accent:       var(--color-elevation-gold);
+  --accent-dim:   #A8894E;
+  --accent-glow:  rgba(200,169,110,0.12);
+  --text:         var(--color-summit-black);
+  --text-muted:   #374151;
+  --text-dim:     var(--color-horizon-gray);
+  --border:       var(--color-border-light);
+  --border-light: #EEEDE8;
+  --success:      var(--color-success);
+  --error:        var(--color-error);
+  --blue:         var(--color-ascent-blue);
+  --gold:         var(--color-elevation-gold);
+  --gold-muted:   rgba(200,169,110,0.10);
+  --gold-border:  rgba(200,169,110,0.25);
+
+  --font-heading: var(--font-display);
+  --font-ui:      var(--font-body);
 }
 
 @theme {
-  --color-bg:           #0C0B08;
-  --color-bg-card:      #1E1C17;
-  --color-bg-card-hover:#2E2A22;
-  --color-bg-input:     #1E1C17;
-  --color-accent:       #E8A020;
-  --color-accent-dim:   #C87820;
-  --color-text:         #F7F6F3;
-  --color-text-muted:   #C8C3B8;
-  --color-text-dim:     #8A8272;
-  --color-border:       rgba(212,207,195,0.10);
-  --color-border-light: rgba(212,207,195,0.18);
-  --color-success:      #10B981;
-  --color-error:        #EF4444;
-  --color-blue:         #3B82F6;
-  --color-purple:       #8B5CF6;
-  --color-teal:         #14B8A6;
+  --color-bg:           #FAFAF8;
+  --color-bg-card:      #FFFFFF;
+  --color-bg-card-hover:#F4F3EF;
+  --color-bg-input:     #F4F3EF;
+  --color-accent:       #C8A96E;
+  --color-accent-dim:   #A8894E;
+  --color-text:         #0F0F0E;
+  --color-text-muted:   #374151;
+  --color-text-dim:     #6B7280;
+  --color-border:       #E8E6E1;
+  --color-border-light: #EEEDE8;
+  --color-success:      #16A34A;
+  --color-error:        #DC2626;
+  --color-blue:         #1B4FFF;
+  --color-gold:         #C8A96E;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   COMPATIBILITY ALIASES — Dashboard / Coach / Circle components
+   ──────────────────────────────────────────────────────────────────
+   These components were built referencing var(--color-background-
+   primary), var(--color-text-secondary), var(--color-border-tertiary)
+   etc. — names that don't exist anywhere above. That mismatch, not a
+   missing file, is why they rendered unstyled.
+
+   Rather than rewrite every component's class names, this block
+   aliases the missing names onto the REAL tokens already defined
+   above (--bg, --bg-card, --text, --text-muted, --border, etc.).
+   Because --bg/--text/--border already flip correctly inside
+   [data-app-theme="dark"], these aliases inherit light/dark switching
+   for free — no new theme logic, nothing duplicated.
+
+   Mapping used (only 7 names were actually referenced):
+     --color-background-primary   -> --bg-card   (white card surface;
+                                       a few page-shell uses read this
+                                       as the page bg instead, but
+                                       --bg-card and --bg are both
+                                       near-white in light mode so the
+                                       visual difference is negligible)
+     --color-background-secondary -> --bg         (page background)
+     --color-text-primary         -> --text
+     --color-text-secondary       -> --text-muted
+     --color-border-primary       -> --border-light
+     --color-border-secondary     -> --border
+     --color-border-tertiary      -> --border-light
+
+   If you later normalize those components to use --bg/--text/--border
+   directly, delete this block — it becomes dead weight, not a bug.
+   ══════════════════════════════════════════════════════════════════ */
+:root {
+  --color-background-primary:   var(--bg-card);
+  --color-background-secondary: var(--bg);
+  --color-text-primary:         var(--text);
+  --color-text-secondary:       var(--text-muted);
+  --color-border-primary:       var(--border-light);
+  --color-border-secondary:     var(--border);
+  --color-border-tertiary:      var(--border-light);
+}
+/* No separate [data-app-theme="dark"] block needed here — these
+   aliases reference var(--bg-card), var(--bg), var(--text), etc.,
+   which already flip to their dark values under [data-app-theme=
+   "dark"] further down this file. CSS resolves var() against the
+   value in effect at the element, not at definition time, so the
+   aliases follow automatically. */
 
 @layer base {
   *, *::before, *::after {
@@ -88,125 +123,189 @@
   }
 
   body {
-    font-family: var(--font-ui) !important;
-    background-color: var(--bg, #0C0B08) !important;
-    color: var(--text, #F7F6F3) !important;
+    font-family: var(--font-body) !important;
+    background-color: var(--color-summit-white) !important;
+    color: var(--color-summit-black) !important;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
+
+  .font-accent {
+    font-family: var(--font-accent);
+  }
+
+  .text-gold {
+    color: var(--color-elevation-gold);
+  }
+
+  .bg-mist {
+    background-color: var(--color-morning-mist);
+  }
+
+  .text-horizon {
+    color: var(--color-horizon-gray);
+  }
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   ADMIN LIGHT THEME
-   Scoped to [data-admin-theme="light"] — set by AdminShell.tsx
-   Overrides all semantic vars used by admin pages & components.
-   ══════════════════════════════════════════════════════════════════ */
 [data-admin-theme="light"] {
-  /* Surfaces */
   --bg:              #F5F3EE;
   --bg-card:         #FFFFFF;
   --bg-card-hover:   #F0EDE6;
   --bg-input:        #F0EDE6;
-
-  /* Accent — deeper gold for light bg contrast */
   --accent:          #A0720A;
   --accent-dim:      #7A5208;
   --accent-glow:     rgba(160,114,10,0.10);
-
-  /* Text */
   --text:            #1A1714;
   --text-muted:      #4A3F30;
   --text-dim:        #7A6E60;
-
-  /* Borders */
   --border:          rgba(0,0,0,0.09);
   --border-light:    rgba(0,0,0,0.13);
-
-  /* Semantic colours stay vivid but slightly adjusted */
   --success:         #059669;
   --error:           #DC2626;
   --blue:            #2563EB;
-  --purple:          #7C3AED;
-  --teal:            #0F766E;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   ADMIN PAGE CSS VARIABLES
-   --admin-* vars used across all admin pages (replacing hardcoded hex).
-   Dark theme (default) matches the original warm charcoal palette.
-   Light theme overrides to a clean warm white palette.
-   ══════════════════════════════════════════════════════════════════ */
-
-/* Dark defaults */
 [data-admin-theme="dark"],
 :root {
-  /* Surfaces */
-  --admin-bg:              #0C0B08;
-  --admin-bg-deep:         #141210;
-  --admin-bg-card:         #1E1C17;
-  --admin-bg-card-hover:   #23201A;
-  --admin-bg-input:        #2E2A22;
-
-  /* Text */
-  --admin-text-heading:    #FEF9EC;
-  --admin-text:            #D4CFC3;
-  --admin-text-dim:        #9A9280;
-  --admin-text-muted:      #7A7260;
-  --admin-text-faint:      #4A4438;
-
-  /* Borders */
-  --admin-border:          rgba(212,207,195,0.10);
-  --admin-border-strong:   rgba(212,207,195,0.18);
+  --admin-bg:              #FAFAF8;
+  --admin-bg-deep:         #F4F3EF;
+  --admin-bg-card:         #FFFFFF;
+  --admin-bg-card-hover:   #F4F3EF;
+  --admin-bg-input:        #EEEDE8;
+  --admin-text-heading:    #0F0F0E;
+  --admin-text:            #1F2937;
+  --admin-text-dim:        #4B5563;
+  --admin-text-muted:      #6B7280;
+  --admin-text-faint:      #9CA3AF;
+  --admin-border:          rgba(0,0,0,0.08);
+  --admin-border-strong:   rgba(0,0,0,0.13);
 }
 
-/* Light overrides */
 [data-admin-theme="light"] {
-  /* Surfaces */
   --admin-bg:              #F5F3EE;
   --admin-bg-deep:         #EEE9E0;
   --admin-bg-card:         #FFFFFF;
   --admin-bg-card-hover:   #F7F4EE;
   --admin-bg-input:        #F0EDE6;
-
-  /* Text — strong contrast for readability */
   --admin-text-heading:    #0F0D0A;
   --admin-text:            #1A1714;
   --admin-text-dim:        #3D3529;
   --admin-text-muted:      #5C5244;
   --admin-text-faint:      #7A6E60;
-
-  /* Borders */
   --admin-border:          rgba(0,0,0,0.08);
   --admin-border-strong:   rgba(0,0,0,0.13);
 }
 
-/* Also override body bg when light theme is active */
 [data-admin-theme="light"],
 [data-admin-theme="light"] body {
   background-color: #F5F3EE !important;
   color: #1A1714 !important;
 }
 
-/* ── Scrollbar — brand-consistent ── */
+[data-app-theme="dark"] {
+  --app-bg:           #0F0F0E;
+  --app-bg-card:      #1A1A19;
+  --app-bg-input:     #242422;
+  --app-bg-hover:     #242422;
+  --app-text:         #FAFAF8;
+  --app-text-muted:   #D1CFC9;
+  --app-text-dim:     #9CA3AF;
+  --app-border:       rgba(250,250,248,0.10);
+  --app-border-gold:  rgba(200,169,110,0.20);
+  --app-nav-shadow:   rgba(0,0,0,0.60);
+  --app-accent:       #C8A96E;
+  --app-accent-glow:  rgba(200,169,110,0.12);
+  --app-card-shadow:  0 2px 12px rgba(0,0,0,0.40);
+
+  --bg:           #0F0F0E;
+  --bg-card:      #1A1A19;
+  --bg-card-hover:#242422;
+  --bg-input:     #242422;
+  --text:         #FAFAF8;
+  --text-muted:   #D1CFC9;
+  --text-dim:     #9CA3AF;
+  --border:       rgba(250,250,248,0.10);
+  --border-light: rgba(250,250,248,0.15);
+  --accent:       #C8A96E;
+  --accent-dim:   #A8894E;
+  --accent-glow:  rgba(200,169,110,0.12);
+}
+
+[data-app-theme="light"] {
+  --app-bg:           #FAFAF8;
+  --app-bg-card:      #FFFFFF;
+  --app-bg-input:     #F4F3EF;
+  --app-bg-hover:     #F4F3EF;
+  --app-text:         #0F0F0E;
+  --app-text-muted:   #374151;
+  --app-text-dim:     #6B7280;
+  --app-border:       rgba(0,0,0,0.09);
+  --app-border-gold:  rgba(200,169,110,0.22);
+  --app-nav-shadow:   rgba(0,0,0,0.10);
+  --app-accent:       #C8A96E;
+  --app-accent-glow:  rgba(200,169,110,0.10);
+  --app-card-shadow:  0 2px 12px rgba(0,0,0,0.06);
+
+  --bg:              #FAFAF8;
+  --bg-card:         #FFFFFF;
+  --bg-card-hover:   #F4F3EF;
+  --bg-input:        #F4F3EF;
+  --accent:          #C8A96E;
+  --accent-dim:      #A8894E;
+  --accent-glow:     rgba(200,169,110,0.10);
+  --text:            #0F0F0E;
+  --text-muted:      #374151;
+  --text-dim:        #6B7280;
+  --border:          #E8E6E1;
+  --border-light:    #EEEDE8;
+  --success:         #16A34A;
+  --error:           #DC2626;
+  --blue:            #1B4FFF;
+}
+
+[data-app-theme="light"],
+[data-app-theme="light"] body {
+  background-color: #FAFAF8 !important;
+  color: #0F0F0E !important;
+}
+
+:root:not([data-partner]) {
+  --accent:       #C8A96E;
+  --accent-hover: #A8894E;
+  --bg:           #FAFAF8;
+  --bg-card:      #FFFFFF;
+  --bg-input:     #F4F3EF;
+  --text:         #0F0F0E;
+  --text-muted:   #374151;
+  --text-dim:     #6B7280;
+  --border:       #E8E6E1;
+  --success:      #16A34A;
+  --error:        #DC2626;
+  --font-heading: var(--font-display);
+  --font-body:    var(--font-body);
+}
+
 ::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--dark); }
-::-webkit-scrollbar-thumb { background: var(--dark-600); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--dark-500); }
+::-webkit-scrollbar-track { background: #F4F3EF; }
+::-webkit-scrollbar-thumb { background: #D1CEC8; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #B8B4AE; }
 
-[data-admin-theme="light"] ::-webkit-scrollbar-track { background: #E8E3D8; }
-[data-admin-theme="light"] ::-webkit-scrollbar-thumb { background: #C8BFB0; }
-[data-admin-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #A89E90; }
+[data-app-theme="dark"] ::-webkit-scrollbar-track { background: #1A1A19; }
+[data-app-theme="dark"] ::-webkit-scrollbar-thumb { background: #3A3A38; }
+[data-app-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #4A4A48; }
 
-/* ── Focus ring — gold, not browser default ── */
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: rgba(232,160,32,0.50) !important;
+  border-color: rgba(200,169,110,0.55) !important;
   outline: none;
 }
 
-/* ── Animations ── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -224,8 +323,8 @@ select:focus {
   50%       { opacity: 0.4; }
 }
 @keyframes goldGlow {
-  0%, 100% { box-shadow: 0 0 20px rgba(232,160,32,0.08); }
-  50%       { box-shadow: 0 0 36px rgba(232,160,32,0.20); }
+  0%, 100% { box-shadow: 0 0 20px rgba(200,169,110,0.08); }
+  50%       { box-shadow: 0 0 36px rgba(200,169,110,0.22); }
 }
 
 .animate-fade-up   { animation: fadeUp  0.5s ease-out both; }
@@ -233,112 +332,93 @@ select:focus {
 .animate-slide-in  { animation: slideIn 0.3s ease-out both; }
 .animate-glow      { animation: goldGlow 3s infinite; }
 
-/* ── Safe-area utility ── */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
-/* ══════════════════════════════════════════════════════════════════
-   APP THEME — light / dark
-   Scoped to [data-app-theme] set by AppThemeProvider.
-   Uses --app-* vars consumed by AppShell, BottomNav, and app pages.
-   ══════════════════════════════════════════════════════════════════ */
-
-/* Dark defaults (matches existing brand) */
-[data-app-theme="dark"] {
-  --app-bg:           #0C0B08;
-  --app-bg-card:      #1E1C17;
-  --app-bg-input:     #2E2A22;
-  --app-bg-hover:     #2E2A22;
-
-  --app-text:         #F7F6F3;
-  --app-text-muted:   #C8C3B8;
-  --app-text-dim:     #8A8272;
-
-  --app-border:       rgba(212,207,195,0.10);
-  --app-border-gold:  rgba(232,160,32,0.18);
-  --app-nav-shadow:   rgba(0,0,0,0.60);
-
-  --app-accent:       #E8A020;
-  --app-accent-glow:  rgba(232,160,32,0.12);
-
-  --app-card-shadow:  0 2px 12px rgba(0,0,0,0.40);
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--color-summit-black);
+  color: var(--color-summit-white);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  text-decoration: none;
+}
+.btn-primary:hover {
+  background-color: #2A2A29;
+  transform: translateY(-1px);
 }
 
-/* Light overrides — warm parchment */
-[data-app-theme="light"] {
-  --app-bg:           #F5F3EE;
-  --app-bg-card:      #FFFFFF;
-  --app-bg-input:     #F0EDE6;
-  --app-bg-hover:     #EDE9E0;
-
-  --app-text:         #1A1714;
-  --app-text-muted:   #4A3F30;
-  --app-text-dim:     #7A6E60;
-
-  --app-border:       rgba(0,0,0,0.09);
-  --app-border-gold:  rgba(160,114,10,0.22);
-  --app-nav-shadow:   rgba(0,0,0,0.10);
-
-  --app-accent:       #A0720A;
-  --app-accent-glow:  rgba(160,114,10,0.10);
-
-  --app-card-shadow:  0 2px 12px rgba(0,0,0,0.08);
-
-  /* ── Also override the root semantic vars so existing page components
-     that use var(--bg-card), var(--text), var(--border) etc. pick up
-     the light palette without needing any code changes. ── */
-  --bg:              #F5F3EE;
-  --bg-card:         #FFFFFF;
-  --bg-card-hover:   #EDE9E0;
-  --bg-input:        #F0EDE6;
-
-  --accent:          #A0720A;
-  --accent-dim:      #7A5208;
-  --accent-glow:     rgba(160,114,10,0.10);
-
-  --text:            #1A1714;
-  --text-muted:      #4A3F30;
-  --text-dim:        #7A6E60;
-
-  --border:          rgba(0,0,0,0.09);
-  --border-light:    rgba(0,0,0,0.13);
-
-  --success:         #059669;
-  --error:           #DC2626;
-  --blue:            #2563EB;
-  --purple:          #7C3AED;
-  --teal:            #0F766E;
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: var(--color-summit-black);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border-radius: 0.5rem;
+  border: 1.5px solid var(--color-border-light);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  text-decoration: none;
+}
+.btn-secondary:hover {
+  border-color: var(--color-elevation-gold);
+  background-color: rgba(200,169,110,0.06);
 }
 
-/* Light theme — override body background */
-[data-app-theme="light"],
-[data-app-theme="light"] body {
-  background-color: #F5F3EE !important;
-  color: #1A1714 !important;
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background-color: var(--color-elevation-gold);
+  color: var(--color-summit-black);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  text-decoration: none;
+}
+.btn-gold:hover {
+  background-color: #B8995E;
+  transform: translateY(-1px);
 }
 
-/* Scrollbar — adapts to theme */
-[data-app-theme="light"] ::-webkit-scrollbar-track { background: #E8E3D8; }
-[data-app-theme="light"] ::-webkit-scrollbar-thumb { background: #C8BFB0; border-radius: 4px; }
-[data-app-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #A89E90; }
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
 
-/* ── Partner CSS variable isolation ──────────────────────────────────────────
-   Partner brand vars are scoped to [data-partner="subdomain"] in the
-   whitelabel layout. This block ensures that if any partner var ever leaks
-   to :root through client-side navigation, the main app immediately
-   re-asserts its canonical values for every page that doesn't carry the
-   data-partner attribute. */
-:root:not([data-partner]) {
-  --accent:       #E8A020;
-  --accent-hover: #C87820;
-  --bg:           #0C0B08;
-  --bg-card:      #1E1C17;
-  --bg-input:     #1E1C17;
-  --text:         #F7F6F3;
-  --text-muted:   #C8C3B8;
-  --text-dim:     #8A8272;
-  --border:       rgba(212,207,195,0.14);
-  --success:      #10B981;
-  --error:        #EF4444;
-  --font-heading: 'Cormorant Garamond', Georgia, serif;
-  --font-body:    'Syne', system-ui, sans-serif;
+.asc-main-width {
+  max-width: 672px;
+}
+@media (min-width: 1024px) {
+  .asc-main-width {
+    max-width: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .asc-coach-col {
+    max-width: 680px;
+    margin: 0 auto;
+  }
 }

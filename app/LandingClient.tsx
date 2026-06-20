@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -202,7 +202,7 @@ export default function LandingClient() {
             <Link href="/signup"
               className="px-5 py-2 rounded-lg text-sm font-semibold"
               style={{ background: '#E8A020', color: '#000' }}>
-              Start Free Trial
+              Join Ascentor Trial
             </Link>
           </div>
           <Link href="/signup" className="md:hidden px-4 py-2 rounded-lg text-sm font-semibold"
@@ -252,10 +252,10 @@ export default function LandingClient() {
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-semibold mb-5 leading-tight"
             style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#FAF9F6' }}>
             Your AI leadership<br />
-            coach for <span style={{ color: '#E8A020' }}>ambitious professionals</span>
+            coach for <span style={{ color: '#E8A020' }}>purposeful individuals</span>
           </h1>
           <p className="text-base md:text-lg max-w-2xl mx-auto mb-8" style={{ color: '#D1CFC9', lineHeight: 1.7 }}>
-            Sage, live expert sessions, and peer accountability cohorts — built for ambitious professionals who refuse to wait for permission to lead.
+            Sage, live expert sessions, and peer accountability cohorts — built for purposeful individuals who refuse to wait for permission to lead.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
             <Link href="/signup"
@@ -269,7 +269,7 @@ export default function LandingClient() {
               See How It Works
             </Link>
           </div>
-          <p className="text-xs" style={{ color: '#9CA3AF' }}>No credit card required · Cancel anytime · 30-day money-back guarantee</p>
+          <p className="text-xs" style={{ color: '#9CA3AF' }}> ·  ·  guarantee</p>
         </div>
       </section>
 
@@ -409,7 +409,7 @@ export default function LandingClient() {
             Ready to lead?
           </h2>
           <p className="text-base mb-8" style={{ color: '#9CA3AF' }}>
-            Join ambitious professionals worldwide who are investing in their leadership growth. Start your free trial today.
+            Join purposeful individuals worldwide who are investing in their leadership growth. Start your free trial today.
           </p>
           <Link href="/signup"
             className="inline-block px-10 py-4 rounded-xl text-base font-semibold transition-transform hover:scale-105"
@@ -460,7 +460,7 @@ export default function LandingClient() {
               <div className="flex flex-col gap-2">
                 <Link href="/pricing" className="text-xs" style={{ color: '#6B7280' }}>Pricing</Link>
                 {/* Blog link hidden until content published */}
-                <Link href="/signup" className="text-xs" style={{ color: '#6B7280' }}>Start Free Trial</Link>
+                <Link href="/signup" className="text-xs" style={{ color: '#6B7280' }}>Join Ascentor Trial</Link>
               </div>
             </div>
             <div>

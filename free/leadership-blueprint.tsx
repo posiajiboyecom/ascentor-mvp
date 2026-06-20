@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -356,7 +356,7 @@ export default function LeadershipBlueprintPage() {
 
           <p className="lb-privacy">
             No spam. Unsubscribe any time.<br />
-            You'll also get our weekly leadership letter for African professionals.
+            You'll also get our weekly leadership letter for purposeful individuals.
           </p>
 
           <div className="lb-divider">

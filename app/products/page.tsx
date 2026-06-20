@@ -1,10 +1,10 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 
 export const metadata: Metadata = {
   title: 'Products — Ascentor',
-  description: 'Tools, playbooks, and resources built for ambitious African professionals.',
+  description: 'Tools, playbooks, and resources built for ambitious purposeful individuals.',
 };
 
 export const dynamic = 'force-dynamic';

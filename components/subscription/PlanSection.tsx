@@ -1,4 +1,4 @@
-// FILE: components/subscription/PlanSection.tsx
+﻿// FILE: components/subscription/PlanSection.tsx
 // FIX: #5a — Next billing date visible for active/trialing/cancelled
 //      #5b — displays rich card info from card_details JSONB column
 //            also shows billing_cycle row (Monthly / Annual)
@@ -36,7 +36,7 @@ const PLAN_META: Record<string, {
     features: ['Sage (3 sessions/month)', '1 mentorship circle', 'Goal tracking'],
     missing: ['Expert sessions', 'Courses & learning', 'Unlimited Sage', 'Export history'],
     upgradeTo: 'explorer',
-    upgradeLabel: 'Start Free Trial',
+    upgradeLabel: 'Join Ascentor Trial',
   },
   explorer: {
     label: 'Explorer',

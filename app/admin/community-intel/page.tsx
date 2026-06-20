@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 // app/admin/community-intel/page.tsx
 // Two tabs:
@@ -434,7 +434,7 @@ function IntelPanel({supabase}:{supabase:ReturnType<typeof createClient>}){
       const goalMap:Record<string,string>={};
       goals.forEach(g=>{goalMap[g.user_id]=g.goal_text;});
       const userSummaries=profiles.map(p=>({current_role:p.current_role||'Unknown',industry:p.industry||'Unknown',goal_role:p.goal_role||'Unknown',biggest_challenge:p.biggest_challenge||'None',time_commitment:p.time_commitment||'Unknown',goal_text:goalMap[p.id]||'No goal set'}));
-      const prompt=`You are an expert community strategist for Ascentor, an AI-powered leadership development platform for African professionals.
+      const prompt=`You are an expert community strategist for Ascentor, an AI-powered leadership development platform for purposeful individuals.
 
 Analyse these ${profiles.length} user profiles and recommend 3-6 communities to create.
 

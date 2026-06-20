@@ -1,11 +1,11 @@
-'use client';
+﻿'use client';
 // app/partner/courses/page.tsx — full partner course manager with tier gating
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from 'react';
 import { useApiBase } from '@/lib/useApiBase';
 
 const DIFF_OPTS = ['beginner','intermediate','advanced'];
-const CAT_OPTS  = ['Leadership','Career Development','Tech Skills','Soft Skills','Finance','Entrepreneurship','Other'];
+const CAT_OPTS  = ['Leadership','Purposeful Development','Tech Skills','Soft Skills','Finance','Entrepreneurship','Other'];
 
 const S: Record<string,React.CSSProperties> = {
   card:  { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', padding:'20px' },

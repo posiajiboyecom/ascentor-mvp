@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -56,7 +56,7 @@ const SECTIONS: Section[] = [
           "Profile information — current role, goal role, industry, career summary, biggest challenge",
           "Onboarding responses — experience level, life stage (Explorer / Builder / Climber), mentorship goals",
           "Mentor application data — if you apply to become a mentor: LinkedIn URL, professional background, availability",
-          "Community content — posts, replies, and upvotes you create in Mentorship Circles",
+          "Community content — posts, replies, and upvotes you create in Accountability Circles",
           "Payment information — billing cycle and plan selected; card details are processed by Paystack and never stored on Ascentor servers",
           "Referral codes — if you share or use a referral link",
           "Support communications — messages you send to our team",
@@ -150,7 +150,7 @@ const SECTIONS: Section[] = [
         type: "list",
         items: [
           "Service providers — Supabase (database & auth), Anthropic (AI processing), Paystack (payments), Vercel (hosting). Each is bound by data processing agreements.",
-          "Other users — your display name, profile role, and community posts are visible to other Ascentor members within Mentorship Circles you join.",
+          "Other users — your display name, profile role, and community posts are visible to other Ascentor members within Accountability Circles you join.",
           "Expert mentors — if you register for a live Expert Session, your name may be shared with the session host for facilitation purposes.",
           "Legal requirements — we may disclose information if required to do so by law, regulation, or valid legal process (e.g. court order).",
           "Business transfers — if Ascentor is acquired or merges with another entity, your data may be transferred as part of that transaction. We will notify you in advance.",
@@ -285,7 +285,7 @@ const SECTIONS: Section[] = [
     content: [
       {
         type: "para",
-        text: "Ascentor is based in Nigeria and primarily serves African professionals. However, our service providers (Supabase, Anthropic, Vercel) may process data in the United States and other countries.",
+        text: "Ascentor is based in Nigeria and primarily serves purposeful individuals. However, our service providers (Supabase, Anthropic, Vercel) may process data in the United States and other countries.",
       },
       {
         type: "para",
@@ -928,7 +928,7 @@ export default function PrivacyPage() {
         </div>
         <div className="hero-divider" />
         <p className="hero-summary">
-          We built Ascentor to serve African professionals — not to monetise their data.
+          We built Ascentor to serve purposeful individuals — not to monetise their data.
           This policy explains exactly what we collect, why we collect it, and how you stay in control.
         </p>
       </header>
