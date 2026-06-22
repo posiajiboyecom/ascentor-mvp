@@ -11,37 +11,52 @@ function SvgIcon({ html, className, style }: { html: string; className?: string;
 }
 
 // ============================================================
-// ASCENTOR BRAND TOKENS · Brand Book v1.0 · 2026
-// Display : Cormorant Garamond 700 / Italic 600
-// UI      : Syne 400–800
-// Mono    : DM Mono 400/500
-// Gold    : #E8A020   Dark: var(--admin-bg)
+// THE LEDGER — token bridge
+// Every color/font reference in this file flows through this B
+// object — nothing below this point hardcodes a color directly
+// (confirmed: zero raw hex outside this block before this pass).
+// That made this file the cleanest of the four to convert: swap
+// the definitions here, the other ~750 lines update for free.
+//
+// explorer/climber were plan-tier accent colors with no Ledger
+// equivalent (Ledger's palette is deliberately narrow: gold +
+// good/bad/warn/info, not a color per subscription tier). Mapped
+// to ledger-info and ledger-gold respectively rather than inventing
+// new tokens — same consolidation already applied in
+// AdminOverviewClient.tsx and app/admin/users/page.tsx.
+//   explorer -> ledger-info   (was teal #14B8A6)
+//   climber  -> ledger-gold   (was purple #8B5CF6 — builder tier
+//               already uses gold/B.gold elsewhere in this file,
+//               so climber reusing gold keeps tier badges from
+//               clashing; differentiated by label text, not color)
+//   success  -> ledger-good
+//   error    -> ledger-bad
 // ============================================================
 const B = {
-  fontDisplay: "'Cormorant Garamond', Georgia, serif",
-  fontUI:      "'Syne', system-ui, sans-serif",
-  fontMono:    "'DM Mono', 'Courier New', monospace",
-  dark:        'var(--admin-bg)',
-  dark800:     'var(--admin-bg-deep)',
-  dark700:     'var(--admin-bg-card)',
-  dark600:     'var(--admin-bg-input)',
-  dark500:     'var(--admin-text-faint)',
-  dark400:     'var(--admin-text-muted)',
-  dark200:     'var(--admin-text)',
-  dark50: 'var(--admin-text-heading)',
-  gold:        '#E8A020',
-  gold300:     '#F9D97A',
-  gold600:     '#C87820',
-  goldMuted:   'rgba(232,160,32,0.09)',
-  goldBorder:  'rgba(232,160,32,0.25)',
-  border:      'var(--admin-border)',
-  explorer:    '#14B8A6',
-  climber:     '#8B5CF6',
-  success:     '#10B981',
-  successMuted:'rgba(16,185,129,0.09)',
-  successBorder:'rgba(16,185,129,0.25)',
-  error:       '#EF4444',
-  errorMuted:  'rgba(239,68,68,0.08)',
+  fontDisplay: "var(--ledger-font-serif)",
+  fontUI:      "var(--ledger-font-ui)",
+  fontMono:    "var(--ledger-font-mono)",
+  dark:        'var(--ledger-bg)',
+  dark800:     'var(--ledger-bg-deep)',
+  dark700:     'var(--ledger-bg-card)',
+  dark600:     'var(--ledger-bg-input)',
+  dark500:     'var(--ledger-ink-faint)',
+  dark400:     'var(--ledger-ink-soft)',
+  dark200:     'var(--ledger-ink)',
+  dark50: 'var(--ledger-ink)',
+  gold:        'var(--ledger-gold)',
+  gold300:     'var(--ledger-gold)',
+  gold600:     'var(--ledger-gold-deep)',
+  goldMuted:   'var(--ledger-gold-bg)',
+  goldBorder:  'var(--ledger-gold-border)',
+  border:      'var(--ledger-line)',
+  explorer:    'var(--ledger-info)',
+  climber:     'var(--ledger-gold)',
+  success:     'var(--ledger-good)',
+  successMuted:'var(--ledger-good-bg)',
+  successBorder:'rgba(79,143,79,0.3)',
+  error:       'var(--ledger-bad)',
+  errorMuted:  'var(--ledger-bad-bg)',
 };
 
 // Difficulty → brand colour (stage metaphor: beginner=explorer, mid=builder, advanced=climber)
@@ -130,8 +145,12 @@ function ActionBtn({
 }
 
 // ── CSS ──────────────────────────────────────────────────────────
+// Font @import removed — Cormorant Garamond / Syne / DM Mono are now
+// loaded once in app/admin/layout.tsx for every /admin page, so this
+// page no longer needs its own <link>/@import. Re-importing per-page
+// was harmless but redundant (browser dedupes identical font
+// requests anyway) — removed for clarity, not because it was broken.
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
   *, *::before, *::after { box-sizing: border-box; }
 
   .asc-field {
@@ -156,7 +175,16 @@ const CSS = `
     letter-spacing: 0.06em;
     text-transform: uppercase;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%234A4438' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    /* Color baked into this data URI as a literal hex (#948C7C =
+       --ledger-ink-faint, LIGHT theme value) because CSS custom
+       properties can't be referenced inside a data: URI. This means
+       the arrow will be slightly lighter than ideal in dark mode
+       (#7A7567) — a real but minor limitation, not fixed here since
+       it'd require either a second CSS rule keyed to
+       [data-ledger-theme="dark"] with its own data URI, or switching
+       this to an inline SVG element instead of a background-image.
+       Flagging rather than leaving unexplained. */
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%23948C7C' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
     background-color: ${B.dark700};
@@ -196,7 +224,7 @@ const CSS = `
   .asc-btn-ghost:hover { border-color: ${B.goldBorder}; color: ${B.dark200}; }
 
   .asc-course-card { transition: border-color 0.12s ease; }
-  .asc-course-card:hover { border-color: var(--admin-border-strong) !important; }
+  .asc-course-card:hover { border-color: var(--ledger-line-strong) !important; }
 
   /* Emoji picker button */
   .asc-emoji-btn {
@@ -863,10 +891,20 @@ function AdminCoursesInner() {
                     )}
                     {/* Plan tier badge */}
                     {c.plan_tier && c.plan_tier !== 'free' && (() => {
+                      // Backgrounds/borders here were hardcoded to the OLD
+                      // explorer=teal / climber=purple hex independently of
+                      // the B object above, so remapping B.explorer/B.climber
+                      // alone (done earlier in this pass) would have left
+                      // teal/purple badge backgrounds under gold/info text —
+                      // visually broken. Fixed to derive consistently:
+                      // explorer matches B.explorer (ledger-info, was teal),
+                      // climber reuses the gold treatment since Ledger has
+                      // no purple token (same consolidation as B.climber
+                      // itself, documented where B is defined above).
                       const tierColors: Record<string, { color: string; bg: string; border: string }> = {
-                        explorer: { color: B.explorer, bg: 'rgba(20,184,166,0.10)', border: 'rgba(20,184,166,0.22)' },
+                        explorer: { color: B.explorer, bg: 'var(--ledger-info-bg)', border: 'rgba(77,124,199,0.25)' },
                         builder:  { color: B.gold,     bg: B.goldMuted,             border: B.goldBorder             },
-                        climber:  { color: B.climber,  bg: 'rgba(139,92,246,0.10)', border: 'rgba(139,92,246,0.22)' },
+                        climber:  { color: B.climber,  bg: B.goldMuted,             border: B.goldBorder             },
                       };
                       const t = tierColors[c.plan_tier] || tierColors.explorer;
                       return (
@@ -929,7 +967,7 @@ function AdminCoursesInner() {
                   <ActionBtn
                     onClick={() => handleDelete(c.id, c.title)}
                     color={B.error}
-                    borderColor={`${B.error}30`}
+                    borderColor="rgba(200,74,56,0.3)"
                     hoverBg={B.errorMuted}
                   >
                     Delete

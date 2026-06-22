@@ -1,0 +1,327 @@
+/* ============================================================
+   THE LEDGER — Ascentor Admin Design System
+   styles/admin-ledger.css
+   ------------------------------------------------------------
+   Scope: every rule here lives under [data-ledger] so it can
+   never leak into or collide with the user-facing app's
+   --bg / --text / --accent globals defined in app/globals.css.
+
+   Theme: set <html data-ledger data-ledger-theme="dark|light">
+   Default (no attribute, or "dark") = Summit Black briefing room.
+   "light" = Summit White, same structure, inverted surfaces.
+
+   Previous admin theming (--admin-* in app/globals.css, driven
+   by [data-admin-theme]) is superseded by this file. That old
+   attribute was never set anywhere in the codebase — dark mode
+   was effectively dead. This file replaces it with a real,
+   working toggle. Do not add new --admin-* usages; migrate
+   existing ones to --ledger-* as each page is rebuilt.
+   ============================================================ */
+
+[data-ledger] {
+  /* ── Type ──────────────────────────────────────────────── */
+  --ledger-font-serif: 'Cormorant Garamond', Georgia, serif;
+  --ledger-font-ui:    'Syne', system-ui, sans-serif;
+  --ledger-font-mono:  'DM Mono', 'JetBrains Mono', monospace;
+
+  /* ── Spacing scale (4px base) ──────────────────────────── */
+  --ledger-space-1: 4px;
+  --ledger-space-2: 8px;
+  --ledger-space-3: 12px;
+  --ledger-space-4: 16px;
+  --ledger-space-5: 20px;
+  --ledger-space-6: 24px;
+  --ledger-space-8: 32px;
+  --ledger-space-10: 40px;
+  --ledger-space-12: 48px;
+
+  /* ── Radius ────────────────────────────────────────────── */
+  --ledger-radius-sm: 3px;
+  --ledger-radius-md: 4px;
+  --ledger-radius-lg: 8px;
+  --ledger-radius-full: 999px;
+
+  /* ── Status colors (theme-independent) ────────────────── */
+  --ledger-good:      #4F8F4F;
+  --ledger-good-bg:   rgba(79,143,79,0.12);
+  --ledger-bad:       #C84A38;
+  --ledger-bad-bg:    rgba(200,74,56,0.12);
+  --ledger-warn:      #C28A1A;
+  --ledger-warn-bg:   rgba(194,138,26,0.12);
+  --ledger-info:      #4D7CC7;
+  --ledger-info-bg:   rgba(77,124,199,0.12);
+
+  /* ── Gold accent (theme-independent identity color) ──── */
+  --ledger-gold:      #C8A96E;
+  --ledger-gold-deep: #A8894E;
+  --ledger-gold-bg:   rgba(200,169,110,0.12);
+  --ledger-gold-border: rgba(200,169,110,0.28);
+}
+
+/* ============================================================
+   DARK — "Summit Black" (default)
+   ============================================================ */
+[data-ledger][data-ledger-theme="dark"],
+[data-ledger]:not([data-ledger-theme]) {
+  --ledger-bg:            #0F0E0C;
+  --ledger-bg-deep:       #080807;
+  --ledger-bg-card:       #17150F;
+  --ledger-bg-card-hover: #1E1C15;
+  --ledger-bg-input:      #1E1C15;
+
+  --ledger-ink:           #F5F2EA;
+  --ledger-ink-soft:      #C9C2B2;
+  --ledger-ink-faint:     #7A7567;
+
+  --ledger-line:          rgba(245,242,234,0.10);
+  --ledger-line-strong:   rgba(245,242,234,0.18);
+
+  --ledger-shadow: 0 4px 24px rgba(0,0,0,0.40);
+}
+
+/* ============================================================
+   LIGHT — "Summit White"
+   ============================================================ */
+[data-ledger][data-ledger-theme="light"] {
+  --ledger-bg:            #FAFAF8;
+  --ledger-bg-deep:       #F2EFE7;
+  --ledger-bg-card:       #FFFFFF;
+  --ledger-bg-card-hover: #F6F3EC;
+  --ledger-bg-input:      #F2EFE7;
+
+  --ledger-ink:           #161412;
+  --ledger-ink-soft:      #4A453C;
+  --ledger-ink-faint:     #948C7C;
+
+  --ledger-line:          rgba(22,20,18,0.10);
+  --ledger-line-strong:   rgba(22,20,18,0.16);
+
+  --ledger-shadow: 0 2px 16px rgba(22,20,18,0.06);
+}
+
+/* ============================================================
+   Base element resets, scoped — does not touch <body> globally
+   ============================================================ */
+[data-ledger] {
+  background: var(--ledger-bg);
+  color: var(--ledger-ink);
+  font-family: var(--ledger-font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-ledger] ::selection {
+  background: var(--ledger-gold-bg);
+  color: var(--ledger-ink);
+}
+
+/* ============================================================
+   Reusable primitives — class names, not inline styles, so
+   every page that adopts The Ledger looks consistent without
+   re-deriving values (the problem with the old admin pages).
+   ============================================================ */
+
+[data-ledger] .ledger-eyebrow {
+  font-family: var(--ledger-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ledger-gold-deep);
+}
+
+[data-ledger] .ledger-h1 {
+  font-family: var(--ledger-font-serif);
+  font-weight: 700;
+  font-size: 38px;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--ledger-ink);
+}
+
+[data-ledger] .ledger-h2 {
+  font-family: var(--ledger-font-serif);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.005em;
+  color: var(--ledger-ink);
+}
+
+[data-ledger] .ledger-number {
+  font-family: var(--ledger-font-serif);
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--ledger-ink);
+}
+
+[data-ledger] .ledger-label {
+  font-family: var(--ledger-font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ledger-ink-faint);
+}
+
+[data-ledger] .ledger-mono {
+  font-family: var(--ledger-font-mono);
+  font-size: 11px;
+  color: var(--ledger-ink-soft);
+}
+
+[data-ledger] .ledger-panel {
+  background: var(--ledger-bg-card);
+  border: 1px solid var(--ledger-line);
+  border-radius: var(--ledger-radius-md);
+}
+
+[data-ledger] .ledger-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--ledger-space-4) var(--ledger-space-5);
+  border-bottom: 1px solid var(--ledger-line);
+}
+
+[data-ledger] .ledger-row {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: var(--ledger-space-3);
+  align-items: center;
+  padding: 13px var(--ledger-space-5);
+  border-bottom: 1px solid var(--ledger-line);
+}
+[data-ledger] .ledger-row:last-child { border-bottom: none; }
+
+[data-ledger] .ledger-tag {
+  font-family: var(--ledger-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+[data-ledger] .ledger-tag-flag { background: var(--ledger-bad-bg); color: var(--ledger-bad); }
+[data-ledger] .ledger-tag-new  { background: var(--ledger-gold-bg); color: var(--ledger-gold-deep); }
+[data-ledger] .ledger-tag-ok   { background: var(--ledger-good-bg); color: var(--ledger-good); }
+[data-ledger] .ledger-tag-info { background: var(--ledger-info-bg); color: var(--ledger-info); }
+[data-ledger] .ledger-tag-warn { background: var(--ledger-warn-bg); color: var(--ledger-warn); }
+
+[data-ledger] .ledger-btn {
+  font-family: var(--ledger-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: var(--ledger-radius-sm);
+  padding: 9px 16px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background .12s, border-color .12s, opacity .12s;
+}
+[data-ledger] .ledger-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+[data-ledger] .ledger-btn-primary {
+  background: var(--ledger-ink);
+  color: var(--ledger-bg);
+}
+[data-ledger][data-ledger-theme="dark"] .ledger-btn-primary,
+[data-ledger]:not([data-ledger-theme]) .ledger-btn-primary {
+  background: var(--ledger-gold);
+  color: var(--ledger-bg-deep);
+}
+
+[data-ledger] .ledger-btn-ghost {
+  background: transparent;
+  color: var(--ledger-gold-deep);
+  border-color: var(--ledger-line-strong);
+}
+[data-ledger] .ledger-btn-ghost:hover {
+  background: var(--ledger-gold-bg);
+  border-color: var(--ledger-gold);
+}
+
+[data-ledger] .ledger-btn-danger {
+  background: transparent;
+  color: var(--ledger-bad);
+  border-color: rgba(200,74,56,0.30);
+}
+[data-ledger] .ledger-btn-danger:hover {
+  background: var(--ledger-bad-bg);
+}
+
+[data-ledger] .ledger-delta-up   { color: var(--ledger-good); font-family: var(--ledger-font-mono); font-size: 10.5px; }
+[data-ledger] .ledger-delta-down { color: var(--ledger-bad);  font-family: var(--ledger-font-mono); font-size: 10.5px; }
+[data-ledger] .ledger-delta-flat { color: var(--ledger-ink-faint); font-family: var(--ledger-font-mono); font-size: 10.5px; }
+
+[data-ledger] .ledger-status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+[data-ledger] .ledger-status-dot.ok   { background: var(--ledger-good); }
+[data-ledger] .ledger-status-dot.warn { background: var(--ledger-warn); }
+[data-ledger] .ledger-status-dot.bad  { background: var(--ledger-bad); }
+
+/* ── Nav (sidebar) ─────────────────────────────────────── */
+[data-ledger] .ledger-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--ledger-radius-sm);
+  text-decoration: none;
+  color: var(--ledger-ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 1px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background .12s, color .12s;
+}
+[data-ledger] .ledger-nav-item:hover {
+  background: var(--ledger-bg-card-hover);
+  color: var(--ledger-ink);
+}
+[data-ledger] .ledger-nav-item.active {
+  background: var(--ledger-gold-bg);
+  color: var(--ledger-ink);
+  border-left-color: var(--ledger-gold);
+  font-weight: 700;
+}
+[data-ledger] .ledger-nav-group-label {
+  font-family: var(--ledger-font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ledger-ink-faint);
+  padding: 0 10px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* ── Scrollbar (webkit), scoped ──────────────────────────── */
+[data-ledger] ::-webkit-scrollbar { width: 8px; height: 8px; }
+[data-ledger] ::-webkit-scrollbar-track { background: transparent; }
+[data-ledger] ::-webkit-scrollbar-thumb {
+  background: var(--ledger-line-strong);
+  border-radius: 4px;
+}
+
+/* ── Focus visibility (accessibility floor) ──────────────── */
+[data-ledger] a:focus-visible,
+[data-ledger] button:focus-visible,
+[data-ledger] [tabindex]:focus-visible {
+  outline: 2px solid var(--ledger-gold);
+  outline-offset: 2px;
+}
+
+/* ── Reduced motion ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-ledger] * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

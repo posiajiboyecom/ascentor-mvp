@@ -173,7 +173,31 @@ function Nav() {
 }
 
 /* ── Page ─────────────────────────────────────────────────── */
-export default function HowItWorksPage() {
+import { getPublishedPage } from '@/lib/supabase/queries/marketing';
+
+export default async function HowItWorksPage() {
+  const cms = await getPublishedPage('how-it-works');
+
+  // CMS section keys for /admin/marketing-pages/how-it-works:
+  //   hero       → {eyebrow, headline, subhead}
+  //   faq        → repeating items {q, a}
+  //   bottom_cta → {eyebrow, headline, body, cta_label, cta_href}
+  // PILLARS, STEPS, COMPARISON table are NOT wired — they are design
+  // components with booleans, colors, and emojis that require code changes.
+  const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
+  const heroEyebrow  = hero?.eyebrow  || 'THE SYSTEM';
+  const heroHeadline = hero?.headline || 'Three forces working together for your growth.';
+  const heroSubhead  = hero?.subhead  || 'Ascentor combines Sage, human expertise, and peer accountability into one system designed specifically for purposeful individuals.';
+
+  const faqItems = (cms?.sections.faq?.items || []) as Array<Record<string, string>>;
+  const activeFaqs: { q: string; a: string }[] = faqItems.length > 0 ? faqItems as { q: string; a: string }[] : FAQS;
+
+  const cta = cms?.sections.bottom_cta?.data as Record<string, string> | undefined;
+  const ctaEyebrow  = cta?.eyebrow   || 'READY TO START?';
+  const ctaHeadline = cta?.headline  || "Your first session is free.\nYour first breakthrough won't be far behind.";
+  const ctaBody     = cta?.body      || 'Join 247+ professionals already on the waitlist.';
+  const ctaLabel    = cta?.cta_label || 'Join Ascentor Trial →';
+  const ctaHref     = cta?.cta_href  || '/signup';
   return (
     <div className="min-h-screen"
       style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'Syne', system-ui, sans-serif" }}>
@@ -187,11 +211,10 @@ export default function HowItWorksPage() {
         </div>
         <h1 className="text-4xl md:text-5xl font-semibold mb-4"
           style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08', lineHeight: 1.1 }}>
-          Three forces working<br className="hidden md:block" /> together for your growth.
+          {heroHeadline}
         </h1>
         <p className="text-base max-w-2xl mx-auto" style={{ color: '#6B7280', lineHeight: 1.75 }}>
-          Ascentor combines Sage,, human expertise, and peer accountability
-          into one system designed specifically for purposeful individuals.
+          {heroSubhead}
         </p>
       </section>
 
@@ -325,7 +348,7 @@ export default function HowItWorksPage() {
             style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
             Frequently asked questions
           </h2>
-          {FAQS.map(f => (
+          {activeFaqs.map(f => (
             <details key={f.q} className="group mb-3 rounded-xl overflow-hidden"
               style={{ background: '#FAFAF9', border: '1px solid #E5E5E4' }}>
               <summary className="px-5 py-4 cursor-pointer text-sm font-semibold flex justify-between items-center"
@@ -344,25 +367,23 @@ export default function HowItWorksPage() {
 
       {/* ── Bottom CTA ── */}
       <section className="py-16 px-5">
-        <div className="max-w-3xl mx-auto rounded-2xl p-10 text-center"
-          style={{ background: '#0C0B08' }}>
+        <div className="max-w-3xl mx-auto rounded-2xl p-10 text-center" style={{ background: '#0C0B08' }}>
           <div className="inline-block px-3 py-1 rounded-full text-[10px] font-bold mb-5"
             style={{ background: 'rgba(245,158,11,0.1)', color: '#E8A020', border: '1px solid rgba(245,158,11,0.2)' }}>
-            READY TO START?
+            {ctaEyebrow}
           </div>
           <h2 className="text-3xl md:text-4xl font-semibold mb-4"
             style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#F3F4F6', lineHeight: 1.2 }}>
-            Your first session is free.<br />Your first breakthrough won&apos;t be far behind.
+            {ctaHeadline}
           </h2>
           <p className="text-sm mb-8 max-w-lg mx-auto" style={{ color: '#9CA3AF', lineHeight: 1.75 }}>
-             on every plan. . .
-            Join 247+ professionals already on the waitlist.
+            {ctaBody}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/signup"
+            <Link href={ctaHref}
               className="px-8 py-3.5 rounded-xl text-sm font-semibold transition-transform hover:scale-105"
               style={{ background: '#E8A020', color: '#000' }}>
-              Join Ascentor Trial →
+              {ctaLabel}
             </Link>
             <Link href="/who-its-for"
               className="px-8 py-3.5 rounded-xl text-sm font-semibold"

@@ -1,6 +1,7 @@
 'use client';
 
 import SageLoader from '@/components/SageLoader';
+import ExportPanel from '@/components/admin/ExportPanel';
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -34,6 +35,36 @@ interface UserGroup {
   sessions: any[];
 }
 
+// Real schema (see app/(app)/community/page.tsx for the canonical
+// reference, confirmed against information_schema on the live DB):
+//   community_channels: slug (PK, no `id`), name, channel_type,
+//                        category_id, sort_order, emoji?
+//   community_messages: id, user_id, channel (text = slug), content,
+//                        flagged, deleted, created_at, likes (text[]),
+//                        reply_to_id, pinned, reply_count
+// There is no cohorts / cohort_posts involvement in current community
+// — that model was replaced. A previous version of this tab still
+// called the cohorts data shape via a since-removed /api/admin/community
+// route, which 404'd silently and is why this tab showed no data.
+interface Channel {
+  slug: string;
+  name: string;
+  emoji?: string | null;
+  channel_type?: string | null;
+  messageCount: number;
+}
+
+interface ChannelMessage {
+  id: string;
+  user_id: string;
+  channel: string;
+  content: string;
+  created_at: string;
+  flagged: boolean;
+  deleted: boolean;
+  author_name: string;
+}
+
 export default function AdminCoachingPage() {
   const supabase = createClient();
 
@@ -45,12 +76,19 @@ export default function AdminCoachingPage() {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
 
+  // Bulk-select for delete — keyed by session/message id. Cleared on
+  // tab switch since the two tabs delete against different tables
+  // (coaching_sessions hard-delete vs community_messages soft-delete).
+  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
+  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+
   // Community
-  const [cohorts, setCohorts] = useState<any[]>([]);
-  const [selectedCohort, setSelectedCohort] = useState<string | null>(null);
-  const [posts, setPosts] = useState<any[]>([]);
-  const [expandedPost, setExpandedPost] = useState<string | null>(null);
-  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChannelMessage[]>([]);
+  const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   // Stats
   const [stats, setStats] = useState({ totalSessions: 0, totalPosts: 0, activeUsers: 0 });
@@ -61,9 +99,9 @@ export default function AdminCoachingPage() {
     setLoading(true);
 
     // Stats
-    const [sessRes, postsRes] = await Promise.all([
+    const [sessRes, msgRes] = await Promise.all([
       supabase.from('coaching_sessions').select('id', { count: 'exact', head: true }),
-      supabase.from('cohort_posts').select('id', { count: 'exact', head: true }),
+      supabase.from('community_messages').select('id', { count: 'exact', head: true }).eq('deleted', false),
     ]);
 
     // All coaching sessions
@@ -109,52 +147,166 @@ export default function AdminCoachingPage() {
     setUserGroups(sorted);
     setStats({
       totalSessions: sessRes.count || 0,
-      totalPosts: postsRes.count || 0,
+      totalPosts: msgRes.count || 0,
       activeUsers: uniqueActive.size,
     });
 
-    // Load cohorts via service-role API (bypasses RLS)
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || '';
+    // Load channels directly (RLS allows reading community_channels —
+    // same pattern as app/(app)/community/page.tsx). Message counts
+    // come from a single grouped query against community_messages
+    // rather than one request per channel, to avoid an N+1 fetch
+    // pattern as the channel list grows.
+    const { data: channelsData, error: channelsErr } = await supabase
+      .from('community_channels')
+      .select('slug, name, emoji, channel_type')
+      .order('sort_order');
 
-    const cohortsRes = await fetch('/api/admin/community', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (cohortsRes.ok) {
-      const { cohorts: cohortsData, totalPosts } = await cohortsRes.json();
-      setCohorts(cohortsData || []);
-      // Update stats with real post count from API
-      setStats(prev => ({ ...prev, totalPosts: totalPosts ?? prev.totalPosts }));
+    if (channelsErr) {
+      console.error('[coaching/community] channels query failed:', channelsErr.message);
+      setChannels([]);
+    } else {
+      // NOTE: this pulls one row per non-deleted message just to count
+      // them client-side, which is fine at current platform scale but
+      // won't be once message volume grows substantially. The proper
+      // fix is a Postgres view or RPC that returns grouped counts
+      // (SELECT channel, count(*) FROM community_messages WHERE
+      // deleted = false GROUP BY channel) — flagging here rather than
+      // building it now since it's not yet a real bottleneck.
+      const { data: countRows } = await supabase
+        .from('community_messages')
+        .select('channel')
+        .eq('deleted', false);
+
+      const counts: Record<string, number> = {};
+      (countRows || []).forEach((r: any) => {
+        counts[r.channel] = (counts[r.channel] || 0) + 1;
+      });
+
+      setChannels((channelsData || []).map(c => ({ ...c, messageCount: counts[c.slug] || 0 })));
     }
 
     setLoading(false);
   }
 
-  async function loadCohortPosts(cohortId: string) {
-    setLoadingPosts(true);
-    setSelectedCohort(cohortId);
-    setExpandedPost(null);
+  function switchTab(next: Tab) {
+    setTab(next);
+    setSelectedSessionIds(new Set());
+    setSelectedMessageIds(new Set());
+  }
+
+  function toggleSession(id: string) {
+    setSelectedSessionIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleMessage(id: string) {
+    setSelectedMessageIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  async function deleteSelectedSessions() {
+    if (selectedSessionIds.size === 0) return;
+    const count = selectedSessionIds.size;
+    if (!confirm(`Permanently delete ${count} coaching session${count === 1 ? '' : 's'}? This cannot be undone.`)) return;
+
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/admin/coaching-sessions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ ids: Array.from(selectedSessionIds) }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        alert(body?.error || 'Delete failed');
+        return;
+      }
+
+      // Remove deleted sessions from local state — both the flat
+      // per-user session arrays and the userGroups summary counts.
+      const idsToRemove = selectedSessionIds;
+      setUserGroups(prev =>
+        prev
+          .map(g => ({ ...g, sessions: g.sessions.filter((s: any) => !idsToRemove.has(s.id)) }))
+          .map(g => ({ ...g, sessionCount: g.sessions.length }))
+          .filter(g => g.sessions.length > 0)
+      );
+      setStats(prev => ({ ...prev, totalSessions: Math.max(0, prev.totalSessions - idsToRemove.size) }));
+      setSelectedSessionIds(new Set());
+    } catch (err) {
+      console.error('[deleteSelectedSessions]', err);
+      alert('Delete failed — check your connection and try again.');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function deleteSelectedMessages() {
+    if (selectedMessageIds.size === 0) return;
+    const count = selectedMessageIds.size;
+    if (!confirm(`Delete ${count} message${count === 1 ? '' : 's'}? This removes them from the community view.`)) return;
+
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/admin/community-messages', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ ids: Array.from(selectedMessageIds), action: 'delete' }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        alert(body?.error || 'Delete failed');
+        return;
+      }
+
+      const idsToRemove = selectedMessageIds;
+      setMessages(prev => prev.filter(m => !idsToRemove.has(m.id)));
+      setChannels(prev => prev.map(c =>
+        c.slug === selectedChannel ? { ...c, messageCount: Math.max(0, c.messageCount - idsToRemove.size) } : c
+      ));
+      setStats(prev => ({ ...prev, totalPosts: Math.max(0, prev.totalPosts - idsToRemove.size) }));
+      setSelectedMessageIds(new Set());
+    } catch (err) {
+      console.error('[deleteSelectedMessages]', err);
+      alert('Delete failed — check your connection and try again.');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function loadChannelMessages(slug: string) {
+    setLoadingMessages(true);
+    setSelectedChannel(slug);
+    setExpandedMessage(null);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || '';
 
-      const res = await fetch(`/api/admin/community?cohortId=${cohortId}`, {
+      const res = await fetch(`/api/admin/community-messages?channel=${encodeURIComponent(slug)}&limit=200`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
-        const { posts: postsData } = await res.json();
-        setPosts(postsData || []);
+        const { messages: messagesData } = await res.json();
+        setMessages(messagesData || []);
       } else {
-        console.error('[loadCohortPosts] API error:', await res.text());
-        setPosts([]);
+        console.error('[loadChannelMessages] API error:', await res.text());
+        setMessages([]);
       }
     } catch (err) {
-      console.error('[loadCohortPosts]', err);
-      setPosts([]);
+      console.error('[loadChannelMessages]', err);
+      setMessages([]);
     } finally {
-      setLoadingPosts(false);
+      setLoadingMessages(false);
     }
   }
 
@@ -195,13 +347,18 @@ export default function AdminCoachingPage() {
         ))}
       </div>
 
+      {/* Export — community messages + AI coaching sessions, CSV/JSON/PDF */}
+      <div className="mb-6">
+        <ExportPanel />
+      </div>
+
       {/* Tabs */}
       <div className="flex gap-1 mb-5 p-1 rounded-lg" style={{ background: 'var(--bg-input)' }}>
         {([
           { key: 'coaching' as Tab, label: `AI Coaching (${stats.totalSessions})`, icon: CoachIcons.Bot },
           { key: 'community' as Tab, label: `Community (${stats.totalPosts})`, icon: CoachIcons.Group },
         ]).map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)}
+          <button key={t.key} onClick={() => switchTab(t.key)}
             className="flex-1 py-2.5 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
             style={{
               background: tab === t.key ? 'var(--bg-card)' : 'transparent',
@@ -215,6 +372,26 @@ export default function AdminCoachingPage() {
       {/* ═══ AI COACHING: Grouped by user ═══ */}
       {tab === 'coaching' && (
         <div className="flex flex-col gap-2">
+          {selectedSessionIds.size > 0 && (
+            <div className="flex items-center justify-between px-4 py-2.5 rounded-xl mb-1"
+              style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)' }}>
+              <span className="text-xs font-semibold" style={{ color: '#DC2626' }}>
+                {selectedSessionIds.size} session{selectedSessionIds.size === 1 ? '' : 's'} selected
+              </span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setSelectedSessionIds(new Set())}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                  style={{ color: 'var(--text-muted)' }}>
+                  Clear
+                </button>
+                <button onClick={deleteSelectedSessions} disabled={deleting}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                  style={{ background: '#DC2626', color: '#fff', opacity: deleting ? 0.6 : 1 }}>
+                  {deleting ? 'Deleting…' : 'Delete selected'}
+                </button>
+              </div>
+            </div>
+          )}
           {userGroups.length === 0 ? (
             <div className="text-center py-10 rounded-xl"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
@@ -261,25 +438,37 @@ export default function AdminCoachingPage() {
                     {group.sessions.map((s) => {
                       const ai = s.ai_response || {};
                       const isSessionOpen = expandedSession === s.id;
+                      const isSelected = selectedSessionIds.has(s.id);
                       return (
                         <div key={s.id} className="rounded-lg mb-1.5 overflow-hidden"
-                          style={{ border: '1px solid var(--border)' }}>
-                          <button onClick={() => setExpandedSession(isSessionOpen ? null : s.id)}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 text-left">
-                            <div className="flex-1">
-                              <p className="text-[13px] truncate" style={{ color: 'var(--text-muted)' }}>
-                                {s.user_input}
-                              </p>
-                            </div>
-                            <span className="text-[10px] shrink-0" style={{ color: 'var(--text-dim)' }}>
-                              {new Date(s.created_at).toLocaleDateString('en-US', {
-                                month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-                              })}
-                            </span>
-                            <span className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
-                              {isSessionOpen ? CoachIcons.ChevUp : CoachIcons.ChevDn}
-                            </span>
-                          </button>
+                          style={{ border: isSelected ? '1.5px solid #DC2626' : '1px solid var(--border)' }}>
+                          <div className="flex items-stretch">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleSession(s.id); }}
+                              className="flex items-center px-2.5"
+                              style={{ background: isSelected ? 'rgba(220,38,38,0.06)' : 'transparent' }}
+                              aria-label={isSelected ? 'Deselect session' : 'Select session'}
+                            >
+                              <input type="checkbox" checked={isSelected} readOnly
+                                style={{ width: 14, height: 14, accentColor: '#DC2626', cursor: 'pointer' }} />
+                            </button>
+                            <button onClick={() => setExpandedSession(isSessionOpen ? null : s.id)}
+                              className="flex-1 flex items-center gap-3 px-3 py-2.5 text-left">
+                              <div className="flex-1">
+                                <p className="text-[13px] truncate" style={{ color: 'var(--text-muted)' }}>
+                                  {s.user_input}
+                                </p>
+                              </div>
+                              <span className="text-[10px] shrink-0" style={{ color: 'var(--text-dim)' }}>
+                                {new Date(s.created_at).toLocaleDateString('en-US', {
+                                  month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+                                })}
+                              </span>
+                              <span className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
+                                {isSessionOpen ? CoachIcons.ChevUp : CoachIcons.ChevDn}
+                              </span>
+                            </button>
+                          </div>
 
                           {isSessionOpen && (
                             <div className="px-3 py-3" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-input)' }}>
@@ -334,126 +523,155 @@ export default function AdminCoachingPage() {
         </div>
       )}
 
-      {/* ═══ COMMUNITY: Cohort selector → posts → replies ═══ */}
+      {/* ═══ COMMUNITY: Channel selector → messages ═══ */}
       {tab === 'community' && (
         <div>
-          {/* Cohort selector */}
+          {/* Channel selector */}
           <div className="flex gap-2 mb-4 flex-wrap">
-            {cohorts.length === 0 ? (
-              <p className="text-sm" style={{ color: 'var(--text-dim)' }}>No cohorts created yet.</p>
-            ) : cohorts.map((c) => (
-              <button key={c.id} onClick={() => loadCohortPosts(c.id)}
+            {channels.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--text-dim)' }}>No channels created yet.</p>
+            ) : channels.map((c) => (
+              <button key={c.slug} onClick={() => loadChannelMessages(c.slug)}
                 className="px-3.5 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5"
                 style={{
-                  background: selectedCohort === c.id ? 'rgba(245,158,11,0.12)' : 'var(--bg-card)',
-                  border: selectedCohort === c.id ? '1.5px solid var(--accent)' : '1px solid var(--border)',
-                  color: selectedCohort === c.id ? 'var(--accent)' : 'var(--text-muted)',
+                  background: selectedChannel === c.slug ? 'rgba(245,158,11,0.12)' : 'var(--bg-card)',
+                  border: selectedChannel === c.slug ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                  color: selectedChannel === c.slug ? 'var(--accent)' : 'var(--text-muted)',
                 }}>
-                <span dangerouslySetInnerHTML={{ __html: c.icon || '' }} />
-                {!c.icon && <span>{CoachIcons.Group}</span>}
+                {c.emoji ? <span>{c.emoji}</span> : <span>{CoachIcons.Group}</span>}
                 {c.name}
-                <span className="text-[10px] opacity-60">({c.post_count ?? 0} posts)</span>
+                <span className="text-[10px] opacity-60">({c.messageCount} messages)</span>
               </button>
             ))}
           </div>
 
-          {/* No cohort selected */}
-          {!selectedCohort && cohorts.length > 0 && (
+          {/* No channel selected */}
+          {!selectedChannel && channels.length > 0 && (
             <div className="text-center py-10 rounded-xl"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
               <div className="mb-2">{CoachIcons.SelectCohort}</div>
               <p className="text-sm" style={{ color: 'var(--text-dim)' }}>
-                Select a cohort above to view its conversations
+                Select a channel above to view its messages
               </p>
             </div>
           )}
 
-          {/* Loading posts */}
-          {loadingPosts && (
+          {/* Loading messages */}
+          {loadingMessages && (
             <div className="text-center py-10">
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading posts...</p>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading messages...</p>
             </div>
           )}
 
-          {/* Posts list */}
-          {selectedCohort && !loadingPosts && (
+          {/* Messages list */}
+          {selectedChannel && !loadingMessages && (
             <div className="flex flex-col gap-2">
-              {posts.length === 0 ? (
+              {selectedMessageIds.size > 0 && (
+                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl mb-1"
+                  style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)' }}>
+                  <span className="text-xs font-semibold" style={{ color: '#DC2626' }}>
+                    {selectedMessageIds.size} message{selectedMessageIds.size === 1 ? '' : 's'} selected
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setSelectedMessageIds(new Set())}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                      style={{ color: 'var(--text-muted)' }}>
+                      Clear
+                    </button>
+                    <button onClick={deleteSelectedMessages} disabled={deleting}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                      style={{ background: '#DC2626', color: '#fff', opacity: deleting ? 0.6 : 1 }}>
+                      {deleting ? 'Deleting…' : 'Delete selected'}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {messages.length === 0 ? (
                 <div className="text-center py-10 rounded-xl"
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                   <div className="mb-2">{CoachIcons.EmptyPosts}</div>
-                  <p className="text-sm" style={{ color: 'var(--text-dim)' }}>No posts in this cohort yet.</p>
+                  <p className="text-sm" style={{ color: 'var(--text-dim)' }}>No messages in this channel yet.</p>
                 </div>
-              ) : posts.map((p) => {
-                const isPostOpen = expandedPost === p.id;
+              ) : messages.map((m) => {
+                const isOpen = expandedMessage === m.id;
+                const isSelected = selectedMessageIds.has(m.id);
                 return (
-                  <div key={p.id} className="rounded-xl overflow-hidden"
-                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                  <div key={m.id} className="rounded-xl overflow-hidden"
+                    style={{ background: 'var(--bg-card)', border: m.flagged ? '1.5px solid var(--error, #DC2626)' : isSelected ? '1.5px solid #DC2626' : '1px solid var(--border)' }}>
 
-                    {/* Post */}
-                    <button onClick={() => setExpandedPost(isPostOpen ? null : p.id)}
-                      className="w-full text-left px-4 py-3">
+                    <div className="flex items-stretch">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleMessage(m.id); }}
+                        className="flex items-center px-2.5"
+                        style={{ background: isSelected ? 'rgba(220,38,38,0.06)' : 'transparent' }}
+                        aria-label={isSelected ? 'Deselect message' : 'Select message'}
+                      >
+                        <input type="checkbox" checked={isSelected} readOnly
+                          style={{ width: 14, height: 14, accentColor: '#DC2626', cursor: 'pointer' }} />
+                      </button>
+                      <button onClick={() => setExpandedMessage(isOpen ? null : m.id)}
+                        className="flex-1 text-left px-4 py-3">
                       <div className="flex justify-between items-start mb-1.5">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
                             style={{ background: 'rgba(20,184,166,0.09)', color: 'var(--teal)' }}>
-                            {p.author.charAt(0).toUpperCase()}
+                            {m.author_name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <span className="text-xs font-semibold" style={{ color: 'var(--text)' }}>{p.author}</span>
+                            <span className="text-xs font-semibold" style={{ color: 'var(--text)' }}>{m.author_name}</span>
                             <span className="text-[10px] ml-2" style={{ color: 'var(--text-dim)' }}>
-                              {new Date(p.created_at).toLocaleDateString('en-US', {
+                              {new Date(m.created_at).toLocaleDateString('en-US', {
                                 month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
                               })}
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-semibold" style={{ color: 'var(--accent)' }}>
-                            <span className="inline-flex items-center gap-1">{CoachIcons.ThumbUp} {p.upvotes || 0}</span>
+                        {m.flagged && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                            style={{ background: 'rgba(220,38,38,0.09)', color: '#DC2626' }}>
+                            Flagged
                           </span>
-                          {((p.reply_count || 0) > 0 || p.replies?.length > 0) && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                              style={{ background: 'rgba(59,130,246,0.09)', color: 'var(--blue)' }}>
-                              {p.reply_count || p.replies?.length || 0} repl{(p.reply_count || p.replies?.length || 0) === 1 ? 'y' : 'ies'}
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
                       <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                        {p.content}
+                        {m.content}
                       </p>
-                    </button>
+                      </button>
+                    </div>
 
-                    {/* Replies */}
-                    {isPostOpen && p.replies?.length > 0 && (
-                      <div className="px-4 pb-3" style={{ borderTop: '1px solid var(--border)' }}>
-                        <p className="text-[10px] font-bold uppercase tracking-wider pt-3 pb-2"
-                          style={{ color: 'var(--text-dim)' }}>
-                          Replies ({p.replies.length})
-                        </p>
-                        {p.replies.map((r: any) => (
-                          <div key={r.id} className="flex gap-2 mb-2 pl-4"
-                            style={{ borderLeft: '2px solid var(--border)' }}>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <span className="text-[11px] font-semibold" style={{ color: 'var(--teal)' }}>{r.author}</span>
-                                <span className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
-                                  {new Date(r.created_at).toLocaleDateString('en-US', {
-                                    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-                                  })}
-                                </span>
-                              </div>
-                              <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>{r.content}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {isPostOpen && (!p.replies || p.replies.length === 0) && (
-                      <div className="px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
-                        <p className="text-xs" style={{ color: 'var(--text-dim)' }}>No replies yet</p>
+                    {isOpen && (
+                      <div className="px-4 py-3 flex gap-2" style={{ borderTop: '1px solid var(--border)' }}>
+                        <button
+                          onClick={async () => {
+                            const { data: { session } } = await supabase.auth.getSession();
+                            await fetch('/api/admin/community-messages', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+                              body: JSON.stringify({ id: m.id, action: m.flagged ? 'unflag' : 'flag' }),
+                            });
+                            setMessages(prev => prev.map(x => x.id === m.id ? { ...x, flagged: !x.flagged } : x));
+                          }}
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                          style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+                        >
+                          {m.flagged ? 'Unflag' : 'Flag'}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Delete this message? This cannot be undone from this view.')) return;
+                            const { data: { session } } = await supabase.auth.getSession();
+                            await fetch('/api/admin/community-messages', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+                              body: JSON.stringify({ id: m.id, action: 'delete' }),
+                            });
+                            setMessages(prev => prev.filter(x => x.id !== m.id));
+                          }}
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                          style={{ border: '1px solid rgba(220,38,38,0.3)', color: '#DC2626' }}
+                        >
+                          Delete
+                        </button>
                       </div>
                     )}
                   </div>

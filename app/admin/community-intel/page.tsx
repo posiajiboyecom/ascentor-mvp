@@ -77,7 +77,7 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
   const[creatingCat,setCreatingCat]=useState(false);
   const[showChForm,setShowChForm]=useState(false);
   const[showCatForm,setShowCatForm]=useState(false);
-  const[chForm,setChForm]=useState({name:'',slug:'',description:'',category_id:''});
+  const[chForm,setChForm]=useState({name:'',slug:'',description:'',category_id:'',channel_type:'chat'});
   const[catForm,setCatForm]=useState({name:''});
   const[editing,setEditing]=useState<string|null>(null);
   const[editForm,setEditForm]=useState<any>({});
@@ -121,15 +121,15 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
     setCreating(true);
     const slug=chForm.slug.trim()||slugify(chForm.name);
     const maxOrder=channels.reduce((m,c)=>Math.max(m,c.sort_order),0);
-    const payload:any={slug,name:chForm.name.trim(),description:chForm.description.trim(),sort_order:maxOrder+1};
+    const payload:any={slug,name:chForm.name.trim(),description:chForm.description.trim(),sort_order:maxOrder+1,channel_type:chForm.channel_type};
     if(chForm.category_id)payload.category_id=chForm.category_id;
     const{error}=await supabase.from('community_channels').insert(payload);
-    if(error){showToast(error.message,false);}else{showToast(`#${slug} created`);setShowChForm(false);setChForm({name:'',slug:'',description:'',category_id:''});load();}
+    if(error){showToast(error.message,false);}else{showToast(`#${slug} created`);setShowChForm(false);setChForm({name:'',slug:'',description:'',category_id:'',channel_type:'chat'});load();}
     setCreating(false);
   }
 
   async function saveEdit(slug:string){
-    const{error}=await supabase.from('community_channels').update({name:editForm.name,description:editForm.description,category_id:editForm.category_id||null}).eq('slug',slug);
+    const{error}=await supabase.from('community_channels').update({name:editForm.name,description:editForm.description,category_id:editForm.category_id||null,channel_type:editForm.channel_type||'chat'}).eq('slug',slug);
     if(error){showToast(error.message,false);}else{showToast('Channel updated');setEditing(null);load();}
   }
 
@@ -196,6 +196,15 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
             <div><span style={MONO_LABEL}>Slug</span><input value={chForm.slug} onChange={e=>setChForm(f=>({...f,slug:e.target.value}))} placeholder="job-alerts" style={{...INPUT_S,fontFamily:B.fontMono}}/></div>
           </div>
           <div style={{marginBottom:12}}><span style={MONO_LABEL}>Description</span><input value={chForm.description} onChange={e=>setChForm(f=>({...f,description:e.target.value}))} placeholder="What is this channel for?" style={INPUT_S}/></div>
+          <div style={{marginBottom:12}}>
+            <span style={MONO_LABEL}>Channel type</span>
+            <select value={chForm.channel_type} onChange={e=>setChForm(f=>({...f,channel_type:e.target.value}))} style={SEL_S}>
+              <option value="chat">Chat — realtime messaging (most channels)</option>
+              <option value="forum">Forum — long-form posts with topic tags (like General)</option>
+              <option value="circle">Circle — WhatsApp-style accountability group</option>
+              <option value="announce">Announce — admin-only broadcast, members react but can't reply</option>
+            </select>
+          </div>
           <div style={{marginBottom:16}}>
             <span style={MONO_LABEL}>Category</span>
             <select value={chForm.category_id} onChange={e=>setChForm(f=>({...f,category_id:e.target.value}))} style={SEL_S}>
@@ -239,6 +248,15 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
                             </div>
                           </div>
                           <div style={{marginBottom:8}}><span style={MONO_LABEL}>Description</span><input value={editForm.description||''} onChange={e=>setEditForm((f:any)=>({...f,description:e.target.value}))} style={INPUT_S}/></div>
+                          <div style={{marginBottom:8}}>
+                            <span style={MONO_LABEL}>Channel type</span>
+                            <select value={editForm.channel_type||'chat'} onChange={e=>setEditForm((f:any)=>({...f,channel_type:e.target.value}))} style={SEL_S}>
+                              <option value="chat">Chat — realtime messaging</option>
+                              <option value="forum">Forum — long-form posts with topic tags</option>
+                              <option value="circle">Circle — accountability group</option>
+                              <option value="announce">Announce — admin-only broadcast</option>
+                            </select>
+                          </div>
                           <div style={{display:'flex',gap:8}}>
                             <button onClick={()=>saveEdit(ch.slug)} style={{padding:'6px 16px',borderRadius:6,border:'none',background:B.gold,color:'#0C0B08',fontFamily:B.fontUI,fontWeight:700,fontSize:12,cursor:'pointer'}}>Save</button>
                             <button onClick={()=>setEditing(null)} style={{padding:'6px 14px',borderRadius:6,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:11,cursor:'pointer'}}>Cancel</button>
@@ -247,12 +265,13 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
                       ):(
                         <div style={{display:'flex',alignItems:'center',gap:10}}>
                           <span style={{fontFamily:B.fontMono,fontSize:13,color:'var(--admin-text)'}}># {ch.name}</span>
+                          <span style={{fontFamily:B.fontMono,fontSize:9,letterSpacing:'0.06em',textTransform:'uppercase' as const,padding:'2px 7px',borderRadius:999,background:'var(--admin-bg-input)',color:'var(--admin-text-faint)',flexShrink:0}}>{ch.channel_type||'chat'}</span>
                           <span style={{fontFamily:B.fontUI,fontSize:12,color:'var(--admin-text-muted)',flex:1}}>{ch.description}</span>
                           <div style={{display:'flex',flexDirection:'column',gap:1}}>
                             <button onClick={()=>moveCh(ch.slug,'up')} disabled={idx===0} style={{width:20,height:16,borderRadius:3,border:'1px solid var(--admin-bg-input)',background:'transparent',color:idx===0?'var(--admin-bg-input)':'var(--admin-text-muted)',fontSize:8,cursor:idx===0?'not-allowed':'pointer',lineHeight:1}}>▲</button>
                             <button onClick={()=>moveCh(ch.slug,'down')} disabled={idx===catChannels.length-1} style={{width:20,height:16,borderRadius:3,border:'1px solid var(--admin-bg-input)',background:'transparent',color:idx===catChannels.length-1?'var(--admin-bg-input)':'var(--admin-text-muted)',fontSize:8,cursor:idx===catChannels.length-1?'not-allowed':'pointer',lineHeight:1}}>▼</button>
                           </div>
-                          <button onClick={()=>{setEditing(ch.slug);setEditForm({name:ch.name,description:ch.description,category_id:ch.category_id||'',slug:ch.slug});}} style={{padding:'4px 10px',borderRadius:5,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>Edit</button>
+                          <button onClick={()=>{setEditing(ch.slug);setEditForm({name:ch.name,description:ch.description,category_id:ch.category_id||'',slug:ch.slug,channel_type:ch.channel_type||'chat'});}} style={{padding:'4px 10px',borderRadius:5,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>Edit</button>
                           <button onClick={()=>deleteChannel(ch.slug)} disabled={deleting[ch.slug]} style={{padding:'4px 10px',borderRadius:5,border:'1px solid rgba(239,68,68,0.25)',background:'transparent',color:B.red,fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>{deleting[ch.slug]?'…':'Delete'}</button>
                         </div>
                       )}
@@ -276,8 +295,9 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
                 {uncat.map((ch:any)=>(
                   <div key={ch.slug} style={{padding:'10px 16px',borderBottom:'1px solid var(--admin-bg-input)',display:'flex',alignItems:'center',gap:10}}>
                     <span style={{fontFamily:B.fontMono,fontSize:13,color:'var(--admin-text)'}}># {ch.name}</span>
+                    <span style={{fontFamily:B.fontMono,fontSize:9,letterSpacing:'0.06em',textTransform:'uppercase' as const,padding:'2px 7px',borderRadius:999,background:'var(--admin-bg-input)',color:'var(--admin-text-faint)',flexShrink:0}}>{ch.channel_type||'chat'}</span>
                     <span style={{fontFamily:B.fontUI,fontSize:12,color:'var(--admin-text-muted)',flex:1}}>{ch.description}</span>
-                    <button onClick={()=>{setEditing(ch.slug);setEditForm({name:ch.name,description:ch.description,category_id:ch.category_id||'',slug:ch.slug});}} style={{padding:'4px 10px',borderRadius:5,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>Edit</button>
+                    <button onClick={()=>{setEditing(ch.slug);setEditForm({name:ch.name,description:ch.description,category_id:ch.category_id||'',slug:ch.slug,channel_type:ch.channel_type||'chat'});}} style={{padding:'4px 10px',borderRadius:5,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>Edit</button>
                     <button onClick={()=>deleteChannel(ch.slug)} disabled={deleting[ch.slug]} style={{padding:'4px 10px',borderRadius:5,border:'1px solid rgba(239,68,68,0.25)',background:'transparent',color:B.red,fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>{deleting[ch.slug]?'…':'Delete'}</button>
                   </div>
                 ))}

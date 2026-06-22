@@ -7,7 +7,37 @@ export const metadata: Metadata = {
     'Ascentor is the official platform of The Elevation Summit — a movement for purposeful individuals building lives of lasting impact. Learn who we are and why we exist.',
 };
 
-export default function AboutPage() {
+import { getPublishedPage } from '@/lib/supabase/queries/marketing';
+
+export default async function AboutPage() {
+  const cms = await getPublishedPage('about');
+  const h = (s: string) => s.replace(/<(?!br\s*\/?>)[^>]*>/gi, '');
+
+  // CMS section keys for /admin/marketing-pages/about:
+  //   what_we_are  → {eyebrow, headline, body1, body2}
+  //   values       → {eyebrow, headline}
+  //   final_cta    → {eyebrow, headline, body, cta_label, cta_href}
+  // The product list items (The Circle, Coach, Resources, Summit) and
+  // value cards are NOT wired to CMS — they're structured design
+  // components whose shape (emoji, background colors, etc.) can't be
+  // changed safely via a text editor. Only prose sections are wired.
+  const whatWeAre = cms?.sections.what_we_are?.data as Record<string, string> | undefined;
+  const whatEyebrow  = whatWeAre?.eyebrow   || 'What We Are';
+  const whatHeadline = whatWeAre?.headline  || 'Not a platform.<br /><span style="color:#C8A96E">A movement with a platform.</span>';
+  const whatBody1    = whatWeAre?.body1     || 'Most products optimize for engagement. Ascentor optimizes for transformation. We measure success not by time spent on the platform but by the quality of the lives being built by the people on it.';
+  const whatBody2    = whatWeAre?.body2     || 'The Elevation Summit is the annual gathering where the movement comes alive in person. Ascentor is where it lives every other day of the year.';
+
+  const values = cms?.sections.values?.data as Record<string, string> | undefined;
+  const valuesEyebrow  = values?.eyebrow  || 'What We Believe';
+  const valuesHeadline = values?.headline || 'The convictions we build on.';
+
+  const finalCta = cms?.sections.final_cta?.data as Record<string, string> | undefined;
+  const ctaEyebrow  = finalCta?.eyebrow   || 'Ready to ascend?';
+  const ctaHeadline = finalCta?.headline  || 'Join the movement.';
+  const ctaBody     = finalCta?.body      || 'Ascentor is for the ones who have decided to stop drifting and start building.';
+  const ctaLabel    = finalCta?.cta_label || 'Join Ascentor →';
+  const ctaHref     = finalCta?.cta_href  || '/signup';
+
   return (
     <>
       <style>{`
@@ -117,23 +147,11 @@ export default function AboutPage() {
       <section style={{ background: '#0F0F0E', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem', alignItems: 'center' }}>
           <div>
-            <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>What We Are</p>
-            <h2 style={{
-              fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-              fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)',
-              fontWeight: 700, color: '#FAFAF8',
-              lineHeight: 1.15, letterSpacing: '-0.02em',
-              marginBottom: '1.5rem',
-            }}>
-              Not a platform.<br />
-              <span style={{ color: '#C8A96E' }}>A movement with a platform.</span>
-            </h2>
-            <p style={{ fontSize: '1.0625rem', color: '#9CA3AF', lineHeight: 1.8, marginBottom: '1.25rem' }}>
-              Most products optimize for engagement. Ascentor optimizes for transformation. We measure success not by time spent on the platform but by the quality of the lives being built by the people on it.
-            </p>
-            <p style={{ fontSize: '1.0625rem', color: '#9CA3AF', lineHeight: 1.8 }}>
-              The Elevation Summit is the annual gathering where the movement comes alive in person. Ascentor is where it lives every other day of the year.
-            </p>
+            <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>{whatEyebrow}</p>
+            <h2 style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 700, color: '#FAFAF8', lineHeight: 1.15, letterSpacing: '-0.02em', marginBottom: '1.5rem' }}
+              dangerouslySetInnerHTML={{ __html: h(whatHeadline) }} />
+            <p style={{ fontSize: '1.0625rem', color: '#9CA3AF', lineHeight: 1.8, marginBottom: '1.25rem' }}>{whatBody1}</p>
+            <p style={{ fontSize: '1.0625rem', color: '#9CA3AF', lineHeight: 1.8 }}>{whatBody2}</p>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -160,10 +178,8 @@ export default function AboutPage() {
       {/* Our Values */}
       <section style={{ padding: 'clamp(4rem, 8vw, 7rem) 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ marginBottom: '3.5rem' }}>
-          <p className="eyebrow" style={{ marginBottom: '1rem' }}>What We Believe</p>
-          <h2 className="section-headline" style={{ maxWidth: '560px' }}>
-            The convictions we build on.
-          </h2>
+          <p className="eyebrow" style={{ marginBottom: '1rem' }}>{valuesEyebrow}</p>
+          <h2 className="section-headline" style={{ maxWidth: '560px' }}>{valuesHeadline}</h2>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
@@ -265,18 +281,12 @@ export default function AboutPage() {
       {/* The Elevation Summit CTA */}
       <section style={{ background: '#0F0F0E', padding: 'clamp(5rem, 10vw, 8rem) 1.5rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '680px', margin: '0 auto' }}>
-          <p className="eyebrow" style={{ color: '#C8A96E', marginBottom: '1.5rem' }}>February 2027</p>
-          <h2 style={{
-            fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-            fontSize: 'clamp(2rem, 4vw, 3rem)',
-            fontWeight: 800, color: '#FAFAF8',
-            letterSpacing: '-0.03em', lineHeight: 1.1,
-            marginBottom: '1.25rem',
-          }}>
-            The inaugural Elevation Summit is coming.
+          <p className="eyebrow" style={{ color: '#C8A96E', marginBottom: '1.5rem' }}>{ctaEyebrow}</p>
+          <h2 style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 800, color: '#FAFAF8', letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '1.25rem' }}>
+            {ctaHeadline}
           </h2>
           <p style={{ color: '#6B7280', fontSize: '1.0625rem', lineHeight: 1.75, marginBottom: '2.5rem' }}>
-            Lagos, Nigeria. One gathering. One decision. The rest of your life.
+            {ctaBody}
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href="/elevation-summit" style={{

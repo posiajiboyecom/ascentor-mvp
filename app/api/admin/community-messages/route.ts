@@ -79,15 +79,41 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PATCH /api/admin/community-messages — delete or flag a message
-// Body: { id, action: 'delete' | 'flag' | 'unflag' }
+// PATCH /api/admin/community-messages — delete or flag message(s)
+// Body: { id, action } for a single message, OR
+//       { ids: string[], action } for bulk (action must be 'delete' for bulk)
 export async function PATCH(req: NextRequest) {
   try {
     const user = await getAdminUser(req.headers.get('authorization'));
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { id, action } = await req.json();
-    if (!id || !action) return NextResponse.json({ error: 'id and action required' }, { status: 400 });
+    const body = await req.json();
+    const { id, ids, action } = body as { id?: string; ids?: string[]; action?: string };
+
+    if (!action) return NextResponse.json({ error: 'action required' }, { status: 400 });
+
+    // Bulk path — only used for delete from the admin UI's multi-select.
+    // Flag/unflag stay single-id (no bulk UI need identified for those).
+    if (Array.isArray(ids)) {
+      if (ids.length === 0 || !ids.every(x => typeof x === 'string')) {
+        return NextResponse.json({ error: 'ids must be a non-empty array of strings' }, { status: 400 });
+      }
+      if (ids.length > 500) {
+        return NextResponse.json({ error: 'Cannot act on more than 500 messages in one request' }, { status: 400 });
+      }
+      if (action !== 'delete') {
+        return NextResponse.json({ error: 'Bulk action only supports delete' }, { status: 400 });
+      }
+      const { error, count } = await supabaseAdmin
+        .from('community_messages')
+        .update({ deleted: true }, { count: 'exact' })
+        .in('id', ids);
+      if (error) throw error;
+      return NextResponse.json({ ok: true, deleted: count ?? ids.length });
+    }
+
+    // Single-id path — original behavior, unchanged.
+    if (!id) return NextResponse.json({ error: 'id or ids required' }, { status: 400 });
 
     if (action === 'delete') {
       const { error } = await supabaseAdmin

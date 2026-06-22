@@ -52,7 +52,48 @@ const dimensions = [
   },
 ];
 
-export default function MovementPage() {
+import { getPublishedPage } from '@/lib/supabase/queries/marketing';
+
+export default async function MovementPage() {
+  const cms = await getPublishedPage('movement');
+  // Helper to safely accept admin-authored html with <br> tags only
+  const h = (s: string) => s.replace(/<(?!br\s*\/?>)[^>]*>/gi, '');
+
+  // CMS-driven content with hardcoded fallbacks.
+  // Section keys for this page in /admin/marketing-pages/movement:
+  //   hero         → {eyebrow, headline, subhead}
+  //   crisis       → {eyebrow, part, headline, paragraphs (newline-separated)}
+  //   conviction   → {eyebrow, part, headline}
+  //   vision       → {eyebrow, part, headline, body}
+  //   dimensions_header → {eyebrow, headline, body}
+  // Dimensions cards use the shared 'dimensions' repeating section
+  // (same keys as landing page: dimension, subtitle, description, contrast)
+  const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
+  const heroEyebrow  = hero?.eyebrow  || 'The Movement';
+  const heroHeadline = hero?.headline || 'A generation is drifting.<br /><span style="color:#C8A96E">We exist to change that.</span>';
+  const heroSubhead  = hero?.subhead  || 'Ascentor is not a product. It is a movement — built around one uncompromising conviction about what is wrong with the world and what is required to fix it.';
+
+  const crisis = cms?.sections.crisis?.data as Record<string, string> | undefined;
+  const crisisHeadline = crisis?.headline || 'The Crisis';
+  const crisisParagraphs = crisis?.paragraphs
+    ? crisis.paragraphs.split('\n').filter(Boolean)
+    : [
+        'Something has gone deeply wrong. Not with resources. Not with intelligence. Not with opportunity alone. What has gone wrong is internal.',
+        'A generation of people exists without architecture. They wake up each day and respond — to notifications, to trends, to the expectations of others, to the gravity of immediate gain. They are not lazy. They are not unintelligent. They are not bad.',
+        'They are unbuilt.',
+        'Leaders without vision, managing rather than building. Professionals without purpose, performing rather than creating. Communities without direction, reacting rather than architecting. Nations without ideology, surviving rather than ascending.',
+        'This is not a political problem. It is not an economic problem. It is a human architecture problem. And it demands a movement.',
+      ];
+
+  const vision = cms?.sections.vision?.data as Record<string, string> | undefined;
+  const visionHeadline = vision?.headline || 'The Vision';
+  const visionBody     = vision?.body     || 'A global community of purposeful, ideologically grounded individuals — in every nation, at every level of society — who have chosen to ascend rather than drift. Who are developing themselves completely. Who are building things that last.';
+
+  const dimHeader = cms?.sections.dimensions_header?.data as Record<string, string> | undefined;
+  const dimHeadline = dimHeader?.headline || 'The Total Person';
+  const dimBody     = dimHeader?.body     || 'The movement is built around one model of human development. Not career success. Not social media influence. Not productivity. The total person.';
+  const dimItems = (cms?.sections.dimensions?.items || []) as Array<Record<string, string>>;
+  const defaultDimensions = dimensions; // use the const already defined above
   return (
     <>
       <style>{`
@@ -157,12 +198,10 @@ export default function MovementPage() {
       {/* Hero */}
       <section style={{ padding: 'clamp(5rem, 10vw, 8rem) 1.5rem clamp(3rem, 6vw, 5rem)', maxWidth: '1200px', margin: '0 auto' }}>
         <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>The Movement</p>
-        <h1 className="page-headline" style={{ marginBottom: '1.5rem', maxWidth: '780px' }}>
-          A generation is drifting.<br />
-          <span style={{ color: '#C8A96E' }}>We exist to change that.</span>
-        </h1>
+        <h1 className="page-headline" style={{ marginBottom: '1.5rem', maxWidth: '780px' }}
+          dangerouslySetInnerHTML={{ __html: h(heroHeadline) }} />
         <p style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: '#374151', lineHeight: 1.75, maxWidth: '620px' }}>
-          Ascentor is not a product. It is a movement — built around one uncompromising conviction about what is wrong with the world and what is required to fix it.
+          {heroSubhead}
         </p>
       </section>
 
@@ -171,16 +210,10 @@ export default function MovementPage() {
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ maxWidth: '760px' }}>
             <p className="eyebrow" style={{ color: '#C8A96E', marginBottom: '1.5rem' }}>Part I</p>
-            <h2 className="section-headline" style={{ color: '#FAFAF8', marginBottom: '2rem' }}>The Crisis</h2>
+            <h2 className="section-headline" style={{ color: '#FAFAF8', marginBottom: '2rem' }}>{crisisHeadline}</h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {[
-                'Something has gone deeply wrong. Not with resources. Not with intelligence. Not with opportunity alone. What has gone wrong is internal.',
-                'A generation of people exists without architecture. They wake up each day and respond — to notifications, to trends, to the expectations of others, to the gravity of immediate gain. They are not lazy. They are not unintelligent. They are not bad.',
-                'They are unbuilt.',
-                'Leaders without vision, managing rather than building. Professionals without purpose, performing rather than creating. Communities without direction, reacting rather than architecting. Nations without ideology, surviving rather than ascending.',
-                'This is not a political problem. It is not an economic problem. It is a human architecture problem. And it demands a movement.',
-              ].map((para, i) => (
+              {crisisParagraphs.map((para, i) => (
                 <p key={i} style={{
                   fontSize: para === 'They are unbuilt.' ? '1.5rem' : '1.0625rem',
                   color: para === 'They are unbuilt.' ? '#C8A96E' : '#9CA3AF',
@@ -244,22 +277,16 @@ export default function MovementPage() {
               Build the total person.
             </h2>
             <p style={{ color: '#6B7280', fontSize: '1.0625rem', lineHeight: 1.75, maxWidth: '620px' }}>
-              Not the successful person. Not the wealthy person. Not the famous person. The total person — fully developed across every dimension of human life, anchored by purpose, governed by principle, and oriented toward impact that outlasts them.
+              {dimBody}
             </p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
-            {dimensions.map((dim) => (
+            {(dimItems.length > 0 ? dimItems : defaultDimensions).map((dim) => (
               <div key={dim.name} className="dimension-card">
                 <div className="gold-bar" />
-                <h3 style={{
-                  fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                  fontSize: '1.125rem', fontWeight: 700, color: '#0F0F0E',
-                  marginBottom: '0.25rem',
-                }}>{dim.name}</h3>
-                <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#9CA3AF', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  {dim.subtitle}
-                </p>
+                <h3 style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontSize: '1.125rem', fontWeight: 700, color: '#0F0F0E', marginBottom: '0.25rem' }}>{dim.name}</h3>
+                <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#9CA3AF', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{dim.subtitle}</p>
                 <p style={{ fontSize: '0.9375rem', color: '#374151', lineHeight: 1.7 }}>{dim.description}</p>
                 <p className="contrast">{dim.contrast}</p>
               </div>
@@ -273,9 +300,9 @@ export default function MovementPage() {
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ maxWidth: '760px', marginBottom: '4rem' }}>
             <p className="eyebrow" style={{ marginBottom: '1rem' }}>The Vision</p>
-            <h2 className="section-headline" style={{ marginBottom: '1.5rem' }}>2050.</h2>
+            <h2 className="section-headline" style={{ marginBottom: '1.5rem' }}>{visionHeadline === 'The Vision' ? '2050.' : visionHeadline}</h2>
             <p style={{ fontSize: '1.0625rem', color: '#374151', lineHeight: 1.75, marginBottom: '1.25rem' }}>
-              By 2050, the people shaped by this movement will be recognized not as products of a platform but as a distinct category of human being — recognizable by how they carry themselves, how they lead, how they build, and what they leave behind.
+              {visionBody}
             </p>
           </div>
 

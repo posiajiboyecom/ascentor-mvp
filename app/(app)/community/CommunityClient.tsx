@@ -28,6 +28,57 @@ import { EmojiPickerButton } from '@/components/community/EmojiPickerButton';
 import { QUICK_REACTIONS } from '@/components/community/emojiSet';
 import type { PlanTier } from '@/lib/planTier';
 
+// ── Chat background pattern ──────────────────────────────────────────
+// Researched before building: literal scattered-icon patterns (the
+// WhatsApp doodle-wallpaper style) are a specific brand choice tied to
+// that product's casual identity, not a general chat-UX best practice
+// — most premium/professional chat UIs (Slack, Discord, iMessage) use
+// flat or near-flat backgrounds. The current 2026 convention for
+// adding texture to premium/editorial-feeling products is subtle
+// grain/geometric texture at very low opacity, not visible iconography
+// — confirmed across multiple current design-tool sources during
+// research for this change.
+//
+// Rather than use a generic noise/grain texture (which would be safe
+// but arbitrary — not tied to this product specifically), this pattern
+// is built from Ascentor's own mark: the three diagonal ascending
+// strokes in the logo (public/ascentor-color-for-dark-pages.svg) are
+// echoed here as a faint, large-scale tiled motif. It reads as "this
+// is Ascentor's chat" rather than "this is generic chat texture."
+//
+// Gold (#C8A96E, the brand accent) at 4% opacity — visible enough to
+// add depth, low enough to never compete with message text or bubble
+// backgrounds for either light or dark theme (--color-background-
+// primary resolves to #FFFFFF light / #1A1A19 dark; 4% gold reads
+// correctly against both without a separate dark-mode variant).
+// Tiled at 120x120px so the motif repeats at a scale large enough to
+// not look like static/noise up close, small enough to be present
+// across small mobile viewports too.
+//
+// TILING NOTE: every stroke's endpoints are kept strictly inside the
+// 0-120 viewBox (never touching x=0, x=120, y=0, or y=120). An
+// earlier version of this pattern had strokes extending past the
+// tile boundary (e.g. x2=134 in a 120-wide tile), which SVG clips at
+// the viewBox edge — that clipping created a visible seam every
+// 120px where lines abruptly cut off instead of continuing smoothly
+// into the next tile. Caught and fixed before shipping by checking
+// every coordinate against the viewBox bounds. Keeping geometry
+// fully inside the tile (rather than relying on wrap-around math at
+// the edges) is the simplest way to guarantee no seam, since there's
+// nothing AT the boundary to seam in the first place.
+const CHAT_BG_PATTERN_SVG = `<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#C8A96E" stroke-width="1.5" stroke-linecap="round" opacity="0.04">
+    <line x1="15" y1="105" x2="40" y2="40" />
+    <line x1="28" y1="105" x2="50" y2="46" />
+    <line x1="41" y1="105" x2="60" y2="52" />
+  </g>
+  <g stroke="#C8A96E" stroke-width="1.5" stroke-linecap="round" opacity="0.04">
+    <line x1="75" y1="105" x2="100" y2="40" />
+    <line x1="88" y1="105" x2="110" y2="46" />
+    <line x1="101" y1="105" x2="119" y2="52" />
+  </g>
+</svg>`;
+
 // ── Types — match the real schema exactly ──────────────────────────────
 
 export type ChannelType = 'chat' | 'forum' | 'circle' | 'announce';
@@ -896,6 +947,23 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
   const profileCache = useRef<Record<string, string>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // User-facing error feedback. Previously every failure path here
+  // (load, send, voice upload, reaction, pin, reply count) only
+  // logged to console — confirmed during UI/UX audit that this
+  // screen had zero user-facing error feedback anywhere, meaning a
+  // failed message send, for example, would silently revert with no
+  // explanation to the person who just sent it. This is the fix:
+  // one shared toast state, set at every catch/error branch below.
+  // Auto-dismisses after 4s; does not block interaction.
+  const [errorToast, setErrorToast] = useState<string | null>(null);
+  const errorToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showError = useCallback((msg: string) => {
+    setErrorToast(msg);
+    if (errorToastTimer.current) clearTimeout(errorToastTimer.current);
+    errorToastTimer.current = setTimeout(() => setErrorToast(null), 4000);
+  }, []);
+  useEffect(() => () => { if (errorToastTimer.current) clearTimeout(errorToastTimer.current); }, []);
+
   const isForum = channel.channel_type === 'forum';
   const canReply = channel.channel_type !== 'announce';
   const isLocked = channel.is_locked && !isModerator;
@@ -940,6 +1008,7 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
 
       if (error) {
         console.error('[CommunityClient] failed to load messages:', error.message);
+        if (!cancelled) showError("Couldn't load messages — check your connection and try again.");
       }
       if (!cancelled) {
         setMessages(await enrichMessages(data ?? []));
@@ -998,14 +1067,16 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           console.error('[CommunityClient] voice upload failed:', data.error);
+          showError("Voice message didn't send — try again.");
         }
         // The INSERT realtime event will add the message — no optimistic
         // insert needed here since the round-trip is already a network call.
       } catch (err) {
         console.error('[CommunityClient] voice upload error:', err);
+        showError("Voice message didn't send — check your connection.");
       }
     },
-    [channel.slug]
+    [channel.slug, showError]
   );
 
   const voiceRecorder = useVoiceRecorder(handleVoiceComplete);
@@ -1050,6 +1121,7 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
     if (error || !data) {
       console.error('[CommunityClient] send failed:', error?.message);
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      showError("Message didn't send — try again.");
       return;
     }
 
@@ -1071,6 +1143,7 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
         .eq('id', replyToId);
       if (countError) {
         console.error('[CommunityClient] reply_count update failed:', countError.message);
+        showError('Reply sent, but the reply count may be out of date.');
       }
     }
   }
@@ -1112,6 +1185,7 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
     if (error) {
       console.error('[CommunityClient] reaction failed:', error.message);
       setMessages((prev) => prev.map((m) => (m.id === message.id ? message : m)));
+      showError("Reaction didn't save — try again.");
     }
   }
 
@@ -1121,7 +1195,10 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
       .from('community_messages')
       .update({ pinned: !message.pinned })
       .eq('id', message.id);
-    if (error) console.error('[CommunityClient] pin toggle failed:', error.message);
+    if (error) {
+      console.error('[CommunityClient] pin toggle failed:', error.message);
+      showError("Couldn't pin message — try again.");
+    }
   }
 
   const pinnedMessage = messages.find((m) => m.pinned);
@@ -1131,7 +1208,32 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
   }, [messages, onMessagesChange]);
 
   return (
-    <div className="flex flex-col h-full bg-[var(--color-background-primary)]">
+    <div
+      className="flex flex-col h-full bg-[var(--color-background-primary)] community-chat-bg"
+      style={{
+        backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(CHAT_BG_PATTERN_SVG)}")`,
+        backgroundRepeat: 'repeat',
+        backgroundSize: '120px 120px',
+      }}
+    >
+      {/* Error toast — see errorToast state declaration above for why
+          this exists: every failure path in this component used to
+          fail completely silently (console.error only). */}
+      {errorToast && (
+        <div
+          role="alert"
+          className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg"
+          style={{
+            background: 'var(--app-bg-card, #1A1A19)',
+            color: 'var(--app-text, #FAFAF8)',
+            border: '1px solid rgba(220,38,38,0.35)',
+            maxWidth: '90vw',
+          }}
+        >
+          {errorToast}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-3 px-4 lg:px-6 py-3 lg:py-4 border-b-[0.5px] border-[var(--color-border-tertiary)] shrink-0">
         {onBack && (

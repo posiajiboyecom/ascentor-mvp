@@ -1,5 +1,25 @@
 'use client';
 
+// app/admin/blog/BlogInner.tsx — THE LEDGER
+// Restyled to The Ledger (styles/admin-ledger.css). Same conversion
+// as the other three pages this pass: var(--bg-card)/var(--text)/
+// var(--accent) -> var(--ledger-*) equivalents, raw status hex ->
+// Ledger status tokens. Logic UNCHANGED — same loadPosts, handleSave,
+// togglePublish, handleDelete.
+//
+// FUNCTIONAL FIX (not just styling): the post list below the form
+// never rendered cover_image at all — no <img> tag existed in that
+// section, only title/slug/category/author text. The form's OWN
+// preview (further up, while editing) DID work, which is why this
+// looked like an inconsistent "sometimes images don't show" bug
+// rather than what it actually was: the list view was simply never
+// built to display a thumbnail. Confirmed cover_image data is real
+// and used correctly on the live post page (app/blog/[slug]/page.tsx)
+// — only the admin list and the public blog INDEX (app/blog/page.tsx,
+// a separate file, out of scope for this pass) are missing it.
+// Added a 56x56 thumbnail (or a placeholder icon when no cover_image
+// is set) to each row below.
+
 import SageLoader from '@/components/SageLoader';
 
 import { useState, useEffect } from 'react';
@@ -112,8 +132,8 @@ export default function AdminBlogPageInner() {
   return (
     <div className="animate-fade-up">
       <style>{`
-        .blog-input:focus { border-color: var(--accent) !important; }
-        .blog-input::placeholder { color: var(--text-dim); opacity: 0.5; }
+        .blog-input:focus { border-color: var(--ledger-gold) !important; }
+        .blog-input::placeholder { color: var(--ledger-ink-faint); opacity: 0.6; }
         .blog-post-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
         @media (max-width: 480px) {
           .blog-post-actions { width: 100%; }
@@ -124,17 +144,17 @@ export default function AdminBlogPageInner() {
       {/* ── Header ── */}
       <div className="flex justify-between items-start mb-6" style={{ gap: '12px' }}>
         <div>
-          <h1 className="text-xl md:text-2xl font-semibold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
+          <h1 className="ledger-h1" style={{ fontSize: 26 }}>
             Blog Posts
           </h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-sm ledger-mono" style={{ fontSize: 12 }}>
             {posts.filter(p => p.is_published).length} published · {posts.filter(p => !p.is_published).length} drafts
           </p>
         </div>
         <button
           onClick={openCreate}
-          className="px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap flex-shrink-0"
-          style={{ background: 'var(--accent)', color: '#000' }}
+          className="ledger-btn ledger-btn-primary px-4 py-2.5 text-sm whitespace-nowrap flex-shrink-0"
+          style={{ fontFamily: 'var(--ledger-font-ui)', textTransform: 'none', letterSpacing: 0, fontSize: 13.5 }}
         >
           + New Post
         </button>
@@ -143,16 +163,16 @@ export default function AdminBlogPageInner() {
       {/* ── Save error banner (replaces alert()) ── */}
       {saveError && (
         <div className="rounded-xl px-4 py-3 mb-4 text-sm flex items-center justify-between gap-3"
-          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#EF4444' }}>
+          style={{ background: 'var(--ledger-bad-bg)', border: '1px solid rgba(200,74,56,0.3)', color: 'var(--ledger-bad)' }}>
           <span>{saveError}</span>
-          <button onClick={() => setSaveError('')} style={{ fontSize: '16px', lineHeight: 1, background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button onClick={() => setSaveError('')} style={{ fontSize: '16px', lineHeight: 1, background: 'none', border: 'none', color: 'var(--ledger-bad)', cursor: 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
       )}
 
       {/* ── Create / Edit Form ── */}
       {showForm && (
-        <div className="rounded-xl p-4 md:p-5 mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--accent)' }}>
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>
+        <div className="rounded-xl p-4 md:p-5 mb-6 ledger-panel" style={{ borderColor: 'var(--ledger-gold-border)' }}>
+          <h3 className="text-sm font-semibold mb-4 ledger-h2" style={{ fontSize: 15 }}>
             {editing ? 'Edit Post' : 'New Blog Post'}
           </h3>
           <div className="flex flex-col gap-3">
@@ -160,7 +180,7 @@ export default function AdminBlogPageInner() {
             {/* Title */}
             <input
               className="blog-input w-full px-3.5 py-3 text-sm rounded-xl"
-              style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
+              style={{ background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', border: '1px solid var(--ledger-line-strong)', outline: 'none' }}
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value, slug: editing ? form.slug : slugify(e.target.value) })}
               placeholder="Post title"
@@ -170,14 +190,14 @@ export default function AdminBlogPageInner() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 className="blog-input px-3.5 py-3 text-sm rounded-xl"
-                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
+                style={{ background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', border: '1px solid var(--ledger-line-strong)', outline: 'none' }}
                 value={form.slug}
                 onChange={(e) => setForm({ ...form, slug: e.target.value })}
                 placeholder="url-slug"
               />
               <select
                 className="blog-input px-3 py-3 text-sm rounded-xl"
-                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)' }}
+                style={{ background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', border: '1px solid var(--ledger-line-strong)' }}
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
               >
@@ -188,7 +208,7 @@ export default function AdminBlogPageInner() {
             {/* Excerpt */}
             <textarea
               className="blog-input w-full px-3.5 py-3 text-sm rounded-xl resize-none"
-              style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
+              style={{ background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', border: '1px solid var(--ledger-line-strong)', outline: 'none' }}
               value={form.excerpt}
               onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
               placeholder="Short excerpt"
@@ -198,7 +218,7 @@ export default function AdminBlogPageInner() {
             {/* Content */}
             <textarea
               className="blog-input w-full px-3.5 py-3 text-sm rounded-xl font-mono"
-              style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none', minHeight: '200px' }}
+              style={{ background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', border: '1px solid var(--ledger-line-strong)', outline: 'none', minHeight: '200px' }}
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
               placeholder="Post content"
@@ -209,7 +229,7 @@ export default function AdminBlogPageInner() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 className="blog-input px-3.5 py-3 text-sm rounded-xl"
-                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
+                style={{ background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', border: '1px solid var(--ledger-line-strong)', outline: 'none' }}
                 value={form.author_name}
                 onChange={(e) => setForm({ ...form, author_name: e.target.value })}
                 placeholder="Author name"
@@ -217,7 +237,7 @@ export default function AdminBlogPageInner() {
               <input
                 type="number"
                 className="blog-input px-3.5 py-3 text-sm rounded-xl"
-                style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
+                style={{ background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', border: '1px solid var(--ledger-line-strong)', outline: 'none' }}
                 value={form.read_time_minutes}
                 onChange={(e) => setForm({ ...form, read_time_minutes: Number(e.target.value) })}
                 placeholder="Read time (min)"
@@ -229,15 +249,15 @@ export default function AdminBlogPageInner() {
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
                   className="blog-input px-3.5 py-3 text-sm rounded-xl"
-                  style={{ flex: 1, background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
+                  style={{ flex: 1, background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', border: '1px solid var(--ledger-line-strong)', outline: 'none' }}
                   value={form.cover_image}
                   onChange={(e) => setForm({ ...form, cover_image: e.target.value })}
                   placeholder="Cover image URL — or upload"
                 />
                 <label style={{
                   display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px',
-                  borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-input)',
-                  cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap',
+                  borderRadius: 'var(--ledger-radius-md)', border: '1px solid var(--ledger-line-strong)', background: 'var(--ledger-bg-input)',
+                  cursor: 'pointer', fontSize: 12, color: 'var(--ledger-ink-soft)', whiteSpace: 'nowrap',
                 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                   Upload
@@ -255,7 +275,7 @@ export default function AdminBlogPageInner() {
                 </label>
               </div>
               {form.cover_image && (
-                <img src={form.cover_image} alt="Cover preview" style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--border)' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                <img src={form.cover_image} alt="Cover preview" style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 'var(--ledger-radius-md)', border: '1px solid var(--ledger-line-strong)' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               )}
             </div>
 
@@ -266,9 +286,9 @@ export default function AdminBlogPageInner() {
                 checked={form.is_published}
                 onChange={(e) => setForm({ ...form, is_published: e.target.checked })}
                 className="w-4 h-4 rounded"
-                style={{ accentColor: 'var(--accent)' }}
+                style={{ accentColor: 'var(--ledger-gold)' }}
               />
-              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Publish immediately</span>
+              <span className="text-sm" style={{ color: 'var(--ledger-ink-soft)' }}>Publish immediately</span>
             </label>
 
             {/* Actions */}
@@ -276,15 +296,15 @@ export default function AdminBlogPageInner() {
               <button
                 onClick={handleSave}
                 disabled={saving || !form.title.trim() || !form.content.trim()}
-                className="px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 flex-1 sm:flex-none"
-                style={{ background: 'var(--accent)', color: '#000' }}
+                className="ledger-btn ledger-btn-primary px-5 py-2.5 text-sm disabled:opacity-40 flex-1 sm:flex-none"
+                style={{ fontFamily: 'var(--ledger-font-ui)', textTransform: 'none', letterSpacing: 0, fontSize: 13.5 }}
               >
                 {saving ? 'Saving...' : editing ? 'Update Post' : 'Create Post'}
               </button>
               <button
                 onClick={() => { setShowForm(false); setEditing(null); }}
-                className="px-4 py-2.5 rounded-lg text-sm flex-1 sm:flex-none"
-                style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                className="ledger-btn ledger-btn-ghost px-4 py-2.5 text-sm flex-1 sm:flex-none"
+                style={{ fontFamily: 'var(--ledger-font-ui)', textTransform: 'none', letterSpacing: 0, fontSize: 13.5 }}
               >
                 Cancel
               </button>
@@ -296,28 +316,53 @@ export default function AdminBlogPageInner() {
       {/* ── Post List ── */}
       <div className="flex flex-col gap-2">
         {posts.length === 0 && (
-          <div className="rounded-xl p-8 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No posts yet. Create your first post above.</p>
+          <div className="rounded-xl p-8 text-center ledger-panel">
+            <p className="text-sm ledger-mono">No posts yet. Create your first post above.</p>
           </div>
         )}
         {posts.map((p) => (
           <div
             key={p.id}
-            className="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', opacity: p.is_published ? 1 : 0.65 }}
+            className="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 ledger-panel"
+            style={{ opacity: p.is_published ? 1 : 0.65 }}
           >
+            {/* Thumbnail — FIX: this row never rendered cover_image before.
+                Falls back to a placeholder icon when no image is set, so
+                the list stays visually scannable either way. */}
+            {p.cover_image ? (
+              <img
+                src={p.cover_image}
+                alt=""
+                style={{
+                  width: 56, height: 56, borderRadius: 'var(--ledger-radius-md)',
+                  objectFit: 'cover', flexShrink: 0,
+                  border: '1px solid var(--ledger-line)',
+                }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            ) : (
+              <div style={{
+                width: 56, height: 56, borderRadius: 'var(--ledger-radius-md)',
+                background: 'var(--ledger-bg-input)', border: '1px solid var(--ledger-line)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ledger-ink-faint)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+                </svg>
+              </div>
+            )}
+
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h4 className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{p.title}</h4>
+                <h4 className="text-sm font-semibold truncate" style={{ color: 'var(--ledger-ink)' }}>{p.title}</h4>
                 {!p.is_published && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
-                    style={{ background: 'rgba(107,114,128,0.15)', color: 'var(--text-dim)', fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+                  <span className="ledger-tag" style={{ background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink-faint)' }}>
                     DRAFT
                   </span>
                 )}
               </div>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <p className="text-xs mt-0.5 ledger-mono" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 /{p.slug} · {p.category} · {p.read_time_minutes} min · {p.author_name}
               </p>
             </div>
@@ -328,8 +373,8 @@ export default function AdminBlogPageInner() {
                 onClick={() => togglePublish(p.id, p.is_published)}
                 className="text-xs px-3 py-2 rounded-lg"
                 style={{
-                  color: p.is_published ? 'var(--text-dim)' : 'var(--success)',
-                  border: `1px solid ${p.is_published ? 'var(--border)' : 'rgba(16,185,129,0.3)'}`,
+                  color: p.is_published ? 'var(--ledger-ink-faint)' : 'var(--ledger-good)',
+                  border: `1px solid ${p.is_published ? 'var(--ledger-line-strong)' : 'rgba(79,143,79,0.3)'}`,
                 }}
               >
                 {p.is_published ? 'Unpublish' : 'Publish'}
@@ -337,24 +382,24 @@ export default function AdminBlogPageInner() {
               <button
                 onClick={() => openEdit(p)}
                 className="text-xs px-3 py-2 rounded-lg"
-                style={{ color: 'var(--accent)', border: '1px solid rgba(245,158,11,0.3)' }}
+                style={{ color: 'var(--ledger-gold)', border: '1px solid var(--ledger-gold-border)' }}
               >
                 Edit
               </button>
               {deletingId === p.id ? (
                 <div className="flex gap-1.5 items-center">
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Delete?</span>
+                  <span className="text-xs" style={{ color: 'var(--ledger-ink-soft)' }}>Delete?</span>
                   <button
                     onClick={() => handleDelete(p.id)}
                     className="text-xs px-2.5 py-2 rounded-lg font-semibold"
-                    style={{ color: '#fff', background: 'rgba(239,68,68,0.8)', border: '1px solid rgba(239,68,68,0.5)' }}
+                    style={{ color: '#fff', background: 'rgba(200,74,56,0.85)', border: '1px solid rgba(200,74,56,0.5)' }}
                   >
                     Yes
                   </button>
                   <button
                     onClick={() => setDeletingId(null)}
                     className="text-xs px-2.5 py-2 rounded-lg"
-                    style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                    style={{ color: 'var(--ledger-ink-soft)', border: '1px solid var(--ledger-line-strong)' }}
                   >
                     No
                   </button>
@@ -363,7 +408,7 @@ export default function AdminBlogPageInner() {
               <button
                 onClick={() => setDeletingId(p.id)}
                 className="text-xs px-3 py-2 rounded-lg"
-                style={{ color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)' }}
+                style={{ color: 'var(--ledger-bad)', border: '1px solid rgba(200,74,56,0.3)' }}
               >
                 Delete
               </button>

@@ -1,7 +1,20 @@
 'use client';
-// app/admin/users/page.tsx — enhanced with permissions management
+// app/admin/users/page.tsx — THE LEDGER
 // View, search, filter, edit roles, assign granular permissions,
 // change plan, ban/unban, hard delete with confirmation
+//
+// Restyled to The Ledger (styles/admin-ledger.css). This file already
+// used a structured --admin-* token system + shared style objects
+// (mono/inp/cardSt) before this pass, so the conversion is mostly a
+// direct token rename: --admin-bg-* -> --ledger-bg-*, --admin-text-*
+// -> --ledger-ink-*, etc. The old gold constant G = '#E8A020' is
+// replaced with Ledger's gold (#C8A96E via var(--ledger-gold)) — a
+// different hex than what this file used before, now consistent
+// with every other Ledger-restyled page. Status colors (banned/
+// active/trial/past_due) now reference Ledger's bad/good/gold/info
+// tokens instead of raw hex, so a future palette change propagates
+// here automatically. Logic is UNCHANGED — same fetchUsers, doAction,
+// setPermissions, togglePerm. This is a styling-only pass.
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -57,10 +70,10 @@ const PERMISSION_GROUPS = [
   },
 ];
 
-const G = '#E8A020';
-const mono: React.CSSProperties = { fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.1em', textTransform:'uppercase' as const, color:'var(--admin-text-faint)' };
-const inp: React.CSSProperties  = { padding:'10px 14px', borderRadius:8, border:'1px solid var(--admin-bg-input)', background:'var(--admin-bg-card)', color:'var(--admin-text)', fontSize:13, fontFamily:"'Syne',sans-serif", outline:'none', transition:'border-color 0.2s' };
-const cardSt: React.CSSProperties = { background:'var(--admin-bg-deep)', border:'1px solid var(--admin-bg-input)', borderRadius:12 };
+const G = 'var(--ledger-gold)';
+const mono: React.CSSProperties = { fontFamily:"var(--ledger-font-mono)", fontSize:10, letterSpacing:'0.1em', textTransform:'uppercase' as const, color:'var(--ledger-ink-faint)' };
+const inp: React.CSSProperties  = { padding:'10px 14px', borderRadius:'var(--ledger-radius-md)', border:'1px solid var(--ledger-line-strong)', background:'var(--ledger-bg-card)', color:'var(--ledger-ink)', fontSize:13, fontFamily:"var(--ledger-font-ui)", outline:'none', transition:'border-color 0.2s' };
+const cardSt: React.CSSProperties = { background:'var(--ledger-bg-deep)', border:'1px solid var(--ledger-line)', borderRadius:'var(--ledger-radius-lg)' };
 
 export default function AdminUsersPage() {
   const [users,        setUsers]        = useState<User[]>([]);
@@ -149,14 +162,14 @@ export default function AdminUsersPage() {
     d ? new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—';
 
   const statusBadge = (status: string | null, banned: boolean) => {
-    if (banned) return { color:'#EF4444', bg:'rgba(239,68,68,0.1)', label:'Banned' };
+    if (banned) return { color:'var(--ledger-bad)', bg:'var(--ledger-bad-bg)', label:'Banned' };
     const map: Record<string, any> = {
-      active:    { color:'#14B8A6', bg:'rgba(20,184,166,0.1)',  label:'Active' },
-      trialing:  { color:G,         bg:'rgba(232,160,32,0.1)',  label:'Trial' },
-      cancelled: { color:'var(--admin-text-muted)', bg:'var(--admin-border)', label:'Cancelled' },
-      past_due:  { color:'#EF4444', bg:'rgba(239,68,68,0.1)',   label:'Past Due' },
+      active:    { color:'var(--ledger-good)', bg:'var(--ledger-good-bg)', label:'Active' },
+      trialing:  { color:G,                    bg:'var(--ledger-gold-bg)', label:'Trial' },
+      cancelled: { color:'var(--ledger-ink-faint)', bg:'var(--ledger-bg-input)', label:'Cancelled' },
+      past_due:  { color:'var(--ledger-bad)', bg:'var(--ledger-bad-bg)',   label:'Past Due' },
     };
-    return map[status || ''] || { color:'var(--admin-text-faint)', bg:'var(--admin-bg-input)', label:'Free' };
+    return map[status || ''] || { color:'var(--ledger-ink-faint)', bg:'var(--ledger-bg-input)', label:'Free' };
   };
 
   const totalPages = Math.ceil(total / 50) || 1;
@@ -165,12 +178,12 @@ export default function AdminUsersPage() {
     <div style={{ maxWidth:1400, margin:'0 auto' }}>
       <style>{`
         @keyframes asc-spin { to { transform:rotate(360deg); } }
-        .asc-input:focus  { border-color:${G} !important; }
-        .asc-input:hover  { border-color:var(--admin-text-faint) !important; }
-        .asc-tr:hover td  { background:var(--admin-bg-deep) !important; }
-        .asc-row-btn:hover { border-color:${G} !important; color:${G} !important; }
+        .asc-input:focus  { border-color:var(--ledger-gold) !important; }
+        .asc-input:hover  { border-color:var(--ledger-ink-faint) !important; }
+        .asc-tr:hover td  { background:var(--ledger-bg-card-hover) !important; }
+        .asc-row-btn:hover { border-color:var(--ledger-gold) !important; color:var(--ledger-gold) !important; }
         .perm-toggle { transition:all 0.15s; }
-        .perm-toggle:hover { border-color:${G} !important; }
+        .perm-toggle:hover { border-color:var(--ledger-gold) !important; }
         * { box-sizing:border-box; }
         @media(max-width:767px) {
           .asc-desktop { display:none !important; }
@@ -184,7 +197,7 @@ export default function AdminUsersPage() {
 
       {/* Toast */}
       {toast && (
-        <div style={{ position:'fixed', top:20, right:20, zIndex:9999, background:G, color:'#0C0B08', padding:'10px 20px', borderRadius:10, fontFamily:"'DM Mono',monospace", fontSize:12, fontWeight:600, boxShadow:'0 4px 20px rgba(0,0,0,0.4)' }}>
+        <div style={{ position:'fixed', top:20, right:20, zIndex:9999, background:'var(--ledger-gold)', color:'var(--ledger-bg-deep)', padding:'10px 20px', borderRadius:'var(--ledger-radius-lg)', fontFamily:"var(--ledger-font-mono)", fontSize:12, fontWeight:600, boxShadow:'var(--ledger-shadow)' }}>
           {toast}
         </div>
       )}
@@ -192,7 +205,7 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
         <div>
-          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:28, fontWeight:700, color:'var(--admin-text-heading)', margin:0, marginBottom:6 }}>
+          <h1 className="ledger-h1" style={{ fontSize:28, marginBottom:6 }}>
             User Management
           </h1>
           <p style={{ ...mono }}>{total.toLocaleString()} total users</p>
@@ -220,7 +233,7 @@ export default function AdminUsersPage() {
       <div style={{ ...cardSt, overflow:'hidden', marginBottom:16 }}>
         {loading ? (
           <div style={{ padding:48, textAlign:'center' }}>
-            <div style={{ width:28, height:28, borderRadius:'50%', border:'2px solid var(--admin-bg-input)', borderTopColor:G, animation:'asc-spin 0.9s linear infinite', margin:'0 auto 12px' }} />
+            <div style={{ width:28, height:28, borderRadius:'50%', border:'2px solid var(--ledger-line-strong)', borderTopColor:'var(--ledger-gold)', animation:'asc-spin 0.9s linear infinite', margin:'0 auto 12px' }} />
             <p style={{ ...mono }}>Loading users…</p>
           </div>
         ) : (
@@ -229,7 +242,7 @@ export default function AdminUsersPage() {
             <div className="asc-desktop" style={{ overflowX:'auto' }}>
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
                 <thead>
-                  <tr style={{ borderBottom:'1px solid var(--admin-bg-input)' }}>
+                  <tr style={{ borderBottom:'1px solid var(--ledger-line)' }}>
                     {['User','Role','Plan','Status','Permissions','Joined','Actions'].map(h => (
                       <th key={h} style={{ padding:'12px 16px', textAlign:'left', ...mono, fontWeight:500, whiteSpace:'nowrap' }}>{h}</th>
                     ))}
@@ -240,10 +253,10 @@ export default function AdminUsersPage() {
                     const badge = statusBadge(u.subscription_status, u.banned);
                     const permCount = u.permissions?.length || 0;
                     return (
-                      <tr key={u.id} className="asc-tr" style={{ borderBottom:'1px solid var(--admin-bg-input)', opacity:u.banned ? 0.55 : 1 }}>
+                      <tr key={u.id} className="asc-tr" style={{ borderBottom:'1px solid var(--ledger-line)', opacity:u.banned ? 0.55 : 1 }}>
                         <td style={{ padding:'13px 16px' }}>
-                          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:600, fontSize:13, color:'var(--admin-text)', marginBottom:2 }}>{u.full_name || 'Unnamed'}</div>
-                          <div style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:'var(--admin-text-faint)' }}>{u.email}</div>
+                          <div style={{ fontFamily:"var(--ledger-font-ui)", fontWeight:600, fontSize:13, color:'var(--ledger-ink)', marginBottom:2 }}>{u.full_name || 'Unnamed'}</div>
+                          <div style={{ fontFamily:"var(--ledger-font-mono)", fontSize:11, color:'var(--ledger-ink-faint)' }}>{u.email}</div>
                           {u.current_role && <div style={{ ...mono, fontSize:10, marginTop:2 }}>{u.current_role}{u.industry ? ` · ${u.industry}` : ''}</div>}
                         </td>
                         <td style={{ padding:'13px 16px' }}>
@@ -253,15 +266,15 @@ export default function AdminUsersPage() {
                           </select>
                         </td>
                         <td style={{ padding:'13px 16px' }}>
-                          <span style={{ ...mono, fontSize:11, color:'var(--admin-text-muted)' }}>{u.subscription_plan || 'free'}</span>
+                          <span style={{ ...mono, fontSize:11, color:'var(--ledger-ink-soft)' }}>{u.subscription_plan || 'free'}</span>
                         </td>
                         <td style={{ padding:'13px 16px' }}>
-                          <span style={{ padding:'3px 10px', borderRadius:100, fontFamily:"'DM Mono',monospace", fontSize:10, fontWeight:500, letterSpacing:'0.06em', textTransform:'uppercase', background:badge.bg, color:badge.color }}>
+                          <span style={{ padding:'3px 10px', borderRadius:100, fontFamily:"var(--ledger-font-mono)", fontSize:10, fontWeight:500, letterSpacing:'0.06em', textTransform:'uppercase', background:badge.bg, color:badge.color }}>
                             {badge.label}
                           </span>
                         </td>
                         <td style={{ padding:'13px 16px' }}>
-                          <span style={{ ...mono, fontSize:11, color: permCount > 0 ? G : 'var(--admin-text-faint)' }}>
+                          <span style={{ ...mono, fontSize:11, color: permCount > 0 ? G : 'var(--ledger-ink-faint)' }}>
                             {permCount > 0 ? `${permCount} granted` : 'default'}
                           </span>
                         </td>
@@ -271,21 +284,21 @@ export default function AdminUsersPage() {
                         <td style={{ padding:'13px 16px' }}>
                           <div style={{ display:'flex', gap:6 }}>
                             <button onClick={() => { setSelectedUser(u); setActiveTab('details'); setDeleteConfirm(''); }}
-                              className="asc-row-btn" style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'var(--admin-text-muted)' }}>
+                              className="asc-row-btn" style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'var(--ledger-ink-soft)' }}>
                               Details
                             </button>
                             <button onClick={() => { setSelectedUser(u); setActiveTab('permissions'); }}
-                              className="asc-row-btn" style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'var(--admin-text-muted)' }}>
+                              className="asc-row-btn" style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'var(--ledger-ink-soft)' }}>
                               Perms
                             </button>
                             {u.banned ? (
                               <button onClick={() => doAction(u.id, 'unban')} disabled={actionLoading}
-                                style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'#14B8A6', borderColor:'rgba(20,184,166,0.3)' }}>
+                                style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'var(--ledger-good)', borderColor:'rgba(79,143,79,0.3)' }}>
                                 Unban
                               </button>
                             ) : (
                               <button onClick={() => { if (confirm(`Ban ${u.full_name || u.email}?`)) doAction(u.id, 'ban'); }} disabled={actionLoading}
-                                style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'#EF4444', borderColor:'rgba(239,68,68,0.3)' }}>
+                                style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'var(--ledger-bad)', borderColor:'rgba(200,74,56,0.3)' }}>
                                 Ban
                               </button>
                             )}
@@ -302,19 +315,19 @@ export default function AdminUsersPage() {
               {users.map(u => {
                 const badge = statusBadge(u.subscription_status, u.banned);
                 return (
-                  <div key={u.id} style={{ padding:16, borderBottom:'1px solid var(--admin-bg-input)', opacity:u.banned ? 0.6 : 1 }}>
+                  <div key={u.id} style={{ padding:16, borderBottom:'1px solid var(--ledger-line)', opacity:u.banned ? 0.6 : 1 }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
                       <div>
-                        <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:600, fontSize:14, color:'var(--admin-text)' }}>{u.full_name || 'Unnamed'}</div>
-                        <div style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:'var(--admin-text-faint)', marginTop:2 }}>{u.email}</div>
+                        <div style={{ fontFamily:"var(--ledger-font-ui)", fontWeight:600, fontSize:14, color:'var(--ledger-ink)' }}>{u.full_name || 'Unnamed'}</div>
+                        <div style={{ fontFamily:"var(--ledger-font-mono)", fontSize:11, color:'var(--ledger-ink-faint)', marginTop:2 }}>{u.email}</div>
                       </div>
-                      <span style={{ padding:'3px 10px', borderRadius:100, fontFamily:"'DM Mono',monospace", fontSize:10, fontWeight:500, textTransform:'uppercase' as const, background:badge.bg, color:badge.color }}>
+                      <span style={{ padding:'3px 10px', borderRadius:100, fontFamily:"var(--ledger-font-mono)", fontSize:10, fontWeight:500, textTransform:'uppercase' as const, background:badge.bg, color:badge.color }}>
                         {badge.label}
                       </span>
                     </div>
                     <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                      <button onClick={() => { setSelectedUser(u); setActiveTab('details'); }} style={{ ...inp, padding:'6px 14px', fontSize:12, cursor:'pointer', color:'var(--admin-text-muted)' }}>Details</button>
-                      <button onClick={() => { setSelectedUser(u); setActiveTab('permissions'); }} style={{ ...inp, padding:'6px 14px', fontSize:12, cursor:'pointer', color:'var(--admin-text-muted)' }}>Permissions</button>
+                      <button onClick={() => { setSelectedUser(u); setActiveTab('details'); }} style={{ ...inp, padding:'6px 14px', fontSize:12, cursor:'pointer', color:'var(--ledger-ink-soft)' }}>Details</button>
+                      <button onClick={() => { setSelectedUser(u); setActiveTab('permissions'); }} style={{ ...inp, padding:'6px 14px', fontSize:12, cursor:'pointer', color:'var(--ledger-ink-soft)' }}>Permissions</button>
                     </div>
                   </div>
                 );
@@ -327,12 +340,12 @@ export default function AdminUsersPage() {
       {/* Pagination */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:16 }}>
         <button onClick={() => setPage(p => Math.max(0,p-1))} disabled={page===0}
-          className="asc-row-btn" style={{ ...inp, cursor:page===0?'not-allowed':'pointer', opacity:page===0?0.35:1, color:'var(--admin-text-muted)' }}>
+          className="asc-row-btn" style={{ ...inp, cursor:page===0?'not-allowed':'pointer', opacity:page===0?0.35:1, color:'var(--ledger-ink-soft)' }}>
           Previous
         </button>
         <span style={{ ...mono }}>Page {page+1} of {totalPages}</span>
         <button onClick={() => setPage(p=>p+1)} disabled={users.length<50}
-          className="asc-row-btn" style={{ ...inp, cursor:users.length<50?'not-allowed':'pointer', opacity:users.length<50?0.35:1, color:'var(--admin-text-muted)' }}>
+          className="asc-row-btn" style={{ ...inp, cursor:users.length<50?'not-allowed':'pointer', opacity:users.length<50?0.35:1, color:'var(--ledger-ink-soft)' }}>
           Next
         </button>
       </div>
@@ -341,23 +354,23 @@ export default function AdminUsersPage() {
       {selectedUser && (
         <>
           <div onClick={() => setSelectedUser(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:9998, backdropFilter:'blur(3px)' }} />
-          <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'var(--admin-bg-deep)', border:'1px solid var(--admin-bg-input)', borderRadius:16, width:'90%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', zIndex:9999 }}>
+          <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'var(--ledger-bg-deep)', border:'1px solid var(--ledger-line)', borderRadius:16, width:'90%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', zIndex:9999 }}>
             {/* Modal header */}
-            <div style={{ position:'sticky', top:0, background:'var(--admin-bg-deep)', borderBottom:'1px solid var(--admin-bg-input)', padding:'18px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', zIndex:1 }}>
+            <div style={{ position:'sticky', top:0, background:'var(--ledger-bg-deep)', borderBottom:'1px solid var(--ledger-line)', padding:'18px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', zIndex:1 }}>
               <div>
-                <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:'var(--admin-text-heading)', margin:0 }}>
+                <h3 className="ledger-h2" style={{ fontSize:22, margin:0 }}>
                   {selectedUser.full_name || selectedUser.email}
                 </h3>
                 <div style={{ ...mono, fontSize:9, marginTop:3 }}>{selectedUser.role} · {selectedUser.subscription_plan || 'free'}</div>
               </div>
-              <button onClick={() => setSelectedUser(null)} style={{ background:'none', border:'1px solid var(--admin-bg-input)', borderRadius:8, color:'var(--admin-text-faint)', cursor:'pointer', fontSize:18, lineHeight:1, padding:'2px 10px', fontFamily:'monospace' }}>✕</button>
+              <button onClick={() => setSelectedUser(null)} style={{ background:'none', border:'1px solid var(--ledger-line-strong)', borderRadius:'var(--ledger-radius-md)', color:'var(--ledger-ink-faint)', cursor:'pointer', fontSize:18, lineHeight:1, padding:'2px 10px', fontFamily:'monospace' }}>✕</button>
             </div>
 
             {/* Tabs */}
-            <div style={{ display:'flex', borderBottom:'1px solid var(--admin-bg-input)' }}>
+            <div style={{ display:'flex', borderBottom:'1px solid var(--ledger-line)' }}>
               {(['details','permissions'] as const).map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
-                  style={{ flex:1, padding:'12px', background:'none', border:'none', borderBottom:`2px solid ${activeTab===tab ? G : 'transparent'}`, color:activeTab===tab ? G : 'var(--admin-text-faint)', fontFamily:"'DM Mono',monospace", fontSize:11, letterSpacing:'0.08em', textTransform:'uppercase', cursor:'pointer', transition:'all 0.15s' }}>
+                  style={{ flex:1, padding:'12px', background:'none', border:'none', borderBottom:`2px solid ${activeTab===tab ? 'var(--ledger-gold)' : 'transparent'}`, color:activeTab===tab ? 'var(--ledger-gold)' : 'var(--ledger-ink-faint)', fontFamily:"var(--ledger-font-mono)", fontSize:11, letterSpacing:'0.08em', textTransform:'uppercase', cursor:'pointer', transition:'all 0.15s' }}>
                   {tab}
                 </button>
               ))}
@@ -384,9 +397,9 @@ export default function AdminUsersPage() {
                     ['Banned',       selectedUser.banned ? '⛔ Yes' : '✓ No'],
                     ['User ID',      selectedUser.id],
                   ].map(([label, value]) => (
-                    <div key={label} style={{ display:'flex', justifyContent:'space-between', padding:'9px 0', borderBottom:'1px solid var(--admin-bg-input)' }}>
+                    <div key={label} style={{ display:'flex', justifyContent:'space-between', padding:'9px 0', borderBottom:'1px solid var(--ledger-line)' }}>
                       <span style={{ ...mono }}>{label}</span>
-                      <span style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:'var(--admin-text)', fontWeight:500, textAlign:'right', maxWidth:'60%', wordBreak:'break-all' }}>{value}</span>
+                      <span style={{ fontFamily:"var(--ledger-font-ui)", fontSize:13, color:'var(--ledger-ink)', fontWeight:500, textAlign:'right', maxWidth:'60%', wordBreak:'break-all' }}>{value}</span>
                     </div>
                   ))}
 
@@ -407,32 +420,32 @@ export default function AdminUsersPage() {
                   <div style={{ marginTop:10 }}>
                     {selectedUser.banned ? (
                       <button onClick={() => { doAction(selectedUser.id, 'unban'); setSelectedUser(null); }}
-                        style={{ ...inp, width:'100%', cursor:'pointer', color:'#14B8A6', borderColor:'rgba(20,184,166,0.3)', textAlign:'center' }}>
+                        style={{ ...inp, width:'100%', cursor:'pointer', color:'var(--ledger-good)', borderColor:'rgba(79,143,79,0.3)', textAlign:'center' }}>
                         ✓ Unban this user
                       </button>
                     ) : (
                       <button onClick={() => { if (confirm('Ban this user?')) { doAction(selectedUser.id, 'ban'); setSelectedUser(null); } }}
-                        style={{ ...inp, width:'100%', cursor:'pointer', color:'#EF4444', borderColor:'rgba(239,68,68,0.3)', textAlign:'center' }}>
+                        style={{ ...inp, width:'100%', cursor:'pointer', color:'var(--ledger-bad)', borderColor:'rgba(200,74,56,0.3)', textAlign:'center' }}>
                         ⛔ Ban this user
                       </button>
                     )}
                   </div>
 
                   {/* Danger zone */}
-                  <div style={{ marginTop:24, padding:18, borderRadius:10, background:'rgba(239,68,68,0.04)', border:'1px solid rgba(239,68,68,0.2)' }}>
-                    <p style={{ ...mono, color:'#EF4444', marginBottom:8 }}>Danger zone — permanent delete</p>
-                    <p style={{ fontFamily:"'Syne',sans-serif", fontSize:12, color:'var(--admin-text-muted)', margin:'0 0 12px', lineHeight:1.6 }}>
-                      Erases account, profile, sessions, and all data. <strong style={{ color:'var(--admin-text)' }}>Cannot be undone.</strong> Type DELETE to confirm.
+                  <div style={{ marginTop:24, padding:18, borderRadius:'var(--ledger-radius-lg)', background:'var(--ledger-bad-bg)', border:'1px solid rgba(200,74,56,0.25)' }}>
+                    <p style={{ ...mono, color:'var(--ledger-bad)', marginBottom:8 }}>Danger zone — permanent delete</p>
+                    <p style={{ fontFamily:"var(--ledger-font-ui)", fontSize:12, color:'var(--ledger-ink-soft)', margin:'0 0 12px', lineHeight:1.6 }}>
+                      Erases account, profile, sessions, and all data. <strong style={{ color:'var(--ledger-ink)' }}>Cannot be undone.</strong> Type DELETE to confirm.
                     </p>
                     <div style={{ display:'flex', gap:8 }}>
                       <input type="text" placeholder="Type DELETE" value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)}
-                        className="asc-input" style={{ ...inp, flex:1, fontSize:12, borderColor:'rgba(239,68,68,0.3)' }} />
+                        className="asc-input" style={{ ...inp, flex:1, fontSize:12, borderColor:'rgba(200,74,56,0.3)' }} />
                       <button
                         onClick={() => {
                           if (deleteConfirm === 'DELETE') { doAction(selectedUser.id, 'delete'); setSelectedUser(null); setDeleteConfirm(''); }
                         }}
                         disabled={deleteConfirm !== 'DELETE' || actionLoading}
-                        style={{ ...inp, cursor:deleteConfirm==='DELETE'?'pointer':'default', color:'#EF4444', borderColor:'rgba(239,68,68,0.4)', background:'rgba(239,68,68,0.1)', fontWeight:700, whiteSpace:'nowrap', opacity:deleteConfirm==='DELETE'?1:0.4 }}>
+                        style={{ ...inp, cursor:deleteConfirm==='DELETE'?'pointer':'default', color:'var(--ledger-bad)', borderColor:'rgba(200,74,56,0.4)', background:'var(--ledger-bad-bg)', fontWeight:700, whiteSpace:'nowrap', opacity:deleteConfirm==='DELETE'?1:0.4 }}>
                         Delete Account
                       </button>
                     </div>
@@ -443,7 +456,7 @@ export default function AdminUsersPage() {
               {/* PERMISSIONS TAB */}
               {activeTab === 'permissions' && (
                 <>
-                  <p style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:'var(--admin-text-muted)', marginBottom:20, lineHeight:1.6 }}>
+                  <p style={{ fontFamily:"var(--ledger-font-ui)", fontSize:13, color:'var(--ledger-ink-soft)', marginBottom:20, lineHeight:1.6 }}>
                     Grant specific permissions beyond the user's base role. Changes take effect immediately.
                   </p>
 
@@ -458,15 +471,15 @@ export default function AdminUsersPage() {
                             className="perm-toggle"
                             onClick={() => togglePerm(selectedUser.id, perm.key, selectedUser.permissions || [])}
                             disabled={actionLoading}
-                            style={{ display:'flex', alignItems:'center', gap:12, width:'100%', padding:'10px 12px', marginBottom:6, borderRadius:8, border:`1px solid ${granted ? G : 'var(--admin-bg-input)'}`, background:granted ? 'rgba(232,160,32,0.06)' : 'var(--admin-bg-card)', cursor:'pointer', textAlign:'left' }}
+                            style={{ display:'flex', alignItems:'center', gap:12, width:'100%', padding:'10px 12px', marginBottom:6, borderRadius:'var(--ledger-radius-md)', border:`1px solid ${granted ? 'var(--ledger-gold)' : 'var(--ledger-line-strong)'}`, background:granted ? 'var(--ledger-gold-bg)' : 'var(--ledger-bg-card)', cursor:'pointer', textAlign:'left' }}
                           >
                             {/* Toggle indicator */}
-                            <div style={{ width:18, height:18, borderRadius:5, background:granted ? G : 'var(--admin-bg-input)', border:`1.5px solid ${granted ? G : 'var(--admin-bg-input)'}`, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}>
-                              {granted && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0C0B08" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                            <div style={{ width:18, height:18, borderRadius:5, background:granted ? 'var(--ledger-gold)' : 'var(--ledger-bg-input)', border:`1.5px solid ${granted ? 'var(--ledger-gold)' : 'var(--ledger-line-strong)'}`, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}>
+                              {granted && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--ledger-bg-deep)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                             </div>
                             <div>
-                              <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:600, color:granted ? G : 'var(--admin-text)', marginBottom:1 }}>{perm.label}</div>
-                              <div style={{ fontFamily:"'Syne',sans-serif", fontSize:11, color:'var(--admin-text-faint)' }}>{perm.desc}</div>
+                              <div style={{ fontFamily:"var(--ledger-font-ui)", fontSize:13, fontWeight:600, color:granted ? 'var(--ledger-gold)' : 'var(--ledger-ink)', marginBottom:1 }}>{perm.label}</div>
+                              <div style={{ fontFamily:"var(--ledger-font-ui)", fontSize:11, color:'var(--ledger-ink-faint)' }}>{perm.desc}</div>
                             </div>
                           </button>
                         );
@@ -477,7 +490,7 @@ export default function AdminUsersPage() {
                   {/* Clear all */}
                   {(selectedUser.permissions?.length || 0) > 0 && (
                     <button onClick={() => setPermissions(selectedUser.id, [])} disabled={actionLoading}
-                      style={{ ...inp, width:'100%', cursor:'pointer', color:'var(--admin-text-faint)', marginTop:8, textAlign:'center', fontSize:12, fontFamily:"'DM Mono',monospace", letterSpacing:'0.06em' }}>
+                      style={{ ...inp, width:'100%', cursor:'pointer', color:'var(--ledger-ink-faint)', marginTop:8, textAlign:'center', fontSize:12, fontFamily:"var(--ledger-font-mono)", letterSpacing:'0.06em' }}>
                       Clear all custom permissions
                     </button>
                   )}
