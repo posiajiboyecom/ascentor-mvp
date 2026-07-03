@@ -114,8 +114,8 @@ export default function PWAInstallPrompt() {
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
           zIndex: 9999,
-          background: '#0C0B08',
-          borderTop: '1px solid rgba(232,160,32,0.2)',
+          background: '#FAFAF8',
+          borderTop: '1px solid #E8E6E1',
           borderRadius: '20px 20px 0 0',
           animation: 'ios-sheet-up 0.4s cubic-bezier(0.16,1,0.3,1) both',
           paddingBottom: 'env(safe-area-inset-bottom)',
@@ -124,12 +124,12 @@ export default function PWAInstallPrompt() {
           {/* Gold top bar */}
           <div style={{
             height: 3,
-            background: 'linear-gradient(90deg, transparent, #E8A020 25%, #F5C55A 50%, #E8A020 75%, transparent)',
+            background: 'linear-gradient(90deg, transparent, #C8A96E 25%, #C8A96E 75%, transparent)',
           }} />
 
           {/* Drag handle */}
           <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 4 }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.12)' }} />
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.10)' }} />
           </div>
 
           <div style={{ padding: '8px 24px 28px' }}>
@@ -139,34 +139,34 @@ export default function PWAInstallPrompt() {
                 {/* App icon */}
                 <div style={{
                   width: 44, height: 44, borderRadius: 10,
-                  background: 'linear-gradient(135deg, #E8A020, #C47D0E)',
+                  background: '#0F0F0E',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 14px rgba(232,160,32,0.4)',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
                   flexShrink: 0,
                 }}>
                   <span style={{
                     fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
-                    fontSize: 22, fontWeight: 700, color: '#0C0B08', lineHeight: 1,
+                    fontSize: 22, fontWeight: 700, color: '#C8A96E', lineHeight: 1,
                   }}>A</span>
                 </div>
                 <div>
                   <p style={{
                     fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
-                    fontSize: 16, fontWeight: 700, color: '#FAFAF8', margin: 0,
+                    fontSize: 16, fontWeight: 700, color: '#0F0F0E', margin: 0,
                   }}>Add to Home Screen</p>
                   <p style={{
                     fontFamily: "var(--font-body, 'Inter', sans-serif)",
-                    fontSize: 10, color: '#6B7280',
+                    fontSize: 10, color: '#9CA3AF',
                     letterSpacing: '0.06em', textTransform: 'uppercase', margin: 0,
-                  }}>ascentor-mvp.vercel.app</p>
+                  }}>ascentor.com</p>
                 </div>
               </div>
               <button onClick={handleDismiss} style={{
                 width: 28, height: 28, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.07)',
-                border: 'none', cursor: 'pointer',
+                background: '#F0EEE9',
+                border: '1px solid #E8E6E1', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#6B7280', fontSize: 14, fontWeight: 600,
+                color: '#9CA3AF', fontSize: 14, fontWeight: 600,
               }}>✕</button>
             </div>
 
@@ -197,28 +197,28 @@ export default function PWAInstallPrompt() {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
                     <div style={{
                       width: 34, height: 34, borderRadius: '50%',
-                      background: 'rgba(232,160,32,0.1)',
-                      border: '1px solid rgba(232,160,32,0.3)',
+                      background: 'rgba(200,169,110,0.10)',
+                      border: '1px solid rgba(200,169,110,0.3)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       <span style={{
                         fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
-                        fontSize: 15, fontWeight: 700, color: '#E8A020', lineHeight: 1,
+                        fontSize: 15, fontWeight: 700, color: '#C8A96E', lineHeight: 1,
                       }}>{step.icon}</span>
                     </div>
                     {i < 2 && (
-                      <div style={{ width: 1, height: 20, background: 'rgba(232,160,32,0.15)', margin: '3px 0' }} />
+                      <div style={{ width: 1, height: 20, background: 'rgba(200,169,110,0.2)', margin: '3px 0' }} />
                     )}
                   </div>
                   {/* Right — text */}
                   <div style={{ paddingTop: 6, paddingBottom: i < 2 ? 0 : 0 }}>
                     <p style={{
                       fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
-                      fontSize: 13, fontWeight: 600, color: '#FAFAF8', margin: 0, marginBottom: 2,
+                      fontSize: 13, fontWeight: 600, color: '#0F0F0E', margin: 0, marginBottom: 2,
                     }}>{step.label}</p>
                     <p style={{
                       fontFamily: "var(--font-body, 'Inter', sans-serif)",
-                      fontSize: 10, color: '#6B7280',
+                      fontSize: 10, color: '#9CA3AF',
                       letterSpacing: '0.02em', margin: 0,
                       marginBottom: i < 2 ? 6 : 0,
                     }}>{step.detail}</p>
@@ -231,14 +231,13 @@ export default function PWAInstallPrompt() {
             <button onClick={handleDismiss} style={{
               width: '100%',
               padding: '14px 0',
-              background: 'linear-gradient(135deg, #E8A020, #C47D0E)',
+              background: '#0F0F0E',
               border: 'none',
               borderRadius: 12,
               fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
               fontSize: 14, fontWeight: 700,
-              color: '#0C0B08',
+              color: '#FAFAF8',
               cursor: 'pointer',
-              boxShadow: '0 4px 20px rgba(232,160,32,0.35)',
               letterSpacing: '0.02em',
             }}>
               Got it
@@ -265,25 +264,24 @@ export default function PWAInstallPrompt() {
         right: 0,
         zIndex: 9989,
         animation: 'pwa-slide-up 0.4s cubic-bezier(0.16,1,0.3,1) both',
-        background: '#0F0F0E',
-        borderTop: '1px solid rgba(232,160,32,0.15)',
+        background: '#FAFAF8',
+        borderTop: '1px solid #E8E6E1',
         paddingBottom: 'env(safe-area-inset-bottom)',
-        boxShadow: '0 -12px 48px rgba(0,0,0,0.6)',
+        boxShadow: '0 -8px 40px rgba(0,0,0,0.10)',
       }}>
         {/* Gold accent line at top */}
         <div style={{
           height: 2,
-          background: 'linear-gradient(90deg, transparent, #E8A020 30%, #E8A020 70%, transparent)',
-          marginBottom: 0,
+          background: 'linear-gradient(90deg, transparent, #C8A96E 30%, #C8A96E 70%, transparent)',
         }} />
 
         <div style={{ padding: '14px 16px 16px', display: 'flex', gap: 14, alignItems: 'center' }}>
           {/* App icon */}
           <div style={{
             width: 48, height: 48, borderRadius: 12, flexShrink: 0,
-            background: 'linear-gradient(135deg, #E8A020, #C47D0E)',
+            background: '#0F0F0E',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(232,160,32,0.35)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           }}>
             <img
               src="/ascentor-color-for-dark-pages.svg"
@@ -298,16 +296,16 @@ export default function PWAInstallPrompt() {
             <p style={{
               fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
               fontSize: 14, fontWeight: 700,
-              color: '#FAFAF8', margin: 0, marginBottom: 2,
+              color: '#0F0F0E', margin: 0, marginBottom: 2,
             }}>
               Add Ascentor to your home screen
             </p>
             <p style={{
               fontFamily: "var(--font-body, 'Inter', sans-serif)",
-              fontSize: 10, color: '#6B7280',
-              letterSpacing: '0.03em', margin: 0,
+              fontSize: 10, color: '#9CA3AF',
+              letterSpacing: '0.06em', textTransform: 'uppercase', margin: 0,
             }}>
-              One tap access · Works offline
+              One-click access · Works offline · No app store needed
             </p>
           </div>
 
@@ -315,24 +313,23 @@ export default function PWAInstallPrompt() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
             <button onClick={handleInstall} style={{
               padding: '8px 18px',
-              background: '#E8A020',
-              color: '#000',
+              background: '#0F0F0E',
+              color: '#FAFAF8',
               border: 'none',
               borderRadius: 8,
               fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
               fontSize: 12, fontWeight: 700,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
-              boxShadow: '0 2px 8px rgba(232,160,32,0.3)',
             }}>
-              Install
+              Install now
             </button>
             <button onClick={handleDismiss} style={{
               padding: '4px 0',
               background: 'transparent',
               border: 'none',
               fontFamily: "var(--font-body, 'Inter', sans-serif)",
-              fontSize: 10, color: '#6B7280',
+              fontSize: 10, color: '#9CA3AF',
               cursor: 'pointer',
               textAlign: 'center',
             }}>
