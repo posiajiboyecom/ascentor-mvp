@@ -158,6 +158,37 @@ export default async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
+  // ── 24-hour inactivity guard ──────────────────────────────────────
+  // If the user is authenticated but has been inactive for 24+ hours,
+  // sign them out at the edge and redirect to login.
+  if (user) {
+    const lastActive = request.cookies.get('last_active')?.value;
+    const INACTIVITY_LIMIT = 24 * 60 * 60 * 1000; // 24 hours in ms
+
+    if (lastActive) {
+      const elapsed = Date.now() - parseInt(lastActive, 10);
+      if (elapsed > INACTIVITY_LIMIT) {
+        // Sign out server-side
+        await supabase.auth.signOut();
+        // Clear cookies and redirect to login
+        const loginUrl = new URL('/login', request.url);
+        loginUrl.searchParams.set('reason', 'session_expired');
+        const redirectResponse = NextResponse.redirect(loginUrl);
+        redirectResponse.cookies.delete('last_active');
+        return redirectResponse;
+      }
+    }
+
+    // Refresh the last_active timestamp on every protected request
+    response.cookies.set('last_active', String(Date.now()), {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60, // 24 hours
+      path: '/',
+    });
+  }
+
   // ── S3: Protect API routes ────────────────────────────────────────
   if (PROTECTED_API_PREFIXES.some(p => pathname.startsWith(p))) {
     if (!user) {

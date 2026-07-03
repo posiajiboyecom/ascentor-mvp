@@ -7,12 +7,16 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const DISMISS_KEY = 'pwa_dismissed_until';
+const DISMISS_DURATION_MS = 6 * 60 * 60 * 1000; // 6 hours
+
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
     // Register service worker
@@ -22,26 +26,30 @@ export default function PWAInstallPrompt() {
       });
     }
 
-    // Check if already installed
+    // Don't show if already installed as PWA
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
       return;
     }
 
-    // Detect iOS
-    const ua = navigator.userAgent;
-    const isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    setIsIOS(isiOS);
-
-    // Check if we've already dismissed
-    const dismissed = localStorage.getItem('pwa-banner-dismissed');
-    if (dismissed) {
-      const dismissedAt = parseInt(dismissed);
-      // Show again after 7 days
-      if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
+    // Check if dismissed within the last 6 hours
+    const dismissedUntil = localStorage.getItem(DISMISS_KEY);
+    if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) {
+      return; // Still within the 6hr suppression window
     }
 
-    // Android/Chrome: listen for install prompt
+    // Detect desktop vs mobile
+    const desktop = window.matchMedia('(min-width: 768px)').matches;
+    setIsDesktop(desktop);
+
+    // Detect iOS (Safari)
+    const ua = navigator.userAgent;
+    const isiOS =
+      /iPad|iPhone|iPod/.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    setIsIOS(isiOS);
+
+    // ── Android / Chrome / Edge / Desktop ────────────────────────────────
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -49,207 +57,221 @@ export default function PWAInstallPrompt() {
     };
     window.addEventListener('beforeinstallprompt', handler);
 
-    // iOS: show manual guide after 3 visits
+    // ── iOS Safari ────────────────────────────────────────────────────────
     if (isiOS) {
-      const visits = parseInt(localStorage.getItem('pwa-visits') || '0') + 1;
-      localStorage.setItem('pwa-visits', String(visits));
-      if (visits >= 3) {
-        setShowBanner(true);
-      }
+      setShowBanner(true);
     }
 
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    // Track successful installation
+    const installedHandler = () => {
+      setIsInstalled(true);
+      setShowBanner(false);
+      localStorage.removeItem(DISMISS_KEY);
+    };
+    window.addEventListener('appinstalled', installedHandler);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', installedHandler);
+    };
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) {
-      if (isIOS) {
-        setShowIOSGuide(true);
-        return;
-      }
+    if (isIOS) {
+      setShowIOSGuide(true);
       return;
     }
+    if (!deferredPrompt) return;
+
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
+
     if (outcome === 'accepted') {
       setIsInstalled(true);
+      setShowBanner(false);
+      localStorage.removeItem(DISMISS_KEY);
+    } else {
+      // User declined — re-arm for next time browser re-fires
+      setDeferredPrompt(null);
+      const reArm = (e: Event) => {
+        e.preventDefault();
+        setDeferredPrompt(e as BeforeInstallPromptEvent);
+        window.removeEventListener('beforeinstallprompt', reArm);
+      };
+      window.addEventListener('beforeinstallprompt', reArm);
     }
-    setDeferredPrompt(null);
-    setShowBanner(false);
   };
 
+  // Dismiss for 6 hours
   const handleDismiss = () => {
+    localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_DURATION_MS));
     setShowBanner(false);
     setShowIOSGuide(false);
-    localStorage.setItem('pwa-banner-dismissed', String(Date.now()));
   };
 
   if (isInstalled || !showBanner) return null;
 
-  // iOS install guide modal
+  // ── iOS install guide modal ───────────────────────────────────────────
   if (showIOSGuide) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        background: 'rgba(15,15,14,0.4)',
+        backdropFilter: 'blur(4px)',
+        padding: '0 16px',
+      }}>
+        <div style={{
+          width: '100%', maxWidth: 440,
+          marginBottom: 16,
+          borderRadius: 16,
+          padding: '24px 20px',
+          background: '#FAFAF8',
+          border: '1px solid #E8E6E1',
+          animation: 'pwa-slide-up 0.35s cubic-bezier(0.16,1,0.3,1) both',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h3 style={{
+              fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
+              fontSize: 20, fontWeight: 700,
+              color: '#0F0F0E', margin: 0,
+            }}>
+              Install Ascentor
+            </h3>
+            <button onClick={handleDismiss} style={{
+              background: 'none', border: '1px solid #E8E6E1',
+              borderRadius: 6, color: '#9CA3AF',
+              fontSize: 16, cursor: 'pointer',
+              padding: '2px 8px', lineHeight: 1,
+            }}>
+              ×
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <IOSStep num={1} text={<>Tap the <strong style={{ color: '#D4CFC3' }}>Share</strong> button at the bottom of Safari</>} />
+            <IOSStep num={2} text={<>Scroll and tap <strong style={{ color: '#D4CFC3' }}>"Add to Home Screen"</strong></>} />
+            <IOSStep num={3} text={<>Tap <strong style={{ color: '#D4CFC3' }}>"Add"</strong> — Ascentor appears on your home screen</>} />
+          </div>
+
+          <button onClick={handleDismiss} style={{
+            width: '100%', marginTop: 20,
+            padding: '13px 0',
+            background: '#0F0F0E', color: '#FAFAF8',
+            border: 'none', borderRadius: 10,
+            fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
+            fontSize: 13, fontWeight: 700,
+            cursor: 'pointer',
+          }}>
+            Got it
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── DESKTOP: Top bar ──────────────────────────────────────────────────
+  if (isDesktop) {
     return (
       <>
         <style>{`
-          @keyframes ios-sheet-up {
-            from { opacity: 0; transform: translateY(100%); }
+          @keyframes pwa-slide-down {
+            from { opacity: 0; transform: translateY(-100%); }
             to   { opacity: 1; transform: translateY(0); }
           }
-          @keyframes ios-fade-in {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-          }
         `}</style>
-
-        {/* Backdrop */}
-        <div onClick={handleDismiss} style={{
-          position: 'fixed', inset: 0, zIndex: 9998,
-          background: 'rgba(0,0,0,0.7)',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-          animation: 'ios-fade-in 0.2s ease both',
-        }} />
-
-        {/* Bottom sheet */}
         <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0,
-          zIndex: 9999,
-          background: '#141210',
-          borderTop: '1px solid rgba(232,160,32,0.2)',
-          borderRadius: '20px 20px 0 0',
-          animation: 'ios-sheet-up 0.4s cubic-bezier(0.16,1,0.3,1) both',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-          overflow: 'hidden',
+          position: 'fixed',
+          top: 0, left: 0, right: 0,
+          zIndex: 9989,
+          animation: 'pwa-slide-down 0.4s cubic-bezier(0.16,1,0.3,1) both',
+          background: '#FAFAF8',
+          borderBottom: '1px solid #E8E6E1',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
         }}>
-          {/* Gold top bar */}
+          {/* Gold accent line */}
           <div style={{
-            height: 3,
-            background: 'linear-gradient(90deg, transparent, #E8A020 25%, #F5C55A 50%, #E8A020 75%, transparent)',
+            height: 2,
+            background: 'linear-gradient(90deg, transparent, #C8A96E 30%, #C8A96E 70%, transparent)',
           }} />
 
-          {/* Drag handle */}
-          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 4 }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.12)' }} />
-          </div>
-
-          <div style={{ padding: '8px 24px 28px' }}>
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                {/* App icon */}
-                <div style={{
-                  width: 44, height: 44, borderRadius: 10,
-                  background: 'linear-gradient(135deg, #E8A020, #C47D0E)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 14px rgba(232,160,32,0.4)',
-                  flexShrink: 0,
-                }}>
-                  <span style={{
-                    fontFamily: "'Cormorant Garamond', Georgia, serif",
-                    fontSize: 22, fontWeight: 700, color: '#0C0B08', lineHeight: 1,
-                  }}>A</span>
-                </div>
-                <div>
-                  <p style={{
-                    fontFamily: "'Syne', system-ui, sans-serif",
-                    fontSize: 16, fontWeight: 700, color: '#FEF9EC', margin: 0,
-                  }}>Add to Home Screen</p>
-                  <p style={{
-                    fontFamily: "'DM Mono', monospace",
-                    fontSize: 10, color: '#5A5550',
-                    letterSpacing: '0.06em', textTransform: 'uppercase', margin: 0,
-                  }}>ascentor-mvp.vercel.app</p>
-                </div>
-              </div>
-              <button onClick={handleDismiss} style={{
-                width: 28, height: 28, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.07)',
-                border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#5A5550', fontSize: 14, fontWeight: 600,
-              }}>✕</button>
-            </div>
-
-            {/* Steps */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 24 }}>
-              {[
-                {
-                  num: 1,
-                  icon: '↑',
-                  label: 'Tap Share',
-                  detail: 'The share icon at the bottom of Safari',
-                },
-                {
-                  num: 2,
-                  icon: '+',
-                  label: 'Add to Home Screen',
-                  detail: 'Scroll down in the share sheet to find it',
-                },
-                {
-                  num: 3,
-                  icon: '✓',
-                  label: 'Tap Add',
-                  detail: 'Ascentor appears on your home screen',
-                },
-              ].map((step, i) => (
-                <div key={step.num} style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                  {/* Left — number + connector line */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-                    <div style={{
-                      width: 34, height: 34, borderRadius: '50%',
-                      background: 'rgba(232,160,32,0.1)',
-                      border: '1px solid rgba(232,160,32,0.3)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <span style={{
-                        fontFamily: "'Syne', system-ui, sans-serif",
-                        fontSize: 15, fontWeight: 700, color: '#E8A020', lineHeight: 1,
-                      }}>{step.icon}</span>
-                    </div>
-                    {i < 2 && (
-                      <div style={{ width: 1, height: 20, background: 'rgba(232,160,32,0.15)', margin: '3px 0' }} />
-                    )}
-                  </div>
-                  {/* Right — text */}
-                  <div style={{ paddingTop: 6, paddingBottom: i < 2 ? 0 : 0 }}>
-                    <p style={{
-                      fontFamily: "'Syne', system-ui, sans-serif",
-                      fontSize: 13, fontWeight: 600, color: '#FEF9EC', margin: 0, marginBottom: 2,
-                    }}>{step.label}</p>
-                    <p style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: 10, color: '#5A5550',
-                      letterSpacing: '0.02em', margin: 0,
-                      marginBottom: i < 2 ? 6 : 0,
-                    }}>{step.detail}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* CTA */}
-            <button onClick={handleDismiss} style={{
-              width: '100%',
-              padding: '14px 0',
-              background: 'linear-gradient(135deg, #E8A020, #C47D0E)',
-              border: 'none',
-              borderRadius: 12,
-              fontFamily: "'Syne', system-ui, sans-serif",
-              fontSize: 14, fontWeight: 700,
-              color: '#0C0B08',
-              cursor: 'pointer',
-              boxShadow: '0 4px 20px rgba(232,160,32,0.35)',
-              letterSpacing: '0.02em',
+          <div style={{
+            padding: '10px 24px',
+            display: 'flex', gap: 14, alignItems: 'center',
+            maxWidth: 960, margin: '0 auto',
+          }}>
+            {/* App icon */}
+            <div style={{
+              width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+              background: '#0F0F0E',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(200,169,110,0.2)',
             }}>
-              Got it
-            </button>
+              <img
+                src="/ascentor-color-for-dark-pages.svg"
+                alt="Ascentor"
+                style={{ width: 22, height: 22, objectFit: 'contain' }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            </div>
+
+            {/* Text */}
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 16 }}>
+              <p style={{
+                fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
+                fontSize: 13, fontWeight: 700,
+                color: '#0F0F0E', margin: 0,
+                whiteSpace: 'nowrap',
+              }}>
+                Install Ascentor
+              </p>
+              <p style={{
+                fontFamily: "var(--font-body, 'Inter', sans-serif)",
+                fontSize: 10, color: '#9CA3AF',
+                letterSpacing: '0.06em', margin: 0,
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+              }}>
+                One-click access · Works offline · No app store needed
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
+              <button onClick={handleInstall} style={{
+                padding: '7px 22px',
+                background: '#0F0F0E',
+                color: '#FAFAF8',
+                border: 'none', borderRadius: 7,
+                fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
+                fontSize: 12, fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 8px rgba(200,169,110,0.15)',
+              }}>
+                Install now
+              </button>
+              <button onClick={handleDismiss} style={{
+                padding: '7px 14px',
+                background: 'transparent',
+                border: '1px solid #E8E6E1',
+                borderRadius: 7,
+                fontFamily: "var(--font-body, 'Inter', sans-serif)",
+                fontSize: 10, color: '#9CA3AF',
+                cursor: 'pointer',
+                letterSpacing: '0.06em',
+                whiteSpace: 'nowrap',
+              }}>
+                Not now
+              </button>
+            </div>
           </div>
         </div>
       </>
     );
   }
 
-  // Install banner
+  // ── MOBILE: Bottom banner ─────────────────────────────────────────────
   return (
     <>
       <style>{`
@@ -260,30 +282,31 @@ export default function PWAInstallPrompt() {
       `}</style>
       <div style={{
         position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
+        bottom: 0, left: 0, right: 0,
         zIndex: 9989,
         animation: 'pwa-slide-up 0.4s cubic-bezier(0.16,1,0.3,1) both',
-        background: '#1A1814',
-        borderTop: '1px solid rgba(232,160,32,0.15)',
+        background: '#FAFAF8',
+        borderTop: '1px solid #E8E6E1',
         paddingBottom: 'env(safe-area-inset-bottom)',
-        boxShadow: '0 -12px 48px rgba(0,0,0,0.6)',
+        boxShadow: '0 -16px 48px rgba(0,0,0,0.08)',
       }}>
-        {/* Gold accent line at top */}
+        {/* Gold accent line */}
         <div style={{
           height: 2,
-          background: 'linear-gradient(90deg, transparent, #E8A020 30%, #E8A020 70%, transparent)',
-          marginBottom: 0,
+          background: 'linear-gradient(90deg, transparent, #C8A96E 30%, #C8A96E 70%, transparent)',
         }} />
 
-        <div style={{ padding: '14px 16px 16px', display: 'flex', gap: 14, alignItems: 'center' }}>
+        <div style={{
+          padding: '14px 16px 16px',
+          display: 'flex', gap: 14, alignItems: 'center',
+          maxWidth: 640, margin: '0 auto',
+        }}>
           {/* App icon */}
           <div style={{
             width: 48, height: 48, borderRadius: 12, flexShrink: 0,
-            background: 'linear-gradient(135deg, #E8A020, #C47D0E)',
+            background: '#0F0F0E',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(232,160,32,0.35)',
+            boxShadow: '0 4px 12px rgba(200,169,110,0.2)',
           }}>
             <img
               src="/ascentor-color-for-dark-pages.svg"
@@ -296,45 +319,44 @@ export default function PWAInstallPrompt() {
           {/* Text */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{
-              fontFamily: "'Syne', system-ui, sans-serif",
+              fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
               fontSize: 14, fontWeight: 700,
-              color: '#FEF9EC', margin: 0, marginBottom: 2,
+              color: '#0F0F0E', margin: '0 0 3px',
             }}>
-              Add Ascentor to your home screen
+              Install Ascentor
             </p>
             <p style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 10, color: '#7A7260',
-              letterSpacing: '0.03em', margin: 0,
+              fontFamily: "var(--font-body, 'Inter', sans-serif)",
+              fontSize: 10, color: '#9CA3AF',
+              letterSpacing: '0.06em', margin: 0,
+              textTransform: 'uppercase',
             }}>
               One tap access · Works offline
             </p>
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0, alignItems: 'center' }}>
             <button onClick={handleInstall} style={{
-              padding: '8px 18px',
-              background: '#E8A020',
-              color: '#000',
-              border: 'none',
-              borderRadius: 8,
-              fontFamily: "'Syne', system-ui, sans-serif",
+              padding: '9px 20px',
+              background: '#0F0F0E',
+              color: '#FAFAF8',
+              border: 'none', borderRadius: 8,
+              fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
               fontSize: 12, fontWeight: 700,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
-              boxShadow: '0 2px 8px rgba(232,160,32,0.3)',
+              boxShadow: '0 2px 8px rgba(200,169,110,0.15)',
             }}>
               Install
             </button>
             <button onClick={handleDismiss} style={{
-              padding: '4px 0',
-              background: 'transparent',
-              border: 'none',
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 10, color: '#4A4438',
+              padding: '3px 0',
+              background: 'transparent', border: 'none',
+              fontFamily: "var(--font-body, 'Inter', sans-serif)",
+              fontSize: 10, color: '#9CA3AF',
               cursor: 'pointer',
-              textAlign: 'center',
+              letterSpacing: '0.06em',
             }}>
               Not now
             </button>
@@ -345,14 +367,26 @@ export default function PWAInstallPrompt() {
   );
 }
 
-function Step({ num, text }: { num: number; text: React.ReactNode }) {
+function IOSStep({ num, text }: { num: number; text: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3">
-      <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
-        style={{ background: 'rgba(245,158,11,0.12)', color: '#E8A020' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+      <div style={{
+        width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(232,160,32,0.1)',
+        border: '1px solid #E8E6E1',
+        fontFamily: "var(--font-body, 'Inter', sans-serif)",
+        fontSize: 10, fontWeight: 500, color: '#C8A96E',
+      }}>
         {num}
       </div>
-      <p className="text-sm pt-0.5" style={{ color: '#C5C4BF' }}>{text}</p>
+      <p style={{
+        fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
+        fontSize: 13, color: '#9CA3AF',
+        margin: 0, paddingTop: 3, lineHeight: 1.5,
+      }}>
+        {text}
+      </p>
     </div>
   );
 }

@@ -29,5 +29,5 @@ export const NAV_ITEMS: NavItem[] = [
   { icon: MessageCircle, label: 'AI Coach',  href: '/coach'     },
   { icon: Users,         label: 'The Circle', href: '/community' },
   { icon: CalendarDays,  label: 'Sessions',  href: '/experts'   },
-  { icon: BookOpen,      label: 'Resources', href: '/learn'     },
+  { icon: BookOpen,      label: 'Learn',     href: '/learn'     },
 ];

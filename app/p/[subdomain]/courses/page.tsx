@@ -93,7 +93,7 @@ export default function PartnerCoursesPage() {
               {playing === course.id ? (
                 <div style={{ position: 'relative', aspectRatio: '16/9', background: '#000' }}>
                   <iframe
-                    src={`https://www.youtube.com/embed/${course.youtube_id}?autoplay=1&rel=0`}
+                    src={`https://www.youtube-nocookie.com/embed/${course.youtube_id}?autoplay=1&rel=0`}
                     style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen

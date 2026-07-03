@@ -347,10 +347,10 @@ function VideoPlayer({ course, onBack, onProgressUpdate, onToggleComplete }: {
             src={(() => {
               const origin = typeof window !== 'undefined' ? window.location.origin : '';
               const params = new URLSearchParams({ start: String(Math.floor(course.lastPosition)), enablejsapi: '1', origin, rel: '0', modestbranding: '1', controls: '1', iv_load_policy: '3', playsinline: '1', autoplay: '0', cc_load_policy: '0' });
-              return `https://www.youtube.com/embed/${course.youtube_id}?${params.toString()}`;
+              return `https://www.youtube-nocookie.com/embed/${course.youtube_id}?${params.toString()}`;
             })()}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
           />
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '14%', background: '#000', zIndex: 2, pointerEvents: 'none' }} />
