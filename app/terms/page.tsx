@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -50,7 +50,7 @@ export default function TermsPage() {
 
           <Section title="4. Subscription Plans & Payments">
             <p>We offer tiered subscription plans (Starter, Pro, Premium) as described on our <Link href="/pricing" style={{ color: '#E8A020', textDecoration: 'underline' }}>Pricing page</Link>. All prices are in US Dollars.</p>
-            <p className="mt-2"><strong>Free Trial:</strong> New users receive a 7-day free trial. No payment is required to start the trial. You will not be charged until the trial period ends and you choose to continue.</p>
+            <p className="mt-2"><strong>Free Trial:</strong> New users receive a . No payment is required to start the trial. You will not be charged until the trial period ends and you choose to continue.</p>
             <p className="mt-2"><strong>Billing:</strong> Subscriptions are billed monthly through our payment processors (Paystack and Selar). By subscribing, you authorize recurring charges.</p>
             <p className="mt-2"><strong>Refund Policy:</strong> We offer a full refund within 30 days of your first payment. After 30 days, payments are non-refundable. You may cancel at any time, and your access continues until the end of your current billing period.</p>
             <p className="mt-2"><strong>Promo Codes:</strong> Promotional discounts are subject to their specific terms and may be revoked if obtained through unauthorized means.</p>

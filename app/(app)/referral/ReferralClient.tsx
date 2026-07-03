@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 
@@ -55,7 +55,7 @@ export default function ReferralClient({ firstName, referralCode, referralCount,
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const shareText = `I've been using Ascentor — an AI leadership coach built for African professionals. It's helping me level up my career. Join me and we both get 7 extra days free: ${referralLink}`;
+  const shareText = `I've been using Ascentor — an AI leadership coach built for purposeful individuals. It's helping me level up my career. Join me and we both get 7 extra days free: ${referralLink}`;
 
   const shareWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');

@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════
 // Agent 1: Content Researcher — Ambitious Professional Edition
 //
 // AUDIENCE SEGMENTS:
@@ -402,7 +402,7 @@ async function researchAndDiscover(
     messages: [{
       role: "user",
       content:
-        `You are the research lead at Ascentor — an AI-powered mentorship platform for ambitious professionals.\n\n` +
+        `You are the research lead at Ascentor — an The Elevation Summit platform for purposeful individuals.\n\n` +
         `MISSION: Find what is ACTUALLY relevant this week for the audience segment below. ` +
         `Global focus — trends that resonate across industries, cities, and career stages.\n\n` +
         `Audience segment: ${audienceMeta.label}\n` +
@@ -458,7 +458,7 @@ async function buildBrief(params: {
     messages: [{
       role: "user",
       content:
-        `You are the content strategist at Ascentor — AI mentorship for ambitious professionals.\n\n` +
+        `You are the content strategist at Ascentor — AI mentorship for purposeful individuals.\n\n` +
         `MISSION: Build a brief that makes a ${stageLabel} stop and say "this is EXACTLY my life right now."\n\n` +
         `Audience segment: ${stageLabel} | Pillar: ${params.pillar} | Week: ${params.weekNumber}\n` +
         `Trends: ${params.trends.slice(0, 3).join(", ") || params.pillar}\n` +
@@ -503,7 +503,7 @@ async function buildBrief(params: {
       hooks: [audienceMeta.platformHooks.linkedin, audienceMeta.platformHooks.twitter, audienceMeta.platformHooks.email],
       instagramHook: audienceMeta.platformHooks.instagram,
       dataPoints: ["Over 1 billion working professionals are navigating their careers without a real mentor"],
-      seoKeywords: [`${stageLabel} career`, `professional ${params.pillar}`, `career development`],
+      seoKeywords: [`${stageLabel} career`, `professional ${params.pillar}`, `purposeful development`],
       urgencyReason: `${stageLabel}s face a real mentorship gap — empowering content builds the trust that converts`,
       professionalAngle: painPoints[Math.floor(Math.random() * painPoints.length)],
     };

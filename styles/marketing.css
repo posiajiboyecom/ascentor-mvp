@@ -1,0 +1,174 @@
+/*
+ * styles/marketing.css
+ * ─────────────────────────────────────────────────────────────────────────
+ * Shared styles for Ascentor marketing pages (Elevation Summit, Movement,
+ * About, etc.). Previously each page embedded these as inline <style> blocks,
+ * causing duplication and drift. Now a single import in each marketing page.
+ *
+ * FIX: Extracted from ElevationSummitClient.tsx and movement/page.tsx.
+ * Import via: import '@/styles/marketing.css';
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+
+.mkt-eyebrow {
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #C8A96E;
+}
+
+.mkt-hero-headline {
+  font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+  font-size: clamp(3rem, 7vw, 6rem);
+  font-weight: 800;
+  line-height: 1.0;
+  letter-spacing: -0.03em;
+  color: #FAFAF8;
+}
+
+.mkt-page-headline {
+  font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+  font-size: clamp(2.75rem, 6vw, 5rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: #0F0F0E;
+}
+
+.mkt-section-headline {
+  font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+  font-size: clamp(1.875rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+/* ── Decorative ──────────────────────────────────────────────────────────── */
+
+.mkt-gold-bar {
+  width: 2.5rem;
+  height: 3px;
+  background: #C8A96E;
+  border-radius: 2px;
+  margin-bottom: 1rem;
+}
+
+/* ── Navigation ──────────────────────────────────────────────────────────── */
+
+.mkt-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+}
+
+.mkt-nav-dark {
+  background: rgba(15, 15, 14, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mkt-nav-light {
+  background: rgba(250, 250, 248, 0.95);
+  border-bottom: 1px solid #E8E6E1;
+}
+
+.mkt-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+/* ── Form inputs ─────────────────────────────────────────────────────────── */
+
+.mkt-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: #FFFFFF;
+  border: 1.5px solid #E8E6E1;
+  border-radius: 0.5rem;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 0.9375rem;
+  color: #0F0F0E;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.mkt-input:focus {
+  border-color: #C8A96E;
+  outline: 2px solid rgba(200, 169, 110, 0.35);
+  outline-offset: 2px;
+}
+
+.mkt-input::placeholder {
+  color: #9CA3AF;
+}
+
+/* ── Cards / Pillars ─────────────────────────────────────────────────────── */
+
+.mkt-pillar {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 2rem;
+}
+
+.mkt-pillar h3 {
+  font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #FAFAF8;
+  margin-bottom: 0.75rem;
+}
+
+.mkt-pillar p {
+  font-size: 0.9375rem;
+  color: #9CA3AF;
+  line-height: 1.7;
+}
+
+.mkt-dimension-card {
+  background: #FFFFFF;
+  border: 1px solid #E8E6E1;
+  border-radius: 1rem;
+  padding: 2rem;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.mkt-dimension-card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07);
+  transform: translateY(-2px);
+}
+
+.mkt-dimension-card .mkt-contrast {
+  font-family: var(--font-accent, 'Playfair Display', serif);
+  font-style: italic;
+  font-size: 0.9375rem;
+  color: #C8A96E;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #E8E6E1;
+  line-height: 1.6;
+}
+
+/* ── Layout helpers ──────────────────────────────────────────────────────── */
+
+.mkt-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.mkt-stats-bar {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 1rem;
+}

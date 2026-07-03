@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // PAGE METADATA EXAMPLES
 // Copy the relevant export into each page file.
 // Next.js App Router reads `export const metadata` automatically.
@@ -8,7 +8,7 @@
 // import { generatePageMetadata } from '@/lib/seo';
 // export const metadata = generatePageMetadata({
 //   title: 'Pricing — Start Your Free Trial',
-//   description: 'Choose the plan that matches your ambition. All plans include a 7-day free trial with AI coaching, courses, and community access.',
+//   description: 'Choose the plan that matches your ambition. All plans include a  with AI coaching, courses, and community access.',
 //   path: '/checkout',
 // });
 
@@ -25,7 +25,7 @@
 // import { generatePageMetadata } from '@/lib/seo';
 // export const metadata = generatePageMetadata({
 //   title: 'Create Your Account',
-//   description: 'Join Ascentor — AI leadership coaching built for African professionals. Start free, upgrade anytime.',
+//   description: 'Join Ascentor — AI leadership coaching built for purposeful individuals. Start free, upgrade anytime.',
 //   path: '/signup',
 // });
 
@@ -51,7 +51,7 @@
 // import { generatePageMetadata } from '@/lib/seo';
 // export const metadata = generatePageMetadata({
 //   title: 'Learn — Courses & Resources',
-//   description: 'Expert-curated courses on leadership, management, and career growth for African professionals.',
+//   description: 'Expert-curated courses on leadership, management, and career growth for purposeful individuals.',
 //   path: '/learn',
 // });
 
@@ -59,7 +59,7 @@
 // import { generatePageMetadata } from '@/lib/seo';
 // export const metadata = generatePageMetadata({
 //   title: 'Community',
-//   description: 'Join cohorts of African professionals. Network, share experiences, and grow together.',
+//   description: 'Join cohorts of purposeful individuals. Network, share experiences, and grow together.',
 //   path: '/community',
 // });
 

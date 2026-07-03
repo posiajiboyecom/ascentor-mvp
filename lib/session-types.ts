@@ -5,11 +5,14 @@
 //   - app/(app)/coach/page.tsx          (dropdown UI)
 //   - app/api/coach/session/route.ts    (prompt selection)
 //
-// tier: which plans unlock this type
-//   'all'     — available to everyone including free (challenge_navigation, weekly_reflection)
-//   'paid'    — explorer (builder ID), builder (pro ID), climber (elite ID) and legacy plans
-//   'builder' — builder (pro ID), climber (elite ID), standard, pro legacy
-//   'climber' — climber (elite ID) only
+// tier: which plans unlock this session type
+//   'all'     — free and all paid plans
+//   'paid'    — any paid plan (explorer, builder, climber)
+//   'builder' — builder and climber only
+//   'climber' — climber only
+//
+// Canonical plan IDs: free | explorer | builder | climber
+// Legacy aliases handled in the plan sets below.
 // ─────────────────────────────────────────────────────────────
 
 export interface SessionType {
@@ -27,7 +30,7 @@ export const SESSION_TYPES: SessionType[] = [
     label:       'Navigate a Challenge',
     description: 'Work through a specific career or workplace challenge',
     tier:        'all',
-    prompt: `You are Sage, Ascentor's AI mentor for ambitious African professionals.
+    prompt: `You are Sage, Ascentor's AI mentor for ambitious purposeful individuals.
 Help the user navigate a specific career or workplace challenge.
 Be warm, direct, and practical. Draw on African professional context where relevant.
 You have full memory of this conversation — reference earlier messages naturally.
@@ -43,7 +46,7 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
     label:       'Prep a Conversation',
     description: 'Prepare for a hard conversation at work',
     tier:        'paid',
-    prompt: `You are Sage, Ascentor's AI mentor for ambitious African professionals.
+    prompt: `You are Sage, Ascentor's AI mentor for ambitious purposeful individuals.
 Help the user prepare for a difficult conversation at work.
 Be practical and specific. Help them think through what to say and how.
 You have full memory of this conversation — use it.
@@ -59,7 +62,7 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
     label:       'Weekly Reflection',
     description: 'Extract learning and set intentions for the week ahead',
     tier:        'all',
-    prompt: `You are Sage, Ascentor's AI mentor for ambitious African professionals.
+    prompt: `You are Sage, Ascentor's AI mentor for ambitious purposeful individuals.
 Guide the user through a meaningful weekly reflection.
 Help them extract learning and set intentions for the week ahead.
 Reference themes or commitments from earlier in this conversation if relevant.
@@ -75,7 +78,7 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
     label:       'Accountability Check',
     description: 'Review commitments, celebrate wins, and re-commit',
     tier:        'paid',
-    prompt: `You are Sage, Ascentor's AI mentor for ambitious African professionals.
+    prompt: `You are Sage, Ascentor's AI mentor for ambitious purposeful individuals.
 Hold the user accountable to their commitments in a warm but direct way.
 Celebrate wins, explore blockers, and help them re-commit to what matters.
 You remember everything discussed earlier — reference those commitments directly.
@@ -92,7 +95,7 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
     label:       'Career Planning',
     description: 'Map your path, identify gaps, and build your next move',
     tier:        'builder',
-    prompt: `You are Sage, Ascentor's AI mentor for ambitious African professionals.
+    prompt: `You are Sage, Ascentor's AI mentor for ambitious purposeful individuals.
 Help the user think strategically about their career trajectory.
 Focus on clarity: where they are now, where they want to be, and what stands between them.
 Draw on the realities of building a career in Africa's professional landscape.
@@ -109,7 +112,7 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
     label:       'Salary Negotiation',
     description: 'Prepare to negotiate your worth with clarity and confidence',
     tier:        'builder',
-    prompt: `You are Sage, Ascentor's AI mentor for ambitious African professionals.
+    prompt: `You are Sage, Ascentor's AI mentor for ambitious purposeful individuals.
 Help the user prepare for a salary negotiation or compensation conversation.
 Be practical, specific, and direct. Help them anchor to their value, not their need.
 Consider the African professional context — local market norms, how to handle counter-offers,
@@ -127,7 +130,7 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
     label:       'Leadership Development',
     description: 'Grow your leadership presence, style, and impact',
     tier:        'builder',
-    prompt: `You are Sage, Ascentor's AI mentor for ambitious African professionals.
+    prompt: `You are Sage, Ascentor's AI mentor for ambitious purposeful individuals.
 Help the user develop as a leader — their presence, influence, and ability to develop others.
 Be honest about what leadership actually requires. Avoid generic advice.
 Draw on African leadership contexts: managing upward, leading across cultures,
@@ -146,10 +149,35 @@ export const SESSION_TYPE_MAP: Record<string, SessionType> = Object.fromEntries(
   SESSION_TYPES.map((t) => [t.id, t])
 );
 
-/** Plans that count as "paid" for tier gating */
-const PAID_PLANS    = new Set(['explorer', 'builder', 'climber', 'standard', 'pro', 'trialing']);
-const BUILDER_PLANS = new Set(['builder', 'climber', 'standard', 'pro']);
-const CLIMBER_PLANS = new Set(['climber']);
+// ── Plan sets for tier gating ─────────────────────────────────────────────────
+// Include both canonical IDs and all legacy aliases so that any value
+// stored in profiles.subscription_plan is handled correctly.
+
+/** Any paid plan — canonical + legacy */
+const PAID_PLANS = new Set([
+  // canonical
+  'explorer', 'builder', 'climber',
+  // legacy
+  'pro', 'elite', 'standard', 'tester', 'basic', 'premium', 'pro_legacy',
+  // edge case: trialing users with a plan get paid access
+  'trialing',
+]);
+
+/** Builder-tier and above — canonical + legacy */
+const BUILDER_PLANS = new Set([
+  // canonical
+  'builder', 'climber',
+  // legacy: old "Builder" DB ID was 'pro', old "Climber" DB ID was 'elite'
+  'pro', 'elite', 'standard', 'pro_legacy',
+]);
+
+/** Climber-tier only — canonical + legacy */
+const CLIMBER_PLANS = new Set([
+  // canonical
+  'climber',
+  // legacy: old Climber DB ID was 'elite'
+  'elite', 'pro_legacy',
+]);
 
 /**
  * Returns the session types available for a given subscription plan.

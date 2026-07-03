@@ -1,4 +1,4 @@
-// ═══ ASCENTOR EMAIL TEMPLATES ═══
+﻿// ═══ ASCENTOR EMAIL TEMPLATES ═══
 // Branded, responsive HTML email templates
 
 const BRAND = {
@@ -78,7 +78,7 @@ export function welcomeEmail(name: string) {
         </a>
       </div>
       <p style="margin:24px 0 0;font-size:13px;color:${BRAND.muted};text-align:center">
-        Your 7-day free trial is active. No credit card needed.
+        Your  is active. No credit card needed.
       </p>
     `, 'Welcome to Ascentor! Start your leadership journey today.'),
   };

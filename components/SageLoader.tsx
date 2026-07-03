@@ -59,7 +59,7 @@ export default function SageLoader({
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <span style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: 'var(--font-accent)',
           fontWeight: 700,
           fontSize,
           color: '#E8A020',
@@ -76,7 +76,7 @@ export default function SageLoader({
       {orb}
       {message !== undefined && (
         <p style={{
-          fontFamily: "'DM Mono', monospace",
+          fontFamily: 'var(--font-display)',
           fontSize: size === 'sm' ? 10 : 11,
           letterSpacing: '0.1em',
           textTransform: 'uppercase',

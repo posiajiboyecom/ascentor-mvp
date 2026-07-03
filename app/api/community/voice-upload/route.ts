@@ -1,105 +1,89 @@
 // app/api/community/voice-upload/route.ts
-// Handles voice message uploads server-side using service role key.
-// This bypasses RLS entirely — auth is verified via the user's JWT.
-// The client sends: FormData with fields: file (Blob), channel, userId
+// ============================================================
+// POST /api/community/voice-upload
+// Accepts a voice message recording and uploads it server-side using
+// the service role key, bypassing storage RLS. Auth is still verified
+// via the user's session cookie before anything is written.
+//
+// Request: multipart/form-data
+//   file:    Blob (audio)
+//   channel: string (channel slug)
+//
+// On success, inserts the message row directly (content encodes the
+// voice URL as `[voice:<url>]`, matching how the message bubble
+// renderer detects and plays voice messages) and returns it so the
+// client can show it immediately without waiting for the realtime
+// echo of its own insert.
+// ============================================================
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
-export async function POST(req: NextRequest) {
-  try {
-    // 1. Verify the user is authenticated via their session cookie
-    const cookieStore = await cookies();
-    const authClient = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll(); },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {}
-          },
-        },
-      }
-    );
+const VOICE_BUCKET = 'community-voice';
 
-    const { data: { user }, error: authError } = await authClient.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+export async function POST(req: Request) {
+  // ── Verify the caller is authenticated via their normal session ──
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    // 2. Parse the multipart form
-    const formData = await req.formData();
-    const file     = formData.get('file') as File | null;
-    const channel  = formData.get('channel') as string | null;
-    const duration = formData.get('duration') as string | null;
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    if (!file || !channel) {
-      return NextResponse.json({ error: 'Missing file or channel' }, { status: 400 });
-    }
+  const formData = await req.formData();
+  const file = formData.get('file');
+  const channel = formData.get('channel');
 
-    // 3. Validate file — must be audio, max 10MB
-    if (!file.type.startsWith('audio/')) {
-      return NextResponse.json({ error: 'File must be audio' }, { status: 400 });
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 });
-    }
+  if (!(file instanceof Blob) || typeof channel !== 'string' || !channel) {
+    return NextResponse.json({ error: 'file and channel are required' }, { status: 400 });
+  }
 
-    // 4. Upload using service role client (bypasses RLS)
-    const serviceClient = createServiceClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+  if (file.size > 10 * 1024 * 1024) {
+    return NextResponse.json({ error: 'Voice message too large (max 10MB)' }, { status: 400 });
+  }
 
-    const ext  = file.type.includes('ogg') ? 'ogg' : file.type.includes('mp4') ? 'm4a' : 'webm';
-    const path = `voice/${user.id}/${Date.now()}.${ext}`;
+  // ── Upload + insert using the service role client (bypasses RLS) ──
+  const serviceClient = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer      = Buffer.from(arrayBuffer);
+  const ext = file.type.includes('mp4')
+    ? 'mp4'
+    : file.type.includes('ogg')
+      ? 'ogg'
+      : 'webm';
+  const path = `voice/${user.id}/${Date.now()}.${ext}`;
 
-    const { error: uploadError } = await serviceClient.storage
-      .from('community-voice')
-      .upload(path, buffer, {
-        contentType: file.type,
-        upsert:      false,
-      });
+  const { error: uploadError } = await serviceClient.storage
+    .from(VOICE_BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: false });
 
-    if (uploadError) {
-      console.error('[voice-upload] Storage error:', uploadError.message);
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
-    }
+  if (uploadError) {
+    console.error('[voice-upload] storage upload failed:', uploadError.message);
+    return NextResponse.json({ error: 'Upload failed. Please try again.' }, { status: 500 });
+  }
 
-    // 5. Get public URL
-    const { data: { publicUrl } } = serviceClient.storage
-      .from('community-voice')
-      .getPublicUrl(path);
+  const { data: urlData } = serviceClient.storage.from(VOICE_BUCKET).getPublicUrl(path);
 
-    // 6. Insert the message using the user's client (respects RLS on messages table)
-    const dur    = parseInt(duration || '0', 10) || 1;
-    const content = `[voice:${publicUrl}:${dur}]`;
-
-    const { error: dbError } = await authClient.from('community_messages').insert({
+  const { data: message, error: insertError } = await serviceClient
+    .from('community_messages')
+    .insert({
       user_id: user.id,
       channel,
-      content,
+      content: `[voice:${urlData.publicUrl}]`,
       likes: [],
-    });
+    })
+    .select('id, user_id, channel, content, created_at, likes, reply_to_id, pinned, dimension_tag, reply_count')
+    .single();
 
-    if (dbError) {
-      console.error('[voice-upload] DB insert error:', dbError.message);
-      return NextResponse.json({ error: dbError.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true, publicUrl, content });
-  } catch (err: any) {
-    console.error('[voice-upload] Unexpected error:', err);
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });
+  if (insertError || !message) {
+    console.error('[voice-upload] message insert failed:', insertError?.message);
+    return NextResponse.json({ error: 'Failed to send voice message.' }, { status: 500 });
   }
+
+  return NextResponse.json({ message });
 }

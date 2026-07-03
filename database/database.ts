@@ -618,6 +618,54 @@ export interface PartnerEventRegistration {
 }
 
 
+// ── Marketing CMS ────────────────────────────────────────────
+// Added for the marketing-pages CMS (landing, elevation-summit,
+// movement, about, how-it-works, who-its-for, products). See
+// database/migrations/001_marketing_cms_schema.sql for the full
+// schema definition and design rationale — particularly why
+// marketing_repeating_items.draft_data/published_data are typed
+// as Json rather than a fixed shape (FAQ, persona cards, and
+// pillar cards each have genuinely different field sets).
+
+export type MarketingPageStatus = 'draft' | 'published';
+export type MarketingSectionType = 'prose' | 'repeating' | 'structured';
+
+export interface MarketingPage {
+  id:          string;
+  slug:        string;
+  title:       string;
+  route:       string;
+  status:      MarketingPageStatus;
+  description: string | null;
+  created_at:  string;
+  updated_at:  string;
+}
+
+export interface MarketingSection {
+  id:             string;
+  page_id:        string;
+  section_key:    string;
+  label:          string;
+  section_type:   MarketingSectionType;
+  sort_order:     number;
+  draft_data:     Json;
+  published_data: Json | null;
+  status:         MarketingPageStatus;
+  updated_at:     string;
+  published_at:   string | null;
+}
+
+export interface MarketingRepeatingItem {
+  id:             string;
+  section_id:     string;
+  sort_order:     number;
+  draft_data:     Json;
+  published_data: Json | null;
+  status:         MarketingPageStatus;
+  updated_at:     string;
+  published_at:   string | null;
+}
+
 type TableMap = {
   profiles:                 Profile;
   coaching_sessions:        CoachingSession;
@@ -663,4 +711,8 @@ type TableMap = {
   partner_event_registrations:  PartnerEventRegistration;
   partner_courses:              PartnerCourse;
   partner_course_enrollments:   Record<string, unknown>;
+  // ── Marketing CMS ──────────────────────────────────────
+  marketing_pages:            MarketingPage;
+  marketing_sections:         MarketingSection;
+  marketing_repeating_items:  MarketingRepeatingItem;
 };

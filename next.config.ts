@@ -47,10 +47,33 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Keep these on the server only — they use Node.js built-ins
   // or native binaries that don't exist in the browser.
+  //
+  // pdfkit + fontkit: fontkit imports applyDecoratedDescriptor from @swc/helpers,
+  // which was renamed to _apply_decorated_descriptor in newer versions. Turbopack
+  // catches this at build time (webpack didn't). Marking pdfkit as external tells
+  // Turbopack to leave it as a Node.js require() instead of bundling it, which
+  // bypasses the ESM re-export mismatch entirely. fontkit is included explicitly
+  // because it's the actual source of the broken import.
   serverExternalPackages: [
     'web-push',
+    'pdfkit',
+    'fontkit',
   ],
 
+  // ── Redirects for deprecated pages ──────────────────────────────
+  async redirects() {
+    return [
+      { source: '/pricing',      destination: '/community',        permanent: false },
+      { source: '/who-its-for',  destination: '/movement',         permanent: false },
+      { source: '/how-it-works', destination: '/movement',         permanent: false },
+      { source: '/products',     destination: '/community',        permanent: false },
+      { source: '/mentor-apply', destination: '/elevation-summit', permanent: false },
+      { source: '/circle',       destination: '/community',        permanent: false },
+      { source: '/summit',       destination: '/elevation-summit', permanent: false },
+    ];
+  },
+
+  // ── Security headers ─────────────────────────────────────────────
   async headers() {
     return [
       {
@@ -59,6 +82,16 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
     ];
+  },
+
+  // ── Images ───────────────────────────────────────────────────────
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+      },
+    ],
   },
 };
 

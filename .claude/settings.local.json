@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Skill(review)",
-      "Bash(git remote *)"
+      "Bash(git remote *)",
+      "Skill(design-shotgun)",
+      "WebSearch"
     ]
   },
   "enableAllProjectMcpServers": true,

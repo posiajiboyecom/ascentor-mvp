@@ -1,237 +1,256 @@
-// app/api/coach/session/route.ts  ← REPLACE EXISTING FILE WITH THIS
-// ─────────────────────────────────────────────────────────────────────────────
-// CHANGES FROM ORIGINAL:
-//  1. Loads AI persona prompt from the tenant config (not hardcoded)
-//  2. Upgrades model to claude-sonnet-4-20250514
-//  3. Adds tenant_id to the session insert for proper multi-tenant data isolation
-//  4. Falls back to Ascentor default persona if no tenant config found
-// ─────────────────────────────────────────────────────────────────────────────
+// app/api/coach/session/route.ts
+// ============================================================
+// POST /api/coach/session
+// Handles one turn of a Sage coaching conversation:
+//   1. Auth + rate limit + tier gate the session type
+//   2. Load or create the coaching_sessions row
+//   3. Enforce per-plan session length (messages per session)
+//   4. Call Claude with the session type's system prompt
+//   5. Parse the strict { reflection, question, action } JSON
+//   6. Persist both turns, return the assistant turn
+//
+// NOTE: auth is already enforced by proxy.ts for all /api/coach/*
+// routes (S3 fix) — this route still re-checks because proxy.ts
+// returning 401 doesn't replace defense-in-depth at the route level.
+// ============================================================
 
-import { createClient } from '@/lib/supabase/server';
-import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
-import { retrieveContext } from '@/app/lib/rag';
+import Anthropic from '@anthropic-ai/sdk';
+import { createClient } from '@/lib/supabase/server';
 import { coachSessionLimiter, getClientIp } from '@/lib/rate-limit';
+import { SESSION_TYPE_MAP, getAvailableSessionTypes } from '@/lib/session-types';
+import { effectivePlan } from '@/lib/planTier';
+import { PLAN_LIMITS, checkUsage } from '@/lib/session-limits';
+import type {
+  CoachMessage,
+  CoachAssistantMessage,
+  SendCoachMessageRequest,
+} from '@/types/coach';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const COACH_MODEL = 'claude-sonnet-4-6';
 
-// ── Default persona (used when no tenant config or direct ascentor.co access) ─
-const DEFAULT_SYSTEM_PROMPT = `<role>
-You are Sage, an expert leadership and career coach for ambitious professionals worldwide.
-Use the Socratic method — ask ONE powerful question at a time, maximum 150 words per response.
-Be aware that career decisions carry significant personal, financial, and relational stakes.
-Help users gain clarity on their situation, options, and next concrete action.
-</role>`;
+export async function POST(req: Request) {
+  // ── Rate limit ────────────────────────────────────────────
+  const ip = getClientIp(req);
+  const rateLimit = coachSessionLimiter.check(ip);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please slow down.' },
+      { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfter) } }
+    );
+  }
 
-// ── Standard output format appended to every persona ────────────────────────
-const OUTPUT_FORMAT = `
-<output_format>
-<reflection>1-2 sentences acknowledging what you hear</reflection>
-<question>ONE powerful question</question>
-<action>ONE specific action for this week (only if ready, otherwise omit)</action>
-</output_format>`;
+  // ── Auth ──────────────────────────────────────────────────
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export async function POST(request: Request) {
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // ── Parse + validate body ────────────────────────────────
+  let body: SendCoachMessageRequest;
   try {
-    // ── 0. IP-level rate limit (before auth to save DB calls) ─────────
-    // 30 requests per 10 minutes per IP — protects Claude API budget (H-3 fix)
-    const ip = getClientIp(request);
-    const { allowed, retryAfter } = coachSessionLimiter.check(ip);
-    if (!allowed) {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+
+  const { sessionId, sessionTypeId, message } = body;
+
+  if (!sessionTypeId || typeof message !== 'string' || !message.trim()) {
+    return NextResponse.json(
+      { error: 'sessionTypeId and message are required' },
+      { status: 400 }
+    );
+  }
+
+  if (message.length > 4000) {
+    return NextResponse.json(
+      { error: 'Message is too long (max 4000 characters)' },
+      { status: 400 }
+    );
+  }
+
+  const sessionType = SESSION_TYPE_MAP[sessionTypeId];
+  if (!sessionType) {
+    return NextResponse.json({ error: 'Unknown session type' }, { status: 400 });
+  }
+
+  // ── Tier gate ─────────────────────────────────────────────
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('subscription_plan, subscription_status, subscription_end')
+    .eq('id', user.id)
+    .single();
+
+  const plan = effectivePlan(profile);
+  const allowedTypes = getAvailableSessionTypes(plan);
+  if (!allowedTypes.some((t) => t.id === sessionTypeId)) {
+    return NextResponse.json(
+      { error: 'This session type requires a higher plan.' },
+      { status: 403 }
+    );
+  }
+
+  // ── Load existing session, or start a new one ────────────
+  let existingMessages: CoachMessage[] = [];
+  let resolvedSessionId = sessionId;
+
+  if (sessionId) {
+    const { data: existing, error: loadError } = await supabase
+      .from('coaching_sessions')
+      .select('id, user_id, messages')
+      .eq('id', sessionId)
+      .single();
+
+    if (loadError || !existing || existing.user_id !== user.id) {
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    }
+
+    existingMessages = (existing.messages as CoachMessage[]) ?? [];
+  }
+
+  // ── Enforce per-plan session length (messages per session) ─
+  const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+  if (
+    limits.sessionLength !== -1 &&
+    existingMessages.length >= limits.sessionLength
+  ) {
+    return NextResponse.json(
+      {
+        error: `This session has reached its message limit (${limits.sessionLength}). Start a new session to continue, or upgrade your plan for longer sessions.`,
+      },
+      { status: 403 }
+    );
+  }
+
+  // ── Enforce monthly coachingSessions limit (new sessions only) ──
+  if (!sessionId) {
+    const usage = await checkUsage(
+      user.id,
+      'coachingSessions',
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    if (!usage.allowed) {
       return NextResponse.json(
-        { error: 'Too many requests. Please wait before sending another message.', retryAfter },
-        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+        { error: usage.message ?? 'You have reached your coaching session limit.' },
+        { status: 403 }
       );
     }
+  }
 
-    // 1. Check Auth
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+  // ── Build the conversation for Claude ────────────────────
+  const userTurn: CoachMessage = {
+    role: 'user',
+    content: message.trim(),
+    createdAt: new Date().toISOString(),
+  };
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Not logged in' }, { status: 401 });
-    }
+  const conversationForClaude = [...existingMessages, userTurn].map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
 
-    // 1b. Usage limit check — enforce free tier session cap
-    try {
-      const limitRes = await fetch(
-        `${process.env.NEXT_PUBLIC_SITE_URL || 'https://ascentorbi.com'}/api/usage/check`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', cookie: request.headers.get('cookie') || '' },
-          body: JSON.stringify({ feature: 'coachingSessions' }),
-        }
-      );
-      if (limitRes.ok) {
-        const limitData = await limitRes.json();
-        if (!limitData.allowed) {
-          return NextResponse.json({
-            error: 'Session limit reached',
-            message: limitData.message || 'You have used all your coaching sessions for today. Upgrade to continue.',
-            upgradeRequired: true,
-          }, { status: 429 });
-        }
-      }
-    } catch (limitErr) {
-      // Non-fatal — if limit check fails, allow the session
-      console.warn('[coach/session] Usage limit check failed (non-fatal):', limitErr);
-    }
+  let assistantTurn: CoachAssistantMessage;
 
-    // 2. Parse Input
-    const body = await request.json();
-    const userInput = body.userInput || body.message;
-    const sessionType = body.sessionType || 'challenge_navigation';
-
-    if (!userInput) {
-      return NextResponse.json({ error: 'Message cannot be empty' }, { status: 400 });
-    }
-
-    // 3. Load Context (profile, goal, history, commitments, AND tenant config)
-    const [profileRes, goalRes, sessionsRes, commitmentsRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-      supabase.from('user_goals').select('*').eq('user_id', user.id)
-        .order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      supabase.from('coaching_sessions').select('user_input, ai_response')
-        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
-      supabase.from('user_commitments').select('commitment_text, due_date')
-        .eq('user_id', user.id).eq('completed', false),
-    ]);
-
-    const profile = profileRes.data;
-    const goal = goalRes.data;
-
-    // 4. Load partner AI persona if this user belongs to a whitelabel partner.
-    // Strategy: look up partner_members by user email → join partners.ai_config.
-    // Falls back to DEFAULT_SYSTEM_PROMPT if user is on main Ascentor platform
-    // or if the partner has not configured a persona yet.
-    // NOTE: We intentionally do NOT use profile.tenant_id — that field references
-    // the old `tenants` table which no longer exists. Partner lookup goes through
-    // partner_members → partners.
-    let tenantPersonaPrompt: string | null = null;
-    if (user.email) {
-      const { data: membership } = await supabase
-        .from('partner_members')
-        .select('partner_id, partners(ai_config)')
-        .eq('email', user.email)
-        .eq('status', 'active')
-        .maybeSingle();
-
-      if (membership) {
-        const aiConfig = (membership as any)?.partners?.ai_config as Record<string, unknown> | null;
-        tenantPersonaPrompt = (aiConfig?.ai_persona_prompt as string) || null;
-      }
-    }
-
-    // 5. Build system prompt = tenant persona (or default) + output format
-    const roleSection = tenantPersonaPrompt
-      ? `<role>\n${tenantPersonaPrompt}\n</role>`
-      : DEFAULT_SYSTEM_PROMPT;
-
-    const SYSTEM_PROMPT = roleSection + OUTPUT_FORMAT;
-
-    // 6. Retrieve relevant knowledge from Pinecone (RAG)
-    // Determines the user's career stage to focus the namespace
-    const plan = profile?.subscription_plan || 'builder';
-    const stageNamespace = plan === 'explorer' ? 'career'
-      : plan === 'climber' ? 'leadership'
-      : 'promotion'; // builder default
-
-    let knowledgeBlock = '';
-    try {
-      const { contextBlock } = await retrieveContext(userInput, {
-        topK: 8,
-        topN: 3,
-        // Search across most relevant namespaces based on message content
-      });
-      knowledgeBlock = contextBlock;
-    } catch (ragErr) {
-      // Non-fatal — Sage still works without RAG context
-      console.warn('[coach/session] RAG retrieval failed (non-fatal):', ragErr);
-    }
-
-    // 6b. Build conversation context
-    const recentHistory = sessionsRes.data?.map((s: any) =>
-      `User: ${s.user_input}\nCoach: ${s.ai_response?.question || ''}`
-    ).join('\n---\n') || 'None';
-
-    const context = `
-<user_profile>
-Name: ${profile?.full_name || 'Unknown'}
-Role: ${profile?.current_role || 'Unknown'}
-Industry: ${profile?.industry || 'Unknown'}
-Goal: ${profile?.goal_role || 'Unknown'}
-Challenge: ${profile?.biggest_challenge || 'Not specified'}
-Plan: ${plan}
-</user_profile>
-<goal>${goal?.goal_text || 'Not set'}</goal>
-<pending_commitments>
-${commitmentsRes.data?.map((c: any) => `- ${c.commitment_text}`).join('\n') || 'None'}
-</pending_commitments>
-<recent_history>${recentHistory}</recent_history>
-${knowledgeBlock ? `<knowledge_context>\nUse the following relevant frameworks and knowledge to inform your coaching. Do not quote them directly — use them to ask better questions.\n${knowledgeBlock}\n</knowledge_context>` : ''}
-<user_message>${userInput}</user_message>`;
-
-    // 7. Call Claude (upgraded model)
+  try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 500,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: context }],
+      model: COACH_MODEL,
+      max_tokens: 800,
+      system: sessionType.prompt,
+      messages: conversationForClaude,
     });
 
-    const aiText =
-      response.content[0].type === 'text' ? response.content[0].text : '';
+    const block = response.content[0];
+    const rawText = block.type === 'text' ? block.text : '';
+    const cleaned = rawText.replace(/```json|```/g, '').trim();
 
-    // 8. Parse Response
-    const parsed = {
-      reflection:
-        aiText.match(/<reflection>([\s\S]*?)<\/reflection>/)?.[1]?.trim() || 'I hear you.',
-      question:
-        aiText.match(/<question>([\s\S]*?)<\/question>/)?.[1]?.trim() || aiText,
-      action:
-        aiText.match(/<action>([\s\S]*?)<\/action>/)?.[1]?.trim() || null,
+    let parsed: { reflection?: string; question?: string; action?: string };
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      // Claude didn't return valid JSON — fall back to showing the
+      // raw text as the question so the turn isn't silently lost.
+      parsed = { reflection: '', question: cleaned, action: undefined };
+    }
+
+    assistantTurn = {
+      role: 'assistant',
+      content: parsed.question || cleaned,
+      reflection: parsed.reflection ?? '',
+      question: parsed.question ?? '',
+      action: parsed.action ?? null,
+      createdAt: new Date().toISOString(),
     };
+  } catch (err) {
+    console.error('[coach/session] Anthropic call failed:', err);
+    return NextResponse.json(
+      { error: 'Sage is having trouble responding right now. Please try again.' },
+      { status: 502 }
+    );
+  }
 
-    const cost =
-      (response.usage.input_tokens / 1_000_000) * 3 +
-      (response.usage.output_tokens / 1_000_000) * 15;
+  const updatedMessages = [...existingMessages, userTurn, assistantTurn];
 
-    // 9. Save Session
-    const { data: session, error: dbError } = await supabase
+  // ── Persist ───────────────────────────────────────────────
+  const isNewSession = !resolvedSessionId;
+
+  if (resolvedSessionId) {
+    const { error: updateError } = await supabase
+      .from('coaching_sessions')
+      .update({ messages: updatedMessages })
+      .eq('id', resolvedSessionId);
+
+    if (updateError) {
+      console.error('[coach/session] Failed to update session:', updateError);
+      return NextResponse.json(
+        { error: 'Failed to save your message. Please try again.' },
+        { status: 500 }
+      );
+    }
+  } else {
+    const { data: created, error: insertError } = await supabase
       .from('coaching_sessions')
       .insert({
         user_id: user.id,
-        session_type: sessionType,
-        user_input: userInput,
-        ai_response: parsed,
-        token_usage: { cost },
+        session_type: sessionTypeId,
+        user_input: userTurn.content,
+        ai_response: assistantTurn.content,
+        messages: updatedMessages,
       })
-      .select()
+      .select('id')
       .single();
 
-    if (dbError) {
-      console.error('DB Save Error:', dbError);
+    if (insertError || !created) {
+      console.error('[coach/session] Failed to create session:', insertError);
+      return NextResponse.json(
+        { error: 'Failed to start your session. Please try again.' },
+        { status: 500 }
+      );
     }
 
-    // 10. Handle Commitments
-    if (parsed.action && session) {
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 7);
-      await supabase.from('user_commitments').insert({
-        user_id: user.id,
-        session_id: session.id,
-        commitment_text: parsed.action,
-        due_date: dueDate.toISOString(),
-      });
-    }
-
-    return NextResponse.json({
-      sessionId: session?.id,
-      response: parsed.question,
-      full_response: parsed,
-    });
-  } catch (error: any) {
-    console.error('API Crash Log:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    resolvedSessionId = created.id;
   }
+
+  // ── Record usage (feature name matches lib/session-limits.ts) ──
+  // coachingSessions is a per-SESSION limit (PLAN_LIMITS), not
+  // per-message — only record on the turn that creates a new session,
+  // or every follow-up reply would also consume the monthly quota.
+  if (isNewSession) {
+    await supabase.from('usage_tracking').insert({
+      user_id: user.id,
+      feature: 'coachingSessions',
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  return NextResponse.json({
+    sessionId: resolvedSessionId,
+    message: assistantTurn,
+  });
 }

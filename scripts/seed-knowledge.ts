@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
+﻿// ─────────────────────────────────────────────────────────────────────────────
 // Ascentor Knowledge Base Seeder
 // Run: npx ts-node --project tsconfig.json scripts/seed-knowledge.ts
 // Or:  npx tsx scripts/seed-knowledge.ts
@@ -148,7 +148,7 @@ After the conversation: follow up in writing. "Following our conversation about 
       },
       {
         id: 'visibility-tactics-001',
-        text: `Practical visibility tactics for ambitious professionals:
+        text: `Practical visibility tactics for purposeful individuals:
 
 The weekly update habit: Every Friday, send your manager a two-sentence message. Sentence 1: one challenge or decision you navigated this week and how you handled it. Sentence 2: one thing you are focused on next week. This takes three minutes. Over 90 days it builds a complete picture of how you think.
 
@@ -276,7 +276,7 @@ After the conversation: write down what was agreed within 24 hours and confirm i
       },
       {
         id: 'stakeholder-management-001',
-        text: `Stakeholder management for ambitious professionals — how to actually do it:
+        text: `Stakeholder management for purposeful individuals — how to actually do it:
 
 Stakeholder management is not networking. Networking is building relationships speculatively. Stakeholder management is identifying the specific people whose support, trust, or opinion is required for a specific outcome — and actively managing those relationships.
 
@@ -498,7 +498,7 @@ What cohorts provide that Sage alone cannot:
 1. People who have lived through what you are navigating. Sage draws on frameworks. Cohort members draw on experience. The difference matters when the situation is ambiguous.
 2. Accountability with relationship. Missing a commitment to Sage has no consequence. Missing a commitment to a cohort of eight people who know your goal has a different weight.
 3. The witness effect. When someone knows your specific situation and is watching what happens, your attention to it changes. You notice things you would otherwise rationalise away.
-4. Normalisation. Hearing that eight other ambitious professionals at your level are navigating similar challenges removes the isolation that makes hard situations feel unique and therefore hopeless.
+4. Normalisation. Hearing that eight other purposeful individuals at your level are navigating similar challenges removes the isolation that makes hard situations feel unique and therefore hopeless.
 
 The most common report from cohort members: "I knew what I needed to do. Having eight people who knew my situation was what made me actually do it."`,
         metadata: { category: 'community', tags: ['cohort', 'accountability', 'peer learning', 'community'] },

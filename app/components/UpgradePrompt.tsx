@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRouter } from 'next/navigation';
 
@@ -18,7 +18,7 @@ interface UpgradePromptProps {
 const FEATURE_MESSAGES: Record<string, { title: string; desc: string; icon: string }> = {
   learn: {
     title: 'Unlock the Full Course Library',
-    desc: 'Access expert-curated courses on leadership, management, and career growth tailored for African professionals.',
+    desc: 'Access expert-curated courses on leadership, management, and career growth tailored for purposeful individuals.',
     icon: '📚',
   },
   coaching: {
@@ -64,7 +64,7 @@ export default function UpgradePrompt({ feature, message, compact, onDismiss }: 
             {message || info?.title || 'Upgrade Required'}
           </p>
           <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-muted, #8B8A85)' }}>
-            {info?.desc || 'Start your 7-day free trial to unlock this feature.'}
+            {info?.desc || 'Start your  to unlock this feature.'}
           </p>
         </div>
         <button
@@ -145,7 +145,7 @@ export default function UpgradePrompt({ feature, message, compact, onDismiss }: 
         </button>
 
         <p style={{ fontSize: '12px', color: 'var(--text-dim, #6B6A65)' }}>
-          No charge for 7 days · Cancel anytime
+          No charge for 7 days · 
         </p>
 
         {onDismiss && (

@@ -1,12 +1,22 @@
 // ============================================================
-// FEATURE #5: Session Limiting per Subscription Type
-// Middleware + utility to enforce usage limits based on plan.
+// Session Limiting per Subscription Type
 //
-// Plan ID mapping (Supabase subscription_plan → display name):
-//   free    → Free
-//   builder → Explorer  (₦12,000/mo)
-//   pro     → Builder   (₦25,000/mo)
-//   elite   → Climber   (₦60,000/mo)
+// Plan IDs (canonical — what pay/start, pay/callback, and
+// pay/webhook now write to profiles.subscription_plan):
+//   free     → Free
+//   explorer → Explorer  (₦12,000/mo)
+//   builder  → Builder   (₦25,000/mo)
+//   climber  → Climber   (₦60,000/mo)
+//
+// Legacy DB IDs that may still exist on old subscribers:
+//   builder (old) → was Explorer — aliased to explorer limits
+//   pro           → was Builder  — aliased to builder limits
+//   elite         → was Climber  — aliased to climber limits
+//
+// The canonical IDs are the primary keys below; legacy IDs
+// are explicit aliases at the bottom of PLAN_LIMITS so that
+// getEffectivePlan() works correctly regardless of which value
+// is stored in profiles.subscription_plan.
 // ============================================================
 
 import { createClient } from '@supabase/supabase-js';
@@ -17,86 +27,67 @@ export interface PlanLimits {
   expertSessions: number;     // registrations per month (-1 = unlimited)
   communityPosts: number;     // per day (-1 = unlimited)
   communityLimit: number;     // max cohorts joined (-1 = unlimited)
-  courseAccess: 'none' | 'preview' | 'full'; // course access level
+  courseAccess: 'none' | 'preview' | 'full';
 }
 
+// ── Canonical plan limits ────────────────────────────────────────────────────
+
+const FREE_LIMITS: PlanLimits = {
+  coachingSessions: 5,        // 5 sessions/month
+  sessionLength: 8,           // 8 messages per session
+  expertSessions: 0,
+  communityPosts: 2,          // 2 posts/day
+  communityLimit: 1,          // 1 circle
+  courseAccess: 'preview',
+};
+
+const EXPLORER_LIMITS: PlanLimits = {
+  coachingSessions: 30,
+  sessionLength: 20,
+  expertSessions: 1,          // 1 expert session/month
+  communityPosts: 5,
+  communityLimit: 3,          // up to 3 circles
+  courseAccess: 'full',
+};
+
+const BUILDER_LIMITS: PlanLimits = {
+  coachingSessions: -1,       // unlimited
+  sessionLength: 50,
+  expertSessions: 2,          // 2 expert sessions/month
+  communityPosts: -1,
+  communityLimit: -1,
+  courseAccess: 'full',
+};
+
+const CLIMBER_LIMITS: PlanLimits = {
+  coachingSessions: -1,
+  sessionLength: -1,
+  expertSessions: -1,         // unlimited
+  communityPosts: -1,
+  communityLimit: -1,
+  courseAccess: 'full',
+};
+
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
-  free: {
-    coachingSessions: 5,        // 5 sessions/month — matches pricing page
-    sessionLength: 8,           // 8 messages per session
-    expertSessions: 0,          // is_free sessions only (enforced separately)
-    communityPosts: 2,          // 2 posts/day
-    communityLimit: 1,          // 1 cohort
-    courseAccess: 'preview',    // 1 preview course
-  },
+  // ── Canonical IDs (what the current payment system writes) ───────────────
+  free:     FREE_LIMITS,
+  explorer: EXPLORER_LIMITS,
+  builder:  BUILDER_LIMITS,
+  climber:  CLIMBER_LIMITS,
 
-  // ── Current Supabase plan IDs ────────────────────────────────────────────
-  builder: {                    // Display: Explorer (₦12,000/mo)
-    coachingSessions: 30,
-    sessionLength: 20,
-    expertSessions: 1,          // 1 expert session/month
-    communityPosts: 5,
-    communityLimit: 3,          // up to 3 cohorts
-    courseAccess: 'full',
-  },
-  pro: {                        // Display: Builder (₦25,000/mo)
-    coachingSessions: -1,       // unlimited
-    sessionLength: 50,
-    expertSessions: 2,          // 2 expert sessions/month
-    communityPosts: -1,
-    communityLimit: -1,
-    courseAccess: 'full',
-  },
-  elite: {                      // Display: Climber (₦60,000/mo)
-    coachingSessions: -1,
-    sessionLength: -1,
-    expertSessions: -1,         // unlimited
-    communityPosts: -1,
-    communityLimit: -1,
-    courseAccess: 'full',
-  },
-
-  // ── Legacy aliases — kept for backward-compat ────────────────────────────
-  explorer: {                   // old display-name key — same as builder
-    coachingSessions: 30,
-    sessionLength: 20,
-    expertSessions: 1,
-    communityPosts: 5,
-    communityLimit: 3,
-    courseAccess: 'full',
-  },
-  standard: {                   // old legacy key — builder-level
-    coachingSessions: -1,
-    sessionLength: 50,
-    expertSessions: 2,
-    communityPosts: -1,
-    communityLimit: -1,
-    courseAccess: 'full',
-  },
-  tester: {                     // promo — builder-level
-    coachingSessions: -1,
-    sessionLength: 50,
-    expertSessions: 2,
-    communityPosts: -1,
-    communityLimit: -1,
-    courseAccess: 'full',
-  },
-  climber: {                    // old display-name key — same as elite
-    coachingSessions: -1,
-    sessionLength: -1,
-    expertSessions: -1,
-    communityPosts: -1,
-    communityLimit: -1,
-    courseAccess: 'full',
-  },
-  pro_legacy: {                 // old pro maps to elite-level
-    coachingSessions: -1,
-    sessionLength: -1,
-    expertSessions: -1,
-    communityPosts: -1,
-    communityLimit: -1,
-    courseAccess: 'full',
-  },
+  // ── Legacy aliases — kept for backward-compat with old subscriber rows ────
+  // Old DB value → canonical equivalent
+  // (old) builder = Explorer tier
+  // pro           = Builder tier
+  // elite         = Climber tier
+  basic:      EXPLORER_LIMITS,   // very old alias
+  standard:   BUILDER_LIMITS,    // old legacy key
+  pro:        BUILDER_LIMITS,    // old Builder DB ID
+  elite:      CLIMBER_LIMITS,    // old Climber DB ID
+  premium:    CLIMBER_LIMITS,    // very old alias
+  tester:     BUILDER_LIMITS,    // promo — builder-level
+  pro_legacy: CLIMBER_LIMITS,    // old pro maps to elite-level
+  trialing:   FREE_LIMITS,       // trialing without a plan = free limits
 };
 
 // --- Usage Checking ---
@@ -124,7 +115,7 @@ export async function checkUsage(
     .single();
 
   const plan = getEffectivePlan(profile);
-  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+  const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
   const limit = limits[feature] as number;
 
   if (limit === -1) {
@@ -166,12 +157,16 @@ export function getEffectivePlan(profile: any): string {
   const { subscription_plan, subscription_status, subscription_end } = profile;
   if (subscription_status === 'active' || subscription_status === 'trialing') {
     if (subscription_end) {
-      return new Date(subscription_end) > new Date() ? (subscription_plan || 'builder') : 'free';
+      return new Date(subscription_end) > new Date()
+        ? (subscription_plan || 'explorer')
+        : 'free';
     }
-    return subscription_plan || 'builder';
+    return subscription_plan || 'explorer';
   }
   if (subscription_status === 'cancelled' && subscription_end) {
-    return new Date(subscription_end) > new Date() ? (subscription_plan || 'builder') : 'free';
+    return new Date(subscription_end) > new Date()
+      ? (subscription_plan || 'explorer')
+      : 'free';
   }
   return 'free';
 }

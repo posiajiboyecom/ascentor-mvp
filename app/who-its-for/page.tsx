@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 
 
@@ -145,7 +145,7 @@ function Nav() {
           <Link href="/signup"
             className="px-5 py-2 rounded-lg text-sm font-semibold"
             style={{ background: '#E8A020', color: '#000' }}>
-            Start Free Trial
+            Join Ascentor Trial
           </Link>
         </div>
       </div>
@@ -154,7 +154,27 @@ function Nav() {
 }
 
 /* ── Page ────────────────────────────────────────────────── */
-export default function WhoItsForPage() {
+import { getPublishedPage } from '@/lib/supabase/queries/marketing';
+
+export default async function WhoItsForPage() {
+  const cms = await getPublishedPage('who-its-for');
+
+  // CMS section keys for /admin/marketing-pages/who-its-for:
+  //   hero       → {eyebrow, headline, subhead}
+  //   bottom_cta → {eyebrow, headline, body, cta_label, cta_href}
+  // PERSONAS cards are NOT wired — they have emoji, bg, border, color,
+  // popular flags that require code changes, not just content editing.
+  const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
+  const heroEyebrow  = hero?.eyebrow  || 'BUILT FOR AFRICA';
+  const heroHeadline = hero?.headline || "Wherever you are on your journey — we're built for you.";
+  const heroSubhead  = hero?.subhead  || 'Ascentor serves every stage of the ambitious professional journey. From the student figuring out what to do with their life, to the executive deciding what kind of legacy to leave.';
+
+  const cta = cms?.sections.bottom_cta?.data as Record<string, string> | undefined;
+  const ctaEyebrow  = cta?.eyebrow   || 'YOUR MENTOR IS WAITING';
+  const ctaHeadline = cta?.headline  || "Everyone who made it\nhad someone who believed in them.";
+  const ctaBody     = cta?.body      || 'Join 247+ purposeful individuals already on the platform.';
+  const ctaLabel    = cta?.cta_label || 'See How It Works';
+  const ctaHref     = cta?.cta_href  || '/how-it-works';
   return (
     <div className="min-h-screen"
       style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'Syne', system-ui, sans-serif" }}>
@@ -168,12 +188,10 @@ export default function WhoItsForPage() {
         </div>
         <h1 className="text-4xl md:text-5xl font-semibold mb-4"
           style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08', lineHeight: 1.1 }}>
-          Wherever you are on<br className="hidden md:block" /> your journey — we&apos;re built for you.
+          {heroHeadline}
         </h1>
         <p className="text-base max-w-2xl mx-auto mb-8" style={{ color: '#6B7280', lineHeight: 1.75 }}>
-          Ascentor serves every stage of the ambitious professional journey.
-          From the student figuring out what to do with their life, to the executive
-          deciding what kind of legacy to leave.
+          {heroSubhead}
         </p>
         {/* Stage nav pills */}
         <div className="flex flex-wrap justify-center gap-3">
@@ -280,7 +298,7 @@ export default function WhoItsForPage() {
                   <span className="text-xs font-normal ml-2" style={{ color: '#6B7280' }}>(~${p.priceUsd} USD)</span>
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
-                  7-day free trial · No credit card required · Cancel anytime
+                   ·  · 
                 </p>
               </div>
               <div className="flex gap-3">
@@ -292,7 +310,7 @@ export default function WhoItsForPage() {
                 <Link href={p.href}
                   className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-transform hover:scale-105"
                   style={{ background: p.color, color: '#000' }}>
-                  Start Free Trial →
+                  Join Ascentor Trial →
                 </Link>
               </div>
             </div>
@@ -309,7 +327,7 @@ export default function WhoItsForPage() {
           </p>
           <h2 className="text-3xl font-semibold mb-3"
             style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
-            Built for ambitious professionals, everywhere.
+            Built for purposeful individuals, everywhere.
           </h2>
           <p className="text-sm max-w-xl mx-auto mb-10" style={{ color: '#6B7280', lineHeight: 1.7 }}>
             Our mentors, peer circles, and AI context are specifically calibrated
@@ -330,25 +348,23 @@ export default function WhoItsForPage() {
 
       {/* ── Bottom CTA ── */}
       <section className="py-16 px-5">
-        <div className="max-w-3xl mx-auto rounded-2xl p-10 text-center"
-          style={{ background: '#0C0B08' }}>
+        <div className="max-w-3xl mx-auto rounded-2xl p-10 text-center" style={{ background: '#0C0B08' }}>
           <div className="inline-block px-3 py-1 rounded-full text-[10px] font-bold mb-5"
             style={{ background: 'rgba(245,158,11,0.1)', color: '#E8A020', border: '1px solid rgba(245,158,11,0.2)' }}>
-            YOUR MENTOR IS WAITING
+            {ctaEyebrow}
           </div>
           <h2 className="text-3xl md:text-4xl font-semibold mb-4"
             style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#F3F4F6', lineHeight: 1.2 }}>
-            Everyone who made it<br />had someone who believed in them.
+            {ctaHeadline}
           </h2>
           <p className="text-sm mb-8 max-w-lg mx-auto" style={{ color: '#9CA3AF', lineHeight: 1.75 }}>
-            Join 247+ ambitious professionals already on the platform.
-            Early members get <strong style={{ color: '#E8A020' }}>3 months free</strong> on launch.
+            {ctaBody}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/how-it-works"
+            <Link href={ctaHref}
               className="px-8 py-3.5 rounded-xl text-sm font-semibold"
               style={{ border: '1px solid #374151', color: '#F3F4F6' }}>
-              See How It Works
+              {ctaLabel}
             </Link>
           </div>
         </div>

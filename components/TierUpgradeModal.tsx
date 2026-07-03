@@ -92,7 +92,7 @@ export default function TierUpgradeModal({ requiredTier, contentType, contentNam
 
         {/* Heading */}
         <h2 style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: 'var(--font-accent)',
           fontSize:   26,
           fontWeight: 700,
           color:      'var(--text, #D4CFC3)',
@@ -104,7 +104,7 @@ export default function TierUpgradeModal({ requiredTier, contentType, contentNam
 
         {/* Description */}
         <p style={{
-          fontFamily:   "'Syne', system-ui, sans-serif",
+          fontFamily: 'var(--font-body)',
           fontSize:     14,
           color:        'var(--text-muted, #7A7260)',
           lineHeight:   1.65,
@@ -130,7 +130,7 @@ export default function TierUpgradeModal({ requiredTier, contentType, contentNam
         }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: meta.color, flexShrink: 0 }} />
           <span style={{
-            fontFamily:    "'DM Mono', monospace",
+            fontFamily: 'var(--font-display)',
             fontSize:      11,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
@@ -150,7 +150,7 @@ export default function TierUpgradeModal({ requiredTier, contentType, contentNam
             border:       'none',
             background:   meta.color,
             color:        requiredTier === 'builder' ? '#0C0B08' : '#fff',
-            fontFamily:   "'Syne', system-ui, sans-serif",
+            fontFamily: 'var(--font-body)',
             fontSize:     14,
             fontWeight:   700,
             cursor:       'pointer',
@@ -170,7 +170,7 @@ export default function TierUpgradeModal({ requiredTier, contentType, contentNam
             background: 'none',
             border:     'none',
             cursor:     'pointer',
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: 'var(--font-display)',
             fontSize:   11,
             letterSpacing: '0.08em',
             color:      'var(--text-muted, #7A7260)',

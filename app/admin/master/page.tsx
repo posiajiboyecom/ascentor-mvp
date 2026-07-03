@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -1154,7 +1154,7 @@ export default function MasterAdminPage() {
               { platform: 'WhatsApp',   priority: '#3', note: '95%+ penetration · 3×/week · Mon/Wed/Fri cadence', color: '#25D366' },
               { platform: 'Instagram',  priority: '#4', note: 'Visual storytelling · carousels · younger segment', color: '#E1306C' },
               { platform: 'YouTube',    priority: 'M4+', note: 'Long-form coaching demos · highest SEO value', color: '#FF0000' },
-              { platform: 'TikTok',     priority: 'M6+', note: 'Gen Z ambitious professionals · short coaching tips', color: '#010101' },
+              { platform: 'TikTok',     priority: 'M6+', note: 'Gen Z purposeful individuals · short coaching tips', color: '#010101' },
             ].map(p => (
               <div key={p.platform} style={{ ...card, padding: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>

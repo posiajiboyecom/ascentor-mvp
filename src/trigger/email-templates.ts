@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════════
 // ASCENTOR EMAIL TEMPLATES — The Rise Letter
 // Aesthetic: Dark editorial luxury · Cormorant Garamond · Syne
 // Brand: #0C0B08 bg · #E8A020 gold · #F5F0E8 cream text
@@ -183,7 +183,7 @@ function newsletterLayout(opts: {
           <!-- Logo mark -->
           <p style="margin:0 0 16px;font-family:'Cormorant Garamond',Georgia,serif;font-size:14px;letter-spacing:0.12em;color:${B.faint}">ASCENTOR</p>
           <p style="margin:0 0 10px;font-family:'DM Mono',monospace,sans-serif;font-size:10px;color:${B.faint};line-height:1.6;letter-spacing:0.04em">
-            AI-powered mentorship for ambitious professionals worldwide.
+            purposeful development for purposeful individuals worldwide.
           </p>
           <p style="margin:0;font-family:'DM Mono',monospace,sans-serif;font-size:10px;color:${B.faint}">
             <a href="https://ascentorbi.com/privacy" style="color:${B.faint};text-decoration:none">Privacy</a>
@@ -457,7 +457,7 @@ export function welcomeEmail(name: string) {
           </tr>
         </table>
 
-        <p style="margin:0;font-size:13px;color:${B.faint}">Your 7-day free trial is active. No credit card needed.</p>
+        <p style="margin:0;font-size:13px;color:${B.faint}">Your  is active. No credit card needed.</p>
       `,
       ctaText: 'Go to Dashboard →',
       ctaUrl: 'https://ascentorbi.com/dashboard',

@@ -1,202 +1,11 @@
 'use client';
 
-// app/signup/page.tsx — v2
-// FIX: Reads ?plan, ?billing, ?currency params from URL (set by pricing page CTA)
-// FIX: Free plan → routes to /onboarding (not /checkout)
-// FIX: Paid plans → routes to /checkout?plan=X&billing=Y&currency=Z (pre-selects plan)
-// FIX: emailRedirectTo passes next param so email-confirmed users land correctly
-
 import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PasswordInput from '@/components/PasswordInput';
 import { OAuthButton } from '@/lib/sso';
-
-// ─────────────────────────────────────────────────────────────────
-// ASCENTOR BRAND TOKENS · Brand Book v1.0 · 2026
-// Display : Cormorant Garamond 700 / Italic 600
-// UI      : Syne 400–800
-// Mono    : DM Mono 400/500
-// Gold    : #E8A020   Dark: #0C0B08
-// ─────────────────────────────────────────────────────────────────
-const B = {
-  fontDisplay: "'Cormorant Garamond', Georgia, serif",
-  fontUI:      "'Syne', system-ui, sans-serif",
-  fontMono:    "'DM Mono', 'Courier New', monospace",
-  dark:        '#0C0B08',
-  dark700:     '#1E1C17',
-  dark600:     '#2E2A22',
-  dark500:     '#4A4438',
-  dark400:     '#7A7260',
-  dark200:     '#D4CFC3',
-  dark50:      '#F7F6F3',
-  gold:        '#E8A020',
-  gold600:     '#C87820',
-  goldMuted:   'rgba(232,160,32,0.10)',
-  goldBorder:  'rgba(232,160,32,0.25)',
-  border:      'rgba(212,207,195,0.10)',
-  error:       '#EF4444',
-  errorMuted:  'rgba(239,68,68,0.08)',
-  explorer:    '#14B8A6',
-  explorerMuted: 'rgba(20,184,166,0.09)',
-  explorerBorder: 'rgba(20,184,166,0.22)',
-};
-
-const SHARED_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-  *, *::before, *::after { box-sizing: border-box; }
-  body { margin: 0; }
-
-  .asc-page {
-    min-height: 100vh;
-    display: flex;
-    background: ${B.dark};
-    font-family: ${B.fontUI};
-    position: relative;
-    overflow: hidden;
-  }
-  .asc-page::before {
-    content: '';
-    position: fixed;
-    top: -20vh; left: 50%;
-    transform: translateX(-50%);
-    width: 600px; height: 600px;
-    background: radial-gradient(ellipse at center, rgba(232,160,32,0.07) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-  .asc-brand-panel {
-    display: none;
-    width: 420px;
-    flex-shrink: 0;
-    background: ${B.dark700};
-    border-right: 1px solid ${B.border};
-    padding: 60px 48px;
-    flex-direction: column;
-    justify-content: space-between;
-    position: relative;
-    overflow: hidden;
-  }
-  .asc-brand-panel::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 50%;
-    background: linear-gradient(to top, rgba(232,160,32,0.04), transparent);
-    pointer-events: none;
-  }
-  @media (min-width: 1024px) { .asc-brand-panel { display: flex; } }
-  .asc-form-panel {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 24px;
-    position: relative;
-    z-index: 1;
-  }
-  .asc-form-inner { width: 100%; max-width: 400px; }
-  .asc-rule {
-    height: 1px;
-    background: linear-gradient(90deg, ${B.gold} 0%, transparent 70%);
-    margin: 24px 0;
-  }
-  .asc-input {
-    width: 100%;
-    padding: 13px 16px;
-    border-radius: 10px;
-    border: 1px solid ${B.border};
-    background: ${B.dark700};
-    color: ${B.dark50};
-    font-family: ${B.fontUI};
-    font-size: 14px;
-    font-weight: 400;
-    outline: none;
-    transition: border-color 0.15s ease;
-  }
-  .asc-input::placeholder { color: ${B.dark500}; }
-  .asc-input:focus        { border-color: ${B.goldBorder}; }
-  .asc-btn-primary {
-    width: 100%;
-    padding: 14px 24px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    background: ${B.gold};
-    color: ${B.dark};
-    font-family: ${B.fontUI};
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    transition: background 0.15s ease, opacity 0.15s ease;
-  }
-  .asc-btn-primary:hover:not(:disabled) { background: ${B.gold600}; }
-  .asc-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .asc-divider { display: flex; align-items: center; gap: 16px; margin: 22px 0; }
-  .asc-divider-line { flex: 1; height: 1px; background: ${B.border}; }
-  .asc-error {
-    padding: 10px 14px;
-    border-radius: 8px;
-    background: ${B.errorMuted};
-    border: 1px solid rgba(239,68,68,0.2);
-    color: ${B.error};
-    font-family: ${B.fontUI};
-    font-size: 13px;
-    line-height: 1.5;
-    margin-bottom: 12px;
-  }
-  .asc-oauth { display: flex; flex-direction: column; gap: 10px; }
-
-  .asc-stages { display: flex; align-items: center; gap: 8px; }
-  .asc-stage-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-  }
-  .asc-stage-label {
-    font-family: ${B.fontMono};
-    font-size: 9px;
-    font-weight: 500;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: ${B.dark500};
-  }
-`;
-
-function BrandLoader() {
-  return (
-    <>
-      <style>{SHARED_CSS}</style>
-      <div className="asc-page" style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <svg width="32" height="28" viewBox="0 0 32 28" fill="none" style={{ marginBottom: '16px' }}>
-            <path d="M16 2L30 26H2L16 2Z" stroke={B.gold} strokeWidth="2" fill="none"/>
-            <path d="M16 8L26 24H6L16 8Z" stroke={B.gold} strokeWidth="1" fill="none" opacity="0.5"/>
-          </svg>
-          <p style={{
-            fontFamily:    B.fontMono,
-            fontSize:      '11px',
-            color:         B.dark500,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase' as const,
-            margin:        0,
-          }}>
-            Loading…
-          </p>
-        </div>
-      </div>
-    </>
-  );
-}
-
-export default function SignUpPage() {
-  return (
-    <Suspense fallback={<BrandLoader />}>
-      <SignUpForm />
-    </Suspense>
-  );
-}
 
 function SignUpForm() {
   const router       = useRouter();
@@ -208,17 +17,11 @@ function SignUpForm() {
   const [error,    setError]    = useState<string | null>(null);
   const [loading,  setLoading]  = useState(false);
 
-  // ── Plan intent params — set by pricing page CTA ──────────────────────────
-  // plan:     'free' | 'builder' | 'pro' | 'elite' | null
-  // billing:  'monthly' | 'annual' (default: monthly)
-  // currency: 'ngn' | 'usd' (default: ngn)
-  const planParam    = searchParams.get('plan');
-  const billingParam = searchParams.get('billing') ?? 'monthly';
+  const planParam     = searchParams.get('plan');
+  const billingParam  = searchParams.get('billing') ?? 'monthly';
   const currencyParam = searchParams.get('currency') ?? 'ngn';
-  const isFree       = planParam === 'free';
-
-  // ── Referral code ─────────────────────────────────────────────────────────
-  const refCode = searchParams.get('ref');
+  const isFree        = planParam === 'free' || !planParam;
+  const refCode       = searchParams.get('ref');
   const [referralCode, setReferralCode] = useState('');
 
   useEffect(() => {
@@ -236,15 +39,12 @@ function SignUpForm() {
     setLoading(true);
     setError(null);
 
-    // Build the post-email-confirmation redirect:
-    // Free plan → onboarding (skip checkout entirely)
-    // Paid plan → checkout with plan pre-selected
-    // No plan   → checkout (user came directly to /signup)
+    // Default routing — community is the entry point, then onboarding
     const callbackNext = isFree
       ? '/onboarding'
       : planParam
         ? `/checkout?plan=${planParam}&billing=${billingParam}&currency=${currencyParam}`
-        : '/checkout';
+        : '/onboarding';
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -257,23 +57,18 @@ function SignUpForm() {
     if (error) {
       setError(error.message);
     } else {
-      // Sync new user to MailerLite (fire-and-forget)
       const name = (data.user?.user_metadata?.full_name || email.split('@')[0]) as string;
       fetch('/api/welcome', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ email, name, userId: data.user?.id }),
-      }).catch(() => {}); // non-blocking, non-fatal
+      }).catch(() => {});
 
-      // Immediate redirect (for users who don't need email confirmation,
-      // e.g. Supabase "Confirm email" setting is off, or auto-confirmed):
-      // Free → onboarding. Paid/unknown → checkout with plan pre-selected.
-      if (isFree) {
-        router.push('/onboarding');
-      } else if (planParam) {
+      // Route to onboarding — community is the entry point for everyone
+      if (planParam && !isFree) {
         router.push(`/checkout?plan=${planParam}&billing=${billingParam}&currency=${currencyParam}`);
       } else {
-        router.push('/checkout');
+        router.push('/onboarding');
       }
     }
     setLoading(false);
@@ -281,271 +76,299 @@ function SignUpForm() {
 
   return (
     <>
-      <style>{SHARED_CSS}</style>
+      <style>{`
+        body { background: #FAFAF8 !important; color: #0F0F0E !important; }
 
-      <div className="asc-page">
+        .signup-page {
+          min-height: 100vh;
+          display: flex;
+          background: #FAFAF8;
+        }
 
-        {/* ── LEFT BRAND PANEL (lg+) ── */}
-        <div className="asc-brand-panel">
+        .signup-brand {
+          display: none;
+          width: 440px;
+          flex-shrink: 0;
+          background: #0F0F0E;
+          padding: 60px 48px;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+        @media (min-width: 1024px) { .signup-brand { display: flex; } }
 
-          {/* Logo */}
+        .signup-form-panel {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 24px;
+          background: #FAFAF8;
+        }
+        .signup-form-inner {
+          width: 100%;
+          max-width: 420px;
+        }
+
+        .signup-input {
+          width: 100%;
+          padding: 0.875rem 1rem;
+          background: #FFFFFF;
+          border: 1.5px solid #E8E6E1;
+          border-radius: 0.625rem;
+          color: #0F0F0E;
+          font-family: var(--font-body, 'Inter', sans-serif);
+          font-size: 0.9375rem;
+          outline: none;
+          transition: border-color 0.15s;
+        }
+        .signup-input::placeholder { color: #9CA3AF; }
+        .signup-input:focus { border-color: #C8A96E; }
+
+        .signup-btn {
+          width: 100%;
+          padding: 0.875rem;
+          border-radius: 0.625rem;
+          border: none;
+          cursor: pointer;
+          background: #0F0F0E;
+          color: #FAFAF8;
+          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+          font-size: 1rem;
+          font-weight: 700;
+          transition: background 0.15s, opacity 0.15s;
+        }
+        .signup-btn:hover:not(:disabled) { background: #2A2A29; }
+        .signup-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .signup-divider {
+          display: flex; align-items: center; gap: 16px; margin: 1.5rem 0;
+        }
+        .signup-divider-line { flex: 1; height: 1px; background: #E8E6E1; }
+
+        .signup-error {
+          padding: 0.75rem 1rem;
+          border-radius: 0.5rem;
+          background: rgba(220,38,38,0.05);
+          border: 1px solid rgba(220,38,38,0.2);
+          color: #DC2626;
+          font-size: 0.875rem;
+          line-height: 1.5;
+          margin-bottom: 0.5rem;
+        }
+
+        .stage-card {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 0.875rem 0;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .stage-dot {
+          width: 8px; height: 8px;
+          border-radius: 50%;
+          background: #C8A96E;
+          flex-shrink: 0;
+          margin-top: 5px;
+        }
+      `}</style>
+
+      <div className="signup-page">
+
+        {/* ── Left Brand Panel ── */}
+        <div className="signup-brand">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '48px' }}>
-              <Link href="/" className="lp-nav-logo">
-                <img
-                  src="/ascentor-color-for-dark-pages.svg"
-                  alt="Ascentor"
-                  style={{ height: '32px', width: 'auto' }}
-                />
-              </Link>
+            <Link href="/" style={{ textDecoration: 'none' }}>
+              <span style={{
+                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+                fontSize: '1.375rem',
+                fontWeight: 800,
+                color: '#FAFAF8',
+                letterSpacing: '-0.03em',
+              }}>Ascentor</span>
+            </Link>
+
+            <div style={{ marginTop: '3rem' }}>
+              <p style={{
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: '#C8A96E',
+                marginBottom: '1rem',
+              }}>The Elevation Summit Movement</p>
+
+              <h2 style={{
+                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+                fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
+                fontWeight: 800,
+                color: '#FAFAF8',
+                lineHeight: 1.15,
+                letterSpacing: '-0.02em',
+                marginBottom: '1rem',
+              }}>
+                You were not built<br />
+                <span style={{ color: '#C8A96E' }}>to drift.</span>
+              </h2>
+
+              <p style={{ fontSize: '0.9375rem', color: '#6B7280', lineHeight: 1.75 }}>
+                Ascentor is the daily platform of The Elevation Summit — a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.
+              </p>
             </div>
 
-            {/* Brand headline — Cormorant italic */}
-            <h2 style={{
-              fontFamily: B.fontDisplay,
-              fontStyle:  'italic',
-              fontWeight: 600,
-              fontSize:   '36px',
-              color:      B.dark50,
-              lineHeight: 1.25,
-              margin:     '0 0 20px',
-            }}>
-              Stop figuring it out alone.
-            </h2>
-
-            <p style={{
-              fontFamily: B.fontUI,
-              fontSize:   '14px',
-              color:      B.dark400,
-              lineHeight: 1.7,
-              margin:     '0 0 36px',
-            }}>
-              The professionals who make it rarely do it alone —
-              they had the right mentor at the right time. We make that
-              available to everyone.
-            </p>
-
-            {/* Stage system — brand visual motif from brand book pg 3 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Ascent stages */}
+            <div style={{ marginTop: '2.5rem' }}>
+              <p style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#4B5563', marginBottom: '1rem' }}>
+                Every stage of ascent
+              </p>
               {[
-                { dot: '#14B8A6', label: 'Explorer', desc: 'Students 15–22' },
-                { dot: '#E8A020', label: 'Builder',  desc: 'Early career 22–32' },
-                { dot: '#8B5CF6', label: 'Climber',  desc: 'Mid-career 32–50' },
-              ].map(({ dot, label, desc }) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: dot, flexShrink: 0 }} />
-                  <span style={{ fontFamily: B.fontUI, fontSize: '13px', fontWeight: 500, color: B.dark200 }}>
-                    {label}
-                  </span>
-                  <span style={{
-                    fontFamily:    B.fontMono,
-                    fontSize:      '10px',
-                    color:         B.dark500,
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase' as const,
-                  }}>
-                    · {desc}
-                  </span>
+                { stage: 'The Seeker', sub: 'Finding purpose and direction' },
+                { stage: 'The Builder', sub: 'Doing the daily work of becoming' },
+                { stage: 'The Leader', sub: 'Responsible for others\' ascent' },
+              ].map((item) => (
+                <div key={item.stage} className="stage-card">
+                  <div className="stage-dot" />
+                  <div>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#D1D5DB', display: 'block' }}>{item.stage}</span>
+                    <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>{item.sub}</span>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Bottom social proof — brand voice */}
-          <div style={{ borderLeft: `3px solid ${B.gold}`, paddingLeft: '16px' }}>
+          {/* Bottom quote */}
+          <div style={{ borderLeft: '3px solid #C8A96E', paddingLeft: '1rem', marginTop: '2rem' }}>
             <p style={{
-              fontFamily: B.fontDisplay,
-              fontStyle:  'italic',
-              fontWeight: 600,
-              fontSize:   '16px',
-              color:      B.dark200,
-              lineHeight: 1.5,
-              margin:     '0 0 8px',
+              fontFamily: 'var(--font-accent, "Playfair Display", serif)',
+              fontStyle: 'italic',
+              fontSize: '0.9375rem',
+              color: '#9CA3AF',
+              lineHeight: 1.65,
+              marginBottom: '0.5rem',
             }}>
-              "Your manager is not going to tell you what's holding you back. We will."
+              "Every life that matters was built on purpose. Not accident. Not circumstance. Purpose."
             </p>
-            <span style={{
-              fontFamily:    B.fontMono,
-              fontSize:      '10px',
-              color:         B.dark500,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase' as const,
-            }}>
-              ASCENTOR PROMISE
+            <span style={{ fontSize: '0.7rem', color: '#4B5563', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
+              The Founding Conviction
             </span>
           </div>
         </div>
 
-        {/* ── RIGHT FORM PANEL ── */}
-        <div className="asc-form-panel">
-          <div className="asc-form-inner">
+        {/* ── Right Form Panel ── */}
+        <div className="signup-form-panel">
+          <div className="signup-form-inner">
 
-            {/* Mobile logo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '32px' }} className="lg:hidden">
-              <Link href="/" className="lp-nav-logo">
-                <img
-                  src="/ascentor-color-for-dark-pages.svg"
-                  alt="Ascentor"
-                  style={{ height: '32px', width: 'auto' }}
-                />
+            {/* Mobile logo + sign in link */}
+            <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Link href="/" style={{ textDecoration: 'none' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: 24, width: 'auto' }} />
+              </Link>
+              <Link href="/login" style={{ fontSize: '0.875rem', color: '#6B7280', textDecoration: 'none' }}>
+                Have an account? <span style={{ color: '#C8A96E', fontWeight: 600 }}>Sign in →</span>
               </Link>
             </div>
 
-            {/* Referral banner */}
-            {referralCode && (
-              <div style={{
-                padding:      '14px 16px',
-                borderRadius: '10px',
-                background:   B.explorerMuted,
-                border:       `1px solid ${B.explorerBorder}`,
-                marginBottom: '24px',
-                textAlign:    'center',
-              }}>
-                <p style={{
-                  fontFamily: B.fontUI,
-                  fontSize:   '13px',
-                  fontWeight: 600,
-                  color:      B.explorer,
-                  margin:     '0 0 4px',
-                }}>
-                  🎁 You've been referred
-                </p>
-                <p style={{
-                  fontFamily:    B.fontMono,
-                  fontSize:      '11px',
-                  color:         B.explorerBorder.replace('0.22', '0.6'),
-                  letterSpacing: '0.04em',
-                  margin:        0,
-                }}>
-                  Sign up — you both get 7 extra days free
-                </p>
-              </div>
-            )}
-
-            {/* Headline */}
             <h1 style={{
-              fontFamily: B.fontDisplay,
-              fontWeight: 700,
-              fontSize:   'clamp(28px, 4vw, 36px)',
-              color:      B.dark50,
-              margin:     '0 0 6px',
-              lineHeight: 1.15,
+              fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+              fontWeight: 800,
+              fontSize: 'clamp(1.75rem, 4vw, 2.25rem)',
+              color: '#0F0F0E',
+              margin: '0 0 0.375rem',
+              lineHeight: 1.1,
+              letterSpacing: '-0.02em',
             }}>
-              Join Ascentor.
+              Join the movement.
             </h1>
-            <p style={{
-              fontFamily: B.fontUI,
-              fontSize:   '14px',
-              color:      B.dark400,
-              margin:     '0 0 4px',
-              lineHeight: 1.6,
-            }}>
-              The professional mentorship platform — from figuring it out to making it happen.
+            <p style={{ fontSize: '0.9375rem', color: '#6B7280', margin: '0 0 1.75rem', lineHeight: 1.6 }}>
+              Your ascent begins here. Free to join.
             </p>
 
             {/* Gold rule */}
-            <div className="asc-rule" />
+            <div style={{ height: '2px', background: 'linear-gradient(90deg, #C8A96E 0%, transparent 100%)', borderRadius: '2px', marginBottom: '1.75rem' }} />
 
             {/* OAuth */}
-            <div className="asc-oauth">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
               <OAuthButton provider="google"        onError={setError} />
-              <OAuthButton provider="discord"       onError={setError} />
               <OAuthButton provider="linkedin_oidc" onError={setError} />
             </div>
 
             {/* Divider */}
-            <div className="asc-divider">
-              <div className="asc-divider-line" />
-              <span style={{
-                fontFamily:    B.fontMono,
-                fontSize:      '11px',
-                fontWeight:    400,
-                color:         B.dark500,
-                letterSpacing: '0.04em',
-                whiteSpace:    'nowrap' as const,
-              }}>
-                or sign up with email
+            <div className="signup-divider">
+              <div className="signup-divider-line" />
+              <span style={{ fontSize: '0.75rem', color: '#9CA3AF', whiteSpace: 'nowrap', fontWeight: 500 }}>
+                or continue with email
               </span>
-              <div className="asc-divider-line" />
+              <div className="signup-divider-line" />
             </div>
 
-            {/* Email form */}
-            <form onSubmit={handleEmailSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Form */}
+            <form onSubmit={handleEmailSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <input
-                type="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                type="email" required
+                value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="Email address"
-                className="asc-input"
+                className="signup-input"
               />
+              <PasswordInput value={password} onChange={setPassword} placeholder="Create a password (min 8 chars)" />
 
-              <PasswordInput
-                value={password}
-                onChange={setPassword}
-                showStrength={true}
-                placeholder="Create a password"
-              />
+              {/* Referral code — shown only if present */}
+              {referralCode && (
+                <div style={{
+                  padding: '0.625rem 1rem',
+                  background: 'rgba(200,169,110,0.08)',
+                  border: '1px solid rgba(200,169,110,0.25)',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.8125rem',
+                  color: '#C8A96E',
+                  fontWeight: 600,
+                }}>
+                  Referral code applied: {referralCode}
+                </div>
+              )}
 
-              {error && <div className="asc-error">{error}</div>}
+              {error && <div className="signup-error">{error}</div>}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="asc-btn-primary"
-                style={{ marginTop: '4px' }}
-              >
-                {loading ? 'Creating account…' : 'Create Account →'}
+              <button type="submit" disabled={loading} className="signup-btn" style={{ marginTop: '0.25rem' }}>
+                {loading ? 'Creating account...' : 'Join Ascentor →'}
               </button>
             </form>
 
             {/* Terms */}
-            <p style={{
-              fontFamily: B.fontUI,
-              fontSize:   '11px',
-              color:      B.dark500,
-              lineHeight: 1.6,
-              textAlign:  'center',
-              margin:     '14px 0 0',
-            }}>
-              By creating an account you agree to our{' '}
-              <Link href="/terms" style={{ color: B.dark400, textDecoration: 'underline' }}>Terms</Link>
+            <p style={{ fontSize: '0.75rem', color: '#9CA3AF', textAlign: 'center', marginTop: '1rem', lineHeight: 1.6 }}>
+              By joining, you agree to our{' '}
+              <Link href="/terms" style={{ color: '#6B7280', textDecoration: 'underline' }}>Terms</Link>
               {' '}and{' '}
-              <Link href="/privacy" style={{ color: B.dark400, textDecoration: 'underline' }}>Privacy Policy</Link>.
+              <Link href="/privacy" style={{ color: '#6B7280', textDecoration: 'underline' }}>Privacy Policy</Link>.
             </p>
 
-            {/* Login link */}
+            {/* Bottom */}
             <div style={{
-              display:       'flex',
-              justifyContent:'center',
-              marginTop:     '28px',
-              paddingTop:    '24px',
-              borderTop:     `1px solid ${B.border}`,
+              marginTop: '1.5rem',
+              paddingTop: '1.5rem',
+              borderTop: '1px solid #E8E6E1',
+              textAlign: 'center',
             }}>
-              <p style={{ fontFamily: B.fontUI, fontSize: '13px', color: B.dark400, margin: 0 }}>
-                Already have an account?{' '}
-                <Link href="/login" style={{ color: B.gold, fontWeight: 600, textDecoration: 'none' }}>
-                  Log in →
+              <p style={{ fontSize: '0.875rem', color: '#6B7280', margin: 0 }}>
+                Already part of the movement?{' '}
+                <Link href="/login" style={{ color: '#C8A96E', fontWeight: 700, textDecoration: 'none' }}>
+                  Sign in →
                 </Link>
               </p>
             </div>
 
-            {/* Mono footer */}
-            <div style={{ textAlign: 'center', marginTop: '32px' }}>
-              <span style={{
-                fontFamily:    B.fontMono,
-                fontSize:      '10px',
-                color:         B.dark600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase' as const,
-              }}>
-                BUILT FOR AFRICA · © 2026 ASCENTOR INC. · ascentorbi.com
-              </span>
-            </div>
-
           </div>
         </div>
+
       </div>
     </>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpForm />
+    </Suspense>
   );
 }

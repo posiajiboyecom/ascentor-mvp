@@ -1,23 +1,27 @@
 'use client';
 
 // ═══════════════════════════════════════════════════════════
-// Admin Overview Client
+// Admin Overview Client — THE LEDGER
 // Drop in: app/admin/AdminOverviewClient.tsx
 //
-// Fixes from previous version:
-//   • Added Video stats card + "Create Video" quick action
-//     (the video tool was invisible from the dashboard).
-//   • Error handling on loadAll — a single failed query no
-//     longer strands the user on the loader.
-//   • Fixed SVG attributes that used kebab-case (stroke-width,
-//     stroke-linecap, etc.) — must be camelCase in JSX.
-//   • Safer cohort-icon rendering — strips <script> tags before
-//     injecting into dangerouslySetInnerHTML. Still imperfect
-//     but removes the obvious XSS vector.
-//   • Replaced Math.max(...array) spread with a reducer so very
-//     long arrays can't blow the call stack.
-//   • Added loadAll to useEffect deps (via useCallback) — fixes
-//     the React Hooks exhaustive-deps warning.
+// Restyled to The Ledger design system (styles/admin-ledger.css).
+// All --bg-card / --border / --text / --accent tokens replaced
+// with --ledger-* equivalents. The old multi-color stat accents
+// (--blue, --purple, --teal, --success) are consolidated into
+// Ledger's deliberately narrow status palette (good/info/warn/bad
+// + gold) rather than carried forward — Ledger's whole point is
+// one coherent palette instead of per-card rainbow colors.
+//   blue    -> ledger-info
+//   purple  -> ledger-gold (no purple equivalent in Ledger; gold
+//              is the identity accent so unassigned cards default
+//              to it rather than inventing a new token)
+//   teal    -> ledger-info (Community card)
+//   success -> ledger-good
+//
+// Logic is UNCHANGED from the previous version — same loadAll,
+// same Supabase queries, same stats shape. This is a styling-only
+// pass; do not treat this as a place to re-verify schema, that
+// was already done when this file was first built.
 // ═══════════════════════════════════════════════════════════
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -178,11 +182,10 @@ export default function AdminOverviewClient() {
 
   return (
     <div className="animate-fade-up">
-      <h1 className="text-xl lg:text-2xl font-semibold mb-1"
-        style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
+      <h1 className="text-xl lg:text-2xl font-semibold mb-1 ledger-h1" style={{ fontSize: 28 }}>
         Admin Dashboard
       </h1>
-      <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
+      <p className="text-sm mb-5 ledger-mono" style={{ fontSize: 12 }}>
         Platform overview · Last updated {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
       </p>
 
@@ -190,9 +193,9 @@ export default function AdminOverviewClient() {
         <div
           className="rounded-lg p-3 mb-5 text-xs"
           style={{
-            background: 'color-mix(in srgb, var(--danger, #EF4444) 8%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--danger, #EF4444) 30%, transparent)',
-            color: 'var(--danger, #EF4444)',
+            background: 'var(--ledger-bad-bg)',
+            border: '1px solid rgba(200,74,56,0.30)',
+            color: 'var(--ledger-bad)',
           }}
         >
           Some data failed to load: {loadError}. Other sections may show stale or zero values.
@@ -202,45 +205,45 @@ export default function AdminOverviewClient() {
       {/* ═══ TOP STAT CARDS ═══ */}
       <div className="grid grid-cols-2 lg:grid-cols-7 gap-2.5 mb-6">
         {[
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', value: stats.totalUsers, label: 'Total Users', sub: `+${stats.newUsers7d} this week`, color: 'var(--blue)', href: '/admin/users' },
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>', value: stats.totalSessions, label: 'AI Sessions', sub: `+${stats.sessions7d} this week`, color: 'var(--accent)', href: '/admin/coaching' },
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>', value: 'Chat', label: 'Community', sub: 'Manage channels', color: 'var(--teal)', href: '/admin/community-intel' },
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', value: stats.publishedCourses, label: 'Courses', sub: 'Published', color: 'var(--purple)', href: '/admin/courses' },
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>', value: stats.upcomingEvents, label: 'Upcoming Events', sub: 'Scheduled', color: 'var(--success)', href: '/admin/experts' },
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>', value: stats.openJobs, label: 'Open Roles', sub: 'Live on /careers', color: 'var(--accent)', href: '/admin/careers' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', value: stats.totalUsers, label: 'Total Users', sub: `+${stats.newUsers7d} this week`, color: 'var(--ledger-info)', href: '/admin/users' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>', value: stats.totalSessions, label: 'AI Sessions', sub: `+${stats.sessions7d} this week`, color: 'var(--ledger-gold)', href: '/admin/coaching' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>', value: 'Chat', label: 'Community', sub: 'Manage channels', color: 'var(--ledger-info)', href: '/admin/community-intel' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', value: stats.publishedCourses, label: 'Courses', sub: 'Published', color: 'var(--ledger-gold)', href: '/admin/courses' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>', value: stats.upcomingEvents, label: 'Upcoming Events', sub: 'Scheduled', color: 'var(--ledger-good)', href: '/admin/experts' },
+          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>', value: stats.openJobs, label: 'Open Roles', sub: 'Live on /careers', color: 'var(--ledger-gold)', href: '/admin/careers' },
         ].map((s) => (
           <Link key={s.label} href={s.href}>
-            <div className="rounded-xl p-3.5 transition-all hover:border-gray-600 cursor-pointer"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div className="rounded-xl p-3.5 transition-all cursor-pointer ledger-panel"
+              style={{ borderRadius: 'var(--ledger-radius-lg)' }}>
               <div className="flex justify-between items-start mb-1.5">
-                <span className="text-xl" dangerouslySetInnerHTML={{ __html: sanitiseIcon(s.icon) }} />
-                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                  style={{ background: `color-mix(in srgb, ${s.color} 12%, transparent)`, color: s.color }}>
+                <span className="text-xl" dangerouslySetInnerHTML={{ __html: sanitiseIcon(s.icon) }} style={{ color: 'var(--ledger-ink-soft)' }} />
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full ledger-mono"
+                  style={{ background: `color-mix(in srgb, ${s.color} 14%, transparent)`, color: s.color, fontSize: 9 }}>
                   {s.sub}
                 </span>
               </div>
-              <div className="text-xl lg:text-2xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: s.color }}>
+              <div className="text-xl lg:text-2xl ledger-number" style={{ color: s.color, fontSize: 26 }}>
                 {s.value.toLocaleString()}
               </div>
-              <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>{s.label}</div>
+              <div className="text-[10px] mt-0.5 ledger-label" style={{ textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>{s.label}</div>
             </div>
           </Link>
         ))}
       </div>
 
       {/* ═══ ACTIVITY CHART (last 14 days) ═══ */}
-      <div className="rounded-xl p-5 mb-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+      <div className="rounded-xl p-5 mb-5 ledger-panel">
         <div className="flex justify-between items-center mb-4">
-          <span className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text)' }}>
+          <span className="text-sm font-semibold flex items-center gap-2 ledger-h2" style={{ fontSize: 15 }}>
             <SvgIcon html='<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>' />
             Activity — Last 14 Days
           </span>
-          <div className="flex gap-3 text-[10px]" style={{ color: 'var(--text-dim)' }}>
+          <div className="flex gap-3 text-[10px] ledger-mono">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }} /> Sessions
+              <span className="w-2 h-2 rounded-full" style={{ background: 'var(--ledger-gold)' }} /> Sessions
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full" style={{ background: 'var(--blue)' }} /> Active Users
+              <span className="w-2 h-2 rounded-full" style={{ background: 'var(--ledger-info)' }} /> Active Users
             </span>
           </div>
         </div>
@@ -251,18 +254,18 @@ export default function AdminOverviewClient() {
                 <div className="w-full rounded-t-sm transition-all"
                   style={{
                     height: `${Math.max((d.sessions / maxSessions) * 100, 2)}%`,
-                    background: 'var(--accent)',
+                    background: 'var(--ledger-gold)',
                     opacity: 0.7,
                   }} />
                 {d.users > 0 && (
                   <div className="absolute w-1.5 h-1.5 rounded-full"
                     style={{
-                      background: 'var(--blue)',
+                      background: 'var(--ledger-info)',
                       bottom: `${Math.max((d.users / maxUsers) * 100, 5)}%`,
                     }} />
                 )}
               </div>
-              <span className="text-[8px] leading-none" style={{ color: 'var(--text-dim)' }}>
+              <span className="text-[8px] leading-none ledger-mono" style={{ fontSize: 8 }}>
                 {new Date(d.day).toLocaleDateString('en-US', { day: 'numeric' })}
               </span>
             </div>
@@ -274,25 +277,25 @@ export default function AdminOverviewClient() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
 
         {/* Session Types Breakdown */}
-        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <span className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text)' }}>
+        <div className="rounded-xl p-5 ledger-panel">
+          <span className="text-sm font-semibold flex items-center gap-2 ledger-h2" style={{ fontSize: 15 }}>
             <SvgIcon html='<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>' />
             Session Types (30d)
           </span>
           <div className="mt-3">
             {sessionTypes.length === 0 ? (
-              <p className="text-xs" style={{ color: 'var(--text-dim)' }}>No session data yet</p>
+              <p className="text-xs ledger-mono">No session data yet</p>
             ) : sessionTypes.map((t) => {
               const total = sessionTypes.reduce((s, x) => s + x.count, 0);
               const pct = Math.round((t.count / total) * 100);
               return (
                 <div key={t.type} className="mb-2.5">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="capitalize" style={{ color: 'var(--text-muted)' }}>{t.type.replace(/_/g, ' ')}</span>
-                    <span style={{ color: 'var(--text-dim)' }}>{t.count} ({pct}%)</span>
+                    <span className="capitalize" style={{ color: 'var(--ledger-ink-soft)' }}>{t.type.replace(/_/g, ' ')}</span>
+                    <span className="ledger-mono">{t.count} ({pct}%)</span>
                   </div>
-                  <div className="w-full h-1.5 rounded-full" style={{ background: 'var(--bg-input)' }}>
-                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--accent)' }} />
+                  <div className="w-full h-1.5 rounded-full" style={{ background: 'var(--ledger-bg-input)' }}>
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--ledger-gold)' }} />
                   </div>
                 </div>
               );
@@ -301,28 +304,28 @@ export default function AdminOverviewClient() {
         </div>
 
         {/* Top Users by Engagement */}
-        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <div className="rounded-xl p-5 ledger-panel">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text)' }}>
+            <span className="text-sm font-semibold flex items-center gap-2 ledger-h2" style={{ fontSize: 15 }}>
               <SvgIcon html='<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>' />
               Top Users (30d)
             </span>
-            <Link href="/admin/users" className="text-xs" style={{ color: 'var(--accent)' }}>View all →</Link>
+            <Link href="/admin/users" className="text-xs" style={{ color: 'var(--ledger-gold-deep)' }}>View all →</Link>
           </div>
           {topUsers.length === 0 ? (
-            <p className="text-xs" style={{ color: 'var(--text-dim)' }}>No active users yet</p>
+            <p className="text-xs ledger-mono">No active users yet</p>
           ) : topUsers.map((u, i) => (
             <div key={u.id} className="flex items-center gap-3 py-2"
-              style={{ borderBottom: '1px solid var(--border)' }}>
-              <span className="text-xs font-bold w-5 text-center"
-                style={{ color: i === 0 ? 'var(--accent)' : 'var(--text-dim)' }}>
+              style={{ borderBottom: '1px solid var(--ledger-line)' }}>
+              <span className="text-xs font-bold w-5 text-center ledger-mono"
+                style={{ color: i === 0 ? 'var(--ledger-gold)' : 'var(--ledger-ink-faint)' }}>
                 {i + 1}
               </span>
               <div className="flex-1">
-                <p className="text-sm" style={{ color: 'var(--text)' }}>{u.full_name || 'Unknown'}</p>
-                <p className="text-[10px]" style={{ color: 'var(--text-dim)' }}>{u.current_role || ''}</p>
+                <p className="text-sm" style={{ color: 'var(--ledger-ink)' }}>{u.full_name || 'Unknown'}</p>
+                <p className="text-[10px] ledger-mono">{u.current_role || ''}</p>
               </div>
-              <span className="text-xs font-bold" style={{ color: 'var(--accent)' }}>
+              <span className="text-xs font-bold ledger-mono" style={{ color: 'var(--ledger-gold-deep)' }}>
                 {u.sessions} sessions
               </span>
             </div>
@@ -334,22 +337,22 @@ export default function AdminOverviewClient() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
 
         {/* Recent Signups */}
-        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <div className="rounded-xl p-5 ledger-panel">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>New Signups</span>
+            <span className="text-sm font-semibold ledger-h2" style={{ fontSize: 15 }}>New Signups</span>
           </div>
           {recentSignups.map((u) => (
             <div key={u.id} className="flex items-center gap-2 py-1.5"
-              style={{ borderBottom: '1px solid var(--border)' }}>
+              style={{ borderBottom: '1px solid var(--ledger-line)' }}>
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                style={{ background: 'rgba(59,130,246,0.09)', color: 'var(--blue)' }}>
+                style={{ background: 'var(--ledger-info-bg)', color: 'var(--ledger-info)' }}>
                 {(u.full_name || '?').charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate" style={{ color: 'var(--text)' }}>{u.full_name || 'No name'}</p>
-                <p className="text-[10px] truncate" style={{ color: 'var(--text-dim)' }}>{u.industry || u.current_role || ''}</p>
+                <p className="text-xs font-medium truncate" style={{ color: 'var(--ledger-ink)' }}>{u.full_name || 'No name'}</p>
+                <p className="text-[10px] truncate ledger-mono">{u.industry || u.current_role || ''}</p>
               </div>
-              <span className="text-[10px] shrink-0" style={{ color: 'var(--text-dim)' }}>
+              <span className="text-[10px] shrink-0 ledger-mono">
                 {new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
             </div>
@@ -357,20 +360,20 @@ export default function AdminOverviewClient() {
         </div>
 
         {/* Upcoming Events */}
-        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <div className="rounded-xl p-5 ledger-panel">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text)' }}>
+            <span className="text-sm font-semibold flex items-center gap-2 ledger-h2" style={{ fontSize: 15 }}>
               <SvgIcon html='<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>' />
               Upcoming Events
             </span>
-            <Link href="/admin/experts" className="text-xs" style={{ color: 'var(--accent)' }}>Manage →</Link>
+            <Link href="/admin/experts" className="text-xs" style={{ color: 'var(--ledger-gold-deep)' }}>Manage →</Link>
           </div>
           {upcomingEvents.length === 0 ? (
-            <p className="text-xs" style={{ color: 'var(--text-dim)' }}>No upcoming events</p>
+            <p className="text-xs ledger-mono">No upcoming events</p>
           ) : upcomingEvents.map((e) => (
-            <div key={e.id} className="py-2" style={{ borderBottom: '1px solid var(--border)' }}>
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{e.title}</p>
-              <p className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
+            <div key={e.id} className="py-2" style={{ borderBottom: '1px solid var(--ledger-line)' }}>
+              <p className="text-sm" style={{ color: 'var(--ledger-ink-soft)' }}>{e.title}</p>
+              <p className="text-[10px] ledger-mono">
                 {e.expert_name} · {new Date(e.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </p>
             </div>
@@ -389,10 +392,10 @@ export default function AdminOverviewClient() {
           { label: 'Master Marketing',   href: '/admin/master',                 icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>' },
         ].map((a) => (
           <Link key={a.label} href={a.href}>
-            <div className="rounded-lg p-3 text-center transition-all hover:border-gray-600 cursor-pointer"
-              style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
-              <SvgIcon html={a.icon} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--accent)' }} />
-              <p className="text-xs font-semibold mt-1" style={{ color: 'var(--text-muted)' }}>{a.label}</p>
+            <div className="rounded-lg p-3 text-center transition-all cursor-pointer ledger-panel"
+              style={{ background: 'var(--ledger-bg-input)' }}>
+              <SvgIcon html={a.icon} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--ledger-gold)' }} />
+              <p className="text-xs font-semibold mt-1" style={{ color: 'var(--ledger-ink-soft)' }}>{a.label}</p>
             </div>
           </Link>
         ))}
@@ -466,30 +469,23 @@ function CheckoutToggle() {
   const loading = enabled === null;
 
   return (
-    <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+    <div className="rounded-xl p-5 ledger-panel" style={{ marginTop: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
 
         {/* Left — label + description */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: "'Syne', sans-serif" }}>
+            <span className="ledger-h2" style={{ fontSize: 14 }}>
               Checkout / Paid Access
             </span>
             {/* Live status pill */}
             {!loading && (
-              <span style={{
-                fontFamily: "'DM Mono', monospace",
-                fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-                padding: '2px 8px', borderRadius: 100,
-                background: isOn ? 'rgba(16,185,129,0.08)' : 'rgba(232,160,32,0.10)',
-                border: `1px solid ${isOn ? 'rgba(16,185,129,0.25)' : 'rgba(232,160,32,0.30)'}`,
-                color: isOn ? '#10B981' : '#E8A020',
-              }}>
+              <span className={`ledger-tag ${isOn ? 'ledger-tag-ok' : 'ledger-tag-new'}`}>
                 {isOn ? 'Paid' : 'Free'}
               </span>
             )}
           </div>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: "'Syne', sans-serif", lineHeight: 1.5 }}>
+          <p className="ledger-mono" style={{ fontSize: 12, lineHeight: 1.5 }}>
             {loading
               ? 'Loading…'
               : isOn
@@ -510,7 +506,7 @@ function CheckoutToggle() {
             border: 'none',
             cursor: loading || saving ? 'not-allowed' : 'pointer',
             position: 'relative',
-            background: loading ? 'var(--bg-input)' : isOn ? '#10B981' : 'var(--bg-input)',
+            background: loading ? 'var(--ledger-bg-input)' : isOn ? 'var(--ledger-good)' : 'var(--ledger-bg-input)',
             transition: 'background 0.2s',
             opacity: loading ? 0.5 : 1,
           }}
@@ -539,12 +535,12 @@ function CheckoutToggle() {
 
       {/* Toast */}
       {toast && (
-        <div style={{
+        <div className="ledger-mono" style={{
           marginTop: 10, padding: '8px 12px', borderRadius: 8, fontSize: 12,
-          background: toast.ok ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-          border: `1px solid ${toast.ok ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
-          color: toast.ok ? '#10B981' : '#EF4444',
-          fontFamily: "'DM Mono', monospace", letterSpacing: '0.04em',
+          background: toast.ok ? 'var(--ledger-good-bg)' : 'var(--ledger-bad-bg)',
+          border: `1px solid ${toast.ok ? 'rgba(79,143,79,0.3)' : 'rgba(200,74,56,0.3)'}`,
+          color: toast.ok ? 'var(--ledger-good)' : 'var(--ledger-bad)',
+          letterSpacing: '0.04em',
         }}>
           {toast.msg}
         </div>

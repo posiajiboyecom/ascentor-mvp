@@ -1,10 +1,10 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 
 export const metadata: Metadata = {
   title: 'Products — Ascentor',
-  description: 'Tools, playbooks, and resources built for ambitious African professionals.',
+  description: 'Tools, playbooks, and resources built for ambitious purposeful individuals.',
 };
 
 export const dynamic = 'force-dynamic';
@@ -53,15 +53,22 @@ function formatPrice(price: number, currency: string) {
 }
 
 export default async function ProductsPage() {
-  const { data: products } = await supabase
-    .from('products')
-    .select('*')
-    .eq('published', true)
-    .order('sort_order', { ascending: true });
+  const [{ data: products }, cms] = await Promise.all([
+    supabase.from('products').select('*').eq('published', true).order('sort_order', { ascending: true }),
+    (await import('@/lib/supabase/queries/marketing')).getPublishedPage('products'),
+  ]);
 
   const items: Product[] = products || [];
   const featured = items.filter(p => p.is_featured);
   const rest     = items.filter(p => !p.is_featured);
+
+  // CMS section keys for /admin/marketing-pages/products:
+  //   hero → {eyebrow, headline, subhead}
+  // Product listing itself stays driven by the `products` DB table, not CMS.
+  const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
+  const heroEyebrow  = hero?.eyebrow  || 'Ascentor Products';
+  const heroHeadline = hero?.headline || 'Resources built for African ambition';
+  const heroSubhead  = hero?.subhead  || 'Playbooks, templates, and courses distilled from real leadership experience. Practical tools you can use today.';
 
   return (
     <>
@@ -331,15 +338,9 @@ export default async function ProductsPage() {
 
         {/* Hero */}
         <div className="prod-hero">
-          <p className="prod-hero-eyebrow">Ascentor Products</p>
-          <h1>
-            Resources built for<br />
-            <em>African ambition</em>
-          </h1>
-          <p className="prod-hero-sub">
-            Playbooks, templates, and courses distilled from real leadership experience.
-            Practical tools you can use today.
-          </p>
+          <p className="prod-hero-eyebrow">{heroEyebrow}</p>
+          <h1>{heroHeadline}</h1>
+          <p className="prod-hero-sub">{heroSubhead}</p>
           {items.length > 0 && (
             <div className="prod-hero-meta">
               <div className="prod-hero-stat">

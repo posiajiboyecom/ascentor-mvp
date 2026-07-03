@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 // app/admin/intelligence/page.tsx
 // Central Intelligence — on-demand AI analysis of all platform data
 // Claude analyzes: coach sessions, community chats, signups, logins,
@@ -259,7 +259,7 @@ export default function AdminIntelligencePage() {
         ? customQ
         : `Provide a comprehensive ${selectedReport.label} analysis. Include: key insights, trends, risks, actionable recommendations. Be specific, data-driven, and strategic. Format with clear sections.`;
 
-      const systemPrompt = `You are the AI Intelligence engine for Ascentor, an AI-powered career coaching platform for African professionals. You analyze platform data and provide strategic insights to the admin team. Be concise, specific, and actionable. Use markdown with headers (##), bullet points, and bold for emphasis. Focus on what matters most for growing the platform.`;
+      const systemPrompt = `You are the AI Intelligence engine for Ascentor, an AI-powered career coaching platform for purposeful individuals. You analyze platform data and provide strategic insights to the admin team. Be concise, specific, and actionable. Use markdown with headers (##), bullet points, and bold for emphasis. Focus on what matters most for growing the platform.`;
 
       const userPrompt = `REPORT TYPE: ${selectedReport.label}
 DATE RANGE: ${dateFrom} to ${dateTo}
