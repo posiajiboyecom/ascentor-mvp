@@ -366,11 +366,12 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
             {videoId ? (
               <iframe
                 key={videoId}
-                src={`https://www.youtube.com/embed/${videoId}`}
+                src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`}
                 title={activeLesson?.title ?? course.title}
                 className="absolute inset-0 w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
               />
             ) : (
               <div className="flex flex-col items-center gap-2 text-white/60">
