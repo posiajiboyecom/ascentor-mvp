@@ -5,7 +5,8 @@
 //
 // Tables touched:
 //   profiles, user_goals, user_commitments, expert_sessions,
-//   session_registrations, usage_tracking
+//   session_registrations, usage_tracking,
+//   channel_read_positions, community_messages  ← added for unread counts
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server';
@@ -32,20 +33,19 @@ export interface DashboardData {
   commitments: UserCommitment[];
   upcomingSession: (ExpertSession & { isRegistered: boolean }) | null;
   summitDaysAway: number;
+  /** Total unread messages across all channels the user has visited. */
+  unreadCircleCount: number;
 }
 
 const WAT_OFFSET_HOURS = 1; // Africa/Lagos is UTC+1, no DST
 
 /**
  * Returns the ISO timestamp for the most recent Monday 00:00, evaluated
- * in WAT (Africa/Lagos) rather than the server's local timezone — the
- * server (Vercel) runs UTC, which would roll the week over ~1 hour
- * early/late relative to what a Lagos-based user expects.
+ * in WAT (Africa/Lagos) rather than the server's local timezone.
  */
 function startOfWeek(): string {
   const now = new Date();
 
-  // Get the current wall-clock date/weekday as seen in Lagos.
   const watParts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Africa/Lagos',
     year: 'numeric',
@@ -65,7 +65,6 @@ function startOfWeek(): string {
   const day = weekdayMap[weekdayShort] ?? 1;
   const diff = d - day + (day === 0 ? -6 : 1); // shift to Monday
 
-  // Construct Monday 00:00 WAT, expressed as a correct UTC instant.
   const mondayUtcMs =
     Date.UTC(y, m - 1, diff, 0, 0, 0) - WAT_OFFSET_HOURS * 60 * 60 * 1000;
 
@@ -89,6 +88,7 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     commitmentsRes,
     sessionsThisWeekRes,
     upcomingSessionRes,
+    readPositionsRes,
   ] = await Promise.all([
     supabase
       .from('profiles')
@@ -128,6 +128,14 @@ export async function getDashboardData(): Promise<DashboardData | null> {
       .order('session_date', { ascending: true })
       .limit(1)
       .maybeSingle(),
+
+    // Fetch last-read timestamps for all channels this user has visited.
+    // Degrades to empty array if channel_read_positions doesn't exist yet
+    // (migration pending) — unreadCircleCount will be 0, which is safe.
+    supabase
+      .from('channel_read_positions')
+      .select('channel_slug, last_read_at')
+      .eq('user_id', user.id),
   ]);
 
   const profile = profileRes.data as Pick<
@@ -161,10 +169,30 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     upcomingSession = { ...session, isRegistered: !!registration };
   }
 
-  const goal = (goalRes.data ?? null) as UserGoal | null;
+  // ── Unread circle count ───────────────────────────────────────────────────
+  // For each channel the user has visited, count messages posted after their
+  // last_read_at. Sum across all channels for the dashboard badge.
+  // This is the same logic as community/page.tsx but summed rather than per-channel.
+  let unreadCircleCount = 0;
+  const readPositions = readPositionsRes.data ?? [];
 
-  const firstName =
-    profile?.full_name?.trim().split(/\s+/)[0] ?? 'there';
+  if (readPositions.length > 0) {
+    const countResults = await Promise.all(
+      readPositions.map(async (pos: { channel_slug: string; last_read_at: string }) => {
+        const { count } = await supabase
+          .from('community_messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('channel', pos.channel_slug)
+          .eq('deleted', false)
+          .gt('created_at', pos.last_read_at);
+        return count ?? 0;
+      })
+    );
+    unreadCircleCount = countResults.reduce((sum, n) => sum + n, 0);
+  }
+
+  const goal = (goalRes.data ?? null) as UserGoal | null;
+  const firstName = profile?.full_name?.trim().split(/\s+/)[0] ?? 'there';
 
   return {
     firstName,
@@ -180,6 +208,7 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     commitments,
     upcomingSession,
     summitDaysAway: daysUntilSummit(),
+    unreadCircleCount,
   };
 }
 

@@ -17,8 +17,10 @@ interface CoachChatProps {
   greeting: string;
   availableSessionTypes: SessionType[];
   recentSessions: RecentSessionSummary[];
-  usedToday: number;
-  dailyLimit: number;
+  /** Sessions used this calendar month. */
+  usedThisMonth: number;
+  /** Monthly session limit for this plan. -1 = unlimited (bar hidden). */
+  monthlyLimit: number;
 }
 
 export function CoachChat({
@@ -26,8 +28,8 @@ export function CoachChat({
   greeting,
   availableSessionTypes,
   recentSessions,
-  usedToday,
-  dailyLimit,
+  usedThisMonth,
+  monthlyLimit,
 }: CoachChatProps) {
   const availableTypeIds = new Set(availableSessionTypes.map((t) => t.id));
 
@@ -40,7 +42,7 @@ export function CoachChat({
   const [sending, setSending] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [usedCount, setUsedCount] = useState(usedToday);
+  const [usedCount, setUsedCount] = useState(usedThisMonth);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -135,10 +137,10 @@ export function CoachChat({
             S
           </span>
           <div className="min-w-0">
-            <p className="text-[13px] lg:text-2xl font-medium text-[#FAFAF8] lg:text-[var(--color-text-primary)] lg:font-serif">
+            <p className="text-[13px] lg:text-2xl font-medium text-[#FAFAF8] lg:text-[var(--text)] lg:font-serif">
               Sage
             </p>
-            <p className="text-[10px] lg:text-base text-[#6B7280] lg:text-[var(--color-text-secondary)]">
+            <p className="text-[10px] lg:text-base text-[#6B7280] lg:text-[var(--text-muted)]">
               Your AI leadership coach
             </p>
           </div>
@@ -152,7 +154,7 @@ export function CoachChat({
             activeId={activeTypeId}
             onSelect={startWithType}
           />
-          <UsageBar used={usedCount} limit={dailyLimit} />
+          <UsageBar used={usedCount} limit={monthlyLimit} />
         </div>
 
         {error && (
@@ -164,10 +166,10 @@ export function CoachChat({
         {/* Body */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto bg-[var(--color-background-primary)] lg:px-10"
+          className="flex-1 overflow-y-auto bg-[var(--bg-card)] lg:px-10"
         >
           {loadingHistory ? (
-            <p className="text-center text-sm text-[var(--color-text-secondary)] py-10">
+            <p className="text-center text-sm text-[var(--text-muted)] py-10">
               Loading session…
             </p>
           ) : !hasStarted ? (
@@ -175,6 +177,7 @@ export function CoachChat({
               allTypes={SESSION_TYPES}
               availableTypeIds={availableTypeIds}
               onSelectType={startWithType}
+              onPromptSelect={(prompt) => setDraft(prompt)}
               greeting={greeting}
               firstName={firstName}
             />
@@ -184,7 +187,7 @@ export function CoachChat({
                 <ChatMessage key={i} message={m} />
               ))}
               {sending && (
-                <div className="flex items-center gap-2 text-xs lg:text-sm text-[var(--color-text-secondary)] pl-9 lg:pl-[52px]">
+                <div className="flex items-center gap-2 text-xs lg:text-sm text-[var(--text-muted)] pl-9 lg:pl-[52px]">
                   <span className="flex gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#C8A96E] animate-bounce [animation-delay:-0.3s]" />
                     <span className="w-1.5 h-1.5 rounded-full bg-[#C8A96E] animate-bounce [animation-delay:-0.15s]" />
@@ -202,18 +205,30 @@ export function CoachChat({
           onSubmit={handleSubmit}
           className="
             flex items-end gap-1.5 lg:gap-3
-            border-t-[0.5px] border-[var(--color-border-tertiary)]
-            bg-[var(--color-background-primary)]
+            border-t-[0.5px] border-[var(--border-light)]
+            bg-[var(--bg-card)]
             px-2.5 py-2 lg:px-10 lg:py-6
           "
         >
-          <button
-            type="button"
-            aria-label="Attach"
-            className="text-[var(--color-text-secondary)] shrink-0"
-          >
-            <Plus className="w-[17px] h-[17px] lg:w-5 lg:h-5" />
-          </button>
+          <div className="relative group shrink-0">
+            <button
+              type="button"
+              aria-label="Attach file — coming soon"
+              title="Attach file — coming soon"
+              className="text-[var(--text-muted)] opacity-50 cursor-default"
+            >
+              <Plus className="w-[17px] h-[17px] lg:w-5 lg:h-5" />
+            </button>
+            <span className="
+              pointer-events-none absolute left-0 bottom-full mb-2 z-50
+              whitespace-nowrap rounded-lg border border-[var(--border)]
+              bg-[var(--bg-card)] px-2.5 py-1.5
+              text-[10px] lg:text-xs text-[var(--text-muted)]
+              opacity-0 group-hover:opacity-100 transition-opacity duration-150
+            ">
+              File attachments coming soon
+            </span>
+          </div>
 
           <input
             value={draft}
@@ -222,23 +237,35 @@ export function CoachChat({
             disabled={sending}
             className="
               flex-1 min-w-0 rounded-[18px] lg:rounded-full
-              border-[0.5px] border-[var(--color-border-secondary)]
-              bg-[var(--color-background-secondary)]
+              border-[0.5px] border-[var(--border)]
+              bg-[var(--bg)]
               px-[11px] py-[7px] lg:px-6 lg:py-3.5
               text-xs lg:text-base
-              text-[var(--color-text-primary)]
-              placeholder:text-[var(--color-text-secondary)]
+              text-[var(--text)]
+              placeholder:text-[var(--text-muted)]
               focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A96E]
             "
           />
 
-          <button
-            type="button"
-            aria-label="Voice"
-            className="hidden lg:block text-[var(--color-text-secondary)] shrink-0"
-          >
-            <Mic className="w-5 h-5" />
-          </button>
+          <div className="relative group hidden lg:block shrink-0">
+            <button
+              type="button"
+              aria-label="Voice input — coming soon"
+              title="Voice input — coming soon"
+              className="text-[var(--text-muted)] opacity-50 cursor-default"
+            >
+              <Mic className="w-5 h-5" />
+            </button>
+            <span className="
+              pointer-events-none absolute right-0 bottom-full mb-2 z-50
+              whitespace-nowrap rounded-lg border border-[var(--border)]
+              bg-[var(--bg-card)] px-2.5 py-1.5
+              text-xs text-[var(--text-muted)]
+              opacity-0 group-hover:opacity-100 transition-opacity duration-150
+            ">
+              Voice input coming soon
+            </span>
+          </div>
 
           <button
             type="submit"

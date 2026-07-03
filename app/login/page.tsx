@@ -199,13 +199,8 @@ export default function LoginPage() {
           <div>
             {/* Logo */}
             <Link href="/" style={{ textDecoration: 'none' }}>
-              <span style={{
-                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                fontSize: '1.375rem',
-                fontWeight: 800,
-                color: '#FAFAF8',
-                letterSpacing: '-0.03em',
-              }}>Ascentor</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: 28, width: 'auto' }} />
             </Link>
 
             {/* Headline */}
@@ -274,13 +269,8 @@ export default function LoginPage() {
             {/* Mobile logo */}
             <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Link href="/" style={{ textDecoration: 'none' }}>
-                <span style={{
-                  fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                  fontSize: '1.25rem',
-                  fontWeight: 800,
-                  color: '#0F0F0E',
-                  letterSpacing: '-0.03em',
-                }}>Ascentor</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: 24, width: 'auto' }} />
               </Link>
               <Link href="/signup" style={{ fontSize: '0.875rem', color: '#6B7280', textDecoration: 'none' }}>
                 New here? <span style={{ color: '#C8A96E', fontWeight: 600 }}>Join →</span>

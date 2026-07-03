@@ -67,53 +67,6 @@
   --color-gold:         #C8A96E;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   COMPATIBILITY ALIASES — Dashboard / Coach / Circle components
-   ──────────────────────────────────────────────────────────────────
-   These components were built referencing var(--color-background-
-   primary), var(--color-text-secondary), var(--color-border-tertiary)
-   etc. — names that don't exist anywhere above. That mismatch, not a
-   missing file, is why they rendered unstyled.
-
-   Rather than rewrite every component's class names, this block
-   aliases the missing names onto the REAL tokens already defined
-   above (--bg, --bg-card, --text, --text-muted, --border, etc.).
-   Because --bg/--text/--border already flip correctly inside
-   [data-app-theme="dark"], these aliases inherit light/dark switching
-   for free — no new theme logic, nothing duplicated.
-
-   Mapping used (only 7 names were actually referenced):
-     --color-background-primary   -> --bg-card   (white card surface;
-                                       a few page-shell uses read this
-                                       as the page bg instead, but
-                                       --bg-card and --bg are both
-                                       near-white in light mode so the
-                                       visual difference is negligible)
-     --color-background-secondary -> --bg         (page background)
-     --color-text-primary         -> --text
-     --color-text-secondary       -> --text-muted
-     --color-border-primary       -> --border-light
-     --color-border-secondary     -> --border
-     --color-border-tertiary      -> --border-light
-
-   If you later normalize those components to use --bg/--text/--border
-   directly, delete this block — it becomes dead weight, not a bug.
-   ══════════════════════════════════════════════════════════════════ */
-:root {
-  --color-background-primary:   var(--bg-card);
-  --color-background-secondary: var(--bg);
-  --color-text-primary:         var(--text);
-  --color-text-secondary:       var(--text-muted);
-  --color-border-primary:       var(--border-light);
-  --color-border-secondary:     var(--border);
-  --color-border-tertiary:      var(--border-light);
-}
-/* No separate [data-app-theme="dark"] block needed here — these
-   aliases reference var(--bg-card), var(--bg), var(--text), etc.,
-   which already flip to their dark values under [data-app-theme=
-   "dark"] further down this file. CSS resolves var() against the
-   value in effect at the element, not at definition time, so the
-   aliases follow automatically. */
 
 @layer base {
   *, *::before, *::after {
@@ -302,8 +255,33 @@
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: rgba(200,169,110,0.55) !important;
-  outline: none;
+  border-color: rgba(200,169,110,0.70) !important;
+  outline: 2px solid rgba(200,169,110,0.55);
+  outline-offset: 2px;
+}
+
+/* Interactive elements — keyboard focus ring */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid rgba(200,169,110,0.75);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+[data-app-theme="dark"] input:focus,
+[data-app-theme="dark"] textarea:focus,
+[data-app-theme="dark"] select:focus {
+  border-color: rgba(200,169,110,0.80) !important;
+  outline-color: rgba(200,169,110,0.65);
+}
+
+[data-app-theme="dark"] button:focus-visible,
+[data-app-theme="dark"] a:focus-visible,
+[data-app-theme="dark"] [role="button"]:focus-visible,
+[data-app-theme="dark"] [tabindex]:focus-visible {
+  outline-color: rgba(200,169,110,0.90);
 }
 
 @keyframes fadeUp {
@@ -333,6 +311,25 @@ select:focus {
 .animate-glow      { animation: goldGlow 3s infinite; }
 
 .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* ── The Circle theme bridge ──────────────────────────────────────────────
+   The community components use --color-background-primary / --color-text-* /
+   --color-border-* tokens which are NOT defined globally on this branch (they
+   compute to empty → transparent/inherited, which is why the surface rendered
+   light). Alias them to the theme-aware --app-* tokens, scoped to
+   .circle-surface so the fix follows the app's light/dark toggle and does not
+   touch the rest of the app's in-progress theme wiring. */
+.circle-surface {
+  --color-background-primary:   var(--app-bg);
+  --color-background-secondary: var(--app-bg-card);
+  --color-text-primary:         var(--app-text);
+  --color-text-secondary:       var(--app-text-dim);
+  --color-border-secondary:     rgba(250, 250, 248, 0.15);
+  --color-border-tertiary:      var(--app-border);
+}
+[data-app-theme="light"] .circle-surface {
+  --color-border-secondary:     rgba(0, 0, 0, 0.12);
+}
 
 .btn-primary {
   display: inline-flex;

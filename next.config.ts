@@ -47,8 +47,17 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Keep these on the server only — they use Node.js built-ins
   // or native binaries that don't exist in the browser.
+  //
+  // pdfkit + fontkit: fontkit imports applyDecoratedDescriptor from @swc/helpers,
+  // which was renamed to _apply_decorated_descriptor in newer versions. Turbopack
+  // catches this at build time (webpack didn't). Marking pdfkit as external tells
+  // Turbopack to leave it as a Node.js require() instead of bundling it, which
+  // bypasses the ESM re-export mismatch entirely. fontkit is included explicitly
+  // because it's the actual source of the broken import.
   serverExternalPackages: [
     'web-push',
+    'pdfkit',
+    'fontkit',
   ],
 
   // ── Redirects for deprecated pages ──────────────────────────────

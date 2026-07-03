@@ -29,7 +29,7 @@ export function QuickActionGrid({
       icon: Users,
       title: 'Next Session',
       sub: nextSessionLabel,
-      href: '/sessions',
+      href: '/experts',
     },
     {
       icon: LayoutPanelLeft,
@@ -55,16 +55,16 @@ export function QuickActionGrid({
           key={title}
           href={href}
           className="
-            rounded-xl border border-[var(--color-border-tertiary)]
-            bg-[var(--color-background-secondary)]
+            rounded-xl border border-[var(--border-light)]
+            bg-[var(--bg)]
             p-3
           "
         >
-          <Icon className="w-[22px] h-[22px] text-[var(--color-text-secondary)] mb-1.5" aria-hidden="true" />
-          <div className="text-xs font-medium text-[var(--color-text-primary)] mb-0.5">
+          <Icon className="w-[22px] h-[22px] text-[var(--text-muted)] mb-1.5" aria-hidden="true" />
+          <div className="text-xs font-medium text-[var(--text)] mb-0.5">
             {title}
           </div>
-          <div className="text-[11px] leading-snug text-[var(--color-text-secondary)]">
+          <div className="text-[11px] leading-snug text-[var(--text-muted)]">
             {sub}
           </div>
         </Link>

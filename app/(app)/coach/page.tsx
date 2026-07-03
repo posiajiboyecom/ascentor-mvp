@@ -1,10 +1,10 @@
 // app/(app)/coach/page.tsx
 // The AI Coach screen. Server Component — fetches session types,
-// recent sessions, and today's usage count, then hands off to the
-// client CoachChat component for the interactive conversation.
+// recent sessions, and this month's usage count, then hands off to
+// the client CoachChat component for the interactive conversation.
 
 import { redirect } from 'next/navigation';
-import { getCoachPageData, PLACEHOLDER_DAILY_LIMIT } from '@/lib/supabase/queries/coach';
+import { getCoachPageData } from '@/lib/supabase/queries/coach';
 import { CoachChat } from '@/components/coach/CoachChat';
 
 function getGreeting(): string {
@@ -26,17 +26,13 @@ export default async function CoachPage() {
 
   return (
     <div className="relative h-full">
-      <span className="hidden lg:block absolute top-6 right-6 rounded-full bg-[#0F0F0E] px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-[#FAFAF8] z-10">
-        Desktop · AI Coach
-      </span>
-
       <CoachChat
         firstName={data.firstName}
         greeting={getGreeting()}
         availableSessionTypes={data.availableSessionTypes}
         recentSessions={data.recentSessions}
-        usedToday={data.usedToday}
-        dailyLimit={PLACEHOLDER_DAILY_LIMIT}
+        usedThisMonth={data.usedThisMonth}
+        monthlyLimit={data.monthlyLimit}
       />
     </div>
   );

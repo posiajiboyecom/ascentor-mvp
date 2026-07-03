@@ -128,7 +128,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           strategy="afterInteractive"
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <ModalProvider>
           <NotificationProvider>
             <MobileInit />

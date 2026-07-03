@@ -245,16 +245,25 @@ function SessionCard({
           type="button"
           onClick={() => onLockedTap(session)}
           aria-label={`Unlock with ${tierMeta.label} plan`}
-          className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-[var(--bg)]/85 backdrop-blur-[2px]"
+          className="absolute bottom-0 inset-x-0 z-10 flex items-center justify-center rounded-b-2xl pt-6 pb-4 px-4"
+          style={{
+            background: `linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg-card) 92%, transparent) 40%)`,
+          }}
         >
           <span
             className="flex items-center gap-1.5 rounded-full border-[0.5px] px-4 py-1.5 text-xs font-bold"
             style={{ color: tierMeta.color, backgroundColor: tierMeta.bg, borderColor: tierMeta.border }}
           >
             <Lock className="w-3 h-3" />
-            {tierMeta.label} plan required
+            Unlock — {tierMeta.label} plan
           </span>
         </button>
+      )}
+
+      {locked && session.expert_bio && (
+        <p className="text-[11px] leading-relaxed mt-2 mb-8 line-clamp-2" style={{ color: 'var(--text-dim)' }}>
+          {session.expert_bio}
+        </p>
       )}
     </div>
   );

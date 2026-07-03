@@ -54,6 +54,8 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const [subLoading, setSubLoading] = useState(false);
   const [subError, setSubError] = useState('');
   const [userCount, setUserCount] = useState<number | null>(null);
+  const [events, setEvents] = useState<Array<{ slug: string; title: string; tagline: string | null; event_date: string | null; is_featured: boolean }>>([]);
+  const [eventsOpen, setEventsOpen] = useState(false);
 
   // Hero content — CMS first, hardcoded fallback second. The CMS
   // shape (set via the 'structured' field editor in
@@ -159,6 +161,11 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .then(({ count }) => { if (count) setUserCount(count); });
+
+    fetch('/api/events/list')
+      .then(r => r.json())
+      .then(d => { if (d.events) setEvents(d.events); })
+      .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubscribe = async (e: React.FormEvent) => {
@@ -350,6 +357,87 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
         .input-field:focus { border-color: #C8A96E; }
         .input-field::placeholder { color: #9CA3AF; }
 
+        .events-dropdown-wrap { position: relative; }
+        .events-dropdown-btn {
+          font-family: var(--font-body, 'Inter', sans-serif);
+          font-size: 0.9rem; font-weight: 500; color: #374151;
+          background: none; border: none; cursor: pointer;
+          display: flex; align-items: center; gap: 4px; padding: 0;
+          transition: color 0.2s;
+        }
+        .events-dropdown-btn:hover { color: #0F0F0E; }
+        .events-dropdown-btn svg { transition: transform 0.2s; }
+        .events-dropdown-btn.open svg { transform: rotate(180deg); }
+        .events-dropdown-menu {
+          position: absolute; top: calc(100% + 12px); left: 50%;
+          transform: translateX(-50%);
+          background: #FFFFFF; border: 1px solid #E8E6E1;
+          border-radius: 12px; padding: 8px; min-width: 240px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+          z-index: 60;
+        }
+        .events-dropdown-item {
+          display: block; padding: 10px 14px; border-radius: 8px;
+          text-decoration: none; transition: background 0.15s;
+        }
+        .events-dropdown-item:hover { background: #F4F3EF; }
+        .events-dropdown-item-title {
+          font-size: 0.875rem; font-weight: 600; color: #0F0F0E; display: block;
+        }
+        .events-dropdown-item-sub {
+          font-size: 0.75rem; color: #9CA3AF; margin-top: 1px; display: block;
+        }
+
+        nav .desktop-nav { display: none !important; }
+        @media(min-width: 860px) { nav .desktop-nav { display: flex !important; } }
+
+        .mobile-menu-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px; height: 36px;
+          background: none;
+          border: 1.5px solid #E8E6E1;
+          border-radius: 8px;
+          cursor: pointer;
+          color: #374151;
+          flex-direction: column;
+          gap: 4px;
+          padding: 0;
+        }
+        .mobile-menu-btn span {
+          display: block;
+          width: 16px;
+          height: 1.5px;
+          background: currentColor;
+          border-radius: 2px;
+          transition: all 0.2s;
+        }
+        @media(min-width: 860px) { .mobile-menu-btn { display: none !important; } }
+
+        .mobile-menu-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 49;
+          background: rgba(250,250,248,0.98);
+          backdrop-filter: blur(16px);
+          padding: 80px 1.5rem 2rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+        .mobile-menu-link {
+          display: block;
+          padding: 1rem 0;
+          border-bottom: 1px solid #E8E6E1;
+          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+          font-size: 1.125rem;
+          font-weight: 600;
+          color: #0F0F0E;
+          text-decoration: none;
+        }
+        .mobile-menu-link:hover { color: #C8A96E; }
+
         footer a {
           color: #6B7280;
           text-decoration: none;
@@ -365,45 +453,73 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
         background: 'rgba(250,250,248,0.95)',
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid #E8E6E1',
-      }}>
+      }} onClick={() => setEventsOpen(false)}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' }}>
-            {/* Logo */}
-            <Link href="/" style={{ textDecoration: 'none' }}>
-              <span style={{
-                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                fontSize: '1.25rem',
-                fontWeight: 800,
-                color: '#0F0F0E',
-                letterSpacing: '-0.03em',
-              }}>Ascentor</span>
+          <div style={{ display: 'flex', alignItems: 'center', height: '64px', position: 'relative' }}>
+            <Link href="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" height={26} width={98} style={{ display: 'block' }} />
             </Link>
-
-            {/* Desktop Nav */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }} className="desktop-nav">
+            <div style={{ alignItems: 'center', gap: '2rem', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }} className="desktop-nav">
               <Link href="/movement" className="nav-link">The Movement</Link>
-              <Link href="/community" className="nav-link">Community</Link>
-              <Link href="/elevation-summit" className="nav-link">The Elevation Summit</Link>
+              <Link href="/signup" className="nav-link">Join Community</Link>
+              <div className="events-dropdown-wrap" onClick={e => e.stopPropagation()}>
+                <button className={`events-dropdown-btn${eventsOpen ? ' open' : ''}`} onClick={() => setEventsOpen(o => !o)}>
+                  Events
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                {eventsOpen && (
+                  <div className="events-dropdown-menu">
+                    {events.length === 0 ? (
+                      <p style={{ padding: '10px 14px', fontSize: '0.8125rem', color: '#9CA3AF', margin: 0 }}>No upcoming events</p>
+                    ) : events.map(ev => (
+                      <Link key={ev.slug} href={`/events/${ev.slug}`} className="events-dropdown-item" onClick={() => setEventsOpen(false)}>
+                        <span className="events-dropdown-item-title">{ev.title}</span>
+                        {(ev.event_date || ev.tagline) && (
+                          <span className="events-dropdown-item-sub">{ev.event_date || ev.tagline}</span>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
               {hasBlogPosts && <Link href="/blog" className="nav-link">Resources</Link>}
               <Link href="/about" className="nav-link">About</Link>
             </div>
-
-            {/* CTAs */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <Link href="/login" style={{
-                fontFamily: 'var(--font-body, "Inter", sans-serif)',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                color: '#374151',
-                textDecoration: 'none',
-              }}>Sign in</Link>
-              <Link href="/signup" className="btn-primary" style={{ padding: '0.625rem 1.25rem', fontSize: '0.875rem' }}>
-                Join Ascentor →
-              </Link>
-            </div>
+            <button
+              className="mobile-menu-btn"
+              onClick={e => { e.stopPropagation(); setMobileMenuOpen(o => !o); }}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              style={{ marginLeft: 'auto' }}
+            >
+              <span style={{ transform: mobileMenuOpen ? 'rotate(45deg) translate(4px,4px)' : 'none' }} />
+              <span style={{ opacity: mobileMenuOpen ? 0 : 1 }} />
+              <span style={{ transform: mobileMenuOpen ? 'rotate(-45deg) translate(4px,-4px)' : 'none' }} />
+            </button>
           </div>
         </div>
       </nav>
+
+      {mobileMenuOpen && (
+        <div className="mobile-menu-overlay" onClick={() => setMobileMenuOpen(false)}>
+          <Link href="/movement" className="mobile-menu-link">The Movement</Link>
+          <Link href="/signup" className="mobile-menu-link">Join Community</Link>
+          <p style={{ padding: '0.75rem 0', borderBottom: '1px solid #E8E6E1', margin: 0, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>Events</p>
+          {events.map(ev => (
+            <Link key={ev.slug} href={`/events/${ev.slug}`} className="mobile-menu-link" style={{ paddingLeft: '1rem', fontSize: '1rem', fontWeight: 500 }}>
+              {ev.title}
+            </Link>
+          ))}
+          {hasBlogPosts && <Link href="/blog" className="mobile-menu-link">Resources</Link>}
+          <Link href="/about" className="mobile-menu-link">About</Link>
+          <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <Link href="/login" className="mobile-menu-link" style={{ border: 'none', fontSize: '0.9375rem', color: '#6B7280' }}>Sign in</Link>
+            <Link href="/signup" className="btn-primary" style={{ textAlign: 'center', padding: '0.875rem' }}>Join Ascentor →</Link>
+          </div>
+        </div>
+      )}
 
       {/* ── Hero ── */}
       <section style={{ padding: 'clamp(5rem, 10vw, 8rem) 1.5rem clamp(4rem, 8vw, 6rem)', maxWidth: '1200px', margin: '0 auto' }}>

@@ -6,11 +6,18 @@
 //   One row per session. `messages` is a flat array of
 //   { role: 'user' | 'assistant', content: string, ... } objects,
 //   stored as a single jsonb column — not one DB row per message.
+//
+// Fix applied:
+//   usedThisMonth + monthlyLimit replace the cosmetic PLACEHOLDER_DAILY_LIMIT.
+//   The real gate is monthly (enforced in /api/coach/session). The usage bar
+//   now shows the same window the server actually enforces, so users aren't
+//   misled about how many sessions they have left.
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server';
 import { effectivePlan } from '@/lib/planTier';
 import { getAvailableSessionTypes, type SessionType } from '@/lib/session-types';
+import { PLAN_LIMITS } from '@/lib/session-limits';
 import type { CoachingSession } from '@/database/database';
 
 export interface RecentSessionSummary {
@@ -26,40 +33,18 @@ export interface CoachPageData {
   planTier: string;
   availableSessionTypes: SessionType[];
   recentSessions: RecentSessionSummary[];
+  /** Sessions used this calendar month. Matches the server-side enforcement window. */
+  usedThisMonth: number;
   /**
-   * Sessions used "today". NOTE: this is a DAY-scoped count to match
-   * the prototype's "x of N today" usage bar. The real plan limits in
-   * lib/session-limits.ts are MONTH-scoped (5/30/unlimited) and don't
-   * map onto a daily "15" anywhere — this is a known placeholder per
-   * product decision. See PLACEHOLDER_DAILY_LIMIT below.
+   * Monthly session limit for this plan (-1 = unlimited).
+   * Pass directly to UsageBar; -1 hides the bar.
    */
-  usedToday: number;
+  monthlyLimit: number;
 }
 
-/**
- * Placeholder daily display limit — not enforced anywhere server-side.
- * Replace once a real daily cap is decided; until then the bar is
- * cosmetic and the actual gate is the monthly limit in session-limits.ts,
- * enforced inside the /api/coach/session route.
- */
-export const PLACEHOLDER_DAILY_LIMIT = 15;
-
-function startOfTodayWAT(): string {
+function startOfMonthUTC(): string {
   const now = new Date();
-  const watParts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Africa/Lagos',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(now);
-
-  const y = Number(watParts.find((p) => p.type === 'year')!.value);
-  const m = Number(watParts.find((p) => p.type === 'month')!.value);
-  const d = Number(watParts.find((p) => p.type === 'day')!.value);
-
-  // Africa/Lagos is UTC+1, no DST.
-  const startUtcMs = Date.UTC(y, m - 1, d, 0, 0, 0) - 1 * 60 * 60 * 1000;
-  return new Date(startUtcMs).toISOString();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 }
 
 function truncate(text: string, max: number): string {
@@ -75,7 +60,7 @@ export async function getCoachPageData(): Promise<CoachPageData | null> {
 
   if (!user) return null;
 
-  const [profileRes, sessionsRes, todayCountRes] = await Promise.all([
+  const [profileRes, sessionsRes, monthCountRes] = await Promise.all([
     supabase
       .from('profiles')
       .select('full_name, subscription_plan, subscription_status, subscription_end')
@@ -89,14 +74,18 @@ export async function getCoachPageData(): Promise<CoachPageData | null> {
       .order('created_at', { ascending: false })
       .limit(10),
 
+    // Count sessions started this calendar month — the real enforcement window.
     supabase
       .from('coaching_sessions')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
-      .gte('created_at', startOfTodayWAT()),
+      .gte('created_at', startOfMonthUTC()),
   ]);
 
   const plan = effectivePlan(profileRes.data);
+  const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+  const monthlyLimit = planLimits.coachingSessions; // -1 = unlimited
+
   const availableSessionTypes = getAvailableSessionTypes(plan);
   const firstName =
     (profileRes.data as { full_name?: string | null } | null)?.full_name
@@ -130,6 +119,7 @@ export async function getCoachPageData(): Promise<CoachPageData | null> {
     planTier: plan,
     availableSessionTypes,
     recentSessions,
-    usedToday: todayCountRes.count ?? 0,
+    usedThisMonth: monthCountRes.count ?? 0,
+    monthlyLimit,
   };
 }

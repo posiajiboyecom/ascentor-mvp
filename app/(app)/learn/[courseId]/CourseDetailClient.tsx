@@ -15,7 +15,7 @@
 // needs revisiting — it cannot be verified without real data.
 
 import Link from 'next/link';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, Play, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -196,6 +196,105 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
     const firstIncomplete = lessons.find((l) => !l.completed);
     return firstIncomplete?.id ?? lessons[lessons.length - 1]?.id ?? null;
   });
+
+  // ── Notes state ─────────────────────────────────────────────────────────
+  const [noteContent, setNoteContent] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
+  const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load note for the active lesson whenever it changes
+  useEffect(() => {
+    if (!activeLessonId) return;
+    setNoteContent('');
+    setNoteSaved(false);
+    supabase
+      .from('course_notes')
+      .select('content')
+      .eq('user_id', userId)
+      .eq('lesson_id', activeLessonId)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setNoteContent(data.content); });
+  }, [activeLessonId, supabase, userId]);
+
+  function handleNoteChange(val: string) {
+    setNoteContent(val);
+    setNoteSaved(false);
+    if (noteTimer.current) clearTimeout(noteTimer.current);
+    noteTimer.current = setTimeout(() => saveNote(val), 1200);
+  }
+
+  async function saveNote(content: string) {
+    if (!activeLessonId) return;
+    setNoteSaving(true);
+    await supabase.from('course_notes').upsert(
+      { user_id: userId, lesson_id: activeLessonId, course_id: course.id, content, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,lesson_id' }
+    );
+    setNoteSaving(false);
+    setNoteSaved(true);
+  }
+
+  // ── Discussion state ─────────────────────────────────────────────────────
+  const [posts, setPosts] = useState<any[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [postDraft, setPostDraft] = useState('');
+  const [posting, setPosting] = useState(false);
+  const [replyTo, setReplyTo] = useState<any | null>(null);
+  const [profileCache, setProfileCache] = useState<Record<string, string>>({});
+
+  async function loadDiscussion() {
+    setPostsLoading(true);
+    const { data } = await supabase
+      .from('course_discussions')
+      .select('id, content, created_at, user_id, reply_to_id')
+      .eq('course_id', course.id)
+      .order('created_at', { ascending: true });
+
+    const rows = data ?? [];
+    // Enrich with names
+    const unknownIds = [...new Set(rows.map((r: any) => r.user_id))].filter(id => !profileCache[id]);
+    if (unknownIds.length) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', unknownIds);
+      const next: Record<string, string> = { ...profileCache };
+      (profiles ?? []).forEach((p: any) => { next[p.id] = p.full_name || 'Member'; });
+      setProfileCache(next);
+    }
+    setPosts(rows);
+    setPostsLoading(false);
+  }
+
+  // Load discussion when tab opens
+  useEffect(() => {
+    if (tab === 'discussion' && posts.length === 0) loadDiscussion();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
+  async function handlePost() {
+    const text = postDraft.trim();
+    if (!text || posting) return;
+    setPosting(true);
+    const { data, error } = await supabase
+      .from('course_discussions')
+      .insert({ course_id: course.id, user_id: userId, content: text, reply_to_id: replyTo?.id ?? null })
+      .select('id, content, created_at, user_id, reply_to_id')
+      .single();
+    setPosting(false);
+    if (!error && data) {
+      setPosts(prev => [...prev, data]);
+      setProfileCache(prev => ({ ...prev, [userId]: prev[userId] ?? 'You' }));
+    }
+    setPostDraft('');
+    setReplyTo(null);
+  }
+
+  async function handleDeletePost(postId: string) {
+    await supabase.from('course_discussions').delete().eq('id', postId).eq('user_id', userId);
+    setPosts(prev => prev.filter(p => p.id !== postId && p.reply_to_id !== postId));
+  }
 
   const activeLesson = allLessons.find((l) => l.id === activeLessonId) ?? null;
   const activeIndex = allLessons.findIndex((l) => l.id === activeLessonId);
@@ -391,10 +490,156 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
             </>
           )}
           {tab === 'notes' && (
-            <p className="text-sm text-[var(--text-dim)]">Notes aren&apos;t available yet.</p>
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-[var(--text)]">
+                  {activeLesson ? `Notes for: ${activeLesson.title}` : 'My Notes'}
+                </h3>
+                <span className="text-[11px] text-[var(--text-dim)]">
+                  {noteSaving ? 'Saving…' : noteSaved ? 'Saved ✓' : ''}
+                </span>
+              </div>
+
+              {!activeLesson ? (
+                <p className="text-sm text-[var(--text-dim)]">Select a lesson to take notes.</p>
+              ) : (
+                <>
+                  <textarea
+                    value={noteContent}
+                    onChange={(e) => handleNoteChange(e.target.value)}
+                    placeholder="Type your notes here. They're saved automatically as you type."
+                    rows={10}
+                    className="w-full resize-none rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg-input)] px-4 py-3 text-sm leading-relaxed text-[var(--text)] placeholder:text-[var(--text-dim)] outline-none focus-visible:ring-2 focus-visible:ring-[#C8A96E] transition-colors"
+                  />
+                  <p className="mt-2 text-[11px] text-[var(--text-dim)]">
+                    Notes are private to you and tied to this lesson.
+                  </p>
+                </>
+              )}
+            </div>
           )}
+
           {tab === 'discussion' && (
-            <p className="text-sm text-[var(--text-dim)]">Discussion isn&apos;t available yet.</p>
+            <div>
+              <h3 className="text-sm font-bold text-[var(--text)] mb-4">Discussion</h3>
+
+              {postsLoading ? (
+                <p className="text-sm text-[var(--text-dim)]">Loading…</p>
+              ) : (
+                <>
+                  {/* Thread */}
+                  <div className="flex flex-col gap-5 mb-6">
+                    {posts.filter(p => !p.reply_to_id).length === 0 && (
+                      <p className="text-sm text-[var(--text-dim)]">No posts yet — start the conversation.</p>
+                    )}
+                    {posts.filter(p => !p.reply_to_id).map((post) => {
+                      const replies = posts.filter(r => r.reply_to_id === post.id);
+                      const isOwn = post.user_id === userId;
+                      return (
+                        <div key={post.id}>
+                          {/* Top-level post */}
+                          <div className="flex gap-3">
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#C8A96E]/20 text-[11px] font-bold text-[#A8894E]">
+                              {(profileCache[post.user_id] ?? 'M')[0].toUpperCase()}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline gap-2 mb-0.5">
+                                <span className="text-[13px] font-semibold text-[var(--text)]">
+                                  {profileCache[post.user_id] ?? 'Member'}
+                                </span>
+                                <span className="text-[11px] text-[var(--text-dim)]">
+                                  {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                              <p className="text-sm leading-relaxed text-[var(--text-muted)] whitespace-pre-wrap break-words">{post.content}</p>
+                              <div className="flex gap-3 mt-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setReplyTo(replyTo?.id === post.id ? null : post)}
+                                  className="text-[11px] font-medium text-[var(--text-dim)] hover:text-[#C8A96E]"
+                                >
+                                  Reply
+                                </button>
+                                {isOwn && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeletePost(post.id)}
+                                    className="text-[11px] font-medium text-[var(--text-dim)] hover:text-red-500"
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Replies */}
+                          {replies.length > 0 && (
+                            <div className="ml-10 mt-3 flex flex-col gap-3 border-l-[0.5px] border-[var(--border)] pl-4">
+                              {replies.map((reply) => (
+                                <div key={reply.id} className="flex gap-3">
+                                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--bg-input)] text-[10px] font-bold text-[var(--text-dim)]">
+                                    {(profileCache[reply.user_id] ?? 'M')[0].toUpperCase()}
+                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-baseline gap-2 mb-0.5">
+                                      <span className="text-[12px] font-semibold text-[var(--text)]">
+                                        {profileCache[reply.user_id] ?? 'Member'}
+                                      </span>
+                                      <span className="text-[10px] text-[var(--text-dim)]">
+                                        {new Date(reply.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                      </span>
+                                    </div>
+                                    <p className="text-[13px] leading-relaxed text-[var(--text-muted)] whitespace-pre-wrap break-words">{reply.content}</p>
+                                    {reply.user_id === userId && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeletePost(reply.id)}
+                                        className="text-[11px] font-medium text-[var(--text-dim)] hover:text-red-500 mt-1"
+                                      >
+                                        Delete
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Compose */}
+                  <div className="border-t-[0.5px] border-[var(--border)] pt-4">
+                    {replyTo && (
+                      <div className="flex items-center justify-between mb-2 px-3 py-1.5 rounded-lg bg-[var(--bg-input)] text-[12px] text-[var(--text-dim)]">
+                        <span>Replying to <strong className="text-[var(--text)]">{profileCache[replyTo.user_id] ?? 'Member'}</strong></span>
+                        <button type="button" onClick={() => setReplyTo(null)} className="text-[var(--text-dim)] hover:text-[var(--text)]">✕</button>
+                      </div>
+                    )}
+                    <textarea
+                      value={postDraft}
+                      onChange={(e) => setPostDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePost(); }}
+                      placeholder={replyTo ? 'Write a reply…' : 'Ask a question or share a thought…'}
+                      rows={3}
+                      className="w-full resize-none rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg-input)] px-4 py-3 text-sm leading-relaxed text-[var(--text)] placeholder:text-[var(--text-dim)] outline-none focus-visible:ring-2 focus-visible:ring-[#C8A96E]"
+                    />
+                    <div className="flex justify-end mt-2">
+                      <button
+                        type="button"
+                        onClick={handlePost}
+                        disabled={!postDraft.trim() || posting}
+                        className="rounded-full bg-[#C8A96E] px-5 py-2 text-sm font-semibold text-[#0F0F0E] disabled:opacity-40"
+                      >
+                        {posting ? 'Posting…' : replyTo ? 'Reply' : 'Post'}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
       </main>
@@ -403,13 +648,21 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
       <aside className="lg:w-[340px] lg:shrink-0 border-t-[0.5px] lg:border-t-0 lg:border-l-[0.5px] border-[var(--border)] bg-[var(--bg-card)] flex flex-col lg:overflow-hidden">
         <div className="px-4 lg:px-5 py-4 lg:py-5 border-b-[0.5px] border-[var(--border)]">
           <p className="text-sm font-bold text-[var(--text)] mb-2">Course content</p>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-[5px] rounded-full bg-[var(--bg-input)] overflow-hidden">
-              <div className="h-full rounded-full bg-[#C8A96E]" style={{ width: `${overallProgress}%` }} />
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-[var(--text-dim)]">
+                {completedCount}/{allLessons.length} lessons
+              </span>
+              <span className="text-[11px] font-semibold" style={{ color: '#A8894E' }}>
+                {Math.round(overallProgress)}%
+              </span>
             </div>
-            <span className="shrink-0 text-[11px] font-semibold text-[var(--text-dim)]">
-              {completedCount}/{allLessons.length}
-            </span>
+            <div className="h-2 rounded-full bg-[var(--bg-input)] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#C8A96E] transition-all duration-500"
+                style={{ width: `${overallProgress}%` }}
+              />
+            </div>
           </div>
         </div>
 

@@ -6,6 +6,7 @@
 import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useAppTheme } from '@/components/AppThemeProvider';
 
 const industries = [
   'Technology', 'Finance & Banking', 'Consulting', 'Healthcare',
@@ -21,7 +22,7 @@ const timeOptions = [
   { value: '60min', label: '1 hour/day' },
 ];
 
-type Section = 'profile' | 'security' | 'plan' | 'notifications' | 'danger';
+type Section = 'profile' | 'security' | 'plan' | 'notifications' | 'appearance' | 'danger';
 
 export default function AccountClient({ profile, email, authProvider, userId, notifications }: {
   profile: any;
@@ -33,6 +34,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
   const supabase = createClient();
   const router = useRouter();
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const { theme, toggle: toggleTheme, isDark } = useAppTheme();
 
   const [section, setSection] = useState<Section>('profile');
 
@@ -53,6 +55,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
 
   // ═══ SECURITY STATE ═══
   const [passwords, setPasswords] = useState({ current: '', newPassword: '', confirm: '' });
@@ -89,8 +92,9 @@ export default function AccountClient({ profile, email, authProvider, userId, no
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { alert('Please select an image.'); return; }
-    if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB.'); return; }
+    setAvatarError('');
+    if (!file.type.startsWith('image/')) { setAvatarError('Please select an image file (JPG, PNG, or WebP).'); return; }
+    if (file.size > 2 * 1024 * 1024) { setAvatarError('Image must be under 2MB. Please choose a smaller file.'); return; }
 
     setAvatarUploading(true);
     const ext = file.name.split('.').pop();
@@ -102,7 +106,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 
     if (uploadError) {
       console.error('Upload error:', uploadError);
-      alert('Upload failed: ' + uploadError.message);
+      setAvatarError('Upload failed: ' + uploadError.message);
       setAvatarUploading(false);
       return;
     }
@@ -112,6 +116,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
 
     await supabase.from('profiles').update({ avatar_url: urlWithCache }).eq('id', userId);
     setForm({ ...form, avatar_url: urlWithCache });
+    setAvatarError('');
     setAvatarUploading(false);
     e.target.value = '';
   };
@@ -261,6 +266,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
     { key: 'security',      label: 'Security' },
     { key: 'plan',          label: 'Plan' },
     { key: 'notifications', label: 'Alerts' },
+    { key: 'appearance',    label: 'Display' },
     { key: 'danger',        label: 'Account' },
   ];
 
@@ -286,6 +292,12 @@ export default function AccountClient({ profile, email, authProvider, userId, no
             <span className="text-white text-xs">{avatarUploading ? '...' : 'Edit'}</span>
           </button>
           <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+          {avatarError && (
+            <p className="absolute left-0 top-full mt-1.5 text-[11px] leading-snug whitespace-nowrap z-20"
+              style={{ color: 'var(--error)' }}>
+              {avatarError}
+            </p>
+          )}
         </div>
         <div>
           <h1 className="text-xl font-semibold" style={{
@@ -752,7 +764,52 @@ export default function AccountClient({ profile, email, authProvider, userId, no
       )}
 
       {/* ═══════════════════════════════════════════ */}
-      {/* ═══ 5. DANGER ZONE / ACCOUNT ═══ */}
+      {/* ═══ 5. APPEARANCE ═══ */}
+      {/* ═══════════════════════════════════════════ */}
+      {section === 'appearance' && (
+        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Display</h2>
+          <p className="text-xs mb-5" style={{ color: 'var(--text-dim)' }}>Choose how Ascentor looks on this device.</p>
+
+          <div className="flex flex-col gap-3">
+            {/* Dark / Light toggle */}
+            <div className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+              <div className="flex-1 pr-4">
+                <p className="text-sm" style={{ color: 'var(--text)' }}>Dark mode</p>
+                <p className="text-[11px]" style={{ color: 'var(--text-dim)' }}>Easier on the eyes in low-light environments</p>
+              </div>
+              <button
+                onClick={toggleTheme}
+                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                className="w-10 h-5 rounded-full transition-all shrink-0 relative"
+                style={{
+                  background: isDark ? 'var(--accent)' : 'var(--bg-input)',
+                  border: `1px solid ${isDark ? 'var(--accent)' : 'var(--border)'}`,
+                }}
+              >
+                <div
+                  className="w-3.5 h-3.5 rounded-full transition-all absolute top-0.5"
+                  style={{ background: isDark ? '#000' : 'var(--text-dim)', left: isDark ? '20px' : '3px' }}
+                />
+              </button>
+            </div>
+
+            {/* Theme indicator */}
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[11px]" style={{ color: 'var(--text-dim)' }}>
+                Currently using: <strong style={{ color: 'var(--text)' }}>{isDark ? 'Dark' : 'Light'} mode</strong>
+              </span>
+              <span
+                className="inline-block w-2 h-2 rounded-full"
+                style={{ background: isDark ? '#C8A96E' : '#374151' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════ */}
+      {/* ═══ 6. DANGER ZONE / ACCOUNT ═══ */}
       {/* ═══════════════════════════════════════════ */}
       {section === 'danger' && (
         <div className="flex flex-col gap-4">

@@ -1,15 +1,18 @@
-﻿// lib/session-types.ts
+// lib/session-types.ts
 // ─────────────────────────────────────────────────────────────
 // All Sage coaching session types — single source of truth.
 // Imported by:
 //   - app/(app)/coach/page.tsx          (dropdown UI)
 //   - app/api/coach/session/route.ts    (prompt selection)
 //
-// tier: which plans unlock this type
-//   'all'     — available to everyone including free (challenge_navigation, weekly_reflection)
-//   'paid'    — explorer (builder ID), builder (pro ID), climber (elite ID) and legacy plans
-//   'builder' — builder (pro ID), climber (elite ID), standard, pro legacy
-//   'climber' — climber (elite ID) only
+// tier: which plans unlock this session type
+//   'all'     — free and all paid plans
+//   'paid'    — any paid plan (explorer, builder, climber)
+//   'builder' — builder and climber only
+//   'climber' — climber only
+//
+// Canonical plan IDs: free | explorer | builder | climber
+// Legacy aliases handled in the plan sets below.
 // ─────────────────────────────────────────────────────────────
 
 export interface SessionType {
@@ -146,10 +149,35 @@ export const SESSION_TYPE_MAP: Record<string, SessionType> = Object.fromEntries(
   SESSION_TYPES.map((t) => [t.id, t])
 );
 
-/** Plans that count as "paid" for tier gating */
-const PAID_PLANS    = new Set(['explorer', 'builder', 'climber', 'standard', 'pro', 'trialing']);
-const BUILDER_PLANS = new Set(['builder', 'climber', 'standard', 'pro']);
-const CLIMBER_PLANS = new Set(['climber']);
+// ── Plan sets for tier gating ─────────────────────────────────────────────────
+// Include both canonical IDs and all legacy aliases so that any value
+// stored in profiles.subscription_plan is handled correctly.
+
+/** Any paid plan — canonical + legacy */
+const PAID_PLANS = new Set([
+  // canonical
+  'explorer', 'builder', 'climber',
+  // legacy
+  'pro', 'elite', 'standard', 'tester', 'basic', 'premium', 'pro_legacy',
+  // edge case: trialing users with a plan get paid access
+  'trialing',
+]);
+
+/** Builder-tier and above — canonical + legacy */
+const BUILDER_PLANS = new Set([
+  // canonical
+  'builder', 'climber',
+  // legacy: old "Builder" DB ID was 'pro', old "Climber" DB ID was 'elite'
+  'pro', 'elite', 'standard', 'pro_legacy',
+]);
+
+/** Climber-tier only — canonical + legacy */
+const CLIMBER_PLANS = new Set([
+  // canonical
+  'climber',
+  // legacy: old Climber DB ID was 'elite'
+  'elite', 'pro_legacy',
+]);
 
 /**
  * Returns the session types available for a given subscription plan.

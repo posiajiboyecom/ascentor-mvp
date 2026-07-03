@@ -3,17 +3,18 @@
 // ================================================================
 // Returns current plan, usage counts, and limit flags.
 // Plan IDs: explorer | builder | climber (canonical — no legacy)
+//
+// Fixes applied:
+//   - PLAN_LIMITS now imported from lib/session-limits.ts (single
+//     source of truth) instead of duplicated inline
+//   - communityPosts count now reads from community_messages
+//     (the live table) — not cohort_posts (old/dead schema)
 // ================================================================
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-
-const PLAN_LIMITS: Record<string, { coachSessions: number; communityPosts: number }> = {
-  free:     { coachSessions: 5,  communityPosts: 3  },
-  explorer: { coachSessions: 30, communityPosts: -1 },
-  builder:  { coachSessions: -1, communityPosts: -1 },
-  climber:  { coachSessions: -1, communityPosts: -1 },
-}
+import { PLAN_LIMITS, getEffectivePlan } from '@/lib/session-limits'
+import { effectivePlan } from '@/lib/planTier'
 
 const PLAN_RANK: Record<string, number> = {
   free:     0,
@@ -37,7 +38,13 @@ export async function GET() {
       .eq('id', user.id)
       .single()
 
-    const plan   = profile?.subscription_plan || 'free'
+    // Use planTier.effectivePlan for display/rank (normalises legacy IDs),
+    // and session-limits.getEffectivePlan for limit lookup (same logic,
+    // but returns the raw plan string so PLAN_LIMITS can alias it).
+    const canonicalPlan = effectivePlan(profile)        // 'free' | 'explorer' | 'builder' | 'climber'
+    const limitsKey     = getEffectivePlan(profile)     // may be a legacy alias — PLAN_LIMITS handles it
+    const limits        = PLAN_LIMITS[limitsKey] ?? PLAN_LIMITS.free
+
     const status = profile?.subscription_status || 'free'
 
     const isActive =
@@ -47,27 +54,33 @@ export async function GET() {
         profile?.subscription_end &&
         new Date(profile.subscription_end) > new Date())
 
-    const effectivePlan = isActive ? plan : 'free'
-
-    // Limits default to free if plan not found (handles any unmigrated legacy rows)
-    const limits = PLAN_LIMITS[effectivePlan] || PLAN_LIMITS.free
-
-    // Monthly usage counts
+    // ── Monthly usage counts ──────────────────────────────────────────────
     const startOfMonth = new Date()
     startOfMonth.setDate(1)
     startOfMonth.setHours(0, 0, 0, 0)
 
+    // Today boundary for communityPosts (per-day limit)
+    const startOfDay = new Date()
+    startOfDay.setHours(0, 0, 0, 0)
+
     const [coachRes, postRes] = await Promise.all([
+      // Coach sessions: count rows in coaching_sessions this month
       supabase
         .from('coaching_sessions')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .gte('created_at', startOfMonth.toISOString()),
+
+      // Community posts: count non-checkin messages in community_messages today.
+      // community_messages replaced the old cohort_posts table entirely.
+      // is_checkin rows are ritual check-ins and don't count against the post limit.
       supabase
-        .from('cohort_posts')
+        .from('community_messages')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .gte('created_at', startOfMonth.toISOString()),
+        .eq('deleted', false)
+        .eq('is_checkin', false)
+        .gte('created_at', startOfDay.toISOString()),
     ])
 
     const usage = {
@@ -75,30 +88,37 @@ export async function GET() {
       communityPosts: postRes.count   || 0,
     }
 
+    // Build a display-friendly limits shape that mirrors the old inline
+    // format so existing callers of this endpoint aren't broken.
+    const displayLimits = {
+      coachSessions:  limits.coachingSessions,
+      communityPosts: limits.communityPosts,
+    }
+
     const remaining = {
-      coachSessions: limits.coachSessions === -1
+      coachSessions: displayLimits.coachSessions === -1
         ? null
-        : Math.max(0, limits.coachSessions - usage.coachSessions),
+        : Math.max(0, displayLimits.coachSessions - usage.coachSessions),
     }
 
     return NextResponse.json({
-      plan:              effectivePlan,
-      rawPlan:           plan,
+      plan:              canonicalPlan,
+      rawPlan:           profile?.subscription_plan || 'free',
       status,
       isActive,
-      planRank:          PLAN_RANK[effectivePlan] || 0,
+      planRank:          PLAN_RANK[canonicalPlan] || 0,
       subscriptionEnd:   profile?.subscription_end,
       subscriptionStart: profile?.subscription_start,
       paymentMethod:     profile?.payment_method,
-      limits,
+      limits:            displayLimits,
       usage,
       remaining,
       // Convenience flags
-      canUseCoach:     limits.coachSessions   === -1 || usage.coachSessions   < limits.coachSessions,
-      canPost:         limits.communityPosts  === -1 || usage.communityPosts  < limits.communityPosts,
-      isExplorerPlus:  (PLAN_RANK[effectivePlan] || 0) >= 1,
-      isBuilderPlus:   (PLAN_RANK[effectivePlan] || 0) >= 2,
-      isClimber:       (PLAN_RANK[effectivePlan] || 0) >= 3,
+      canUseCoach:    displayLimits.coachSessions   === -1 || usage.coachSessions   < displayLimits.coachSessions,
+      canPost:        displayLimits.communityPosts  === -1 || usage.communityPosts  < displayLimits.communityPosts,
+      isExplorerPlus: (PLAN_RANK[canonicalPlan] || 0) >= 1,
+      isBuilderPlus:  (PLAN_RANK[canonicalPlan] || 0) >= 2,
+      isClimber:      (PLAN_RANK[canonicalPlan] || 0) >= 3,
     })
 
   } catch (err: any) {

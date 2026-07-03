@@ -142,32 +142,52 @@ function CourseCard({ course, userPlan, onLockedTap }: {
           <DiffDots difficulty={course.difficulty} />
         </div>
 
-        <div className="h-1 rounded-full bg-[var(--bg-input)] overflow-hidden">
+        <div className="h-2 rounded-full bg-[var(--bg-input)] overflow-hidden">
           <div
-            className="h-full rounded-full"
+            className="h-full rounded-full transition-all duration-500"
             style={{
               width: `${Math.min(100, Math.max(0, course.progress))}%`,
               backgroundColor: isComplete ? '#16A34A' : '#C8A96E',
             }}
           />
         </div>
+        {course.progress > 0 && !isComplete && (
+          <p className="text-[10px] font-medium mt-1.5 lg:mt-2" style={{ color: '#A8894E' }}>
+            {course.progress}% complete
+          </p>
+        )}
+        {isComplete && (
+          <p className="text-[10px] font-medium mt-1.5 lg:mt-2" style={{ color: '#16A34A' }}>
+            Course complete
+          </p>
+        )}
       </div>
 
       {locked && (
-        <button
-          type="button"
-          onClick={() => onLockedTap(course)}
-          aria-label={`Unlock with ${tierMeta.label} plan`}
-          className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-[var(--bg)]/85 backdrop-blur-[2px]"
-        >
-          <span
-            className="flex items-center gap-1.5 rounded-full border-[0.5px] px-3.5 py-1.5 text-[11.5px] font-bold"
-            style={{ color: tierMeta.color, backgroundColor: tierMeta.bg, borderColor: tierMeta.border }}
+        <>
+          {course.description && (
+            <p className="text-[11px] leading-relaxed mt-2 mb-7 line-clamp-2" style={{ color: 'var(--text-dim)' }}>
+              {course.description}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => onLockedTap(course)}
+            aria-label={`Unlock with ${tierMeta.label} plan`}
+            className="absolute bottom-0 inset-x-0 z-10 flex items-center justify-center rounded-b-2xl pt-6 pb-4 px-4"
+            style={{
+              background: `linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg-card) 92%, transparent) 40%)`,
+            }}
           >
-            <Lock className="w-3 h-3" />
-            {tierMeta.label} plan required
-          </span>
-        </button>
+            <span
+              className="flex items-center gap-1.5 rounded-full border-[0.5px] px-3.5 py-1.5 text-[11.5px] font-bold"
+              style={{ color: tierMeta.color, backgroundColor: tierMeta.bg, borderColor: tierMeta.border }}
+            >
+              <Lock className="w-3 h-3" />
+              Unlock — {tierMeta.label} plan
+            </span>
+          </button>
+        </>
       )}
     </div>
   );
@@ -273,8 +293,8 @@ function ContinueHero({ course }: { course: Course }) {
         <p className="text-xs lg:text-[13px] text-[var(--text-dim)] mb-2 lg:mb-3">
           {course.progress}% complete · {lessonCountLabel(course)}
         </p>
-        <div className="hidden lg:block h-[5px] w-[280px] rounded-full bg-[#C8A96E]/20 overflow-hidden">
-          <div className="h-full rounded-full bg-[#C8A96E]" style={{ width: `${course.progress}%` }} />
+        <div className="hidden lg:block h-2 w-[280px] rounded-full bg-[#C8A96E]/20 overflow-hidden">
+          <div className="h-full rounded-full bg-[#C8A96E] transition-all duration-500" style={{ width: `${course.progress}%` }} />
         </div>
       </div>
       <span className="hidden lg:inline-block shrink-0 rounded-xl bg-[#C8A96E] px-6 py-2.5 text-[13.5px] font-bold text-[#0F0F0E]">

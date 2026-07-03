@@ -193,13 +193,8 @@ export default function OnboardingPage() {
     <div style={styles.page}>
       {/* Logo */}
       <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-        <span style={{
-          fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-          fontSize: '1.375rem',
-          fontWeight: 800,
-          color: '#0F0F0E',
-          letterSpacing: '-0.03em',
-        }}>Ascentor</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: 28, width: 'auto' }} />
       </div>
 
       <div style={styles.card}>

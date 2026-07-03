@@ -178,7 +178,7 @@ export default function WaitlistPage() {
     .right::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(232,160,32,.06) 0%,transparent 70%);top:-100px;right:-100px;pointer-events:none}
     .right::after{content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(232,160,32,.04) 0%,transparent 70%);bottom:-50px;left:-50px;pointer-events:none}
     .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
-    .logo-mark{width:36px;height:36px;background:#E8A020;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:#0C0B08}
+    .logo-mark{width:36px;height:36px;background:#C8A96E;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:#0F0F0E}
     .logo-text{font-size:18px;font-weight:700;color:#F5F0E8;letter-spacing:-.01em}
     .left-mid{flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px 0}
     .eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:32px}

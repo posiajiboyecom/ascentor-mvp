@@ -3,31 +3,16 @@
 // components/nav/MobileTabBar.tsx
 // Bottom tab bar for < lg viewports. Matches the prototype's .bn/.bi
 // structure: dark chrome, 5 icons, gold active state.
+//
+// FIX: Icons now sourced from shared NAV_ITEMS constant defined in
+// @/lib/nav-items — same array consumed by DesktopRail, guaranteeing
+// identical icons at every breakpoint. Previously used MessageCircle +
+// CalendarDays while DesktopRail used MessageSquare + User for the
+// same routes.
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  Home,
-  MessageCircle,
-  Users,
-  CalendarDays,
-  BookOpen,
-  type LucideIcon,
-} from 'lucide-react';
-
-interface TabItem {
-  icon: LucideIcon;
-  label: string;
-  href: string;
-}
-
-const TABS: TabItem[] = [
-  { icon: Home, label: 'Home', href: '/dashboard' },
-  { icon: MessageCircle, label: 'Coach', href: '/coach' },
-  { icon: Users, label: 'Circle', href: '/community' },
-  { icon: CalendarDays, label: 'Sessions', href: '/experts' },
-  { icon: BookOpen, label: 'Resources', href: '/learn' },
-];
+import { NAV_ITEMS } from '@/lib/nav-items';
 
 export function MobileTabBar() {
   const pathname = usePathname();
@@ -42,7 +27,7 @@ export function MobileTabBar() {
       "
       style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}
     >
-      {TABS.map(({ icon: Icon, label, href }) => {
+      {NAV_ITEMS.map(({ icon: Icon, label, href }) => {
         const active = pathname === href || pathname?.startsWith(href + '/');
         return (
           <Link

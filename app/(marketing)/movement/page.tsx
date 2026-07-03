@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import '@/styles/marketing.css';
 
 export const metadata: Metadata = {
   title: 'The Movement',
@@ -96,109 +97,31 @@ export default async function MovementPage() {
   const defaultDimensions = dimensions; // use the const already defined above
   return (
     <>
-      <style>{`
-        body { background: #FAFAF8 !important; color: #0F0F0E !important; }
-
-        .movement-nav {
-          position: sticky; top: 0; z-index: 50;
-          background: rgba(250,250,248,0.95);
-          backdrop-filter: blur(12px);
-          border-bottom: 1px solid #E8E6E1;
-        }
-        .movement-nav-inner {
-          max-width: 1200px; margin: 0 auto; padding: 0 1.5rem;
-          display: flex; align-items: center; justify-content: space-between;
-          height: 64px;
-        }
-
-        .eyebrow {
-          font-family: var(--font-body, 'Inter', sans-serif);
-          font-size: 0.75rem; font-weight: 600;
-          letter-spacing: 0.12em; text-transform: uppercase;
-          color: #C8A96E;
-        }
-
-        .page-headline {
-          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-          font-size: clamp(2.75rem, 6vw, 5rem);
-          font-weight: 800; line-height: 1.05; letter-spacing: -0.03em;
-          color: #0F0F0E;
-        }
-
-        .section-headline {
-          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-          font-size: clamp(1.875rem, 4vw, 3rem);
-          font-weight: 700; line-height: 1.15; letter-spacing: -0.02em;
-          color: #0F0F0E;
-        }
-
-        .gold-bar {
-          width: 2.5rem; height: 3px; background: #C8A96E;
-          border-radius: 2px; margin-bottom: 1rem;
-        }
-
-        .dimension-card {
-          background: #FFFFFF; border: 1px solid #E8E6E1;
-          border-radius: 1rem; padding: 2rem;
-          transition: box-shadow 0.2s, transform 0.2s;
-        }
-        .dimension-card:hover {
-          box-shadow: 0 8px 32px rgba(0,0,0,0.07);
-          transform: translateY(-2px);
-        }
-        .dimension-card .contrast {
-          font-family: var(--font-accent, 'Playfair Display', serif);
-          font-style: italic; font-size: 0.875rem;
-          color: #C8A96E; margin-top: 1rem; line-height: 1.6;
-        }
-
-        .conviction-block {
-          background: #0F0F0E; border-radius: 1.25rem;
-          padding: clamp(2.5rem, 5vw, 4rem); margin: 0;
-        }
-
-        .founder-section {
-          background: #F4F3EF; border-radius: 1.25rem;
-          padding: clamp(2.5rem, 5vw, 4rem);
-        }
-
-        .stat-block { text-align: center; }
-        .stat-number {
-          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-          font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800;
-          color: #C8A96E; line-height: 1; display: block;
-          margin-bottom: 0.5rem;
-        }
-        .stat-label {
-          font-size: 0.875rem; color: #6B7280; font-weight: 500;
-          text-transform: uppercase; letter-spacing: 0.06em;
-        }
-      `}</style>
 
       {/* Nav */}
-      <nav className="movement-nav">
-        <div className="movement-nav-inner">
-          <Link href="/" style={{
-            fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-            fontSize: '1.25rem', fontWeight: 800, color: '#0F0F0E',
-            letterSpacing: '-0.03em', textDecoration: 'none',
-          }}>Ascentor</Link>
+      <nav className="mkt-nav mkt-nav-light">
+        <div className="mkt-nav-inner">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <Link href="/"><img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" height={26} style={{ display: 'block' }} /></Link>
 
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-            <Link href="/elevation-summit" style={{ fontSize: '0.875rem', color: '#374151', textDecoration: 'none', fontWeight: 500 }}>
+            <Link href="/elevation-summit" style={{ fontSize: '0.875rem', color: '#374151', textDecoration: 'none', fontWeight: 500, whiteSpace: 'nowrap' }}
+              className="mkt-nav-summit-link">
               The Elevation Summit
             </Link>
-            <Link href="/signup" className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem' }}>
+            <Link href="/signup" className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
               Join Ascentor →
             </Link>
           </div>
         </div>
       </nav>
 
+      <style>{`.mkt-nav-summit-link { display: none; } @media(min-width: 640px){ .mkt-nav-summit-link { display: inline; } }`}</style>
+
       {/* Hero */}
       <section style={{ padding: 'clamp(5rem, 10vw, 8rem) 1.5rem clamp(3rem, 6vw, 5rem)', maxWidth: '1200px', margin: '0 auto' }}>
-        <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>The Movement</p>
-        <h1 className="page-headline" style={{ marginBottom: '1.5rem', maxWidth: '780px' }}
+        <p className="mkt-eyebrow" style={{ marginBottom: '1.5rem' }}>The Movement</p>
+        <h1 className="mkt-page-headline" style={{ marginBottom: '1.5rem', maxWidth: '780px' }}
           dangerouslySetInnerHTML={{ __html: h(heroHeadline) }} />
         <p style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: '#374151', lineHeight: 1.75, maxWidth: '620px' }}>
           {heroSubhead}
@@ -209,8 +132,8 @@ export default async function MovementPage() {
       <section style={{ background: '#0F0F0E', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ maxWidth: '760px' }}>
-            <p className="eyebrow" style={{ color: '#C8A96E', marginBottom: '1.5rem' }}>Part I</p>
-            <h2 className="section-headline" style={{ color: '#FAFAF8', marginBottom: '2rem' }}>{crisisHeadline}</h2>
+            <p className="mkt-eyebrow" style={{ color: '#C8A96E', marginBottom: '1.5rem' }}>Part I</p>
+            <h2 className="mkt-section-headline" style={{ color: '#FAFAF8', marginBottom: '2rem' }}>{crisisHeadline}</h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {crisisParagraphs.map((para, i) => (
@@ -234,8 +157,8 @@ export default async function MovementPage() {
       {/* The Conviction */}
       <section style={{ padding: 'clamp(4rem, 8vw, 7rem) 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ maxWidth: '760px' }}>
-          <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>Part II</p>
-          <h2 className="section-headline" style={{ marginBottom: '2rem' }}>The Conviction</h2>
+          <p className="mkt-eyebrow" style={{ marginBottom: '1.5rem' }}>Part II</p>
+          <h2 className="mkt-section-headline" style={{ marginBottom: '2rem' }}>The Conviction</h2>
 
           <div className="conviction-block" style={{ marginBottom: '2.5rem' }}>
             <p style={{
@@ -272,8 +195,8 @@ export default async function MovementPage() {
       <section id="total-person" style={{ background: '#F4F3EF', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ marginBottom: '3.5rem' }}>
-            <p className="eyebrow" style={{ marginBottom: '1rem' }}>The Mission</p>
-            <h2 className="section-headline" style={{ maxWidth: '640px', marginBottom: '1rem' }}>
+            <p className="mkt-eyebrow" style={{ marginBottom: '1rem' }}>The Mission</p>
+            <h2 className="mkt-section-headline" style={{ maxWidth: '640px', marginBottom: '1rem' }}>
               Build the total person.
             </h2>
             <p style={{ color: '#6B7280', fontSize: '1.0625rem', lineHeight: 1.75, maxWidth: '620px' }}>
@@ -283,8 +206,8 @@ export default async function MovementPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
             {(dimItems.length > 0 ? dimItems : defaultDimensions).map((dim) => (
-              <div key={dim.name} className="dimension-card">
-                <div className="gold-bar" />
+              <div key={dim.name} className="mkt-dimension-card">
+                <div className="mkt-gold-bar" />
                 <h3 style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontSize: '1.125rem', fontWeight: 700, color: '#0F0F0E', marginBottom: '0.25rem' }}>{dim.name}</h3>
                 <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#9CA3AF', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{dim.subtitle}</p>
                 <p style={{ fontSize: '0.9375rem', color: '#374151', lineHeight: 1.7 }}>{dim.description}</p>
@@ -299,8 +222,8 @@ export default async function MovementPage() {
       <section style={{ padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ maxWidth: '760px', marginBottom: '4rem' }}>
-            <p className="eyebrow" style={{ marginBottom: '1rem' }}>The Vision</p>
-            <h2 className="section-headline" style={{ marginBottom: '1.5rem' }}>{visionHeadline === 'The Vision' ? '2050.' : visionHeadline}</h2>
+            <p className="mkt-eyebrow" style={{ marginBottom: '1rem' }}>The Vision</p>
+            <h2 className="mkt-section-headline" style={{ marginBottom: '1.5rem' }}>{visionHeadline === 'The Vision' ? '2050.' : visionHeadline}</h2>
             <p style={{ fontSize: '1.0625rem', color: '#374151', lineHeight: 1.75, marginBottom: '1.25rem' }}>
               {visionBody}
             </p>
@@ -316,7 +239,7 @@ export default async function MovementPage() {
               { title: 'Nation Builders', sub: 'Leaving their nations measurably better than they found them' },
             ].map((item) => (
               <div key={item.title} style={{ padding: '1.5rem', background: '#FFFFFF', border: '1px solid #E8E6E1', borderRadius: '0.75rem' }}>
-                <div className="gold-bar" style={{ marginBottom: '0.75rem' }} />
+                <div className="mkt-gold-bar" style={{ marginBottom: '0.75rem' }} />
                 <h3 style={{
                   fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
                   fontSize: '1rem', fontWeight: 700, color: '#0F0F0E', marginBottom: '0.5rem',
@@ -331,7 +254,7 @@ export default async function MovementPage() {
       {/* The Founder */}
       <section style={{ padding: '0 1.5rem clamp(4rem, 8vw, 7rem)', maxWidth: '1200px', margin: '0 auto' }}>
         <div className="founder-section">
-          <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>The Founder's Mandate</p>
+          <p className="mkt-eyebrow" style={{ marginBottom: '1.5rem' }}>The Founder's Mandate</p>
           <div style={{ maxWidth: '680px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {[
@@ -369,7 +292,7 @@ export default async function MovementPage() {
       {/* The Call / CTA */}
       <section style={{ background: '#0F0F0E', padding: 'clamp(5rem, 10vw, 8rem) 1.5rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '680px', margin: '0 auto' }}>
-          <p className="eyebrow" style={{ color: '#C8A96E', marginBottom: '1.5rem' }}>The Call</p>
+          <p className="mkt-eyebrow" style={{ color: '#C8A96E', marginBottom: '1.5rem' }}>The Call</p>
           <h2 style={{
             fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
             fontSize: 'clamp(2rem, 4vw, 3.25rem)',

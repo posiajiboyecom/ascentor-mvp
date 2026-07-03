@@ -4,31 +4,17 @@
 // The "Server" three-pane desktop shell's left rail. Visible at >= lg.
 // Matches: logo lockup, 5 nav items (active = gold text + left bar),
 // Elevation Summit mini-card pinned above the footer, profile footer.
+//
+// FIX: Icons now sourced from shared NAV_ITEMS constant defined in
+// @/lib/nav-items — same array consumed by MobileTabBar, guaranteeing
+// identical icons at every breakpoint. Previously DesktopRail used
+// MessageSquare + User while MobileTabBar used MessageCircle + CalendarDays
+// for the same routes, breaking cross-breakpoint wayfinding.
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Settings, type LucideIcon } from 'lucide-react';
-import {
-  Home,
-  MessageSquare,
-  Users,
-  User,
-  BookOpen,
-} from 'lucide-react';
-
-interface NavItem {
-  icon: LucideIcon;
-  label: string;
-  href: string;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { icon: Home, label: 'Home', href: '/dashboard' },
-  { icon: MessageSquare, label: 'AI Coach', href: '/coach' },
-  { icon: Users, label: 'The Circle', href: '/community' },
-  { icon: User, label: 'Sessions', href: '/experts' },
-  { icon: BookOpen, label: 'Resources', href: '/learn' },
-];
+import { Settings } from 'lucide-react';
+import { NAV_ITEMS } from '@/lib/nav-items';
 
 interface DesktopRailProps {
   userName: string;
@@ -52,13 +38,9 @@ export function DesktopRail({
       "
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-6">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#C8A96E]/30 font-serif text-lg text-[#C8A96E]">
-          A
-        </span>
-        <span className="text-lg font-semibold text-[#FAFAF8]">
-          Ascentor
-        </span>
+      <div className="flex items-center px-6 py-6">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: 28, width: 'auto' }} />
       </div>
 
       {/* Nav */}
@@ -88,17 +70,25 @@ export function DesktopRail({
       <div className="flex-1" />
 
       {/* Elevation Summit mini-card */}
-      <div className="mx-4 mb-4 rounded-xl border border-[#C8A96E]/20 bg-[#C8A96E]/[0.06] px-4 py-3">
+      <Link
+        href="/elevation-summit"
+        className="
+          mx-4 mb-4 rounded-xl border border-[#C8A96E]/20 bg-[#C8A96E]/[0.06]
+          px-4 py-3 block no-underline
+          hover:border-[#C8A96E]/40 hover:bg-[#C8A96E]/[0.10]
+          transition-colors cursor-pointer
+        "
+      >
         <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#C8A96E] mb-1">
           The Elevation Summit
         </p>
         <p className="text-sm font-medium text-[#FAFAF8]">
           Feb 2027 · Lagos
         </p>
-        <p className="text-xs text-[#6B7280] mt-0.5">
-          {summitDaysAway} days away — register
+        <p className="text-xs text-[#C8A96E]/70 mt-1 font-medium">
+          {summitDaysAway} days away — Register →
         </p>
-      </div>
+      </Link>
 
       {/* Profile footer */}
       <div className="flex items-center gap-3 border-t border-white/[0.06] px-4 py-4">

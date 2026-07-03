@@ -12,6 +12,12 @@
 // by this middleware — that routing decision lives in route.ts
 // (the auth callback), which is the single source of truth for
 // post-login destination.
+//
+// FIX: PROTECTED_API_PREFIXES now includes /api/pay (was /api/payment,
+// which never matched), /api/partner, and /api/community.
+// Webhook endpoints (/api/pay/webhook, /api/partner/webhook) are
+// explicitly public — Paystack/partner platforms call them without
+// a user session and they verify their own signatures internally.
 // ============================================================
 
 import { createServerClient } from '@supabase/ssr';
@@ -55,16 +61,44 @@ const AUTH_ROUTES = [
   '/referral', '/admin',
 ];
 
-// API routes that require authentication (S3 fix)
+// API routes that are explicitly public — checked BEFORE the protected
+// prefix list so webhooks and public endpoints are never blocked.
+//
+// ORDER MATTERS: this list is checked before PROTECTED_API_PREFIXES.
+// Any path that matches here is passed through immediately.
+const PUBLIC_API_ROUTES = [
+  '/api/waitlist',
+  '/api/newsletter',
+  '/api/welcome',
+  '/api/auth',
+  // Paystack webhook — verified internally via HMAC signature
+  '/api/pay/webhook',
+  // Partner platform webhook — verified internally
+  '/api/partner/webhook',
+  // Public promo code GET (used on checkout page before auth)
+  '/api/pay/promo',
+  // Checkout pending — non-destructive marketing hook, called pre-auth
+  '/api/checkout-pending',
+];
+
+// API route prefixes that require authentication.
+// Unauthenticated requests return 401 at the edge, before the route
+// handler runs. Each route still does its own auth check (defence in depth).
 const PROTECTED_API_PREFIXES = [
   '/api/coach',
   '/api/coaching',
-  '/api/payment',
+  '/api/pay',        // was /api/payment — that prefix never matched anything
+  '/api/partner',    // 16 routes — all require auth except /webhook (exempted above)
+  '/api/community',  // checkin, circle, read, voice-upload
   '/api/referral',
   '/api/subscription',
   '/api/usage',
   '/api/push',
   '/api/admin',
+  '/api/account',
+  '/api/goals',
+  '/api/intel-analyse',
+  '/api/lead-magnet',
 ];
 
 // Public routes — no auth needed
@@ -74,14 +108,6 @@ const PUBLIC_ROUTES = [
   '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
   '/how-it-works', '/who-its-for', '/waitlist', '/newsletter',
   '/mentor-apply', '/offline',
-];
-
-// API routes that are intentionally public
-const PUBLIC_API_ROUTES = [
-  '/api/waitlist',
-  '/api/newsletter',
-  '/api/welcome',
-  '/api/auth',
 ];
 
 export default async function proxy(request: NextRequest) {
@@ -104,7 +130,7 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Always pass through public API routes
+  // Always pass through public API routes (checked before protected prefixes)
   if (PUBLIC_API_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     return NextResponse.next();
   }
@@ -141,9 +167,6 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ── Protect page routes ───────────────────────────────────────────
-  // This includes /onboarding — unauthenticated users go to /login.
-  // Authenticated users who visit /onboarding directly are allowed
-  // through (edge case: someone bookmarked it, or is mid-flow).
   if (!user && AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
@@ -151,8 +174,6 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ── Subscription gate for paid pages ─────────────────────────────
-  // Skipped entirely when checkout is disabled (Free Mode on).
-  // The `isCheckoutEnabled` helper reads from Supabase platform_settings.
   if (user && PAID_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     const checkoutOn = await isCheckoutEnabled(supabase);
     if (checkoutOn) {
