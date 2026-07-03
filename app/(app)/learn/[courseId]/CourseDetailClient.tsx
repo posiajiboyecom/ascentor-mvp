@@ -203,19 +203,22 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
   const [noteSaved, setNoteSaved] = useState(false);
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load note for the active lesson whenever it changes
+  // Note key: use the active lesson ID if available, otherwise fall back
+  // to the course ID so notes still work for single-video courses with no lessons.
+  const noteKey = activeLessonId ?? course.id;
+
+  // Load note whenever the note key changes
   useEffect(() => {
-    if (!activeLessonId) return;
     setNoteContent('');
     setNoteSaved(false);
     supabase
       .from('course_notes')
       .select('content')
       .eq('user_id', userId)
-      .eq('lesson_id', activeLessonId)
+      .eq('lesson_id', noteKey)
       .maybeSingle()
       .then(({ data }) => { if (data) setNoteContent(data.content); });
-  }, [activeLessonId, supabase, userId]);
+  }, [noteKey, supabase, userId]);
 
   function handleNoteChange(val: string) {
     setNoteContent(val);
@@ -225,10 +228,9 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
   }
 
   async function saveNote(content: string) {
-    if (!activeLessonId) return;
     setNoteSaving(true);
     await supabase.from('course_notes').upsert(
-      { user_id: userId, lesson_id: activeLessonId, course_id: course.id, content, updated_at: new Date().toISOString() },
+      { user_id: userId, lesson_id: noteKey, course_id: course.id, content, updated_at: new Date().toISOString() },
       { onConflict: 'user_id,lesson_id' }
     );
     setNoteSaving(false);
@@ -299,7 +301,15 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
   const activeLesson = allLessons.find((l) => l.id === activeLessonId) ?? null;
   const activeIndex = allLessons.findIndex((l) => l.id === activeLessonId);
 
-  const videoId = activeLesson ? extractYouTubeId(activeLesson.video_url) : null;
+  // Resolve video ID: prefer the active lesson's video_url, fall back to
+  // course.youtube_id (the field admin sets when adding a course without
+  // individual lesson rows). This is the primary reason videos don't play —
+  // most courses have no lesson rows, so activeLesson is null and only
+  // course.youtube_id is populated.
+  const videoId =
+    (activeLesson ? extractYouTubeId(activeLesson.video_url) : null) ??
+    extractYouTubeId(course.youtube_id) ??
+    null;
 
   const completedCount = allLessons.filter((l) => l.completed).length;
   const overallProgress =
@@ -439,10 +449,6 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
               </button>
             )}
           </div>
-
-          <p className="text-sm leading-relaxed text-[var(--text-muted)] max-w-2xl mb-5 lg:mb-6">
-            {activeLesson?.description ?? course.description}
-          </p>
         </div>
 
         {/* Tabs */}
@@ -494,29 +500,22 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold text-[var(--text)]">
-                  {activeLesson ? `Notes for: ${activeLesson.title}` : 'My Notes'}
+                  {activeLesson ? `Notes for: ${activeLesson.title}` : `Notes for: ${course.title}`}
                 </h3>
                 <span className="text-[11px] text-[var(--text-dim)]">
                   {noteSaving ? 'Saving…' : noteSaved ? 'Saved ✓' : ''}
                 </span>
               </div>
-
-              {!activeLesson ? (
-                <p className="text-sm text-[var(--text-dim)]">Select a lesson to take notes.</p>
-              ) : (
-                <>
-                  <textarea
-                    value={noteContent}
-                    onChange={(e) => handleNoteChange(e.target.value)}
-                    placeholder="Type your notes here. They're saved automatically as you type."
-                    rows={10}
-                    className="w-full resize-none rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg-input)] px-4 py-3 text-sm leading-relaxed text-[var(--text)] placeholder:text-[var(--text-dim)] outline-none focus-visible:ring-2 focus-visible:ring-[#C8A96E] transition-colors"
-                  />
-                  <p className="mt-2 text-[11px] text-[var(--text-dim)]">
-                    Notes are private to you and tied to this lesson.
-                  </p>
-                </>
-              )}
+              <textarea
+                value={noteContent}
+                onChange={(e) => handleNoteChange(e.target.value)}
+                placeholder="Type your notes here. They're saved automatically as you type."
+                rows={10}
+                className="w-full resize-none rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg-input)] px-4 py-3 text-sm leading-relaxed text-[var(--text)] placeholder:text-[var(--text-dim)] outline-none focus-visible:ring-2 focus-visible:ring-[#C8A96E] transition-colors"
+              />
+              <p className="mt-2 text-[11px] text-[var(--text-dim)]">
+                Notes are private to you and saved automatically.
+              </p>
             </div>
           )}
 
