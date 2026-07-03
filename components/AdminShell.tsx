@@ -184,7 +184,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/admin/blog', label: 'Blog', icon: ICON.blog },
       { href: '/admin/courses', label: 'Courses', icon: ICON.courses },
-      { href: '/admin/products', label: 'Products', icon: ICON.products },
       { href: '/admin/careers', label: 'Careers', icon: ICON.careers },
       { href: '/admin/marketing-pages', label: 'Marketing Pages', icon: ICON.pages },
       { href: '/admin/master', label: 'Marketing Pipeline', icon: ICON.pipeline },
@@ -202,8 +201,22 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/coaching', label: 'Chat Data', icon: ICON.chat },
       { href: '/admin/surveys', label: 'Surveys', icon: ICON.survey },
       { href: '/admin/newsletter', label: 'Newsletter', icon: ICON.newsletter },
-      { href: '/admin/events', label: 'Events', icon: ICON.events },
+    ],
+  },
+  {
+    label: 'Events',
+    items: [
+      { href: '/admin/events', label: 'Public Events', icon: ICON.events },
+      { href: '/admin/community-events', label: 'Community Events', icon: ICON.community },
       { href: '/admin/summit', label: 'Summit', icon: ICON.summit },
+    ],
+  },
+  {
+    label: 'Revenue',
+    items: [
+      { href: '/admin/billboards', label: 'Rail Billboards', icon: ICON.launch },
+      { href: '/admin/products', label: 'Products', icon: ICON.products },
+      { href: '/admin/promo-codes', label: 'Promo Codes', icon: ICON.promo },
     ],
   },
   {
@@ -212,12 +225,6 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/intel', label: 'Platform Intel', icon: ICON.intel },
       { href: '/admin/reports', label: 'Reports', icon: ICON.reports },
       { href: '/admin/logs', label: 'Audit Logs', icon: ICON.logs },
-    ],
-  },
-  {
-    label: 'Commerce',
-    items: [
-      { href: '/admin/promo-codes', label: 'Promo Codes', icon: ICON.promo },
     ],
   },
 ];
@@ -333,7 +340,7 @@ export default function AdminShell({
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ledger-bg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ledger-bg)', display: 'flex', flexDirection: 'column', overflowX: 'hidden', maxWidth: '100vw' }}>
       <style>{`
         @media (max-width: 1023px) { .ledger-desktop-sidebar { display: none !important; } }
         @media (min-width: 1024px) { .ledger-mobile-header { display: none !important; } }
@@ -395,8 +402,8 @@ export default function AdminShell({
         </aside>
 
         {/* Content */}
-        <main style={{ flex: 1, overflowX: 'hidden', background: 'var(--ledger-bg)' }}>
-          <div style={{ maxWidth: '1320px', margin: '0 auto', padding: '24px' }}>
+        <main style={{ flex: 1, minWidth: 0, overflowX: 'hidden', background: 'var(--ledger-bg)' }}>
+          <div style={{ maxWidth: '1320px', margin: '0 auto', padding: 'clamp(12px, 3vw, 24px)', overflowX: 'hidden' }}>
             {children}
           </div>
         </main>
