@@ -38,7 +38,7 @@ export default function PWAInstallPrompt() {
     if (dismissed) {
       const dismissedAt = parseInt(dismissed);
       // Show again after 7 days
-      if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
+      if (Date.now() - dismissedAt < 24 * 60 * 60 * 1000) return;
     }
 
     // Android/Chrome: listen for install prompt
@@ -114,7 +114,7 @@ export default function PWAInstallPrompt() {
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
           zIndex: 9999,
-          background: '#141210',
+          background: '#0C0B08',
           borderTop: '1px solid rgba(232,160,32,0.2)',
           borderRadius: '20px 20px 0 0',
           animation: 'ios-sheet-up 0.4s cubic-bezier(0.16,1,0.3,1) both',
@@ -145,18 +145,18 @@ export default function PWAInstallPrompt() {
                   flexShrink: 0,
                 }}>
                   <span style={{
-                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
                     fontSize: 22, fontWeight: 700, color: '#0C0B08', lineHeight: 1,
                   }}>A</span>
                 </div>
                 <div>
                   <p style={{
-                    fontFamily: "'Syne', system-ui, sans-serif",
-                    fontSize: 16, fontWeight: 700, color: '#FEF9EC', margin: 0,
+                    fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
+                    fontSize: 16, fontWeight: 700, color: '#FAFAF8', margin: 0,
                   }}>Add to Home Screen</p>
                   <p style={{
-                    fontFamily: "'DM Mono', monospace",
-                    fontSize: 10, color: '#5A5550',
+                    fontFamily: "var(--font-body, 'Inter', sans-serif)",
+                    fontSize: 10, color: '#6B7280',
                     letterSpacing: '0.06em', textTransform: 'uppercase', margin: 0,
                   }}>ascentor-mvp.vercel.app</p>
                 </div>
@@ -166,7 +166,7 @@ export default function PWAInstallPrompt() {
                 background: 'rgba(255,255,255,0.07)',
                 border: 'none', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#5A5550', fontSize: 14, fontWeight: 600,
+                color: '#6B7280', fontSize: 14, fontWeight: 600,
               }}>✕</button>
             </div>
 
@@ -202,7 +202,7 @@ export default function PWAInstallPrompt() {
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       <span style={{
-                        fontFamily: "'Syne', system-ui, sans-serif",
+                        fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
                         fontSize: 15, fontWeight: 700, color: '#E8A020', lineHeight: 1,
                       }}>{step.icon}</span>
                     </div>
@@ -213,12 +213,12 @@ export default function PWAInstallPrompt() {
                   {/* Right — text */}
                   <div style={{ paddingTop: 6, paddingBottom: i < 2 ? 0 : 0 }}>
                     <p style={{
-                      fontFamily: "'Syne', system-ui, sans-serif",
-                      fontSize: 13, fontWeight: 600, color: '#FEF9EC', margin: 0, marginBottom: 2,
+                      fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
+                      fontSize: 13, fontWeight: 600, color: '#FAFAF8', margin: 0, marginBottom: 2,
                     }}>{step.label}</p>
                     <p style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: 10, color: '#5A5550',
+                      fontFamily: "var(--font-body, 'Inter', sans-serif)",
+                      fontSize: 10, color: '#6B7280',
                       letterSpacing: '0.02em', margin: 0,
                       marginBottom: i < 2 ? 6 : 0,
                     }}>{step.detail}</p>
@@ -234,7 +234,7 @@ export default function PWAInstallPrompt() {
               background: 'linear-gradient(135deg, #E8A020, #C47D0E)',
               border: 'none',
               borderRadius: 12,
-              fontFamily: "'Syne', system-ui, sans-serif",
+              fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
               fontSize: 14, fontWeight: 700,
               color: '#0C0B08',
               cursor: 'pointer',
@@ -265,7 +265,7 @@ export default function PWAInstallPrompt() {
         right: 0,
         zIndex: 9989,
         animation: 'pwa-slide-up 0.4s cubic-bezier(0.16,1,0.3,1) both',
-        background: '#1A1814',
+        background: '#0F0F0E',
         borderTop: '1px solid rgba(232,160,32,0.15)',
         paddingBottom: 'env(safe-area-inset-bottom)',
         boxShadow: '0 -12px 48px rgba(0,0,0,0.6)',
@@ -296,15 +296,15 @@ export default function PWAInstallPrompt() {
           {/* Text */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{
-              fontFamily: "'Syne', system-ui, sans-serif",
+              fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
               fontSize: 14, fontWeight: 700,
-              color: '#FEF9EC', margin: 0, marginBottom: 2,
+              color: '#FAFAF8', margin: 0, marginBottom: 2,
             }}>
               Add Ascentor to your home screen
             </p>
             <p style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 10, color: '#7A7260',
+              fontFamily: "var(--font-body, 'Inter', sans-serif)",
+              fontSize: 10, color: '#6B7280',
               letterSpacing: '0.03em', margin: 0,
             }}>
               One tap access · Works offline
@@ -319,7 +319,7 @@ export default function PWAInstallPrompt() {
               color: '#000',
               border: 'none',
               borderRadius: 8,
-              fontFamily: "'Syne', system-ui, sans-serif",
+              fontFamily: "var(--font-display, 'Plus Jakarta Sans', sans-serif)",
               fontSize: 12, fontWeight: 700,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
@@ -331,8 +331,8 @@ export default function PWAInstallPrompt() {
               padding: '4px 0',
               background: 'transparent',
               border: 'none',
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 10, color: '#4A4438',
+              fontFamily: "var(--font-body, 'Inter', sans-serif)",
+              fontSize: 10, color: '#6B7280',
               cursor: 'pointer',
               textAlign: 'center',
             }}>
@@ -352,7 +352,7 @@ function Step({ num, text }: { num: number; text: React.ReactNode }) {
         style={{ background: 'rgba(245,158,11,0.12)', color: '#E8A020' }}>
         {num}
       </div>
-      <p className="text-sm pt-0.5" style={{ color: '#C5C4BF' }}>{text}</p>
+      <p className="text-sm pt-0.5" style={{ color: '#9CA3AF' }}>{text}</p>
     </div>
   );
 }

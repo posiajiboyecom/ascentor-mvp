@@ -49,7 +49,7 @@ export default async function DashboardPage() {
   return (
     <div className="h-full overflow-y-auto">
       {/* ── Desktop header (hidden on mobile) ── */}
-      <header className="hidden lg:flex items-start justify-between px-10 pt-10 pb-6">
+      <header className="hidden lg:flex items-start justify-between px-10 pt-10 pb-8">
         <div>
           <h1 className="text-[34px] font-serif font-medium text-[var(--text)]">
             {greeting}, {firstName}.
@@ -88,7 +88,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* ── Mobile header (hidden on desktop) ── */}
-      <header className="lg:hidden flex items-center justify-between px-4 py-3.5 bg-[#0F0F0E]">
+      <header className="lg:hidden flex items-center justify-between px-5 py-4 bg-[#0F0F0E] border-b border-white/5">
         <div className="min-w-0">
           <p className="text-base font-semibold text-[#FAFAF8] truncate">
             {greeting}, {firstName}.
@@ -125,15 +125,15 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <div className="px-[13px] lg:px-10 mb-3 lg:mb-6">
+      <div className="px-4 lg:px-10 mt-4 lg:mt-0 mb-4 lg:mb-6">
         <SummitBanner daysAway={summitDaysAway} />
       </div>
 
       {/* ── Main content ── */}
       <div className="lg:flex lg:gap-8 lg:px-10 lg:pb-10">
         {/* Center column */}
-        <main className="flex-1 min-w-0 px-[13px] pb-[14px] lg:p-0 lg:max-w-[610px]">
-          <div className="grid grid-cols-3 gap-2 lg:gap-4 mb-3 lg:mb-6">
+        <main className="flex-1 min-w-0 px-4 pb-6 lg:p-0 lg:max-w-[610px]">
+          <div className="grid grid-cols-3 gap-3 lg:gap-4 mb-4 lg:mb-6">
             <StatBox value={sessionsThisWeek} label="Sessions this week" color="#C8A96E" />
             <StatBox
               value={`${commitmentsDone}/${commitmentsTotal}`}
@@ -143,7 +143,7 @@ export default async function DashboardPage() {
             <StatBox value={`${goalProgressPct}%`} label="90-day progress" color="#534AB7" />
           </div>
 
-          <div className="mb-3 lg:mb-6">
+          <div className="mb-4 lg:mb-6">
             <GoalCard goal={goal} progressPct={goalProgressPct} />
           </div>
 
@@ -152,11 +152,11 @@ export default async function DashboardPage() {
             unreadCircleCount={unreadCircleCount}
           />
 
-          <div className="mb-3 lg:mb-6">
+          <div className="mb-4 lg:mb-6">
             <CommitmentsCard commitments={commitments} />
           </div>
 
-          <div className="mb-3 lg:mb-0 lg:hidden">
+          <div className="mb-4 lg:mb-0 lg:hidden">
             <UpcomingSessionCard session={upcomingSession} />
           </div>
         </main>

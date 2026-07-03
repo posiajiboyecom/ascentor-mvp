@@ -16,6 +16,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState<string | null>(null);
   const [loading,  setLoading]  = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('reason') === 'session_expired') {
+      setSessionExpired(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const plan    = searchParams.get('plan');
@@ -291,6 +298,32 @@ export default function LoginPage() {
             <p style={{ fontSize: '0.9375rem', color: '#6B7280', margin: '0 0 1.75rem', lineHeight: 1.6 }}>
               Continue your ascent.
             </p>
+
+            {/* Session expired notice */}
+            {sessionExpired && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.625rem',
+                padding: '0.875rem 1rem',
+                borderRadius: '0.625rem',
+                background: 'rgba(200,169,110,0.08)',
+                border: '1px solid rgba(200,169,110,0.25)',
+                marginBottom: '1.25rem',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C8A96E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '1px' }}>
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <div>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#92700A', margin: '0 0 0.125rem' }}>
+                    Session expired
+                  </p>
+                  <p style={{ fontSize: '0.8125rem', color: '#A07820', margin: 0, lineHeight: 1.5 }}>
+                    You were signed out after 24 hours of inactivity. Please sign in again to continue.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Gold rule */}
             <div style={{ height: '2px', background: 'linear-gradient(90deg, #C8A96E 0%, transparent 100%)', borderRadius: '2px', marginBottom: '1.75rem' }} />
