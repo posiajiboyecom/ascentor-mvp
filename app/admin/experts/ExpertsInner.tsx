@@ -23,7 +23,7 @@ export default function AdminExpertsPageInner() {
   const emptyForm = {
     title: '', description: '', expert_name: '', expert_bio: '',
     scheduled_at: '', duration_minutes: 60, max_participants: 50,
-    status: 'scheduled' as string, join_url: '', registration_url: '',
+    status: 'scheduled' as string, meeting_url: '', registration_url: '',
     plan_tier: 'free' as string,
   };
   const [form, setForm] = useState(emptyForm);
@@ -44,7 +44,7 @@ export default function AdminExpertsPageInner() {
       duration_minutes: event.duration_minutes || 60,
       max_participants: event.max_participants || 50,
       status: event.status || 'scheduled',
-      join_url: event.join_url || '',
+      meeting_url: event.meeting_url || '',
       registration_url: event.registration_url || '',
       plan_tier: event.plan_tier || 'free',
     });
@@ -71,7 +71,7 @@ export default function AdminExpertsPageInner() {
       duration_minutes: Number(form.duration_minutes) || 60,
       max_participants: Number(form.max_participants) || 50,
       status: form.status,
-      join_url: form.join_url || null,
+      meeting_url: form.meeting_url || null,
       registration_url: form.registration_url || null,
       plan_tier: form.plan_tier || 'free',
 is_free: form.plan_tier === 'free',
@@ -181,8 +181,8 @@ is_free: form.plan_tier === 'free',
                 placeholder="Registration link (Zoom, Meet, Teams, etc.)" />
               <input className="px-3.5 py-2.5 text-sm rounded-xl"
                 style={{ background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none' }}
-                value={form.join_url}
-                onChange={(e) => setForm({ ...form, join_url: e.target.value })}
+                value={form.meeting_url}
+                onChange={(e) => setForm({ ...form, meeting_url: e.target.value })}
                 placeholder="Meeting/webinar join link" />
             </div>
             {/* Access tier — admin controls who can join this event */}
@@ -257,7 +257,7 @@ onChange={(e) => setForm({ ...form, plan_tier: e.target.value })}
             </div>
             <div className="flex gap-3 items-center text-[11px] mb-3" style={{ color: 'var(--text-dim)' }}>
               {e.registration_url && <span style={{display:"inline-flex",alignItems:"center",gap:3}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Reg link</span>}
-              {e.join_url && <span style={{display:"inline-flex",alignItems:"center",gap:3}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> Join link</span>}
+              {e.meeting_url && <span style={{display:"inline-flex",alignItems:"center",gap:3}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> Join link</span>}
             </div>
             <div className="flex gap-2">
               <button onClick={() => openEdit(e)}

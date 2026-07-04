@@ -161,6 +161,11 @@ const ICON = {
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
     </svg>
   ),
+  knowledge: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+  ),
 };
 
 // ── The reconciled IA — 17 real sections, 7 groups ──────────────
@@ -184,6 +189,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/admin/blog', label: 'Blog', icon: ICON.blog },
       { href: '/admin/courses', label: 'Courses', icon: ICON.courses },
+      { href: '/admin/knowledge', label: 'Knowledge Base', icon: ICON.knowledge },
       { href: '/admin/careers', label: 'Careers', icon: ICON.careers },
       { href: '/admin/marketing-pages', label: 'Marketing Pages', icon: ICON.pages },
       { href: '/admin/master', label: 'Marketing Pipeline', icon: ICON.pipeline },

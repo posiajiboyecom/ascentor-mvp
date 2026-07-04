@@ -32,6 +32,7 @@ export default async function DashboardPage() {
     commitments,
     upcomingSession,
     summitDaysAway,
+    summitRegistered,
     unreadCircleCount,
   } = data;
 
@@ -126,7 +127,7 @@ export default async function DashboardPage() {
       </header>
 
       <div className="px-4 lg:px-10 mt-4 lg:mt-0 mb-4 lg:mb-6">
-        <SummitBanner daysAway={summitDaysAway} />
+        <SummitBanner daysAway={summitDaysAway} registered={summitRegistered} />
       </div>
 
       {/* ── Main content ── */}

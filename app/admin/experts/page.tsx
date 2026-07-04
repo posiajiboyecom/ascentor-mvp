@@ -214,17 +214,19 @@ function AdminExpertsPageInner() {
   const supabase     = createClient();
   const searchParams = useSearchParams();
 
-  const [events,   setEvents]   = useState<any[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [showForm, setShowForm] = useState(searchParams.get('action') === 'create');
-  const [editing,  setEditing]  = useState<any>(null);
-  const [saving,   setSaving]   = useState(false);
-  const [tab,      setTab]      = useState<'upcoming' | 'past'>('upcoming');
+  const [events,        setEvents]        = useState<any[]>([]);
+  const [registrations, setRegistrations] = useState<Record<string, any[]>>({}); // sessionId → registrant rows
+  const [expanded,      setExpanded]      = useState<Set<string>>(new Set());    // expanded registrant lists
+  const [loading,       setLoading]       = useState(true);
+  const [showForm,      setShowForm]      = useState(searchParams.get('action') === 'create');
+  const [editing,       setEditing]       = useState<any>(null);
+  const [saving,        setSaving]        = useState(false);
+  const [tab,           setTab]           = useState<'upcoming' | 'past'>('upcoming');
 
   const emptyForm = {
     title: '', description: '', expert_name: '', expert_bio: '',
     scheduled_at: '', duration_minutes: 60, max_participants: 50,
-    status: 'scheduled' as string, join_url: '', registration_url: '',
+    status: 'scheduled' as string, meeting_url: '', registration_url: '',
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -232,11 +234,24 @@ function AdminExpertsPageInner() {
 
   async function loadEvents() {
     setLoading(true);
-    const { data } = await supabase
-      .from('expert_sessions')
-      .select('*')
-      .order('scheduled_at', { ascending: false });
-    setEvents(data || []);
+    const [{ data: sessions }, { data: regs }] = await Promise.all([
+      supabase
+        .from('expert_sessions')
+        .select('*')
+        .order('scheduled_at', { ascending: false }),
+      supabase
+        .from('session_registrations')
+        .select('id, session_id, user_id, registered_at, profiles(full_name, email, avatar_url)')
+        .order('registered_at', { ascending: true }),
+    ]);
+    setEvents(sessions || []);
+    // Group registrations by session_id
+    const grouped: Record<string, any[]> = {};
+    for (const r of regs || []) {
+      if (!grouped[r.session_id]) grouped[r.session_id] = [];
+      grouped[r.session_id].push(r);
+    }
+    setRegistrations(grouped);
     setLoading(false);
   }
 
@@ -252,7 +267,7 @@ function AdminExpertsPageInner() {
       duration_minutes: event.duration_minutes  || 60,
       max_participants: event.max_participants  || 50,
       status:           event.status            || 'scheduled',
-      join_url:         event.join_url          || '',
+      meeting_url:      event.meeting_url        || '',
       registration_url: event.registration_url  || '',
     });
     setEditing(event);
@@ -280,7 +295,7 @@ function AdminExpertsPageInner() {
       duration_minutes: Number(form.duration_minutes) || 60,
       max_participants: Number(form.max_participants)  || 50,
       status:           form.status,
-      join_url:         form.join_url          || null,
+      meeting_url:      form.meeting_url        || null,
       registration_url: form.registration_url  || null,
     };
 
@@ -345,7 +360,7 @@ function AdminExpertsPageInner() {
               margin:        0,
               letterSpacing: '0.04em',
             }}>
-              {upcoming.length} UPCOMING · {past.length} PAST · {events.length} TOTAL
+              {upcoming.length} UPCOMING · {past.length} PAST · {Object.values(registrations).reduce((s, a) => s + a.length, 0)} REGISTRATIONS
             </p>
           </div>
 
@@ -504,8 +519,8 @@ function AdminExpertsPageInner() {
                 <FieldLabel>Join Link</FieldLabel>
                 <input
                   className="asc-field"
-                  value={form.join_url}
-                  onChange={e => setForm({ ...form, join_url: e.target.value })}
+                  value={form.meeting_url}
+                  onChange={e => setForm({ ...form, meeting_url: e.target.value })}
                   placeholder="Webinar / meeting join URL"
                 />
               </div>
@@ -659,7 +674,7 @@ function AdminExpertsPageInner() {
                     Reg link set
                   </span>
                 )}
-                {e.join_url && (
+                {e.meeting_url && (
                   <span style={{
                     fontFamily:    B.fontMono,
                     fontSize:      '10px',
@@ -678,7 +693,7 @@ function AdminExpertsPageInner() {
               </div>
 
               {/* Card actions */}
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
                   className="asc-action-btn"
                   onClick={() => openEdit(e)}
@@ -713,7 +728,112 @@ function AdminExpertsPageInner() {
                     Reg link →
                   </a>
                 )}
+
+                {/* Registrant count + toggle */}
+                {(() => {
+                  const regs = registrations[e.id] || [];
+                  const isOpen = expanded.has(e.id);
+                  if (regs.length === 0) return (
+                    <span style={{
+                      fontFamily: B.fontMono, fontSize: '10px', letterSpacing: '0.05em',
+                      textTransform: 'uppercase', color: B.dark500, marginLeft: 'auto',
+                    }}>
+                      0 registered
+                    </span>
+                  );
+                  return (
+                    <button
+                      className="asc-action-btn"
+                      onClick={() => setExpanded(prev => {
+                        const next = new Set(prev);
+                        if (next.has(e.id)) next.delete(e.id); else next.add(e.id);
+                        return next;
+                      })}
+                      style={{
+                        color: B.climber, borderColor: `${B.climber}30`, marginLeft: 'auto',
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                      }}
+                      onMouseEnter={el => ((el.currentTarget as HTMLElement).style.background = `${B.climber}10`)}
+                      onMouseLeave={el => ((el.currentTarget as HTMLElement).style.background = 'transparent')}
+                    >
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: '18px', height: '18px', borderRadius: '50%',
+                        background: B.climber, color: '#fff',
+                        fontFamily: B.fontMono, fontSize: '9px', fontWeight: 700,
+                      }}>
+                        {regs.length}
+                      </span>
+                      {regs.length === 1 ? '1 registrant' : `${regs.length} registrants`}
+                      <span style={{ fontSize: '10px', opacity: 0.7 }}>{isOpen ? '▲' : '▼'}</span>
+                    </button>
+                  );
+                })()}
               </div>
+
+              {/* Expandable registrant list */}
+              {expanded.has(e.id) && (() => {
+                const regs = registrations[e.id] || [];
+                return (
+                  <div style={{
+                    marginTop: '12px',
+                    borderTop: `1px solid ${B.border}`,
+                    paddingTop: '12px',
+                  }}>
+                    <MonoLabel color={B.dark500}>Registered users</MonoLabel>
+                    <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {regs.map((r: any, i: number) => {
+                        const profile = r.profiles || {};
+                        const name  = profile.full_name || '—';
+                        const email = profile.email     || r.user_id?.slice(0, 8) + '…';
+                        const date  = new Date(r.registered_at).toLocaleDateString('en-US', {
+                          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                        });
+                        return (
+                          <div key={r.id} style={{
+                            display: 'flex', alignItems: 'center', gap: '10px',
+                            padding: '7px 10px', borderRadius: '8px',
+                            background: i % 2 === 0 ? B.dark700 : 'transparent',
+                          }}>
+                            {/* Avatar initials */}
+                            <span style={{
+                              width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
+                              background: `${B.climber}20`, border: `1px solid ${B.climber}40`,
+                              color: B.climber, fontFamily: B.fontUI, fontSize: '10px', fontWeight: 700,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              textTransform: 'uppercase',
+                            }}>
+                              {name !== '—'
+                                ? name.split(' ').filter(Boolean).map((p: string) => p[0]).join('').slice(0, 2)
+                                : '?'}
+                            </span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{
+                                fontFamily: B.fontUI, fontSize: '12px', fontWeight: 600,
+                                color: B.dark200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              }}>
+                                {name}
+                              </div>
+                              <div style={{
+                                fontFamily: B.fontMono, fontSize: '10px', color: B.dark500,
+                                letterSpacing: '0.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              }}>
+                                {email}
+                              </div>
+                            </div>
+                            <span style={{
+                              fontFamily: B.fontMono, fontSize: '10px', color: B.dark500,
+                              letterSpacing: '0.03em', flexShrink: 0,
+                            }}>
+                              {date}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           );
         })}

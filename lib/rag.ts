@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 import { CohereClient } from 'cohere-ai';
 
 // ── Clients ──
-// Uses service role key — this file only runs server-side (API routes, Trigger.dev jobs)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -10,15 +9,17 @@ const supabase = createClient(
 const cohere = new CohereClient({ token: process.env.COHERE_API_KEY! });
 
 // ── Types ──
-// Identical to before — no callers need to change
 export interface KnowledgeChunk {
   id: string;
   text: string;
   metadata: {
     category: string;
-    source?: string;
+    source?: string;       // book title, speech name, article title
+    source_type?: string;  // 'book' | 'speech' | 'article' | 'youtube' | 'pdf'
     tags?: string[];
     difficulty?: string;
+    mentor_slug?: string;  // links chunk to a mentor profile
+    mentor_name?: string;  // denormalized for fast prompt injection
     [key: string]: any;
   };
 }
@@ -28,10 +29,23 @@ export interface RetrievedChunk {
   text: string;
   score: number;
   category: string;
+  mentor_slug?: string;
+  mentor_name?: string;
+  source?: string;
+}
+
+export interface MentorProfile {
+  id: string;
+  slug: string;
+  name: string;
+  title: string;
+  bio: string;
+  background: 'christian' | 'secular' | 'african-christian' | 'african-secular';
+  dimensions: string[];
+  active: boolean;
 }
 
 // ── Embed a query string using Cohere ──
-// inputType: 'search_query' — correct for retrieval-time embedding
 export async function embedText(text: string): Promise<number[]> {
   const response = await cohere.embed({
     texts: [text],
@@ -46,11 +60,8 @@ export async function embedText(text: string): Promise<number[]> {
   throw new Error('Unexpected embedding response format from Cohere');
 }
 
-// ── Embed documents for ingestion ──
-// inputType: 'search_document' — correct for index-time embedding
-// Not exported — only used internally by addChunks
+// ── Embed documents for ingestion (internal use only) ──
 async function embedDocuments(texts: string[]): Promise<number[][]> {
-  // Cohere embed accepts max 96 texts per call
   const COHERE_BATCH_SIZE = 96;
   const allEmbeddings: number[][] = [];
 
@@ -74,27 +85,25 @@ async function embedDocuments(texts: string[]): Promise<number[][]> {
 }
 
 // ── Search knowledge base via pgvector ──
-// Replaces: Pinecone index.query()
-// Namespace maps to the knowledge_chunks.namespace column
 export async function searchKnowledge(
   query: string,
   options: {
     topK?: number;
     namespace?: string;
     filter?: Record<string, any>;
+    mentorSlug?: string;
   } = {}
 ): Promise<RetrievedChunk[]> {
-  const { topK = 10, namespace, filter } = options;
+  const { topK = 10, namespace, filter, mentorSlug } = options;
 
-  // 1. Embed the query
   const queryVector = await embedText(query);
 
-  // 2. Call the pgvector RPC function
   const { data, error } = await supabase.rpc('match_knowledge_chunks', {
     query_embedding: queryVector,
     match_count: topK,
     filter_namespace: namespace ?? null,
     filter_metadata: filter ?? {},
+    filter_mentor: mentorSlug ?? null,
   });
 
   if (error) {
@@ -108,17 +117,20 @@ export async function searchKnowledge(
     chunk_id: string;
     content: string;
     metadata: Record<string, any>;
+    mentor_slug: string | null;
     similarity: number;
   }) => ({
     id: row.chunk_id,
     text: row.content,
     score: row.similarity,
     category: (row.metadata?.category as string) || 'general',
+    mentor_slug: row.mentor_slug ?? row.metadata?.mentor_slug ?? undefined,
+    mentor_name: row.metadata?.mentor_name ?? undefined,
+    source: row.metadata?.source ?? undefined,
   }));
 }
 
 // ── Rerank with Cohere ──
-// Unchanged — Cohere reranking is independent of the vector store
 export async function rerankResults(
   query: string,
   chunks: RetrievedChunk[],
@@ -140,8 +152,27 @@ export async function rerankResults(
   }));
 }
 
+// ── Build attribution context block for Sage's system prompt ──
+function buildContextBlock(chunks: RetrievedChunk[]): string {
+  return chunks
+    .map((c, i) => {
+      const mentorLine = c.mentor_name
+        ? `mentor="${c.mentor_name}"${c.source ? ` source="${c.source}"` : ''}`
+        : '';
+      const attrs = [
+        `category="${c.category}"`,
+        `relevance="${c.score.toFixed(2)}"`,
+        mentorLine,
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      return `<knowledge_${i + 1} ${attrs}>\n${c.text}\n</knowledge_${i + 1}>`;
+    })
+    .join('\n\n');
+}
+
 // ── Full RAG pipeline: embed → search → rerank → format for Claude ──
-// Identical signature and return shape to before
 export async function retrieveContext(
   userMessage: string,
   options: {
@@ -149,25 +180,25 @@ export async function retrieveContext(
     topK?: number;
     topN?: number;
     filter?: Record<string, any>;
+    mentorSlug?: string;
   } = {}
 ): Promise<{ chunks: RetrievedChunk[]; contextBlock: string }> {
-  const { namespace, topK = 10, topN = 3, filter } = options;
+  const { namespace, topK = 10, topN = 3, filter, mentorSlug } = options;
 
   try {
-    const rawChunks = await searchKnowledge(userMessage, { topK, namespace, filter });
+    const rawChunks = await searchKnowledge(userMessage, {
+      topK,
+      namespace,
+      filter,
+      mentorSlug,
+    });
 
     if (rawChunks.length === 0) {
       return { chunks: [], contextBlock: '' };
     }
 
     const reranked = await rerankResults(userMessage, rawChunks, topN);
-
-    const contextBlock = reranked
-      .map(
-        (c, i) =>
-          `<knowledge_${i + 1} category="${c.category}" relevance="${c.score.toFixed(2)}">\n${c.text}\n</knowledge_${i + 1}>`
-      )
-      .join('\n\n');
+    const contextBlock = buildContextBlock(reranked);
 
     return { chunks: reranked, contextBlock };
   } catch (error) {
@@ -176,9 +207,7 @@ export async function retrieveContext(
   }
 }
 
-// ── Add chunks to pgvector (for ingestion) ──
-// Replaces: Pinecone index.namespace().upsert()
-// namespace arg preserved — stored as a column, used for filtering
+// ── Add chunks to pgvector ──
 export async function addChunks(
   namespace: string,
   chunks: KnowledgeChunk[]
@@ -188,15 +217,15 @@ export async function addChunks(
   const texts = chunks.map((c) => c.text);
   const vectors = await embedDocuments(texts);
 
-  // Supabase upsert in batches of 100
   const BATCH_SIZE = 100;
   for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
     const batch = chunks.slice(i, i + BATCH_SIZE).map((chunk, j) => ({
-      chunk_id:  chunk.id,
-      content:   chunk.text,
-      embedding: vectors[i + j],
+      chunk_id:    chunk.id,
+      content:     chunk.text,
+      embedding:   vectors[i + j],
       namespace,
-      metadata:  chunk.metadata,
+      mentor_slug: chunk.metadata?.mentor_slug ?? null,
+      metadata:    chunk.metadata,
     }));
 
     const { error } = await supabase
@@ -210,4 +239,32 @@ export async function addChunks(
   }
 
   console.log(`✓ Upserted ${chunks.length} chunks to namespace "${namespace}"`);
+}
+
+// ── Mentor profile helpers ──
+
+export async function getMentors(): Promise<MentorProfile[]> {
+  const { data, error } = await supabase
+    .from('mentor_profiles')
+    .select('*')
+    .eq('active', true)
+    .order('name');
+
+  if (error) {
+    console.error('Failed to fetch mentors:', error);
+    return [];
+  }
+
+  return data as MentorProfile[];
+}
+
+export async function getMentorBySlug(slug: string): Promise<MentorProfile | null> {
+  const { data, error } = await supabase
+    .from('mentor_profiles')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+
+  if (error || !data) return null;
+  return data as MentorProfile;
 }

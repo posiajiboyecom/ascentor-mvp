@@ -1,9 +1,9 @@
-﻿// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // Ascentor Knowledge Base Seeder
-// Run: npx ts-node --project tsconfig.json scripts/seed-knowledge.ts
-// Or:  npx tsx scripts/seed-knowledge.ts
+// Run: npx tsx scripts/seed-knowledge.ts
 //
-// Seeds Pinecone with structured knowledge aligned to Ascentor's current focus:
+// Seeds pgvector (knowledge_chunks table) with structured knowledge aligned
+// to Ascentor's current focus:
 //   - The core problem: talent without access to guidance
 //   - The 90-day leadership framework (what Sage uses)
 //   - Promotion mechanics (visibility, positioning, timing)
@@ -16,7 +16,7 @@
 //   - Common professional challenges Sage users bring
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { addChunks, KnowledgeChunk } from '../app/lib/rag';
+import { addChunks, KnowledgeChunk } from '../lib/rag';  // ← fixed: was '../app/lib/rag'
 
 // ── NAMESPACE MAP ─────────────────────────────────────────────────────────────
 // framework   — core models and methodologies Sage uses
@@ -357,7 +357,6 @@ For lateral transitions (same level, different function): the hardest adjustment
 
   // ══════════════════════════════════════════════════════════════════════════
   // NAMESPACE: coaching
-  // Common situations Sage users bring and how to coach through them
   // ══════════════════════════════════════════════════════════════════════════
   {
     namespace: 'coaching',
@@ -447,9 +446,7 @@ The distinction that changes the coaching:
 - Burnout from meaningless work (values misalignment): the need is a change in the work itself, not better management of it.
 - Burnout from a toxic environment: the need is exit, not coping strategies.
 
-What to avoid in coaching burnout: productivity frameworks, time management techniques, "have you tried [wellness practice]?" None of these address the root cause and can make the person feel blamed for the situation.
-
-The honest coaching commitment: Sage can help you think clearly about what is happening and what you want to do about it. It cannot fix an environment that is genuinely making you unwell. If the situation is the latter, the coaching job is to help you see that clearly enough to act on it.`,
+What to avoid in coaching burnout: productivity frameworks, time management techniques, "have you tried [wellness practice]?" None of these address the root cause and can make the person feel blamed for the situation.`,
         metadata: { category: 'coaching', tags: ['burnout', 'overwhelm', 'wellbeing', 'sustainability'] },
       },
       {
@@ -472,9 +469,7 @@ The three types of career change:
 The questions that test commitment:
 - "What have you done in the last 6 months to move toward this?"
 - "What is the smallest version of this change you could try without fully committing?"
-- "What would you need to give up to make this change? Are you ready to give that up?"
-
-The coaching job is not to validate the desire for change or to talk the person out of it — it is to help them see the decision clearly so they can make it with full awareness of what it requires.`,
+- "What would you need to give up to make this change? Are you ready to give that up?"`,
         metadata: { category: 'coaching', tags: ['career change', 'transition', 'clarity'] },
       },
     ],

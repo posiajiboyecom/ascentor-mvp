@@ -33,6 +33,8 @@ export interface DashboardData {
   commitments: UserCommitment[];
   upcomingSession: (ExpertSession & { isRegistered: boolean }) | null;
   summitDaysAway: number;
+  /** Whether this user has already registered for the Elevation Summit in-app. */
+  summitRegistered: boolean;
   /** Total unread messages across all channels the user has visited. */
   unreadCircleCount: number;
 }
@@ -89,6 +91,7 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     sessionsThisWeekRes,
     upcomingSessionRes,
     readPositionsRes,
+    summitRegRes,
   ] = await Promise.all([
     supabase
       .from('profiles')
@@ -136,6 +139,13 @@ export async function getDashboardData(): Promise<DashboardData | null> {
       .from('channel_read_positions')
       .select('channel_slug, last_read_at')
       .eq('user_id', user.id),
+
+    // Check if the user has already registered for the Elevation Summit
+    supabase
+      .from('summit_registrations')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .limit(1),
   ]);
 
   const profile = profileRes.data as Pick<
@@ -208,6 +218,7 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     commitments,
     upcomingSession,
     summitDaysAway: daysUntilSummit(),
+    summitRegistered: (summitRegRes?.count ?? 0) > 0,
     unreadCircleCount,
   };
 }
