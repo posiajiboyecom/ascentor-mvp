@@ -1,9 +1,10 @@
 // app/api/admin/knowledge/ingest-pdf/route.ts
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // POST /api/admin/knowledge/ingest-pdf
 // Accepts a multipart form upload of a PDF, extracts text
-// via pdf-parse, chunks it, embeds via Cohere, and upserts
-// into knowledge_chunks with full mentor attribution.
+// via pdf-parse v2 (PDFParse class), chunks it, embeds via
+// Cohere, and upserts into knowledge_chunks with full mentor
+// attribution.
 //
 // Form fields:
 //   file        — the PDF file (multipart/form-data)
@@ -13,14 +14,19 @@
 //   tags        — optional comma-separated string
 //
 // Install: npm install pdf-parse
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+
+// Force Node.js runtime — pdf-parse requires Node APIs (Buffer, fs)
+// and must never run in the Edge runtime.
+export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { addChunks, getMentorBySlug } from '@/lib/rag';
 import type { KnowledgeChunk } from '@/lib/rag';
-import { createRequire } from 'module';
-const pdfParse = createRequire(import.meta.url)('pdf-parse') as (buffer: Buffer, options?: Record<string, unknown>) => Promise<{ text: string; numpages: number; info: Record<string, unknown> }>;
+// pdf-parse v2 exports a class, not a default function.
+// Import the named class directly — no default import needed.
+import { PDFParse } from 'pdf-parse';
 
 // ── Config ──
 const CHUNK_SIZE    = 400;
@@ -100,12 +106,15 @@ export async function POST(req: Request) {
     );
   }
 
-  // Extract text from PDF
+  // Extract text from PDF using the PDFParse class (pdf-parse v2 API)
   let text: string;
   try {
-    const buffer  = Buffer.from(await file.arrayBuffer());
-    const parsed  = await pdfParse(buffer);
-    text          = parsed.text;
+    const arrayBuffer = await file.arrayBuffer();
+    // PDFParse v2: instantiate with the buffer as a Uint8Array
+    const parser = new PDFParse({ data: new Uint8Array(arrayBuffer) });
+    const result = await parser.getText();
+    // TextResult.text is the full concatenated document string
+    text = result.text;
   } catch (err) {
     console.error('[ingest-pdf] pdf-parse failed:', err);
     return NextResponse.json(
@@ -129,9 +138,9 @@ export async function POST(req: Request) {
   // Stable IDs based on file name + index
   const fileSlug = file.name.replace(/[^A-Za-z0-9]/g, '-').slice(0, 20);
 
-  const chunks: KnowledgeChunk[] = textChunks.map((chunkText, i) => ({
+  const chunks: KnowledgeChunk[] = textChunks.map((chunk, i) => ({
     id: `pdf-${fileSlug}-${i}`,
-    text: chunkText,
+    text: chunk,
     metadata: {
       category:    namespace,
       source:      sourceTitle,

@@ -14,6 +14,8 @@
 //   }
 // ─────────────────────────────────────────────────────────────
 
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { addChunks, getMentorBySlug } from '@/lib/rag';
@@ -83,9 +85,9 @@ export async function POST(req: Request) {
   const textChunks = chunkText(text, CHUNK_SIZE, CHUNK_OVERLAP);
   const textHash   = Buffer.from(text.slice(0, 40)).toString('base64').slice(0, 10).replace(/[^A-Za-z0-9]/g, '');
 
-  const chunks: KnowledgeChunk[] = textChunks.map((chunkText, i) => ({
+  const chunks: KnowledgeChunk[] = textChunks.map((chunk, i) => ({
     id: `txt-${mentorSlug}-${textHash}-${i}`,
-    text: chunkText,
+    text: chunk,
     metadata: {
       category:    namespace,
       source:      sourceTitle,

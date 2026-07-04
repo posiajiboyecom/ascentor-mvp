@@ -14,6 +14,8 @@
 //   }
 // ─────────────────────────────────────────────────────────────
 
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { addChunks, getMentorBySlug } from '@/lib/rag';
@@ -25,18 +27,12 @@ const CHUNK_OVERLAP = 50;
 const FETCH_TIMEOUT = 15_000; // 15s
 
 // ── HTML → plain text ──
-// Strips tags, scripts, styles, and normalises whitespace.
-// No external deps — just native string manipulation.
 function htmlToText(html: string): string {
   return html
-    // Remove <script> and <style> blocks entirely
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    // Replace block-level elements with newlines for readability
-    .replace(/<(\/?(p|div|li|h[1-6]|br|tr|blockquote))[^>]*>/gi, '\n')
-    // Strip all remaining tags
+    .replace(/<(\/?(?:p|div|li|h[1-6]|br|tr|blockquote))[^>]*>/gi, '\n')
     .replace(/<[^>]+>/g, ' ')
-    // Decode common HTML entities
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -45,7 +41,6 @@ function htmlToText(html: string): string {
     .replace(/&#39;/g, "'")
     .replace(/&mdash;/g, '—')
     .replace(/&ndash;/g, '–')
-    // Collapse whitespace
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -56,13 +51,11 @@ function chunkText(text: string, chunkSize: number, overlap: number): string[] {
   const words  = text.split(/\s+/).filter(Boolean);
   const chunks: string[] = [];
   let i = 0;
-
   while (i < words.length) {
     const slice = words.slice(i, i + chunkSize).join(' ');
     if (slice.trim()) chunks.push(slice.trim());
     i += chunkSize - overlap;
   }
-
   return chunks;
 }
 
@@ -131,7 +124,6 @@ export async function POST(req: Request) {
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        // Polite user-agent so sites know who's fetching
         'User-Agent': 'Ascentor-KnowledgeBot/1.0 (content ingestion for AI coaching)',
         'Accept': 'text/html,application/xhtml+xml',
       },
@@ -147,10 +139,11 @@ export async function POST(req: Request) {
     }
 
     html = await response.text();
-  } catch (err: any) {
-    const isTimeout = err?.name === 'AbortError';
+  } catch (err: unknown) {
+    const isTimeout = err instanceof Error && err.name === 'AbortError';
+    const message   = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: isTimeout ? 'Request timed out after 15 seconds' : `Failed to fetch URL: ${err?.message}` },
+      { error: isTimeout ? 'Request timed out after 15 seconds' : `Failed to fetch URL: ${message}` },
       { status: 422 }
     );
   }
@@ -167,13 +160,11 @@ export async function POST(req: Request) {
 
   // Chunk + embed + upsert
   const textChunks = chunkText(text, CHUNK_SIZE, CHUNK_OVERLAP);
+  const urlHash    = Buffer.from(url).toString('base64').slice(0, 12).replace(/[^A-Za-z0-9]/g, '');
 
-  // Stable chunk IDs based on URL + index
-  const urlHash = Buffer.from(url).toString('base64').slice(0, 12).replace(/[^A-Za-z0-9]/g, '');
-
-  const chunks: KnowledgeChunk[] = textChunks.map((chunkText, i) => ({
+  const chunks: KnowledgeChunk[] = textChunks.map((chunk, i) => ({
     id: `url-${urlHash}-${i}`,
-    text: chunkText,
+    text: chunk,
     metadata: {
       category:    namespace,
       source:      sourceTitle,
