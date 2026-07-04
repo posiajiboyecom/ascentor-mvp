@@ -171,6 +171,13 @@ function YoutubeTab({ mentors }: { mentors: MentorProfile[] }) {
   const [status, setStatus] = useState<StatusType>('idle');
   const [message, setMessage] = useState('');
 
+  // Auto-dismiss status banner after 8 seconds
+  useEffect(() => {
+    if (status === 'idle') return;
+    const t = setTimeout(() => setStatus('idle'), 8000);
+    return () => clearTimeout(t);
+  }, [status]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!videoUrl || !mentorSlug || !namespace || !sourceTitle) {
@@ -217,6 +224,13 @@ function UrlTab({ mentors }: { mentors: MentorProfile[] }) {
   const [status, setStatus] = useState<StatusType>('idle');
   const [message, setMessage] = useState('');
 
+  // Auto-dismiss status banner after 8 seconds
+  useEffect(() => {
+    if (status === 'idle') return;
+    const t = setTimeout(() => setStatus('idle'), 8000);
+    return () => clearTimeout(t);
+  }, [status]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!url || !mentorSlug || !namespace || !sourceTitle) {
@@ -262,6 +276,13 @@ function PdfTab({ mentors }: { mentors: MentorProfile[] }) {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<StatusType>('idle');
   const [message, setMessage] = useState('');
+
+  // Auto-dismiss status banner after 8 seconds
+  useEffect(() => {
+    if (status === 'idle') return;
+    const t = setTimeout(() => setStatus('idle'), 8000);
+    return () => clearTimeout(t);
+  }, [status]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -322,6 +343,13 @@ function TextTab({ mentors }: { mentors: MentorProfile[] }) {
   const [tags, setTags] = useState('');
   const [status, setStatus] = useState<StatusType>('idle');
   const [message, setMessage] = useState('');
+
+  // Auto-dismiss status banner after 8 seconds
+  useEffect(() => {
+    if (status === 'idle') return;
+    const t = setTimeout(() => setStatus('idle'), 8000);
+    return () => clearTimeout(t);
+  }, [status]);
   const wordCount = text.trim() ? text.split(/\s+/).filter(Boolean).length : 0;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -393,20 +421,41 @@ export default function AdminKnowledgePage() {
       setMentors(mentorList);
 
       // Fetch chunk counts per mentor — only if mentor_profiles loaded
-      const chunkRes = await supabase
-        .from('knowledge_chunks')
-        .select('mentor_slug')
-        .not('mentor_slug', 'is', null);
+      // Count chunks per mentor via RPC (avoids O(N) full table scan).
+      // Requires the DB function below — falls back gracefully if not yet created.
+      //
+      // CREATE OR REPLACE FUNCTION count_knowledge_chunks_by_mentor()
+      // RETURNS TABLE(mentor_slug text, chunk_count bigint)
+      // LANGUAGE sql STABLE AS $$
+      //   SELECT metadata->>'mentor_slug' AS mentor_slug, COUNT(*) AS chunk_count
+      //   FROM knowledge_chunks
+      //   WHERE metadata->>'mentor_slug' IS NOT NULL
+      //   GROUP BY metadata->>'mentor_slug';
+      // $$;
+      const rpcRes = await supabase.rpc('count_knowledge_chunks_by_mentor');
 
-      // chunk errors are non-fatal — table may have no mentor_slug col yet
-      if (!chunkRes.error) {
-        const chunks = chunkRes.data || [];
-        setTotalChunks(chunks.length);
-        const countMap: Record<string, number> = {};
-        for (const c of chunks) {
-          if (c.mentor_slug) countMap[c.mentor_slug] = (countMap[c.mentor_slug] || 0) + 1;
+      if (!rpcRes.error && rpcRes.data) {
+        const rows = rpcRes.data as Array<{ mentor_slug: string; chunk_count: number }>;
+        const total = rows.reduce((s: number, r) => s + Number(r.chunk_count), 0);
+        setTotalChunks(total);
+        setStats(rows.map(r => ({ mentor_slug: r.mentor_slug, count: Number(r.chunk_count) })));
+      } else {
+        // RPC not yet created — fall back to a capped row fetch (max 5000)
+        // mentor_slug lives inside the metadata jsonb column, not as a top-level column
+        const chunkRes = await supabase
+          .from('knowledge_chunks')
+          .select('metadata')
+          .limit(5000);
+        if (!chunkRes.error) {
+          const chunks = chunkRes.data || [];
+          setTotalChunks(chunks.length);
+          const countMap: Record<string, number> = {};
+          for (const c of chunks) {
+            const slug = (c.metadata as Record<string, unknown>)?.mentor_slug as string | undefined;
+            if (slug) countMap[slug] = (countMap[slug] || 0) + 1;
+          }
+          setStats(Object.entries(countMap).map(([mentor_slug, count]) => ({ mentor_slug, count })));
         }
-        setStats(Object.entries(countMap).map(([mentor_slug, count]) => ({ mentor_slug, count })));
       }
     } catch (err: any) {
       console.error('[AdminKnowledge] loadData error:', err);
@@ -470,7 +519,7 @@ export default function AdminKnowledgePage() {
             <div style={{ display: 'flex', gap: '2px', padding: '4px', borderRadius: '12px', background: brand.dark700, marginBottom: '20px', overflowX: 'auto' as const }}>
               {tabs.map(t => (
                 <button key={t.id} onClick={() => setTab(t.id)}
-                  style={{ flex: '1 1 0', minWidth: '80px', padding: '10px 8px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: brand.fontUI, fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' as const, background: tab === t.id ? brand.card : 'transparent', color: tab === t.id ? brand.gold : brand.dark400 }}
+                  style={{ flex: '1 1 0', minWidth: '60px', padding: '8px 4px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: brand.fontUI, fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' as const, background: tab === t.id ? brand.card : 'transparent', color: tab === t.id ? brand.gold : brand.dark400 }}
                 >
                   {t.icon} {t.label}
                 </button>
@@ -509,7 +558,7 @@ export default function AdminKnowledgePage() {
           </div>
 
           {/* Right: mentor council stats */}
-          <div style={{ width: '300px', flexShrink: 0 }}>
+          <div style={{ flex: '1 1 280px', maxWidth: '340px', minWidth: 0 }}>
             <div style={{ borderRadius: '14px', background: brand.card, border: `1px solid ${brand.border}`, overflow: 'hidden', marginBottom: '16px' }}>
               <div style={{ padding: '16px 20px', borderBottom: `1px solid ${brand.border}`, background: brand.dark700 }}>
                 <SectionLabel>Mentor Council</SectionLabel>

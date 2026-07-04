@@ -487,6 +487,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
               </div>
               {hasBlogPosts && <Link href="/blog" className="nav-link">Resources</Link>}
               <Link href="/about" className="nav-link">About</Link>
+              <Link href="/contact" className="nav-link">Contact</Link>
             </div>
             <button
               className="mobile-menu-btn"
@@ -514,6 +515,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
           ))}
           {hasBlogPosts && <Link href="/blog" className="mobile-menu-link">Resources</Link>}
           <Link href="/about" className="mobile-menu-link">About</Link>
+          <Link href="/contact" className="mobile-menu-link">Contact</Link>
           <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <Link href="/login" className="mobile-menu-link" style={{ border: 'none', fontSize: '0.9375rem', color: '#6B7280' }}>Sign in</Link>
             <Link href="/signup" className="btn-primary" style={{ textAlign: 'center', padding: '0.875rem' }}>Join Ascentor →</Link>
@@ -741,6 +743,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
                 {hasBlogPosts && <Link href="/blog">Resources</Link>}
                 <Link href="/products">Products</Link>
                 <Link href="/newsletter">Newsletter</Link>
+                <Link href="/contact">Contact</Link>
               </nav>
             </div>
 

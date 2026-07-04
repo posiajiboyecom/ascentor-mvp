@@ -95,6 +95,10 @@ function BillboardCard({ b }: { b: Billboard }) {
             marginBottom: b.cta_label ? 10 : 0,
             lineHeight: 1.5,
             fontFamily: "var(--font-body, 'Inter', sans-serif)",
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical' as const,
+            overflow: 'hidden',
           }}>
             {b.body}
           </p>
@@ -153,6 +157,8 @@ export default function RailBillboard() {
       gap: 8,
       padding: '0 16px',
       marginBottom: 8,
+      maxHeight: '38vh',
+      overflowY: 'auto',
     }}>
       {billboards.map((b) => (
         <BillboardCard key={b.id} b={b} />

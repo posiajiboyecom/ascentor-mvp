@@ -240,17 +240,17 @@ function SessionCard({
         <div className="pt-3 border-t-[0.5px] border-[var(--border)]">
           {isRegistered && session.meeting_url ? (
             // ── Registered + has a join link ──────────────────────────────
-            <div className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
+            <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-2">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-green-600 shrink-0">
                 <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
                 Registered
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap justify-end">
                 {/* Join Here primary CTA */}
                 <button
                   type="button"
                   onClick={handleAction}
-                  className="rounded-lg px-3.5 py-1.5 text-xs font-bold bg-[#0891B2] text-white"
+                  className="rounded-lg px-3.5 py-1.5 text-xs font-bold bg-[#0891B2] text-white whitespace-nowrap"
                 >
                   Join Here →
                 </button>
@@ -258,7 +258,7 @@ function SessionCard({
                 <button
                   type="button"
                   onClick={() => onToggleRegister(session)}
-                  className="rounded-lg px-2.5 py-1.5 text-[10px] font-medium border-[0.5px] border-[var(--border)] bg-transparent text-[var(--text-dim)]"
+                  className="rounded-lg px-2.5 py-1.5 text-[10px] font-medium border-[0.5px] border-[var(--border)] bg-transparent text-[var(--text-dim)] whitespace-nowrap"
                 >
                   Unregister
                 </button>
@@ -607,18 +607,47 @@ export function ExpertsClient({
           </div>
         </div>
 
-        {/* Mobile filter chips */}
+        {/* Mobile filter chips — horizontal scrollable chip rows */}
         {mobileFilterOpen && (
           <div className="lg:hidden mb-4 rounded-2xl border-[0.5px] border-[var(--border)] bg-[var(--bg-card)] p-3">
-            <FilterRail
-              dimensionCounts={dimensionCounts}
-              totalCount={sessions.length}
-              registeredCount={registeredIds.size}
-              activeDimension={activeDimension}
-              onDimensionChange={setActiveDimension}
-              activeStatus={activeStatus}
-              onStatusChange={setActiveStatus}
-            />
+            {/* Dimension chips */}
+            <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--text-dim)] mb-2">Dimension</p>
+            <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3">
+              {(['All', ...DIMENSIONS]).map((dim) => (
+                <button
+                  key={dim}
+                  type="button"
+                  onClick={() => setActiveDimension(dim)}
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-colors
+                    ${activeDimension === dim
+                      ? 'bg-[#C8A96E]/15 text-[#A8894E] border-[0.5px] border-[#C8A96E]/40'
+                      : 'border-[0.5px] border-[var(--border)] text-[var(--text-muted)]'}`}
+                >
+                  {dim} {dim !== 'All' && dimensionCounts[dim] ? `(${dimensionCounts[dim]})` : dim === 'All' ? `(${sessions.length})` : ''}
+                </button>
+              ))}
+            </div>
+            {/* Status chips */}
+            <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--text-dim)] mb-2">Status</p>
+            <div className="flex gap-1.5">
+              {([
+                { id: 'all' as StatusFilter, label: 'All' },
+                { id: 'registered' as StatusFilter, label: `Registered (${registeredIds.size})` },
+                { id: 'open' as StatusFilter, label: 'Open' },
+              ]).map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setActiveStatus(id)}
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-colors
+                    ${activeStatus === id
+                      ? 'bg-[#C8A96E]/15 text-[#A8894E] border-[0.5px] border-[#C8A96E]/40'
+                      : 'border-[0.5px] border-[var(--border)] text-[var(--text-muted)]'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

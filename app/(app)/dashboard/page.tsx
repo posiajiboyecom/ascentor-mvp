@@ -100,7 +100,7 @@ export default async function DashboardPage() {
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <span
-            className="rounded-full border px-2.5 py-1 text-[11px] font-medium"
+            className="rounded-full border px-2.5 py-1 text-[11px] font-medium max-w-[90px] truncate"
             style={{ color: planColor, backgroundColor: planBg, borderColor: planBorder }}
           >
             {planLabel}

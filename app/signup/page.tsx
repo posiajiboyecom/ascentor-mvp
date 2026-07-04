@@ -80,9 +80,10 @@ function SignUpForm() {
         body { background: #FAFAF8 !important; color: #0F0F0E !important; }
 
         .signup-page {
-          min-height: 100vh;
+          min-height: 100dvh;
           display: flex;
           background: #FAFAF8;
+          overflow-y: auto;
         }
 
         .signup-brand {
@@ -99,10 +100,11 @@ function SignUpForm() {
         .signup-form-panel {
           flex: 1;
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: center;
           padding: 40px 24px;
           background: #FAFAF8;
+          overflow-y: auto;
         }
         .signup-form-inner {
           width: 100%;

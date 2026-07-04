@@ -90,7 +90,7 @@ export function DesktopRail({
           Feb 2027 · Lagos
         </p>
         <p className="text-xs text-[#C8A96E]/70 mt-1 font-medium">
-          {summitDaysAway} days away — Register →
+          {summitDaysAway} days away — Learn more →
         </p>
       </Link>
 

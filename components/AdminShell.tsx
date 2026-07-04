@@ -161,6 +161,11 @@ const ICON = {
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
     </svg>
   ),
+  inbox: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+    </svg>
+  ),
   knowledge: (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
@@ -204,6 +209,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Engagement',
     items: [
+      { href: '/admin/inbox', label: 'Inbox', icon: ICON.inbox },
       { href: '/admin/coaching', label: 'Chat Data', icon: ICON.chat },
       { href: '/admin/surveys', label: 'Surveys', icon: ICON.survey },
       { href: '/admin/newsletter', label: 'Newsletter', icon: ICON.newsletter },

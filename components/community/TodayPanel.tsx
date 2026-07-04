@@ -55,7 +55,7 @@ export function TodayPanel({
   onlineCount,
 }: TodayPanelProps) {
   return (
-    <aside className="hidden lg:flex lg:flex-col w-[300px] shrink-0 border-l border-[var(--color-border-tertiary)] h-full overflow-y-auto px-5 py-6">
+    <aside className="hidden xl:flex xl:flex-col w-[300px] shrink-0 border-l border-[var(--color-border-tertiary)] h-full overflow-y-auto px-5 py-6">
       <p className="text-xs font-medium uppercase tracking-[0.06em] text-[var(--color-text-secondary)] mb-5">
         Today in #{channelName}
       </p>

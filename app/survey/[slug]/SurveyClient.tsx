@@ -287,7 +287,7 @@ export default function SurveyClient({ survey }: { survey: Survey }) {
   // ── Thank you screen ──
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', overflowY: 'auto' }}>
         <div style={{ textAlign: 'center', maxWidth: '480px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
           <div style={{ width: '72px', height: '72px', background: 'var(--gold-muted)', border: '1px solid var(--gold-border)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <AscentorMark size={36} />
@@ -305,7 +305,7 @@ export default function SurveyClient({ survey }: { survey: Survey }) {
 
   // ── Survey ──
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <div style={{ minHeight: '100dvh' }}>
       {/* Progress bar */}
       <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--dark)', borderBottom: '1px solid var(--border)', padding: '12px 0' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto', padding: '0 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>

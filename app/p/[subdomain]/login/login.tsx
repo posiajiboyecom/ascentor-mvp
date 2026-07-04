@@ -76,9 +76,9 @@ function PartnerLoginForm() {
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '40px 24px', background: 'var(--bg)',
+      minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+      alignItems: 'flex-start', justifyContent: 'center',
+      padding: '40px 24px', background: 'var(--bg)', overflowY: 'auto',
     }}>
       <div style={{ width: '100%', maxWidth: 400 }}>
 
@@ -216,7 +216,7 @@ const oauthBtn: React.CSSProperties = {
 export default function PartnerLoginPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', background: 'var(--bg)', overflowY: 'auto' }}>
         <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Loading…</p>
       </div>
     }>
