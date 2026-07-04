@@ -215,6 +215,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
           color: #374151;
           text-decoration: none;
           transition: color 0.2s;
+          white-space: nowrap;
         }
         .nav-link:hover { color: #0F0F0E; }
 
@@ -460,7 +461,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" height={26} width={98} style={{ display: 'block' }} />
             </Link>
-            <div style={{ alignItems: 'center', gap: '2rem', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }} className="desktop-nav">
+            <div style={{ alignItems: 'center', gap: '2rem', position: 'absolute', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }} className="desktop-nav">
               <Link href="/movement" className="nav-link">The Movement</Link>
               <Link href="/signup" className="nav-link">Join Community</Link>
               <div className="events-dropdown-wrap" onClick={e => e.stopPropagation()}>
