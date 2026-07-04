@@ -6,6 +6,7 @@ import { ModalProvider } from '@/components/Modal';
 import { NotificationProvider } from '@/components/Notifications';
 import PushPermission from '@/components/PushPermission';
 import { MobileInit } from '@/components/MobileInit';
+import AuthErrorHandler from '@/components/AuthErrorHandler';
 import Script from 'next/script';
 
 // ── Fonts ──────────────────────────────────────────────────────────
@@ -129,6 +130,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body suppressHydrationWarning>
+        <AuthErrorHandler />
         <ModalProvider>
           <NotificationProvider>
             <MobileInit />

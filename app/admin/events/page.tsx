@@ -8,8 +8,6 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient();
-
 const B = {
   bg: '#0F0F0E', card: '#161614', border: 'rgba(255,255,255,0.08)',
   gold: '#C8A96E', text: '#FAFAF8', muted: '#6B7280', dim: '#4B5563',
@@ -58,6 +56,7 @@ type Reg = {
 };
 
 export default function AdminEventsPage() {
+  const supabase = createClient();
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<PublicEvent> | null>(null);

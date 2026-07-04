@@ -1,459 +1,505 @@
-// FILE: app/onboarding/page.tsx
-// ASCENTOR REBRAND v2 — Movement-aligned onboarding
-// 3 steps: Stage → What Building → Commitment/Welcome
+// app/onboarding/page.tsx
+// ─────────────────────────────────────────────────────────────────────────────
+// Ascentor onboarding — 3 screens, ~45 seconds
+//
+// Screen 1 — Identity:    Name + primary dimension (one tap → advance)
+// Screen 2 — Mission:     "I am building…" (seeds goal_text + what_building)
+// Screen 3 — Commitment:  "This week I will…" (seeds first user_commitment)
+//
+// Saves: full_name, ascent_stage, what_building, onboarding_completed = true
+//        Creates: user_goals row, user_commitments row
+// Auth callback reads: onboarding_completed (priority 1) + ascent_stage (resume)
+// ─────────────────────────────────────────────────────────────────────────────
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+// ── Brand tokens ──────────────────────────────────────────────────────────────
+const GOLD   = '#C8A96E';
+const DARK   = '#0F0F0E';
+const BG     = '#FAFAF8';
+const MUTED  = '#9CA3AF';
+const BORDER = '#E8E6E1';
+const CARD   = '#FFFFFF';
+
+// ── The 7 dimensions ─────────────────────────────────────────────────────────
+const DIMENSIONS = [
+  { value: 'purpose',       label: 'Purpose',       sub: 'Why I exist'                  },
+  { value: 'mind',          label: 'Mind',           sub: 'How I think'                  },
+  { value: 'character',     label: 'Character',      sub: 'How I live'                   },
+  { value: 'work',          label: 'Work',           sub: 'How I contribute'             },
+  { value: 'relationships', label: 'Relationships',  sub: 'Who I build with'             },
+  { value: 'community',     label: 'Community',      sub: 'What I build beyond myself'   },
+  { value: 'legacy',        label: 'Legacy',         sub: 'What remains when I am gone'  },
+] as const;
+
+type Dimension = typeof DIMENSIONS[number]['value'];
+
+// ── Shared styles ─────────────────────────────────────────────────────────────
+const fontDisplay = "var(--font-display,'Plus Jakarta Sans',sans-serif)";
+const fontBody    = "var(--font-body,'Inter',sans-serif)";
+
+const H1: React.CSSProperties = {
+  fontFamily: fontDisplay,
+  fontSize: 'clamp(1.5rem, 4vw, 2rem)',
+  fontWeight: 800, lineHeight: 1.15,
+  letterSpacing: '-0.02em', color: DARK,
+  margin: '0 0 0.375rem',
+};
+const SUB: React.CSSProperties = {
+  fontSize: 15, color: '#6B7280',
+  lineHeight: 1.6, margin: '0 0 1.75rem',
+  fontFamily: fontBody,
+};
+const LABEL: React.CSSProperties = {
+  display: 'block', fontSize: 13, fontWeight: 600,
+  color: DARK, marginBottom: 8, fontFamily: fontBody,
+};
+const INPUT: React.CSSProperties = {
+  width: '100%', padding: '0.875rem 1rem',
+  background: '#F6F5F1',
+  border: `1.5px solid ${BORDER}`,
+  borderRadius: '0.625rem',
+  fontFamily: fontBody,
+  fontSize: 15, color: DARK,
+  outline: 'none', boxSizing: 'border-box' as const,
+  transition: 'border-color 0.2s',
+};
+const BTN_PRIMARY: React.CSSProperties = {
+  width: '100%', padding: '0.9375rem',
+  borderRadius: '0.625rem', border: 'none',
+  background: DARK, color: BG,
+  fontSize: 15, fontWeight: 700,
+  cursor: 'pointer', fontFamily: fontDisplay,
+  transition: 'opacity 0.2s',
+};
+const BTN_GHOST: React.CSSProperties = {
+  padding: '0.9375rem 1.25rem',
+  borderRadius: '0.625rem',
+  border: `1.5px solid ${BORDER}`,
+  background: 'transparent',
+  color: MUTED, fontSize: 14, fontWeight: 600,
+  cursor: 'pointer', fontFamily: fontDisplay,
+};
+
+// ── Progress bar ──────────────────────────────────────────────────────────────
+function ProgressBar({ step, total = 3 }: { step: number; total?: number }) {
+  return (
+    <div style={{ display: 'flex', gap: 5, marginBottom: '1.75rem' }}>
+      {Array.from({ length: total }).map((_, i) => (
+        <div key={i} style={{
+          height: 3, flex: 1, borderRadius: 9999,
+          background: i < step ? DARK : BORDER,
+          transition: 'background 0.4s',
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ── Eyebrow ───────────────────────────────────────────────────────────────────
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{
+      fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+      textTransform: 'uppercase', color: GOLD,
+      fontFamily: fontBody, margin: '0 0 0.875rem',
+    }}>
+      {children}
+    </p>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function OnboardingPage() {
+  const router       = useRouter();
   const searchParams = useSearchParams();
-  const initialStep = parseInt(searchParams.get('step') || '1', 10);
-  const [step, setStep] = useState(initialStep);
-  const [saving, setSaving] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
+  const supabase     = createClient();
 
-  // ── Step 1 state ──
-  const [ascentStage, setAscentStage] = useState<'seeker' | 'builder' | 'leader' | ''>('');
+  const initialStep  = parseInt(searchParams.get('step') || '1', 10) as 1 | 2 | 3;
+  const [screen, setScreen]       = useState<1 | 2 | 3>(initialStep);
+  const [fullName, setFullName]   = useState('');
+  const [dimension, setDimension] = useState<Dimension | null>(null);
+  const [building, setBuilding]   = useState('');
+  const [commitment, setCommitment] = useState('');
+  const [saving, setSaving]       = useState(false);
+  const [nameError, setNameError] = useState(false);
 
-  // ── Step 2 state ──
-  const [whatBuilding, setWhatBuilding] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [whatsappPhone, setWhatsappPhone] = useState('');
+  const nameRef       = useRef<HTMLInputElement>(null);
+  const buildingRef   = useRef<HTMLInputElement>(null);
+  const commitmentRef = useRef<HTMLInputElement>(null);
 
-  // ── Step 1 → Step 2 ──
-  const handleStageSelect = (stage: 'seeker' | 'builder' | 'leader') => {
-    setAscentStage(stage);
-  };
+  useEffect(() => { nameRef.current?.focus(); }, []);
+  useEffect(() => { if (screen === 2) buildingRef.current?.focus(); }, [screen]);
+  useEffect(() => { if (screen === 3) commitmentRef.current?.focus(); }, [screen]);
 
-  const goToStep2 = () => {
-    if (!ascentStage) return;
-    setStep(2);
-  };
-
-  // ── Step 2 → Step 3 (save profile) ──
-  const handleProfileSave = async () => {
-    if (!whatBuilding.trim() || !fullName.trim()) return;
-    setSaving(true);
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      alert('Session expired. Please sign in again.');
-      setSaving(false);
+  // Screen 1: tap dimension → if name present, advance; else shake
+  function handleDimensionSelect(d: Dimension) {
+    setDimension(d);
+    if (!fullName.trim()) {
+      setNameError(true);
+      nameRef.current?.focus();
+      setTimeout(() => setNameError(false), 700);
       return;
     }
+    setTimeout(() => setScreen(2), 200);
+  }
 
-    const { data: existingProfile } = await supabase
+  // Screen 2: save mission → advance
+  async function handleMissionNext() {
+    if (!building.trim() || saving) return;
+    setScreen(3);
+  }
+
+  // Screen 3: save everything → dashboard
+  async function handleComplete() {
+    if (!commitment.trim() || saving) return;
+    setSaving(true);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push('/login'); return; }
+
+    const { data: existing } = await supabase
       .from('profiles')
       .select('referral_code')
       .eq('id', user.id)
       .single();
 
-    const referralCode = existingProfile?.referral_code || (
-      'ASC-' + Math.random().toString(36).substring(2, 6).toUpperCase()
-    );
+    const referralCode = existing?.referral_code ||
+      'ASC-' + Math.random().toString(36).substring(2, 6).toUpperCase();
 
-    const { error: dbError } = await supabase.from('profiles').upsert({
-      id: user.id,
-      full_name: fullName.trim(),
-      ascent_stage: ascentStage,
-      what_building: whatBuilding.trim(),
-      whatsapp_phone: whatsappPhone.trim() || null,
-      referral_code: referralCode,
-      updated_at: new Date().toISOString(),
+    // Save profile
+    await supabase.from('profiles').upsert({
+      id:                   user.id,
+      full_name:            fullName.trim(),
+      ascent_stage:         dimension,
+      what_building:        building.trim(),
+      referral_code:        referralCode,
+      onboarding_completed: true,
+      updated_at:           new Date().toISOString(),
     });
 
-    if (dbError) {
-      alert('Error saving profile: ' + dbError.message);
-      setSaving(false);
-      return;
-    }
+    // Seed first goal (powers GoalCard on dashboard)
+    await supabase.from('user_goals').insert({
+      user_id:   user.id,
+      goal_text: building.trim(),
+      progress:  0,
+    });
 
-    // Fire welcome email
-    try {
-      await fetch('/api/welcome', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
-      });
-    } catch (_) { /* non-blocking */ }
+    // Seed first commitment (powers CommitmentsCard on dashboard)
+    await supabase.from('user_commitments').insert({
+      user_id:         user.id,
+      commitment_text: commitment.trim(),
+      completed:       false,
+      due_date: new Date(
+        Date.now() + 7 * 24 * 60 * 60 * 1000
+      ).toISOString().split('T')[0], // end of this week
+    });
 
-    setSaving(false);
-    setStep(3);
-  };
+    // Non-blocking welcome email
+    fetch('/api/welcome', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id }),
+    }).catch(() => {});
 
-  // ── Step 3 → Dashboard ──
-  const handleComplete = () => {
     router.push('/dashboard');
-  };
-
-  // ── Styles ──
-  const styles = {
-    page: {
-      minHeight: '100vh',
-      background: '#FAFAF8',
-      display: 'flex',
-      flexDirection: 'column' as const,
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '2rem 1.5rem',
-    },
-    card: {
-      background: '#FFFFFF',
-      border: '1px solid #E8E6E1',
-      borderRadius: '1.25rem',
-      padding: 'clamp(2rem, 5vw, 3.5rem)',
-      width: '100%',
-      maxWidth: '560px',
-      boxShadow: '0 4px 40px rgba(0,0,0,0.06)',
-    },
-    eyebrow: {
-      fontFamily: 'var(--font-body, "Inter", sans-serif)',
-      fontSize: '0.75rem',
-      fontWeight: 600 as const,
-      letterSpacing: '0.12em',
-      textTransform: 'uppercase' as const,
-      color: '#C8A96E',
-      marginBottom: '1rem',
-      display: 'block',
-    },
-    headline: {
-      fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-      fontSize: 'clamp(1.5rem, 4vw, 2.25rem)',
-      fontWeight: 800 as const,
-      lineHeight: 1.15,
-      letterSpacing: '-0.02em',
-      color: '#0F0F0E',
-      marginBottom: '0.75rem',
-    },
-    subtext: {
-      fontSize: '1rem',
-      color: '#6B7280',
-      lineHeight: 1.7,
-      marginBottom: '2rem',
-    },
-    input: {
-      width: '100%',
-      padding: '0.875rem 1rem',
-      background: '#F4F3EF',
-      border: '1.5px solid #E8E6E1',
-      borderRadius: '0.5rem',
-      fontFamily: 'var(--font-body, "Inter", sans-serif)',
-      fontSize: '0.9375rem',
-      color: '#0F0F0E',
-      outline: 'none',
-    },
-    btnPrimary: {
-      width: '100%',
-      padding: '0.875rem',
-      background: '#0F0F0E',
-      color: '#FAFAF8',
-      fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-      fontWeight: 700 as const,
-      fontSize: '1rem',
-      borderRadius: '0.625rem',
-      border: 'none',
-      cursor: 'pointer',
-      transition: 'background 0.2s',
-      marginTop: '1.5rem',
-    },
-    progressDots: {
-      display: 'flex',
-      gap: '0.5rem',
-      justifyContent: 'center',
-      marginTop: '2rem',
-    },
-  };
-
-  const stageOptions = [
-    {
-      value: 'seeker' as const,
-      label: 'The Seeker',
-      sub: 'I am finding my purpose',
-      description: 'You know there is more, but you have not fully named it yet.',
-    },
-    {
-      value: 'builder' as const,
-      label: 'The Builder',
-      sub: 'I am building toward it',
-      description: 'You know where you are going and are doing the daily work.',
-    },
-    {
-      value: 'leader' as const,
-      label: 'The Leader',
-      sub: 'I am leading others in it',
-      description: 'You have built something and are now responsible for others.',
-    },
-  ];
+  }
 
   return (
-    <div style={styles.page}>
+    <div style={{
+      minHeight: '100vh', background: BG,
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '1.5rem',
+    }}>
+
       {/* Logo */}
-      <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+      <div style={{ marginBottom: '2rem' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: 28, width: 'auto' }} />
+        <img
+          src="/ascentor-color-for-light-pages.svg"
+          alt="Ascentor"
+          style={{ height: 26, width: 'auto' }}
+        />
       </div>
 
-      <div style={styles.card}>
+      {/* Card */}
+      <div style={{
+        background: CARD,
+        border: `1px solid ${BORDER}`,
+        borderRadius: '1.25rem',
+        padding: 'clamp(1.75rem, 5vw, 2.75rem)',
+        width: '100%', maxWidth: 500,
+        boxShadow: '0 4px 40px rgba(0,0,0,0.06)',
+        animation: 'fadeUp 0.3s ease both',
+      }}>
 
-        {/* ── STEP 1: The Stage ── */}
-        {step === 1 && (
-          <>
-            <span style={styles.eyebrow}>Step 1 of 3</span>
-            <h1 style={styles.headline}>Where are you in your ascent?</h1>
-            <p style={styles.subtext}>
-              Choose the stage that best describes where you are right now. There are no wrong answers — only honest ones.
+        {/* ── SCREEN 1: Identity ── */}
+        {screen === 1 && (
+          <div key="s1" style={{ animation: 'fadeUp 0.25s ease both' }}>
+            <ProgressBar step={1} />
+            <Eyebrow>Your Identity</Eyebrow>
+            <h1 style={H1}>Who are you becoming?</h1>
+            <p style={SUB}>
+              Not your job. Not your title. The person you are <em>building</em>.
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-              {stageOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleStageSelect(option.value)}
-                  style={{
-                    width: '100%',
-                    padding: '1.25rem 1.375rem',
-                    borderRadius: '0.75rem',
-                    border: ascentStage === option.value
-                      ? '2px solid #C8A96E'
-                      : '1.5px solid #E8E6E1',
-                    background: ascentStage === option.value
-                      ? 'rgba(200,169,110,0.06)'
-                      : '#FAFAF8',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <span style={{
-                    display: 'block',
-                    fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                    fontSize: '1rem',
-                    fontWeight: 700,
-                    color: ascentStage === option.value ? '#C8A96E' : '#0F0F0E',
-                    marginBottom: '0.2rem',
-                  }}>
-                    {option.label}
-                  </span>
-                  <span style={{ fontSize: '0.8125rem', color: '#9CA3AF', display: 'block', marginBottom: '0.375rem' }}>
-                    {option.sub}
-                  </span>
-                  <span style={{ fontSize: '0.875rem', color: '#6B7280', lineHeight: 1.5 }}>
-                    {option.description}
-                  </span>
-                </button>
-              ))}
+            {/* Name */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={LABEL}>Your name</label>
+              <input
+                ref={nameRef}
+                type="text"
+                value={fullName}
+                onChange={e => setFullName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && dimension && handleDimensionSelect(dimension)}
+                placeholder="First and last name"
+                autoComplete="name"
+                style={{
+                  ...INPUT,
+                  borderColor: nameError ? '#EF4444' : BORDER,
+                  boxShadow: nameError ? '0 0 0 3px rgba(239,68,68,0.12)' : 'none',
+                  animation: nameError ? 'shake 0.4s ease' : 'none',
+                }}
+              />
+              {nameError && (
+                <p style={{ fontSize: 12, color: '#EF4444', marginTop: 6, fontFamily: fontBody }}>
+                  Enter your name first
+                </p>
+              )}
             </div>
 
-            <button
-              type="button"
-              onClick={goToStep2}
-              disabled={!ascentStage}
-              style={{
-                ...styles.btnPrimary,
-                opacity: ascentStage ? 1 : 0.4,
-                cursor: ascentStage ? 'pointer' : 'not-allowed',
-              }}
-            >
-              Continue →
-            </button>
-          </>
+            {/* Dimension grid */}
+            <div>
+              <label style={LABEL}>
+                Where do you most need to grow right now?
+              </label>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '0.5rem',
+              }}>
+                {DIMENSIONS.map(d => {
+                  const active = dimension === d.value;
+                  return (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => handleDimensionSelect(d.value)}
+                      style={{
+                        padding: '0.75rem 0.875rem',
+                        borderRadius: '0.625rem',
+                        border: active
+                          ? `2px solid ${GOLD}`
+                          : `1.5px solid ${BORDER}`,
+                        background: active
+                          ? `rgba(200,169,110,0.07)`
+                          : BG,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s',
+                        // Legacy spans full width in the grid
+                        gridColumn: d.value === 'legacy' && DIMENSIONS.length % 2 !== 0
+                          ? 'span 2' : 'auto',
+                      }}
+                    >
+                      <span style={{
+                        display: 'block',
+                        fontSize: 13.5, fontWeight: 700,
+                        color: active ? GOLD : DARK,
+                        fontFamily: fontDisplay,
+                        marginBottom: 2,
+                      }}>
+                        {d.label}
+                      </span>
+                      <span style={{
+                        fontSize: 11.5,
+                        color: active ? `${GOLD}cc` : MUTED,
+                        fontFamily: fontBody,
+                      }}>
+                        {d.sub}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p style={{
+                fontSize: 11.5, color: MUTED, marginTop: 10,
+                fontFamily: fontBody, textAlign: 'center',
+              }}>
+                Tap to select — you'll advance automatically
+              </p>
+            </div>
+          </div>
         )}
 
-        {/* ── STEP 2: The Decision ── */}
-        {step === 2 && (
-          <>
-            <span style={styles.eyebrow}>Step 2 of 3</span>
-            <h1 style={styles.headline}>What are you building?</h1>
-            <p style={styles.subtext}>
-              Not your job title. Not your career goal.{' '}
-              <strong style={{ color: '#0F0F0E' }}>What are you building with your life?</strong>
+        {/* ── SCREEN 2: Mission ── */}
+        {screen === 2 && (
+          <div key="s2" style={{ animation: 'fadeUp 0.25s ease both' }}>
+            <ProgressBar step={2} />
+            <Eyebrow>Your Mission</Eyebrow>
+            <h1 style={H1}>What are you building?</h1>
+            <p style={SUB}>
+              Not your job description. Not a goal. The thing your life is <em>about</em>.
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Full name */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#0F0F0E', marginBottom: '0.5rem' }}>
-                  Full Name *
-                </label>
+            <div style={{ marginBottom: '1.75rem' }}>
+              <label style={LABEL}>I am building…</label>
+              <div style={{ position: 'relative' }}>
                 <input
+                  ref={buildingRef}
                   type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Your full name"
-                  style={styles.input}
-                  required
+                  value={building}
+                  onChange={e => setBuilding(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && building.trim() && handleMissionNext()}
+                  placeholder="e.g. a generation of African leaders who think clearly"
+                  maxLength={120}
+                  style={{ ...INPUT, paddingRight: '3rem' }}
                 />
+                {building.trim() && (
+                  <span style={{
+                    position: 'absolute', right: 14, top: '50%',
+                    transform: 'translateY(-50%)',
+                    fontSize: 11, color: MUTED, fontFamily: fontBody,
+                    pointerEvents: 'none',
+                  }}>
+                    {building.length}/120
+                  </span>
+                )}
               </div>
-
-              {/* What building */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#0F0F0E', marginBottom: '0.5rem' }}>
-                  What are you building? *
-                </label>
-                <textarea
-                  value={whatBuilding}
-                  onChange={(e) => setWhatBuilding(e.target.value)}
-                  placeholder="I am building..."
-                  rows={4}
-                  style={{
-                    ...styles.input,
-                    resize: 'vertical',
-                    minHeight: '100px',
-                    lineHeight: '1.6',
-                  }}
-                  required
-                />
-                <p style={{ fontSize: '0.8rem', color: '#9CA3AF', marginTop: '0.375rem' }}>
-                  2–3 sentences is enough. This is how the community will know you.
-                </p>
-              </div>
-
-              {/* WhatsApp */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#0F0F0E', marginBottom: '0.5rem' }}>
-                  WhatsApp Number <span style={{ color: '#9CA3AF', fontWeight: 400 }}>(optional)</span>
-                </label>
-                <input
-                  type="tel"
-                  value={whatsappPhone}
-                  onChange={(e) => setWhatsappPhone(e.target.value)}
-                  placeholder="+234 800 000 0000"
-                  style={styles.input}
-                />
-                <p style={{ fontSize: '0.8rem', color: '#9CA3AF', marginTop: '0.375rem' }}>
-                  For community updates and Summit notifications.
-                </p>
-              </div>
+              <p style={{ fontSize: 12, color: MUTED, marginTop: 8, fontFamily: fontBody }}>
+                One sentence. This will become your 90-day goal on the dashboard.
+              </p>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.625rem' }}>
               <button
                 type="button"
-                onClick={() => setStep(1)}
-                style={{
-                  flex: '0 0 auto',
-                  padding: '0.875rem 1.25rem',
-                  background: 'transparent',
-                  color: '#6B7280',
-                  fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  borderRadius: '0.625rem',
-                  border: '1.5px solid #E8E6E1',
-                  cursor: 'pointer',
-                }}
+                onClick={() => setScreen(1)}
+                style={BTN_GHOST}
               >
-                ← Back
+                ←
               </button>
-
               <button
                 type="button"
-                onClick={handleProfileSave}
-                disabled={saving || !whatBuilding.trim() || !fullName.trim()}
+                onClick={handleMissionNext}
+                disabled={!building.trim()}
                 style={{
-                  ...styles.btnPrimary,
+                  ...BTN_PRIMARY,
                   flex: 1,
-                  marginTop: 0,
-                  opacity: (!saving && whatBuilding.trim() && fullName.trim()) ? 1 : 0.4,
-                  cursor: (!saving && whatBuilding.trim() && fullName.trim()) ? 'pointer' : 'not-allowed',
+                  opacity: building.trim() ? 1 : 0.35,
+                  cursor: building.trim() ? 'pointer' : 'not-allowed',
                 }}
               >
-                {saving ? 'Saving...' : 'Continue →'}
+                Continue →
               </button>
             </div>
-          </>
+
+            <p style={{ fontSize: 12, color: MUTED, textAlign: 'center', marginTop: 12, fontFamily: fontBody }}>
+              Press{' '}
+              <kbd style={{
+                fontSize: 11, padding: '1px 6px', borderRadius: 4,
+                border: `1px solid ${BORDER}`, background: BG, fontFamily: fontBody,
+              }}>Enter</kbd>
+              {' '}to continue
+            </p>
+          </div>
         )}
 
-        {/* ── STEP 3: The Commitment / Welcome ── */}
-        {step === 3 && (
-          <div style={{ textAlign: 'center' }}>
-            {/* Gold checkmark */}
-            <div style={{
-              width: '64px', height: '64px',
-              borderRadius: '50%',
-              background: 'rgba(200,169,110,0.12)',
-              border: '2px solid #C8A96E',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 1.5rem',
-            }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#C8A96E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
-
-            <span style={styles.eyebrow}>Step 3 of 3</span>
-            <h1 style={{ ...styles.headline, textAlign: 'center' }}>
-              Welcome to The Circle.
-            </h1>
-            <p style={{ ...styles.subtext, textAlign: 'center' }}>
-              Ascentor is built on one thing: intentional people holding each other accountable to becoming who they were built to be.
+        {/* ── SCREEN 3: Commitment ── */}
+        {screen === 3 && (
+          <div key="s3" style={{ animation: 'fadeUp 0.25s ease both' }}>
+            <ProgressBar step={3} />
+            <Eyebrow>Your First Commitment</Eyebrow>
+            <h1 style={H1}>What will you do this week?</h1>
+            <p style={SUB}>
+              Ascentor is built on commitments, not intentions. Name one thing.
             </p>
 
+            <div style={{ marginBottom: '1.75rem' }}>
+              <label style={LABEL}>This week I will…</label>
+              <input
+                ref={commitmentRef}
+                type="text"
+                value={commitment}
+                onChange={e => setCommitment(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && commitment.trim() && handleComplete()}
+                placeholder="e.g. read for 30 minutes every morning"
+                maxLength={100}
+                style={{ ...INPUT }}
+              />
+              <p style={{ fontSize: 12, color: MUTED, marginTop: 8, fontFamily: fontBody }}>
+                This will appear on your dashboard as your first commitment.
+              </p>
+            </div>
+
+            {/* Quote */}
             <div style={{
-              background: '#0F0F0E',
-              borderRadius: '1rem',
-              padding: '1.5rem',
-              marginBottom: '1.5rem',
-              textAlign: 'left',
+              background: '#0C0B08',
+              borderRadius: '0.875rem',
+              padding: '1.125rem 1.25rem',
+              marginBottom: '1.75rem',
+              borderLeft: `3px solid ${GOLD}`,
             }}>
               <p style={{
-                fontFamily: 'var(--font-accent, "Playfair Display", serif)',
+                fontFamily: "var(--font-accent,'Playfair Display',serif)",
                 fontStyle: 'italic',
-                fontSize: '1rem',
-                color: '#C8A96E',
-                lineHeight: 1.65,
+                fontSize: 14, color: GOLD, lineHeight: 1.65, margin: 0,
               }}>
                 "Every life that matters was built on purpose. Not accident. Not circumstance. Purpose."
               </p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem', textAlign: 'left' }}>
-              {[
-                'Engage with The Circle — your community of purposeful builders',
-                'Use the AI Coach to think clearly about what you\'re building',
-                'Register your interest in The Elevation Summit — February 2027',
-              ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#C8A96E', marginTop: '0.5rem', flexShrink: 0 }} />
-                  <p style={{ fontSize: '0.9375rem', color: '#374151', lineHeight: 1.6 }}>{item}</p>
-                </div>
-              ))}
+            <div style={{ display: 'flex', gap: '0.625rem' }}>
+              <button
+                type="button"
+                onClick={() => setScreen(2)}
+                style={BTN_GHOST}
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                onClick={handleComplete}
+                disabled={!commitment.trim() || saving}
+                style={{
+                  ...BTN_PRIMARY,
+                  flex: 1,
+                  opacity: commitment.trim() && !saving ? 1 : 0.35,
+                  cursor: commitment.trim() && !saving ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {saving ? 'Setting things up…' : 'Begin my ascent →'}
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={handleComplete}
-              style={styles.btnPrimary}
-            >
-              I'm ready. Let's begin. →
-            </button>
           </div>
         )}
 
-        {/* Progress dots */}
-        <div style={styles.progressDots}>
-          {[1, 2, 3].map((s) => (
-            <div key={s} style={{
-              width: s === step ? '24px' : '8px',
-              height: '8px',
-              borderRadius: '9999px',
-              background: s === step ? '#C8A96E' : s < step ? '#0F0F0E' : '#E8E6E1',
-              transition: 'all 0.3s',
-            }} />
-          ))}
-        </div>
-
       </div>
 
-      {/* Footer note */}
-      <p style={{ marginTop: '1.5rem', fontSize: '0.8125rem', color: '#9CA3AF', textAlign: 'center' }}>
+      {/* Footer */}
+      <p style={{
+        marginTop: '1.5rem', fontSize: 12,
+        color: MUTED, textAlign: 'center', fontFamily: fontBody,
+      }}>
         The Elevation Summit · February 2027 · Lagos, Nigeria
       </p>
+
+      <style>{`
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          20%, 60%  { transform: translateX(-6px); }
+          40%, 80%  { transform: translateX(6px); }
+        }
+      `}</style>
     </div>
   );
 }

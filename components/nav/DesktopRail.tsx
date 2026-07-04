@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Settings } from 'lucide-react';
 import { NAV_ITEMS } from '@/lib/nav-items';
+import RailBillboard from '@/components/nav/RailBillboard';
 
 interface DesktopRailProps {
   userName: string;
@@ -68,6 +69,9 @@ export function DesktopRail({
       </nav>
 
       <div className="flex-1" />
+
+      {/* ── Rail billboards — managed from Admin → Rail Billboards ── */}
+      <RailBillboard />
 
       {/* Elevation Summit mini-card */}
       <Link

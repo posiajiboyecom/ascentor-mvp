@@ -109,13 +109,121 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         >
           <div className="admin-wrapper">
             <style>{`
-              .admin-wrapper table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+              /* ── Global admin mobile fixes ─────────────────────────── */
+
+              /* Tables: always scrollable */
+              .admin-wrapper table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                width: 100%;
+              }
               .admin-wrapper .grid-cols-12 { min-width: 700px; }
+
+              /* Stat/metric grids: 2-up on mobile */
+              .admin-wrapper .admin-stat-grid {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 10px !important;
+              }
+
               @media (max-width: 768px) {
-                .admin-wrapper { padding: 0 4px; }
+                /* Layout */
+                .admin-wrapper { padding: 0; }
+
+                /* Typography */
                 .admin-wrapper h1 { font-size: 1.25rem !important; }
+                .admin-wrapper h2 { font-size: 1.05rem !important; }
+
+                /* Buttons & inputs */
                 .admin-wrapper button { white-space: nowrap; font-size: 0.75rem; }
-                .admin-wrapper select { font-size: 0.75rem; }
+                .admin-wrapper select, .admin-wrapper input { font-size: 0.875rem !important; }
+
+                /* Tab bars: scroll horizontally instead of overflowing */
+                .admin-wrapper [style*="width: 'fit-content'"],
+                .admin-wrapper [style*="width:fit-content"],
+                .admin-wrapper [style*="width: fit-content"] {
+                  width: 100% !important;
+                  overflow-x: auto !important;
+                }
+
+                /* Flex rows that should wrap on mobile */
+                .admin-wrapper .asc-row,
+                .admin-wrapper .admin-header-row {
+                  flex-wrap: wrap !important;
+                  gap: 8px !important;
+                }
+
+                /* Two-column grids → single column */
+                .admin-wrapper [class*="grid-cols-2"] { grid-template-columns: 1fr !important; }
+                .admin-wrapper [class*="grid-cols-3"] { grid-template-columns: 1fr 1fr !important; }
+                .admin-wrapper [class*="grid-cols-4"] { grid-template-columns: 1fr 1fr !important; }
+
+                /* Inline flex layouts with fixed widths → full width */
+                .admin-wrapper .ascentor-layout { flex-direction: column !important; }
+                .admin-wrapper .pm-wrap { flex-direction: column !important; }
+
+                /* Sticky sidebars inside pages → static on mobile */
+                .admin-wrapper [style*="position: sticky"],
+                .admin-wrapper [style*="position:'sticky'"] {
+                  position: static !important;
+                }
+
+                /* Cards: reduce padding */
+                .admin-wrapper [style*="padding: 28"],
+                .admin-wrapper [style*="padding: 32"],
+                .admin-wrapper [style*="padding: '28px'"],
+                .admin-wrapper [style*="padding: '32px'"] {
+                  padding: 16px !important;
+                }
+
+                /* Fixed pixel widths on inputs → full width */
+                .admin-wrapper input[style*="width: '260px'"],
+                .admin-wrapper input[style*="width: 260px"] {
+                  width: 100% !important;
+                }
+
+                /* Horizontal scroll containers */
+                .admin-wrapper .asc-table-wrap,
+                .admin-wrapper [style*="overflow-x: auto"] {
+                  overflow-x: auto !important;
+                  -webkit-overflow-scrolling: touch;
+                }
+
+                /* Modal / overlay widths */
+                .admin-wrapper [style*="maxWidth: 480"],
+                .admin-wrapper [style*="maxWidth: 400"],
+                .admin-wrapper [style*="maxWidth: 380"],
+                .admin-wrapper [style*="max-width: 480px"],
+                .admin-wrapper [style*="max-width: 400px"],
+                .admin-wrapper [style*="max-width: 380px"] {
+                  max-width: calc(100vw - 32px) !important;
+                }
+
+                /* Hide non-essential desktop columns in tables */
+                .admin-wrapper .td-hide-mobile { display: none !important; }
+
+                /* Pill/tag tab bars: wrap not overflow */
+                .admin-wrapper .asc-tabs { flex-wrap: nowrap; overflow-x: auto; }
+
+                /* Reduce chart containers */
+                .admin-wrapper [style*="height: '300px'"],
+                .admin-wrapper [style*="height: 300px"] {
+                  height: 200px !important;
+                }
+              }
+
+              @media (max-width: 480px) {
+                /* Stat grids → 2 columns on very narrow */
+                .admin-wrapper .admin-stat-grid {
+                  grid-template-columns: 1fr 1fr !important;
+                }
+
+                /* Single-column forms */
+                .admin-wrapper form .grid,
+                .admin-wrapper .form-grid {
+                  grid-template-columns: 1fr !important;
+                }
               }
             `}</style>
             {children}

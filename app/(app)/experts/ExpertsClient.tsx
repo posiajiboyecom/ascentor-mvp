@@ -12,10 +12,9 @@
 // own header comment.
 // ============================================================
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Check } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { canAccess, TIER_META, type PlanTier } from '@/lib/planTier';
 
 // ── Types — match the real schema, not database.ts's stale fields ──
@@ -70,7 +69,26 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
-function isLive(scheduledAt: string, durationMinutes: number | null): boolean {
+// ── Breathing live dot ───────────────────────────────────────────────────
+// A small red pulsing indicator used on session cards when a session is live.
+
+function LiveDot({ className = '' }: { className?: string }) {
+  return (
+    <span className={`relative inline-flex h-2.5 w-2.5 shrink-0 ${className}`}>
+      <span className="absolute inset-0 rounded-full bg-red-500 opacity-40 animate-ping" />
+      <span className="absolute inset-[2px] rounded-full bg-red-500" />
+    </span>
+  );
+}
+
+function isLive(
+  scheduledAt: string,
+  durationMinutes: number | null,
+  status?: string,
+): boolean {
+  // If admin has explicitly marked the session as live, trust that.
+  if (status === 'live') return true;
+  // Otherwise fall back to the time-window check (5-min early + duration).
   const start = new Date(scheduledAt).getTime();
   const end = start + (durationMinutes ?? 60) * 60 * 1000;
   const now = Date.now();
@@ -147,7 +165,7 @@ function SessionCard({
   onToggleRegister,
   onLockedTap,
 }: SessionCardProps) {
-  const live = isLive(session.scheduled_at, session.duration_minutes);
+  const live = isLive(session.scheduled_at, session.duration_minutes, session.status);
   const today = isToday(session.scheduled_at);
   const requiredTier = (session.plan_tier as PlanTier) || 'free';
   const locked = !canAccess(userPlan, requiredTier);
@@ -159,6 +177,12 @@ function SessionCard({
       onLockedTap(session);
       return;
     }
+    // Registered + has a join link → open it (works for both live and upcoming)
+    if (isRegistered && session.meeting_url) {
+      window.open(session.meeting_url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    // Live with no registration required (or not yet registered)
     if (live && session.meeting_url) {
       window.open(session.meeting_url, '_blank', 'noopener,noreferrer');
       return;
@@ -187,9 +211,17 @@ function SessionCard({
             {initials(session.expert_name)}
           </span>
           <div className="min-w-0">
-            <p className="text-[10.5px] font-medium text-[var(--text-dim)] mb-1">
-              {formatSessionTime(session.scheduled_at)}
-            </p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-[10.5px] font-medium text-[var(--text-dim)]">
+                {formatSessionTime(session.scheduled_at)}
+              </p>
+              {live && (
+                <span className="flex items-center gap-1 rounded-full bg-red-500/10 border-[0.5px] border-red-500/30 px-1.5 py-0.5">
+                  <LiveDot />
+                  <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-red-500">Live</span>
+                </span>
+              )}
+            </div>
             <p className="text-sm lg:text-[14.5px] font-bold leading-snug text-[var(--text)] mb-0.5">
               {session.title}
             </p>
@@ -205,38 +237,69 @@ function SessionCard({
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-3 border-t-[0.5px] border-[var(--border)]">
-          {isRegistered ? (
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
-              <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
-              Registered
-            </span>
-          ) : locked ? (
-            <span className="text-xs font-medium" style={{ color: tierMeta.color }}>
-              {tierMeta.label} plan required
-            </span>
+        <div className="pt-3 border-t-[0.5px] border-[var(--border)]">
+          {isRegistered && session.meeting_url ? (
+            // ── Registered + has a join link ──────────────────────────────
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
+                <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                Registered
+              </span>
+              <div className="flex items-center gap-2">
+                {/* Join Here primary CTA */}
+                <button
+                  type="button"
+                  onClick={handleAction}
+                  className="rounded-lg px-3.5 py-1.5 text-xs font-bold bg-[#0891B2] text-white"
+                >
+                  Join Here →
+                </button>
+                {/* Unregister — small secondary */}
+                <button
+                  type="button"
+                  onClick={() => onToggleRegister(session)}
+                  className="rounded-lg px-2.5 py-1.5 text-[10px] font-medium border-[0.5px] border-[var(--border)] bg-transparent text-[var(--text-dim)]"
+                >
+                  Unregister
+                </button>
+              </div>
+            </div>
           ) : (
-            <span className="text-xs text-[var(--text-dim)]">Open to join</span>
-          )}
+            // ── Default state: registered (no link) / locked / open ───────
+            <div className="flex items-center justify-between">
+              {isRegistered ? (
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-green-600">
+                  <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                  Registered
+                </span>
+              ) : locked ? (
+                <span className="text-xs font-medium" style={{ color: tierMeta.color }}>
+                  {tierMeta.label} plan required
+                </span>
+              ) : (
+                <span className="text-xs text-[var(--text-dim)]">Open to join</span>
+              )}
 
-          <button
-            type="button"
-            onClick={handleAction}
-            disabled={locked}
-            className={`
-              rounded-lg px-3.5 py-1.5 text-xs font-bold
-              ${
-                isRegistered
-                  ? 'border-[0.5px] border-[var(--border)] bg-transparent text-[var(--text-dim)]'
-                  : live
-                    ? 'bg-red-500 text-white'
-                    : 'bg-[#C8A96E] text-[#0F0F0E]'
-              }
-              ${locked ? 'invisible' : ''}
-            `}
-          >
-            {isRegistered ? 'Unregister' : live ? 'Join now' : 'Register'}
-          </button>
+              <button
+                type="button"
+                onClick={handleAction}
+                disabled={locked}
+                className={`
+                  rounded-lg px-3.5 py-1.5 text-xs font-bold
+                  ${
+                    isRegistered
+                      ? 'border-[0.5px] border-[var(--border)] bg-transparent text-[var(--text-dim)]'
+                      : live
+                        ? 'bg-red-500 text-white'
+                        : 'bg-[#C8A96E] text-[#0F0F0E]'
+                  }
+                  ${locked ? 'invisible' : ''}
+                `}
+              >
+                {isRegistered ? 'Unregister' : live ? 'Join now' : 'Register'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -416,7 +479,6 @@ export function ExpertsClient({
   userPlan,
   userId,
 }: ExpertsClientProps) {
-  const supabase = useRef(createClient()).current;
   const router = useRouter();
 
   const [registeredIds, setRegisteredIds] = useState(new Set(initialRegisteredIds));
@@ -437,21 +499,25 @@ export function ExpertsClient({
     });
 
     if (isReg) {
-      const { error } = await supabase
-        .from('session_registrations')
-        .delete()
-        .eq('session_id', session.id)
-        .eq('user_id', userId);
-      if (error) {
-        console.error('[ExpertsClient] unregister failed:', error.message);
+      // Unregister — DELETE via API route (no notification needed)
+      const res = await fetch('/api/experts/register', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id }),
+      });
+      if (!res.ok) {
+        console.error('[ExpertsClient] unregister failed:', await res.text());
         setRegisteredIds((prev) => new Set(prev).add(session.id)); // revert
       }
     } else {
-      const { error } = await supabase
-        .from('session_registrations')
-        .insert({ session_id: session.id, user_id: userId });
-      if (error) {
-        console.error('[ExpertsClient] register failed:', error.message);
+      // Register — POST via API route (triggers in-app notification + push/email)
+      const res = await fetch('/api/experts/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id }),
+      });
+      if (!res.ok) {
+        console.error('[ExpertsClient] register failed:', await res.text());
         setRegisteredIds((prev) => {
           const next = new Set(prev);
           next.delete(session.id); // revert
@@ -487,7 +553,7 @@ export function ExpertsClient({
     });
   }, [sessions, activeDimension, activeStatus, registeredIds]);
 
-  const liveSessions = filtered.filter((s) => isLive(s.scheduled_at, s.duration_minutes));
+  const liveSessions = filtered.filter((s) => isLive(s.scheduled_at, s.duration_minutes, s.status));
   // Today includes live sessions too — the prototype shows the live session
   // both in the LiveBanner AND as its own card in the Today grid below it.
   const todaySessions = filtered.filter(

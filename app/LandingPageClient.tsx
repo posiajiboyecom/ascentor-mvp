@@ -66,7 +66,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   // a field is missing or misnamed, that one value silently falls
   // back to hardcoded copy rather than rendering blank or crashing.
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
-  const heroEyebrow  = hero?.eyebrow   || 'The Elevation Summit Movement';
+  const heroEyebrow  = hero?.eyebrow   || 'The Elevation Summit Platform';
   const heroHeadline = hero?.headline  || 'You were not built<br />to drift.';
   const heroSubhead  = hero?.subhead   || 'Ascentor is the daily platform of The Elevation Summit — a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.';
   const heroCtaLabel    = hero?.cta_label    || 'Join the Movement →';
@@ -79,7 +79,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const bannerEyebrow = banner?.eyebrow || 'The Elevation Summit';
   const bannerDate    = banner?.date    || 'February 2027 · Lagos, Nigeria';
   const bannerSub     = banner?.sub     || 'The inaugural gathering. One defining moment.';
-  const bannerCta     = banner?.cta     || 'Register Interest →';
+  const bannerCta     = banner?.cta     || 'Register →';
   const bannerHref    = banner?.href    || '/elevation-summit';
 
   // Problem Section

@@ -4,7 +4,7 @@ import BottomNav from './BottomNav';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NotificationBell } from '@/components/Notifications';
 
 // ─────────────────────────────────────────────────────────────────
@@ -23,6 +23,23 @@ export default function AppShell({
   const supabase = createClient();
   const router   = useRouter();
   const [showMenu, setShowMenu] = useState(false);
+
+  // ── Catch client-side token expiry / forced sign-out ─────────────
+  // When the refresh token becomes invalid while the user is on a page
+  // (e.g. revoked from another device, or Supabase session table purged),
+  // Supabase emits a SIGNED_OUT event. We catch it and redirect to login
+  // so the user sees a clean "session expired" message instead of a
+  // broken UI with silent 401s.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event) => {
+        if (event === 'SIGNED_OUT') {
+          router.push('/login?reason=session_expired');
+        }
+      }
+    );
+    return () => subscription.unsubscribe();
+  }, [supabase, router]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

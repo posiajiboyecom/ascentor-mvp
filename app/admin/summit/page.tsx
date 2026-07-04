@@ -46,6 +46,8 @@ const B = {
 
 type Reg = {
   id: string;
+  user_id: string | null;
+  source: string | null;
   full_name: string;
   email: string;
   whatsapp: string;
@@ -247,7 +249,23 @@ export default function AdminSummitPage() {
                 return (
                   <>
                     <tr key={r.id} style={{ borderBottom: `1px solid ${B.border}`, background: isExpanded ? 'rgba(200,169,110,0.04)' : 'transparent' }}>
-                      <td style={{ padding: '12px 14px', color: B.text, fontSize: '13px', whiteSpace: 'nowrap' }}>{r.full_name}</td>
+                      <td style={{ padding: '12px 14px', color: B.text, fontSize: '13px', whiteSpace: 'nowrap' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {r.full_name}
+                          {r.source === 'app' && (
+                            <span style={{
+                              fontFamily: B.fontMono, fontSize: '9px', fontWeight: 600,
+                              letterSpacing: '0.06em', textTransform: 'uppercase',
+                              padding: '1px 6px', borderRadius: '999px',
+                              background: 'rgba(139,92,246,0.12)',
+                              border: '1px solid rgba(139,92,246,0.3)',
+                              color: '#8B5CF6', flexShrink: 0,
+                            }}>
+                              App
+                            </span>
+                          )}
+                        </span>
+                      </td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{r.email}</td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{r.whatsapp}</td>
                       <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted }}>{r.city ? `${r.city}, ` : ''}{r.country}</td>
@@ -291,6 +309,14 @@ export default function AdminSummitPage() {
                       <tr key={`${r.id}-detail`} style={{ borderBottom: `1px solid ${B.border}`, background: 'rgba(200,169,110,0.03)' }}>
                         <td colSpan={9} style={{ padding: '20px 24px' }}>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+
+                            {/* Source / App user indicator */}
+                            {r.source === 'app' && (
+                              <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', marginBottom: '4px' }}>
+                                <span style={{ fontFamily: B.fontMono, fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#8B5CF6' }}>Registered via Ascentor App</span>
+                                {r.user_id && <span style={{ fontFamily: B.fontMono, fontSize: '10px', color: B.dim }}>user_id: {r.user_id}</span>}
+                              </div>
+                            )}
 
                             {/* Contact */}
                             <div>

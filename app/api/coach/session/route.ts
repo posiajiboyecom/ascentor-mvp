@@ -5,13 +5,10 @@
 //   1. Auth + rate limit + tier gate the session type
 //   2. Load or create the coaching_sessions row
 //   3. Enforce per-plan session length (messages per session)
-//   4. Call Claude with the session type's system prompt
-//   5. Parse the strict { reflection, question, action } JSON
-//   6. Persist both turns, return the assistant turn
-//
-// NOTE: auth is already enforced by proxy.ts for all /api/coach/*
-// routes (S3 fix) — this route still re-checks because proxy.ts
-// returning 401 doesn't replace defense-in-depth at the route level.
+//   4. Retrieve relevant knowledge via pgvector RAG
+//   5. Call Claude with the session type's system prompt + RAG context
+//   6. Parse the strict { reflection, question, action } JSON
+//   7. Persist both turns, return the assistant turn
 // ============================================================
 
 import { NextResponse } from 'next/server';
@@ -21,6 +18,7 @@ import { coachSessionLimiter, getClientIp } from '@/lib/rate-limit';
 import { SESSION_TYPE_MAP, getAvailableSessionTypes } from '@/lib/session-types';
 import { effectivePlan } from '@/lib/planTier';
 import { PLAN_LIMITS, checkUsage } from '@/lib/session-limits';
+import { retrieveContext } from '@/lib/rag';
 import type {
   CoachMessage,
   CoachAssistantMessage,
@@ -114,7 +112,7 @@ export async function POST(req: Request) {
     existingMessages = (existing.messages as CoachMessage[]) ?? [];
   }
 
-  // ── Enforce per-plan session length (messages per session) ─
+  // ── Enforce per-plan session length ───────────────────────
   const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
   if (
     limits.sessionLength !== -1 &&
@@ -144,6 +142,47 @@ export async function POST(req: Request) {
     }
   }
 
+  // ── RAG: retrieve relevant knowledge from pgvector ────────
+  // Map session type to the most relevant namespace(s).
+  // Falls back to searching all namespaces if no specific match.
+  const namespaceMap: Record<string, string> = {
+    challenge_navigation:  'coaching',
+    difficult_conversation: 'leadership',
+    weekly_reflection:     'framework',
+    accountability_check:  'framework',
+    career_planning:       'career',
+    salary_negotiation:    'salary',
+    leadership_development: 'leadership',
+  };
+
+  const ragNamespace = namespaceMap[sessionTypeId];
+
+  // Retrieve context — runs concurrently with nothing else needed before Claude
+  // so we await it here. Fails gracefully: empty contextBlock = no RAG injection.
+  const { contextBlock } = await retrieveContext(message.trim(), {
+    namespace: ragNamespace,
+    topK: 10,
+    topN: 3,
+  });
+
+  // ── Build system prompt with optional RAG context ─────────
+  // The mentor attribution instruction is appended when knowledge is present.
+  // This is what enables "Approach 2: Sage Surfaces the Source" —
+  // once mentor chunks are in the knowledge base, Sage will attribute
+  // naturally when similarity is high.
+  const systemPrompt = contextBlock
+    ? `${sessionType.prompt}
+
+=== RELEVANT KNOWLEDGE ===
+The following has been retrieved from Ascentor's knowledge base to inform your response.
+Use it to ground your coaching in proven frameworks and real insight.
+When a piece of knowledge is distinctively attributed to a named person or source,
+and it is central to your response, attribute it naturally (e.g. "Covey called this...").
+Do not attribute every piece — only when it adds genuine weight.
+
+${contextBlock}`
+    : sessionType.prompt;
+
   // ── Build the conversation for Claude ────────────────────
   const userTurn: CoachMessage = {
     role: 'user',
@@ -162,7 +201,7 @@ export async function POST(req: Request) {
     const response = await anthropic.messages.create({
       model: COACH_MODEL,
       max_tokens: 800,
-      system: sessionType.prompt,
+      system: systemPrompt,
       messages: conversationForClaude,
     });
 
@@ -174,8 +213,6 @@ export async function POST(req: Request) {
     try {
       parsed = JSON.parse(cleaned);
     } catch {
-      // Claude didn't return valid JSON — fall back to showing the
-      // raw text as the question so the turn isn't silently lost.
       parsed = { reflection: '', question: cleaned, action: undefined };
     }
 
@@ -237,10 +274,7 @@ export async function POST(req: Request) {
     resolvedSessionId = created.id;
   }
 
-  // ── Record usage (feature name matches lib/session-limits.ts) ──
-  // coachingSessions is a per-SESSION limit (PLAN_LIMITS), not
-  // per-message — only record on the turn that creates a new session,
-  // or every follow-up reply would also consume the monthly quota.
+  // ── Record usage ──────────────────────────────────────────
   if (isNewSession) {
     await supabase.from('usage_tracking').insert({
       user_id: user.id,

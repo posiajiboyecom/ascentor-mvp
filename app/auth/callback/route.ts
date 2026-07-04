@@ -11,8 +11,8 @@
 //   2. hasPaid but not onboarded             → /dashboard
 //   3. next=/onboarding explicitly set       → /onboarding  (free plan)
 //   4. next=/checkout?plan=X explicitly set  → /checkout?plan=X (paid intent)
-//   5. completedStep2 (both onboarding steps done, unpaid) → /checkout
-//   6. completedStep1 (partially onboarded)  → /onboarding?step=2
+//   5. hasStarted (name + dimension chosen) → /onboarding?step=2
+//   6. Fresh user → /onboarding
 //   7. Fresh user                            → /onboarding
 //
 // PARTNER WHITELIST CHECK:
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
   // ── MAIN ASCENTOR FLOW ────────────────────────────────────
   const { data: profile } = await supabase
     .from('profiles')
-    .select('onboarding_completed, subscription_status, subscription_plan, full_name, email, current_role, goal_role, industry')
+    .select('onboarding_completed, subscription_status, subscription_plan, full_name, email, what_building, ascent_stage')
     .eq('id', user.id)
     .single();
 
@@ -122,23 +122,18 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}${next}`);
   }
 
-  // 5–7. Standard onboarding routing for users who came through
+  // 5–6. Standard onboarding routing for users who came through
   //      other paths (direct /signup, OAuth, etc.)
+  //      Uses ascent_stage (their chosen dimension) as the resume signal.
 
-  const completedStep1 = !!(profile?.full_name && profile?.current_role);
-  const completedStep2 = !!(profile?.full_name && profile?.current_role && profile?.goal_role && profile?.industry);
+  const hasStarted = !!(profile?.full_name && profile?.ascent_stage);
 
-  if (completedStep2) {
-    // Both steps done, not paid — send to checkout
-    return NextResponse.redirect(`${origin}/checkout`);
-  }
-
-  if (completedStep1) {
-    // Partially through onboarding — resume at step 2
+  if (hasStarted) {
+    // Completed screen 1, not finished — resume at screen 2
     return NextResponse.redirect(`${origin}/onboarding?step=2`);
   }
 
-  // Fresh user — start onboarding from beginning
+  // Fresh user — start onboarding from the beginning
   return NextResponse.redirect(`${origin}/onboarding`);
 }
 
