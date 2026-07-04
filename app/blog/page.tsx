@@ -2,8 +2,18 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Blog — Ascentor',
-  description: 'Leadership insights and career strategies for purposeful individuals.',
+  title: 'Blog',
+  description:
+    'Insights on purposeful living, leadership, and legacy — across Mind, Character, Work, Relationships, Community, and Legacy.',
+  alternates: { canonical: 'https://ascentorbi.com/blog' },
+  openGraph: {
+    title: 'The Ascentor Blog',
+    description:
+      'Insights on purposeful living, leadership, and legacy from the Ascentor movement.',
+    url: 'https://ascentorbi.com/blog',
+    siteName: 'Ascentor',
+    type: 'website',
+  },
 };
 
 export default async function BlogPage() {
@@ -44,10 +54,10 @@ export default async function BlogPage() {
               <p className="text-sm mb-6" style={{ color: '#9CA3AF', maxWidth: 320, margin: '0 auto 24px' }}>
                 We're preparing leadership insights and career strategies for purposeful individuals worldwide.
               </p>
-              <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-semibold"
+              <Link href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-semibold"
                 style={{ background: '#E8A020', color: '#000' }}>
                 Back to Home
-              </a>
+              </Link>
             </div>
           )}
 

@@ -7,6 +7,7 @@ import { NotificationProvider } from '@/components/Notifications';
 import PushPermission from '@/components/PushPermission';
 import { MobileInit } from '@/components/MobileInit';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
+import StructuredData from '@/components/StructuredData';
 import Script from 'next/script';
 
 // ── Fonts ──────────────────────────────────────────────────────────
@@ -34,6 +35,12 @@ const playfair = Playfair_Display({
 
 // ── Metadata ───────────────────────────────────────────────────────
 export const metadata: Metadata = {
+  // metadataBase makes all relative OG/twitter image + canonical URLs
+  // resolve against the production domain (incl. the dynamic
+  // app/opengraph-image.tsx). Without it Next falls back to localhost
+  // or the Vercel deployment URL.
+  metadataBase: new URL('https://ascentorbi.com'),
+  alternates: { canonical: '/' },
   title: {
     default: 'Ascentor — Build a life that outlasts you.',
     template: '%s | Ascentor',
@@ -98,6 +105,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <head>
+        <StructuredData />
         <link rel="apple-touch-icon" sizes="180x180" href="/icon/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/icon/icon-192.png" />
 

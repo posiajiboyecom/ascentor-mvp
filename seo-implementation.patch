@@ -1,0 +1,849 @@
+diff --git a/app/(marketing)/elevation-summit/ElevationSummitClient.tsx b/app/(marketing)/elevation-summit/ElevationSummitClient.tsx
+index dbbdd3b..204c4ef 100644
+--- a/app/(marketing)/elevation-summit/ElevationSummitClient.tsx
++++ b/app/(marketing)/elevation-summit/ElevationSummitClient.tsx
+@@ -88,7 +88,7 @@ const EMPTY: Form = {
+ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | null }) {
+   // CMS section keys
+   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
+-  const heroEyebrow   = hero?.eyebrow    || 'Annual Gathering · February 2027';
++  const heroEyebrow   = hero?.eyebrow    || 'Inaugural Gathering · December 2026';
+   const heroHeadline  = hero?.headline   || 'The Elevation<br />Summit';
+   const heroSubhead   = hero?.subhead    || 'One gathering. One decision. The rest of your life.';
+   const heroCtaLabel  = hero?.cta_label  || 'Register Now →';
+@@ -102,7 +102,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
+   const register = cms?.sections.register?.data as Record<string, string> | undefined;
+   const regEyebrow  = register?.eyebrow  || 'Event Registration';
+   const regHeadline = register?.headline || 'Secure your place.';
+-  const regSubhead  = register?.subhead  || 'Registration is open for the inaugural Elevation Summit, February 2027, Lagos. Complete the form below — every detail helps us prepare the right experience for you.';
++  const regSubhead  = register?.subhead  || 'Registration is open for the inaugural Elevation Summit, December 2026, Lagos — attend physically or join virtually. Complete the form below — every detail helps us prepare the right experience for you.';
+ 
+   const [form, setForm] = useState<Form>(EMPTY);
+   const [submitted, setSubmitted] = useState(false);
+@@ -189,7 +189,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
+       <section style={{ background: '#C8A96E', padding: '1.5rem' }}>
+         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '1rem' }}>
+           {[
+-            { value: 'February 2027', label: 'Inaugural Gathering' },
++            { value: 'December 2026', label: 'Inaugural Gathering' },
+             { value: 'Lagos, Nigeria', label: 'Location' },
+             { value: '1 Day', label: 'Defining Moment' },
+             { value: 'Open', label: 'Registration' },
+diff --git a/app/(marketing)/elevation-summit/page.tsx b/app/(marketing)/elevation-summit/page.tsx
+index ebbf11c..d0ab005 100644
+--- a/app/(marketing)/elevation-summit/page.tsx
++++ b/app/(marketing)/elevation-summit/page.tsx
+@@ -3,16 +3,61 @@
+ // client component (ElevationSummitClient.tsx) which owns the
+ // registration form state. Same split pattern as app/page.tsx →
+ // app/LandingPageClient.tsx.
++//
++// SEO: full metadata + Event JSON-LD (hybrid: physical Lagos venue +
++// virtual access). Event constants live in lib/seo.ts (SUMMIT) — update
++// the exact date/venue/prices there, not here.
+ import type { Metadata } from 'next';
+ import { getPublishedPage } from '@/lib/supabase/queries/marketing';
++import { SITE_URL, SUMMIT, getSummitEventSchema, getBreadcrumbSchema } from '@/lib/seo';
+ import ElevationSummitClient from './ElevationSummitClient';
+ 
+ export const metadata: Metadata = {
+-  title: 'The Elevation Summit',
+-  description: 'One gathering. One decision. The rest of your life. The Elevation Summit — February 2027, Lagos.',
++  title: 'The Elevation Summit 2026 — Lagos | Physical & Virtual',
++  description:
++    'One gathering. One decision. The rest of your life. The inaugural Elevation Summit — December 2026 at the Femi Gbajabiamila Conference Centre, LASU, Lagos, with global virtual access. Register now.',
++  alternates: { canonical: `${SITE_URL}/elevation-summit` },
++  openGraph: {
++    title: 'The Elevation Summit 2026 — Lagos',
++    description:
++      'A movement for purposeful living, leadership, and legacy. December 2026, Lagos — attend in person or join virtually from anywhere in the world.',
++    url: `${SITE_URL}/elevation-summit`,
++    siteName: 'Ascentor',
++    type: 'website',
++  },
++  twitter: {
++    card: 'summary_large_image',
++    title: 'The Elevation Summit 2026 — Lagos',
++    description:
++      'One gathering. One decision. The rest of your life. December 2026 · Lagos · Physical & Virtual.',
++  },
++  keywords: [
++    'The Elevation Summit',
++    'Elevation Summit Lagos',
++    'Elevation Summit 2026',
++    'leadership conference Lagos 2026',
++    'personal development events Nigeria',
++    'purposeful living conference',
++  ],
+ };
+ 
+ export default async function ElevationSummitPage() {
+   const cms = await getPublishedPage('elevation-summit');
+-  return <ElevationSummitClient cms={cms} />;
++  const jsonLd = [
++    getSummitEventSchema(),
++    getBreadcrumbSchema([
++      { name: 'Home', url: SITE_URL },
++      { name: SUMMIT.name, url: `${SITE_URL}/elevation-summit` },
++    ]),
++  ];
++
++  return (
++    <>
++      <script
++        type="application/ld+json"
++        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
++      />
++      <ElevationSummitClient cms={cms} />
++    </>
++  );
+ }
+diff --git a/app/blog/[slug]/page.tsx b/app/blog/[slug]/page.tsx
+index c4bd1e8..389a4ca 100644
+--- a/app/blog/[slug]/page.tsx
++++ b/app/blog/[slug]/page.tsx
+@@ -2,6 +2,7 @@
+ import { notFound } from 'next/navigation';
+ import Link from 'next/link';
+ import type { Metadata } from 'next';
++import { SITE_URL, getArticleSchema, getBreadcrumbSchema } from '@/lib/seo';
+ 
+ type Props = { params: Promise<{ slug: string }> };
+ 
+@@ -10,17 +11,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
+   const supabase = await createClient();
+   const { data: post } = await supabase
+     .from('blog_posts')
+-    .select('title, excerpt')
++    .select('title, excerpt, published_at, author_name')
+     .eq('slug', slug)
+     .eq('is_published', true)
+     .single();
+ 
+-  if (!post) return { title: 'Post Not Found — Ascentor' };
++  if (!post) return { title: 'Post Not Found — Ascentor', robots: { index: false } };
+ 
++  const url = `${SITE_URL}/blog/${slug}`;
+   return {
+-    title: `${post.title} — Ascentor Blog`,
++    title: post.title, // root template appends "| Ascentor"
+     description: post.excerpt || '',
+-    openGraph: { title: post.title, description: post.excerpt || '' },
++    alternates: { canonical: url },
++    openGraph: {
++      title: post.title,
++      description: post.excerpt || '',
++      url,
++      siteName: 'Ascentor',
++      type: 'article',
++      publishedTime: post.published_at || undefined,
++      authors: post.author_name ? [post.author_name] : undefined,
++    },
++    twitter: {
++      card: 'summary_large_image',
++      title: post.title,
++      description: post.excerpt || '',
++    },
+   };
+ }
+ 
+@@ -97,8 +113,21 @@ export default async function BlogPostPage({ params }: Props) {
+       });
+   }
+ 
++  const jsonLd = [
++    getArticleSchema({ ...post, slug }),
++    getBreadcrumbSchema([
++      { name: 'Home', url: SITE_URL },
++      { name: 'Blog', url: `${SITE_URL}/blog` },
++      { name: post.title, url: `${SITE_URL}/blog/${slug}` },
++    ]),
++  ];
++
+   return (
+     <div className="min-h-screen" style={{ background: '#FAFAF9', fontFamily: "'Syne', system-ui, sans-serif" }}>
++      <script
++        type="application/ld+json"
++        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
++      />
+ 
+       <nav className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(250,250,249,0.88)', borderBottom: '1px solid #E5E5E4' }}>
+         <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
+diff --git a/app/blog/page.tsx b/app/blog/page.tsx
+index be602ca..4aa5320 100644
+--- a/app/blog/page.tsx
++++ b/app/blog/page.tsx
+@@ -2,8 +2,18 @@
+ import Link from 'next/link';
+ 
+ export const metadata = {
+-  title: 'Blog — Ascentor',
+-  description: 'Leadership insights and career strategies for purposeful individuals.',
++  title: 'Blog',
++  description:
++    'Insights on purposeful living, leadership, and legacy — across Mind, Character, Work, Relationships, Community, and Legacy.',
++  alternates: { canonical: 'https://ascentorbi.com/blog' },
++  openGraph: {
++    title: 'The Ascentor Blog',
++    description:
++      'Insights on purposeful living, leadership, and legacy from the Ascentor movement.',
++    url: 'https://ascentorbi.com/blog',
++    siteName: 'Ascentor',
++    type: 'website',
++  },
+ };
+ 
+ export default async function BlogPage() {
+@@ -44,10 +54,10 @@ export default async function BlogPage() {
+               <p className="text-sm mb-6" style={{ color: '#9CA3AF', maxWidth: 320, margin: '0 auto 24px' }}>
+                 We're preparing leadership insights and career strategies for purposeful individuals worldwide.
+               </p>
+-              <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-semibold"
++              <Link href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-semibold"
+                 style={{ background: '#E8A020', color: '#000' }}>
+                 Back to Home
+-              </a>
++              </Link>
+             </div>
+           )}
+ 
+diff --git a/app/components/StructuredData.tsx b/app/components/StructuredData.tsx
+deleted file mode 100644
+index 69013d5..0000000
+--- a/app/components/StructuredData.tsx
++++ /dev/null
+@@ -1,25 +0,0 @@
+-// ============================================================
+-// STRUCTURED DATA COMPONENT
+-// Renders JSON-LD schema in <head> for rich search results.
+-// Usage: <StructuredData /> in app/layout.tsx
+-// ============================================================
+-
+-import { getOrganizationSchema, getSoftwareAppSchema } from '@/lib/seo';
+-
+-export default function StructuredData() {
+-  const orgSchema = getOrganizationSchema();
+-  const appSchema = getSoftwareAppSchema();
+-
+-  return (
+-    <>
+-      <script
+-        type="application/ld+json"
+-        dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+-      />
+-      <script
+-        type="application/ld+json"
+-        dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }}
+-      />
+-    </>
+-  );
+-}
+diff --git a/app/layout.tsx b/app/layout.tsx
+index 29fed57..253ce42 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -7,6 +7,7 @@ import { NotificationProvider } from '@/components/Notifications';
+ import PushPermission from '@/components/PushPermission';
+ import { MobileInit } from '@/components/MobileInit';
+ import AuthErrorHandler from '@/components/AuthErrorHandler';
++import StructuredData from '@/components/StructuredData';
+ import Script from 'next/script';
+ 
+ // ── Fonts ──────────────────────────────────────────────────────────
+@@ -34,6 +35,12 @@ const playfair = Playfair_Display({
+ 
+ // ── Metadata ───────────────────────────────────────────────────────
+ export const metadata: Metadata = {
++  // metadataBase makes all relative OG/twitter image + canonical URLs
++  // resolve against the production domain (incl. the dynamic
++  // app/opengraph-image.tsx). Without it Next falls back to localhost
++  // or the Vercel deployment URL.
++  metadataBase: new URL('https://ascentorbi.com'),
++  alternates: { canonical: '/' },
+   title: {
+     default: 'Ascentor — Build a life that outlasts you.',
+     template: '%s | Ascentor',
+@@ -98,6 +105,7 @@ export default function RootLayout({ children }: { children: React.ReactNode })
+       suppressHydrationWarning
+     >
+       <head>
++        <StructuredData />
+         <link rel="apple-touch-icon" sizes="180x180" href="/icon/apple-touch-icon.png" />
+         <link rel="icon" type="image/png" sizes="32x32" href="/icon/icon-192.png" />
+ 
+diff --git a/app/opengraph-image.tsx b/app/opengraph-image.tsx
+new file mode 100644
+index 0000000..3f66e6c
+--- /dev/null
++++ b/app/opengraph-image.tsx
+@@ -0,0 +1,61 @@
++// app/opengraph-image.tsx
++// Default Open Graph image for every page that doesn't define its own.
++// Rendered at the edge via next/og — no static asset to maintain.
++// WhatsApp, X, LinkedIn, iMessage all pick this up automatically once
++// metadataBase is set in the root layout.
++
++import { ImageResponse } from 'next/og';
++
++export const runtime = 'edge';
++export const alt = 'Ascentor — Build a life that outlasts you.';
++export const size = { width: 1200, height: 630 };
++export const contentType = 'image/png';
++
++export default function OpengraphImage() {
++  return new ImageResponse(
++    (
++      <div
++        style={{
++          width: '100%',
++          height: '100%',
++          display: 'flex',
++          flexDirection: 'column',
++          justifyContent: 'space-between',
++          padding: 72,
++          background: 'linear-gradient(135deg, #0C0B08 0%, #1A1A2E 100%)',
++          color: '#FFFBF5',
++          fontFamily: 'Georgia, serif',
++        }}
++      >
++        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
++          <div
++            style={{
++              width: 18,
++              height: 18,
++              borderRadius: 9999,
++              background: '#E8A020',
++              display: 'flex',
++            }}
++          />
++          <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: 2, display: 'flex' }}>
++            ASCENTOR
++          </div>
++        </div>
++
++        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
++          <div style={{ fontSize: 76, fontWeight: 700, lineHeight: 1.1, display: 'flex' }}>
++            Build a life that outlasts you.
++          </div>
++          <div style={{ fontSize: 30, color: '#E8A020', display: 'flex' }}>
++            Purpose · Leadership · Community · Legacy
++          </div>
++        </div>
++
++        <div style={{ fontSize: 26, color: '#9CA3AF', display: 'flex' }}>
++          ascentorbi.com — home of The Elevation Summit
++        </div>
++      </div>
++    ),
++    { ...size },
++  );
++}
+diff --git a/app/robots.ts b/app/robots.ts
+new file mode 100644
+index 0000000..d9ec198
+--- /dev/null
++++ b/app/robots.ts
+@@ -0,0 +1,37 @@
++// app/robots.ts
++// Served automatically at /robots.txt.
++// Blocks the authed app shell, admin, APIs, and auth flows from crawling;
++// everything else (marketing layer, blog, summit) is open.
++
++import type { MetadataRoute } from 'next';
++import { SITE_URL } from '@/lib/seo';
++
++export default function robots(): MetadataRoute.Robots {
++  return {
++    rules: [
++      {
++        userAgent: '*',
++        allow: '/',
++        disallow: [
++          '/admin',
++          '/api/',
++          '/auth/',
++          '/dashboard',
++          '/coach',
++          '/community',
++          '/experts',
++          '/learn',
++          '/account',
++          '/referral',
++          '/onboarding',
++          '/checkout',
++          '/login',
++          '/forgot-password',
++          '/reset-password',
++          '/offline',
++        ],
++      },
++    ],
++    sitemap: `${SITE_URL}/sitemap.xml`,
++  };
++}
+diff --git a/app/sitemap.ts b/app/sitemap.ts
+new file mode 100644
+index 0000000..3204ff4
+--- /dev/null
++++ b/app/sitemap.ts
+@@ -0,0 +1,70 @@
++// app/sitemap.ts
++// Dynamic XML sitemap — served at /sitemap.xml automatically by Next.js.
++// Includes all public marketing routes + published blog posts from Supabase.
++//
++// Uses a bare supabase-js client (not the cookie-bound server client)
++// because sitemaps are generated outside a user request context.
++// Only publicly-readable data (published posts) is queried.
++
++import type { MetadataRoute } from 'next';
++import { createClient } from '@supabase/supabase-js';
++import { SITE_URL } from '@/lib/seo';
++
++export const revalidate = 3600; // regenerate at most hourly
++
++const STATIC_ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [
++  { path: '',                  priority: 1.0, changeFrequency: 'weekly' },
++  { path: '/elevation-summit', priority: 1.0, changeFrequency: 'weekly' },
++  { path: '/about',            priority: 0.8, changeFrequency: 'monthly' },
++  { path: '/how-it-works',     priority: 0.8, changeFrequency: 'monthly' },
++  { path: '/who-its-for',      priority: 0.8, changeFrequency: 'monthly' },
++  { path: '/products',         priority: 0.7, changeFrequency: 'monthly' },
++  { path: '/blog',             priority: 0.9, changeFrequency: 'daily' },
++  { path: '/movement',         priority: 0.7, changeFrequency: 'monthly' },
++  { path: '/events',           priority: 0.7, changeFrequency: 'weekly' },
++  { path: '/careers',          priority: 0.4, changeFrequency: 'monthly' },
++  { path: '/contact',          priority: 0.5, changeFrequency: 'yearly' },
++  { path: '/mentor-apply',     priority: 0.5, changeFrequency: 'monthly' },
++  { path: '/partner',          priority: 0.5, changeFrequency: 'monthly' },
++  { path: '/signup',           priority: 0.6, changeFrequency: 'yearly' },
++  { path: '/privacy',          priority: 0.2, changeFrequency: 'yearly' },
++  { path: '/terms',            priority: 0.2, changeFrequency: 'yearly' },
++];
++
++export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
++  const now = new Date();
++
++  const entries: MetadataRoute.Sitemap = STATIC_ROUTES.map((r) => ({
++    url: `${SITE_URL}${r.path}`,
++    lastModified: now,
++    changeFrequency: r.changeFrequency,
++    priority: r.priority,
++  }));
++
++  // Published blog posts — fail soft: a Supabase hiccup must never 500 the sitemap.
++  try {
++    const supabase = createClient(
++      process.env.NEXT_PUBLIC_SUPABASE_URL!,
++      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
++    );
++    const { data: posts } = await supabase
++      .from('blog_posts')
++      .select('slug, published_at, updated_at')
++      .eq('is_published', true)
++      .order('published_at', { ascending: false })
++      .limit(1000);
++
++    for (const post of posts ?? []) {
++      entries.push({
++        url: `${SITE_URL}/blog/${post.slug}`,
++        lastModified: new Date(post.updated_at || post.published_at || now),
++        changeFrequency: 'monthly',
++        priority: 0.7,
++      });
++    }
++  } catch {
++    // Sitemap still serves static routes if the DB query fails.
++  }
++
++  return entries;
++}
+diff --git a/components/StructuredData.tsx b/components/StructuredData.tsx
+index 69013d5..175b5a0 100644
+--- a/components/StructuredData.tsx
++++ b/components/StructuredData.tsx
+@@ -1,25 +1,28 @@
+ // ============================================================
+ // STRUCTURED DATA COMPONENT
+-// Renders JSON-LD schema in <head> for rich search results.
+-// Usage: <StructuredData /> in app/layout.tsx
++// Renders sitewide JSON-LD (Organization, WebSite, SoftwareApplication)
++// for rich search results. Rendered once in app/layout.tsx.
++// Page-specific schema (Event, Article) lives in the page files.
+ // ============================================================
+ 
+-import { getOrganizationSchema, getSoftwareAppSchema } from '@/lib/seo';
++import {
++  getOrganizationSchema,
++  getWebSiteSchema,
++  getSoftwareAppSchema,
++} from '@/lib/seo';
+ 
+ export default function StructuredData() {
+-  const orgSchema = getOrganizationSchema();
+-  const appSchema = getSoftwareAppSchema();
++  const schemas = [getOrganizationSchema(), getWebSiteSchema(), getSoftwareAppSchema()];
+ 
+   return (
+     <>
+-      <script
+-        type="application/ld+json"
+-        dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+-      />
+-      <script
+-        type="application/ld+json"
+-        dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }}
+-      />
++      {schemas.map((schema, i) => (
++        <script
++          key={i}
++          type="application/ld+json"
++          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
++        />
++      ))}
+     </>
+   );
+ }
+diff --git a/lib/seo.ts b/lib/seo.ts
+index 04845ac..dc52453 100644
+--- a/lib/seo.ts
++++ b/lib/seo.ts
+@@ -1,122 +1,44 @@
+-﻿// ============================================================
+-// SEO METADATA — Root layout metadata for Ascentor
+-// Place in: app/layout.tsx (merge with existing)
++// ============================================================
++// lib/seo.ts — Central SEO configuration & JSON-LD builders
++// Single source of truth for site identity, canonical URLs, and
++// structured data. Never hardcode ascentorbi.com in page files.
+ //
+-// Next.js App Router uses the exported `metadata` object
+-// for automatic <head> tag generation.
++// NOTE: this file intentionally contains NO fabricated ratings or
++// review markup. Only add aggregateRating when real, verifiable
++// user reviews exist — fake ratings violate Google's structured
++// data policies and can get all rich results revoked.
+ // ============================================================
+ 
+-import type { Metadata, Viewport } from 'next';
+-
+-// Base URL — update after deployment
+-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://ascentor-mvp.vercel.app';
+-
+-export const viewport: Viewport = {
+-  width: 'device-width',
+-  initialScale: 1,
+-  maximumScale: 5,
+-  themeColor: [
+-    { media: '(prefers-color-scheme: dark)', color: '#0A0D14' },
+-    { media: '(prefers-color-scheme: light)', color: '#0A0D14' },
+-  ],
+-};
+-
+-export const metadata: Metadata = {
+-  metadataBase: new URL(BASE_URL),
+-
+-  title: {
+-    default: 'Ascentor — AI Leadership Coaching for Ambitious Professionals',
+-    template: '%s | Ascentor',
+-  },
++export const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://ascentorbi.com';
++export const SITE_NAME = 'Ascentor';
++export const TWITTER_HANDLE = '@ascentorhq';
+ 
++// ── Elevation Summit event constants ─────────────────────────
++// TODO: set exact confirmed date/time once locked with LASU.
++// startDate/endDate must be ISO 8601 with timezone offset.
++export const SUMMIT = {
++  name: 'The Elevation Summit 2026',
+   description:
+-    'AI-powered leadership coaching for purposeful individuals worldwide. Get personalized coaching, join expert-led communities, and accelerate your career growth.',
+-
+-  keywords: [
+-    'AI coaching', 'leadership coaching', 'purposeful individuals',
+-    'purposeful development', 'executive coaching', 'AI mentor',
+-    'professional development', 'leadership skills', 'global leaders',
+-    'coaching platform', 'career growth', 'management skills',
+-  ],
+-
+-  authors: [{ name: 'Ascentor', url: BASE_URL }],
+-  creator: 'Ascentor',
+-  publisher: 'Ascentor',
+-
+-  // Open Graph
+-  openGraph: {
+-    type: 'website',
+-    locale: 'en_US',
+-    url: BASE_URL,
+-    siteName: 'Ascentor',
+-    title: 'Ascentor — AI Leadership Coaching for Ambitious Professionals',
+-    description:
+-      'Personalized AI coaching, expert-led communities, and courses designed to develop the next generation of global leaders.',
+-    images: [
+-      {
+-        url: `${BASE_URL}/og-image.png`,
+-        width: 1200,
+-        height: 630,
+-        alt: 'Ascentor — AI Leadership Coaching',
+-        type: 'image/png',
+-      },
+-    ],
++    'One gathering. One decision. The rest of your life. The inaugural Elevation Summit — a movement for purposeful living, leadership, and legacy. Lagos, December 2026, with global virtual access.',
++  startDate: '2026-12-12T10:00:00+01:00', // TODO: confirm exact date
++  endDate: '2026-12-12T18:00:00+01:00',   // TODO: confirm exact date
++  venue: {
++    name: 'Femi Gbajabiamila Conference Centre, Lagos State University',
++    street: 'Lagos State University Main Campus, LASU-Isheri Road',
++    locality: 'Ojo',
++    region: 'Lagos',
++    country: 'NG',
+   },
++  url: `${SITE_URL}/elevation-summit`,
++  // Update as ticket tiers go live. Prices in NGN.
++  offers: [
++    { name: 'Early Bird', price: '15000' },
++    { name: 'Virtual Access', price: '5000' },
++  ],
++} as const;
+ 
+-  // Twitter
+-  twitter: {
+-    card: 'summary_large_image',
+-    title: 'Ascentor — AI Leadership Coaching for Ambitious Professionals',
+-    description:
+-      'Personalized AI coaching for purposeful individuals worldwide. Start your .',
+-    images: [`${BASE_URL}/og-image.png`],
+-    creator: '@ascentorbi',
+-  },
+-
+-  // Robots
+-  robots: {
+-    index: true,
+-    follow: true,
+-    googleBot: {
+-      index: true,
+-      follow: true,
+-      'max-video-preview': -1,
+-      'max-image-preview': 'large',
+-      'max-snippet': -1,
+-    },
+-  },
+-
+-  // Icons
+-  icons: {
+-    icon: '/favicon.ico',
+-    shortcut: '/favicon-16x16.png',
+-    apple: '/apple-touch-icon.png',
+-  },
+-
+-  // Manifest (PWA)
+-  manifest: '/manifest.json',
+-
+-  // Verification (add your IDs)
+-  // verification: {
+-  //   google: 'your-google-verification-id',
+-  // },
+-
+-  // Category
+-  category: 'education',
+-
+-  // Alternate languages (future)
+-  // alternates: {
+-  //   languages: { 'fr': '/fr', 'sw': '/sw' },
+-  // },
+-};
+-
+-// ============================================================
+-// PAGE-SPECIFIC METADATA HELPERS
+-// Use in individual page files:
+-//
+-// import { generatePageMetadata } from '@/lib/seo';
+-// export const metadata = generatePageMetadata({ ... });
+-// ============================================================
++// ── Page metadata helper (kept API-compatible) ────────────────
++import type { Metadata } from 'next';
+ 
+ export function generatePageMetadata({
+   title,
+@@ -131,46 +53,43 @@ export function generatePageMetadata({
+   image?: string;
+   noIndex?: boolean;
+ }): Metadata {
+-  const url = `${BASE_URL}${path}`;
+-  const ogImage = image || `${BASE_URL}/og-image.png`;
+-
++  const url = `${SITE_URL}${path}`;
+   return {
+     title,
+     description,
++    alternates: { canonical: url },
+     openGraph: {
+       title,
+       description,
+       url,
+-      images: [{ url: ogImage, width: 1200, height: 630 }],
++      siteName: SITE_NAME,
++      ...(image ? { images: [{ url: image, width: 1200, height: 630 }] } : {}),
+     },
+     twitter: {
++      card: 'summary_large_image',
+       title,
+       description,
+-      images: [ogImage],
+-    },
+-    alternates: {
+-      canonical: url,
++      creator: TWITTER_HANDLE,
++      ...(image ? { images: [image] } : {}),
+     },
+     ...(noIndex ? { robots: { index: false, follow: false } } : {}),
+   };
+ }
+ 
+-// ============================================================
+-// STRUCTURED DATA (JSON-LD)
+-// Add to root layout or specific pages
+-// ============================================================
++// ── JSON-LD builders ──────────────────────────────────────────
+ 
+ export function getOrganizationSchema() {
+   return {
+     '@context': 'https://schema.org',
+     '@type': 'Organization',
+-    name: 'Ascentor',
+-    url: BASE_URL,
+-    logo: `${BASE_URL}/logo.png`,
+-    description: 'AI-powered leadership coaching for purposeful individuals',
++    name: SITE_NAME,
++    url: SITE_URL,
++    logo: `${SITE_URL}/icon/icon-512.png`,
++    description:
++      'Ascentor is a purposeful living and leadership development platform — AI coaching with Sage, community in The Circle, expert sessions, and The Elevation Summit.',
+     sameAs: [
+-      'https://twitter.com/ascentorbi',
+-      'https://linkedin.com/company/ascentor',
++      'https://twitter.com/ascentorhq',
++      // TODO: add Instagram / LinkedIn / YouTube profile URLs when live
+     ],
+     contactPoint: {
+       '@type': 'ContactPoint',
+@@ -180,24 +99,106 @@ export function getOrganizationSchema() {
+   };
+ }
+ 
++export function getWebSiteSchema() {
++  return {
++    '@context': 'https://schema.org',
++    '@type': 'WebSite',
++    name: SITE_NAME,
++    url: SITE_URL,
++  };
++}
++
++// Kept for backwards compatibility with components/StructuredData.tsx.
++// Deliberately minimal: no offers/ratings until real data exists.
+ export function getSoftwareAppSchema() {
+   return {
+     '@context': 'https://schema.org',
+     '@type': 'SoftwareApplication',
+-    name: 'Ascentor',
+-    applicationCategory: 'EducationalApplication',
+-    operatingSystem: 'Web',
+-    offers: {
+-      '@type': 'AggregateOffer',
+-      lowPrice: '15',
+-      highPrice: '49',
+-      priceCurrency: 'USD',
+-      offerCount: 3,
+-    },
+-    aggregateRating: {
+-      '@type': 'AggregateRating',
+-      ratingValue: '4.8',
+-      ratingCount: '50',
++    name: SITE_NAME,
++    url: SITE_URL,
++    applicationCategory: 'LifestyleApplication',
++    operatingSystem: 'Web, iOS, Android',
++    description:
++      'AI-powered coaching for purposeful living across six dimensions: Mind, Character, Work, Relationships, Community, and Legacy.',
++  };
++}
++
++export function getSummitEventSchema() {
++  return {
++    '@context': 'https://schema.org',
++    '@type': 'Event',
++    name: SUMMIT.name,
++    description: SUMMIT.description,
++    startDate: SUMMIT.startDate,
++    endDate: SUMMIT.endDate,
++    eventStatus: 'https://schema.org/EventScheduled',
++    // Physical + virtual — this value marks it as a hybrid event.
++    eventAttendanceMode: 'https://schema.org/MixedEventAttendanceMode',
++    location: [
++      {
++        '@type': 'Place',
++        name: SUMMIT.venue.name,
++        address: {
++          '@type': 'PostalAddress',
++          streetAddress: SUMMIT.venue.street,
++          addressLocality: SUMMIT.venue.locality,
++          addressRegion: SUMMIT.venue.region,
++          addressCountry: SUMMIT.venue.country,
++        },
++      },
++      { '@type': 'VirtualLocation', url: SUMMIT.url },
++    ],
++    image: [`${SITE_URL}/opengraph-image`],
++    offers: SUMMIT.offers.map((o) => ({
++      '@type': 'Offer',
++      name: o.name,
++      price: o.price,
++      priceCurrency: 'NGN',
++      availability: 'https://schema.org/InStock',
++      url: SUMMIT.url,
++      validFrom: '2026-08-01T00:00:00+01:00',
++    })),
++    organizer: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
++  };
++}
++
++export function getArticleSchema(post: {
++  title: string;
++  excerpt?: string | null;
++  slug: string;
++  author_name?: string | null;
++  published_at?: string | null;
++  updated_at?: string | null;
++  cover_image_url?: string | null;
++}) {
++  return {
++    '@context': 'https://schema.org',
++    '@type': 'Article',
++    headline: post.title,
++    description: post.excerpt ?? undefined,
++    url: `${SITE_URL}/blog/${post.slug}`,
++    datePublished: post.published_at ?? undefined,
++    dateModified: post.updated_at ?? post.published_at ?? undefined,
++    image: post.cover_image_url ? [post.cover_image_url] : [`${SITE_URL}/opengraph-image`],
++    author: { '@type': 'Person', name: post.author_name || 'Ascentor Editorial' },
++    publisher: {
++      '@type': 'Organization',
++      name: SITE_NAME,
++      logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon/icon-512.png` },
+     },
++    mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
++  };
++}
++
++export function getBreadcrumbSchema(items: { name: string; url: string }[]) {
++  return {
++    '@context': 'https://schema.org',
++    '@type': 'BreadcrumbList',
++    itemListElement: items.map((item, i) => ({
++      '@type': 'ListItem',
++      position: i + 1,
++      name: item.name,
++      item: item.url,
++    })),
+   };
+ }
