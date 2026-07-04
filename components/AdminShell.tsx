@@ -352,7 +352,7 @@ export default function AdminShell({
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ledger-bg)', display: 'flex', flexDirection: 'column', overflowX: 'hidden', maxWidth: '100vw' }}>
+    <div style={{ height: '100dvh', background: 'var(--ledger-bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden', maxWidth: '100vw' }}>
       <style>{`
         @media (max-width: 1023px) { .ledger-desktop-sidebar { display: none !important; } }
         @media (min-width: 1024px) { .ledger-mobile-header { display: none !important; } }
@@ -400,13 +400,13 @@ export default function AdminShell({
         </div>
       )}
 
-      <div style={{ display: 'flex', flex: 1 }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {/* Desktop sidebar */}
         <aside
           className="ledger-desktop-sidebar"
           style={{
             width: '248px', flexShrink: 0, display: 'flex', flexDirection: 'column',
-            height: '100vh', position: 'sticky', top: 0,
+            height: '100%', overflowY: 'auto',
             background: 'var(--ledger-bg-deep)', borderRight: '1px solid var(--ledger-line)',
           }}
         >
@@ -414,7 +414,7 @@ export default function AdminShell({
         </aside>
 
         {/* Content */}
-        <main style={{ flex: 1, minWidth: 0, overflowX: 'hidden', background: 'var(--ledger-bg)' }}>
+        <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', overflowX: 'hidden', background: 'var(--ledger-bg)' }}>
           <div style={{ maxWidth: '1320px', margin: '0 auto', padding: 'clamp(12px, 3vw, 24px)', overflowX: 'hidden' }}>
             {children}
           </div>
