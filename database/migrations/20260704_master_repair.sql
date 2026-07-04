@@ -1,0 +1,608 @@
+-- ============================================================================
+-- 2026-07-04_master_repair.sql — Ascentor full admin/feature repair
+--
+-- HOW TO RUN: paste this ENTIRE file into the Supabase SQL Editor
+--   (Dashboard → SQL Editor → New query → Run). Same manual convention
+--   as database/migrations/20260702_community_ritual.sql.
+--
+-- SAFE TO RUN REPEATEDLY: everything is IF NOT EXISTS / DROP POLICY IF
+-- EXISTS / CREATE OR REPLACE. Running it on a healthy database changes
+-- nothing; running it on a broken one repairs it.
+--
+-- WHAT IT FIXES, in order:
+--   1. is_admin() helper + updated_at trigger function
+--   2. Missing tables & columns for admin-managed features
+--      (contact inbox, summit, public events, billboards, products,
+--       careers, newsletter, mentors, waitlist, marketing CMS, blog)
+--   3. THE BIG ONE — admin RLS on EVERY table: admin pages use the
+--      browser Supabase client, so without an admin policy on each
+--      table the admin panel silently sees empty lists and all edits
+--      fail. A dynamic block below grants the admin role full access
+--      on every public table, current and future-created-by-this-file.
+--   4. Public/anon policies for public-facing flows (contact form,
+--      newsletter, careers applications, event & summit registration
+--      reads, published content).
+--   5. Storage buckets + policies (avatars, product-images,
+--      content-media, community-voice, resumes) — the root cause of
+--      "image links not processing": uploads from the browser client
+--      fail without these, or succeed into a missing/private bucket
+--      so the saved public URL 404s.
+--   6. Unique indexes & updated_at triggers the code relies on.
+-- ============================================================================
+
+
+-- ════════════════════════════════════════════════════════════════════════
+-- 1. FOUNDATIONS
+-- ════════════════════════════════════════════════════════════════════════
+
+-- Admin check used by every policy. SECURITY DEFINER so it can read
+-- profiles regardless of the caller's own RLS visibility.
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+$$;
+
+-- Generic updated_at maintainer.
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+
+-- ════════════════════════════════════════════════════════════════════════
+-- 2. TABLES & COLUMNS (create if missing, add columns if missing)
+--    Column shapes match the TypeScript types the app actually uses.
+-- ════════════════════════════════════════════════════════════════════════
+
+-- ── Contact inbox (public contact form → admin/inbox) ──────────────────
+CREATE TABLE IF NOT EXISTS contact_messages (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name       text NOT NULL,
+  email      text NOT NULL,
+  subject    text NOT NULL,
+  message    text NOT NULL,
+  status     text NOT NULL DEFAULT 'new',  -- new | read | replied | archived
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- ── Elevation Summit registrations (marketing form + in-app + admin) ───
+CREATE TABLE IF NOT EXISTS summit_registrations (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  source        text DEFAULT 'marketing',
+  full_name     text NOT NULL,
+  email         text NOT NULL,
+  whatsapp      text DEFAULT '',
+  phone         text,
+  country       text DEFAULT '',
+  city          text,
+  "current_role" text,
+  organisation  text,
+  industry      text,
+  what_building text,
+  why_attend    text,
+  how_heard     text,
+  dietary_needs text,
+  accessibility text,
+  status        text NOT NULL DEFAULT 'pending', -- pending | confirmed | waitlist | cancelled
+  ticket_type   text,
+  notes         text,
+  confirmed_at  timestamptz,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  updated_at    timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE summit_registrations
+  ADD COLUMN IF NOT EXISTS user_id       uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS source        text DEFAULT 'marketing',
+  ADD COLUMN IF NOT EXISTS phone         text,
+  ADD COLUMN IF NOT EXISTS city          text,
+  ADD COLUMN IF NOT EXISTS "current_role" text,
+  ADD COLUMN IF NOT EXISTS organisation  text,
+  ADD COLUMN IF NOT EXISTS industry      text,
+  ADD COLUMN IF NOT EXISTS what_building text,
+  ADD COLUMN IF NOT EXISTS why_attend    text,
+  ADD COLUMN IF NOT EXISTS how_heard     text,
+  ADD COLUMN IF NOT EXISTS dietary_needs text,
+  ADD COLUMN IF NOT EXISTS accessibility text,
+  ADD COLUMN IF NOT EXISTS ticket_type   text,
+  ADD COLUMN IF NOT EXISTS notes         text,
+  ADD COLUMN IF NOT EXISTS confirmed_at  timestamptz,
+  ADD COLUMN IF NOT EXISTS updated_at    timestamptz NOT NULL DEFAULT now();
+
+-- One registration per user (the API treats 23505 as "already registered").
+CREATE UNIQUE INDEX IF NOT EXISTS summit_regs_one_per_user
+  ON summit_registrations (user_id) WHERE user_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS summit_regs_one_per_email
+  ON summit_registrations (lower(email));
+
+-- ── Public events + registrations (admin/events ↔ /events) ─────────────
+CREATE TABLE IF NOT EXISTS public_events (
+  id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug                 text NOT NULL UNIQUE,
+  title                text NOT NULL,
+  tagline              text DEFAULT '',
+  description          text DEFAULT '',
+  event_date           text DEFAULT '',      -- display string
+  event_date_iso       text DEFAULT '',      -- machine-readable
+  location             text DEFAULT '',
+  is_published         boolean NOT NULL DEFAULT false,
+  is_featured          boolean NOT NULL DEFAULT false,
+  registration_open    boolean NOT NULL DEFAULT true,
+  cover_color          text DEFAULT '#0F0F0E',
+  registration_fields  jsonb  DEFAULT '["full_name","email","whatsapp","country"]'::jsonb,
+  confirmation_subject text DEFAULT '',
+  confirmation_body    text DEFAULT '',
+  created_at           timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public_events
+  ADD COLUMN IF NOT EXISTS event_date_iso       text DEFAULT '',
+  ADD COLUMN IF NOT EXISTS is_featured          boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS registration_open    boolean NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS cover_color          text DEFAULT '#0F0F0E',
+  ADD COLUMN IF NOT EXISTS registration_fields  jsonb DEFAULT '["full_name","email","whatsapp","country"]'::jsonb,
+  ADD COLUMN IF NOT EXISTS confirmation_subject text DEFAULT '',
+  ADD COLUMN IF NOT EXISTS confirmation_body    text DEFAULT '';
+
+CREATE TABLE IF NOT EXISTS event_registrations (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id      uuid NOT NULL REFERENCES public_events(id) ON DELETE CASCADE,
+  user_id       uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  full_name     text NOT NULL,
+  email         text NOT NULL,
+  whatsapp      text,
+  country       text,
+  city          text,
+  "current_role" text,
+  organisation  text,
+  industry      text,
+  what_building text,
+  why_attend    text,
+  how_heard     text,
+  dietary_needs text,
+  accessibility text,
+  status        text NOT NULL DEFAULT 'pending',
+  ticket_type   text,
+  notes         text,
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE event_registrations
+  ADD COLUMN IF NOT EXISTS user_id       uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS ticket_type   text,
+  ADD COLUMN IF NOT EXISTS notes         text;
+CREATE UNIQUE INDEX IF NOT EXISTS event_regs_one_per_email
+  ON event_registrations (event_id, lower(email));
+
+-- ── Rail billboards (admin/billboards ↔ RailBillboard component) ───────
+CREATE TABLE IF NOT EXISTS rail_billboards (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slot         integer NOT NULL DEFAULT 1,
+  title        text NOT NULL,
+  body         text,
+  cta_label    text,
+  cta_url      text,
+  bg_color     text NOT NULL DEFAULT '#161412',
+  accent_color text NOT NULL DEFAULT '#C8A96E',
+  image_url    text,
+  is_active    boolean NOT NULL DEFAULT true,
+  sort_order   integer NOT NULL DEFAULT 1,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE rail_billboards
+  ADD COLUMN IF NOT EXISTS image_url text,
+  ADD COLUMN IF NOT EXISTS slot      integer NOT NULL DEFAULT 1;
+
+-- ── Products (admin/products ↔ /products) ──────────────────────────────
+CREATE TABLE IF NOT EXISTS products (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        text NOT NULL,
+  tagline     text DEFAULT '',
+  description text DEFAULT '',
+  price       numeric NOT NULL DEFAULT 0,
+  currency    text NOT NULL DEFAULT 'NGN',
+  image_url   text,
+  category    text DEFAULT 'general',
+  badge       text,
+  cta_label   text DEFAULT 'Get it',
+  cta_url     text DEFAULT '',
+  is_featured boolean NOT NULL DEFAULT false,
+  published   boolean NOT NULL DEFAULT false,
+  sort_order  integer NOT NULL DEFAULT 0,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS image_url   text,
+  ADD COLUMN IF NOT EXISTS badge       text,
+  ADD COLUMN IF NOT EXISTS is_featured boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS published   boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS sort_order  integer NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS product_purchases (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  product_id uuid REFERENCES products(id) ON DELETE SET NULL,
+  email      text,
+  amount     numeric,
+  currency   text DEFAULT 'NGN',
+  reference  text,
+  status     text NOT NULL DEFAULT 'pending',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- ── Careers (public /careers ↔ admin/careers) ──────────────────────────
+CREATE TABLE IF NOT EXISTS job_listings (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title        text NOT NULL,
+  department   text DEFAULT '',
+  location     text DEFAULT '',
+  type         text DEFAULT 'full-time',
+  mode         text DEFAULT 'remote',
+  description  text DEFAULT '',
+  requirements jsonb DEFAULT '[]'::jsonb,
+  nice_to_have jsonb DEFAULT '[]'::jsonb,
+  apply_url    text,
+  apply_email  text,
+  is_active    boolean NOT NULL DEFAULT true,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS job_applications (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_id           uuid REFERENCES job_listings(id) ON DELETE CASCADE,
+  job_title        text,
+  full_name        text NOT NULL,
+  email            text NOT NULL,
+  phone            text,
+  linkedin_url     text,
+  portfolio_url    text,
+  years_experience text,
+  cover_letter     text,
+  cv_url           text,
+  cv_filename      text,
+  how_did_you_hear text,
+  status           text NOT NULL DEFAULT 'new', -- new | reviewing | interview | rejected | hired
+  created_at       timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE job_applications
+  ADD COLUMN IF NOT EXISTS cv_filename text,
+  ADD COLUMN IF NOT EXISTS job_title   text,
+  ADD COLUMN IF NOT EXISTS status      text NOT NULL DEFAULT 'new';
+
+-- ── Newsletter (public signup ↔ admin/newsletter) ──────────────────────
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email         text NOT NULL UNIQUE,
+  first_name    text,
+  source        text,
+  is_active     boolean NOT NULL DEFAULT true,
+  subscribed_at timestamptz DEFAULT now(),
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS newsletter_queue (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  subject      text NOT NULL,
+  body_html    text NOT NULL DEFAULT '',
+  status       text NOT NULL DEFAULT 'draft', -- draft | scheduled | sending | sent | failed
+  scheduled_at timestamptz,
+  sent_at      timestamptz,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS sent_newsletters (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  subject         text NOT NULL,
+  body_html       text,
+  recipient_count integer DEFAULT 0,
+  sent_at         timestamptz NOT NULL DEFAULT now(),
+  created_at      timestamptz NOT NULL DEFAULT now()
+);
+
+-- ── Mentor applications, waitlist, partner enquiries ───────────────────
+CREATE TABLE IF NOT EXISTS mentor_applications (
+  id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  full_name          text NOT NULL,
+  email              text NOT NULL,
+  phone              text,
+  country            text,
+  role_title         text,
+  company            text,
+  years_experience   text,
+  industry           text,
+  linkedin_url       text,
+  career_summary     text,
+  why_mentor         text,
+  mentor_style       text,
+  availability_hours text,
+  age_groups         jsonb DEFAULT '[]'::jsonb,
+  terms_accepted     boolean NOT NULL DEFAULT false,
+  status             text NOT NULL DEFAULT 'pending',
+  applied_at         timestamptz DEFAULT now(),
+  created_at         timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS waitlist_entries (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email      text NOT NULL UNIQUE,
+  name       text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS partner_enquiries (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  full_name    text NOT NULL,
+  email        text NOT NULL,
+  organisation text,
+  message      text,
+  status       text NOT NULL DEFAULT 'new',
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+
+-- ── Marketing CMS (admin/marketing-pages ↔ landing & summit pages) ─────
+CREATE TABLE IF NOT EXISTS marketing_pages (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug        text NOT NULL UNIQUE,
+  title       text NOT NULL,
+  route       text NOT NULL DEFAULT '/',
+  status      text NOT NULL DEFAULT 'draft', -- draft | published
+  description text,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS marketing_sections (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  page_id        uuid NOT NULL REFERENCES marketing_pages(id) ON DELETE CASCADE,
+  section_key    text NOT NULL,
+  label          text NOT NULL DEFAULT '',
+  section_type   text NOT NULL DEFAULT 'block',
+  sort_order     integer NOT NULL DEFAULT 0,
+  draft_data     jsonb NOT NULL DEFAULT '{}'::jsonb,
+  published_data jsonb,
+  status         text NOT NULL DEFAULT 'draft',
+  updated_at     timestamptz NOT NULL DEFAULT now(),
+  published_at   timestamptz,
+  UNIQUE (page_id, section_key)
+);
+
+CREATE TABLE IF NOT EXISTS marketing_repeating_items (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  section_id     uuid NOT NULL REFERENCES marketing_sections(id) ON DELETE CASCADE,
+  sort_order     integer NOT NULL DEFAULT 0,
+  draft_data     jsonb NOT NULL DEFAULT '{}'::jsonb,
+  published_data jsonb,
+  status         text NOT NULL DEFAULT 'draft',
+  updated_at     timestamptz NOT NULL DEFAULT now(),
+  published_at   timestamptz
+);
+
+-- ── Blog: columns the SEO layer and admin editor rely on ────────────────
+ALTER TABLE blog_posts
+  ADD COLUMN IF NOT EXISTS cover_image       text,
+  ADD COLUMN IF NOT EXISTS author_name       text,
+  ADD COLUMN IF NOT EXISTS excerpt           text,
+  ADD COLUMN IF NOT EXISTS category          text,
+  ADD COLUMN IF NOT EXISTS read_time_minutes integer,
+  ADD COLUMN IF NOT EXISTS is_published      boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS published_at      timestamptz,
+  ADD COLUMN IF NOT EXISTS updated_at        timestamptz NOT NULL DEFAULT now();
+
+
+-- ════════════════════════════════════════════════════════════════════════
+-- 3. ADMIN RLS POLICY ON EVERY TABLE (the core "admin can't manage" fix)
+--    Adds an admin_all policy to every public table so admin pages
+--    (which use the browser Supabase client) can read & write.
+--    IMPORTANT: this block does NOT force-enable RLS on pre-existing
+--    tables — enabling RLS on a table that currently works without it
+--    would instantly break its user-facing flows. The policy simply
+--    sits dormant on RLS-off tables and becomes active if/when RLS is
+--    enabled. RLS is explicitly enabled further below ONLY on the
+--    feature tables whose complete public policies this file defines.
+-- ════════════════════════════════════════════════════════════════════════
+DO $$
+DECLARE t record;
+BEGIN
+  FOR t IN
+    SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS admin_all ON public.%I', t.tablename);
+    EXECUTE format(
+      'CREATE POLICY admin_all ON public.%I FOR ALL TO authenticated
+         USING (public.is_admin()) WITH CHECK (public.is_admin())',
+      t.tablename
+    );
+  END LOOP;
+END $$;
+
+-- Enable RLS ONLY on the feature tables this migration fully covers
+-- (each has admin_all from above + its public policies from §4).
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'contact_messages', 'summit_registrations',
+    'public_events', 'event_registrations',
+    'rail_billboards', 'products', 'product_purchases',
+    'job_listings', 'job_applications',
+    'newsletter_subscribers', 'newsletter_queue', 'sent_newsletters',
+    'mentor_applications', 'waitlist_entries', 'partner_enquiries',
+    'marketing_pages', 'marketing_sections', 'marketing_repeating_items',
+    'blog_posts'
+  ]
+  LOOP
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
+  END LOOP;
+END $$;
+
+
+-- ════════════════════════════════════════════════════════════════════════
+-- 4. PUBLIC / USER-FACING POLICIES
+--    Anon-writable forms, public-readable published content, and
+--    own-row access for signed-in users where the browser client is used.
+-- ════════════════════════════════════════════════════════════════════════
+
+-- Contact form: anyone can submit; only admin reads (from §3).
+DROP POLICY IF EXISTS public_insert ON contact_messages;
+CREATE POLICY public_insert ON contact_messages
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+-- Newsletter: anyone can subscribe.
+DROP POLICY IF EXISTS public_insert ON newsletter_subscribers;
+CREATE POLICY public_insert ON newsletter_subscribers
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+-- Waitlist: anyone can join.
+DROP POLICY IF EXISTS public_insert ON waitlist_entries;
+CREATE POLICY public_insert ON waitlist_entries
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+-- Mentor applications: anyone can apply.
+DROP POLICY IF EXISTS public_insert ON mentor_applications;
+CREATE POLICY public_insert ON mentor_applications
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+-- Partner enquiries: anyone can enquire.
+DROP POLICY IF EXISTS public_insert ON partner_enquiries;
+CREATE POLICY public_insert ON partner_enquiries
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+-- Careers: everyone reads open roles; anyone can apply.
+DROP POLICY IF EXISTS public_read ON job_listings;
+CREATE POLICY public_read ON job_listings
+  FOR SELECT TO anon, authenticated USING (is_active = true);
+DROP POLICY IF EXISTS public_insert ON job_applications;
+CREATE POLICY public_insert ON job_applications
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+-- Blog: everyone reads published posts (blog pages use the anon server client).
+DROP POLICY IF EXISTS public_read ON blog_posts;
+CREATE POLICY public_read ON blog_posts
+  FOR SELECT TO anon, authenticated USING (is_published = true);
+
+-- Public events: everyone reads published; registration handled by
+-- service-role API (bypasses RLS), so no anon insert needed.
+DROP POLICY IF EXISTS public_read ON public_events;
+CREATE POLICY public_read ON public_events
+  FOR SELECT TO anon, authenticated USING (is_published = true);
+
+-- Products: everyone reads published.
+DROP POLICY IF EXISTS public_read ON products;
+CREATE POLICY public_read ON products
+  FOR SELECT TO anon, authenticated USING (published = true);
+
+-- Rail billboards: signed-in users see active boards in the app rail.
+DROP POLICY IF EXISTS member_read ON rail_billboards;
+CREATE POLICY member_read ON rail_billboards
+  FOR SELECT TO authenticated USING (is_active = true);
+
+-- Marketing CMS: policies must match lib/supabase/queries/marketing.ts —
+-- the page row is fetched with NO status filter (status lives on sections),
+-- and sections/items are filtered by status = 'published'.
+DROP POLICY IF EXISTS public_read ON marketing_pages;
+CREATE POLICY public_read ON marketing_pages
+  FOR SELECT TO anon, authenticated USING (true);
+DROP POLICY IF EXISTS public_read ON marketing_sections;
+CREATE POLICY public_read ON marketing_sections
+  FOR SELECT TO anon, authenticated USING (status = 'published');
+DROP POLICY IF EXISTS public_read ON marketing_repeating_items;
+CREATE POLICY public_read ON marketing_repeating_items
+  FOR SELECT TO anon, authenticated USING (status = 'published');
+
+-- Summit registrations: users can see & remove their own registration
+-- (the in-app register/unregister flow); inserts go through the API.
+DROP POLICY IF EXISTS own_read ON summit_registrations;
+CREATE POLICY own_read ON summit_registrations
+  FOR SELECT TO authenticated USING (user_id = auth.uid());
+DROP POLICY IF EXISTS own_insert ON summit_registrations;
+CREATE POLICY own_insert ON summit_registrations
+  FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS own_delete ON summit_registrations;
+CREATE POLICY own_delete ON summit_registrations
+  FOR DELETE TO authenticated USING (user_id = auth.uid());
+
+
+-- ════════════════════════════════════════════════════════════════════════
+-- 5. STORAGE — buckets + policies ("image links not processing" fix)
+-- ════════════════════════════════════════════════════════════════════════
+
+-- Create buckets (public = files reachable via getPublicUrl).
+INSERT INTO storage.buckets (id, name, public)
+VALUES
+  ('avatars',         'avatars',         true),
+  ('product-images',  'product-images',  true),
+  ('content-media',   'content-media',   true),
+  ('community-voice', 'community-voice', true),
+  ('resumes',         'resumes',         false)   -- CVs are PII: private
+ON CONFLICT (id) DO UPDATE SET public = EXCLUDED.public;
+
+-- avatars: any signed-in user may upload/replace their own avatar file;
+-- the app writes to path 'avatars/<user_id>.<ext>'.
+DROP POLICY IF EXISTS avatars_read   ON storage.objects;
+CREATE POLICY avatars_read ON storage.objects
+  FOR SELECT TO anon, authenticated USING (bucket_id = 'avatars');
+DROP POLICY IF EXISTS avatars_write  ON storage.objects;
+CREATE POLICY avatars_write ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'avatars'
+              AND (storage.filename(name) LIKE auth.uid()::text || '.%'));
+DROP POLICY IF EXISTS avatars_update ON storage.objects;
+CREATE POLICY avatars_update ON storage.objects
+  FOR UPDATE TO authenticated
+  USING (bucket_id = 'avatars'
+         AND (storage.filename(name) LIKE auth.uid()::text || '.%'));
+
+-- product-images & content-media: admin writes from the browser client.
+DROP POLICY IF EXISTS media_read ON storage.objects;
+CREATE POLICY media_read ON storage.objects
+  FOR SELECT TO anon, authenticated
+  USING (bucket_id IN ('product-images', 'content-media', 'community-voice'));
+DROP POLICY IF EXISTS media_admin_write ON storage.objects;
+CREATE POLICY media_admin_write ON storage.objects
+  FOR ALL TO authenticated
+  USING (bucket_id IN ('product-images', 'content-media') AND public.is_admin())
+  WITH CHECK (bucket_id IN ('product-images', 'content-media') AND public.is_admin());
+
+-- resumes: applicants (incl. anonymous) upload; ONLY admins can read,
+-- via 60-second signed URLs generated in admin/careers.
+DROP POLICY IF EXISTS resumes_insert ON storage.objects;
+CREATE POLICY resumes_insert ON storage.objects
+  FOR INSERT TO anon, authenticated
+  WITH CHECK (bucket_id = 'resumes' AND name LIKE 'applications/%');
+DROP POLICY IF EXISTS resumes_admin_read ON storage.objects;
+CREATE POLICY resumes_admin_read ON storage.objects
+  FOR SELECT TO authenticated
+  USING (bucket_id = 'resumes' AND public.is_admin());
+
+
+-- ════════════════════════════════════════════════════════════════════════
+-- 6. TRIGGERS — keep updated_at honest where the code expects it
+-- ════════════════════════════════════════════════════════════════════════
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'summit_registrations', 'newsletter_queue',
+    'marketing_pages', 'marketing_sections', 'marketing_repeating_items',
+    'blog_posts'
+  ]
+  LOOP
+    EXECUTE format('DROP TRIGGER IF EXISTS set_updated_at ON public.%I', t);
+    EXECUTE format(
+      'CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.%I
+         FOR EACH ROW EXECUTE FUNCTION public.set_updated_at()', t);
+  END LOOP;
+END $$;
+
+-- ============================================================================
+-- DONE. Verify with:
+--   SELECT tablename, policyname FROM pg_policies
+--   WHERE schemaname='public' ORDER BY tablename;
+--   SELECT id, public FROM storage.buckets;
+-- ============================================================================

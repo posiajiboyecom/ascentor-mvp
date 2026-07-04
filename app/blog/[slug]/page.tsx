@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient();
   const { data: post } = await supabase
     .from('blog_posts')
-    .select('title, excerpt, published_at, author_name')
+    .select('title, excerpt, published_at, author_name, cover_image')
     .eq('slug', slug)
     .eq('is_published', true)
     .single();
@@ -31,11 +31,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'article',
       publishedTime: post.published_at || undefined,
       authors: post.author_name ? [post.author_name] : undefined,
+      ...(post.cover_image
+        ? { images: [{ url: post.cover_image, width: 1200, height: 630 }] }
+        : {}),
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
       description: post.excerpt || '',
+      ...(post.cover_image ? { images: [post.cover_image] } : {}),
     },
   };
 }

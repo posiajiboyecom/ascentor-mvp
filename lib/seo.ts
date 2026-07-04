@@ -169,7 +169,7 @@ export function getArticleSchema(post: {
   author_name?: string | null;
   published_at?: string | null;
   updated_at?: string | null;
-  cover_image_url?: string | null;
+  cover_image?: string | null; // matches blog_posts.cover_image column
 }) {
   return {
     '@context': 'https://schema.org',
@@ -179,7 +179,7 @@ export function getArticleSchema(post: {
     url: `${SITE_URL}/blog/${post.slug}`,
     datePublished: post.published_at ?? undefined,
     dateModified: post.updated_at ?? post.published_at ?? undefined,
-    image: post.cover_image_url ? [post.cover_image_url] : [`${SITE_URL}/opengraph-image`],
+    image: post.cover_image ? [post.cover_image] : [`${SITE_URL}/opengraph-image`],
     author: { '@type': 'Person', name: post.author_name || 'Ascentor Editorial' },
     publisher: {
       '@type': 'Organization',
