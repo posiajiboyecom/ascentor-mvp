@@ -88,7 +88,7 @@ const EMPTY: Form = {
 export default function ElevationSummitClient({ cms }: { cms: PublishedPage | null }) {
   // CMS section keys
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
-  const heroEyebrow   = hero?.eyebrow    || 'Annual Gathering · February 2027';
+  const heroEyebrow   = hero?.eyebrow    || 'Inaugural Gathering · December 2026';
   const heroHeadline  = hero?.headline   || 'The Elevation<br />Summit';
   const heroSubhead   = hero?.subhead    || 'One gathering. One decision. The rest of your life.';
   const heroCtaLabel  = hero?.cta_label  || 'Register Now →';
@@ -102,7 +102,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
   const register = cms?.sections.register?.data as Record<string, string> | undefined;
   const regEyebrow  = register?.eyebrow  || 'Event Registration';
   const regHeadline = register?.headline || 'Secure your place.';
-  const regSubhead  = register?.subhead  || 'Registration is open for the inaugural Elevation Summit, February 2027, Lagos. Complete the form below — every detail helps us prepare the right experience for you.';
+  const regSubhead  = register?.subhead  || 'Registration is open for the inaugural Elevation Summit, December 2026, Lagos — attend physically or join virtually. Complete the form below — every detail helps us prepare the right experience for you.';
 
   const [form, setForm] = useState<Form>(EMPTY);
   const [submitted, setSubmitted] = useState(false);
@@ -189,7 +189,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       <section style={{ background: '#C8A96E', padding: '1.5rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '1rem' }}>
           {[
-            { value: 'February 2027', label: 'Inaugural Gathering' },
+            { value: 'December 2026', label: 'Inaugural Gathering' },
             { value: 'Lagos, Nigeria', label: 'Location' },
             { value: '1 Day', label: 'Defining Moment' },
             { value: 'Open', label: 'Registration' },

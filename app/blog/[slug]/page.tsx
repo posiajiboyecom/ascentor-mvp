@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { SITE_URL, getArticleSchema, getBreadcrumbSchema } from '@/lib/seo';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -10,17 +11,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient();
   const { data: post } = await supabase
     .from('blog_posts')
-    .select('title, excerpt')
+    .select('title, excerpt, published_at, author_name')
     .eq('slug', slug)
     .eq('is_published', true)
     .single();
 
-  if (!post) return { title: 'Post Not Found — Ascentor' };
+  if (!post) return { title: 'Post Not Found — Ascentor', robots: { index: false } };
 
+  const url = `${SITE_URL}/blog/${slug}`;
   return {
-    title: `${post.title} — Ascentor Blog`,
+    title: post.title, // root template appends "| Ascentor"
     description: post.excerpt || '',
-    openGraph: { title: post.title, description: post.excerpt || '' },
+    alternates: { canonical: url },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt || '',
+      url,
+      siteName: 'Ascentor',
+      type: 'article',
+      publishedTime: post.published_at || undefined,
+      authors: post.author_name ? [post.author_name] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.excerpt || '',
+    },
   };
 }
 
@@ -97,8 +113,21 @@ export default async function BlogPostPage({ params }: Props) {
       });
   }
 
+  const jsonLd = [
+    getArticleSchema({ ...post, slug }),
+    getBreadcrumbSchema([
+      { name: 'Home', url: SITE_URL },
+      { name: 'Blog', url: `${SITE_URL}/blog` },
+      { name: post.title, url: `${SITE_URL}/blog/${slug}` },
+    ]),
+  ];
+
   return (
     <div className="min-h-screen" style={{ background: '#FAFAF9', fontFamily: "'Syne', system-ui, sans-serif" }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       <nav className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(250,250,249,0.88)', borderBottom: '1px solid #E5E5E4' }}>
         <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
