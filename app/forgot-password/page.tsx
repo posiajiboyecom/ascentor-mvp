@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
         body { margin: 0; }
 
         .asc-page {
-          min-height: 100vh;
+          min-height: 100dvh;
           display: flex;
           background: ${B.dark};
           font-family: ${B.fontUI};

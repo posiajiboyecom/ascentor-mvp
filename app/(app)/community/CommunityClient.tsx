@@ -307,8 +307,9 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
       {errorToast && (
         <div
           role="alert"
-          className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg"
+          className="fixed left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg lg:bottom-6"
           style={{
+            bottom: 'max(88px, calc(72px + env(safe-area-inset-bottom)))',
             background: 'var(--app-bg-card, #1A1A19)',
             color: 'var(--app-text, #FAFAF8)',
             border: '1px solid rgba(220,38,38,0.35)',
@@ -577,7 +578,7 @@ export default function CommunityClient({
   if (isDesktop) {
     return (
       <div className="circle-surface flex h-full bg-[var(--app-bg)]">
-        <div className="w-[248px] shrink-0 h-full">
+        <div className="w-[220px] xl:w-[248px] shrink-0 h-full">
           <SectionNav
             categories={categories}
             channels={channels}

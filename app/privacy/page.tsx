@@ -911,7 +911,7 @@ export default function PrivacyPage() {
                   style={{ height: '32px', width: 'auto' }}
                 />
               </Link>
-        <Link href="/nav/dashboard" className="nav-back">← Back to app</Link>
+        <Link href="/dashboard" className="nav-back">← Back to app</Link>
       </nav>
 
       {/* Hero */}

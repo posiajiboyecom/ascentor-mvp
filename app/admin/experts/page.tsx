@@ -781,7 +781,7 @@ function AdminExpertsPageInner() {
                     paddingTop: '12px',
                   }}>
                     <MonoLabel color={B.dark500}>Registered users</MonoLabel>
-                    <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}>
                       {regs.map((r: any, i: number) => {
                         const profile = r.profiles || {};
                         const name  = profile.full_name || '—';

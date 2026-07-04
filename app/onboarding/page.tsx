@@ -211,10 +211,11 @@ export default function OnboardingPage() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: BG,
+      minHeight: '100dvh', background: BG,
       display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '1.5rem',
+      alignItems: 'center', justifyContent: 'flex-start',
+      padding: '2rem 1.5rem',
+      overflowY: 'auto',
     }}>
 
       {/* Logo */}

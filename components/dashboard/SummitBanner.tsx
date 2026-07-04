@@ -60,7 +60,7 @@ export function SummitBanner({ daysAway, registered: initialRegistered }: Summit
           <p className="text-[8px] lg:text-[11px] font-medium uppercase tracking-[0.1em] text-[#C8A96E] mb-0.5 lg:mb-1.5">
             The Elevation Summit
           </p>
-          <p className="text-xs lg:text-2xl font-medium text-[#FAFAF8] lg:font-serif">
+          <p className="text-xs lg:text-2xl font-medium text-[#FAFAF8] lg:font-serif truncate lg:overflow-visible">
             February 2027 · Lagos, Nigeria
           </p>
           <p className="hidden lg:block text-sm text-[#6B7280] mt-1">

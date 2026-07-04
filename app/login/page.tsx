@@ -106,9 +106,10 @@ export default function LoginPage() {
         body { background: #FAFAF8 !important; color: #0F0F0E !important; }
 
         .login-page {
-          min-height: 100vh;
+          min-height: 100dvh;
           display: flex;
           background: #FAFAF8;
+          overflow-y: auto;
         }
 
         /* ── Left brand panel ── */
@@ -127,10 +128,11 @@ export default function LoginPage() {
         .login-form-panel {
           flex: 1;
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: center;
           padding: 40px 24px;
           background: #FAFAF8;
+          overflow-y: auto;
         }
         .login-form-inner {
           width: 100%;

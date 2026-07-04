@@ -93,9 +93,9 @@ export default function ResetPasswordPage() {
         *, *::before, *::after { box-sizing: border-box; }
         body { margin: 0; }
         .asc-page {
-          min-height: 100vh; display: flex;
+          min-height: 100dvh; display: flex;
           background: ${B.dark}; font-family: ${B.fontUI};
-          position: relative; overflow: hidden;
+          position: relative; overflow-y: auto;
         }
         .asc-page::before {
           content: ''; position: fixed; top: -20vh; left: 50%;
@@ -117,8 +117,9 @@ export default function ResetPasswordPage() {
         @media (min-width: 1024px) { .asc-brand-panel { display: flex; } }
         .asc-form-panel {
           flex: 1; display: flex; flex-direction: column;
-          align-items: center; justify-content: center;
+          align-items: center; justify-content: flex-start;
           padding: 40px 24px; position: relative; z-index: 1;
+          overflow-y: auto;
         }
         .asc-form-inner { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 0; }
         .asc-rule { height: 1px; background: linear-gradient(90deg, ${B.gold} 0%, transparent 70%); margin: 28px 0; }
