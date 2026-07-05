@@ -6,7 +6,6 @@
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { daysUntilSummit } from '@/lib/elevationSummit';
 import { DesktopRail } from '@/components/nav/DesktopRail';
 import { MobileTabBar } from '@/components/nav/MobileTabBar';
 
@@ -14,6 +13,14 @@ function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// Matches the fixed summit date shown in DesktopRail's mini-card
+// ("Feb 2027 · Lagos"). Clamped at 0 so it never goes negative once
+// the date has passed.
+function getSummitDaysAway(): number {
+  const diff = new Date('2027-02-01T00:00:00Z').getTime() - Date.now();
+  return diff > 0 ? Math.ceil(diff / 86400000) : 0;
 }
 
 export default async function AppLayout({
@@ -41,7 +48,7 @@ export default async function AppLayout({
       <DesktopRail
         userName={userName}
         userInitials={getInitials(userName)}
-        summitDaysAway={daysUntilSummit()}
+        summitDaysAway={getSummitDaysAway()}
       />
       <div className="flex-1 min-w-0 h-full pb-[78px] lg:pb-0">
         {children}
