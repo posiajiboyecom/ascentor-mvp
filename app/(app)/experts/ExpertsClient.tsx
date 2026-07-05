@@ -200,16 +200,26 @@ function SessionCard({
     >
       <div className={locked ? 'pointer-events-none' : ''}>
         <div className="flex gap-3 mb-3.5">
-          <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold"
-            style={{
-              backgroundColor: `${avatarColor}29`,
-              color: avatarColor,
-              border: `1.5px solid ${avatarColor}`,
-            }}
-          >
-            {initials(session.expert_name)}
-          </span>
+          {session.expert_avatar ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={session.expert_avatar}
+              alt={session.expert_name}
+              className="asc-duotone h-11 w-11 shrink-0 rounded-full object-cover"
+              style={{ border: `1.5px solid ${avatarColor}` }}
+            />
+          ) : (
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold"
+              style={{
+                backgroundColor: `${avatarColor}29`,
+                color: avatarColor,
+                border: `1.5px solid ${avatarColor}`,
+              }}
+            >
+              {initials(session.expert_name)}
+            </span>
+          )}
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <p className="text-[10.5px] font-medium text-[var(--text-dim)]">
@@ -485,6 +495,7 @@ export function ExpertsClient({
   const [activeDimension, setActiveDimension] = useState('All');
   const [activeStatus, setActiveStatus] = useState<StatusFilter>('all');
   const [lockedSession, setLockedSession] = useState<ExpertSession | null>(null);
+  const [confirmedSession, setConfirmedSession] = useState<ExpertSession | null>(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   async function handleToggleRegister(session: ExpertSession) {
@@ -527,6 +538,9 @@ export function ExpertsClient({
       }
       if (session.registration_url) {
         window.open(session.registration_url, '_blank', 'noopener,noreferrer');
+      } else {
+        // The moment: a registration is a commitment, not a toast.
+        setConfirmedSession(session);
       }
     }
   }
@@ -665,6 +679,40 @@ export function ExpertsClient({
       </main>
 
       {/* ── Tier upgrade modal ── */}
+      {/* ── The registration moment — a commitment deserves more than a toast ── */}
+      {confirmedSession && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setConfirmedSession(null)}
+          role="dialog"
+          aria-label="Registration confirmed"
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border-[0.5px] border-[#C8A96E]/25 bg-[var(--bg-card)] p-8 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="ledger-line mx-auto mb-5 max-w-[140px]" aria-hidden="true" />
+            <p className="font-serif text-2xl text-[var(--text)] mb-2">
+              You&apos;re in.
+            </p>
+            <p className="text-sm text-[var(--text-muted)] leading-relaxed mb-1">
+              {confirmedSession.title}
+            </p>
+            <p className="text-xs text-[var(--text-dim)] mb-6">
+              with {confirmedSession.expert_name} ·{' '}
+              {formatSessionTime(confirmedSession.scheduled_at)}
+            </p>
+            <button
+              type="button"
+              onClick={() => setConfirmedSession(null)}
+              className="w-full rounded-lg bg-[#C8A96E] px-4 py-2.5 text-sm font-semibold text-[#0F0F0E] transition-colors hover:bg-[var(--app-accent-strong)]"
+            >
+              I&apos;ll be there
+            </button>
+          </div>
+        </div>
+      )}
+
       {lockedSession && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"

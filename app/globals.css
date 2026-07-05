@@ -419,3 +419,139 @@ a:focus-visible,
     margin: 0 auto;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   ASCENTOR PREMIUM LAYER — added July 2026
+   The Ledger Line signature system, extended tokens, skeletons,
+   reading typography for Sage, and reduced-motion guards.
+   ════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Extended semantic tokens (both themes share these) */
+  --app-accent-strong: #D9BC85;            /* gold hover/active */
+  --app-success:       #7BA37A;            /* muted sage green — never neon */
+  --app-danger:        #B96A5E;            /* muted terracotta — never alarm red */
+  --app-radius-sm: 8px;
+  --app-radius-md: 12px;
+  --app-radius-lg: 16px;
+}
+
+/* ── The Ledger Line ─────────────────────────────────────────────────
+   A single 1px gold hairline that appears at meaning-moments.
+   .ledger-line        → draws itself in on mount (400ms)
+   .ledger-line-static → the same line, no animation                */
+@keyframes ledger-draw {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.ledger-line,
+.ledger-line-static {
+  display: block;
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--app-accent, #C8A96E) 0%,
+    rgba(200, 169, 110, 0.25) 100%
+  );
+  transform-origin: left center;
+}
+.ledger-line {
+  animation: ledger-draw 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Continuous draw loop — the "Sage is reflecting…" thinking state */
+@keyframes ledger-think {
+  0%   { transform: scaleX(0);   opacity: 1; }
+  70%  { transform: scaleX(1);   opacity: 1; }
+  100% { transform: scaleX(1);   opacity: 0; }
+}
+.ledger-line-thinking {
+  display: block;
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--app-accent, #C8A96E) 0%,
+    rgba(200, 169, 110, 0.15) 100%
+  );
+  transform-origin: left center;
+  animation: ledger-think 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Gold strike-through for a kept commitment */
+.ledger-strike {
+  position: relative;
+  color: var(--text-dim, #9CA3AF);
+  transition: color 200ms ease-out;
+}
+.ledger-strike::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 1px;
+  width: 100%;
+  background: var(--app-accent, #C8A96E);
+  transform-origin: left center;
+  animation: ledger-draw 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ── Small-caps eyebrow label ──────────────────────────────────────── */
+.asc-eyebrow {
+  font-family: var(--font-display, 'Plus Jakarta Sans', system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--app-accent, #C8A96E);
+}
+
+/* ── Sage reading typography ───────────────────────────────────────
+   Applied to assistant answers so they read like a page written for
+   you, not a chat bubble.                                          */
+.sage-prose {
+  font-family: var(--font-body, Inter, system-ui, sans-serif);
+  font-size: 16px;
+  line-height: 1.7;
+  letter-spacing: 0.001em;
+  max-width: 68ch;
+}
+@media (min-width: 1024px) {
+  .sage-prose { font-size: 17px; }
+}
+
+/* ── Skeleton shimmer (shaped placeholders, never spinners) ───────── */
+@keyframes asc-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+.asc-skeleton {
+  border-radius: var(--app-radius-sm, 8px);
+  background: linear-gradient(
+    90deg,
+    var(--bg-card, #1A1A19) 25%,
+    var(--bg-card-hover, #242422) 50%,
+    var(--bg-card, #1A1A19) 75%
+  );
+  background-size: 200% 100%;
+  animation: asc-shimmer 1.4s ease-in-out infinite;
+}
+
+/* ── Reduced motion: the quality floor ─────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ledger-line,
+  .ledger-line-thinking,
+  .ledger-strike::after,
+  .asc-skeleton {
+    animation: none !important;
+  }
+  .ledger-line,
+  .ledger-line-thinking { transform: scaleX(1); opacity: 1; }
+  .ledger-strike::after { transform: scaleX(1); }
+}
+
+/* ── Expert portrait duotone — visual unity regardless of source photo ── */
+.asc-duotone {
+  filter: grayscale(1) sepia(0.32) saturate(1.15) brightness(0.96) contrast(1.05);
+}

@@ -5,13 +5,15 @@
 import { redirect } from 'next/navigation';
 import { Bell } from 'lucide-react';
 import { getDashboardData } from '@/lib/supabase/queries/dashboard';
-import { StatBox } from '@/components/dashboard/StatBox';
+import { getDailyLine, getLagosDateParts } from '@/lib/daily-line';
+import { LedgerLine } from '@/components/ui';
 import { SummitBanner } from '@/components/dashboard/SummitBanner';
 import { GoalCard } from '@/components/dashboard/GoalCard';
 import { CommitmentsCard } from '@/components/dashboard/CommitmentsCard';
 import { UpcomingSessionCard } from '@/components/dashboard/UpcomingSessionCard';
 import { ExploreList } from '@/components/dashboard/ExploreList';
 import { QuickActionGrid } from '@/components/dashboard/QuickActionGrid';
+import { DimensionStrip } from '@/components/dashboard/DimensionStrip';
 
 export default async function DashboardPage() {
   const data = await getDashboardData();
@@ -37,6 +39,8 @@ export default async function DashboardPage() {
   } = data;
 
   const greeting = getGreeting();
+  const daily = getDailyLine();
+  const date = getLagosDateParts();
 
   const nextSessionLabel = upcomingSession
     ? new Date(upcomingSession.session_date).toLocaleString('en-US', {
@@ -49,14 +53,23 @@ export default async function DashboardPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      {/* ── Desktop header (hidden on mobile) ── */}
+      {/* ── Desktop header — Today's Page (hidden on mobile) ── */}
       <header className="hidden lg:flex items-start justify-between px-10 pt-10 pb-8">
-        <div>
-          <h1 className="text-[34px] font-serif font-medium text-[var(--text)]">
+        <div className="max-w-[610px] w-full">
+          <p className="asc-eyebrow">
+            {date.weekday} · {date.day} {date.month} {date.year}
+          </p>
+          <h1 className="text-[34px] font-serif font-medium text-[var(--text)] mt-2">
             {greeting}, {firstName}.
           </h1>
-          <p className="text-base text-[var(--text-muted)] mt-1">
-            What are you building today?
+          <LedgerLine className="mt-3 max-w-[280px]" />
+          <p className="text-base text-[var(--text-muted)] mt-3 font-serif italic leading-relaxed">
+            {daily.text}
+            {daily.attribution && (
+              <span className="not-italic font-sans text-xs text-[var(--text-dim)] ml-2">
+                — {daily.attribution}
+              </span>
+            )}
           </p>
           <span
             className="inline-block mt-3 rounded-full px-3 py-1 text-xs font-medium border"
@@ -94,8 +107,8 @@ export default async function DashboardPage() {
           <p className="text-base font-semibold text-[#FAFAF8] truncate">
             {greeting}, {firstName}.
           </p>
-          <p className="text-xs text-[#6B7280] mt-0.5">
-            What are you building today?
+          <p className="text-xs text-[#9CA3AF] mt-0.5 font-serif italic truncate">
+            {daily.text}
           </p>
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
@@ -127,22 +140,36 @@ export default async function DashboardPage() {
       </header>
 
       <div className="px-4 lg:px-10 mt-4 lg:mt-0 mb-4 lg:mb-6">
-        <SummitBanner daysAway={summitDaysAway} registered={summitRegistered} />
+        <DimensionStrip today={daily.dimension} />
+        <div className="mt-4">
+          <SummitBanner daysAway={summitDaysAway} registered={summitRegistered} />
+        </div>
       </div>
 
       {/* ── Main content ── */}
       <div className="lg:flex lg:gap-8 lg:px-10 lg:pb-10">
         {/* Center column */}
         <main className="flex-1 min-w-0 px-4 pb-6 lg:p-0 lg:max-w-[610px]">
-          <div className="grid grid-cols-3 gap-3 lg:gap-4 mb-4 lg:mb-6">
-            <StatBox value={sessionsThisWeek} label="Sessions this week" color="#C8A96E" />
-            <StatBox
-              value={`${commitmentsDone}/${commitmentsTotal}`}
-              label="Commitments done"
-              color="#16A34A"
-            />
-            <StatBox value={`${goalProgressPct}%`} label="90-day progress" color="#534AB7" />
-          </div>
+          {/* The week, as a sentence — not a stat grid. Numbers in the
+              product's voice: "you kept your word", not "🔥 streak". */}
+          <p className="text-sm lg:text-[15px] text-[var(--text-muted)] leading-relaxed mb-4 lg:mb-6">
+            You kept your word{' '}
+            <span className="text-[var(--app-accent)] font-medium">
+              {commitmentsDone} of {commitmentsTotal}
+            </span>{' '}
+            times this week
+            {sessionsThisWeek > 0 && (
+              <>
+                , with{' '}
+                <span className="text-[var(--text)] font-medium">
+                  {sessionsThisWeek} session{sessionsThisWeek === 1 ? '' : 's'}
+                </span>{' '}
+                alongside Sage
+              </>
+            )}
+            . Your 90-day goal stands at{' '}
+            <span className="text-[var(--text)] font-medium">{goalProgressPct}%</span>.
+          </p>
 
           <div className="mb-4 lg:mb-6">
             <GoalCard goal={goal} progressPct={goalProgressPct} />

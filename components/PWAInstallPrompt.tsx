@@ -68,16 +68,27 @@ export default function PWAInstallPrompt() {
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     setIsIOS(isiOS);
 
+    // Marks the prompt as shown NOW: whether the user dismisses it,
+    // ignores it, or navigates away, it will not appear again for
+    // 24 hours. (Previously only an explicit dismiss set this key,
+    // so ignoring the banner meant seeing it on every page load.)
+    const markShown = () =>
+      localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_DURATION_MS));
+
     // Android / Chrome / Edge / Desktop
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowBanner(true);
+      markShown();
     };
     window.addEventListener('beforeinstallprompt', handler);
 
     // iOS Safari (no beforeinstallprompt support)
-    if (isiOS) setShowBanner(true);
+    if (isiOS) {
+      setShowBanner(true);
+      markShown();
+    }
 
     const installedHandler = () => {
       setIsInstalled(true);

@@ -75,6 +75,24 @@ export function MessageBubble({
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <audio controls src={voiceUrl} className="h-8 w-full max-w-[240px]" />
           </div>
+        ) : message.is_checkin ? (
+          /* ── The weekly check-in — the feed's punctuation mark ──
+             A kept ritual deserves ceremony: framed card, gold ledger
+             top line, small-caps label. Same data, different weight. */
+          <div
+            className="
+              w-full rounded-xl border-[0.5px] border-[#C8A96E]/25
+              bg-[#C8A96E]/[0.05] px-4 py-3
+            "
+          >
+            <span className="ledger-line-static mb-2 max-w-[120px]" aria-hidden="true" />
+            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#C8A96E] mb-1.5">
+              Weekly check-in
+            </p>
+            <p className="text-sm leading-relaxed break-words text-[var(--color-text-primary)]">
+              {message.content}
+            </p>
+          </div>
         ) : (
           <div
             className={`rounded-2xl px-3.5 py-2 text-sm leading-relaxed break-words overflow-hidden ${
