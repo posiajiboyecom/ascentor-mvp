@@ -83,10 +83,19 @@ export function getOrganizationSchema() {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: SITE_NAME,
+    // Connects the former brand to the current identity so search
+    // engines and AI answers merge them instead of describing the
+    // old "career platform" positioning.
+    alternateName: ['AscentorBI', 'Ascentor BI'],
     url: SITE_URL,
     logo: `${SITE_URL}/icon/icon-512.png`,
     description:
-      'Ascentor is a purposeful living and leadership development platform — AI coaching with Sage, community in The Circle, expert sessions, and The Elevation Summit.',
+      'Ascentor (formerly AscentorBI) is a purposeful living and leadership development platform — AI coaching with Sage, community in The Circle, expert sessions, courses, and The Elevation Summit, its annual gathering in Lagos.',
+    founder: {
+      '@type': 'Person',
+      name: 'Ajiboye Ayomiposi Samuel',
+      jobTitle: 'Founder',
+    },
     sameAs: [
       'https://twitter.com/ascentorhq',
       // TODO: add Instagram / LinkedIn / YouTube profile URLs when live

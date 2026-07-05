@@ -1,11 +1,33 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-export const metadata: Metadata = {
-  title: 'About',
-  description:
-    'Ascentor is the official platform of The Elevation Summit — a movement for purposeful individuals building lives of lasting impact. Learn who we are and why we exist.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  // Founder photo (when published) becomes the page's share image and
+  // an indexable image signal for Google.
+  let founderPhoto = '';
+  try {
+    const cms = await getPublishedPage('about');
+    const f = cms?.sections.founder?.data as Record<string, string> | undefined;
+    founderPhoto = f?.photo_url || '';
+  } catch { /* metadata must never throw */ }
+
+  return {
+    title: 'About Ascentor',
+    description:
+      'Ascentor (formerly AscentorBI) is a purposeful living and leadership development platform: AI coaching with Sage, community in The Circle, expert sessions, and The Elevation Summit — its annual gathering in Lagos.',
+    alternates: { canonical: 'https://ascentorbi.com/about' },
+    openGraph: {
+      title: 'About Ascentor',
+      description:
+        'A purposeful living and leadership development platform, and the home of The Elevation Summit.',
+      url: 'https://ascentorbi.com/about',
+      siteName: 'Ascentor',
+      type: 'website',
+      ...(founderPhoto ? { images: [{ url: founderPhoto }] } : {}),
+    },
+    ...(founderPhoto ? { twitter: { card: 'summary_large_image', images: [founderPhoto] } } : {}),
+  };
+}
 
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
 
@@ -38,8 +60,52 @@ export default async function AboutPage() {
   const ctaLabel    = finalCta?.cta_label || 'Join Ascentor →';
   const ctaHref     = finalCta?.cta_href  || '/signup';
 
+  // ── Founder — fully admin-managed at /admin/about ──────────────────
+  // Structured section 'founder': { name, photo_url, bio, quote,
+  // quote_attribution }. `bio` is one textarea; blank lines split it
+  // into paragraphs. Falls back to the original copy until published.
+  const founder = cms?.sections.founder?.data as Record<string, string> | undefined;
+  const founderName  = founder?.name || 'Ajiboye Ayomiposi Samuel';
+  const founderPhoto = founder?.photo_url || '';
+  const photoRight   = founder?.photo_position === 'right';
+  const photoFocus   = (founder?.photo_focus as 'top' | 'center' | 'bottom') || 'top';
+  const founderBioParas = (founder?.bio || '')
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const founderParas = founderBioParas.length > 0 ? founderBioParas : [
+    'Ajiboye is a Lagos-based technology and security professional, the founder of Guardsmann Technologies, and the creator of Ascentor — the official platform of The Elevation Summit.',
+    'He built Ascentor because he grew up inside the crisis it exists to solve. He watched people around him drift — not because they were incapable, but because no one had ever shown them what a built life looked like, or challenged them to think architecturally about their existence.',
+    'The Elevation Summit is not his career. It is not his brand. It is his life\'s purpose given organizational form — and he is building it to outlast him.',
+  ];
+  const founderQuote = founder?.quote || '"I will not drift. And I will spend my life making it harder for others to drift."';
+  const founderQuoteAttr = founder?.quote_attribution || `${founderName} · Founder, Ascentor`;
+
+  const aboutJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    name: 'About Ascentor',
+    url: 'https://ascentorbi.com/about',
+    mainEntity: {
+      '@type': 'Organization',
+      name: 'Ascentor',
+      alternateName: ['AscentorBI'],
+      url: 'https://ascentorbi.com',
+      founder: {
+        '@type': 'Person',
+        name: founderName,
+        jobTitle: 'Founder, Ascentor',
+        ...(founderPhoto ? { image: founderPhoto } : {}),
+      },
+    },
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
+      />
       <style>{`
         body { background: #FAFAF8 !important; color: #0F0F0E !important; }
 
@@ -218,44 +284,79 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* The Founder */}
+      {/* The Founder — content managed at /admin/about */}
       <section style={{ background: '#F4F3EF', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ maxWidth: '760px' }}>
-            <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>The Founder</p>
-            <h2 className="section-headline" style={{ marginBottom: '2rem' }}>
-              Ajiboye Ayomiposi Samuel
-            </h2>
+          <div style={{
+            display: 'flex',
+            flexDirection: photoRight ? 'row-reverse' : 'row',
+            flexWrap: 'wrap',
+            gap: 'clamp(2rem, 5vw, 4rem)',
+            alignItems: 'flex-start',
+          }}>
+            {founderPhoto && (
+              <div style={{ flex: '0 0 auto' }}>
+                <div style={{
+                  position: 'relative',
+                  width: 'clamp(200px, 26vw, 280px)',
+                }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={founderPhoto}
+                    alt={`${founderName}, Founder of Ascentor`}
+                    style={{
+                      width: '100%',
+                      aspectRatio: '4 / 5',
+                      objectFit: 'cover',
+                      objectPosition: photoFocus,
+                      borderRadius: '0.75rem',
+                      border: '1px solid #E0DCD2',
+                      display: 'block',
+                    }}
+                  />
+                  <span aria-hidden="true" style={{
+                    display: 'block',
+                    height: 1,
+                    width: '60%',
+                    marginTop: '1rem',
+                    background: 'linear-gradient(90deg, #C8A96E 0%, rgba(200,169,110,0.2) 100%)',
+                  }} />
+                </div>
+              </div>
+            )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
-              {[
-                'Ajiboye is a Lagos-based technology and security professional, the founder of Guardsmann Technologies, and the creator of Ascentor — the official platform of The Elevation Summit.',
-                'He built Ascentor because he grew up inside the crisis it exists to solve. He watched people around him drift — not because they were incapable, but because no one had ever shown them what a built life looked like, or challenged them to think architecturally about their existence.',
-                'The Elevation Summit is not his career. It is not his brand. It is his life\'s purpose given organizational form — and he is building it to outlast him.',
-              ].map((para, i) => (
-                <p key={i} style={{ fontSize: '1.0625rem', color: '#374151', lineHeight: 1.8 }}>{para}</p>
-              ))}
-            </div>
+            <div style={{ flex: '1 1 420px', maxWidth: '760px' }}>
+              <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>The Founder</p>
+              <h2 className="section-headline" style={{ marginBottom: '2rem' }}>
+                {founderName}
+              </h2>
 
-            <div style={{
-              background: '#0F0F0E',
-              borderRadius: '1rem',
-              padding: '1.5rem 2rem',
-              borderLeft: '4px solid #C8A96E',
-            }}>
-              <p style={{
-                fontFamily: 'var(--font-accent, "Playfair Display", serif)',
-                fontStyle: 'italic',
-                fontSize: '1.125rem',
-                color: '#C8A96E',
-                lineHeight: 1.65,
-                marginBottom: '0.75rem',
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
+                {founderParas.map((para, i) => (
+                  <p key={i} style={{ fontSize: '1.0625rem', color: '#374151', lineHeight: 1.8 }}>{para}</p>
+                ))}
+              </div>
+
+              <div style={{
+                background: '#0F0F0E',
+                borderRadius: '1rem',
+                padding: '1.5rem 2rem',
+                borderLeft: '4px solid #C8A96E',
               }}>
-                "I will not drift. And I will spend my life making it harder for others to drift."
-              </p>
-              <p style={{ fontSize: '0.8125rem', color: '#4B5563', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                Ajiboye Ayomiposi Samuel · Founder, Ascentor
-              </p>
+                <p style={{
+                  fontFamily: 'var(--font-accent, "Playfair Display", serif)',
+                  fontStyle: 'italic',
+                  fontSize: '1.125rem',
+                  color: '#C8A96E',
+                  lineHeight: 1.65,
+                  marginBottom: '0.75rem',
+                }}>
+                  {founderQuote}
+                </p>
+                <p style={{ fontSize: '0.8125rem', color: '#4B5563', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {founderQuoteAttr}
+                </p>
+              </div>
             </div>
           </div>
         </div>
