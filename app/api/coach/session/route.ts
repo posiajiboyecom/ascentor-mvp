@@ -159,7 +159,7 @@ export async function POST(req: Request) {
 
   // Retrieve context — runs concurrently with nothing else needed before Claude
   // so we await it here. Fails gracefully: empty contextBlock = no RAG injection.
-  const { contextBlock } = await retrieveContext(message.trim(), {
+  const { chunks, contextBlock } = await retrieveContext(message.trim(), {
     namespace: ragNamespace,
     topK: 10,
     topN: 3,
@@ -224,6 +224,38 @@ ${contextBlock}`
       action: parsed.action ?? null,
       createdAt: new Date().toISOString(),
     };
+
+    // ── "Sage Surfaces the Source" — visible attribution ─────
+    // Derive mentor sources from the retrieved chunks that actually
+    // informed this answer: only chunks with a named mentor and a
+    // meaningful relevance score, deduped by mentor, max two.
+    const SOURCE_SCORE_THRESHOLD = 0.5;
+    const seen = new Set<string>();
+    const sources = chunks
+      .filter(
+        (c) =>
+          c.score >= SOURCE_SCORE_THRESHOLD &&
+          typeof c.metadata?.mentor_name === 'string' &&
+          c.metadata.mentor_name
+      )
+      .filter((c) => {
+        const name = String(c.metadata!.mentor_name);
+        if (seen.has(name)) return false;
+        seen.add(name);
+        return true;
+      })
+      .slice(0, 2)
+      .map((c) => ({
+        mentorName: String(c.metadata!.mentor_name),
+        mentorSlug:
+          typeof c.metadata?.mentor_slug === 'string'
+            ? c.metadata.mentor_slug
+            : undefined,
+        sourceTitle:
+          typeof c.metadata?.source === 'string' ? c.metadata.source : undefined,
+      }));
+
+    if (sources.length > 0) assistantTurn.sources = sources;
   } catch (err) {
     console.error('[coach/session] Anthropic call failed:', err);
     return NextResponse.json(

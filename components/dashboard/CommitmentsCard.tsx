@@ -106,7 +106,7 @@ export function CommitmentsCard({ commitments }: CommitmentsCardProps) {
               <span
                 className={`flex-1 text-xs lg:text-base leading-relaxed ${
                   c.completed
-                    ? 'text-[var(--color-text-secondary)] line-through'
+                    ? 'ledger-strike'
                     : 'text-[var(--color-text-primary)]'
                 }`}
               >

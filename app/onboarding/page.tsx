@@ -85,14 +85,14 @@ const BTN_GHOST: React.CSSProperties = {
   cursor: 'pointer', fontFamily: fontDisplay,
 };
 
-// ── Progress bar ──────────────────────────────────────────────────────────────
+// ── Progress — three gold ticks, not a percentage bar ─────────────────────────
 function ProgressBar({ step, total = 3 }: { step: number; total?: number }) {
   return (
-    <div style={{ display: 'flex', gap: 5, marginBottom: '1.75rem' }}>
+    <div style={{ display: 'flex', gap: 8, marginBottom: '1.75rem' }}>
       {Array.from({ length: total }).map((_, i) => (
         <div key={i} style={{
-          height: 3, flex: 1, borderRadius: 9999,
-          background: i < step ? DARK : BORDER,
+          height: 2, width: 28, borderRadius: 9999,
+          background: i < step ? GOLD : BORDER,
           transition: 'background 0.4s',
         }} />
       ))}
@@ -126,6 +126,7 @@ export default function OnboardingPage() {
   const [building, setBuilding]   = useState('');
   const [commitment, setCommitment] = useState('');
   const [saving, setSaving]       = useState(false);
+  const [celebrating, setCelebrating] = useState(false);
   const [nameError, setNameError] = useState(false);
 
   const nameRef       = useRef<HTMLInputElement>(null);
@@ -206,7 +207,11 @@ export default function OnboardingPage() {
       body: JSON.stringify({ userId: user.id }),
     }).catch(() => {});
 
-    router.push('/dashboard');
+    // The set-piece: the one place a 2-second moment is worth it.
+    // Everything is already saved — the overlay plays, then we land
+    // on Today's Page.
+    setCelebrating(true);
+    setTimeout(() => router.push('/dashboard'), 2000);
   }
 
   return (
@@ -217,6 +222,42 @@ export default function OnboardingPage() {
       padding: '2rem 1.5rem',
       overflowY: 'auto',
     }}>
+
+      {/* ── Completion set-piece — the product's one orchestrated moment ── */}
+      {celebrating && (
+        <div
+          role="status"
+          aria-label="Onboarding complete"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 100,
+            background: '#0F0F0E',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            padding: '2rem',
+            animation: 'fadeUp 0.35s ease both',
+          }}
+        >
+          <span
+            className="ledger-line"
+            style={{ maxWidth: 220, marginBottom: '1.5rem' }}
+            aria-hidden="true"
+          />
+          <p style={{
+            fontFamily: "var(--font-accent,'Playfair Display',serif)",
+            fontSize: 'clamp(1.6rem, 5vw, 2.2rem)',
+            color: '#FAFAF8', margin: 0, textAlign: 'center',
+          }}>
+            Your ascent begins.
+          </p>
+          <p style={{
+            fontFamily: fontBody, fontSize: 13, color: '#9CA3AF',
+            marginTop: '0.75rem', letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+          }}>
+            {fullName ? fullName.trim().split(' ')[0] : 'Welcome'} · Ascentor
+          </p>
+        </div>
+      )}
 
       {/* Logo */}
       <div style={{ marginBottom: '2rem' }}>

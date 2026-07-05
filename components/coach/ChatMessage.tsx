@@ -47,11 +47,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {message.question && (
           <div
             className="
+              sage-prose
               rounded-[2px_12px_12px_12px]
               bg-[var(--color-background-secondary)]
               border-[0.5px] border-[var(--color-border-tertiary)]
-              px-[11px] py-2 lg:px-6 lg:py-4
-              text-xs lg:text-lg leading-relaxed
+              px-[13px] py-2.5 lg:px-6 lg:py-4
               text-[var(--color-text-primary)]
             "
           >
@@ -80,6 +80,34 @@ export function ChatMessage({ message }: ChatMessageProps) {
             </p>
           </div>
         )}
+
+        {/* ── "Sage Surfaces the Source" — mentor attribution card ──
+            The visible form of the RAG attribution system: which
+            member(s) of the mentor council informed this answer. */}
+        {message.role === 'assistant' &&
+          message.sources &&
+          message.sources.length > 0 && (
+            <div className="pt-1">
+              <span className="ledger-line-static mb-2 max-w-[180px]" aria-hidden="true" />
+              <p className="text-[9px] lg:text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--text-dim)] mb-1">
+                Drawing on
+              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {message.sources.map((s) => (
+                  <span key={s.mentorName} className="flex items-baseline gap-2">
+                    <span className="font-serif text-sm lg:text-base text-[#C8A96E]">
+                      {s.mentorName}
+                    </span>
+                    {s.sourceTitle && (
+                      <span className="text-[10px] lg:text-xs text-[var(--text-dim)] italic">
+                        {s.sourceTitle}
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
       </div>
     </div>
   );

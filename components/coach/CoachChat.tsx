@@ -50,6 +50,20 @@ export function CoachChat({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages]);
 
+  // Entry from the dashboard DimensionStrip: /coach?prefill=…
+  // Read window.location directly (not useSearchParams) so no Suspense
+  // boundary is required at build time. Runs once on mount; never
+  // overwrites something the user has already typed.
+  useEffect(() => {
+    const prefill = new URLSearchParams(window.location.search).get('prefill');
+    if (prefill) {
+      setDraft((d) => (d ? d : prefill));
+      // Clean the URL so refresh/share doesn't re-trigger it.
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const hasStarted = messages.length > 0;
 
   function startWithType(typeId: string) {
@@ -169,9 +183,13 @@ export function CoachChat({
           className="flex-1 overflow-y-auto bg-[var(--bg-card)] lg:px-10"
         >
           {loadingHistory ? (
-            <p className="text-center text-sm text-[var(--text-muted)] py-10">
-              Loading session…
-            </p>
+            <div className="flex flex-col gap-4 px-3 py-6 lg:px-0 lg:max-w-[720px]" aria-label="Loading session">
+              <div className="asc-skeleton h-4 w-3/5 self-end" />
+              <div className="asc-skeleton h-4 w-2/5 self-end" />
+              <div className="asc-skeleton h-4 w-4/5" />
+              <div className="asc-skeleton h-4 w-3/4" />
+              <div className="asc-skeleton h-4 w-2/3" />
+            </div>
           ) : !hasStarted ? (
             <CoachEmptyState
               allTypes={SESSION_TYPES}
@@ -187,13 +205,11 @@ export function CoachChat({
                 <ChatMessage key={i} message={m} />
               ))}
               {sending && (
-                <div className="flex items-center gap-2 text-xs lg:text-sm text-[var(--text-muted)] pl-9 lg:pl-[52px]">
-                  <span className="flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#C8A96E] animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#C8A96E] animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#C8A96E] animate-bounce" />
-                  </span>
-                  Sage is thinking…
+                <div className="pl-9 lg:pl-[52px] pr-6 max-w-[320px]">
+                  <p className="asc-eyebrow !text-[10px] mb-2 !text-[var(--text-dim)]">
+                    Sage is reflecting…
+                  </p>
+                  <span className="ledger-line-thinking" aria-hidden="true" />
                 </div>
               )}
             </div>

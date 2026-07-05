@@ -13,6 +13,17 @@ export interface CoachUserMessage {
 }
 
 /**
+ * A mentor/source surfaced by RAG retrieval for an assistant turn —
+ * the visible form of "Sage Surfaces the Source". Optional and
+ * backward-compatible: older persisted messages simply lack it.
+ */
+export interface CoachSource {
+  mentorName: string;
+  mentorSlug?: string;
+  sourceTitle?: string;
+}
+
+/**
  * An assistant turn. `content` mirrors the human-readable text shown
  * in the bubble (currently `question`) so anything that reads
  * messages[].content as a flat string (e.g. coaching-summary.ts's
@@ -25,6 +36,7 @@ export interface CoachAssistantMessage {
   reflection: string;
   question: string;
   action: string | null;
+  sources?: CoachSource[];
   createdAt: string;
 }
 
