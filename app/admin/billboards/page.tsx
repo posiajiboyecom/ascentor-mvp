@@ -134,6 +134,7 @@ export default function AdminBillboardsPage() {
   const [showForm, setShowForm]     = useState(false);
   const [editing, setEditing]       = useState<Billboard | null>(null);
   const [form, setForm]             = useState<Omit<Billboard, 'id'>>(EMPTY);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState<string | null>(null);
   const [dbMissing, setDbMissing]   = useState(false);
@@ -296,10 +297,75 @@ export default function AdminBillboardsPage() {
                 </Field>
               </div>
 
-              <Field label="Image URL (optional)">
-                <input className={inputCls} style={inputSt} value={form.image_url}
-                  onChange={(e) => set('image_url', e.target.value)}
-                  placeholder="https://… (banner image, ~80px tall)" />
+              <Field label="Image (optional)">
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {form.image_url ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={form.image_url}
+                      alt="Billboard"
+                      style={{ width: 132, height: 56, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--ledger-line-strong)' }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: 132, height: 56, borderRadius: 8,
+                      border: '1px dashed var(--ledger-line-strong)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10.5, color: 'var(--ledger-ink-faint)',
+                    }}>
+                      No image
+                    </div>
+                  )}
+                  <label style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px',
+                    borderRadius: 8, background: '#C8A96E', color: '#0F0F0E',
+                    fontSize: 12, fontWeight: 700, cursor: uploadingImage ? 'wait' : 'pointer',
+                    opacity: uploadingImage ? 0.6 : 1, whiteSpace: 'nowrap',
+                  }}>
+                    {uploadingImage ? 'Uploading…' : form.image_url ? 'Replace image' : 'Upload image'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      style={{ display: 'none' }}
+                      disabled={uploadingImage}
+                      onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingImage(true);
+                        try {
+                          const fd = new FormData();
+                          fd.append('file', file);
+                          fd.append('folder', 'billboards');
+                          const res = await fetch('/api/admin/upload-media', { method: 'POST', body: fd });
+                          const data = await res.json();
+                          if (!res.ok) throw new Error(data.error || 'Upload failed');
+                          set('image_url', data.url);
+                        } catch (err) {
+                          alert(err instanceof Error ? err.message : 'Upload failed');
+                        } finally {
+                          setUploadingImage(false);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                  </label>
+                  {form.image_url && (
+                    <button
+                      type="button"
+                      onClick={() => set('image_url', '')}
+                      style={{
+                        background: 'none', border: '1px solid var(--ledger-line-strong)',
+                        borderRadius: 8, padding: '9px 14px', fontSize: 12,
+                        color: 'var(--ledger-ink-soft)', cursor: 'pointer',
+                      }}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <p style={{ fontSize: 10.5, color: 'var(--ledger-ink-faint)', marginTop: 6 }}>
+                  JPG, PNG or WebP · shows as a banner (~96px tall) at the top of the card.
+                </p>
               </Field>
 
               {/* Color presets */}

@@ -102,7 +102,7 @@ export default async function MovementPage() {
       <nav className="mkt-nav mkt-nav-light">
         <div className="mkt-nav-inner">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <Link href="/"><img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" height={26} style={{ display: 'block' }} /></Link>
+          <Link href="/"><img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" height={26} width={98} style={{ display: 'block' }} /></Link>
 
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
             <Link href="/elevation-summit" style={{ fontSize: '0.875rem', color: '#374151', textDecoration: 'none', fontWeight: 500, whiteSpace: 'nowrap' }}

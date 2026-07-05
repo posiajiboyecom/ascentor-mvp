@@ -49,6 +49,7 @@ export default function AdminBlogPageInner() {
     cover_image: '',
   };
   const [form, setForm] = useState(emptyForm);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   useEffect(() => { loadPosts(); }, []);
 
@@ -244,35 +245,44 @@ export default function AdminBlogPageInner() {
               />
             </div>
 
-            {/* Cover image — upload or paste URL */}
+            {/* Cover image — upload first; URL paste as fallback */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', gap: 8 }}>
+                <label style={{
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '0 16px',
+                  borderRadius: 'var(--ledger-radius-md)', background: '#C8A96E', color: '#0F0F0E',
+                  cursor: coverUploading ? 'wait' : 'pointer', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
+                  opacity: coverUploading ? 0.6 : 1,
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  {coverUploading ? 'Uploading…' : 'Upload cover'}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} disabled={coverUploading} onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setCoverUploading(true);
+                    try {
+                      const fd = new FormData();
+                      fd.append('file', file);
+                      fd.append('folder', 'blog');
+                      const res = await fetch('/api/admin/upload-media', { method: 'POST', body: fd });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Upload failed');
+                      setForm(prev => ({ ...prev, cover_image: data.url }));
+                    } catch (err) {
+                      alert(err instanceof Error ? err.message : 'Upload failed — try again.');
+                    } finally {
+                      setCoverUploading(false);
+                      e.target.value = '';
+                    }
+                  }} />
+                </label>
                 <input
                   className="blog-input px-3.5 py-3 text-sm rounded-xl"
                   style={{ flex: 1, background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', border: '1px solid var(--ledger-line-strong)', outline: 'none' }}
                   value={form.cover_image}
                   onChange={(e) => setForm({ ...form, cover_image: e.target.value })}
-                  placeholder="Cover image URL — or upload"
+                  placeholder="…or paste an image URL"
                 />
-                <label style={{
-                  display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px',
-                  borderRadius: 'var(--ledger-radius-md)', border: '1px solid var(--ledger-line-strong)', background: 'var(--ledger-bg-input)',
-                  cursor: 'pointer', fontSize: 12, color: 'var(--ledger-ink-soft)', whiteSpace: 'nowrap',
-                }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  Upload
-                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const fd = new FormData();
-                    fd.append('file', file);
-                    fd.append('folder', 'blog');
-                    const res = await fetch('/api/admin/upload-media', { method: 'POST', body: fd });
-                    const data = await res.json();
-                    if (data.url) setForm(prev => ({ ...prev, cover_image: data.url }));
-                    e.target.value = '';
-                  }} />
-                </label>
               </div>
               {form.cover_image && (
                 <img src={form.cover_image} alt="Cover preview" style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 'var(--ledger-radius-md)', border: '1px solid var(--ledger-line-strong)' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />

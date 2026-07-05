@@ -161,7 +161,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <Link href="/"><img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" height={28} style={{ display: 'block' }} /></Link>
+          <Link href="/"><img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" height={26} width={98} style={{ display: 'block' }} /></Link>
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
             <Link href="/movement" style={{ fontSize: '0.875rem', color: '#9CA3AF', textDecoration: 'none', fontWeight: 500 }}>The Movement</Link>
             <Link href="/signup" className="btn-gold" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem' }}>Join Ascentor →</Link>
