@@ -1,28 +1,25 @@
 import type { NextConfig } from 'next';
 
 // ── Content Security Policy ───────────────────────────────────────────────────
-// Restricts which resources the browser can load. Adjust if you add new
-// external scripts, fonts, or API domains.
+// NOTE: script-src 'unsafe-inline' has been removed (M-06 fix).
+// The per-request nonce is now injected by proxy.ts (the Next.js middleware),
+// which overwrites this header with a nonce-based CSP on every request.
+// This static CSP is a fallback only — it applies to routes the middleware
+// does not process (e.g., _next/static assets). It intentionally omits
+// script-src 'unsafe-inline' so those paths also stay protected.
 const CSP = [
-  // Only load scripts from our own origin + trusted CDNs
-  `script-src 'self' 'unsafe-inline' https://js.paystack.co https://plausible.io https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com`,
-  // Styles: self + inline (required by Next.js) + Google Fonts
+  // script-src: nonce is set dynamically in proxy.ts per request
+  // This fallback only covers static assets (no inline scripts needed there)
+  `script-src 'self' https://js.paystack.co https://plausible.io https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com`,
+  // Styles: self + inline (required by Next.js CSS-in-JS) + Google Fonts
   `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
-  // Fonts: self + Google Fonts CDN
   `font-src 'self' data: https://fonts.gstatic.com`,
-  // Images: self + data URIs + Supabase + any https (blog cover images, social media)
   `img-src 'self' data: blob: https://*.supabase.co https://www.gravatar.com https://i.ytimg.com https:`,
-  // Frames: only Paystack iframe + YouTube embeds (both standard and privacy-enhanced)
   `frame-src https://js.paystack.co https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com`,
-  // API/fetch calls: self + Supabase + Anthropic + Paystack + Plausible + Buffer
   `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.paystack.co https://plausible.io https://api.bufferapp.com https://www.youtube.com`,
-  // Workers / service worker
   `worker-src 'self' blob:`,
-  // Everything else: self only
   `default-src 'self'`,
-  // Block all <object> / <embed> / Flash
   `object-src 'none'`,
-  // Upgrade any accidental http: requests to https:
   `upgrade-insecure-requests`,
 ].join('; ');
 

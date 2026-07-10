@@ -101,8 +101,24 @@ export async function POST(req: Request) {
     );
   }
 
-  // Validate URL format
-  try { new URL(url); } catch {
+  const VALID_NAMESPACES = ['framework','vocation','character','mind',
+    'relationships','community','legacy','finance','leadership','career','coaching'];
+  if (!VALID_NAMESPACES.includes(namespace)) {
+    return NextResponse.json({ error: `Invalid namespace. Valid values: ${VALID_NAMESPACES.join(', ')}` }, { status: 400 });
+  }
+
+  // Validate URL format + SSRF blocklist
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return NextResponse.json({ error: 'Only http and https URLs are allowed.' }, { status: 400 });
+    }
+    const host = parsed.hostname.toLowerCase();
+    const BLOCKED = /^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|::1|fc00:|fe80:)/;
+    if (BLOCKED.test(host)) {
+      return NextResponse.json({ error: 'URL points to a private or internal address.' }, { status: 400 });
+    }
+  } catch {
     return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 });
   }
 

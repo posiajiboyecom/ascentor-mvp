@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     if (!verifyData.status || verifyData.data?.status !== 'success') {
       console.error('[pay/callback] Verification failed:', verifyData.message)
       return NextResponse.redirect(
-        `${APP_URL}/checkout?error=payment_failed&ref=${reference}`
+        `${APP_URL}/checkout?error=payment_failed`
       )
     }
 

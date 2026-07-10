@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import type { Permission } from '@/lib/permissions';
 import '@/styles/admin-ledger.css';
+import { headers } from 'next/headers';
 
 // ═══════════════════════════════════════════════════════════
 // Admin layout
@@ -39,6 +40,10 @@ const LEDGER_FONTS_URL =
   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Read per-request nonce from middleware (M-06)
+  const headersList = await headers();
+  const nonce = headersList.get('x-nonce') ?? '';
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -85,6 +90,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           here because this script runs inside <body>, not on <html>
           (admin doesn't own the root <html> tag — app/layout.tsx does). */}
       <script
+        nonce={nonce}
         dangerouslySetInnerHTML={{
           __html: `
             (function() {

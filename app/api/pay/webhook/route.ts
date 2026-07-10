@@ -29,13 +29,14 @@ import crypto from 'crypto'
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!
 
-// ── Signature verification ────────────────────────────────────────────────────
+// ── Signature verification (timing-safe) ─────────────────────────────────────
 function verifySignature(rawBody: string, sig: string): boolean {
   const expected = crypto
     .createHmac('sha512', PAYSTACK_SECRET)
     .update(rawBody)
     .digest('hex')
-  return expected === sig
+  if (expected.length !== sig.length) return false
+  return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(sig, 'hex'))
 }
 
 // ── Idempotency — prevent double-processing on Paystack retries ───────────────

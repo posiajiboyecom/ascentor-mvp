@@ -1,3 +1,4 @@
+import 'server-only'; // Build-time error if imported in client code — protects SUPABASE_SERVICE_ROLE_KEY
 import { createClient } from '@supabase/supabase-js';
 
 // WARNING: This bypasses Row Level Security

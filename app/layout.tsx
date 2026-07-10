@@ -8,6 +8,7 @@ import PushPermission from '@/components/PushPermission';
 import { MobileInit } from '@/components/MobileInit';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import StructuredData from '@/components/StructuredData';
+import { headers } from 'next/headers';
 import Script from 'next/script';
 
 // ── Fonts ──────────────────────────────────────────────────────────
@@ -94,7 +95,10 @@ export const viewport: Viewport = {
 };
 
 // ── Root Layout ────────────────────────────────────────────────────
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Read the per-request nonce injected by proxy.ts middleware (M-06)
+  const headersList = await headers();
+  const nonce = headersList.get('x-nonce') ?? '';
   return (
     // suppressHydrationWarning is required here because the inline theme
     // script sets data-app-theme before React hydrates, causing a mismatch.
@@ -113,6 +117,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             Sets data-app-theme on <html> before React hydrates.
             suppressHydrationWarning on <html> above handles the mismatch. */}
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -132,6 +137,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Plausible Analytics */}
         <Script
           defer
+          nonce={nonce}
           data-domain="ascentorbi.com"
           src="https://plausible.io/js/script.js"
           strategy="afterInteractive"

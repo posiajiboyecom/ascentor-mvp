@@ -32,7 +32,8 @@ const supabase = createClient(
 
 function verifySignature(rawBody: string, signature: string, secret: string): boolean {
   const hash = crypto.createHmac('sha512', secret).update(rawBody).digest('hex');
-  return hash === signature;
+  if (hash.length !== signature.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(signature, 'hex'));
 }
 
 async function getPartnerById(partnerId: string) {

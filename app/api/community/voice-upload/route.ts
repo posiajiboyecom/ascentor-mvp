@@ -45,22 +45,46 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Voice message too large (max 10MB)' }, { status: 400 });
   }
 
+  // ── H-05: Validate MIME type server-side (never trust client-supplied type) ──
+  const ALLOWED_AUDIO: Record<string, string> = {
+    'audio/webm': 'webm',
+    'audio/ogg':  'ogg',
+    'audio/mp4':  'mp4',
+    'audio/mpeg': 'mp3',
+  };
+  const ext = ALLOWED_AUDIO[file.type];
+  if (!ext) {
+    return NextResponse.json({ error: 'Invalid audio format. Supported: webm, ogg, mp4, mpeg.' }, { status: 400 });
+  }
+
+  // ── H-02: Validate channel exists and user has access (user-scoped client respects RLS) ──
+  const { data: channelData, error: channelErr } = await supabase
+    .from('community_channels')
+    .select('slug, channel_type, is_locked')
+    .eq('slug', channel)
+    .maybeSingle();
+
+  if (channelErr || !channelData) {
+    return NextResponse.json({ error: 'Channel not found.' }, { status: 404 });
+  }
+  if (channelData.channel_type === 'announce') {
+    return NextResponse.json({ error: 'Cannot post voice messages to announcement channels.' }, { status: 403 });
+  }
+  if (channelData.is_locked) {
+    return NextResponse.json({ error: 'This channel is locked.' }, { status: 403 });
+  }
+
   // ── Upload + insert using the service role client (bypasses RLS) ──
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const ext = file.type.includes('mp4')
-    ? 'mp4'
-    : file.type.includes('ogg')
-      ? 'ogg'
-      : 'webm';
   const path = `voice/${user.id}/${Date.now()}.${ext}`;
 
   const { error: uploadError } = await serviceClient.storage
     .from(VOICE_BUCKET)
-    .upload(path, file, { contentType: file.type, upsert: false });
+    .upload(path, file, { contentType: `audio/${ext}`, upsert: false }); // use validated type, not client-supplied
 
   if (uploadError) {
     console.error('[voice-upload] storage upload failed:', uploadError.message);

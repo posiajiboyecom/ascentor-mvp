@@ -97,10 +97,13 @@ export function CoachChat({
     setError(null);
     setDraft('');
 
-    const optimisticUser: CoachMessage = {
+    // Use a stable tempId for rollback — reference identity is unreliable across re-renders
+    const tempId = `optimistic-${Date.now()}-${Math.random()}`;
+    const optimisticUser: CoachMessage & { _tempId?: string } = {
       role: 'user',
       content: trimmed,
       createdAt: new Date().toISOString(),
+      _tempId: tempId,
     };
     setMessages((prev) => [...prev, optimisticUser]);
     setSending(true);
@@ -130,8 +133,8 @@ export function CoachChat({
       setError(
         err instanceof Error ? err.message : 'Something went wrong. Please try again.'
       );
-      // Remove the optimistic user message since it never got a reply.
-      setMessages((prev) => prev.filter((m) => m !== optimisticUser));
+      // Roll back optimistic message using stable tempId
+      setMessages((prev) => prev.filter((m) => (m as any)._tempId !== tempId));
     } finally {
       setSending(false);
     }
@@ -246,11 +249,17 @@ export function CoachChat({
             </span>
           </div>
 
+          {/* L-05: aria-live region announces Sage's thinking state to screen readers */}
+          <span aria-live="polite" aria-atomic="true" className="sr-only">
+            {sending ? 'Sage is thinking...' : ''}
+          </span>
+
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={hasStarted ? 'Type your response...' : "Share what's on your mind..."}
             disabled={sending}
+            aria-label="Message Sage"
             className="
               flex-1 min-w-0 rounded-[18px] lg:rounded-full
               border-[0.5px] border-[var(--border)]
@@ -289,7 +298,7 @@ export function CoachChat({
             disabled={sending || !draft.trim()}
             className="
               flex h-[30px] w-[30px] lg:h-12 lg:w-12 shrink-0 items-center justify-center
-              rounded-full bg-[#0F0F0E] disabled:opacity-40
+              rounded-full bg-[#0F0F0E] disabled:opacity-40 disabled:cursor-not-allowed
             "
           >
             <Send className="w-[13px] h-[13px] lg:w-5 lg:h-5 text-[#FAFAF8]" />
