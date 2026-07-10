@@ -127,6 +127,10 @@ export async function POST(req: Request) {
   }
 
   // ── Enforce monthly coachingSessions limit (new sessions only) ──
+  // Usage is recorded HERE (before the Anthropic call) to close the TOCTOU
+  // race window where two concurrent requests both read count = N-1 and both
+  // proceed. The insert is rolled back (deleted) if the session fails to create.
+  let usageInsertId: string | null = null;
   if (!sessionId) {
     const usage = await checkUsage(
       user.id,
@@ -139,6 +143,17 @@ export async function POST(req: Request) {
         { error: usage.message ?? 'You have reached your coaching session limit.' },
         { status: 403 }
       );
+    }
+    // Pre-insert usage row — acts as an optimistic lock
+    const { data: usageRow, error: usageErr } = await supabase
+      .from('usage_tracking')
+      .insert({ user_id: user.id, feature: 'coachingSessions', created_at: new Date().toISOString() })
+      .select('id')
+      .single();
+    if (usageErr) {
+      console.error('[coach/session] usage_tracking pre-insert failed:', usageErr);
+    } else {
+      usageInsertId = usageRow?.id ?? null;
     }
   }
 
@@ -273,7 +288,8 @@ ${contextBlock}`
     const { error: updateError } = await supabase
       .from('coaching_sessions')
       .update({ messages: updatedMessages })
-      .eq('id', resolvedSessionId);
+      .eq('id', resolvedSessionId)
+      .eq('user_id', user.id); // ownership guard — defence-in-depth beyond RLS
 
     if (updateError) {
       console.error('[coach/session] Failed to update session:', updateError);
@@ -297,6 +313,10 @@ ${contextBlock}`
 
     if (insertError || !created) {
       console.error('[coach/session] Failed to create session:', insertError);
+      // Roll back the pre-inserted usage row so the failed attempt doesn't count
+      if (usageInsertId) {
+        await supabase.from('usage_tracking').delete().eq('id', usageInsertId);
+      }
       return NextResponse.json(
         { error: 'Failed to start your session. Please try again.' },
         { status: 500 }
@@ -304,15 +324,6 @@ ${contextBlock}`
     }
 
     resolvedSessionId = created.id;
-  }
-
-  // ── Record usage ──────────────────────────────────────────
-  if (isNewSession) {
-    await supabase.from('usage_tracking').insert({
-      user_id: user.id,
-      feature: 'coachingSessions',
-      created_at: new Date().toISOString(),
-    });
   }
 
   return NextResponse.json({

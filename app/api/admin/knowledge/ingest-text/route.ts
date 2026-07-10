@@ -74,6 +74,12 @@ export async function POST(req: Request) {
     );
   }
 
+  const VALID_NAMESPACES = ['framework','vocation','character','mind',
+    'relationships','community','legacy','finance','leadership','career','coaching'];
+  if (!VALID_NAMESPACES.includes(namespace)) {
+    return NextResponse.json({ error: `Invalid namespace. Valid values: ${VALID_NAMESPACES.join(', ')}` }, { status: 400 });
+  }
+
   const mentor = await getMentorBySlug(mentorSlug);
   if (!mentor) {
     return NextResponse.json(

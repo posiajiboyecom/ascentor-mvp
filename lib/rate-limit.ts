@@ -39,6 +39,7 @@ export class RateLimiter {
   }
 
   check(identifier: string): RateLimitResult {
+    this.prune(); // L-07: prune expired entries on every check to prevent unbounded Map growth
     const now       = Date.now();
     const cutoff    = now - this.windowMs;
     const hits      = (this.store.get(identifier) ?? []).filter((t) => t > cutoff);
@@ -89,10 +90,16 @@ export const strictLimiter = new RateLimiter({
 });
 
 /**
- * Extract the real client IP from Next.js request headers.
- * Vercel sets x-forwarded-for; falls back to a generic string.
+ * Extract the real client IP from request headers.
+ * Prefers x-vercel-forwarded-for (Vercel's tamper-proof header, set by the
+ * platform — cannot be spoofed by the client), then falls back to
+ * x-forwarded-for for non-Vercel environments.
  */
 export function getClientIp(req: Request): string {
+  // x-vercel-forwarded-for is set by Vercel's edge and cannot be spoofed
+  const vercelIp = req.headers.get('x-vercel-forwarded-for');
+  if (vercelIp) return vercelIp.split(',')[0].trim();
+  // Fallback for local dev / non-Vercel deployments
   const xff = req.headers.get('x-forwarded-for');
   if (xff) return xff.split(',')[0].trim();
   return req.headers.get('x-real-ip') ?? 'unknown';

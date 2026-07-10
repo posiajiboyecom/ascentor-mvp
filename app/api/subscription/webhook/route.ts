@@ -38,12 +38,25 @@ const supabase = createClient(
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!;
 
 // ── Signature verification ────────────────────────────────
+// ⚠️  RETIRED — This handler is superseded by /api/pay/webhook.
+// This file must be deleted and removed from proxy.ts PUBLIC_API_ROUTES.
+// It remains temporarily to avoid a 404 if Paystack still points here,
+// but it now returns 410 Gone so Paystack stops retrying this endpoint.
+// Delete once Paystack dashboard is updated to use /api/pay/webhook only.
+export async function POST(_req: Request) {
+  return new Response(JSON.stringify({ error: 'This endpoint has been retired. Use /api/pay/webhook.' }), {
+    status: 410,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 function verifySignature(rawBody: string, signature: string): boolean {
   const hash = crypto
     .createHmac('sha512', PAYSTACK_SECRET)
     .update(rawBody)
     .digest('hex');
-  return hash === signature;
+  if (hash.length !== signature.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(signature, 'hex'));
 }
 
 // ── Look up profile by email ──────────────────────────────
@@ -275,9 +288,9 @@ async function handleSubscriptionDisable(data: any) {
   console.log(`[Webhook] ⚠️ subscription.disable — ${email}`);
 }
 
-// ── Main Route ────────────────────────────────────────────
+// ── Original handler (no longer exported — superseded by the 410 stub above) ──
 
-export async function POST(req: NextRequest) {
+async function _legacyHandler(req: NextRequest) {
   try {
     const rawBody = await req.text();
     const signature = req.headers.get('x-paystack-signature') || '';
