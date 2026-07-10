@@ -116,9 +116,19 @@ export default async function AboutPage() {
           border-bottom: 1px solid #E8E6E1;
         }
         .about-nav-inner {
-          max-width: 1200px; margin: 0 auto; padding: 0 1.5rem;
+          max-width: 1200px; margin: 0 auto; padding: 0 1rem;
           display: flex; align-items: center; justify-content: space-between;
-          height: 64px;
+          height: 56px;
+        }
+        .about-nav-cta {
+          padding: 0 1.125rem;
+          min-height: 44px;
+          display: inline-flex; align-items: center;
+          background: #0F0F0E; color: #FAFAF8;
+          border-radius: 0.5rem; text-decoration: none;
+          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+          font-weight: 700; font-size: 0.8125rem;
+          white-space: nowrap; letter-spacing: 0.01em;
         }
 
         .eyebrow {
@@ -183,17 +193,7 @@ export default async function AboutPage() {
             letterSpacing: '-0.03em', textDecoration: 'none',
           }}>Ascentor</Link>
 
-          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-            <Link href="/movement" style={{ fontSize: '0.875rem', color: '#374151', textDecoration: 'none', fontWeight: 500 }}>The Movement</Link>
-            <Link href="/elevation-summit" style={{ fontSize: '0.875rem', color: '#374151', textDecoration: 'none', fontWeight: 500 }}>The Summit</Link>
-            <Link href="/signup" style={{
-              padding: '0.5rem 1.25rem',
-              background: '#0F0F0E', color: '#FAFAF8',
-              borderRadius: '0.5rem', textDecoration: 'none',
-              fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-              fontWeight: 700, fontSize: '0.875rem',
-            }}>Join Ascentor →</Link>
-          </div>
+          <Link href="/signup" className="about-nav-cta">Join Ascentor →</Link>
         </div>
       </nav>
 
