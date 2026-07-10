@@ -3,7 +3,7 @@
 import SageLoader from '@/components/SageLoader';
 import ExportPanel from '@/components/admin/ExportPanel';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // ── SVG icons for coaching page ───────────────────────────────────
@@ -66,7 +66,7 @@ interface ChannelMessage {
 }
 
 export default function AdminCoachingPage() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [tab, setTab] = useState<Tab>('coaching');
   const [loading, setLoading] = useState(true);
@@ -82,6 +82,9 @@ export default function AdminCoachingPage() {
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  // H-06: useRef guard prevents double-click from firing two concurrent DELETEs
+  // regardless of React render timing — more reliable than the disabled prop alone.
+  const deletingRef = useRef(false);
 
   // Community
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -212,11 +215,15 @@ export default function AdminCoachingPage() {
 
   async function deleteSelectedSessions() {
     if (selectedSessionIds.size === 0) return;
+    // H-06: ref-based guard prevents concurrent deletes from double-click
+    if (deletingRef.current) return;
     const count = selectedSessionIds.size;
     if (!confirm(`Permanently delete ${count} coaching session${count === 1 ? '' : 's'}? This cannot be undone.`)) return;
 
+    deletingRef.current = true;
     setDeleting(true);
     try {
+      // H-01: getSession only provides the token; server validates it via getUser
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/admin/coaching-sessions', {
         method: 'DELETE',
@@ -244,15 +251,19 @@ export default function AdminCoachingPage() {
       console.error('[deleteSelectedSessions]', err);
       alert('Delete failed — check your connection and try again.');
     } finally {
+      deletingRef.current = false;
       setDeleting(false);
     }
   }
 
   async function deleteSelectedMessages() {
     if (selectedMessageIds.size === 0) return;
+    // H-06: ref-based guard prevents concurrent deletes from double-click
+    if (deletingRef.current) return;
     const count = selectedMessageIds.size;
     if (!confirm(`Delete ${count} message${count === 1 ? '' : 's'}? This removes them from the community view.`)) return;
 
+    deletingRef.current = true;
     setDeleting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -278,6 +289,7 @@ export default function AdminCoachingPage() {
       console.error('[deleteSelectedMessages]', err);
       alert('Delete failed — check your connection and try again.');
     } finally {
+      deletingRef.current = false;
       setDeleting(false);
     }
   }

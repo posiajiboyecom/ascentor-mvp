@@ -227,6 +227,7 @@ export default function AdminIntelligencePage() {
   const [results,      setResults]      = useState<AnalysisResult[]>([]);
   const [fetchStatus,  setFetchStatus]  = useState('');
   const streamRef = useRef<string>('');
+  const abortRef  = useRef<AbortController | null>(null);
 
   const selectedReport = REPORT_TYPES.find(r => r.id === reportType)!;
 
@@ -246,6 +247,11 @@ export default function AdminIntelligencePage() {
       createdAt: new Date().toISOString(),
     };
     setResults(prev => [newResult, ...prev]);
+    // M-02: abort any in-flight stream before starting a new one
+    if (abortRef.current) abortRef.current.abort();
+    const abort = new AbortController();
+    abortRef.current = abort;
+
     streamRef.current = '';
 
     try {
@@ -272,16 +278,16 @@ ${question}
 
 Analyze this data and provide strategic insights.`;
 
-      // 3. Stream from Claude API
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      // 3. Call Claude via server-side API route (C-01: never call Anthropic directly from browser)
+      const response = await fetch('/api/admin/intel-analyse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: abort.signal,
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1500,
-          stream: true,
+          mode: 'stream',
           system: systemPrompt,
-          messages: [{ role: 'user', content: userPrompt }],
+          prompt: userPrompt,
+          max_tokens: 1500,
         }),
       });
 
