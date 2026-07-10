@@ -77,6 +77,45 @@ function getServiceClient() {
   );
 }
 
+// ── Prompt injection sanitisation (H-04) ──────────────────────────────────────
+// Applied at WRITE TIME (addChunks) so poisoned content never reaches the DB.
+// Also applied at READ TIME (retrieveContext) as defence-in-depth.
+//
+// What it strips:
+//   1. XML/HTML-like tags — the contextBlock wraps chunks in <knowledge_N> tags.
+//      Injected </knowledge_1> tags would break out of the data context and could
+//      be followed by forged system instructions.
+//   2. Common prompt injection trigger phrases ("ignore previous", "system:",
+//      "assistant:", "[INST]", "OVERRIDE", etc.). These are neutralised by
+//      inserting a zero-width space, making them invisible to models but
+//      breaking the pattern.
+//   3. Null bytes and other control characters that confuse tokenisers.
+//
+// What it preserves:
+//   All natural language content, including angle-bracket-less text, quotes,
+//   numbers, punctuation, and unicode. The goal is to strip structure that
+//   could be interpreted as instructions, not to sanitise prose.
+export function sanitiseChunkText(raw: string): string {
+  return raw
+    // 1. Strip XML/HTML tags — prevents </knowledge_N> breakout
+    .replace(/<[^>]{0,200}>/g, '')
+    // 2. Neutralise common prompt injection trigger phrases
+    //    Insert zero-width space (U+200B) after the first word so the
+    //    pattern no longer matches model attention but text stays readable.
+    .replace(/\b(ignore|disregard|forget|override|bypass)\b(\s+(previous|prior|above|all|instructions?|rules?|constraints?))/gi,
+      (_, verb, rest) => `${verb}\u200B${rest}`)
+    .replace(/\b(system|assistant|user|human|instruction|prompt)\s*:/gi,
+      (m) => m.replace(':', ':\u200B'))
+    .replace(/\[INST\]|\[\/INST\]|<<SYS>>|<\/SYS>|\[SYSTEM\]/gi,
+      (m) => m.replace(/[[\]<>]/g, '\u200B'))
+    // 3. Strip null bytes and ASCII control characters (except newline/tab)
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    // 4. Collapse runs of more than 3 consecutive newlines (often used for
+    //    visual separator tricks in injected payloads)
+    .replace(/\n{4,}/g, '\n\n\n')
+    .trim();
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface KnowledgeChunk {
@@ -240,10 +279,15 @@ export async function retrieveContext(
 
     const reranked = await rerankResults(userMessage, rawChunks, topN);
 
+    // H-04: Defence-in-depth — sanitise text at read time too, in case any
+    // pre-migration chunks in the DB escaped write-time sanitisation.
+    // Also wraps contextBlock in a hard delimiter Claude is instructed to
+    // treat as data-only (see system prompt in coach/session/route.ts).
     const contextBlock = reranked
-      .map((c, i) =>
-        `<knowledge_${i + 1} category="${c.category}" relevance="${c.score.toFixed(2)}">\n${c.text}\n</knowledge_${i + 1}>`
-      )
+      .map((c, i) => {
+        const safeText = sanitiseChunkText(c.text);
+        return `<knowledge_${i + 1} category="${c.category}" relevance="${c.score.toFixed(2)}">\n${safeText}\n</knowledge_${i + 1}>`;
+      })
       .join('\n\n');
 
     return { chunks: reranked, contextBlock };
@@ -282,17 +326,21 @@ export async function addChunks(
 
   const supabase = getServiceClient();
 
-  // Embed all texts
-  const vectors = await embedDocuments(chunks.map((c) => c.text));
+  // Embed all texts — sanitise first to prevent prompt injection payloads
+  // reaching the DB (H-04: write-time sanitisation)
+  const sanitisedChunks = chunks.map((c) => ({
+    ...c,
+    text: sanitiseChunkText(c.text),
+  }));
+  const vectors = await embedDocuments(sanitisedChunks.map((c) => c.text));
 
   // Upsert in batches of 100 (Supabase bulk upsert sweet spot)
   const BATCH = 100;
 
-  for (let i = 0; i < chunks.length; i += BATCH) {
-    const batchChunks  = chunks.slice(i, i + BATCH);
+  for (let i = 0; i < sanitisedChunks.length; i += BATCH) {
     const batchVectors = vectors.slice(i, i + BATCH);
 
-    const rows = batchChunks.map((chunk, j) => ({
+    const rows = sanitisedChunks.slice(i, i + BATCH).map((chunk, j) => ({
       id:        chunk.id,
       namespace,
       text:      chunk.text,
