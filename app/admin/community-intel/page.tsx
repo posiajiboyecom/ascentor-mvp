@@ -463,12 +463,20 @@ ${JSON.stringify(userSummaries,null,2)}
 
 Respond ONLY with valid JSON, no markdown:
 {"total_users_analysed":<number>,"summary":"<overview>","recommendations":[{"id":"<slug>","name":"<name max 5 words>","description":"<1-2 sentences>","category":"<Technology|Finance|Leadership|Entrepreneurship|Consulting|Career Growth|Executive|Diversity|Other>","icon":"users","rationale":"<1 sentence>","estimated_members":<number>,"user_ids":[],"tags":["<tag>"],"editing":false}]}`;
-      const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
-      const data=await res.json();
-      if(!res.ok)throw new Error(data?.error?.message||'API error');
-      const text=data.content?.filter((b:any)=>b.type==='text').map((b:any)=>b.text).join('')||'';
-      const parsed:AnalysisResult=JSON.parse(text.replace(/```json|```/g,'').trim());
-      parsed.recommendations=parsed.recommendations.map((r,i)=>({...r,id:r.id||`rec-${i}`,editing:false}));
+      // C-01: call server-side route — never call Anthropic directly from the browser
+      // H-03: user profile data (biggest_challenge, goal_role) stays server-side;
+      //       we send only aggregated summaries, not raw PII, to the API route
+      const res = await fetch('/api/admin/intel-analyse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'json', prompt, max_tokens: 1000 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'API error');
+      // New route returns { content: string } not the raw Anthropic response shape
+      const text = (data.content as string || '').replace(/```json|```/g, '').trim();
+      const parsed: AnalysisResult = JSON.parse(text);
+      parsed.recommendations = parsed.recommendations.map((r, i) => ({ ...r, id: r.id || `rec-${i}`, editing: false }));
       setResult(parsed);
     }catch(e:any){setError(e?.message||'Analysis failed.');}
     setAnalysing(false);

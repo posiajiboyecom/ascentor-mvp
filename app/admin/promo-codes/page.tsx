@@ -34,7 +34,7 @@ export default function AdminPromoCodesPage() {
   const [newLabel, setNewLabel] = useState('');
   const [newMaxUses, setNewMaxUses] = useState('');
   const [newExpiry, setNewExpiry] = useState('');
-  const [newPlans, setNewPlans] = useState(['basic', 'standard', 'premium']);
+  const [newPlans, setNewPlans] = useState(['explorer', 'builder', 'climber']);
   const [creating, setCreating] = useState(false);
   const [mode, setMode] = useState<'single' | 'event'>('single');
   const [bulkCount, setBulkCount] = useState('50');
@@ -84,7 +84,7 @@ export default function AdminPromoCodesPage() {
 
       const res = await fetch('/api/admin/promo-codes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session!.access_token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -109,7 +109,7 @@ export default function AdminPromoCodesPage() {
     const { data: { session } } = await supabase.auth.getSession();
     await fetch('/api/admin/promo-codes', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session!.access_token}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
       body: JSON.stringify({ id, active: !active }),
     });
     fetchCodes();
@@ -124,7 +124,7 @@ export default function AdminPromoCodesPage() {
         if (c.id !== id && c.auto_apply) {
           await fetch('/api/admin/promo-codes', {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session!.access_token}` },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
             body: JSON.stringify({ id: c.id, auto_apply: false }),
           });
         }
@@ -132,7 +132,7 @@ export default function AdminPromoCodesPage() {
     }
     await fetch('/api/admin/promo-codes', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session!.access_token}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
       body: JSON.stringify({ id, auto_apply: !current }),
     });
     fetchCodes();
@@ -144,7 +144,7 @@ export default function AdminPromoCodesPage() {
     const { data: { session } } = await supabase.auth.getSession();
     await fetch('/api/admin/promo-codes', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session!.access_token}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
       body: JSON.stringify({ id }),
     });
     fetchCodes();

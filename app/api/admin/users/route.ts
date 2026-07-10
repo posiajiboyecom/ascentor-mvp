@@ -61,22 +61,22 @@ export async function GET(req: NextRequest) {
     const { data, count, error } = await query;
     if (error) throw error;
 
-    // Get banned users from auth metadata
-    const enhancedData = await Promise.all(
-      (data || []).map(async (profile: any) => {
-        try {
-          const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
-          return {
-            ...profile,
-            banned: authUser?.user?.banned_until ? new Date(authUser.user.banned_until) > new Date() : false,
-            last_sign_in: authUser?.user?.last_sign_in_at,
-            email: authUser?.user?.email || profile.email,
-          };
-        } catch {
-          return { ...profile, banned: false };
-        }
-      })
+    // M-04: Use a single listUsers call instead of one getUserById per profile (was N+1).
+    // We fetch up to 1000 auth users and join in memory — auth users are lightweight objects.
+    const { data: authList } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+    const authMap = new Map(
+      (authList?.users || []).map(u => [u.id, u])
     );
+
+    const enhancedData = (data || []).map((profile: any) => {
+      const authUser = authMap.get(profile.id);
+      return {
+        ...profile,
+        banned: authUser?.banned_until ? new Date(authUser.banned_until) > new Date() : false,
+        last_sign_in: authUser?.last_sign_in_at ?? null,
+        email: authUser?.email || profile.email,
+      };
+    });
 
     return NextResponse.json({ users: enhancedData, total: count, page, limit });
   } catch (err: any) {
@@ -124,7 +124,7 @@ export async function PATCH(req: NextRequest) {
             details: { new_role: value },
           });
         } catch (e) {
-          // Silently ignore audit log failures
+          console.error('[audit_log] Failed to write audit entry:', e);
         }
 
         return NextResponse.json({ success: true, message: `Role updated to ${value}` });
@@ -152,7 +152,7 @@ export async function PATCH(req: NextRequest) {
             details: { reason: value || 'Admin action' },
           });
         } catch (e) {
-          // Silently ignore audit log failures
+          console.error('[audit_log] Failed to write audit entry:', e);
         }
 
         return NextResponse.json({ success: true, message: 'User banned' });
@@ -169,7 +169,7 @@ export async function PATCH(req: NextRequest) {
             entity_id: targetUserId,
           });
         } catch (e) {
-          // Silently ignore audit log failures
+          console.error('[audit_log] Failed to write audit entry:', e);
         }
 
         return NextResponse.json({ success: true, message: 'User unbanned' });
@@ -212,7 +212,9 @@ export async function PATCH(req: NextRequest) {
             entity_id:   targetUserId,
             details:     { new_plan: value, granted_by: user.email, expires: subscriptionEnd.toISOString() },
           });
-        } catch { /* ignore */ }
+        } catch (e) {
+          console.error('[audit_log] Failed to write audit entry:', e);
+        }
 
         return NextResponse.json({ success: true, message: `Plan set to ${value} (active until ${subscriptionEnd.toLocaleDateString()})` });
       }
@@ -264,13 +266,49 @@ export async function PATCH(req: NextRequest) {
             entity_id: targetUserId,
             details: { deleted_by: user.email },
           });
-        } catch { /* ignore */ }
+        } catch (e) {
+          console.error('[audit_log] Failed to write audit entry:', e);
+        }
 
         return NextResponse.json({ success: true, message: 'User permanently deleted' });
       }
 
-      default:
-        return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+      case 'set_permissions': {
+        // value is expected to be a JSON-serialised string[] of permission keys
+        let permissions: string[];
+        try {
+          permissions = Array.isArray(value) ? value : JSON.parse(value || '[]');
+        } catch {
+          return NextResponse.json({ error: 'Invalid permissions format' }, { status: 400 });
+        }
+
+        const VALID_PERMS = new Set([
+          'community:moderate', 'community:read_all',
+          'users:view', 'users:edit', 'users:delete',
+          'content:manage', 'content:publish',
+          'intel:view', 'finance:view',
+        ]);
+        const invalid = permissions.filter(p => !VALID_PERMS.has(p));
+        if (invalid.length > 0) {
+          return NextResponse.json({ error: `Invalid permissions: ${invalid.join(', ')}` }, { status: 400 });
+        }
+
+        await supabase.from('profiles').update({ permissions, updated_at: new Date().toISOString() }).eq('id', targetUserId);
+
+        try {
+          await supabase.from('audit_logs').insert({
+            user_id: user.id,
+            action: 'user_permissions_changed',
+            entity_type: 'user',
+            entity_id: targetUserId,
+            details: { permissions, changed_by: user.email },
+          });
+        } catch (e) {
+          console.error('[audit_log] Failed to write permissions audit:', e);
+        }
+
+        return NextResponse.json({ success: true, message: 'Permissions updated' });
+      }
     }
   } catch (err: any) {
     console.error('Admin user action error:', err);

@@ -16,7 +16,7 @@
 // here automatically. Logic is UNCHANGED — same fetchUsers, doAction,
 // setPermissions, togglePerm. This is a styling-only pass.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface User {
@@ -88,7 +88,7 @@ export default function AdminUsersPage() {
   const [actionLoading,setActionLoading]= useState(false);
   const [toast,        setToast]        = useState('');
   const [deleteConfirm,setDeleteConfirm]= useState('');
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const showToast = (msg: string, err = false) => {
     setToast(msg);
@@ -98,15 +98,18 @@ export default function AdminUsersPage() {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const { data: { user: caller } } = await supabase.auth.getUser();
+      if (!caller) return;
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) return;
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (roleFilter) params.set('role', roleFilter);
       if (statusFilter) params.set('status', statusFilter);
       params.set('page', String(page));
       const res = await fetch(`/api/admin/users?${params}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       setUsers(data.users || []);
@@ -117,7 +120,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  const doAction = async (userId: string, action: string, value?: string) => {
+  const doAction = async (userId: string, action: string, value?: string | string[]) => {
     setActionLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -138,15 +141,27 @@ export default function AdminUsersPage() {
     setActionLoading(false);
   };
 
-  // Update permissions directly in Supabase
+  // C-04: Permissions are now updated through the API route (not directly via browser Supabase client)
+  // so that the audit log is always written and server-side permission validation is enforced.
   const setPermissions = async (userId: string, permissions: string[]) => {
     setActionLoading(true);
-    const { error } = await supabase.from('profiles').update({ permissions }).eq('id', userId);
-    if (error) { showToast('Failed to update permissions', true); }
-    else {
-      showToast('Permissions updated');
-      setSelectedUser(prev => prev ? { ...prev, permissions } : null);
-      fetchUsers();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session!.access_token}` },
+        body: JSON.stringify({ targetUserId: userId, action: 'set_permissions', value: permissions }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Permissions updated');
+        setSelectedUser(prev => prev ? { ...prev, permissions } : null);
+        fetchUsers();
+      } else {
+        showToast(`Failed: ${data.error}`, true);
+      }
+    } catch {
+      showToast('Failed to update permissions', true);
     }
     setActionLoading(false);
   };
@@ -195,9 +210,9 @@ export default function AdminUsersPage() {
         }
       `}</style>
 
-      {/* Toast */}
+      {/* Toast — role="alert" announces to screen readers (M-05) */}
       {toast && (
-        <div style={{ position:'fixed', top:20, right:20, zIndex:9999, background:'var(--ledger-gold)', color:'var(--ledger-bg-deep)', padding:'10px 20px', borderRadius:'var(--ledger-radius-lg)', fontFamily:"var(--ledger-font-mono)", fontSize:12, fontWeight:600, boxShadow:'var(--ledger-shadow)' }}>
+        <div role="alert" aria-atomic="true" style={{ position:'fixed', top:20, right:20, zIndex:9999, background:'var(--ledger-gold)', color:'var(--ledger-bg-deep)', padding:'10px 20px', borderRadius:'var(--ledger-radius-lg)', fontFamily:"var(--ledger-font-mono)", fontSize:12, fontWeight:600, boxShadow:'var(--ledger-shadow)' }}>
           {toast}
         </div>
       )}
@@ -405,7 +420,14 @@ export default function AdminUsersPage() {
 
                   {/* Plan change */}
                   <div style={{ display:'flex', gap:8, marginTop:20 }}>
-                    <select onChange={e => { if (e.target.value) doAction(selectedUser.id, 'change_plan', e.target.value); }}
+                    <select onChange={e => {
+                        const plan = e.target.value;
+                        if (!plan) return;
+                        if (confirm(`Change plan to "${plan}" for ${selectedUser.full_name || selectedUser.email}?`)) {
+                          doAction(selectedUser.id, 'change_plan', plan);
+                        }
+                        (e.target as HTMLSelectElement).value = '';
+                      }}
                       className="asc-input" style={{ ...inp, flex:1, cursor:'pointer' }} defaultValue="">
                       <option value="" disabled>Change plan…</option>
                       {PLANS.filter(Boolean).map(p => <option key={p} value={p}>{p}</option>)}
