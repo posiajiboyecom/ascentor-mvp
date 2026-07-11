@@ -790,9 +790,9 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
             </p>
 
             <div style={{ display: 'flex', gap: '1.5rem' }}>
-              <a href="https://x.com/ascentorhq" target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none' }}>X / Twitter</a>
-              <a href="https://linkedin.com/company/ascentorhq" target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none' }}>LinkedIn</a>
-              <a href="https://instagram.com/ascentorhq" target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none' }}>Instagram</a>
+              <a href="https://x.com/joinascentor" target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none' }}>X / Twitter</a>
+              <a href="https://linkedin.com/company/joinascentor" target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none' }}>LinkedIn</a>
+              <a href="https://instagram.com/joinascentor" target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none' }}>Instagram</a>
             </div>
           </div>
         </div>
