@@ -20,10 +20,10 @@ export const SUMMIT = {
   name: 'The Elevation Summit 2026',
   description:
     'One gathering. One decision. The rest of your life. The inaugural Elevation Summit — a movement for purposeful living, leadership, and legacy. Lagos, December 2026, with global virtual access.',
-  startDate: '2026-12-12T10:00:00+01:00', // TODO: confirm exact date
-  endDate: '2026-12-12T18:00:00+01:00',   // TODO: confirm exact date
+  startDate: '2026-11-19T10:00:00+01:00', // Date Confirmed
+  endDate: '2026-11-19T15:00:00+01:00',   // Date Confirmed
   venue: {
-    name: 'Femi Gbajabiamila Conference Centre, Lagos State University',
+    name: 'Aderemi Makanjuola Lecture Theatre, Lagos State University',
     street: 'Lagos State University Main Campus, LASU-Isheri Road',
     locality: 'Ojo',
     region: 'Lagos',
