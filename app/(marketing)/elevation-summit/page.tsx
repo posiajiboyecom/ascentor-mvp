@@ -15,7 +15,7 @@ import ElevationSummitClient from './ElevationSummitClient';
 export const metadata: Metadata = {
   title: 'The Elevation Summit 2026 — Lagos | Physical & Virtual',
   description:
-    'One gathering. One decision. The rest of your life. The inaugural Elevation Summit — December 2026 at the Femi Gbajabiamila Conference Centre, LASU, Lagos, with global virtual access. Register now.',
+    'One gathering. One decision. The rest of your life. The inaugural Elevation Summit — 19 November 2026 at the Aderemi Makanjuola Lecture Theatre, Lagos State University, with global virtual access. Register now.',
   alternates: { canonical: `${SITE_URL}/elevation-summit` },
   openGraph: {
     title: 'The Elevation Summit 2026 — Lagos',
