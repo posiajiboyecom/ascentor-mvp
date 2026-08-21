@@ -61,7 +61,7 @@ export function SummitBanner({ daysAway, registered: initialRegistered }: Summit
             The Elevation Summit
           </p>
           <p className="text-xs lg:text-2xl font-medium text-[#FAFAF8] lg:font-serif truncate lg:overflow-visible">
-            February 2027 · Lagos, Nigeria
+            19 November 2026 · Lagos, Nigeria
           </p>
           <p className="hidden lg:block text-sm text-[#6B7280] mt-1">
             {daysAway} days away

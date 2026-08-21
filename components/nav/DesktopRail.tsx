@@ -87,7 +87,7 @@ export function DesktopRail({
           The Elevation Summit
         </p>
         <p className="text-sm font-medium text-[#FAFAF8]">
-          Feb 2027 · Lagos
+          19 Nov 2027 · Lagos
         </p>
         <p className="text-xs text-[#C8A96E]/70 mt-1 font-medium">
           {summitDaysAway} days away — Learn more →
