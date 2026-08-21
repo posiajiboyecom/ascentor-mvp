@@ -78,7 +78,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const banner = cms?.sections.summit_banner?.data as Record<string, string> | undefined;
   const bannerEyebrow = banner?.eyebrow || 'The Elevation Summit';
   const bannerDate    = banner?.date    || '19 November, 2026 · Lagos, Nigeria';
-  const bannerSub     = banner?.sub     || 'The inaugural gathering. One defining moment.';
+  const bannerSub     = banner?.sub     || 'The Rise We Choose. The Elevation Story.';
   const bannerCta     = banner?.cta     || 'Register →';
   const bannerHref    = banner?.href    || '/elevation-summit';
 

@@ -225,7 +225,7 @@ export default async function AboutPage() {
               { label: 'The Circle', desc: 'A global community of purposeful individuals holding each other accountable.' },
               { label: 'The Coach', desc: 'AI-powered development support, available whenever you need to think clearly.' },
               { label: 'The Resources', desc: 'Structured learning pathways built around the six dimensions of the total person.' },
-              { label: 'The Elevation Summit', desc: 'The annual gathering. The peak moment. February 2027, Lagos.' },
+              { label: 'The Elevation Summit', desc: 'The Rise We Choose. The Elevation Story. 19 November 2026, Lagos.' },
             ].map((item) => (
               <div key={item.label} style={{
                 padding: '1.25rem 1.5rem',
@@ -366,10 +366,10 @@ export default async function AboutPage() {
       <section style={{ padding: 'clamp(3rem, 6vw, 5rem) 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
           {[
-            { label: 'CISM', sub: 'Certified Information Security Manager' },
-            { label: 'CRISC', sub: 'Certified in Risk and Information Systems Control' },
-            { label: 'CIPP/C', sub: 'Certified Information Privacy Professional' },
-            { label: 'B.Tech', sub: 'Information Systems · FUTA' },
+                  { label: 'TECHNOLOGY', sub: 'Cybersecurity · GRC & Application Security' },
+                  { label: 'MENTORSHIP', sub: 'Securing This Generation and The Next' },
+                  { label: 'ENTREPRENEURSHIP', sub: 'Building The Elevation Platform' },
+                  { label: 'LEADERSHIP', sub: 'Structure, Strategy, and People' },
           ].map((item) => (
             <div key={item.label} style={{ padding: '1.25rem', background: '#FFFFFF', border: '1px solid #E8E6E1', borderRadius: '0.75rem', textAlign: 'center' }}>
               <p style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontWeight: 800, fontSize: '1.125rem', color: '#C8A96E', marginBottom: '0.375rem' }}>{item.label}</p>
