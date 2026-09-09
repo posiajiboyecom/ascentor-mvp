@@ -11,23 +11,17 @@ export default function Preloader({ minimumVisibleMs = 1200 }: PreloaderProps) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const start = Date.now();
-    const duration = 2200;
-    let raf: number;
-
-    const tick = () => {
-      const elapsed = Date.now() - start;
-      const pct = Math.min(100, Math.round((elapsed / duration) * 100));
-      setProgress((prev) => (pct === prev ? prev : pct));
-      if (pct < 100) {
-        raf = requestAnimationFrame(tick);
-      } else {
+    let pct = 0;
+    const timer = setInterval(() => {
+      pct += 1;
+      setProgress(pct);
+      if (pct >= 100) {
+        clearInterval(timer);
         setTimeout(() => setVisible(false), minimumVisibleMs);
       }
-    };
+    }, 22); // 2.2s from 0 to 100%
 
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => clearInterval(timer);
   }, [minimumVisibleMs]);
 
   if (!visible) return null;

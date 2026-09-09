@@ -264,6 +264,7 @@ function SignUpForm() {
                   {...register('password')}
                   placeholder="Create a password (min 8 chars)"
                   className={errors.password ? 'error' : ''}
+                  light
                 />
                 {errors.password && <p className="field-error">{errors.password.message}</p>}
               </div>

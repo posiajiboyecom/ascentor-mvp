@@ -10,7 +10,7 @@ import { useState } from 'react';
 // ─────────────────────────────────────────────────────────────────
 
 interface PasswordInputProps {
-  value: string;
+  value?: string;
   onChange: (value: string) => void;
   placeholder?: string;
   name?: string;
@@ -21,6 +21,7 @@ interface PasswordInputProps {
   className?: string;
   style?: React.CSSProperties;
   showStrength?: boolean;
+  light?: boolean;
 }
 
 function getStrength(password: string): { score: number; label: string; color: string } {
@@ -49,11 +50,26 @@ export default function PasswordInput({
   className,
   style,
   showStrength = false,
+  light      = false,
 }: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
   const strength = showStrength && value.length > 0 ? getStrength(value) : null;
 
-  const inputStyle: React.CSSProperties = {
+  const inputStyle: React.CSSProperties = light ? {
+    width:        '100%',
+    padding:      '13px 44px 13px 16px',
+    borderRadius: '10px',
+    border:       '1.5px solid #E8E6E1',
+    background:   '#FFFFFF',
+    color:        '#0F0F0E',
+    fontFamily:   'Metropolis',
+    fontSize:     '0.9375rem',
+    fontWeight:   400,
+    outline:      'none',
+    boxSizing:    'border-box',
+    transition:   'border-color 0.15s ease',
+    ...style,
+  } : {
     width:           '100%',
     padding:         '13px 44px 13px 16px',
     borderRadius:    '10px',
@@ -83,8 +99,8 @@ export default function PasswordInput({
         disabled={disabled}
         className={className}
         style={inputStyle}
-        onFocus={(e)  => { (e.target as HTMLInputElement).style.borderColor = 'rgba(232,160,32,0.35)'; }}
-        onBlur={(e)   => { (e.target as HTMLInputElement).style.borderColor = 'rgba(212,207,195,0.10)'; }}
+        onFocus={(e)  => { (e.target as HTMLInputElement).style.borderColor = light ? '#C8A96E' : 'rgba(232,160,32,0.35)'; }}
+        onBlur={(e)   => { (e.target as HTMLInputElement).style.borderColor = light ? '#E8E6E1' : 'rgba(212,207,195,0.10)'; }}
       />
 
       {/* Show/Hide toggle */}

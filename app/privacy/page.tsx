@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import PublicHeader from '@/components/layout/PublicHeader';
+import PublicFooter from '@/components/layout/PublicFooter';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ContactItem = { label: string; value: string };
@@ -445,12 +447,10 @@ export default function PrivacyPage() {
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+      <PublicHeader />
+      <ProgressBar />
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
+      {/* Hero */}
           --black:   #0C0B08;
           --slate:   #181612;
           --card:    #1E1C18;
@@ -902,18 +902,6 @@ export default function PrivacyPage() {
 
       <ProgressBar />
 
-      {/* Nav */}
-      <nav className={`nav ${scrolled ? "scrolled" : ""}`}>
-        <Link href="/" className="lp-nav-logo">
-                <img
-                  src="/ascentor-color-for-dark-pages.svg"
-                  alt="Ascentor"
-                  style={{ height: '32px', width: 'auto' }}
-                />
-              </Link>
-        <Link href="/dashboard" className="nav-back">← Back to app</Link>
-      </nav>
-
       {/* Hero */}
       <header className="hero">
         <div className="hero-eyebrow">Privacy Policy</div>
@@ -963,18 +951,6 @@ export default function PrivacyPage() {
           ))}
         </main>
       </div>
-
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-brand">
-          <span>Ascentor</span> — Everyone who made it had someone.
-        </div>
-        <div className="footer-links">
-          <Link href="/terms">Terms</Link>
-          <Link href="/privacy">Privacy</Link>
-          <a href="mailto:hello@ascentorbi.com">Contact</a>
-        </div>
-      </footer>
 
       {/* Mobile TOC overlay — closes drawer when tapped outside */}
       {menuOpen && (
