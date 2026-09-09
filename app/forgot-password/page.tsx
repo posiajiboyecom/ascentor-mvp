@@ -94,6 +94,13 @@ export default function ForgotPasswordPage() {
           position: absolute;
           inset: 0;
         }
+        .auth-image::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(15, 15, 14, 0.15) 0%, rgba(15, 15, 14, 0.55) 100%);
+          pointer-events: none;
+        }
         @media (min-width: 1024px) { .auth-image { display: block; } }
 
         .auth-form-panel {

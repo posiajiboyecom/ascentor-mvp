@@ -159,6 +159,13 @@ export default function LoginPage() {
           position: absolute;
           inset: 0;
         }
+        .auth-image::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(15, 15, 14, 0.15) 0%, rgba(15, 15, 14, 0.55) 100%);
+          pointer-events: none;
+        }
         @media (min-width: 1024px) { .auth-image { display: block; } }
 
         .auth-form-panel {
@@ -324,6 +331,7 @@ export default function LoginPage() {
                   {...register('password')}
                   placeholder="Password"
                   className={errors.password ? 'error' : ''}
+                  light
                 />
                 {errors.password && <p className="field-error">{errors.password.message}</p>}
               </div>

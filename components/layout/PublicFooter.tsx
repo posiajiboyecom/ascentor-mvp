@@ -17,7 +17,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
           align-items: center;
           gap: 0.5rem;
         }
-        .pf-link:hover { color: #0F0F0E; }
+        .pf-link:hover { color: #E8A020 !important; text-decoration: underline; }
         .pf-social {
           display: inline-flex;
           align-items: center;
@@ -64,8 +64,8 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                 src="/ascentor-color-on-light.svg"
                 alt="Ascentor"
                 height={26}
-                width={28}
-                style={{ display: 'block', marginBottom: '0.75rem', objectFit: 'cover', objectPosition: 'left' }}
+                width={98}
+                style={{ display: 'block', marginBottom: '0.75rem' }}
               />
               <p style={{ fontSize: '0.875rem', color: '#6B7280', lineHeight: 1.6, marginBottom: '1rem' }}>
                 The official platform of The Elevation Summit movement.
