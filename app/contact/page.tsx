@@ -7,6 +7,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import PublicHeader from '@/components/layout/PublicHeader';
+import PublicFooter from '@/components/layout/PublicFooter';
 
 const GOLD   = '#C8A96E';
 const DARK   = '#0F0F0E';
@@ -63,23 +65,8 @@ export default function ContactPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
-        body { margin: 0; background: ${BG}; color: ${DARK}; font-family: 'Inter', system-ui, sans-serif; }
-
-        .contact-nav {
-          position: sticky; top: 0; z-index: 50;
-          display: flex; align-items: center; height: 64px;
-          padding: 0 1.5rem;
-          background: ${BG};
-          border-bottom: 1px solid ${BORDER};
-        }
-        .contact-back {
-          display: inline-flex; align-items: center; gap: 6px;
-          font-size: 0.8125rem; color: ${MUTED}; text-decoration: none;
-          transition: color 0.15s;
-        }
-        .contact-back:hover { color: ${DARK}; }
+        body { margin: 0; background: ${BG}; color: ${DARK}; font-family: Metropolis; }
 
         .contact-wrap {
           min-height: 100dvh;
@@ -95,19 +82,20 @@ export default function ContactPage() {
         }
 
         .eyebrow {
-          font-family: 'Inter', system-ui, sans-serif;
+          font-family: Metropolis;
           font-size: 0.6875rem; font-weight: 600;
           letter-spacing: 0.12em; text-transform: uppercase;
           color: ${GOLD}; margin: 0 0 1rem;
         }
         .page-title {
-          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          font-family: Metropolis;
           font-size: clamp(2rem, 5vw, 3rem);
           font-weight: 800; line-height: 1.1;
           letter-spacing: -0.03em;
           color: ${DARK}; margin: 0 0 1rem;
         }
         .page-sub {
+          font-family: Metropolis;
           font-size: 1rem; color: ${MUTED}; line-height: 1.7;
           margin: 0 0 2.5rem; max-width: 520px;
         }
@@ -115,6 +103,7 @@ export default function ContactPage() {
         .field-group { margin-bottom: 1.25rem; }
         .field-label {
           display: block;
+          font-family: Metropolis;
           font-size: 0.8125rem; font-weight: 600;
           color: ${DARK}; margin-bottom: 0.4rem;
         }
@@ -123,7 +112,7 @@ export default function ContactPage() {
           background: #FFFFFF;
           border: 1.5px solid ${BORDER};
           border-radius: 0.625rem;
-          font-family: 'Inter', system-ui, sans-serif;
+          font-family: Metropolis;
           font-size: 0.9375rem; color: ${DARK};
           outline: none; transition: border-color 0.15s;
         }
@@ -139,7 +128,7 @@ export default function ContactPage() {
           width: 100%; padding: 1rem;
           background: ${DARK}; color: ${BG};
           border: none; border-radius: 0.625rem;
-          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          font-family: Metropolis;
           font-size: 0.9375rem; font-weight: 700;
           cursor: pointer; transition: opacity 0.15s;
           margin-top: 0.5rem;
@@ -158,6 +147,7 @@ export default function ContactPage() {
           margin: 0 auto 1.25rem;
         }
         .error-msg {
+          font-family: Metropolis;
           font-size: 0.875rem; color: #DC2626;
           margin-top: 0.75rem; padding: 0.75rem 1rem;
           background: #FEF2F2; border: 1px solid #FECACA;
@@ -172,29 +162,21 @@ export default function ContactPage() {
         }
         @media (max-width: 540px) { .contact-info { grid-template-columns: 1fr; } }
         .info-item-label {
+          font-family: Metropolis;
           font-size: 0.6875rem; font-weight: 600;
           letter-spacing: 0.08em; text-transform: uppercase;
           color: ${GOLD}; margin-bottom: 0.375rem;
         }
         .info-item-value {
+          font-family: Metropolis;
           font-size: 0.875rem; color: ${MUTED}; line-height: 1.5;
         }
         .info-item-value a { color: ${DARK}; text-decoration: none; }
         .info-item-value a:hover { color: ${GOLD}; }
       `}</style>
 
+      <PublicHeader />
       <div className="contact-wrap">
-
-        {/* Nav */}
-        <nav className="contact-nav">
-          <Link href="/" className="contact-back">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 12H5M12 5l-7 7 7 7"/>
-            </svg>
-            Back to home
-          </Link>
-        </nav>
-
         <div className="contact-body">
           <p className="eyebrow">Get in touch</p>
           <h1 className="page-title">Contact Ascentor</h1>
@@ -209,7 +191,7 @@ export default function ContactPage() {
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               </div>
-              <h2 style={{ fontFamily: "'Plus Jakarta Sans', system-ui", fontWeight: 800, fontSize: '1.25rem', color: DARK, margin: '0 0 0.5rem' }}>
+              <h2 style={{ fontFamily: "Metropolis", fontWeight: 800, fontSize: '1.25rem', color: DARK, margin: '0 0 0.5rem' }}>
                 Message received.
               </h2>
               <p style={{ fontSize: '0.9375rem', color: MUTED, lineHeight: 1.6, margin: '0 0 1.5rem' }}>
@@ -222,7 +204,7 @@ export default function ContactPage() {
                   background: 'transparent', border: `1.5px solid ${BORDER}`,
                   borderRadius: '0.625rem', padding: '0.625rem 1.25rem',
                   fontSize: '0.875rem', fontWeight: 600, color: MUTED,
-                  cursor: 'pointer',
+                  cursor: 'pointer', fontFamily: 'Metropolis',
                 }}
               >
                 Send another message
@@ -304,6 +286,7 @@ export default function ContactPage() {
           </div>
         </div>
       </div>
+      <PublicFooter />
     </>
   );
 }

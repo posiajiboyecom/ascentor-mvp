@@ -7,7 +7,6 @@ import PushPermission from '@/components/PushPermission';
 import { MobileInit } from '@/components/MobileInit';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import StructuredData from '@/components/StructuredData';
-import PublicLayout from '@/components/layout/PublicLayout';
 import { headers } from 'next/headers';
 import Script from 'next/script';
 
@@ -128,9 +127,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ModalProvider>
           <NotificationProvider>
             <MobileInit />
-            <PublicLayout>
-              {children}
-            </PublicLayout>
+            {children}
             <PWAInstallPrompt />
             <PushPermission />
           </NotificationProvider>
