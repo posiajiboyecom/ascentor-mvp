@@ -258,7 +258,7 @@ export default function ContactPage() {
               </div>
 
               <button className="submit-btn" type="submit" disabled={status === 'loading'}>
-                {status === 'loading' ? 'Sending…' : 'Send message →'}
+                {status === 'loading' ? 'Sending…' : 'Send message'}
               </button>
 
               {status === 'error' && (

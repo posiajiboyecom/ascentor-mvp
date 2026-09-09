@@ -11,26 +11,23 @@ export default function Preloader({ minimumVisibleMs = 1200 }: PreloaderProps) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const startTime = Date.now();
+    const start = Date.now();
     const duration = 2200;
-    const steps = 40;
-    const interval = duration / steps;
+    let raf: number;
 
-    const timer = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const rawProgress = Math.min(100, (elapsed / duration) * 100);
-      const steppedProgress = Math.floor(rawProgress / (100 / steps)) * (100 / steps);
-      const finalProgress = Math.min(steppedProgress, 100);
-
-      setProgress(finalProgress);
-
-      if (finalProgress >= 100) {
-        clearInterval(timer);
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      const pct = Math.min(100, Math.round((elapsed / duration) * 100));
+      setProgress((prev) => (pct === prev ? prev : pct));
+      if (pct < 100) {
+        raf = requestAnimationFrame(tick);
+      } else {
         setTimeout(() => setVisible(false), minimumVisibleMs);
       }
-    }, interval);
+    };
 
-    return () => clearInterval(timer);
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [minimumVisibleMs]);
 
   if (!visible) return null;
@@ -101,7 +98,7 @@ export default function Preloader({ minimumVisibleMs = 1200 }: PreloaderProps) {
           />
         </div>
 
-        <p className="preloader-text">Loading</p>
+        <p className="preloader-text">{progress}%</p>
       </div>
     </>
   );

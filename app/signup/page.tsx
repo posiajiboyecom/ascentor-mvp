@@ -286,7 +286,7 @@ function SignUpForm() {
               {error && <div className="auth-error">{error}</div>}
 
               <button type="submit" disabled={loading} className="auth-btn" style={{ marginTop: '0.25rem' }}>
-                {loading ? 'Creating account...' : 'Join Ascentor →'}
+                {loading ? 'Creating account...' : 'Join Ascentor'}
               </button>
             </form>
 

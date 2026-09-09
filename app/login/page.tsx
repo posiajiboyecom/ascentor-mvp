@@ -244,7 +244,7 @@ export default function LoginPage() {
                 <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: 24, width: 'auto' }} />
               </Link>
               <Link href="/signup" style={{ fontSize: '0.875rem', color: '#6B7280', textDecoration: 'none' }}>
-                New here? <span style={{ color: '#C8A96E', fontWeight: 600 }}>Join →</span>
+                New here? <span style={{ color: '#C8A96E', fontWeight: 600 }}>Join</span>
               </Link>
             </div>
 
@@ -329,7 +329,7 @@ export default function LoginPage() {
               </div>
               {error && <div className="auth-error">{error}</div>}
               <button type="submit" disabled={loading} className="auth-btn" style={{ marginTop: '0.25rem' }}>
-                {loading ? 'Signing in...' : 'Sign In →'}
+                {loading ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
 
@@ -350,7 +350,7 @@ export default function LoginPage() {
               <p style={{ fontSize: '0.875rem', color: '#6B7280', margin: 0 }}>
                 Not yet part of the movement?{' '}
                 <Link href="/signup" style={{ color: '#C8A96E', fontWeight: 700, textDecoration: 'none' }}>
-                  Join Ascentor →
+                  Join Ascentor
                 </Link>
               </p>
             </div>

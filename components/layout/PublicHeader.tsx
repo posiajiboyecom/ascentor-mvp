@@ -18,6 +18,7 @@ type PublicHeaderProps = {
 export default function PublicHeader({ events = [], hasBlogPosts = false }: PublicHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -38,10 +39,17 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const desktopLinks = (
     <>
+      <Link href="/" className="ph-nav-link">Home</Link>
       <Link href="/movement" className="ph-nav-link">The Movement</Link>
-      <Link href="/signup" className="ph-nav-link">Join Community</Link>
+      <Link href="/about" className="ph-nav-link">About</Link>
       <div className="ph-events-wrap" onClick={(e) => e.stopPropagation()}>
         <button
           className={`ph-events-btn${eventsOpen ? ' ph-open' : ''}`}
@@ -75,7 +83,6 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
         )}
       </div>
       {hasBlogPosts && <Link href="/blog" className="ph-nav-link">Resources</Link>}
-      <Link href="/about" className="ph-nav-link">About</Link>
       <Link href="/contact" className="ph-nav-link">Contact</Link>
     </>
   );
@@ -219,23 +226,21 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
           flex-direction: column;
           gap: 0.75rem;
         }
-        .ph-mobile-header-cta {
-          display: inline-flex !important;
+        .ph-cta-btn {
+          display: inline-flex;
           align-items: center;
-          padding: 0.4rem 1rem;
+          justify-content: center;
+          padding: 0.625rem 1.25rem;
           background: #0F0F0E;
           color: #FAFAF8;
           border-radius: 0.5rem;
           text-decoration: none;
           font-family: Metropolis;
           font-weight: 700;
-          font-size: 0.8125rem;
-          margin-right: 0.75rem;
+          font-size: 0.875rem;
+          transition: background 0.15s;
         }
-        .ph-mobile-header-cta:hover { background: #2A2A29; }
-        @media(min-width: 860px) { .ph-mobile-header-cta { display: none !important; } }
-        .ph-desktop-cta { display: none !important; }
-        @media(min-width: 860px) { .ph-desktop-cta { display: flex !important; } }
+        .ph-cta-btn:hover { background: #2A2A29; }
         .ph-mobile-logo { position: absolute; top: 1.5rem; left: 1.5rem; }
         .ph-mobile-backdrop {
           position: fixed;
@@ -265,6 +270,34 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
           z-index: 101;
         }
         .ph-mobile-close:hover { background: #C8A96E; color: #FAFAF8; transform: scale(1.05); }
+
+        .ph-scroll-top {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          z-index: 90;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          border: 1.5px solid #E8E6E1;
+          background: #FFFFFF;
+          color: #0F0F0E;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+          opacity: 0;
+          transform: translateY(8px);
+          pointer-events: none;
+          transition: opacity 0.2s, transform 0.2s, background 0.15s;
+        }
+        .ph-scroll-top.visible {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+        .ph-scroll-top:hover { background: #0F0F0E; color: #FAFAF8; border-color: #0F0F0E; }
       `}</style>
 
       <nav
@@ -272,9 +305,10 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
           position: 'sticky',
           top: 0,
           zIndex: 50,
-          background: 'rgba(250,250,248,0.95)',
+          background: scrolled ? 'rgba(250,250,248,0.98)' : 'rgba(250,250,248,0.95)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid #E8E6E1',
+          transition: 'background 0.2s',
         }}
         onClick={() => setEventsOpen(false)}
       >
@@ -312,30 +346,12 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
             </div>
 
             <div className="ph-desktop-cta" style={{ marginLeft: 'auto' }}>
-              <Link
-                href="/signup"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '0.5rem 1.25rem',
-                  background: '#0F0F0E',
-                  color: '#FAFAF8',
-                  borderRadius: '0.5rem',
-                  textDecoration: 'none',
-                  fontFamily: 'Metropolis',
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                }}
-              >
+              <Link href="/signup" className="ph-cta-btn">
                 Join Ascentor
               </Link>
             </div>
 
-            <Link
-              href="/signup"
-              className="ph-mobile-header-cta"
-              style={{ marginLeft: 'auto', marginRight: '0.75rem' }}
-            >
+            <Link href="/signup" className="ph-mobile-header-cta" style={{ marginLeft: 'auto', marginRight: '0.75rem' }}>
               Get Started
             </Link>
 
@@ -379,77 +395,88 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
             <path d="M12 19l-7-7 7-7" />
           </svg>
         </button>
-          <Link href="/movement" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
-            The Movement
-          </Link>
-          <Link href="/signup" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
-            Join Community
-          </Link>
-          <p
-            style={{
-              padding: '0.75rem 0',
-              borderBottom: '1px solid #E8E6E1',
-              margin: 0,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: '#9CA3AF',
-            }}
+        <Link href="/" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+          Home
+        </Link>
+        <Link href="/movement" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+          The Movement
+        </Link>
+        <Link href="/about" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+          About
+        </Link>
+        <p
+          style={{
+            padding: '0.75rem 0',
+            borderBottom: '1px solid #E8E6E1',
+            margin: 0,
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: '#9CA3AF',
+          }}
+        >
+          Events
+        </p>
+        {events.map((ev) => (
+          <Link
+            key={ev.slug}
+            href={`/events/${ev.slug}`}
+            className="ph-mobile-link"
+            style={{ paddingLeft: '1rem', fontSize: '1rem', fontWeight: 500 }}
+            onClick={() => setMobileMenuOpen(false)}
           >
-            Events
-          </p>
-          {events.map((ev) => (
-            <Link
-              key={ev.slug}
-              href={`/events/${ev.slug}`}
-              className="ph-mobile-link"
-              style={{ paddingLeft: '1rem', fontSize: '1rem', fontWeight: 500 }}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {ev.title}
-            </Link>
-          ))}
-          {hasBlogPosts && (
-            <Link href="/blog" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
-              Resources
-            </Link>
-          )}
-          <Link href="/about" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
-            About
+            {ev.title}
           </Link>
-          <Link href="/contact" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
-            Contact
+        ))}
+        {hasBlogPosts && (
+          <Link href="/blog" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+            Resources
           </Link>
+        )}
+        <Link href="/contact" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+          Contact
+        </Link>
 
-          <div className="ph-mobile-cta">
-            <Link
-              href="/login"
-              className="ph-mobile-link"
-              style={{ border: 'none', fontSize: '0.9375rem', color: '#6B7280' }}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/signup"
-              onClick={() => setMobileMenuOpen(false)}
-              style={{
-                textAlign: 'center',
-                padding: '0.875rem',
-                background: '#0F0F0E',
-                color: '#FAFAF8',
-                borderRadius: '0.5rem',
-                textDecoration: 'none',
-                fontFamily: 'Metropolis',
-                fontWeight: 700,
-                fontSize: '0.9375rem',
-              }}
-            >
-              Join Ascentor
-            </Link>
-          </div>
+        <div className="ph-mobile-cta">
+          <Link
+            href="/login"
+            className="ph-mobile-link"
+            style={{ border: 'none', fontSize: '0.9375rem', color: '#6B7280' }}
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Sign in
+          </Link>
+          <Link href="/signup" className="ph-cta-btn" onClick={() => setMobileMenuOpen(false)}>
+            Join Ascentor
+          </Link>
         </div>
+      </div>
+
+      <ScrollToTop />
     </>
+  );
+}
+
+function ScrollToTop() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  return (
+    <button
+      className={`ph-scroll-top${visible ? ' visible' : ''}`}
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      aria-label="Scroll to top"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 19V5" />
+        <path d="M5 12l7-7 7 7" />
+      </svg>
+    </button>
   );
 }

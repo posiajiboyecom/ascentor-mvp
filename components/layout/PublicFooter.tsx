@@ -61,11 +61,11 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
             {/* Brand */}
             <div>
               <img
-                src="/ascentor-color-for-dark-pages.svg"
+                src="/ascentor-color-on-light.svg"
                 alt="Ascentor"
                 height={26}
-                width={28}
-                style={{ display: 'block', marginBottom: '0.75rem', objectFit: 'cover', objectPosition: 'left' }}
+                width={98}
+                style={{ display: 'block', marginBottom: '0.75rem' }}
               />
               <p style={{ fontSize: '0.875rem', color: '#6B7280', lineHeight: 1.6, marginBottom: '1rem' }}>
                 The official platform of The Elevation Summit movement.

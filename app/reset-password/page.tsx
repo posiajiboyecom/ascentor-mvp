@@ -287,7 +287,7 @@ export default function ResetPasswordPage() {
               <p style={{ fontSize: '0.875rem', color: '#6B7280', margin: 0 }}>
                 Remember your password?{' '}
                 <Link href="/login" style={{ color: '#C8A96E', fontWeight: 700, textDecoration: 'none' }}>
-                  Sign in →
+                  Sign in
                 </Link>
               </p>
             </div>
