@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import PublicHeader from '@/components/layout/PublicHeader';
+import PublicFooter from '@/components/layout/PublicFooter';
 import type { PublishedPage } from '@/lib/supabase/queries/marketing';
 
 // Narrow sanitizer for the hero headline specifically — allows ONLY
@@ -49,13 +51,11 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
 
   const [email, setEmail] = useState('');
   const [hasBlogPosts, setHasBlogPosts] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [subLoading, setSubLoading] = useState(false);
   const [subError, setSubError] = useState('');
   const [userCount, setUserCount] = useState<number | null>(null);
   const [events, setEvents] = useState<Array<{ slug: string; title: string; tagline: string | null; event_date: string | null; is_featured: boolean }>>([]);
-  const [eventsOpen, setEventsOpen] = useState(false);
   const [heroSlide, setHeroSlide] = useState(0);
 
   const heroImages = [
@@ -480,80 +480,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
       `}</style>
 
       {/* ── Navigation ── */}
-      <nav style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(250,250,248,0.95)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid #E8E6E1',
-      }} onClick={() => setEventsOpen(false)}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', height: '64px', position: 'relative' }}>
-            <Link href="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" height={26} width={98} style={{ display: 'block' }} />
-            </Link>
-            <div style={{ alignItems: 'center', gap: '2rem', position: 'absolute', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }} className="desktop-nav">
-              <Link href="/movement" className="nav-link">The Movement</Link>
-              <Link href="/signup" className="nav-link">Join Community</Link>
-              <div className="events-dropdown-wrap" onClick={e => e.stopPropagation()}>
-                <button className={`events-dropdown-btn${eventsOpen ? ' open' : ''}`} onClick={() => setEventsOpen(o => !o)}>
-                  Events
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-                {eventsOpen && (
-                  <div className="events-dropdown-menu">
-                    {events.length === 0 ? (
-                      <p style={{ padding: '10px 14px', fontSize: '0.8125rem', color: '#9CA3AF', margin: 0 }}>No upcoming events</p>
-                    ) : events.map(ev => (
-                      <Link key={ev.slug} href={`/events/${ev.slug}`} className="events-dropdown-item" onClick={() => setEventsOpen(false)}>
-                        <span className="events-dropdown-item-title">{ev.title}</span>
-                        {(ev.event_date || ev.tagline) && (
-                          <span className="events-dropdown-item-sub">{ev.event_date || ev.tagline}</span>
-                        )}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {hasBlogPosts && <Link href="/blog" className="nav-link">Resources</Link>}
-              <Link href="/about" className="nav-link">About</Link>
-              <Link href="/contact" className="nav-link">Contact</Link>
-            </div>
-            <button
-              className="mobile-menu-btn"
-              onClick={e => { e.stopPropagation(); setMobileMenuOpen(o => !o); }}
-              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-              style={{ marginLeft: 'auto' }}
-            >
-              <span style={{ transform: mobileMenuOpen ? 'rotate(45deg) translate(4px,4px)' : 'none' }} />
-              <span style={{ opacity: mobileMenuOpen ? 0 : 1 }} />
-              <span style={{ transform: mobileMenuOpen ? 'rotate(-45deg) translate(4px,-4px)' : 'none' }} />
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {mobileMenuOpen && (
-        <div className="mobile-menu-overlay" onClick={() => setMobileMenuOpen(false)}>
-          <Link href="/movement" className="mobile-menu-link">The Movement</Link>
-          <Link href="/signup" className="mobile-menu-link">Join Community</Link>
-          <p style={{ padding: '0.75rem 0', borderBottom: '1px solid #E8E6E1', margin: 0, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>Events</p>
-          {events.map(ev => (
-            <Link key={ev.slug} href={`/events/${ev.slug}`} className="mobile-menu-link" style={{ paddingLeft: '1rem', fontSize: '1rem', fontWeight: 500 }}>
-              {ev.title}
-            </Link>
-          ))}
-          {hasBlogPosts && <Link href="/blog" className="mobile-menu-link">Resources</Link>}
-          <Link href="/about" className="mobile-menu-link">About</Link>
-          <Link href="/contact" className="mobile-menu-link">Contact</Link>
-          <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <Link href="/login" className="mobile-menu-link" style={{ border: 'none', fontSize: '0.9375rem', color: '#6B7280' }}>Sign in</Link>
-            <Link href="/signup" className="btn-primary" style={{ textAlign: 'center', padding: '0.875rem' }}>Join Ascentor →</Link>
-          </div>
-        </div>
-      )}
+      <PublicHeader events={events} hasBlogPosts={hasBlogPosts} />
 
       {/* ── Hero ── */}
       <section style={{ padding: 'clamp(3rem, 6vw, 5rem) 1.5rem clamp(3rem, 6vw, 5rem)', maxWidth: '1200px', margin: '0 auto' }}>
@@ -770,110 +697,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer style={{ background: '#0F0F0E', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '3rem 1.5rem 2rem' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
-            {/* Brand */}
-            <div>
-              <span style={{
-                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                fontSize: '1.25rem',
-                fontWeight: 800,
-                color: '#FAFAF8',
-                letterSpacing: '-0.03em',
-                display: 'block',
-                marginBottom: '0.75rem',
-              }}>Ascentor</span>
-              <p style={{ fontSize: '0.875rem', color: '#6B7280', lineHeight: 1.6 }}>
-                The official platform of The Elevation Summit movement.
-              </p>
-            </div>
-
-            {/* The Movement */}
-            <div>
-              <h4 style={{
-                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                fontWeight: 700,
-                fontSize: '0.875rem',
-                color: '#FAFAF8',
-                marginBottom: '1rem',
-              }}>The Movement</h4>
-              <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                <Link href="/movement">Our Ideology</Link>
-                <Link href="/movement#total-person">The Total Person</Link>
-                <Link href="/about">About Ascentor</Link>
-              </nav>
-            </div>
-
-            {/* Community */}
-            <div>
-              <h4 style={{
-                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                fontWeight: 700,
-                fontSize: '0.875rem',
-                color: '#FAFAF8',
-                marginBottom: '1rem',
-              }}>Community</h4>
-              <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                <Link href="/signup">Join Free</Link>
-                <Link href="/community">The Circle</Link>
-                {hasBlogPosts && <Link href="/blog">Resources</Link>}
-                <Link href="/products">Products</Link>
-                <Link href="/newsletter">Newsletter</Link>
-                <Link href="/contact">Contact</Link>
-              </nav>
-            </div>
-
-            {/* The Elevation Summit */}
-            <div>
-              <h4 style={{
-                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                fontWeight: 700,
-                fontSize: '0.875rem',
-                color: '#FAFAF8',
-                marginBottom: '1rem',
-              }}>The Elevation Summit</h4>
-              <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                <Link href="/elevation-summit">About the Summit</Link>
-                <Link href="/elevation-summit#register">19 November, 2026</Link>
-                <Link href="/elevation-summit#speak">Become a Speaker</Link>
-                <Link href="/elevation-summit#partner">Partner with Us</Link>
-              </nav>
-            </div>
-          </div>
-
-          {/* Footer Bottom */}
-          <div style={{
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            paddingTop: '1.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '1rem',
-          }}>
-            <p style={{
-              fontFamily: 'var(--font-accent, "Playfair Display", serif)',
-              fontStyle: 'italic',
-              fontSize: '1rem',
-              color: '#C8A96E',
-            }}>
-              "Build a life that outlasts you."
-            </p>
-
-            <p style={{ fontSize: '0.8125rem', color: '#4B5563' }}>
-              © 2026 Ascentor. All rights reserved.
-            </p>
-
-            <div style={{ display: 'flex', gap: '1.5rem' }}>
-              <a href="https://x.com/joinascentor" target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none' }}>X / Twitter</a>
-              <a href="https://linkedin.com/company/joinascentor" target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none' }}>LinkedIn</a>
-              <a href="https://instagram.com/joinascentor" target="_blank" rel="noopener noreferrer" style={{ color: '#6B7280', fontSize: '0.875rem', textDecoration: 'none' }}>Instagram</a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter hasBlogPosts={hasBlogPosts} />
     </>
   );
 }

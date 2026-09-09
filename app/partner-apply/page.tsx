@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import PublicShell from '@/components/layout/PublicShell';
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--bg-input)', color: 'var(--text)',
@@ -89,19 +90,8 @@ export default function PartnerApplyPage() {
   }
 
   return (
+    <PublicShell>
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-
-      {/* Nav */}
-      <nav style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <span style={{ fontFamily: 'var(--font-heading)', fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>
-            Ascentor
-          </span>
-        </Link>
-        <Link href="/login" style={{ fontSize: 13, color: 'var(--text-dim)', textDecoration: 'none' }}>
-          Log in →
-        </Link>
-      </nav>
 
       <div style={{ maxWidth: 540, margin: '0 auto', padding: '48px 24px' }}>
 
@@ -229,6 +219,7 @@ export default function PartnerApplyPage() {
         </div>
       </div>
     </div>
+    </PublicShell>
   );
 }
 

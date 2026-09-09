@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import PublicShell from '@/components/layout/PublicShell';
 
 // ============================================================
 // CAREERS PAGE — /careers
@@ -142,7 +143,7 @@ export default function CareersPage() {
   const depts = ['All', ...Array.from(new Set(jobs.filter(j => j.is_active).map(j => j.department)))];
 
   return (
-    <>
+    <PublicShell>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 
@@ -390,16 +391,7 @@ export default function CareersPage() {
       `}</style>
 
       <div className="cr-root">
-
-        {/* ── Nav ── */}
-        <nav className="cr-nav">
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: 28 }} />
-          </Link>
-          <Link href="/login" className="cr-apply-btn" style={{ padding: '9px 20px', fontSize: 13 }}>
-            Sign In
-          </Link>
-        </nav>
+        {/* Content */}
 
         {/* ── Hero ── */}
         <section className="cr-hero">
@@ -715,6 +707,6 @@ export default function CareersPage() {
         </div>
 
       </div>
-    </>
+    </PublicShell>
   );
 }

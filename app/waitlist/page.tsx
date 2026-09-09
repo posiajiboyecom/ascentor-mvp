@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
+import PublicShell from '@/components/layout/PublicShell';
 
 
 // Renders SVG icon strings safely  
@@ -288,7 +289,7 @@ export default function WaitlistPage() {
     const rawUrl = `${typeof window!=='undefined'?window.location.origin:'https://ascentorbi.com'}/waitlist?ref=${success.referral_code}`;
 
     return (
-      <>
+      <PublicShell>
         <style>{css}</style>
         <div className="grain" />
         <canvas ref={canvasRef} style={{position:'fixed',inset:0,zIndex:0,pointerEvents:'none'}} />
@@ -316,13 +317,13 @@ export default function WaitlistPage() {
             <Link href="/" className="back">Back to homepage</Link>
           </div>
         </div>
-      </>
+      </PublicShell>
     );
   }
 
   /* ── Form state ── */
   return (
-    <>
+    <PublicShell>
       <style>{css}</style>
       <div className="grain" />
       <canvas ref={canvasRef} style={{position:'fixed',inset:0,zIndex:0,pointerEvents:'none'}} aria-hidden="true" />
@@ -331,10 +332,7 @@ export default function WaitlistPage() {
 
         {/* ══ LEFT PANEL ══ */}
         <div className="left">
-          <Link href="/" className="logo">
-            <div className="logo-mark">A</div>
-            <span className="logo-text">Ascentor</span>
-          </Link>
+          {/* PublicShell provides the header */}
 
           <div className="left-mid">
             <div className="eyebrow">
@@ -518,6 +516,6 @@ export default function WaitlistPage() {
         </div>
 
       </div>
-    </>
+    </PublicShell>
   );
 }

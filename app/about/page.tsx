@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import PublicShell from '@/components/layout/PublicShell';
 
 export async function generateMetadata(): Promise<Metadata> {
   // Founder photo (when published) becomes the page's share image and
@@ -101,7 +102,7 @@ export default async function AboutPage() {
   };
 
   return (
-    <>
+    <PublicShell>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
@@ -184,18 +185,7 @@ export default async function AboutPage() {
         footer a:hover { color: #0F0F0E; }
       `}</style>
 
-      {/* Nav */}
-      <nav className="about-nav">
-        <div className="about-nav-inner">
-          <Link href="/" style={{
-            fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-            fontSize: '1.25rem', fontWeight: 800, color: '#0F0F0E',
-            letterSpacing: '-0.03em', textDecoration: 'none',
-          }}>Ascentor</Link>
-
-          <Link href="/signup" className="about-nav-cta">Join Ascentor →</Link>
-        </div>
-      </nav>
+      {/* Content */}
 
       {/* Hero */}
       <section style={{ padding: 'clamp(5rem, 10vw, 8rem) 1.5rem clamp(3rem, 6vw, 5rem)', maxWidth: '1200px', margin: '0 auto' }}>
@@ -409,16 +399,6 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer style={{ background: '#0F0F0E', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '2rem 1.5rem' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-          <p style={{ fontFamily: 'var(--font-accent, "Playfair Display", serif)', fontStyle: 'italic', color: '#C8A96E', fontSize: '0.9375rem' }}>
-            "Build a life that outlasts you."
-          </p>
-          <p style={{ fontSize: '0.8125rem', color: '#4B5563' }}>© 2026 Ascentor. All rights reserved.</p>
-          <Link href="/" style={{ fontSize: '0.875rem', color: '#6B7280', textDecoration: 'none' }}>← Back to Ascentor</Link>
-        </div>
-      </footer>
-    </>
+    </PublicShell>
   );
 }

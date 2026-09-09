@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import PublicShell from '@/components/layout/PublicShell';
 
 const INDUSTRIES = [
   'Finance & Banking', 'Technology & Engineering', 'Consulting & Strategy',
@@ -154,20 +155,10 @@ export default function MentorApplyPage() {
   }
 
   return (
+    <PublicShell>
     <div className="ma-page">
       <style>{maStyles}</style>
-
-      {/* NAV */}
-      <nav className="ma-nav">
-        <Link href="/" className="lp-nav-logo">
-            <img
-              src="/ascentor-color-for-light-pages.svg"
-              alt="Ascentor"
-              style={{ height: '32px', width: 'auto' }}
-            />
-            </Link>
-        <span className="ma-nav-tag">Founding Mentor Application</span>
-      </nav>
+      {/* Content */}
 
       {/* HERO */}
       <div className="ma-hero">
@@ -410,6 +401,7 @@ export default function MentorApplyPage() {
         <p className="ma-footer-note">We review every application personally. No automated rejections.</p>
       </div>
     </div>
+    </PublicShell>
   );
 }
 

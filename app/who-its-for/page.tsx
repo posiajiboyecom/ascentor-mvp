@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from 'next';
 import Link from 'next/link';
+import PublicShell from '@/components/layout/PublicShell';
 
 
 // Renders SVG icon strings safely  
@@ -176,9 +177,10 @@ export default async function WhoItsForPage() {
   const ctaLabel    = cta?.cta_label || 'See How It Works';
   const ctaHref     = cta?.cta_href  || '/how-it-works';
   return (
-    <div className="min-h-screen"
+    <PublicShell>
+    <div
       style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'Syne', system-ui, sans-serif" }}>
-      <Nav />
+      {/* Content */}
 
       {/* ── Hero ── */}
       <section className="pt-16 pb-10 text-center px-5">
@@ -370,18 +372,7 @@ export default async function WhoItsForPage() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="py-8 text-center text-xs"
-        style={{ borderTop: '1px solid #E5E5E4', color: '#9CA3AF' }}>
-        <p>
-          © {new Date().getFullYear()} Ascentor Inc. ·{' '}
-          <Link href="/who-its-for">Who It&apos;s For</Link> ·{' '}
-          <Link href="/how-it-works">How It Works</Link> ·{' '}
-          <Link href="/pricing">Pricing</Link> ·{' '}
-          <Link href="/terms">Terms</Link> ·{' '}
-          <Link href="/blog">Blog</Link>
-        </p>
-      </footer>
     </div>
+    </PublicShell>
   );
 }

@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 
 type PublicFooterProps = {
@@ -61,7 +63,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
             {/* Brand */}
             <div>
               <img
-                src="/ascentor-color-on-light.svg"
+                src="/ascentor-color-for-light-pages.svg"
                 alt="Ascentor"
                 height={26}
                 width={98}

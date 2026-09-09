@@ -6,6 +6,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import PublicShell from '@/components/layout/PublicShell';
 
 export const metadata: Metadata = {
   title: 'The Ascentor Manifesto',
@@ -47,7 +48,7 @@ export default function ManifestoPage() {
   };
 
   return (
-    <>
+    <PublicShell>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -155,6 +156,6 @@ export default function ManifestoPage() {
           </Link>
         </div>
       </main>
-    </>
+    </PublicShell>
   );
 }
