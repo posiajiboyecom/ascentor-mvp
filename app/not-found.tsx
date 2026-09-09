@@ -7,7 +7,7 @@ export default function NotFound() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#0C0B08',
+      background: '#FAFAF8',
       fontFamily: "'Syne', system-ui, sans-serif",
       padding: '24px',
     }}>
@@ -27,14 +27,14 @@ export default function NotFound() {
         <h1 style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontSize: 30, fontWeight: 700,
-          color: '#F1F0EB',
+          color: '#0F0F0E',
           marginBottom: 10, marginTop: 0,
         }}>
           Page not found
         </h1>
 
         <p style={{
-          fontSize: 14, color: '#7A7260',
+          fontSize: 14, color: '#6B7280',
           lineHeight: 1.7, marginBottom: 32,
           maxWidth: 320, margin: '0 auto 32px',
         }}>
@@ -61,8 +61,8 @@ export default function NotFound() {
             href="/"
             style={{
               padding: '12px 24px', borderRadius: 10,
-              border: '1px solid #2E2A22',
-              color: '#D4CFC3', background: 'transparent',
+              border: '1px solid #E8E6E1',
+              color: '#0F0F0E', background: 'transparent',
               fontFamily: "'Syne', sans-serif",
               fontSize: 14, fontWeight: 600,
               textDecoration: 'none',

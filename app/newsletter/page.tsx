@@ -3,12 +3,20 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import PublicShell from '@/components/layout/PublicShell';
-import { Mail, Check } from 'lucide-react';
+import { Mail, Check, AlertCircle, X } from 'lucide-react';
 
 export default function NewsletterPage() {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+
+  function closeModal() {
+    setStatus('idle');
+    if (status === 'done') {
+      setEmail('');
+      setName('');
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,19 +50,6 @@ export default function NewsletterPage() {
           Every Tuesday, get one actionable leadership insight, one framework you can use immediately, and one story from a leader who's been where you are.
         </p>
 
-        {status === 'done' ? (
-          <div className="rounded-2xl p-8" style={{ background: '#fff', border: '1px solid #E5E5E4' }}>
-            <div className="mb-3" style={{ color: '#E8A020', display: 'flex', justifyContent: 'center' }}>
-              <Check size={32} strokeWidth={2} />
-            </div>
-            <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
-              You're in!
-            </h3>
-            <p className="text-sm" style={{ color: '#6B7280' }}>
-              Check your inbox for a welcome email. Your first leadership insight drops next Tuesday.
-            </p>
-          </div>
-        ) : (
           <form onSubmit={handleSubmit} className="rounded-2xl p-8 text-left"
             style={{ background: '#fff', border: '1px solid #E5E5E4' }}>
             <div className="mb-4">
@@ -92,21 +87,64 @@ export default function NewsletterPage() {
               No spam. Unsubscribe anytime. Read our <Link href="/terms" style={{ textDecoration: 'underline' }}>privacy policy</Link>.
             </p>
           </form>
-        )}
-
-        <div className="mt-10 grid grid-cols-3 gap-4 text-center">
-          {[
-            { val: '2,000+', label: 'Subscribers' },
-            { val: '52%', label: 'Open rate' },
-            { val: 'Free', label: 'Forever' },
-          ].map((s) => (
-            <div key={s.label}>
-              <p className="text-lg font-bold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#E8A020' }}>{s.val}</p>
-              <p className="text-[11px]" style={{ color: '#9CA3AF' }}>{s.label}</p>
-            </div>
-          ))}
-        </div>
       </div>
+
+      {(status === 'done' || status === 'error') && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 15, 14, 0.45)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+          }}
+          onClick={closeModal}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff',
+              borderRadius: '1rem',
+              padding: '2rem',
+              maxWidth: 420,
+              width: '100%',
+              textAlign: 'center',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
+              position: 'relative',
+            }}
+          >
+            <button
+              onClick={closeModal}
+              style={{ position: 'absolute', top: 14, right: 14, color: '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer' }}
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+            <div style={{ color: status === 'done' ? '#E8A020' : '#EF4444', display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              {status === 'done' ? <Check size={40} strokeWidth={2} /> : <AlertCircle size={40} strokeWidth={2} />}
+            </div>
+            <h3 className="text-xl font-semibold mb-2" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
+              {status === 'done' ? "You're in!" : 'Something went wrong'}
+            </h3>
+            <p className="text-sm mb-6" style={{ color: '#6B7280', lineHeight: 1.7 }}>
+              {status === 'done'
+                ? "Check your inbox for a welcome email. Your first leadership insight drops next Tuesday."
+                : "We couldn't subscribe you right now. Please try again in a moment."}
+            </p>
+            <button
+              onClick={closeModal}
+              className="py-3 px-8 rounded-xl text-sm font-semibold"
+              style={{ background: status === 'done' ? '#E8A020' : '#0F0F0E', color: status === 'done' ? '#000' : '#FAFAF8' }}
+            >
+              {status === 'done' ? 'Got it' : 'Try again'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
     </PublicShell>
   );

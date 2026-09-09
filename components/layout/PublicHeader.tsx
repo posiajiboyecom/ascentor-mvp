@@ -345,15 +345,11 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
               {desktopLinks}
             </div>
 
-            <div className="ph-desktop-cta" style={{ marginLeft: 'auto' }}>
+            <div className="ph-desktop-cta" style={{ marginLeft: 'auto', marginRight: '0.75rem' }}>
               <Link href="/signup" className="ph-cta-btn">
                 Join Ascentor
               </Link>
             </div>
-
-            <Link href="/signup" className="ph-mobile-header-cta" style={{ marginLeft: 'auto', marginRight: '0.75rem' }}>
-              Get Started
-            </Link>
 
             <button
               className="ph-mobile-btn"
@@ -460,12 +456,24 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
 
 function ScrollToTop() {
   const [visible, setVisible] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 400);
+    const onScroll = () => {
+      const y = window.scrollY;
+      const doc = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = doc > 0 ? (y / doc) * 100 : 0;
+      setProgress(Math.min(100, Math.max(0, pct)));
+      setVisible(y > 400);
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  const r = 24;
+  const c = 2 * Math.PI * r;
+  const offset = c * (1 - progress / 100);
 
   return (
     <button
@@ -476,6 +484,31 @@ function ScrollToTop() {
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 19V5" />
         <path d="M5 12l7-7 7 7" />
+      </svg>
+      <svg
+        width={52}
+        height={52}
+        viewBox="0 0 52 52"
+        style={{
+          position: 'absolute',
+          top: -4,
+          left: -4,
+          pointerEvents: 'none',
+          transform: 'rotate(-90deg)',
+          transformOrigin: 'center',
+        }}
+      >
+        <circle
+          cx={26}
+          cy={26}
+          r={r}
+          fill="none"
+          stroke="#0F0F0E"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+        />
       </svg>
     </button>
   );
