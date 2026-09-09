@@ -56,6 +56,20 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const [userCount, setUserCount] = useState<number | null>(null);
   const [events, setEvents] = useState<Array<{ slug: string; title: string; tagline: string | null; event_date: string | null; is_featured: boolean }>>([]);
   const [eventsOpen, setEventsOpen] = useState(false);
+  const [heroSlide, setHeroSlide] = useState(0);
+
+  const heroImages = [
+    '/images/PXL_20250125_115412210.jpg',
+    '/images/IMG_5602.jpg',
+    '/images/IMG_5665.jpg',
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHeroSlide((prev) => (prev + 1) % heroImages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [heroImages.length]);
 
   // Hero content — CMS first, hardcoded fallback second. The CMS
   // shape (set via the 'structured' field editor in
@@ -235,6 +249,23 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
           line-height: 1.05;
           letter-spacing: -0.03em;
           color: #0F0F0E;
+        }
+
+        .hero-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 2.5rem;
+          align-items: stretch;
+        }
+        .hero-grid .hero-carousel { order: 1; display: flex; }
+        .hero-grid .hero-text { order: 2; display: flex; flex-direction: column; justify-content: center; }
+        @media (min-width: 860px) {
+          .hero-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+          }
+          .hero-grid .hero-carousel { order: 2; }
+          .hero-grid .hero-text { order: 1; }
         }
 
         .section-headline {
@@ -525,33 +556,79 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
       )}
 
       {/* ── Hero ── */}
-      <section style={{ padding: 'clamp(5rem, 10vw, 8rem) 1.5rem clamp(4rem, 8vw, 6rem)', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ maxWidth: '820px' }}>
-          <p className="eyebrow" style={{ marginBottom: '1.5rem' }}>{heroEyebrow}</p>
-
-          <h1 className="hero-headline" style={{ marginBottom: '1.5rem' }}
-            dangerouslySetInnerHTML={{ __html: sanitizeHeroHeadline(heroHeadline) }} />
-
-          <p style={{
-            fontSize: 'clamp(1.0625rem, 2vw, 1.25rem)',
-            color: '#374151',
-            lineHeight: 1.7,
-            maxWidth: '600px',
-            marginBottom: '2.5rem',
-          }}>
-            {heroSubhead}
-          </p>
-
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-            <Link href={heroCtaHref} className="btn-primary">{heroCtaLabel}</Link>
-            <Link href={heroCta2Href} className="btn-secondary">{heroCta2Label}</Link>
+      <section style={{ padding: 'clamp(3rem, 6vw, 5rem) 1.5rem clamp(3rem, 6vw, 5rem)', maxWidth: '1200px', margin: '0 auto' }}>
+        <div className="hero-grid">
+          {/* Images Column - shown first on mobile, second on desktop */}
+          <div className="hero-carousel" style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '1rem', overflow: 'hidden', background: '#E8E6E1' }}>
+              {heroImages.map((src, i) => (
+                <img
+                  key={src}
+                  src={src}
+                  alt=""
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    opacity: heroSlide === i ? 1 : 0,
+                    transition: 'opacity 0.6s ease',
+                    pointerEvents: 'none',
+                  }}
+                />
+              ))}
+              {/* Dot navigation overlaid on the image */}
+              <div style={{ position: 'absolute', bottom: '1rem', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '0.5rem', zIndex: 2 }}>
+                {heroImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setHeroSlide(i)}
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      border: 'none',
+                      background: heroSlide === i ? '#0F0F0E' : 'rgba(255,255,255,0.7)',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s, transform 0.15s',
+                      padding: 0,
+                    }}
+                    aria-label={`Go to slide ${i + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
 
-          {userCount && userCount > 5 && (
-            <p style={{ fontSize: '0.875rem', color: '#9CA3AF' }}>
-              Join {userCount.toLocaleString()}+ people who chose direction over drift.
+          {/* Text Column - shown second on mobile, first on desktop */}
+          <div className="hero-text" style={{ maxWidth: '820px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <p className="eyebrow" style={{ marginBottom: '1.25rem' }}>{heroEyebrow}</p>
+
+            <h1 className="hero-headline" style={{ marginBottom: '1.25rem' }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHeroHeadline(heroHeadline) }} />
+
+            <p style={{
+              fontSize: 'clamp(1.0625rem, 2vw, 1.25rem)',
+              color: '#374151',
+              lineHeight: 1.7,
+              maxWidth: '600px',
+              marginBottom: '2rem',
+            }}>
+              {heroSubhead}
             </p>
-          )}
+
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+              <Link href={heroCtaHref} className="btn-primary">{heroCtaLabel}</Link>
+              <Link href={heroCta2Href} className="btn-secondary">{heroCta2Label}</Link>
+            </div>
+
+            {userCount && userCount > 5 && (
+              <p style={{ fontSize: '0.875rem', color: '#9CA3AF' }}>
+                Join {userCount.toLocaleString()}+ people who chose direction over drift.
+              </p>
+            )}
+          </div>
         </div>
       </section>
 
