@@ -17,7 +17,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
           align-items: center;
           gap: 0.5rem;
         }
-        .pf-link:hover { color: #FAFAF8; }
+        .pf-link:hover { color: #0F0F0E; }
         .pf-social {
           display: inline-flex;
           align-items: center;
@@ -44,8 +44,8 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
 
       <footer
         style={{
-          background: '#0F0F0E',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          background: '#FAFAF8',
+          borderTop: '1px solid #E8E6E1',
           padding: '3rem 1.5rem 2rem',
         }}
       >
@@ -60,7 +60,6 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
           >
             {/* Brand */}
             <div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/ascentor-color-on-light.svg"
                 alt="Ascentor"
@@ -91,7 +90,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                   fontFamily: 'Metropolis',
                   fontWeight: 700,
                   fontSize: '0.875rem',
-                  color: '#FAFAF8',
+                  color: '#0F0F0E',
                   marginBottom: '1rem',
                 }}
               >
@@ -117,7 +116,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                   fontFamily: 'Metropolis',
                   fontWeight: 700,
                   fontSize: '0.875rem',
-                  color: '#FAFAF8',
+                  color: '#0F0F0E',
                   marginBottom: '1rem',
                 }}
               >
@@ -154,7 +153,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                   fontFamily: 'Metropolis',
                   fontWeight: 700,
                   fontSize: '0.875rem',
-                  color: '#FAFAF8',
+                  color: '#0F0F0E',
                   marginBottom: '1rem',
                 }}
               >
@@ -183,7 +182,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                   fontFamily: 'Metropolis',
                   fontWeight: 700,
                   fontSize: '0.875rem',
-                  color: '#FAFAF8',
+                  color: '#0F0F0E',
                   marginBottom: '1rem',
                 }}
               >
@@ -201,7 +200,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
           {/* Footer Bottom */}
           <div
             style={{
-              borderTop: '1px solid rgba(255,255,255,0.06)',
+              borderTop: '1px solid #E8E6E1',
               paddingTop: '1.5rem',
               display: 'flex',
               alignItems: 'center',
@@ -210,7 +209,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
               gap: '1rem',
             }}
           >
-            <p style={{ fontSize: '0.8125rem', color: '#4B5563' }}>
+            <p style={{ fontSize: '0.8125rem', color: '#6B7280' }}>
               © 2026 Ascentor. All rights reserved.
             </p>
 

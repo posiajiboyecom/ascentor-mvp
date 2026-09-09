@@ -47,7 +47,7 @@ export default function Preloader({ minimumVisibleMs = 1200 }: PreloaderProps) {
           position: fixed;
           inset: 0;
           z-index: 99999;
-          background: #0F0F0E;
+          background: #FAFAF8;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -65,14 +65,14 @@ export default function Preloader({ minimumVisibleMs = 1200 }: PreloaderProps) {
         .preloader-track {
           width: 180px;
           height: 2px;
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(0, 0, 0, 0.08);
           border-radius: 2px;
           overflow: hidden;
         }
 
         .preloader-bar {
           height: 100%;
-          background: #C8A96E;
+          background: #0F0F0E;
           border-radius: 2px;
           transition: width 0.1s linear;
         }
@@ -82,14 +82,14 @@ export default function Preloader({ minimumVisibleMs = 1200 }: PreloaderProps) {
           font-weight: 600;
           letter-spacing: 0.2em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.35);
+          color: rgba(0, 0, 0, 0.35);
           margin: 0;
         }
       `}</style>
 
       <div className="preloader">
         <img
-          src="/ascentor-color-on-dark.svg"
+          src="/ascentor-color-on-light.svg"
           alt="Ascentor"
           className="preloader-logo"
         />

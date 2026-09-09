@@ -288,7 +288,6 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
             }}
           >
             <Link href="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/ascentor-color-for-light-pages.svg"
                 alt="Ascentor"
@@ -328,7 +327,7 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
                   fontSize: '0.875rem',
                 }}
               >
-                Join Ascentor →
+                Join Ascentor
               </Link>
             </div>
 
@@ -337,7 +336,7 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
               className="ph-mobile-header-cta"
               style={{ marginLeft: 'auto', marginRight: '0.75rem' }}
             >
-              Get Started →
+              Get Started
             </Link>
 
             <button
@@ -362,7 +361,6 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
       />
       <div className={`ph-mobile-overlay${mobileMenuOpen ? ' ph-open' : ''}`}>
         <Link href="/" className="ph-mobile-logo" style={{ display: 'inline-block' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/ascentor-color-for-light-pages.svg"
             alt="Ascentor"
@@ -448,7 +446,7 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
                 fontSize: '0.9375rem',
               }}
             >
-              Join Ascentor →
+              Join Ascentor
             </Link>
           </div>
         </div>
