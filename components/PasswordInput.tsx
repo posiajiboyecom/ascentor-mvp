@@ -1,27 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 
 // ─────────────────────────────────────────────────────────────────
 // ASCENTOR · PasswordInput · Brand Book v1.0 · 2026
-// Drop-in replacement for <input type="password" />
-// Usage: <PasswordInput value={pw} onChange={setPw} placeholder="..." />
+// Supports both react-hook-form {...register()} spreads and plain
+// string callbacks via onValueChange.
 // Gold: #E8A020  Dark: #0C0B08  Font: Syne
 // ─────────────────────────────────────────────────────────────────
 
-interface PasswordInputProps {
-  value?: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  name?: string;
-  id?: string;
-  required?: boolean;
-  autoComplete?: string;
-  disabled?: boolean;
-  className?: string;
-  style?: React.CSSProperties;
+interface PasswordInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
   showStrength?: boolean;
   light?: boolean;
+  onValueChange?: (value: string) => void;
 }
 
 function getStrength(password: string): { score: number; label: string; color: string } {
@@ -38,24 +29,34 @@ function getStrength(password: string): { score: number; label: string; color: s
   return               { score, label: 'Strong', color: '#10B981' };
 }
 
-export default function PasswordInput({
-  value,
-  onChange,
-  placeholder = 'Enter password',
-  name,
-  id,
-  required   = false,
-  autoComplete,
-  disabled   = false,
-  className,
-  style,
-  showStrength = false,
-  light      = false,
-}: PasswordInputProps) {
+const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(function PasswordInput(
+  {
+    showStrength = false,
+    light = false,
+    onValueChange,
+    onChange,
+    onBlur,
+    style,
+    className,
+    ...rest
+  },
+  ref,
+) {
   const [visible, setVisible] = useState(false);
-  const strength = showStrength && value.length > 0 ? getStrength(value) : null;
+  const strVal = (rest.value as string) ?? '';
+  const strength = showStrength && strVal.length > 0 ? getStrength(strVal) : null;
 
-  const inputStyle: React.CSSProperties = light ? {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onValueChange?.(e.target.value);
+    onChange?.(e);
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    (e.target as HTMLInputElement).style.borderColor = light ? '#E8E6E1' : 'rgba(212,207,195,0.10)';
+    onBlur?.(e);
+  };
+
+  const baseStyle: React.CSSProperties = light ? {
     width:        '100%',
     padding:      '13px 44px 13px 16px',
     borderRadius: '10px',
@@ -68,39 +69,34 @@ export default function PasswordInput({
     outline:      'none',
     boxSizing:    'border-box',
     transition:   'border-color 0.15s ease',
-    ...style,
   } : {
-    width:           '100%',
-    padding:         '13px 44px 13px 16px',
-    borderRadius:    '10px',
-    border:          '1px solid rgba(212,207,195,0.10)',
-    background:      '#1E1C17',
-    color:           '#F7F6F3',
-    fontFamily:      "'Syne', system-ui, sans-serif",
-    fontSize:        '14px',
-    fontWeight:      400,
-    outline:         'none',
-    boxSizing:       'border-box',
-    transition:      'border-color 0.15s ease',
-    ...style,
+    width:        '100%',
+    padding:      '13px 44px 13px 16px',
+    borderRadius: '10px',
+    border:       '1px solid rgba(212,207,195,0.10)',
+    background:   '#1E1C17',
+    color:        '#F7F6F3',
+    fontFamily:   "'Syne', system-ui, sans-serif",
+    fontSize:     '14px',
+    fontWeight:   400,
+    outline:      'none',
+    boxSizing:    'border-box',
+    transition:   'border-color 0.15s ease',
   };
+
+  const inputStyle: React.CSSProperties = { ...baseStyle, ...style };
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       <input
+        {...rest}
+        ref={ref}
         type={visible ? 'text' : 'password'}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        name={name}
-        id={id}
-        required={required}
-        autoComplete={autoComplete}
-        disabled={disabled}
+        onChange={handleChange}
+        onBlur={handleBlur}
         className={className}
         style={inputStyle}
-        onFocus={(e)  => { (e.target as HTMLInputElement).style.borderColor = light ? '#C8A96E' : 'rgba(232,160,32,0.35)'; }}
-        onBlur={(e)   => { (e.target as HTMLInputElement).style.borderColor = light ? '#E8E6E1' : 'rgba(212,207,195,0.10)'; }}
+        onFocus={(e) => { (e.target as HTMLInputElement).style.borderColor = light ? '#C8A96E' : 'rgba(232,160,32,0.35)'; }}
       />
 
       {/* Show/Hide toggle */}
@@ -172,4 +168,6 @@ export default function PasswordInput({
       )}
     </div>
   );
-}
+});
+
+export default PasswordInput;

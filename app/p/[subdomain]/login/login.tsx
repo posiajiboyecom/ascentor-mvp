@@ -155,7 +155,7 @@ function PartnerLoginForm() {
               style={fieldStyle}
             />
             <PasswordInput
-              value={password} onChange={p => { setPassword(p); setError(null); }}
+              value={password} onValueChange={p => { setPassword(p); setError(null); }}
               showStrength={false} placeholder="Password"
             />
 

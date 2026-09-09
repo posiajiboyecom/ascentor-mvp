@@ -197,7 +197,7 @@ function PartnerSignupForm() {
 
             <PasswordInput
               value={password}
-              onChange={setPassword}
+              onValueChange={setPassword}
               showStrength={true}
               placeholder="Create a password"
             />

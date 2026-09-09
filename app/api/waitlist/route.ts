@@ -2,13 +2,17 @@ import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-// ── Clients (initialised once at module level) ─────────────
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// ── Lazy clients (never executed at build/module-eval time) ─
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY!);
+}
 
 // ── Email HTML builder ─────────────────────────────────────
 function buildConfirmationEmailHtml({
@@ -171,6 +175,7 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') ?? null;
 
     // Call the Supabase stored function (handles duplicate detection)
+    const supabase = getSupabase();
     const { data, error } = await supabase.rpc('submit_waitlist_entry', {
       p_first_name:      body.first_name,
       p_last_name:       body.last_name,
@@ -207,7 +212,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send confirmation email — non-blocking (failure does not break the response)
-    const { error: emailError } = await resend.emails.send({
+    const { error: emailError } = await getResend().emails.send({
       from:    'Ascentor <hello@ascentorbi.com>',
       to:      body.email,
       subject: `You're on the Ascentor waitlist — position #${data.position} 🎉`,
@@ -245,7 +250,7 @@ export async function POST(request: NextRequest) {
 // ── GET /api/waitlist — returns current total count ────────
 export async function GET() {
   try {
-    const { count, error } = await supabase
+    const { count, error } = await getSupabase()
       .from('waitlist_entries')
       .select('*', { count: 'exact', head: true })
       .eq('gdpr_delete_requested', false);
