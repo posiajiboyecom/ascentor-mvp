@@ -1,27 +1,43 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PasswordInput from '@/components/PasswordInput';
 import { OAuthButton } from '@/lib/sso';
+import { createClient } from '@/lib/supabase/client';
+
+const signupSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+});
+
+type SignupFormData = z.infer<typeof signupSchema>;
 
 function SignUpForm() {
-  const router       = useRouter();
-  const supabase     = createClient();
+  const router = useRouter();
+  const supabase = createClient();
   const searchParams = useSearchParams();
 
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [error,    setError]    = useState<string | null>(null);
-  const [loading,  setLoading]  = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const planParam     = searchParams.get('plan');
-  const billingParam  = searchParams.get('billing') ?? 'monthly';
+  const planParam = searchParams.get('plan');
+  const billingParam = searchParams.get('billing') ?? 'monthly';
   const currencyParam = searchParams.get('currency') ?? 'ngn';
-  const isFree        = planParam === 'free' || !planParam;
-  const refCode       = searchParams.get('ref');
+  const isFree = planParam === 'free' || !planParam;
+  const refCode = searchParams.get('ref');
   const [referralCode, setReferralCode] = useState('');
 
   useEffect(() => {
@@ -34,21 +50,27 @@ function SignUpForm() {
     }
   }, [refCode]);
 
-  async function handleEmailSignUp(e: React.FormEvent) {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+  });
+
+  async function onSubmit(data: SignupFormData) {
     setLoading(true);
     setError(null);
 
-    // Default routing — community is the entry point, then onboarding
     const callbackNext = isFree
       ? '/onboarding'
       : planParam
         ? `/checkout?plan=${planParam}&billing=${billingParam}&currency=${currencyParam}`
         : '/onboarding';
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
+    const { data: authData, error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackNext)}`,
       },
@@ -57,14 +79,13 @@ function SignUpForm() {
     if (error) {
       setError(error.message);
     } else {
-      const name = (data.user?.user_metadata?.full_name || email.split('@')[0]) as string;
+      const name = (authData.user?.user_metadata?.full_name || data.email.split('@')[0]) as string;
       fetch('/api/welcome', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email, name, userId: data.user?.id }),
+        body: JSON.stringify({ email: data.email, name, userId: authData.user?.id }),
       }).catch(() => {});
 
-      // Route to onboarding — community is the entry point for everyone
       if (planParam && !isFree) {
         router.push(`/checkout?plan=${planParam}&billing=${billingParam}&currency=${currencyParam}`);
       } else {
@@ -77,56 +98,64 @@ function SignUpForm() {
   return (
     <>
       <style>{`
-        body { background: #FAFAF8 !important; color: #0F0F0E !important; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #FAFAF8 !important; color: #0F0F0E !important; }
 
-        .signup-page {
+        .auth-split {
           min-height: 100dvh;
-          display: flex;
+          display: grid;
+          grid-template-columns: 1fr;
           background: #FAFAF8;
-          overflow-y: auto;
+        }
+        @media (min-width: 1024px) {
+          .auth-split { grid-template-columns: 1fr 1fr; }
         }
 
-        .signup-brand {
+        .auth-image {
           display: none;
-          width: 440px;
-          flex-shrink: 0;
-          background: #0F0F0E;
-          padding: 60px 48px;
-          flex-direction: column;
-          justify-content: space-between;
+          width: 100%;
+          height: 100%;
+          position: relative;
+          overflow: hidden;
         }
-        @media (min-width: 1024px) { .signup-brand { display: flex; } }
+        .auth-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          position: absolute;
+          inset: 0;
+        }
+        @media (min-width: 1024px) { .auth-image { display: block; } }
 
-        .signup-form-panel {
-          flex: 1;
+        .auth-form-panel {
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: center;
           padding: 40px 24px;
           background: #FAFAF8;
-          overflow-y: auto;
         }
-        .signup-form-inner {
+        .auth-form-inner {
           width: 100%;
           max-width: 420px;
         }
 
-        .signup-input {
+        .auth-input {
           width: 100%;
           padding: 0.875rem 1rem;
           background: #FFFFFF;
           border: 1.5px solid #E8E6E1;
           border-radius: 0.625rem;
           color: #0F0F0E;
-          font-family: var(--font-body, 'Inter', sans-serif);
+          font-family: Metropolis;
           font-size: 0.9375rem;
           outline: none;
           transition: border-color 0.15s;
         }
-        .signup-input::placeholder { color: #9CA3AF; }
-        .signup-input:focus { border-color: #C8A96E; }
+        .auth-input::placeholder { color: #9CA3AF; }
+        .auth-input:focus { border-color: #C8A96E; }
+        .auth-input.error { border-color: #DC2626; }
 
-        .signup-btn {
+        .auth-btn {
           width: 100%;
           padding: 0.875rem;
           border-radius: 0.625rem;
@@ -134,20 +163,27 @@ function SignUpForm() {
           cursor: pointer;
           background: #0F0F0E;
           color: #FAFAF8;
-          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+          font-family: Metropolis;
           font-size: 1rem;
           font-weight: 700;
           transition: background 0.15s, opacity 0.15s;
         }
-        .signup-btn:hover:not(:disabled) { background: #2A2A29; }
-        .signup-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .auth-btn:hover:not(:disabled) { background: #2A2A29; }
+        .auth-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-        .signup-divider {
+        .auth-divider {
           display: flex; align-items: center; gap: 16px; margin: 1.5rem 0;
         }
-        .signup-divider-line { flex: 1; height: 1px; background: #E8E6E1; }
+        .auth-divider-line { flex: 1; height: 1px; background: #E8E6E1; }
 
-        .signup-error {
+        .field-error {
+          color: #DC2626;
+          font-size: 0.8125rem;
+          margin-top: 0.375rem;
+          line-height: 1.4;
+        }
+
+        .auth-error {
           padding: 0.75rem 1rem;
           border-radius: 0.5rem;
           background: rgba(220,38,38,0.05);
@@ -157,113 +193,20 @@ function SignUpForm() {
           line-height: 1.5;
           margin-bottom: 0.5rem;
         }
-
-        .stage-card {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          padding: 0.875rem 0;
-          border-bottom: 1px solid rgba(255,255,255,0.06);
-        }
-        .stage-dot {
-          width: 8px; height: 8px;
-          border-radius: 50%;
-          background: #C8A96E;
-          flex-shrink: 0;
-          margin-top: 5px;
-        }
       `}</style>
 
-      <div className="signup-page">
-
-        {/* ── Left Brand Panel ── */}
-        <div className="signup-brand">
-          <div>
-            <Link href="/" style={{ textDecoration: 'none' }}>
-              <span style={{
-                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                fontSize: '1.375rem',
-                fontWeight: 800,
-                color: '#FAFAF8',
-                letterSpacing: '-0.03em',
-              }}>Ascentor</span>
-            </Link>
-
-            <div style={{ marginTop: '3rem' }}>
-              <p style={{
-                fontSize: '0.7rem',
-                fontWeight: 600,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: '#C8A96E',
-                marginBottom: '1rem',
-              }}>The Elevation Summit Movement</p>
-
-              <h2 style={{
-                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-                fontWeight: 800,
-                color: '#FAFAF8',
-                lineHeight: 1.15,
-                letterSpacing: '-0.02em',
-                marginBottom: '1rem',
-              }}>
-                You were not built<br />
-                <span style={{ color: '#C8A96E' }}>to drift.</span>
-              </h2>
-
-              <p style={{ fontSize: '0.9375rem', color: '#6B7280', lineHeight: 1.75 }}>
-                Ascentor is the daily platform of The Elevation Summit — a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.
-              </p>
-            </div>
-
-            {/* Ascent stages */}
-            <div style={{ marginTop: '2.5rem' }}>
-              <p style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#4B5563', marginBottom: '1rem' }}>
-                Every stage of ascent
-              </p>
-              {[
-                { stage: 'The Seeker', sub: 'Finding purpose and direction' },
-                { stage: 'The Builder', sub: 'Doing the daily work of becoming' },
-                { stage: 'The Leader', sub: 'Responsible for others\' ascent' },
-              ].map((item) => (
-                <div key={item.stage} className="stage-card">
-                  <div className="stage-dot" />
-                  <div>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#D1D5DB', display: 'block' }}>{item.stage}</span>
-                    <span style={{ fontSize: '0.75rem', color: '#6B7280' }}>{item.sub}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Bottom quote */}
-          <div style={{ borderLeft: '3px solid #C8A96E', paddingLeft: '1rem', marginTop: '2rem' }}>
-            <p style={{
-              fontFamily: 'var(--font-accent, "Playfair Display", serif)',
-              fontStyle: 'italic',
-              fontSize: '0.9375rem',
-              color: '#9CA3AF',
-              lineHeight: 1.65,
-              marginBottom: '0.5rem',
-            }}>
-              "Every life that matters was built on purpose. Not accident. Not circumstance. Purpose."
-            </p>
-            <span style={{ fontSize: '0.7rem', color: '#4B5563', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
-              The Founding Conviction
-            </span>
-          </div>
+      <div className="auth-split">
+        {/* Left: Image */}
+        <div className="auth-image">
+          <img src="/images/signup-hero.jpg" alt="" />
         </div>
 
-        {/* ── Right Form Panel ── */}
-        <div className="signup-form-panel">
-          <div className="signup-form-inner">
-
-            {/* Mobile logo + sign in link */}
+        {/* Right: Form */}
+        <div className="auth-form-panel">
+          <div className="auth-form-inner">
+            {/* Mobile logo */}
             <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Link href="/" style={{ textDecoration: 'none' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: 24, width: 'auto' }} />
               </Link>
               <Link href="/login" style={{ fontSize: '0.875rem', color: '#6B7280', textDecoration: 'none' }}>
@@ -272,7 +215,7 @@ function SignUpForm() {
             </div>
 
             <h1 style={{
-              fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+              fontFamily: 'Metropolis',
               fontWeight: 800,
               fontSize: 'clamp(1.75rem, 4vw, 2.25rem)',
               color: '#0F0F0E',
@@ -291,30 +234,41 @@ function SignUpForm() {
 
             {/* OAuth */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-              <OAuthButton provider="google"        onError={setError} />
+              <OAuthButton provider="google" onError={setError} />
               <OAuthButton provider="linkedin_oidc" onError={setError} />
             </div>
 
             {/* Divider */}
-            <div className="signup-divider">
-              <div className="signup-divider-line" />
+            <div className="auth-divider">
+              <div className="auth-divider-line" />
               <span style={{ fontSize: '0.75rem', color: '#9CA3AF', whiteSpace: 'nowrap', fontWeight: 500 }}>
                 or continue with email
               </span>
-              <div className="signup-divider-line" />
+              <div className="auth-divider-line" />
             </div>
 
             {/* Form */}
-            <form onSubmit={handleEmailSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <input
-                type="email" required
-                value={email} onChange={e => setEmail(e.target.value)}
-                placeholder="Email address"
-                className="signup-input"
-              />
-              <PasswordInput value={password} onChange={setPassword} placeholder="Create a password (min 8 chars)" />
+            <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div>
+                <input
+                  type="email"
+                  {...register('email')}
+                  placeholder="Email address"
+                  className={`auth-input ${errors.email ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.email && <p className="field-error">{errors.email.message}</p>}
+              </div>
+              <div>
+                <PasswordInput
+                  {...register('password')}
+                  placeholder="Create a password (min 8 chars)"
+                  className={errors.password ? 'error' : ''}
+                />
+                {errors.password && <p className="field-error">{errors.password.message}</p>}
+              </div>
 
-              {/* Referral code — shown only if present */}
+              {/* Referral code - shown only if present */}
               {referralCode && (
                 <div style={{
                   padding: '0.625rem 1rem',
@@ -329,9 +283,9 @@ function SignUpForm() {
                 </div>
               )}
 
-              {error && <div className="signup-error">{error}</div>}
+              {error && <div className="auth-error">{error}</div>}
 
-              <button type="submit" disabled={loading} className="signup-btn" style={{ marginTop: '0.25rem' }}>
+              <button type="submit" disabled={loading} className="auth-btn" style={{ marginTop: '0.25rem' }}>
                 {loading ? 'Creating account...' : 'Join Ascentor →'}
               </button>
             </form>
@@ -361,7 +315,6 @@ function SignUpForm() {
 
           </div>
         </div>
-
       </div>
     </>
   );

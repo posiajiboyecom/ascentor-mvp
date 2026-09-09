@@ -1,21 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PasswordInput from '@/components/PasswordInput';
 import { OAuthButton } from '@/lib/sso';
 
-export default function LoginPage() {
-  const router       = useRouter();
-  const searchParams = useSearchParams();
-  const supabase     = createClient();
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
+  password: z
+    .string()
+    .min(1, 'Password is required'),
+});
 
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [error,    setError]    = useState<string | null>(null);
-  const [loading,  setLoading]  = useState(false);
+type LoginFormData = z.infer<typeof loginSchema>;
+
+export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = createClient();
+
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
@@ -25,7 +38,7 @@ export default function LoginPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    const plan    = searchParams.get('plan');
+    const plan = searchParams.get('plan');
     const billing = searchParams.get('billing');
     if (plan && typeof window !== 'undefined') {
       const existing = localStorage.getItem('ascentor_plan_intent');
@@ -34,6 +47,14 @@ export default function LoginPage() {
       }
     }
   }, [searchParams]);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  });
 
   async function routeAfterAuth(userId: string) {
     try {
@@ -75,18 +96,26 @@ export default function LoginPage() {
     }
   }
 
-  async function handleEmailLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true); setError(null);
+  async function onSubmit(data: LoginFormData) {
+    setLoading(true);
+    setError(null);
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { setError(error.message); setLoading(false); return; }
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
 
     try {
-      const res   = await fetch('/api/auth/security-check', {
-        method:  'POST',
+      const res = await fetch('/api/auth/security-check', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ userId: data.session?.user.id }),
+        body: JSON.stringify({ userId: authData.session?.user.id }),
       });
       const check = await res.json();
       if (!check.allowed) {
@@ -94,67 +123,73 @@ export default function LoginPage() {
         setError(check.message);
         setLoading(false); return;
       }
-    } catch {}
+    } catch { }
 
-    await routeAfterAuth(data.session!.user.id);
+    await routeAfterAuth(authData.session!.user.id);
     setLoading(false);
   }
 
   return (
     <>
       <style>{`
-        body { background: #FAFAF8 !important; color: #0F0F0E !important; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #FAFAF8 !important; color: #0F0F0E !important; }
 
-        .login-page {
+        .auth-split {
           min-height: 100dvh;
-          display: flex;
+          display: grid;
+          grid-template-columns: 1fr;
           background: #FAFAF8;
-          overflow-y: auto;
+        }
+        @media (min-width: 1024px) {
+          .auth-split { grid-template-columns: 1fr 1fr; }
         }
 
-        /* ── Left brand panel ── */
-        .login-brand {
+        .auth-image {
           display: none;
-          width: 440px;
-          flex-shrink: 0;
-          background: #0F0F0E;
-          padding: 60px 48px;
-          flex-direction: column;
-          justify-content: space-between;
+          width: 100%;
+          height: 100%;
+          position: relative;
+          overflow: hidden;
         }
-        @media (min-width: 1024px) { .login-brand { display: flex; } }
+        .auth-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          position: absolute;
+          inset: 0;
+        }
+        @media (min-width: 1024px) { .auth-image { display: block; } }
 
-        /* ── Right form panel ── */
-        .login-form-panel {
-          flex: 1;
+        .auth-form-panel {
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: center;
           padding: 40px 24px;
           background: #FAFAF8;
-          overflow-y: auto;
         }
-        .login-form-inner {
+        .auth-form-inner {
           width: 100%;
           max-width: 420px;
         }
 
-        .login-input {
+        .auth-input {
           width: 100%;
           padding: 0.875rem 1rem;
           background: #FFFFFF;
           border: 1.5px solid #E8E6E1;
           border-radius: 0.625rem;
           color: #0F0F0E;
-          font-family: var(--font-body, 'Inter', sans-serif);
+          font-family: Metropolis;
           font-size: 0.9375rem;
           outline: none;
           transition: border-color 0.15s;
         }
-        .login-input::placeholder { color: #9CA3AF; }
-        .login-input:focus { border-color: #C8A96E; }
+        .auth-input::placeholder { color: #9CA3AF; }
+        .auth-input:focus { border-color: #C8A96E; }
+        .auth-input.error { border-color: #DC2626; }
 
-        .login-btn {
+        .auth-btn {
           width: 100%;
           padding: 0.875rem;
           border-radius: 0.625rem;
@@ -162,20 +197,27 @@ export default function LoginPage() {
           cursor: pointer;
           background: #0F0F0E;
           color: #FAFAF8;
-          font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+          font-family: Metropolis;
           font-size: 1rem;
           font-weight: 700;
           transition: background 0.15s, opacity 0.15s;
         }
-        .login-btn:hover:not(:disabled) { background: #2A2A29; }
-        .login-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .auth-btn:hover:not(:disabled) { background: #2A2A29; }
+        .auth-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-        .login-divider {
+        .auth-divider {
           display: flex; align-items: center; gap: 16px; margin: 1.5rem 0;
         }
-        .login-divider-line { flex: 1; height: 1px; background: #E8E6E1; }
+        .auth-divider-line { flex: 1; height: 1px; background: #E8E6E1; }
 
-        .login-error {
+        .field-error {
+          color: #DC2626;
+          font-size: 0.8125rem;
+          margin-top: 0.375rem;
+          line-height: 1.4;
+        }
+
+        .auth-error {
           padding: 0.75rem 1rem;
           border-radius: 0.5rem;
           background: rgba(220,38,38,0.05);
@@ -185,100 +227,20 @@ export default function LoginPage() {
           line-height: 1.5;
           margin-bottom: 0.5rem;
         }
-
-        .dimension-pill {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 0.75rem 0;
-          border-bottom: 1px solid rgba(255,255,255,0.06);
-        }
-        .dimension-dot {
-          width: 8px; height: 8px;
-          border-radius: 50%;
-          background: #C8A96E;
-          flex-shrink: 0;
-        }
       `}</style>
 
-      <div className="login-page">
-
-        {/* ── Left Brand Panel ── */}
-        <div className="login-brand">
-          <div>
-            {/* Logo */}
-            <Link href="/" style={{ textDecoration: 'none' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: 28, width: 'auto' }} />
-            </Link>
-
-            {/* Headline */}
-            <div style={{ marginTop: '3rem' }}>
-              <p style={{
-                fontSize: '0.7rem',
-                fontWeight: 600,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: '#C8A96E',
-                marginBottom: '1rem',
-              }}>The Elevation Summit Platform</p>
-              <h2 style={{
-                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
-                fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-                fontWeight: 800,
-                color: '#FAFAF8',
-                lineHeight: 1.15,
-                letterSpacing: '-0.02em',
-                marginBottom: '1rem',
-              }}>
-                Welcome back.<br />
-                <span style={{ color: '#C8A96E' }}>The ascent continues.</span>
-              </h2>
-              <p style={{ fontSize: '0.9375rem', color: '#6B7280', lineHeight: 1.75 }}>
-                Every day you show up is a day you choose direction over drift.
-              </p>
-            </div>
-
-            {/* The Total Person dimensions */}
-            <div style={{ marginTop: '2.5rem' }}>
-              <p style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#4B5563', marginBottom: '1rem' }}>
-                Built across six dimensions
-              </p>
-              {['Mind', 'Character', 'Vocation', 'Relationships', 'Community', 'Legacy'].map((dim) => (
-                <div key={dim} className="dimension-pill">
-                  <div className="dimension-dot" />
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#D1D5DB' }}>{dim}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Bottom quote */}
-          <div style={{ borderLeft: '3px solid #C8A96E', paddingLeft: '1rem', marginTop: '2rem' }}>
-            <p style={{
-              fontFamily: 'var(--font-accent, "Playfair Display", serif)',
-              fontStyle: 'italic',
-              fontSize: '0.9375rem',
-              color: '#9CA3AF',
-              lineHeight: 1.65,
-              marginBottom: '0.5rem',
-            }}>
-              "An unbuilt person cannot build anything that lasts."
-            </p>
-            <span style={{ fontSize: '0.7rem', color: '#4B5563', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
-              The Founding Conviction
-            </span>
-          </div>
+      <div className="auth-split">
+        {/* Left: Image */}
+        <div className="auth-image">
+          <img src="/images/login-hero.jpg" alt="" />
         </div>
 
-        {/* ── Right Form Panel ── */}
-        <div className="login-form-panel">
-          <div className="login-form-inner">
-
+        {/* Right: Form */}
+        <div className="auth-form-panel">
+          <div className="auth-form-inner">
             {/* Mobile logo */}
             <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Link href="/" style={{ textDecoration: 'none' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: 24, width: 'auto' }} />
               </Link>
               <Link href="/signup" style={{ fontSize: '0.875rem', color: '#6B7280', textDecoration: 'none' }}>
@@ -287,7 +249,7 @@ export default function LoginPage() {
             </div>
 
             <h1 style={{
-              fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+              fontFamily: 'Metropolis',
               fontWeight: 800,
               fontSize: 'clamp(1.75rem, 4vw, 2.25rem)',
               color: '#0F0F0E',
@@ -332,30 +294,41 @@ export default function LoginPage() {
 
             {/* OAuth */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-              <OAuthButton provider="google"        onError={setError} />
+              <OAuthButton provider="google" onError={setError} />
               <OAuthButton provider="linkedin_oidc" onError={setError} />
             </div>
 
             {/* Divider */}
-            <div className="login-divider">
-              <div className="login-divider-line" />
+            <div className="auth-divider">
+              <div className="auth-divider-line" />
               <span style={{ fontSize: '0.75rem', color: '#9CA3AF', whiteSpace: 'nowrap', fontWeight: 500 }}>
                 or continue with email
               </span>
-              <div className="login-divider-line" />
+              <div className="auth-divider-line" />
             </div>
 
             {/* Form */}
-            <form onSubmit={handleEmailLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <input
-                type="email" required
-                value={email} onChange={e => setEmail(e.target.value)}
-                placeholder="Email address"
-                className="login-input"
-              />
-              <PasswordInput value={password} onChange={setPassword} placeholder="Password" />
-              {error && <div className="login-error">{error}</div>}
-              <button type="submit" disabled={loading} className="login-btn" style={{ marginTop: '0.25rem' }}>
+            <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div>
+                <input
+                  type="email"
+                  {...register('email')}
+                  placeholder="Email address"
+                  className={`auth-input ${errors.email ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.email && <p className="field-error">{errors.email.message}</p>}
+              </div>
+              <div>
+                <PasswordInput
+                  {...register('password')}
+                  placeholder="Password"
+                  className={errors.password ? 'error' : ''}
+                />
+                {errors.password && <p className="field-error">{errors.password.message}</p>}
+              </div>
+              {error && <div className="auth-error">{error}</div>}
+              <button type="submit" disabled={loading} className="auth-btn" style={{ marginTop: '0.25rem' }}>
                 {loading ? 'Signing in...' : 'Sign In →'}
               </button>
             </form>
@@ -384,7 +357,6 @@ export default function LoginPage() {
 
           </div>
         </div>
-
       </div>
     </>
   );

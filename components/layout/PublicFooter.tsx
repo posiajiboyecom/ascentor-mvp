@@ -62,7 +62,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/ascentor-color-on-dark.svg"
+                src="/ascentor-color-on-light.svg"
                 alt="Ascentor"
                 height={26}
                 width={98}
