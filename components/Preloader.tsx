@@ -89,7 +89,7 @@ export default function Preloader({ minimumVisibleMs = 1200 }: PreloaderProps) {
 
       <div className="preloader">
         <img
-          src="/ascentor-color-on-light.svg"
+          src="/ascentor-color-for-light-pages.svg"
           alt="Ascentor"
           className="preloader-logo"
         />

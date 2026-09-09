@@ -1,5 +1,48 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Metropolis';
+  src: url('/fonts/metropolis/Metropolis-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Metropolis';
+  src: url('/fonts/metropolis/Metropolis-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Metropolis';
+  src: url('/fonts/metropolis/Metropolis-SemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Metropolis';
+  src: url('/fonts/metropolis/Metropolis-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Metropolis';
+  src: url('/fonts/metropolis/Metropolis-ExtraBold.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Metropolis';
+  src: url('/fonts/metropolis/Metropolis-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --color-summit-white:     #FAFAF8;
   --color-summit-black:     #0F0F0E;
@@ -14,9 +57,9 @@
   --color-warning:          #D97706;
   --color-error:            #DC2626;
 
-  --font-display:           'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-body:              'Inter', system-ui, sans-serif;
-  --font-accent:            'Playfair Display', Georgia, serif;
+  --font-display:           Metropolis;
+  --font-body:              Metropolis;
+  --font-accent:            Metropolis;
 
   --space-xs:   0.25rem;
   --space-sm:   0.5rem;
@@ -65,6 +108,10 @@
   --color-error:        #DC2626;
   --color-blue:         #1B4FFF;
   --color-gold:         #C8A96E;
+
+  --font-sans: Metropolis;
+  --font-serif: Metropolis;
+  --font-mono: 'DM Mono', monospace;
 }
 
 
@@ -499,7 +546,7 @@ a:focus-visible,
 
 /* ── Small-caps eyebrow label ──────────────────────────────────────── */
 .asc-eyebrow {
-  font-family: var(--font-display, 'Plus Jakarta Sans', system-ui, sans-serif);
+  font-family: Metropolis;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -508,10 +555,10 @@ a:focus-visible,
 }
 
 /* ── Sage reading typography ───────────────────────────────────────
-   Applied to assistant answers so they read like a page written for
-   you, not a chat bubble.                                          */
+    Applied to assistant answers so they read like a page written for
+    you, not a chat bubble.                                          */
 .sage-prose {
-  font-family: var(--font-body, Inter, system-ui, sans-serif);
+  font-family: Metropolis;
   font-size: 16px;
   line-height: 1.7;
   letter-spacing: 0.001em;

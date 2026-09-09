@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { ModalProvider } from '@/components/Modal';
@@ -8,31 +7,13 @@ import PushPermission from '@/components/PushPermission';
 import { MobileInit } from '@/components/MobileInit';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import StructuredData from '@/components/StructuredData';
+import PublicLayout from '@/components/layout/PublicLayout';
 import { headers } from 'next/headers';
 import Script from 'next/script';
 
 // ── Fonts ──────────────────────────────────────────────────────────
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-display',
-  display: 'swap',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-body',
-  display: 'swap',
-});
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['700'],
-  style: ['normal', 'italic'],
-  variable: '--font-accent',
-  display: 'swap',
-});
+// Metropolis is loaded locally from public/fonts/metropolis/
+// See globals.css for @font-face declarations
 
 // ── Metadata ───────────────────────────────────────────────────────
 export const metadata: Metadata = {
@@ -103,11 +84,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     // suppressHydrationWarning is required here because the inline theme
     // script sets data-app-theme before React hydrates, causing a mismatch.
     // This is intentional and safe — it only suppresses the warning on <html>.
-    <html
-      lang="en"
-      className={`${plusJakarta.variable} ${inter.variable} ${playfair.variable}`}
-      suppressHydrationWarning
-    >
+      <html
+        lang="en"
+        suppressHydrationWarning
+      >
       <head>
         <StructuredData />
         <link rel="apple-touch-icon" sizes="180x180" href="/icon/apple-touch-icon.png" />
@@ -148,7 +128,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ModalProvider>
           <NotificationProvider>
             <MobileInit />
-            {children}
+            <PublicLayout>
+              {children}
+            </PublicLayout>
             <PWAInstallPrompt />
             <PushPermission />
           </NotificationProvider>

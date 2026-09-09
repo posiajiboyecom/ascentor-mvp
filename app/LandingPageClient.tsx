@@ -81,7 +81,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   // back to hardcoded copy rather than rendering blank or crashing.
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
   const heroEyebrow  = hero?.eyebrow   || 'The Elevation Summit Platform';
-  const heroHeadline = hero?.headline  || 'You were not built<br />to drift.';
+  const heroHeadline = 'Ascentor exists because drift is the default';
   const heroSubhead  = hero?.subhead   || 'Ascentor is the daily platform of The Elevation Summit — a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.';
   const heroCtaLabel    = hero?.cta_label    || 'Join the Movement →';
   const heroCtaHref     = hero?.cta_href     || '/signup';
@@ -244,7 +244,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
 
         .hero-headline {
           font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
-          font-size: clamp(2.75rem, 7vw, 5.5rem);
+          font-size: clamp(2.25rem, 5.5vw, 4.25rem);
           font-weight: 800;
           line-height: 1.05;
           letter-spacing: -0.03em;
