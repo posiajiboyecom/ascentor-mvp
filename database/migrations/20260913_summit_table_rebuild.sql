@@ -16,7 +16,7 @@ CREATE TABLE summit_registrations (
   payment_reference TEXT UNIQUE,
   amount_paid NUMERIC,
   currency TEXT DEFAULT 'NGN',
-  flutterwave_tx_id TEXT,
+  payment_provider_tx_id TEXT,
   paid_at TIMESTAMPTZ,
   confirmed_at TIMESTAMPTZ,
 

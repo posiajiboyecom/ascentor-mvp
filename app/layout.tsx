@@ -97,6 +97,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             suppressHydrationWarning on <html> above handles the mismatch. */}
         <script
           nonce={nonce}
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
               (function() {

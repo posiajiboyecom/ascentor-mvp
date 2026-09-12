@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, createContext, useContext, useCallback } from 'react';
+import { Check, AlertTriangle, XCircle } from 'lucide-react';
 
 // ============================================================
 // FEATURE #8: In-App Modal System
@@ -18,11 +19,41 @@ interface ModalConfig {
   title?: string;
   message: string;
   type: 'alert' | 'confirm' | 'prompt';
+  variant?: 'success' | 'warning' | 'error';
   placeholder?: string;
   defaultValue?: string;
   inputType?: string;
   buttons: ModalButton[];
   onClose: () => void;
+}
+
+const VARIANT_COLORS = {
+  success: '#22C55E',
+  warning: '#E8A020',
+  error: '#EF4444',
+};
+
+function VariantIcon({ variant }: { variant?: 'success' | 'warning' | 'error' }) {
+  if (!variant) return null;
+  const color = VARIANT_COLORS[variant];
+  const Icon = variant === 'success' ? Check : variant === 'warning' ? AlertTriangle : XCircle;
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+      <div
+        style={{
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: `${color}20`,
+        }}
+      >
+        <Icon size={28} color={color} />
+      </div>
+    </div>
+  );
 }
 
 // --- Modal Overlay Component ---
@@ -89,6 +120,7 @@ function ModalOverlay({ config }: { config: ModalConfig }) {
         style={{
           background: 'var(--bg-card, #12151F)',
           border: '1px solid var(--border, #2A2D3A)',
+          borderTop: config.variant ? `4px solid ${VARIANT_COLORS[config.variant]}` : undefined,
           borderRadius: '12px',
           padding: '24px',
           maxWidth: '440px',
@@ -97,6 +129,8 @@ function ModalOverlay({ config }: { config: ModalConfig }) {
           animation: 'modalSlideIn 0.2s ease-out',
         }}
       >
+        <VariantIcon variant={config.variant} />
+
         {config.title && (
           <h3 style={{
             margin: '0 0 8px 0',
@@ -187,7 +221,7 @@ function ModalOverlay({ config }: { config: ModalConfig }) {
 // --- Modal Context & Provider ---
 interface ModalContextType {
   alert: (message: string, title?: string) => Promise<void>;
-  confirm: (message: string, title?: string) => Promise<boolean>;
+  confirm: (message: string, title?: string, variant?: 'success' | 'warning' | 'error') => Promise<boolean>;
   prompt: (message: string, options?: { title?: string; placeholder?: string; defaultValue?: string; inputType?: string }) => Promise<string | null>;
 }
 
@@ -212,12 +246,13 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
     });
   }, [closeModal]);
 
-  const confirm = useCallback((message: string, title?: string): Promise<boolean> => {
+  const confirm = useCallback((message: string, title?: string, variant?: 'success' | 'warning' | 'error'): Promise<boolean> => {
     return new Promise((resolve) => {
       setModal({
         type: 'confirm',
         title: title || 'Confirm',
         message,
+        variant,
         buttons: [
           { label: 'Cancel', variant: 'secondary', onClick: () => { closeModal(); resolve(false); } },
           { label: 'OK', variant: 'primary', onClick: () => { closeModal(); resolve(true); } },

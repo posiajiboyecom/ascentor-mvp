@@ -43,11 +43,11 @@ function buildNoncedCSP(nonce: string): string {
     // nonce replaces 'unsafe-inline' — only scripts with this nonce attribute run
     `script-src 'self' 'nonce-${nonce}' https://js.paystack.co https://plausible.io https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com`,
     // style-src keeps unsafe-inline (Next.js CSS-in-JS requirement — low risk)
-    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://paystack.com`,
     `font-src 'self' data: https://fonts.gstatic.com`,
     `img-src 'self' data: blob: https://*.supabase.co https://www.gravatar.com https://i.ytimg.com https:`,
-    `frame-src https://js.paystack.co https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com`,
-    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.paystack.co https://plausible.io https://api.bufferapp.com https://www.youtube.com`,
+    `frame-src https://js.paystack.co https://checkout.paystack.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com`,
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.paystack.co https://checkout.paystack.com https://plausible.io https://api.bufferapp.com https://www.youtube.com`,
     `worker-src 'self' blob:`,
     `default-src 'self'`,
     `object-src 'none'`,

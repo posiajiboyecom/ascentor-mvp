@@ -33,7 +33,7 @@ const SECTIONS: Section[] = [
     content: [
       {
         type: "para",
-        text: `Ascentor ("we", "our", or "us") is committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, store, and share your information when you use our platform — including our website, mobile Progressive Web App (PWA), and all related services.`,
+        text: `Ascentor ("we", "our", or "us") is committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, store, and share your information when you use our platform - including our website, mobile Progressive Web App (PWA), and all related services.`,
       },
       {
         type: "para",
@@ -41,7 +41,7 @@ const SECTIONS: Section[] = [
       },
       {
         type: "highlight",
-        text: "We do not sell your personal data. We do not show you third-party advertisements. Ascentor's business model is subscription-based — your data is never our product.",
+        text: "We do not sell your personal data. We do not show you third-party advertisements. Ascentor's business model is subscription-based - your data is never our product.",
       },
     ],
   },
@@ -54,35 +54,35 @@ const SECTIONS: Section[] = [
       {
         type: "list",
         items: [
-          "Account registration data — name, email address, password (hashed, never stored in plain text)",
-          "Profile information — current role, goal role, industry, career summary, biggest challenge",
-          "Onboarding responses — experience level, life stage (Explorer / Builder / Climber), mentorship goals",
-          "Mentor application data — if you apply to become a mentor: LinkedIn URL, professional background, availability",
-          "Community content — posts, replies, and upvotes you create in Accountability Circles",
-          "Payment information — billing cycle and plan selected; card details are processed by Paystack and never stored on Ascentor servers",
-          "Referral codes — if you share or use a referral link",
-          "Support communications — messages you send to our team",
+          "Account registration data - name, email address, password (hashed, never stored in plain text)",
+          "Profile information - current role, goal role, industry, career summary, biggest challenge",
+          "Onboarding responses - experience level, life stage (Explorer / Builder / Climber), mentorship goals",
+          "Mentor application data - if you apply to become a mentor: LinkedIn URL, professional background, availability",
+          "Community content - posts, replies, and upvotes you create in Accountability Circles",
+          "Payment information - billing cycle and plan selected; card details are processed by Paystack and never stored on Ascentor servers",
+          "Referral codes - if you share or use a referral link",
+          "Support communications - messages you send to our team",
         ],
       },
       { type: "subheading", text: "Information Collected Automatically" },
       {
         type: "list",
         items: [
-          "Usage data — pages visited, features used, session duration, button clicks",
-          "Device information — browser type, operating system, screen size, PWA install status",
-          "Sage AI session data — your conversation inputs with our AI mentor and the responses generated",
-          "Learning progress — video completion percentage, last playback position, completed courses",
-          "Goal and commitment activity — 90-day goals created, milestones updated, commitments checked",
-          "Expert session registrations — which sessions you register for and attend",
-          "Push notification subscription data — device endpoint for delivering notifications (no personally identifiable data in the subscription itself)",
+          "Usage data - pages visited, features used, session duration, button clicks",
+          "Device information - browser type, operating system, screen size, PWA install status",
+          "Sage AI session data - your conversation inputs with our AI mentor and the responses generated",
+          "Learning progress - video completion percentage, last playback position, completed courses",
+          "Goal and commitment activity - 90-day goals created, milestones updated, commitments checked",
+          "Expert session registrations - which sessions you register for and attend",
+          "Push notification subscription data - device endpoint for delivering notifications (no personally identifiable data in the subscription itself)",
         ],
       },
       { type: "subheading", text: "Information from Third Parties" },
       {
         type: "list",
         items: [
-          "Google OAuth — if you sign in with Google, we receive your name and email address from Google. We do not receive your Google password or access to your Google account beyond authentication.",
-          "Paystack — payment status and transaction reference for verifying subscription payments. We receive confirmation of payment, not your card details.",
+          "Google OAuth - if you sign in with Google, we receive your name and email address from Google. We do not receive your Google password or access to your Google account beyond authentication.",
+          "Paystack - payment status and transaction reference for verifying subscription payments. We receive confirmation of payment, not your card details.",
         ],
       },
     ],
@@ -143,7 +143,7 @@ const SECTIONS: Section[] = [
           { purpose: "Sage AI conversations", detail: "Retained for the life of your account unless you delete individual sessions." },
           { purpose: "Community posts", detail: "Retained while account is active; anonymised upon account deletion." },
           { purpose: "Payment & billing", detail: "7 years (tax & financial regulation)." },
-          { purpose: "Analytics (anonymised)", detail: "Indefinitely — aggregated, no personal identifiers." },
+          { purpose: "Analytics (anonymised)", detail: "Indefinitely - aggregated, no personal identifiers." },
           { purpose: "Security logs", detail: "12 months." },
         ],
       },
@@ -161,13 +161,13 @@ const SECTIONS: Section[] = [
       {
         type: "list",
         items: [
-          "Access — request a copy of all personal data we hold about you.",
-          "Rectification — correct inaccurate or incomplete data.",
-          "Erasure — delete your account and all associated data (except what we must retain legally).",
-          "Restriction — limit processing of your data in certain circumstances.",
-          "Portability — receive your data in a structured, machine-readable format.",
-          "Objection — object to processing based on legitimate interests or direct marketing.",
-          "Withdraw consent — at any time, for any consent-based processing (e.g., marketing emails).",
+          "Access - request a copy of all personal data we hold about you.",
+          "Rectification - correct inaccurate or incomplete data.",
+          "Erasure - delete your account and all associated data (except what we must retain legally).",
+          "Restriction - limit processing of your data in certain circumstances.",
+          "Portability - receive your data in a structured, machine-readable format.",
+          "Objection - object to processing based on legitimate interests or direct marketing.",
+          "Withdraw consent - at any time, for any consent-based processing (e.g., marketing emails).",
         ],
       },
       {
@@ -185,9 +185,9 @@ const SECTIONS: Section[] = [
         type: "list",
         items: [
           "Encryption in transit (TLS 1.2+) and at rest (AES-256) on Supabase/AWS infrastructure.",
-          "Row-Level Security (RLS) on every database table — users can only ever access their own rows.",
+          "Row-Level Security (RLS) on every database table - users can only ever access their own rows.",
           "Supabase Auth handles authentication with OAuth 2.0 (Google, LinkedIn) and encrypted session cookies.",
-          "Service-role keys are server-side only — never exposed to the client.",
+          "Service-role keys are server-side only - never exposed to the client.",
           "Regular security audits, dependency scanning, and access logging.",
           "Incident response plan with 72-hour breach notification to affected users and regulators.",
         ],
@@ -290,15 +290,15 @@ export default function PrivacyPage() {
   function renderBlock(block: Block, i: number) {
     switch (block.type) {
       case "para":
-        return <p key={i} className="privacy-para">{block.text}</p>;
+        return <p key={i} className="privacy-para" dangerouslySetInnerHTML={{ __html: block.text }} />;
       case "highlight":
-        return <p key={i} className="privacy-highlight">{block.text}</p>;
+        return <p key={i} className="privacy-highlight" dangerouslySetInnerHTML={{ __html: block.text }} />;
       case "subheading":
         return <h3 key={i} className="privacy-subheading">{block.text}</h3>;
       case "list":
         return (
           <ul key={i} className="privacy-list">
-            {block.items.map((item, j) => <li key={j}>{item}</li>)}
+            {block.items.map((item, j) => <li key={j} dangerouslySetInnerHTML={{ __html: item }} />)}
           </ul>
         );
       case "table":
@@ -313,8 +313,8 @@ export default function PrivacyPage() {
             <tbody>
               {block.rows.map((row, j) => (
                 <tr key={j}>
-                  <td>{row.purpose}</td>
-                  <td>{row.detail}</td>
+                  <td dangerouslySetInnerHTML={{ __html: row.purpose }} />
+                  <td dangerouslySetInnerHTML={{ __html: row.detail }} />
                 </tr>
               ))}
             </tbody>
@@ -326,7 +326,15 @@ export default function PrivacyPage() {
             {block.items.map((item, j) => (
               <div key={j} className="contact-card">
                 <p className="contact-label">{item.label}</p>
-                <p className="contact-value">{item.value}</p>
+                <p className="contact-value">
+                  {item.value.includes("@") ? (
+                    <a href={`mailto:${item.value}`}>{item.value}</a>
+                  ) : item.value.startsWith("http") ? (
+                    <a href={item.value} target="_blank" rel="noopener noreferrer">{item.value}</a>
+                  ) : (
+                    item.value
+                  )}
+                </p>
               </div>
             ))}
           </div>
@@ -338,6 +346,7 @@ export default function PrivacyPage() {
 
   return (
     <>
+      <div className="privacy-page">
       <PublicHeader />
       <ProgressBar />
 
@@ -355,7 +364,7 @@ export default function PrivacyPage() {
         </div>
         <div className="hero-divider" />
         <p className="hero-summary">
-          We built Ascentor to serve purposeful individuals — not to monetise their data.
+          We built Ascentor to serve purposeful individuals - not to monetise their data.
           This policy explains exactly what we collect, why we collect it, and how you stay in control.
         </p>
       </header>
@@ -391,7 +400,7 @@ export default function PrivacyPage() {
         </main>
       </div>
 
-      {/* Mobile TOC overlay — closes drawer when tapped outside */}
+      {/* Mobile TOC overlay - closes drawer when tapped outside */}
       {menuOpen && (
         <div className="mobile-toc-overlay" onClick={() => setMenuOpen(false)} />
       )}
@@ -419,6 +428,7 @@ export default function PrivacyPage() {
       </div>
 
       <PublicFooter />
+      </div>
     </>
   );
 }

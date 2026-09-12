@@ -439,7 +439,7 @@ export interface SummitRegistration {
   payment_reference: string | null;
   amount_paid:      number | null;
   currency:         string;
-  flutterwave_tx_id: string | null;
+  payment_provider_tx_id: string | null;
   paid_at:          string | null;
   confirmed_at:     string | null;
   ticket_type:      string | null;

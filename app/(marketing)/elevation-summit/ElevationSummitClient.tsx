@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { summitFormSchema, SummitFormValues } from './summitFormSchema';
@@ -9,7 +9,7 @@ import '@/styles/marketing.css';
 import 'react-phone-number-input/style.css';
 import PhoneInput from 'react-phone-number-input';
 import { useModal } from '@/components/Modal';
-import { useNotifications } from '@/components/Notifications';
+import { useRouter } from 'next/navigation';
 import { Compass, Hammer, Crown, Sparkles, Network, Monitor } from 'lucide-react';
 
 const h = (s: string) => s.replace(/<(?!br\s*\/?>)[^>]*>/gi, '');
@@ -63,15 +63,53 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
   const whatItIs = cms?.sections.what_it_is?.data as Record<string, string> | undefined;
   const whatEyebrow  = whatItIs?.eyebrow  || 'What It Is';
   const whatHeadline = whatItIs?.headline || 'Not a conference.<br /><span style="color:#C8A96E">A defining moment.</span>';
-  const whatBody     = whatItIs?.body     || 'The Elevation Summit is a deliberate interruption of the ordinary rhythms of life — to ask the questions that drift never allows: Who am I becoming? What am I building? What will remain when I am gone?';
+  const whatBody     = whatItIs?.body     || 'The Elevation Summit is a deliberate interruption of the ordinary rhythms of life - to ask the questions that drift never allows: Who am I becoming? What am I building? What will remain when I am gone?';
 
   const regSection = cms?.sections.register?.data as Record<string, string> | undefined;
   const regEyebrow  = regSection?.eyebrow  || 'Event Registration';
   const regHeadline = regSection?.headline || 'Secure your place.';
-  const regSubhead  = regSection?.subhead  || 'Registration is open for the inaugural Elevation Summit, 19 November, 2026, Lagos — attend physically or join virtually. Complete the form below — every detail helps us prepare the right experience for you.';
+  const regSubhead  = regSection?.subhead  || 'Registration is open for the inaugural Elevation Summit, 19 November, 2026, Lagos - attend physically or join virtually. Complete the form below - every detail helps us prepare the right experience for you.';
 
-  const { alert } = useModal();
-  const { showToast } = useNotifications();
+  const { alert, confirm } = useModal();
+  const router = useRouter();
+
+  const GALLERY_IMAGES = [
+    '/images/IMG-20250125-WA0113.jpg',
+    '/images/IMG_5584.jpg',
+    '/images/IMG_5592.jpg',
+    '/images/IMG_5592_(1).jpg',
+    '/images/IMG_5593.jpg',
+    '/images/IMG_5602.jpg',
+    '/images/IMG_5603.jpg',
+    '/images/IMG_5610.jpg',
+    '/images/IMG_5612.jpg',
+    '/images/IMG_5613.jpg',
+    '/images/IMG_5615.jpg',
+    '/images/IMG_5621.jpg',
+    '/images/IMG_5628.jpg',
+    '/images/IMG_5639.jpg',
+    '/images/IMG_5645.jpg',
+    '/images/IMG_5654.jpg',
+    '/images/IMG_5665.jpg',
+    '/images/IMG_5666.jpg',
+    '/images/PXL_20250125_093829687.LONG_EXPOSURE-01.COVER.jpg',
+    '/images/PXL_20250125_093950863.jpg',
+    '/images/PXL_20250125_105854172.PORTRAIT.jpg',
+    '/images/PXL_20250125_110049979.jpg',
+    '/images/PXL_20250125_114854095.MP.jpg',
+    '/images/PXL_20250125_114916546.MP.jpg',
+    '/images/PXL_20250125_115406391.jpg',
+    '/images/PXL_20250125_115412210.jpg',
+    '/images/PXL_20250125_115416461.jpg',
+  ];
+
+  const [shuffledTop, setShuffledTop] = useState(GALLERY_IMAGES);
+  const [shuffledBottom, setShuffledBottom] = useState(GALLERY_IMAGES);
+
+  useEffect(() => {
+    setShuffledTop([...GALLERY_IMAGES].sort(() => Math.random() - 0.5));
+    setShuffledBottom([...GALLERY_IMAGES].sort(() => Math.random() - 0.5));
+  }, []);
 
   const {
     register,
@@ -111,65 +149,77 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       }
 
       const { registrationId } = await res.json() as { registrationId: string };
-      await startPayment(registrationId);
+
+      const payRes = await fetch('/api/summit/pay/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registrationId }),
+      });
+      const config = await payRes.json();
+
+      if (!payRes.ok) {
+        await alert(config.error || 'Could not prepare your payment.', 'Payment setup failed');
+        return;
+      }
+
+      const naira = (config.amount / 100).toLocaleString('en-NG');
+      const userConfirmed = await confirm(
+        `Payment for your ticket confirms your registration. The Elevation Summit costs ₦${naira}. Click OK to proceed to payment.`,
+        'Confirm your registration',
+        'success'
+      );
+
+      if (!userConfirmed) return;
+
+      startPayment(registrationId, config);
     } catch (err) {
       await alert('Something went wrong. Please try again in a moment.', 'Registration failed');
     }
   };
 
-  const startPayment = async (registrationId: string) => {
+  const startPayment = async (registrationId: string, config: any) => {
     try {
-      const res = await fetch('/api/summit/pay/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ registrationId }),
-      });
-      const config = await res.json();
-
-      if (typeof (window as any).FlutterwaveCheckout !== 'function') {
+      if (typeof (window as any).PaystackPop === 'undefined') {
         await alert('The payment script is still loading. Please refresh the page and try again.', 'Payment unavailable');
         return;
       }
 
-      if (!res.ok) {
-        await alert(config.error || 'Could not prepare your payment.', 'Payment setup failed');
-        return;
-      }
-
-      (window as any).FlutterwaveCheckout({
-        public_key: config.public_key,
-        tx_ref: config.tx_ref,
+      const handler = (window as any).PaystackPop.setup({
+        key: config.public_key,
+        email: config.email,
         amount: config.amount,
         currency: config.currency,
-        payment_options: 'card, banktransfer, ussd',
-        customer: config.customer,
-        customizations: {
-          title: 'Elevation Summit Registration',
-          description: 'Ticket payment',
+        ref: config.reference,
+        metadata: {
+          registration_id: registrationId,
+          full_name: config.full_name,
         },
-        callback: (payment: { transaction_id: string; tx_ref: string; status: string }) => {
-          verifyAndFinish(payment.transaction_id, registrationId);
+        callback: (response: { reference: string }) => {
+          verifyAndFinish(response.reference, registrationId);
         },
-        onclose: () => {
-          showToast('Payment not completed', 'Payment was not completed. You can retry from your email link.', 'error');
+        onClose: () => {
+          alert('Payment was not completed. You can retry from this page whenever you are ready.', 'Payment not completed');
         },
       });
+
+      handler.openIframe();
     } catch (err) {
       await alert('Could not prepare your payment.', 'Payment setup failed');
     }
   };
 
-  const verifyAndFinish = async (transaction_id: string, registrationId: string) => {
+  const verifyAndFinish = async (reference: string, registrationId: string) => {
     try {
       const res = await fetch('/api/summit/pay/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transaction_id, registrationId }),
+        body: JSON.stringify({ reference, registrationId }),
       });
 
       if (res.ok) {
         reset();
         await alert('Check your email for payment confirmation.', 'You are confirmed');
+        router.push('/elevation-summit/confirmed');
       } else {
         const data = await res.json().catch(() => ({} as any));
         await alert(data.error || 'Contact us if you were charged.', 'Payment could not be verified');
@@ -180,10 +230,10 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && !document.getElementById('flutterwave-script')) {
+    if (typeof window !== 'undefined' && !document.getElementById('paystack-script')) {
       const s = document.createElement('script');
-      s.id = 'flutterwave-script';
-      s.src = 'https://checkout.flutterwave.com/v3.js';
+      s.id = 'paystack-script';
+      s.src = 'https://js.paystack.co/v1/inline.js';
       s.async = true;
       document.head.appendChild(s);
     }
@@ -206,7 +256,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
               <a href="#what-it-is" className="btn-secondary" style={{ fontSize: '1rem', padding: '0.875rem 2rem', borderColor: '#0F0F0E', color: '#0F0F0E' }}>{heroCta2Label}</a>
             </div>
           </div>
-          <div>
+          <div className="hero-image">
             <img
               src="/images/elevation-summit-2.jpeg"
               alt="The Elevation Summit"
@@ -214,6 +264,14 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             />
           </div>
         </div>
+
+        <style jsx>{`
+          @media (max-width: 640px) {
+            .hero-image {
+              order: -1;
+            }
+          }
+        `}</style>
       </section>
 
       {/* Stats bar */}
@@ -245,8 +303,8 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
             {[
               { title: 'Not a Motivational Spectacle', icon: Sparkles, description: 'The Summit does not exist to excite you for 72 hours and send you home unchanged. It exists to send you home more built than you arrived.' },
-              { title: 'Not a Networking Event', icon: Network, description: 'You will meet extraordinary people. But the purpose is not connection for career advancement — it is the encounter with others who have chosen the same ascent.' },
-              { title: 'Not a Conference', icon: Monitor, description: 'There are no passive attendees. Every person in the room is a participant — challenged, accountable, and choosing, in real time, who they will be.' },
+              { title: 'Not a Networking Event', icon: Network, description: 'You will meet extraordinary people. But the purpose is not connection for career advancement - it is the encounter with others who have chosen the same ascent.' },
+              { title: 'Not a Conference', icon: Monitor, description: 'There are no passive attendees. Every person in the room is a participant - challenged, accountable, and choosing, in real time, who they will be.' },
             ].map((item) => {
               const ItemIcon = item.icon;
               return (
@@ -263,8 +321,9 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       </section>
 
       {/* Who Attends */}
-      <section style={{ padding: 'clamp(4rem, 8vw, 7rem) 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ marginBottom: '3.5rem', maxWidth: '640px' }}>
+      <section style={{ background: '#F4F3EF', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ marginBottom: '3.5rem', maxWidth: '640px' }}>
           <p className="mkt-eyebrow" style={{ marginBottom: '1rem' }}>Who Attends</p>
           <h2 className="mkt-section-headline" style={{ color: '#0F0F0E', marginBottom: '1rem' }}>Purposeful individuals at every stage of ascent.</h2>
           <p style={{ color: '#6B7280', fontSize: '1rem', lineHeight: 1.75 }}>The Summit is not defined by industry, age, geography, or title. It is defined by one decision: to live with intention and build with purpose.</p>
@@ -285,6 +344,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
               </div>
             );
           })}
+        </div>
         </div>
       </section>
 
@@ -416,6 +476,74 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         </div>
       </section>
 
+      {/* Gallery */}
+      <section style={{ background: '#F4F3EF', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', marginBottom: '2.5rem' }}>
+          <p className="mkt-eyebrow" style={{ marginBottom: '1rem' }}>From Past Editions</p>
+          <h2 className="mkt-section-headline" style={{ color: '#0F0F0E', marginBottom: '1rem' }}>Moments from the journey.</h2>
+          <p style={{ color: '#6B7280', fontSize: '1rem', lineHeight: 1.75, maxWidth: '640px' }}>
+            A few snapshots of the people, conversations, and decisions that have shaped the Elevation Summit so far.
+          </p>
+        </div>
+
+        <div className="gallery-row" style={{ marginBottom: '1.25rem' }}>
+          <div className="gallery-track-left">
+            {[...shuffledTop, ...shuffledTop].map((src, i) => (
+              <img
+                key={`left-${i}`}
+                src={src}
+                alt="Elevation Summit moment"
+                style={{ height: '180px', width: 'auto', borderRadius: '0.75rem', objectFit: 'cover', flexShrink: 0 }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="gallery-row">
+          <div className="gallery-track-right">
+            {[...shuffledBottom, ...shuffledBottom].map((src, i) => (
+              <img
+                key={`right-${i}`}
+                src={src}
+                alt="Elevation Summit moment"
+                style={{ height: '180px', width: 'auto', borderRadius: '0.75rem', objectFit: 'cover', flexShrink: 0 }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <style jsx>{`
+          .gallery-row {
+            overflow: hidden;
+            width: 100%;
+          }
+          .gallery-track-left,
+          .gallery-track-right {
+            display: flex;
+            gap: 1rem;
+            width: max-content;
+          }
+          .gallery-row:hover .gallery-track-left,
+          .gallery-row:hover .gallery-track-right {
+            animation-play-state: paused;
+          }
+          .gallery-track-left {
+            animation: scrollLeft 60s linear infinite;
+          }
+          .gallery-track-right {
+            animation: scrollRight 60s linear infinite;
+          }
+          @keyframes scrollLeft {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          @keyframes scrollRight {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+          }
+        `}</style>
+      </section>
+
       {/* Get Involved */}
       <section id="speak" style={{ background: '#0F0F0E', padding: 'clamp(4rem, 8vw, 6rem) 1.5rem' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto', textAlign: 'center' }}>
@@ -424,13 +552,13 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             Bring your voice or your organisation.
           </h2>
           <p style={{ color: '#9CA3AF', lineHeight: 1.8, fontSize: '1rem', marginBottom: '2.5rem' }}>
-            The Elevation Summit is built by people who have built something real — and by organisations that serve them. If you have a story worth telling to purposeful people, or you want to bring your organisation into the conversation, we would love to hear from you.
+            The Elevation Summit is built by people who have built something real - and by organisations that serve them. If you have a story worth telling to purposeful people, or you want to bring your organisation into the conversation, we would love to hear from you.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <a className="summit-cta-link" href="mailto:asamuel@ascentorbi.com?subject=Elevation Summit — Speaker Interest">
+            <a className="summit-cta-link" href="mailto:asamuel@ascentorbi.com?subject=Elevation Summit - Speaker Interest">
               Express speaker interest →
             </a>
-            <a className="summit-cta-link" href="mailto:asamuel@ascentorbi.com?subject=Elevation Summit — Partnership Interest">
+            <a className="summit-cta-link" href="mailto:asamuel@ascentorbi.com?subject=Elevation Summit - Partnership Interest">
               Explore partnership →
             </a>
           </div>

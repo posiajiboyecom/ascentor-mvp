@@ -1,26 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendPaymentConfirmedEmail, sendAdminPaymentNotification } from '@/lib/summitEmails';
 
-export async function POST(req: NextRequest) {
-  const signature = req.headers.get('verif-hash');
-  if (!signature || signature !== process.env.FLUTTERWAVE_SECRET_HASH) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-  }
-
-  const payload = await req.json();
-
-  if (payload.event !== 'charge.completed' || payload.data?.status !== 'successful') {
+export async function handleSummitWebhookEvent(payload: any) {
+  if (payload.event !== 'charge.success') {
     return NextResponse.json({ received: true });
   }
 
   const { data: existing } = await supabaseAdmin
     .from('summit_registrations')
     .select('*')
-    .eq('payment_reference', payload.data.tx_ref)
+    .eq('payment_reference', payload.data.reference)
     .single();
 
   if (!existing || existing.payment_status === 'paid') {
+    return NextResponse.json({ received: true });
+  }
+
+  const expectedAmountKobo = Number(process.env.SUMMIT_TICKET_PRICE_NGN) * 100;
+  if (payload.data.amount < expectedAmountKobo) {
+    console.error('[summit/webhook] Amount mismatch for reference', payload.data.reference);
     return NextResponse.json({ received: true });
   }
 
@@ -29,9 +28,9 @@ export async function POST(req: NextRequest) {
     .update({
       payment_status: 'paid',
       status: 'confirmed',
-      amount_paid: payload.data.amount,
+      amount_paid: payload.data.amount / 100,
       currency: payload.data.currency,
-      flutterwave_tx_id: String(payload.data.id),
+      payment_provider_tx_id: String(payload.data.id),
       paid_at: new Date().toISOString(),
       confirmed_at: new Date().toISOString(),
     })
