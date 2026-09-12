@@ -425,31 +425,29 @@ export interface ProductPurchase {
 }
 
 export interface SummitRegistration {
-  id:            string;
-  full_name:     string;
-  email:         string;
-  whatsapp:      string;
-  phone:         string | null;
-  country:       string;
-  city:          string | null;
-  current_role:  string | null;
-  organisation:  string | null;
-  industry:      string | null;
-  what_building: string | null;
-  why_attend:    string | null;
-  how_heard:     string | null;
-  dietary_needs: string | null;
-  accessibility: string | null;
-  consent:       boolean;
-  other_messages: string | null;
-  status:        string;
-  ticket_type:   string | null;
-  notes:         string | null;
-  confirmed_at:  string | null;
-  created_at:    string;
-  updated_at:    string;
-  user_id:       string | null;
-  source:        string;
+  id:               string;
+  full_name:        string;
+  email:            string;
+  whatsapp:         string;
+  location:         string;
+  organisation:     string;
+  current_role:     string;
+  other_messages:   string | null;
+  consent:          boolean;
+  status:           'pending' | 'confirmed';
+  payment_status:   'pending' | 'paid' | 'failed' | 'refunded';
+  payment_reference: string | null;
+  amount_paid:      number | null;
+  currency:         string;
+  flutterwave_tx_id: string | null;
+  paid_at:          string | null;
+  confirmed_at:     string | null;
+  ticket_type:      string | null;
+  notes:            string | null;
+  user_id:          string | null;
+  source:           string;
+  created_at:       string;
+  updated_at:       string;
 }
 
 export interface JobListing {

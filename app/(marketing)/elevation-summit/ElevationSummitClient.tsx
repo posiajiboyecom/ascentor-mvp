@@ -1,8 +1,9 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { summitFormSchema, SummitFormValues } from './summitFormSchema';
 import type { PublishedPage } from '@/lib/supabase/queries/marketing';
 import '@/styles/marketing.css';
 import 'react-phone-number-input/style.css';
@@ -12,29 +13,6 @@ import { useNotifications } from '@/components/Notifications';
 
 const h = (s: string) => s.replace(/<(?!br\s*\/?>)[^>]*>/gi, '');
 
-const COUNTRIES = [
-  'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Ethiopia', 'Tanzania',
-  'Uganda', 'Rwanda', 'Senegal', 'Côte d\'Ivoire', 'Cameroon', 'Angola',
-  'Mozambique', 'Zambia', 'Zimbabwe', 'Botswana', 'Namibia', 'Sierra Leone',
-  'Liberia', 'Guinea', 'Mali', 'Burkina Faso', 'Niger', 'Chad', 'Sudan',
-  'Egypt', 'Morocco', 'Tunisia', 'Algeria', 'Libya',
-  'United Kingdom', 'United States', 'Canada', 'Germany', 'France',
-  'Netherlands', 'UAE', 'Qatar', 'Saudi Arabia', 'Other',
-];
-
-const HOW_HEARD = [
-  'Ascentor platform', 'Instagram', 'LinkedIn', 'X / Twitter',
-  'WhatsApp', 'Friend or colleague', 'Email newsletter',
-  'Google / search', 'Other',
-];
-
-const INDUSTRIES = [
-  'Technology', 'Finance & Banking', 'Consulting', 'Healthcare',
-  'Education', 'Energy & Resources', 'Government & Policy',
-  'Media & Entertainment', 'Legal', 'Real Estate', 'Agriculture',
-  'Manufacturing', 'NGO / Non-profit', 'Entrepreneurship',
-  'Creative Arts', 'Other',
-];
 
 const INPUT = {
   display: 'block' as const,
@@ -71,28 +49,6 @@ const ERROR = {
   marginTop: '0.25rem',
 };
 
-const summitFormSchema = z.object({
-  full_name: z.string().min(2, 'Full name is required'),
-  email: z.string().email('Enter a valid email address'),
-  whatsapp: z.string().min(8, 'WhatsApp number is required'),
-  phone: z.string().min(8, 'Phone number is required'),
-  country: z.string().min(1, 'Country is required'),
-  city: z.string().min(1, 'City is required'),
-  current_role: z.string().min(1, 'Role is required'),
-  organisation: z.string().min(1, 'Organisation is required'),
-  industry: z.string().min(1, 'Industry is required'),
-  what_building: z.string().min(1, 'This field is required'),
-  why_attend: z.string().min(1, 'This field is required'),
-  how_heard: z.string().min(1, 'This field is required'),
-  dietary_needs: z.string().optional(),
-  accessibility: z.string().optional(),
-  other_messages: z.string().optional(),
-  consent: z.boolean().refine((val) => val === true, {
-    message: 'You must accept the privacy policy to register',
-  }),
-});
-
-type SummitFormValues = z.infer<typeof summitFormSchema>;
 
 export default function ElevationSummitClient({ cms }: { cms: PublishedPage | null }) {
   // CMS section keys
@@ -108,10 +64,10 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
   const whatHeadline = whatItIs?.headline || 'Not a conference.<br /><span style="color:#C8A96E">A defining moment.</span>';
   const whatBody     = whatItIs?.body     || 'The Elevation Summit is a deliberate interruption of the ordinary rhythms of life — to ask the questions that drift never allows: Who am I becoming? What am I building? What will remain when I am gone?';
 
-  const register = cms?.sections.register?.data as Record<string, string> | undefined;
-  const regEyebrow  = register?.eyebrow  || 'Event Registration';
-  const regHeadline = register?.headline || 'Secure your place.';
-  const regSubhead  = register?.subhead  || 'Registration is open for the inaugural Elevation Summit, 19 November, 2026, Lagos — attend physically or join virtually. Complete the form below — every detail helps us prepare the right experience for you.';
+  const regSection = cms?.sections.register?.data as Record<string, string> | undefined;
+  const regEyebrow  = regSection?.eyebrow  || 'Event Registration';
+  const regHeadline = regSection?.headline || 'Secure your place.';
+  const regSubhead  = regSection?.subhead  || 'Registration is open for the inaugural Elevation Summit, 19 November, 2026, Lagos — attend physically or join virtually. Complete the form below — every detail helps us prepare the right experience for you.';
 
   const { alert } = useModal();
   const { showToast } = useNotifications();
@@ -128,17 +84,9 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       full_name: '',
       email: '',
       whatsapp: '',
-      phone: '',
-      country: '',
-      city: '',
-      current_role: '',
+      location: '',
       organisation: '',
-      industry: '',
-      what_building: '',
-      why_attend: '',
-      how_heard: '',
-      dietary_needs: '',
-      accessibility: '',
+      current_role: '',
       other_messages: '',
       consent: false,
     },
@@ -149,24 +97,11 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       const res = await fetch('/api/summit/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          email: data.email.toLowerCase(),
-          whatsapp: data.whatsapp.trim(),
-          phone: data.phone.trim(),
-          city: data.city.trim(),
-          current_role: data.current_role.trim(),
-          organisation: data.organisation.trim(),
-          what_building: data.what_building.trim(),
-          why_attend: data.why_attend.trim(),
-          dietary_needs: data.dietary_needs?.trim() || null,
-          accessibility: data.accessibility?.trim() || null,
-          other_messages: data.other_messages?.trim() || null,
-        }),
+        body: JSON.stringify(data),
       });
 
       if (res.status === 409) {
-        showToast('Already registered', 'This email is already registered for the Summit.', 'error');
+        await alert('This email is already confirmed for the Summit.', 'Already registered');
         return;
       }
 
@@ -174,12 +109,84 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         throw new Error('Registration failed');
       }
 
-      reset();
-      await alert('We have your details. A confirmation will be sent to your email. We will be in touch on WhatsApp closer to the event. Build well until then.', 'You\'re registered.');
+      const { registrationId } = await res.json() as { registrationId: string };
+      await startPayment(registrationId);
     } catch (err) {
-      showToast('Registration failed', 'Something went wrong. Please try again.', 'error');
+      await alert('Something went wrong. Please try again in a moment.', 'Registration failed');
     }
   };
+
+  const startPayment = async (registrationId: string) => {
+    try {
+      const res = await fetch('/api/summit/pay/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registrationId }),
+      });
+      const config = await res.json();
+
+      if (typeof (window as any).FlutterwaveCheckout !== 'function') {
+        await alert('The payment script is still loading. Please refresh the page and try again.', 'Payment unavailable');
+        return;
+      }
+
+      if (!res.ok) {
+        await alert(config.error || 'Could not prepare your payment.', 'Payment setup failed');
+        return;
+      }
+
+      (window as any).FlutterwaveCheckout({
+        public_key: config.public_key,
+        tx_ref: config.tx_ref,
+        amount: config.amount,
+        currency: config.currency,
+        payment_options: 'card, banktransfer, ussd',
+        customer: config.customer,
+        customizations: {
+          title: 'Elevation Summit Registration',
+          description: 'Ticket payment',
+        },
+        callback: (payment: { transaction_id: string; tx_ref: string; status: string }) => {
+          verifyAndFinish(payment.transaction_id, registrationId);
+        },
+        onclose: () => {
+          showToast('Payment not completed', 'Payment was not completed. You can retry from your email link.', 'error');
+        },
+      });
+    } catch (err) {
+      await alert('Could not prepare your payment.', 'Payment setup failed');
+    }
+  };
+
+  const verifyAndFinish = async (transaction_id: string, registrationId: string) => {
+    try {
+      const res = await fetch('/api/summit/pay/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transaction_id, registrationId }),
+      });
+
+      if (res.ok) {
+        reset();
+        await alert('Check your email for payment confirmation.', 'You are confirmed');
+      } else {
+        const data = await res.json().catch(() => ({} as any));
+        await alert(data.error || 'Contact us if you were charged.', 'Payment could not be verified');
+      }
+    } catch (err) {
+      await alert('Contact us if you were charged.', 'Payment could not be verified');
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !document.getElementById('flutterwave-script')) {
+      const s = document.createElement('script');
+      s.id = 'flutterwave-script';
+      s.src = 'https://checkout.flutterwave.com/v3.js';
+      s.async = true;
+      document.head.appendChild(s);
+    }
+  }, []);
 
   return (
     <>
@@ -291,12 +298,9 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           <h2 className="mkt-section-headline" style={{ color: '#0F0F0E', marginBottom: '1rem', textAlign: 'center', fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)' }}>{regHeadline}</h2>
           <p style={{ color: '#6B7280', lineHeight: 1.75, marginBottom: '2.5rem', textAlign: 'center', fontSize: '1rem' }}>{regSubhead}</p>
 
-          <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+          <form onSubmit={handleSubmit(onSubmit)} className="summit-form">
 
-            {/* Section: Personal */}
-            <p style={{ gridColumn: '1 / -1', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C8A96E', marginBottom: '0.25rem' }}>Personal details</p>
-
-            <div style={{ gridColumn: '1 / -1' }}>
+            <div>
               <label style={LABEL}>Full Name *</label>
               <input style={INPUT} type="text" {...register('full_name')} placeholder="Your full name" />
               {errors.full_name && <p style={ERROR}>{errors.full_name.message}</p>}
@@ -325,45 +329,19 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
                 )}
               />
               {errors.whatsapp && <p style={ERROR}>{errors.whatsapp.message}</p>}
-              <p style={HINT}>We use WhatsApp for event updates and logistics.</p>
             </div>
 
             <div>
-              <label style={LABEL}>Phone Number *</label>
-              <Controller
-                name="phone"
-                control={control}
-                rules={{ required: 'Phone number is required' }}
-                render={({ field }) => (
-                  <PhoneInput
-                    {...field}
-                    international
-                    defaultCountry="NG"
-                    className="phone-input"
-                    placeholder="+234 800 000 0000"
-                  />
-                )}
-              />
-              {errors.phone && <p style={ERROR}>{errors.phone.message}</p>}
+              <label style={LABEL}>Location *</label>
+              <input style={INPUT} type="text" {...register('location')} placeholder="Lagos, Nigeria" />
+              {errors.location && <p style={ERROR}>{errors.location.message}</p>}
             </div>
 
             <div>
-              <label style={LABEL}>Country *</label>
-              <select style={{ ...INPUT, cursor: 'pointer' }} {...register('country')}>
-                <option value="">Select country</option>
-                {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              {errors.country && <p style={ERROR}>{errors.country.message}</p>}
+              <label style={LABEL}>Current Company *</label>
+              <input style={INPUT} type="text" {...register('organisation')} placeholder="Company or institution" />
+              {errors.organisation && <p style={ERROR}>{errors.organisation.message}</p>}
             </div>
-
-            <div>
-              <label style={LABEL}>City *</label>
-              <input style={INPUT} type="text" {...register('city')} placeholder="Lagos, Nairobi, London…" />
-              {errors.city && <p style={ERROR}>{errors.city.message}</p>}
-            </div>
-
-            {/* Section: Professional */}
-            <p style={{ gridColumn: '1 / -1', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C8A96E', marginBottom: '0.25rem', marginTop: '1.5rem' }}>Professional context</p>
 
             <div>
               <label style={LABEL}>Current Role *</label>
@@ -371,69 +349,13 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
               {errors.current_role && <p style={ERROR}>{errors.current_role.message}</p>}
             </div>
 
-            <div>
-              <label style={LABEL}>Organisation *</label>
-              <input style={INPUT} type="text" {...register('organisation')} placeholder="Company or institution" />
-              {errors.organisation && <p style={ERROR}>{errors.organisation.message}</p>}
-            </div>
-
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={LABEL}>Industry *</label>
-              <select style={{ ...INPUT, cursor: 'pointer' }} {...register('industry')}>
-                <option value="">Select industry</option>
-                {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-              </select>
-              {errors.industry && <p style={ERROR}>{errors.industry.message}</p>}
-            </div>
-
-            {/* Section: Intent */}
-            <p style={{ gridColumn: '1 / -1', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C8A96E', marginBottom: '0.25rem', marginTop: '1.5rem' }}>Your ascent</p>
-
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={LABEL}>What are you building? *</label>
-              <textarea style={{ ...INPUT, resize: 'vertical', minHeight: '80px' }} {...register('what_building')} rows={3}
-                placeholder="Describe what you are building with your life — not your job title." />
-              {errors.what_building && <p style={ERROR}>{errors.what_building.message}</p>}
-              <p style={HINT}>This helps us understand who is in the room.</p>
-            </div>
-
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={LABEL}>Why do you want to attend? *</label>
-              <textarea style={{ ...INPUT, resize: 'vertical', minHeight: '80px' }} {...register('why_attend')} rows={3}
-                placeholder="What are you hoping to take away from The Elevation Summit?" />
-              {errors.why_attend && <p style={ERROR}>{errors.why_attend.message}</p>}
-            </div>
-
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={LABEL}>How did you hear about the Summit? *</label>
-              <select style={{ ...INPUT, cursor: 'pointer' }} {...register('how_heard')}>
-                <option value="">Select one</option>
-                {HOW_HEARD.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              {errors.how_heard && <p style={ERROR}>{errors.how_heard.message}</p>}
-            </div>
-
-            {/* Section: Logistics */}
-            <p style={{ gridColumn: '1 / -1', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C8A96E', marginBottom: '0.25rem', marginTop: '1.5rem' }}>Logistics</p>
-
-            <div>
-              <label style={LABEL}>Dietary needs <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-              <input style={INPUT} type="text" {...register('dietary_needs')} placeholder="Vegetarian, halal, allergies…" />
-            </div>
-
-            <div>
-              <label style={LABEL}>Accessibility needs <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-              <input style={INPUT} type="text" {...register('accessibility')} placeholder="Wheelchair, hearing loop…" />
-            </div>
-
-            {/* Other messages */}
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={LABEL} htmlFor="other_messages">Anything else you would like us to know? <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-              <textarea style={{ ...INPUT, resize: 'vertical', minHeight: '80px' }} id="other_messages" {...register('other_messages')} rows={4}
+              <label style={LABEL}>Other Messages <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
+              <textarea style={{ ...INPUT, resize: 'vertical', minHeight: '80px' }} {...register('other_messages')} rows={4}
                 placeholder="Share any additional details, questions, or requests." />
+              {errors.other_messages && <p style={ERROR}>{errors.other_messages.message}</p>}
             </div>
 
-            {/* Consent */}
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.875rem', color: '#0F0F0E', cursor: 'pointer' }}>
                 <input type="checkbox" {...register('consent')} style={{ marginTop: '0.25rem' }} />
@@ -456,6 +378,16 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             </p>
 
             <style jsx>{`
+              .summit-form {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 1rem;
+              }
+              @media (min-width: 768px) {
+                .summit-form {
+                  grid-template-columns: 1fr 1fr;
+                }
+              }
               .phone-input input {
                 width: 100%;
                 padding: 0.75rem 1rem;
