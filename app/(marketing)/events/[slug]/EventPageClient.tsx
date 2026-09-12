@@ -6,7 +6,6 @@
 // which fields appear by editing the event in /admin/events.
 
 import { useState } from 'react';
-import Link from 'next/link';
 import '@/styles/marketing.css';
 
 const COUNTRIES = [
@@ -91,18 +90,6 @@ export default function EventPageClient({ event }: { event: any }) {
 
   return (
     <>
-      {/* Nav */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(15,15,14,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <Link href="/"><img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" height={26} style={{ display: 'block' }} /></Link>
-          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-            <Link href="/events" style={{ fontSize: '0.875rem', color: '#9CA3AF', textDecoration: 'none', fontWeight: 500 }}>All Events</Link>
-            <Link href="/signup" className="btn-gold" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem' }}>Join Ascentor →</Link>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero */}
       <section style={{ background: bgColor, padding: 'clamp(5rem, 10vw, 9rem) 1.5rem clamp(4rem, 8vw, 7rem)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -305,16 +292,6 @@ export default function EventPageClient({ event }: { event: any }) {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer style={{ background: '#0F0F0E', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '2rem 1.5rem' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-          <p style={{ fontFamily: 'var(--font-accent,"Playfair Display",serif)', fontStyle: 'italic', color: '#C8A96E', fontSize: '0.9375rem' }}>
-            "Build a life that outlasts you."
-          </p>
-          <p style={{ fontSize: '0.8125rem', color: '#4B5563' }}>© 2026 Ascentor.</p>
-          <Link href="/" style={{ fontSize: '0.875rem', color: '#6B7280', textDecoration: 'none' }}>← Back to Ascentor</Link>
-        </div>
-      </footer>
     </>
   );
 }

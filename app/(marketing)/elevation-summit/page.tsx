@@ -11,6 +11,7 @@ import type { Metadata } from 'next';
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
 import { SITE_URL, SUMMIT, getSummitEventSchema, getBreadcrumbSchema } from '@/lib/seo';
 import ElevationSummitClient from './ElevationSummitClient';
+import PublicShell from '@/components/layout/PublicShell';
 
 export const metadata: Metadata = {
   title: 'The Elevation Summit 2026 — Lagos | Physical & Virtual',
@@ -52,12 +53,12 @@ export default async function ElevationSummitPage() {
   ];
 
   return (
-    <>
+    <PublicShell>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <ElevationSummitClient cms={cms} />
-    </>
+    </PublicShell>
   );
 }

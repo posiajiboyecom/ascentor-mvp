@@ -2,8 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import '@/styles/marketing.css';
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
-import PublicHeader from '@/components/layout/PublicHeader';
-import PublicFooter from '@/components/layout/PublicFooter';
+import PublicShell from '@/components/layout/PublicShell';
 
 export const metadata: Metadata = {
   title: 'The Movement',
@@ -88,9 +87,8 @@ export default async function MovementPage() {
   const defaultDimensions = dimensions;
 
   return (
-    <>
-      <PublicHeader />
-      <main style={{ minHeight: '100vh', background: '#FAFAF8' }}>
+    <PublicShell>
+      <div style={{ minHeight: '100vh', background: '#FAFAF8' }}>
 
         {/* Hero */}
         <section style={{ padding: 'clamp(5rem, 10vw, 8rem) 1.5rem clamp(3rem, 6vw, 5rem)', maxWidth: '1200px', margin: '0 auto' }}>
@@ -290,8 +288,7 @@ export default async function MovementPage() {
           </div>
         </section>
 
-      </main>
-      <PublicFooter />
-    </>
+      </div>
+    </PublicShell>
   );
 }

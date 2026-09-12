@@ -1,8 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { PublishedPage } from '@/lib/supabase/queries/marketing';
 import '@/styles/marketing.css';
 
@@ -152,36 +150,6 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
 
   return (
     <>
-      {/* Nav */}
-      <nav style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(15,15,14,0.95)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '56px' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <Link href="/"><img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" height={24} width={90} style={{ display: 'block' }} /></Link>
-          <Link
-            href="/signup"
-            className="btn-gold"
-            style={{
-              padding: '0.5rem 1.125rem',
-              fontSize: '0.8125rem',
-              fontWeight: 700,
-              letterSpacing: '0.01em',
-              borderRadius: '0.5rem',
-              whiteSpace: 'nowrap',
-              minHeight: '44px',
-              display: 'inline-flex',
-              alignItems: 'center',
-            }}
-          >
-            Join Ascentor →
-          </Link>
-        </div>
-      </nav>
-
       {/* Hero */}
       <section style={{ background: '#0F0F0E', padding: 'clamp(5rem, 10vw, 9rem) 1.5rem clamp(4rem, 8vw, 7rem)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -423,14 +391,6 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         </div>
       </section>
 
-      {/* Footer */}
-      <footer style={{ background: '#0F0F0E', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '2rem 1.5rem' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-          <p style={{ fontFamily: 'var(--font-accent, "Playfair Display", serif)', fontStyle: 'italic', color: '#C8A96E', fontSize: '0.9375rem' }}>"Build a life that outlasts you."</p>
-          <p style={{ fontSize: '0.8125rem', color: '#4B5563' }}>© 2026 Ascentor. All rights reserved.</p>
-          <Link href="/" style={{ fontSize: '0.875rem', color: '#6B7280', textDecoration: 'none' }}>← Back to Ascentor</Link>
-        </div>
-      </footer>
     </>
   );
 }

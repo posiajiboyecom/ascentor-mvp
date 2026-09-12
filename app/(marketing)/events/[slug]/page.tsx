@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import EventPageClient from './EventPageClient';
+import PublicShell from '@/components/layout/PublicShell';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,5 +40,9 @@ export default async function EventPage({ params }: Props) {
 
   if (!event) notFound();
 
-  return <EventPageClient event={event} />;
+  return (
+    <PublicShell>
+      <EventPageClient event={event} />
+    </PublicShell>
+  );
 }
