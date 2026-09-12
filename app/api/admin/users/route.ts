@@ -14,16 +14,22 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Verify admin
-async function isAdmin(userId: string): Promise<boolean> {
-  const { data } = await supabase.from('profiles').select('role').eq('id', userId).single();
-  return data?.role === 'admin';
+async function getCaller(userId: string): Promise<{ role: UserRole; permissions: Permission[] | null } | null> {
+  const { data } = await supabase.from('profiles').select('role, permissions').eq('id', userId).single();
+  if (!data) return null;
+  return { role: data.role as UserRole, permissions: data.permissions as Permission[] | null };
+}
+
+function sanitizeSearch(s: string): string {
+  // Remove characters that have special meaning in Supabase/PostgREST ilike filter strings.
+  return s.replace(/[%*,]/g, '');
 }
 
 export async function GET(req: NextRequest) {
@@ -35,8 +41,11 @@ export async function GET(req: NextRequest) {
       { global: { headers: { Authorization: authHeader || '' } } }
     );
     const { data: { user } } = await anonClient.auth.getUser();
-    if (!user || !(await isAdmin(user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const caller = await getCaller(user.id);
+    if (!caller || !userHasPermission(caller.role, caller.permissions, 'users.view')) {
+      return NextResponse.json({ error: 'Forbidden: users.view required' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -53,7 +62,8 @@ export async function GET(req: NextRequest) {
       .range(page * limit, (page + 1) * limit - 1);
 
     if (search) {
-      query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,referral_code.ilike.%${search}%`);
+      const safe = sanitizeSearch(search);
+      query = query.or(`full_name.ilike.%${safe}%,email.ilike.%${safe}%,referral_code.ilike.%${safe}%`);
     }
     if (role) query = query.eq('role', role);
     if (status) query = query.eq('subscription_status', status);
@@ -94,13 +104,19 @@ export async function PATCH(req: NextRequest) {
       { global: { headers: { Authorization: authHeader || '' } } }
     );
     const { data: { user } } = await anonClient.auth.getUser();
-    if (!user || !(await isAdmin(user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const caller = await getCaller(user.id);
+    if (!caller) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { targetUserId, action, value } = await req.json();
     if (!targetUserId || !action) {
       return NextResponse.json({ error: 'Missing targetUserId or action' }, { status: 400 });
+    }
+
+    const required: Permission = action === 'delete' ? 'users.delete' : 'users.edit_role';
+    if (!userHasPermission(caller.role, caller.permissions, required)) {
+      return NextResponse.json({ error: `Forbidden: ${required} required` }, { status: 403 });
     }
 
     // Prevent self-modification
@@ -323,7 +339,10 @@ export async function POST(req: NextRequest) {
     const authClient = await createAuthClient();
     const { data: { user: caller } } = await authClient.auth.getUser();
     if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!(await isAdmin(caller.id))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const callerData = await getCaller(caller.id);
+    if (!callerData || !userHasPermission(callerData.role, callerData.permissions, 'users.view')) {
+      return NextResponse.json({ error: 'Forbidden: users.view required' }, { status: 403 });
+    }
 
     const { email } = await req.json();
     if (!email) return NextResponse.json({ error: 'Missing email' }, { status: 400 });

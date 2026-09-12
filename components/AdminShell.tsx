@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAdminTheme } from '@/components/AdminThemeProvider';
+import { userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
 
 // ─────────────────────────────────────────────────────────────────
 // ASCENTOR · AdminShell · THE LEDGER · v2 · 2026
@@ -184,8 +185,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'People',
     items: [
-      { href: '/admin/users', label: 'Users', icon: ICON.users },
-      { href: '/admin/permissions', label: 'Permissions', icon: ICON.shield },
+      { href: '/admin/users', label: 'Users', icon: ICON.users, permission: 'users.view' },
+      { href: '/admin/permissions', label: 'Permissions', icon: ICON.shield, permission: 'users.edit_role' },
       { href: '/admin/mentors', label: 'Mentors', icon: ICON.heart },
     ],
   },
@@ -280,27 +281,33 @@ export default function AdminShell({
 
       {/* Nav, grouped */}
       <nav style={{ flex: 1, overflowY: 'auto', padding: '12px 8px' }}>
-        {NAV_GROUPS.map(group => (
-          <div key={group.label} style={{ marginBottom: 4 }}>
-            <p className="ledger-nav-group-label" style={{ marginTop: 14 }}>{group.label}</p>
-            {group.items.map(item => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onNav}
-                className={`ledger-nav-item ${isActive(item.href) ? 'active' : ''}`}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0, opacity: isActive(item.href) ? 1 : 0.7 }}>
-                    {item.icon}
+        {NAV_GROUPS.map(group => {
+          const visible = group.items.filter(item =>
+            !item.permission || userHasPermission(role as UserRole, userPermissions as Permission[] | null, item.permission as Permission)
+          );
+          if (visible.length === 0) return null;
+          return (
+            <div key={group.label} style={{ marginBottom: 4 }}>
+              <p className="ledger-nav-group-label" style={{ marginTop: 14 }}>{group.label}</p>
+              {visible.map(item => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNav}
+                  className={`ledger-nav-item ${isActive(item.href) ? 'active' : ''}`}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0, opacity: isActive(item.href) ? 1 : 0.7 }}>
+                      {item.icon}
+                    </span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                   </span>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
-                </span>
-                {isActive(item.href) && <span className="ledger-status-dot ok" style={{ marginRight: 0 }} />}
-              </Link>
-            ))}
-          </div>
-        ))}
+                  {isActive(item.href) && <span className="ledger-status-dot ok" style={{ marginRight: 0 }} />}
+                </Link>
+              ))}
+            </div>
+          );
+        })}
       </nav>
 
       {/* Footer — theme toggle, identity, sign out */}

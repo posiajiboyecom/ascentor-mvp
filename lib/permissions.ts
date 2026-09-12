@@ -118,6 +118,20 @@ export function getPermissions(role: UserRole): Permission[] {
 }
 
 /**
+ * Check a permission against the user's stored permissions array,
+ * falling back to their role's default permissions when no override is set.
+ */
+export function userHasPermission(
+  role: UserRole,
+  userPermissions: Permission[] | null | undefined,
+  permission: Permission
+): boolean {
+  if (userPermissions) return userPermissions.includes(permission);
+  return hasPermission(role, permission);
+}
+
+
+/**
  * Get a human-readable description of what a role can/cannot do.
  */
 export function getRoleDescription(role: UserRole): string {
@@ -404,6 +418,9 @@ export const PERMISSION_LABELS: Record<Permission, PermissionMeta> = {
     page: '/admin/master',
   },
 };
+
+/** Every valid permission key that the system knows about. */
+export const ALL_PERMISSIONS: Permission[] = Object.keys(PERMISSION_LABELS) as Permission[];
 
 // ── Helper: get effective permissions for a user ─────────────────────────────
 // If user has custom permissions set, use those. Otherwise use role defaults.

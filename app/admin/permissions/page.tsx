@@ -84,7 +84,13 @@ export default function PermissionsPage() {
 
   async function grant(m:Staff){
     const base:Permission[]=['admin.access','admin.view_stats'];
-    await sb.from('profiles').update({role:'moderator',permissions:base}).eq('id',m.id);
+    const { data:{session} } = await sb.auth.getSession();
+    const res = await fetch('/api/admin/permissions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', Authorization:`Bearer ${session?.access_token||''}`},
+      body: JSON.stringify({ targetUserId: m.id, action:'grant' }),
+    });
+    if(!res.ok){const d=await res.json();alert(d.error||'Grant failed');return;}
     const u={...m,role:'moderator' as UserRole,permissions:base};
     setStaff(p=>[...p.filter(s=>s.id!==m.id),u].sort((a,b)=>a.role.localeCompare(b.role)));
     setSearch('');setFound(null);pick(u);
@@ -92,7 +98,13 @@ export default function PermissionsPage() {
 
   async function revoke(m:Staff){
     if(!confirm(`Remove ${m.full_name||m.email} from the admin team?`))return;
-    await sb.from('profiles').update({role:'member',permissions:null}).eq('id',m.id);
+    const { data:{session} } = await sb.auth.getSession();
+    const res = await fetch('/api/admin/permissions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', Authorization:`Bearer ${session?.access_token||''}`},
+      body: JSON.stringify({ targetUserId: m.id, action:'revoke' }),
+    });
+    if(!res.ok){const d=await res.json();alert(d.error||'Revoke failed');return;}
     setStaff(p=>p.filter(s=>s.id!==m.id));
     if(sel?.id===m.id)setSel(null);
   }
@@ -111,7 +123,13 @@ export default function PermissionsPage() {
   async function save(){
     if(!sel)return;setSaving(true);
     const ts=draft.length>0&&!draft.includes('admin.access')?['admin.access' as Permission,...draft]:draft;
-    await sb.from('profiles').update({permissions:ts}).eq('id',sel.id);
+    const { data:{session} } = await sb.auth.getSession();
+    const res = await fetch('/api/admin/permissions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', Authorization:`Bearer ${session?.access_token||''}`},
+      body: JSON.stringify({ targetUserId: sel.id, action:'set_permissions', value: ts }),
+    });
+    if(!res.ok){const d=await res.json();alert(d.error||'Save failed');setSaving(false);return;}
     setStaff(p=>p.map(s=>s.id===sel.id?{...s,permissions:ts}:s));
     setSel(p=>p?{...p,permissions:ts}:null);
     setSaving(false);setSaved(true);
