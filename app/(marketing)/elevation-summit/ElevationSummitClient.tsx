@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { summitFormSchema, SummitFormValues } from './summitFormSchema';
@@ -103,13 +103,8 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
     '/images/PXL_20250125_115416461.jpg',
   ];
 
-  const [shuffledTop, setShuffledTop] = useState(GALLERY_IMAGES);
-  const [shuffledBottom, setShuffledBottom] = useState(GALLERY_IMAGES);
-
-  useEffect(() => {
-    setShuffledTop([...GALLERY_IMAGES].sort(() => Math.random() - 0.5));
-    setShuffledBottom([...GALLERY_IMAGES].sort(() => Math.random() - 0.5));
-  }, []);
+  const shuffledTop = useMemo(() => GALLERY_IMAGES, []);
+  const shuffledBottom = useMemo(() => [...GALLERY_IMAGES].reverse(), []);
 
   const {
     register,
