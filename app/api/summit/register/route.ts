@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isValidPhoneNumber } from 'react-phone-number-input';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendRegistrationReceivedEmail } from '@/lib/summitEmails';
 
