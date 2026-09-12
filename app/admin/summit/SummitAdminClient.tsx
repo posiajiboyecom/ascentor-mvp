@@ -31,6 +31,7 @@ export default function SummitAdminClient() {
   const supabase = createClient();
   const [regs, setRegs] = useState<SummitRegistration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -43,21 +44,34 @@ export default function SummitAdminClient() {
   const [emailSending, setEmailSending] = useState(false);
   const [emailResult, setEmailResult] = useState<string | null>(null);
 
+  function formatAmount(amount: number | null, currency: string | null) {
+    if (!amount) return '—';
+    const symbol = currency === 'NGN' ? '₦' : `${currency || ''} `;
+    return `${symbol}${Number(amount).toLocaleString()}`;
+  }
+
   async function load() {
     setLoading(true);
+    setError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return;
+      if (!session?.access_token) { setLoading(false); return; }
       const res = await fetch('/api/admin/summit-registrations', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to load registrations');
+        setLoading(false);
+        return;
+      }
       const list: SummitRegistration[] = data.registrations || [];
       setRegs(list);
       const notes: Record<string, string> = {};
       list.forEach((r) => { notes[r.id] = r.notes || ''; });
       setLocalNotes(notes);
     } catch (err) {
+      setError('Failed to load registrations');
       console.error(err);
     }
     setLoading(false);
@@ -153,7 +167,7 @@ export default function SummitAdminClient() {
         r.current_role,
         r.status,
         r.payment_status,
-        r.amount_paid ? `\u20a6${Number(r.amount_paid).toLocaleString()}` : '',
+        formatAmount(r.amount_paid, r.currency),
         r.paid_at ? new Date(r.paid_at).toLocaleDateString() : '',
       ]),
       styles: { fontSize: 8 },
@@ -258,7 +272,9 @@ export default function SummitAdminClient() {
         </div>
       </div>
 
-      {loading ? (
+      {error ? (
+        <p style={{ color: '#EF4444', fontFamily: B.fontMono, fontSize: '13px' }}>{error}</p>
+      ) : loading ? (
         <p style={{ color: B.muted, fontFamily: B.fontMono, fontSize: '12px' }}>Loading…</p>
       ) : filtered.length === 0 ? (
         <p style={{ color: B.muted, fontFamily: B.fontUI, fontSize: '14px' }}>No registrations match your filters.</p>
@@ -305,7 +321,7 @@ export default function SummitAdminClient() {
                       </td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{r.payment_status}</td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>
-                        {r.amount_paid ? `\u20a6${Number(r.amount_paid).toLocaleString()}` : '—'}
+                        {formatAmount(r.amount_paid, r.currency)}
                       </td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '10px', color: B.dim, whiteSpace: 'nowrap' }}>
                         {r.paid_at ? new Date(r.paid_at).toLocaleDateString() : '—'}
@@ -353,7 +369,7 @@ export default function SummitAdminClient() {
                               <p style={{ fontFamily: B.fontMono, fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: B.gold, margin: '0 0 10px' }}>Registration</p>
                               <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Status: </span>{r.status}</p>
                               <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Payment: </span>{r.payment_status}</p>
-                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Amount: </span>{r.amount_paid ? `\u20a6${Number(r.amount_paid).toLocaleString()}` : '—'}</p>
+                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Amount: </span>{formatAmount(r.amount_paid, r.currency)}</p>
                               <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Consent: </span>{r.consent ? 'Yes' : 'No'}</p>
                               <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Ref: </span>{r.payment_reference || '—'}</p>
                             </div>

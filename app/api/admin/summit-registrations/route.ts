@@ -5,13 +5,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
-async function isAdminOrModerator(userId: string): Promise<boolean> {
+async function isAdmin(userId: string): Promise<boolean> {
   const { data } = await supabaseAdmin
     .from('profiles')
     .select('role')
     .eq('id', userId)
     .single();
-  return data?.role === 'admin' || data?.role === 'moderator';
+  return data?.role === 'admin';
 }
 
 export async function GET(req: NextRequest) {
@@ -24,8 +24,8 @@ export async function GET(req: NextRequest) {
     );
 
     const { data: { user } } = await anonClient.auth.getUser();
-    if (!user || !(await isAdminOrModerator(user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!user || !(await isAdmin(user.id))) {
+      return NextResponse.json({ error: 'Forbidden: admin only' }, { status: 403 });
     }
 
     const { data, error } = await supabaseAdmin
