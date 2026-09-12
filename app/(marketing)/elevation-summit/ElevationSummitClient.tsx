@@ -1,8 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import type { PublishedPage } from '@/lib/supabase/queries/marketing';
 import '@/styles/marketing.css';
+import 'react-phone-number-input/style.css';
+import PhoneInput from 'react-phone-number-input';
+import { useModal } from '@/components/Modal';
+import { useNotifications } from '@/components/Notifications';
 
 const h = (s: string) => s.replace(/<(?!br\s*\/?>)[^>]*>/gi, '');
 
@@ -59,29 +65,34 @@ const HINT = {
   marginTop: '0.3rem',
 };
 
-type Form = {
-  full_name: string;
-  email: string;
-  whatsapp: string;
-  phone: string;
-  country: string;
-  city: string;
-  current_role: string;
-  organisation: string;
-  industry: string;
-  what_building: string;
-  why_attend: string;
-  how_heard: string;
-  dietary_needs: string;
-  accessibility: string;
+const ERROR = {
+  fontSize: '0.8125rem',
+  color: '#DC2626',
+  marginTop: '0.25rem',
 };
 
-const EMPTY: Form = {
-  full_name: '', email: '', whatsapp: '', phone: '',
-  country: '', city: '', current_role: '', organisation: '', industry: '',
-  what_building: '', why_attend: '', how_heard: '',
-  dietary_needs: '', accessibility: '',
-};
+const summitFormSchema = z.object({
+  full_name: z.string().min(2, 'Full name is required'),
+  email: z.string().email('Enter a valid email address'),
+  whatsapp: z.string().min(8, 'WhatsApp number is required'),
+  phone: z.string().min(8, 'Phone number is required'),
+  country: z.string().min(1, 'Country is required'),
+  city: z.string().min(1, 'City is required'),
+  current_role: z.string().min(1, 'Role is required'),
+  organisation: z.string().min(1, 'Organisation is required'),
+  industry: z.string().min(1, 'Industry is required'),
+  what_building: z.string().min(1, 'This field is required'),
+  why_attend: z.string().min(1, 'This field is required'),
+  how_heard: z.string().min(1, 'This field is required'),
+  dietary_needs: z.string().optional(),
+  accessibility: z.string().optional(),
+  other_messages: z.string().optional(),
+  consent: z.boolean().refine((val) => val === true, {
+    message: 'You must accept the privacy policy to register',
+  }),
+});
+
+type SummitFormValues = z.infer<typeof summitFormSchema>;
 
 export default function ElevationSummitClient({ cms }: { cms: PublishedPage | null }) {
   // CMS section keys
@@ -102,66 +113,97 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
   const regHeadline = register?.headline || 'Secure your place.';
   const regSubhead  = register?.subhead  || 'Registration is open for the inaugural Elevation Summit, 19 November, 2026, Lagos — attend physically or join virtually. Complete the form below — every detail helps us prepare the right experience for you.';
 
-  const [form, setForm] = useState<Form>(EMPTY);
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { alert } = useModal();
+  const { showToast } = useNotifications();
 
-  const set = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setForm(f => ({ ...f, [k]: e.target.value }));
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<SummitFormValues>({
+    resolver: zodResolver(summitFormSchema),
+    defaultValues: {
+      full_name: '',
+      email: '',
+      whatsapp: '',
+      phone: '',
+      country: '',
+      city: '',
+      current_role: '',
+      organisation: '',
+      industry: '',
+      what_building: '',
+      why_attend: '',
+      how_heard: '',
+      dietary_needs: '',
+      accessibility: '',
+      other_messages: '',
+      consent: false,
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  const onSubmit = async (data: SummitFormValues) => {
+    try {
+      const res = await fetch('/api/summit/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...data,
+          email: data.email.toLowerCase(),
+          whatsapp: data.whatsapp.trim(),
+          phone: data.phone.trim(),
+          city: data.city.trim(),
+          current_role: data.current_role.trim(),
+          organisation: data.organisation.trim(),
+          what_building: data.what_building.trim(),
+          why_attend: data.why_attend.trim(),
+          dietary_needs: data.dietary_needs?.trim() || null,
+          accessibility: data.accessibility?.trim() || null,
+          other_messages: data.other_messages?.trim() || null,
+        }),
+      });
 
-    const payload = {
-      full_name:    form.full_name.trim(),
-      email:        form.email.trim().toLowerCase(),
-      whatsapp:     form.whatsapp.trim(),
-      phone:        form.phone.trim() || null,
-      country:      form.country,
-      city:         form.city.trim() || null,
-      current_role: form.current_role.trim() || null,
-      organisation: form.organisation.trim() || null,
-      industry:     form.industry || null,
-      what_building: form.what_building.trim() || null,
-      why_attend:   form.why_attend.trim() || null,
-      how_heard:    form.how_heard || null,
-      dietary_needs: form.dietary_needs.trim() || null,
-      accessibility: form.accessibility.trim() || null,
-    };
+      if (res.status === 409) {
+        showToast('Already registered', 'This email is already registered for the Summit.', 'error');
+        return;
+      }
 
-    const res = await fetch('/api/summit/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+      if (!res.ok) {
+        throw new Error('Registration failed');
+      }
 
-    setLoading(false);
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error || 'Something went wrong. Please try again.');
-    } else {
-      setSubmitted(true);
+      reset();
+      await alert('We have your details. A confirmation will be sent to your email. We will be in touch on WhatsApp closer to the event. Build well until then.', 'You\'re registered.');
+    } catch (err) {
+      showToast('Registration failed', 'Something went wrong. Please try again.', 'error');
     }
   };
 
   return (
     <>
       {/* Hero */}
-      <section style={{ background: '#0F0F0E', padding: 'clamp(5rem, 10vw, 9rem) 1.5rem clamp(4rem, 8vw, 7rem)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <p className="mkt-eyebrow" style={{ marginBottom: '1.5rem' }}>{heroEyebrow}</p>
-          <h1 className="mkt-hero-headline" style={{ marginBottom: '1.5rem', maxWidth: '840px' }}
-            dangerouslySetInnerHTML={{ __html: h(heroHeadline) }} />
-          <p style={{ fontSize: 'clamp(1.125rem, 2.5vw, 1.375rem)', color: '#9CA3AF', lineHeight: 1.75, maxWidth: '600px', marginBottom: '3rem' }}>
-            {heroSubhead}
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <a href="#register" className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>{heroCtaLabel}</a>
-            <a href="#what-it-is" className="btn-secondary" style={{ fontSize: '1rem', padding: '0.875rem 2rem', borderColor: 'rgba(255,255,255,0.15)', color: '#FAFAF8' }}>{heroCta2Label}</a>
+      <section style={{ background: '#FFFFFF', padding: 'clamp(5rem, 10vw, 9rem) 1.5rem clamp(4rem, 8vw, 7rem)' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', alignItems: 'center' }}>
+          <div>
+            <p className="mkt-eyebrow" style={{ marginBottom: '1.5rem' }}>{heroEyebrow}</p>
+            <h1 className="mkt-hero-headline" style={{ marginBottom: '1.5rem', maxWidth: '840px', color: '#0F0F0E' }}
+              dangerouslySetInnerHTML={{ __html: h(heroHeadline) }} />
+            <p style={{ fontSize: 'clamp(1.125rem, 2.5vw, 1.375rem)', color: '#6B7280', lineHeight: 1.75, maxWidth: '600px', marginBottom: '3rem' }}>
+              {heroSubhead}
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <a href="#register" className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>{heroCtaLabel}</a>
+              <a href="#what-it-is" className="btn-secondary" style={{ fontSize: '1rem', padding: '0.875rem 2rem', borderColor: '#0F0F0E', color: '#0F0F0E' }}>{heroCta2Label}</a>
+            </div>
+          </div>
+          <div>
+            <img
+              src="/images/elevation-summit-2.jpeg"
+              alt="The Elevation Summit"
+              style={{ width: '100%', borderRadius: '1rem', objectFit: 'cover', maxHeight: '520px', display: 'block' }}
+            />
           </div>
         </div>
       </section>
@@ -249,127 +291,189 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           <h2 className="mkt-section-headline" style={{ color: '#0F0F0E', marginBottom: '1rem', textAlign: 'center', fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)' }}>{regHeadline}</h2>
           <p style={{ color: '#6B7280', lineHeight: 1.75, marginBottom: '2.5rem', textAlign: 'center', fontSize: '1rem' }}>{regSubhead}</p>
 
-          {submitted ? (
-            <div style={{ background: '#0F0F0E', border: '1px solid #C8A96E', borderRadius: '1rem', padding: '2.5rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>◇</div>
-              <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 700, color: '#C8A96E', marginBottom: '0.75rem' }}>
-                You&apos;re registered.
-              </p>
-              <p style={{ color: '#9CA3AF', fontSize: '1rem', lineHeight: 1.7, maxWidth: '480px', margin: '0 auto' }}>
-                We have your details. A confirmation will be sent to your email. We&apos;ll be in touch on WhatsApp closer to the event. Build well until then.
-              </p>
+          <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+
+            {/* Section: Personal */}
+            <p style={{ gridColumn: '1 / -1', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C8A96E', marginBottom: '0.25rem' }}>Personal details</p>
+
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={LABEL}>Full Name *</label>
+              <input style={INPUT} type="text" {...register('full_name')} placeholder="Your full name" />
+              {errors.full_name && <p style={ERROR}>{errors.full_name.message}</p>}
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
 
-              {/* Section: Personal */}
-              <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C8A96E', marginBottom: '1.25rem', marginTop: '0.5rem' }}>Personal details</p>
+            <div>
+              <label style={LABEL}>Email Address *</label>
+              <input style={INPUT} type="email" {...register('email')} placeholder="your@email.com" />
+              {errors.email && <p style={ERROR}>{errors.email.message}</p>}
+            </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={LABEL}>Full Name *</label>
-                  <input style={INPUT} type="text" required value={form.full_name} onChange={set('full_name')} placeholder="Your full name" />
-                </div>
-                <div>
-                  <label style={LABEL}>Email Address *</label>
-                  <input style={INPUT} type="email" required value={form.email} onChange={set('email')} placeholder="your@email.com" />
-                </div>
-                <div>
-                  <label style={LABEL}>WhatsApp Number *</label>
-                  <input style={INPUT} type="tel" required value={form.whatsapp} onChange={set('whatsapp')} placeholder="+234 800 000 0000" />
-                  <p style={HINT}>We use WhatsApp for event updates and logistics.</p>
-                </div>
-                <div>
-                  <label style={LABEL}>Country *</label>
-                  <select style={{ ...INPUT, cursor: 'pointer' }} required value={form.country} onChange={set('country')}>
-                    <option value="">Select country</option>
-                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={LABEL}>City <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-                  <input style={INPUT} type="text" value={form.city} onChange={set('city')} placeholder="Lagos, Nairobi, London…" />
-                </div>
-              </div>
+            <div>
+              <label style={LABEL}>WhatsApp Number *</label>
+              <Controller
+                name="whatsapp"
+                control={control}
+                rules={{ required: 'WhatsApp number is required' }}
+                render={({ field }) => (
+                  <PhoneInput
+                    {...field}
+                    international
+                    defaultCountry="NG"
+                    className="phone-input"
+                    placeholder="+234 800 000 0000"
+                  />
+                )}
+              />
+              {errors.whatsapp && <p style={ERROR}>{errors.whatsapp.message}</p>}
+              <p style={HINT}>We use WhatsApp for event updates and logistics.</p>
+            </div>
 
-              {/* Section: Professional */}
-              <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C8A96E', marginBottom: '1.25rem', marginTop: '1.5rem' }}>Professional context</p>
+            <div>
+              <label style={LABEL}>Phone Number *</label>
+              <Controller
+                name="phone"
+                control={control}
+                rules={{ required: 'Phone number is required' }}
+                render={({ field }) => (
+                  <PhoneInput
+                    {...field}
+                    international
+                    defaultCountry="NG"
+                    className="phone-input"
+                    placeholder="+234 800 000 0000"
+                  />
+                )}
+              />
+              {errors.phone && <p style={ERROR}>{errors.phone.message}</p>}
+            </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div>
-                  <label style={LABEL}>Current Role <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-                  <input style={INPUT} type="text" value={form.current_role} onChange={set('current_role')} placeholder="Software Engineer, CEO, Student…" />
-                </div>
-                <div>
-                  <label style={LABEL}>Organisation <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-                  <input style={INPUT} type="text" value={form.organisation} onChange={set('organisation')} placeholder="Company or institution" />
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={LABEL}>Industry <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-                  <select style={{ ...INPUT, cursor: 'pointer' }} value={form.industry} onChange={set('industry')}>
-                    <option value="">Select industry</option>
-                    {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
-                </div>
-              </div>
+            <div>
+              <label style={LABEL}>Country *</label>
+              <select style={{ ...INPUT, cursor: 'pointer' }} {...register('country')}>
+                <option value="">Select country</option>
+                {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              {errors.country && <p style={ERROR}>{errors.country.message}</p>}
+            </div>
 
-              {/* Section: Intent */}
-              <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C8A96E', marginBottom: '1.25rem', marginTop: '1.5rem' }}>Your ascent</p>
+            <div>
+              <label style={LABEL}>City *</label>
+              <input style={INPUT} type="text" {...register('city')} placeholder="Lagos, Nairobi, London…" />
+              {errors.city && <p style={ERROR}>{errors.city.message}</p>}
+            </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
-                <div>
-                  <label style={LABEL}>What are you building? <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-                  <textarea style={{ ...INPUT, resize: 'vertical', minHeight: '80px' }} value={form.what_building} onChange={set('what_building')}
-                    placeholder="Describe what you are building with your life — not your job title." rows={3} />
-                  <p style={HINT}>This helps us understand who is in the room.</p>
-                </div>
-                <div>
-                  <label style={LABEL}>Why do you want to attend? <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-                  <textarea style={{ ...INPUT, resize: 'vertical', minHeight: '80px' }} value={form.why_attend} onChange={set('why_attend')}
-                    placeholder="What are you hoping to take away from The Elevation Summit?" rows={3} />
-                </div>
-                <div>
-                  <label style={LABEL}>How did you hear about the Summit? <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-                  <select style={{ ...INPUT, cursor: 'pointer' }} value={form.how_heard} onChange={set('how_heard')}>
-                    <option value="">Select one</option>
-                    {HOW_HEARD.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
+            {/* Section: Professional */}
+            <p style={{ gridColumn: '1 / -1', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C8A96E', marginBottom: '0.25rem', marginTop: '1.5rem' }}>Professional context</p>
 
-              {/* Section: Logistics */}
-              <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C8A96E', marginBottom: '1.25rem', marginTop: '1.5rem' }}>Logistics</p>
+            <div>
+              <label style={LABEL}>Current Role *</label>
+              <input style={INPUT} type="text" {...register('current_role')} placeholder="Software Engineer, CEO, Student…" />
+              {errors.current_role && <p style={ERROR}>{errors.current_role.message}</p>}
+            </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div>
-                  <label style={LABEL}>Dietary needs <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-                  <input style={INPUT} type="text" value={form.dietary_needs} onChange={set('dietary_needs')} placeholder="Vegetarian, halal, allergies…" />
-                </div>
-                <div>
-                  <label style={LABEL}>Accessibility needs <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-                  <input style={INPUT} type="text" value={form.accessibility} onChange={set('accessibility')} placeholder="Wheelchair, hearing loop…" />
-                </div>
-              </div>
+            <div>
+              <label style={LABEL}>Organisation *</label>
+              <input style={INPUT} type="text" {...register('organisation')} placeholder="Company or institution" />
+              {errors.organisation && <p style={ERROR}>{errors.organisation.message}</p>}
+            </div>
 
-              {error && (
-                <p style={{ fontSize: '0.875rem', color: '#DC2626', background: '#FEF2F2', padding: '0.75rem 1rem', borderRadius: '0.5rem', border: '1px solid #FECACA', marginBottom: '1rem' }}>
-                  {error}
-                </p>
-              )}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={LABEL}>Industry *</label>
+              <select style={{ ...INPUT, cursor: 'pointer' }} {...register('industry')}>
+                <option value="">Select industry</option>
+                {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+              </select>
+              {errors.industry && <p style={ERROR}>{errors.industry.message}</p>}
+            </div>
 
-              <button type="submit" className="btn-primary" disabled={loading}
-                style={{ width: '100%', justifyContent: 'center', padding: '0.875rem', fontSize: '1rem' }}>
-                {loading ? 'Submitting…' : 'Complete Registration →'}
-              </button>
+            {/* Section: Intent */}
+            <p style={{ gridColumn: '1 / -1', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C8A96E', marginBottom: '0.25rem', marginTop: '1.5rem' }}>Your ascent</p>
 
-              <p style={{ fontSize: '0.8125rem', color: '#9CA3AF', textAlign: 'center', marginTop: '1rem' }}>
-                Your information is kept private. We will only contact you about The Elevation Summit.
-              </p>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={LABEL}>What are you building? *</label>
+              <textarea style={{ ...INPUT, resize: 'vertical', minHeight: '80px' }} {...register('what_building')} rows={3}
+                placeholder="Describe what you are building with your life — not your job title." />
+              {errors.what_building && <p style={ERROR}>{errors.what_building.message}</p>}
+              <p style={HINT}>This helps us understand who is in the room.</p>
+            </div>
 
-              {/* Mobile responsive grid */}
-              <style>{`@media(max-width:560px){form > div[style*="grid-template-columns: 1fr 1fr"]{grid-template-columns:1fr!important}}`}</style>
-            </form>
-          )}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={LABEL}>Why do you want to attend? *</label>
+              <textarea style={{ ...INPUT, resize: 'vertical', minHeight: '80px' }} {...register('why_attend')} rows={3}
+                placeholder="What are you hoping to take away from The Elevation Summit?" />
+              {errors.why_attend && <p style={ERROR}>{errors.why_attend.message}</p>}
+            </div>
+
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={LABEL}>How did you hear about the Summit? *</label>
+              <select style={{ ...INPUT, cursor: 'pointer' }} {...register('how_heard')}>
+                <option value="">Select one</option>
+                {HOW_HEARD.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              {errors.how_heard && <p style={ERROR}>{errors.how_heard.message}</p>}
+            </div>
+
+            {/* Section: Logistics */}
+            <p style={{ gridColumn: '1 / -1', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C8A96E', marginBottom: '0.25rem', marginTop: '1.5rem' }}>Logistics</p>
+
+            <div>
+              <label style={LABEL}>Dietary needs <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
+              <input style={INPUT} type="text" {...register('dietary_needs')} placeholder="Vegetarian, halal, allergies…" />
+            </div>
+
+            <div>
+              <label style={LABEL}>Accessibility needs <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
+              <input style={INPUT} type="text" {...register('accessibility')} placeholder="Wheelchair, hearing loop…" />
+            </div>
+
+            {/* Other messages */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={LABEL} htmlFor="other_messages">Anything else you would like us to know? <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
+              <textarea style={{ ...INPUT, resize: 'vertical', minHeight: '80px' }} id="other_messages" {...register('other_messages')} rows={4}
+                placeholder="Share any additional details, questions, or requests." />
+            </div>
+
+            {/* Consent */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.875rem', color: '#0F0F0E', cursor: 'pointer' }}>
+                <input type="checkbox" {...register('consent')} style={{ marginTop: '0.25rem' }} />
+                <span>
+                  I agree to the{' '}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#C8A96E', textDecoration: 'underline' }}>privacy policy</a>
+                  {' '}and consent to being contacted about the Elevation Summit.
+                </span>
+              </label>
+              {errors.consent && <p style={ERROR}>{errors.consent.message}</p>}
+            </div>
+
+            <button type="submit" className="btn-primary" disabled={isSubmitting}
+              style={{ gridColumn: '1 / -1', width: '100%', justifyContent: 'center', padding: '0.875rem', fontSize: '1rem' }}>
+              {isSubmitting ? 'Submitting…' : 'Complete Registration →'}
+            </button>
+
+            <p style={{ gridColumn: '1 / -1', fontSize: '0.8125rem', color: '#9CA3AF', textAlign: 'center' }}>
+              Your information is kept private. We will only contact you about The Elevation Summit.
+            </p>
+
+            <style jsx>{`
+              .phone-input input {
+                width: 100%;
+                padding: 0.75rem 1rem;
+                font-size: 0.9375rem;
+                border-radius: 0.625rem;
+                border: 1.5px solid #E8E6E1;
+                background: #FAFAF8;
+                color: #0F0F0E;
+                outline: none;
+                box-sizing: border-box;
+                font-family: var(--font-body, "Inter", sans-serif);
+                transition: border-color 0.15s;
+              }
+              .phone-input .PhoneInputCountry {
+                padding-right: 0.75rem;
+              }
+            `}</style>
+          </form>
         </div>
       </section>
 

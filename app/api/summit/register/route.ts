@@ -97,21 +97,24 @@ export async function POST(req: Request) {
   const { error: dbError } = await supabaseAdmin
     .from('summit_registrations')
     .insert({
-      full_name:     (full_name as string).trim(),
-      email:         (email as string).trim().toLowerCase(),
-      whatsapp:      (whatsapp as string).trim(),
-      phone:         body.phone || null,
-      country:       (country as string).trim(),
-      city:          body.city || null,
-      current_role:  body.current_role || null,
-      organisation:  body.organisation || null,
-      industry:      body.industry || null,
-      what_building: body.what_building || null,
-      why_attend:    body.why_attend || null,
-      how_heard:     body.how_heard || null,
-      dietary_needs: body.dietary_needs || null,
-      accessibility: body.accessibility || null,
-      status:        'pending',
+      full_name:      (full_name as string).trim(),
+      email:          (email as string).trim().toLowerCase(),
+      whatsapp:       (whatsapp as string).trim(),
+      phone:          (body.phone as string)?.trim() || null,
+      country:        (country as string).trim(),
+      city:           (body.city as string)?.trim() || null,
+      current_role:   (body.current_role as string)?.trim() || null,
+      organisation:   (body.organisation as string)?.trim() || null,
+      industry:       (body.industry as string) || null,
+      what_building:  (body.what_building as string)?.trim() || null,
+      why_attend:     (body.why_attend as string)?.trim() || null,
+      how_heard:      (body.how_heard as string) || null,
+      dietary_needs:  (body.dietary_needs as string)?.trim() || null,
+      accessibility:  (body.accessibility as string)?.trim() || null,
+      consent:        body.consent === true,
+      other_messages: (body.other_messages as string)?.trim() || null,
+      source:         'marketing',
+      status:         'pending',
     });
 
   if (dbError) {
@@ -142,6 +145,32 @@ export async function POST(req: Request) {
     }
   } catch (err: any) {
     console.warn('[summit/register] email non-fatal:', err.message);
+  }
+
+  // Admin notification (non-fatal; must not block the registrant's confirmation)
+  try {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const apiKey = process.env.RESEND_API_KEY;
+    if (adminEmail && apiKey) {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          from:    'Ascentor <notifications@ascentorbi.com>',
+          to:      adminEmail,
+          subject: `New Elevation Summit registration: ${(full_name as string).trim()}`,
+          html:    `<p>New registration received.</p>
+            <ul>
+              <li>Name: ${(full_name as string).trim()}</li>
+              <li>Email: ${(email as string).trim().toLowerCase()}</li>
+              <li>Organisation: ${(body.organisation as string) || ''}</li>
+              <li>Country: ${(country as string).trim()}, ${(body.city as string) || ''}</li>
+            </ul>`,
+        }),
+      });
+    }
+  } catch (err: any) {
+    console.warn('[summit/register] admin email non-fatal:', err.message);
   }
 
   return NextResponse.json({ ok: true });

@@ -424,6 +424,34 @@ export interface ProductPurchase {
   created_at:    string;
 }
 
+export interface SummitRegistration {
+  id:            string;
+  full_name:     string;
+  email:         string;
+  whatsapp:      string;
+  phone:         string | null;
+  country:       string;
+  city:          string | null;
+  current_role:  string | null;
+  organisation:  string | null;
+  industry:      string | null;
+  what_building: string | null;
+  why_attend:    string | null;
+  how_heard:     string | null;
+  dietary_needs: string | null;
+  accessibility: string | null;
+  consent:       boolean;
+  other_messages: string | null;
+  status:        string;
+  ticket_type:   string | null;
+  notes:         string | null;
+  confirmed_at:  string | null;
+  created_at:    string;
+  updated_at:    string;
+  user_id:       string | null;
+  source:        string;
+}
+
 export interface JobListing {
   id:           string;
   title:        string;
@@ -697,6 +725,7 @@ type TableMap = {
   social_queue:             SocialQueue;
   products:                 Product;
   product_purchases:        ProductPurchase;
+  summit_registrations:     SummitRegistration;
   job_listings:             JobListing;
   mentor_applications:      MentorApplication;
   lead_magnets:             LeadMagnet;

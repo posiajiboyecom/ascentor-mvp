@@ -1,0 +1,3 @@
+ALTER TABLE summit_registrations
+  ADD COLUMN IF NOT EXISTS consent BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS other_messages TEXT;
