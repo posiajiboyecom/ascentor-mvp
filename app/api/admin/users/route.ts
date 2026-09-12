@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from('profiles')
-      .select('id, full_name, email, role, subscription_plan, subscription_status, subscription_end, created_at, referral_code, referral_count, avatar_url, current_role, industry', { count: 'exact' })
+      .select('id, full_name, email, role, subscription_plan, subscription_status, subscription_end, created_at, referral_code, referral_count, avatar_url, current_role, industry, permissions', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(page * limit, (page + 1) * limit - 1);
 
@@ -289,42 +289,6 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ success: true, message: 'User permanently deleted' });
       }
 
-      case 'set_permissions': {
-        // value is expected to be a JSON-serialised string[] of permission keys
-        let permissions: string[];
-        try {
-          permissions = Array.isArray(value) ? value : JSON.parse(value || '[]');
-        } catch {
-          return NextResponse.json({ error: 'Invalid permissions format' }, { status: 400 });
-        }
-
-        const VALID_PERMS = new Set([
-          'community:moderate', 'community:read_all',
-          'users:view', 'users:edit', 'users:delete',
-          'content:manage', 'content:publish',
-          'intel:view', 'finance:view',
-        ]);
-        const invalid = permissions.filter(p => !VALID_PERMS.has(p));
-        if (invalid.length > 0) {
-          return NextResponse.json({ error: `Invalid permissions: ${invalid.join(', ')}` }, { status: 400 });
-        }
-
-        await supabase.from('profiles').update({ permissions, updated_at: new Date().toISOString() }).eq('id', targetUserId);
-
-        try {
-          await supabase.from('audit_logs').insert({
-            user_id: user.id,
-            action: 'user_permissions_changed',
-            entity_type: 'user',
-            entity_id: targetUserId,
-            details: { permissions, changed_by: user.email },
-          });
-        } catch (e) {
-          console.error('[audit_log] Failed to write permissions audit:', e);
-        }
-
-        return NextResponse.json({ success: true, message: 'Permissions updated' });
-      }
     }
   } catch (err: any) {
     console.error('Admin user action error:', err);

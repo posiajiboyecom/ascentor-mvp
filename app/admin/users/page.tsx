@@ -32,40 +32,40 @@ const ROLES = ['member', 'moderator', 'admin'];
 const PLANS = ['', 'explorer', 'builder', 'climber'];
 const STATUSES = ['', 'free', 'trialing', 'active', 'cancelled', 'past_due'];
 
-// Granular permissions — matches Permission type in lib/permissions.ts
+// Granular permissions — dot-style Permission union from lib/permissions.ts
 const PERMISSION_GROUPS = [
   {
     label: 'Community',
     perms: [
-      { key: 'community:moderate', label: 'Moderate community', desc: 'Delete messages, pin, broadcast' },
-      { key: 'community:read_all', label: 'Read all channels', desc: 'Access private channels' },
+      { key: 'community.posts.moderate', label: 'Moderate community', desc: 'Delete messages, pin, broadcast' },
+      { key: 'community.posts.delete',   label: 'Delete posts',       desc: 'Remove posts and replies' },
     ],
   },
   {
     label: 'Users',
     perms: [
-      { key: 'users:view',   label: 'View users',   desc: 'See user list and profiles' },
-      { key: 'users:edit',   label: 'Edit users',   desc: 'Change roles, plans, ban/unban' },
-      { key: 'users:delete', label: 'Delete users', desc: 'Permanently delete accounts' },
+      { key: 'users.view',     label: 'View users',   desc: 'See user list and profiles' },
+      { key: 'users.edit_role', label: 'Edit users',   desc: 'Change roles and permissions' },
+      { key: 'users.delete',   label: 'Delete users', desc: 'Permanently delete accounts' },
     ],
   },
   {
     label: 'Content',
     perms: [
-      { key: 'content:manage', label: 'Manage content', desc: 'Create, edit, delete posts' },
-      { key: 'content:publish', label: 'Publish content', desc: 'Publish to production' },
+      { key: 'content.blog.create',   label: 'Create blog',    desc: 'Create and edit blog posts' },
+      { key: 'content.blog.publish',  label: 'Publish content', desc: 'Publish blog posts' },
     ],
   },
   {
-    label: 'Intelligence',
+    label: 'Pipeline',
     perms: [
-      { key: 'intel:view', label: 'View intelligence', desc: 'Run AI analyses' },
+      { key: 'content.pipeline.view', label: 'View pipeline', desc: 'See content pipeline' },
     ],
   },
   {
     label: 'Finance',
     perms: [
-      { key: 'finance:view', label: 'View revenue data', desc: 'See subscription and payment data' },
+      { key: 'payments.view', label: 'View revenue data', desc: 'See subscription and payment data' },
     ],
   },
 ];
@@ -141,14 +141,14 @@ export default function AdminUsersPage() {
     setActionLoading(false);
   };
 
-  // C-04: Permissions are now updated through the API route (not directly via browser Supabase client)
-  // so that the audit log is always written and server-side permission validation is enforced.
+  // Permissions are now updated through the dedicated /api/admin/permissions route
+  // so that the audit log is always written and dot-style Permission validation is enforced.
   const setPermissions = async (userId: string, permissions: string[]) => {
     setActionLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/admin/users', {
-        method: 'PATCH',
+      const res = await fetch('/api/admin/permissions', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session!.access_token}` },
         body: JSON.stringify({ targetUserId: userId, action: 'set_permissions', value: permissions }),
       });
