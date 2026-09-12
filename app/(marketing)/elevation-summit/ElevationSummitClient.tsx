@@ -10,6 +10,7 @@ import 'react-phone-number-input/style.css';
 import PhoneInput from 'react-phone-number-input';
 import { useModal } from '@/components/Modal';
 import { useNotifications } from '@/components/Notifications';
+import { Compass, Hammer, Crown, Sparkles, Network, Monitor } from 'lucide-react';
 
 const h = (s: string) => s.replace(/<(?!br\s*\/?>)[^>]*>/gi, '');
 
@@ -25,7 +26,7 @@ const INPUT = {
   color: '#0F0F0E',
   outline: 'none',
   boxSizing: 'border-box' as const,
-  fontFamily: 'var(--font-body, "Inter", sans-serif)',
+  fontFamily: 'Metropolis, "Inter", sans-serif',
   transition: 'border-color 0.15s',
 };
 
@@ -243,16 +244,20 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
             {[
-              { title: 'Not a Motivational Spectacle', description: 'The Summit does not exist to excite you for 72 hours and send you home unchanged. It exists to send you home more built than you arrived.' },
-              { title: 'Not a Networking Event', description: 'You will meet extraordinary people. But the purpose is not connection for career advancement — it is the encounter with others who have chosen the same ascent.' },
-              { title: 'Not a Conference', description: 'There are no passive attendees. Every person in the room is a participant — challenged, accountable, and choosing, in real time, who they will be.' },
-            ].map((item) => (
-              <div key={item.title} className="mkt-pillar">
-                <div className="mkt-gold-bar" />
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-              </div>
-            ))}
+              { title: 'Not a Motivational Spectacle', icon: Sparkles, description: 'The Summit does not exist to excite you for 72 hours and send you home unchanged. It exists to send you home more built than you arrived.' },
+              { title: 'Not a Networking Event', icon: Network, description: 'You will meet extraordinary people. But the purpose is not connection for career advancement — it is the encounter with others who have chosen the same ascent.' },
+              { title: 'Not a Conference', icon: Monitor, description: 'There are no passive attendees. Every person in the room is a participant — challenged, accountable, and choosing, in real time, who they will be.' },
+            ].map((item) => {
+              const ItemIcon = item.icon;
+              return (
+                <div key={item.title} className="mkt-pillar">
+                  <ItemIcon size={24} style={{ color: '#C8A96E', marginBottom: '0.75rem' }} />
+                  <div className="mkt-gold-bar" />
+                  <h3>{item.title}</h3>
+                  <p>{item.description}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -266,28 +271,20 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
           {[
-            { stage: 'The Seeker', description: 'Still finding the thread. Coming to the Summit to name what has been unnamed and commit to the direction.' },
-            { stage: 'The Builder', description: 'Already building. Coming to the Summit to be sharpened, challenged, and surrounded by people who understand the ascent.' },
-            { stage: 'The Leader', description: 'Responsible for others. Coming to the Summit to think at the level their position demands and to invest in the next generation of builders.' },
-          ].map((item) => (
-            <div key={item.stage} style={{ background: '#FAFAF8', border: '1px solid #E8E6E1', borderRadius: '1rem', padding: '2rem' }}>
-              <div className="mkt-gold-bar" />
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 700, color: '#0F0F0E', marginBottom: '0.75rem' }}>{item.stage}</h3>
-              <p style={{ fontSize: '0.9375rem', color: '#6B7280', lineHeight: 1.7 }}>{item.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Quote */}
-      <section style={{ background: '#F4F3EF', padding: 'clamp(3rem, 6vw, 5rem) 1.5rem' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontFamily: 'var(--font-accent, "Playfair Display", serif)', fontStyle: 'italic', fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)', color: '#0F0F0E', lineHeight: 1.55, marginBottom: '1.5rem' }}>
-            "Every gathering has one purpose: to send people back to their lives more built than they arrived."
-          </p>
-          <p style={{ fontSize: '0.8125rem', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
-            The Founding Document · Ascentor
-          </p>
+            { stage: 'The Seeker', icon: Compass, description: 'Still finding the thread. Coming to the Summit to name what has been unnamed and commit to the direction.' },
+            { stage: 'The Builder', icon: Hammer, description: 'Already building. Coming to the Summit to be sharpened, challenged, and surrounded by people who understand the ascent.' },
+            { stage: 'The Leader', icon: Crown, description: 'Responsible for others. Coming to the Summit to think at the level their position demands and to invest in the next generation of builders.' },
+          ].map((item) => {
+            const ItemIcon = item.icon;
+            return (
+              <div key={item.stage} style={{ background: '#FAFAF8', border: '1px solid #E8E6E1', borderRadius: '1rem', padding: '2rem' }}>
+                <ItemIcon size={24} style={{ color: '#0F0F0E', marginBottom: '0.75rem' }} />
+                <div className="mkt-gold-bar" />
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 700, color: '#0F0F0E', marginBottom: '0.75rem' }}>{item.stage}</h3>
+                <p style={{ fontSize: '0.9375rem', color: '#6B7280', lineHeight: 1.7 }}>{item.description}</p>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -320,11 +317,12 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
                 rules={{ required: 'WhatsApp number is required' }}
                 render={({ field }) => (
                   <PhoneInput
-                    {...field}
+                    value={field.value || undefined}
+                    onChange={field.onChange}
                     international
                     defaultCountry="NG"
                     className="phone-input"
-                    placeholder="+234 800 000 0000"
+                    numberInputProps={{ style: INPUT, placeholder: '+234 800 000 0000' }}
                   />
                 )}
               />
@@ -398,8 +396,17 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
                 color: #0F0F0E;
                 outline: none;
                 box-sizing: border-box;
-                font-family: var(--font-body, "Inter", sans-serif);
+                font-family: 'Metropolis', 'Inter', sans-serif;
                 transition: border-color 0.15s;
+              }
+              .phone-input input::placeholder,
+              .summit-form input::placeholder,
+              .summit-form textarea::placeholder {
+                font-family: 'Metropolis', 'Inter', sans-serif;
+                color: #9CA3AF;
+              }
+              .phone-input input:focus {
+                border-color: #C8A96E;
               }
               .phone-input .PhoneInputCountry {
                 padding-right: 0.75rem;
@@ -409,21 +416,44 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         </div>
       </section>
 
-      {/* Speak / Partner */}
-      <section id="speak" style={{ background: '#F4F3EF', padding: 'clamp(3rem, 6vw, 5rem) 1.5rem' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-          <div>
-            <div className="mkt-gold-bar" />
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, color: '#0F0F0E', marginBottom: '0.75rem' }}>Become a Speaker</h3>
-            <p style={{ color: '#6B7280', lineHeight: 1.7, fontSize: '0.9375rem', marginBottom: '1rem' }}>The Elevation Summit features voices that have built something real — not polished presenters, but proven builders. If you have a story worth telling to an audience of purposeful people, we want to hear from you.</p>
-            <a href="mailto:asamuel@ascentorbi.com?subject=Elevation Summit — Speaker Interest" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#C8A96E', textDecoration: 'none' }}>Express speaker interest →</a>
+      {/* Get Involved */}
+      <section id="speak" style={{ background: '#0F0F0E', padding: 'clamp(4rem, 8vw, 6rem) 1.5rem' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto', textAlign: 'center' }}>
+          <p className="mkt-eyebrow" style={{ marginBottom: '1rem' }}>Get Involved</p>
+          <h2 style={{ fontFamily: 'var(--font-display)', color: '#FAFAF8', marginBottom: '1.25rem', fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 700 }}>
+            Bring your voice or your organisation.
+          </h2>
+          <p style={{ color: '#9CA3AF', lineHeight: 1.8, fontSize: '1rem', marginBottom: '2.5rem' }}>
+            The Elevation Summit is built by people who have built something real — and by organisations that serve them. If you have a story worth telling to purposeful people, or you want to bring your organisation into the conversation, we would love to hear from you.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <a className="summit-cta-link" href="mailto:asamuel@ascentorbi.com?subject=Elevation Summit — Speaker Interest">
+              Express speaker interest →
+            </a>
+            <a className="summit-cta-link" href="mailto:asamuel@ascentorbi.com?subject=Elevation Summit — Partnership Interest">
+              Explore partnership →
+            </a>
           </div>
-          <div id="partner">
-            <div className="mkt-gold-bar" />
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, color: '#0F0F0E', marginBottom: '0.75rem' }}>Partner With Us</h3>
-            <p style={{ color: '#6B7280', lineHeight: 1.7, fontSize: '0.9375rem', marginBottom: '1rem' }}>The Elevation Summit brings together some of the most intentional, high-potential individuals on the continent. If your organization exists to serve purposeful people, there is a conversation to be had.</p>
-            <a href="mailto:asamuel@ascentorbi.com?subject=Elevation Summit — Partnership Interest" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#C8A96E', textDecoration: 'none' }}>Explore partnership →</a>
-          </div>
+
+          <style jsx>{`
+            .summit-cta-link {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.5rem;
+              padding: 0.75rem 1.25rem;
+              border-radius: 0.5rem;
+              background: #C8A96E;
+              color: #0F0F0E;
+              font-weight: 600;
+              font-size: 0.875rem;
+              text-decoration: none;
+              transition: background 0.2s, color 0.2s;
+            }
+            .summit-cta-link:hover {
+              background: #FFFFFF;
+              color: #0F0F0E;
+            }
+          `}</style>
         </div>
       </section>
 
