@@ -95,26 +95,32 @@ export default function SummitSpeakers() {
                 </>
               )}
 
-              <div style={{ display: 'flex', gap: '0.625rem', marginTop: '0.875rem', flexWrap: 'wrap' }}>
-                <a
-                  href={speaker.linkedinUrl ?? '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`${speaker.name} on LinkedIn`}
-                  className="summit-speaker-social summit-speaker-linkedin"
-                >
-                  <Linkedin size={16} /> LinkedIn
-                </a>
-                <a
-                  href={speaker.instagramUrl ?? '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`${speaker.name} on Instagram`}
-                  className="summit-speaker-social summit-speaker-instagram"
-                >
-                  <Instagram size={16} /> Instagram
-                </a>
-              </div>
+              {(speaker.linkedinUrl || speaker.instagramUrl) && (
+                <div style={{ display: 'flex', gap: '0.625rem', marginTop: '0.875rem', flexWrap: 'wrap' }}>
+                  {speaker.linkedinUrl && (
+                    <a
+                      href={speaker.linkedinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${speaker.name} on LinkedIn`}
+                      className="summit-speaker-social summit-speaker-linkedin"
+                    >
+                      <Linkedin size={16} /> LinkedIn
+                    </a>
+                  )}
+                  {speaker.instagramUrl && (
+                    <a
+                      href={speaker.instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${speaker.name} on Instagram`}
+                      className="summit-speaker-social summit-speaker-instagram"
+                    >
+                      <Instagram size={16} /> Instagram
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           ))}
 
