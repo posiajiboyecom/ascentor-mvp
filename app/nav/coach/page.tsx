@@ -281,7 +281,7 @@ export default function CoachPage() {
         <div className="mb-5">
           <h2
             className="text-2xl font-semibold mb-1"
-            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}
+            style={{ fontFamily: "'Metropolis', sans-serif", color: 'var(--text)' }}
           >
             AI Mentor
           </h2>
@@ -437,7 +437,7 @@ export default function CoachPage() {
             color: 'var(--text)',
             border: '1px solid var(--border)',
             outline: 'none',
-            fontFamily: "'Syne', system-ui, sans-serif",
+            fontFamily: "'Metropolis', system-ui, sans-serif",
           }}
         />
         <button

@@ -173,8 +173,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #FAFAF9; }
 
         .pd-nav {
@@ -236,7 +235,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           background: rgba(12,11,8,0.06); color: #4B5563;
         }
         .pd-title {
-          font-family: 'Cormorant Garamond', Georgia, serif;
+          font-family: 'Metropolis', sans-serif;
           font-size: clamp(30px, 4vw, 44px); font-weight: 700;
           line-height: 1.1; color: #0C0B08; margin-bottom: 14px;
         }
@@ -259,7 +258,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px;
         }
         .pd-price {
-          font-family: 'Cormorant Garamond', serif;
+          font-family: 'Metropolis', serif;
           font-size: 44px; font-weight: 700; color: #0C0B08; line-height: 1;
         }
         .pd-price.free-price { color: #14B8A6; }
@@ -275,7 +274,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
         .pd-buy-btn {
           width: 100%; padding: 15px 24px; border-radius: 12px; border: none;
-          font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+          font-family: 'Metropolis', sans-serif; font-size: 15px; font-weight: 700;
           cursor: pointer; letter-spacing: 0.01em;
           transition: opacity 0.15s, transform 0.1s;
         }

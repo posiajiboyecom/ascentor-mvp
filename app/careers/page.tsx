@@ -8,7 +8,7 @@ import PublicShell from '@/components/layout/PublicShell';
 // ============================================================
 // CAREERS PAGE — /careers
 // Public-facing. Inline application form per job listing.
-// Ascentor brand: Dark #0C0B08 · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
+// Ascentor brand: Dark #0C0B08 · Gold #E8A020 · Metropolis · DM Mono · Metropolis
 // ============================================================
 
 interface Job {
@@ -145,15 +145,13 @@ export default function CareersPage() {
   return (
     <PublicShell>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-
-        *, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
         body { margin: 0; background: #0C0B08; }
 
         .cr-root {
           min-height: 100vh;
           background: #0C0B08;
-          font-family: 'Syne', sans-serif;
+          font-family: 'Metropolis', sans-serif;
           color: #D4CFC3;
         }
 
@@ -293,7 +291,7 @@ export default function CareersPage() {
           color: #0C0B08;
           border: none;
           border-radius: 10px;
-          font-family: 'Syne', sans-serif;
+          font-family: 'Metropolis', sans-serif;
           font-size: 14px;
           font-weight: 700;
           cursor: pointer;
@@ -311,7 +309,7 @@ export default function CareersPage() {
           color: #7A7260;
           border: 1px solid #2E2A22;
           border-radius: 10px;
-          font-family: 'Syne', sans-serif;
+          font-family: 'Metropolis', sans-serif;
           font-size: 14px;
           font-weight: 600;
           cursor: pointer;
@@ -327,7 +325,7 @@ export default function CareersPage() {
           animation: cr-expand 0.22s ease both;
         }
         .cr-app-form-title {
-          font-family: 'Cormorant Garamond', serif;
+          font-family: 'Metropolis', serif;
           font-size: 20px; font-weight: 700;
           color: #FEF9EC; margin: 0 0 4px;
         }
@@ -352,7 +350,7 @@ export default function CareersPage() {
         .cr-input {
           background: #1A1710; border: 1px solid #2E2A22; border-radius: 8px;
           padding: 10px 14px; color: #D4CFC3;
-          font-family: 'Syne', sans-serif; font-size: 14px;
+          font-family: 'Metropolis', sans-serif; font-size: 14px;
           outline: none; transition: border-color 0.15s; width: 100%;
           box-sizing: border-box;
         }
@@ -362,7 +360,7 @@ export default function CareersPage() {
         .cr-select {
           background: #1A1710; border: 1px solid #2E2A22; border-radius: 8px;
           padding: 10px 14px; color: #D4CFC3;
-          font-family: 'Syne', sans-serif; font-size: 14px;
+          font-family: 'Metropolis', sans-serif; font-size: 14px;
           outline: none; width: 100%; box-sizing: border-box;
           appearance: none; cursor: pointer;
         }
@@ -377,7 +375,7 @@ export default function CareersPage() {
         .cr-cancel-btn {
           background: transparent; border: 1px solid #2E2A22; border-radius: 8px;
           padding: 11px 22px; color: #7A7260;
-          font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+          font-family: 'Metropolis', sans-serif; font-size: 13px; font-weight: 600;
           cursor: pointer; transition: border-color 0.15s, color 0.15s;
         }
         .cr-cancel-btn:hover { border-color: #4A4438; color: #A09880; }
@@ -404,7 +402,7 @@ export default function CareersPage() {
               Ascentor Careers
             </p>
             <h1 style={{
-              fontFamily: "'Cormorant Garamond', serif",
+              fontFamily: "'Metropolis', serif",
               fontSize: 'clamp(40px, 7vw, 72px)',
               fontWeight: 700, lineHeight: 1.05,
               color: '#FEF9EC', margin: '0 0 20px',
@@ -482,7 +480,7 @@ export default function CareersPage() {
                     ))}
                   </div>
                   <h3 style={{
-                    fontFamily: "'Cormorant Garamond', serif",
+                    fontFamily: "'Metropolis', serif",
                     fontSize: 22, fontWeight: 700,
                     color: '#FEF9EC', margin: '0 0 6px', lineHeight: 1.2,
                   }}>
@@ -553,7 +551,7 @@ export default function CareersPage() {
                     <div className="cr-success-banner">
                       <span style={{ fontSize: 22 }}>✓</span>
                       <div>
-                        <p style={{ margin: '0 0 4px', fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: '#FEF9EC' }}>
+                        <p style={{ margin: '0 0 4px', fontFamily: "'Metropolis', serif", fontSize: 18, fontWeight: 700, color: '#FEF9EC' }}>
                           Application received.
                         </p>
                         <p style={{ margin: 0, fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: '#7A7260', letterSpacing: '0.04em', lineHeight: 1.6 }}>
@@ -634,7 +632,7 @@ export default function CareersPage() {
                           borderRadius: 8, padding: '10px 14px', cursor: 'pointer', transition: 'border-color 0.15s',
                         }}>
                           <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: '#E8A020' }}>↑</span>
-                          <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: cvFile ? '#D4CFC3' : '#3A3830' }}>
+                          <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 14, color: cvFile ? '#D4CFC3' : '#3A3830' }}>
                             {cvFile ? cvFile.name : 'Choose file…'}
                           </span>
                           {cvFile && (
@@ -692,7 +690,7 @@ export default function CareersPage() {
         {/* ── Speculative / CTA strip ── */}
         <div className="cr-cta">
           <p style={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "'Metropolis', serif",
             fontSize: 32, fontWeight: 700,
             color: '#FEF9EC', marginBottom: 12, lineHeight: 1.2,
           }}>

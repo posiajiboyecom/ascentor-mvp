@@ -6,7 +6,7 @@ import { useState } from 'react';
 // ASCENTOR · PasswordInput · Brand Book v1.0 · 2026
 // Drop-in replacement for <input type="password" />
 // Usage: <PasswordInput value={pw} onChange={setPw} placeholder="..." />
-// Gold: #E8A020  Dark: #0C0B08  Font: Syne
+// Gold: #E8A020  Dark: #0C0B08  Font: Metropolis
 // ─────────────────────────────────────────────────────────────────
 
 interface PasswordInputProps {
@@ -60,7 +60,7 @@ export default function PasswordInput({
     border:          '1px solid rgba(212,207,195,0.10)',
     background:      '#1E1C17',
     color:           '#F7F6F3',
-    fontFamily:      "'Syne', system-ui, sans-serif",
+    fontFamily:      "'Metropolis', system-ui, sans-serif",
     fontSize:        '14px',
     fontWeight:      400,
     outline:         'none',

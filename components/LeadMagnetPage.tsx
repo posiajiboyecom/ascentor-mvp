@@ -72,7 +72,7 @@ export default function LeadMagnetPage({
   const gold = accentColor;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FAF7F2', fontFamily: "'Syne', system-ui, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#FAF7F2', fontFamily: "'Metropolis', system-ui, sans-serif" }}>
 
       {/* Nav */}
       <nav style={{
@@ -86,7 +86,7 @@ export default function LeadMagnetPage({
         </Link>
         <Link href="/signup" style={{
           padding: '8px 18px', borderRadius: 8, background: gold, color: '#0C0B08',
-          fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13,
+          fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 13,
           textDecoration: 'none',
         }}>
           Join Ascentor →
@@ -113,18 +113,18 @@ export default function LeadMagnetPage({
 
           {/* Headline */}
           <h1 style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "'Metropolis', sans-serif",
             fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 700, lineHeight: 1.1,
             color: '#0C0B08', marginBottom: 12,
           }}>
             {headline}
           </h1>
           <p style={{
-            fontFamily: "'Syne', sans-serif", fontSize: 18, fontStyle: 'italic',
+            fontFamily: "'Metropolis', sans-serif", fontSize: 18, fontStyle: 'italic',
             color: gold, marginBottom: 20,
           }}>{subheadline}</p>
           <p style={{
-            fontFamily: "'Syne', sans-serif", fontSize: 16, lineHeight: 1.8,
+            fontFamily: "'Metropolis', sans-serif", fontSize: 16, lineHeight: 1.8,
             color: '#4A4438', marginBottom: 32, maxWidth: 520,
           }}>{description}</p>
 
@@ -146,7 +146,7 @@ export default function LeadMagnetPage({
                       <path d="M2 6l3 3 5-5" stroke={gold} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </span>
-                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, color: '#2A2820', lineHeight: 1.6 }}>
+                  <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 15, color: '#2A2820', lineHeight: 1.6 }}>
                     {b.text}
                   </span>
                 </div>
@@ -162,13 +162,13 @@ export default function LeadMagnetPage({
                   width: 28, height: 28, borderRadius: '50%', background: c,
                   border: '2px solid #FAF7F2', marginLeft: i > 0 ? -8 : 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: '#0C0B08',
+                  fontFamily: "'Metropolis', sans-serif", fontSize: 11, fontWeight: 700, color: '#0C0B08',
                 }}>
                   {['P','D','H'][i]}
                 </div>
               ))}
             </div>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: '#7A7260', margin: 0 }}>
+            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: '#7A7260', margin: 0 }}>
               Used by purposeful individuals building their career edge
             </p>
           </div>
@@ -193,22 +193,22 @@ export default function LeadMagnetPage({
                   <path d="M5 12l4 4 10-10" stroke={gold} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <h3 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 24, fontWeight: 700, color: '#0C0B08', marginBottom: 8 }}>
+              <h3 style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 24, fontWeight: 700, color: '#0C0B08', marginBottom: 8 }}>
                 It's on its way
               </h3>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: '#6B6456' }}>
+              <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 14, color: '#6B6456' }}>
                 Check your email — your free resource is being delivered now. Taking you to the download page...
               </p>
             </div>
           ) : (
             <>
               <h2 style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontFamily: "'Metropolis', sans-serif",
                 fontSize: 26, fontWeight: 700, color: '#0C0B08', marginBottom: 6,
               }}>
                 Get instant access
               </h2>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: '#7A7260', marginBottom: 24 }}>
+              <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 14, color: '#7A7260', marginBottom: 24 }}>
                 Free. No credit card. Delivered to your inbox immediately.
               </p>
 
@@ -225,7 +225,7 @@ export default function LeadMagnetPage({
                     style={{
                       width: '100%', padding: '12px 14px', borderRadius: 10,
                       border: '1px solid rgba(42,40,32,0.15)', background: '#FAF7F2',
-                      fontFamily: "'Syne', sans-serif", fontSize: 14, color: '#0C0B08',
+                      fontFamily: "'Metropolis', sans-serif", fontSize: 14, color: '#0C0B08',
                       outline: 'none', boxSizing: 'border-box' as const,
                     }}
                   />
@@ -243,14 +243,14 @@ export default function LeadMagnetPage({
                     style={{
                       width: '100%', padding: '12px 14px', borderRadius: 10,
                       border: '1px solid rgba(42,40,32,0.15)', background: '#FAF7F2',
-                      fontFamily: "'Syne', sans-serif", fontSize: 14, color: '#0C0B08',
+                      fontFamily: "'Metropolis', sans-serif", fontSize: 14, color: '#0C0B08',
                       outline: 'none', boxSizing: 'border-box' as const,
                     }}
                   />
                 </div>
 
                 {error && (
-                  <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: '#EF4444', margin: 0 }}>
+                  <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: '#EF4444', margin: 0 }}>
                     {error}
                   </p>
                 )}
@@ -262,7 +262,7 @@ export default function LeadMagnetPage({
                     width: '100%', padding: '14px', borderRadius: 10,
                     background: status === 'loading' ? `${gold}80` : gold,
                     color: '#0C0B08', border: 'none',
-                    fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700,
+                    fontFamily: "'Metropolis', sans-serif", fontSize: 15, fontWeight: 700,
                     cursor: status === 'loading' ? 'not-allowed' : 'pointer',
                     transition: 'background 0.15s',
                   }}
@@ -281,11 +281,11 @@ export default function LeadMagnetPage({
                 borderTop: '1px solid rgba(42,40,32,0.08)',
                 textAlign: 'center' as const,
               }}>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: '#9A9080', marginBottom: 8 }}>
+                <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: '#9A9080', marginBottom: 8 }}>
                   Want more than a guide?
                 </p>
                 <Link href="/signup" style={{
-                  fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600,
+                  fontFamily: "'Metropolis', sans-serif", fontSize: 13, fontWeight: 600,
                   color: gold, textDecoration: 'none',
                 }}>
                   Try Sage free for 7 days →

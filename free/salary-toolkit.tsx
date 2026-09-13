@@ -44,8 +44,7 @@ export default function SalaryToolkitPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         .st-page {
           min-height: 100vh;
@@ -93,7 +92,7 @@ export default function SalaryToolkitPage() {
           margin-bottom: 28px;
         }
         .st-h1 {
-          font-family: 'Cormorant Garamond', serif;
+          font-family: 'Metropolis', serif;
           font-size: clamp(42px, 5vw, 68px);
           font-weight: 700;
           line-height: 1.0;
@@ -159,7 +158,7 @@ export default function SalaryToolkitPage() {
           margin-bottom: 20px;
         }
         .st-form-title {
-          font-family: 'Cormorant Garamond', serif;
+          font-family: 'Metropolis', serif;
           font-size: 28px;
           font-weight: 700;
           line-height: 1.2;

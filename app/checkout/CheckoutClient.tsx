@@ -255,7 +255,7 @@ export default function CheckoutClient() {
             <div style={{ textAlign: 'center', padding: '40px 24px' }}>
               <Link href="/account"
                 className="co-cta"
-                style={{ display: 'inline-block', width: 'auto', padding: '14px 40px', background: '#E8A020', color: '#0C0B08', borderRadius: 10, fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
+                style={{ display: 'inline-block', width: 'auto', padding: '14px 40px', background: '#E8A020', color: '#0C0B08', borderRadius: 10, fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
                 Manage Subscription
               </Link>
             </div>
@@ -548,8 +548,7 @@ function TrustBar() {
 
 function checkoutStyles(isDark: boolean): string {
   return `
-    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     .co-root[data-co-theme="dark"] {
       --bg: #0C0B08; --bg2: #1E1C17; --card: #141310;
@@ -569,7 +568,7 @@ function checkoutStyles(isDark: boolean): string {
 
     .co-root {
       min-height: 100vh; background: var(--bg);
-      font-family: 'Syne', sans-serif; color: var(--text);
+      font-family: 'Metropolis', sans-serif; color: var(--text);
       position: relative; overflow-x: hidden;
     }
     .co-root::before {
@@ -593,7 +592,7 @@ function checkoutStyles(isDark: boolean): string {
       display: flex; align-items: center; gap: 10px; text-decoration: none;
     }
     .co-logo-text {
-      font-family: 'Cormorant Garamond', serif; font-weight: 700;
+      font-family: 'Metropolis', serif; font-weight: 700;
       font-size: 20px; color: var(--heading);
     }
     .co-back-btn {
@@ -617,7 +616,7 @@ function checkoutStyles(isDark: boolean): string {
       background: rgba(20,184,166,0.08); border: 1px solid rgba(20,184,166,0.2); color: #14B8A6;
     }
     .co-hero-heading {
-      font-family: 'Cormorant Garamond', serif; font-weight: 700;
+      font-family: 'Metropolis', serif; font-weight: 700;
       font-size: clamp(34px, 6vw, 52px); line-height: 1.05;
       color: var(--heading); margin-bottom: 16px;
     }
@@ -633,7 +632,7 @@ function checkoutStyles(isDark: boolean): string {
     }
     .co-billing-btn {
       padding: 10px 24px; border-radius: 9px; border: none; cursor: pointer;
-      font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.2s;
+      font-family: 'Metropolis', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.2s;
     }
     .co-billing-btn.on  { background: #E8A020; color: #0C0B08; }
     .co-billing-btn.off { background: transparent; color: var(--text-muted); }
@@ -682,18 +681,18 @@ function checkoutStyles(isDark: boolean): string {
       font-family: Metropolis, 'Inter', sans-serif; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
     }
     .co-plan-name {
-      font-family: 'Cormorant Garamond', serif; font-weight: 700;
+      font-family: 'Metropolis', serif; font-weight: 700;
       font-size: 28px; color: var(--heading); margin-bottom: 6px;
     }
     .co-plan-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; }
 
     .co-price-row { display: flex; align-items: baseline; gap: 3px; }
     .co-price-sym {
-      font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600;
+      font-family: 'Metropolis', serif; font-size: 20px; font-weight: 600;
       color: #7A7260; align-self: flex-start; margin-top: 6px;
     }
     .co-price-num {
-      font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 700;
+      font-family: 'Metropolis', serif; font-size: 48px; font-weight: 700;
       color: var(--price); line-height: 1; letter-spacing: -1px;
     }
     .co-price-per { font-size: 13px; color: var(--text-muted); align-self: flex-end; margin-bottom: 4px; }
@@ -723,7 +722,7 @@ function checkoutStyles(isDark: boolean): string {
 
     .co-cta {
       padding: 14px 24px; border-radius: 10px; border: none;
-      font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+      font-family: 'Metropolis', sans-serif; font-size: 14px; font-weight: 700;
       cursor: pointer; width: 100%; transition: all 0.2s;
     }
     .co-cta:disabled { opacity: 0.4; cursor: not-allowed; }

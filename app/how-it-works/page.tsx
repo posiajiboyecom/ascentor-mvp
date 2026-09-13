@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicShell from '@/components/layout/PublicShell';
 
@@ -202,7 +202,7 @@ export default async function HowItWorksPage() {
   return (
     <PublicShell>
     <div
-      style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'Syne', system-ui, sans-serif" }}>
+      style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'Metropolis', system-ui, sans-serif" }}>
       {/* Content */}
 
       {/* ── Hero ── */}
@@ -212,7 +212,7 @@ export default async function HowItWorksPage() {
           THE SYSTEM
         </div>
         <h1 className="text-4xl md:text-5xl font-semibold mb-4"
-          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08', lineHeight: 1.1 }}>
+          style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08', lineHeight: 1.1 }}>
           {heroHeadline}
         </h1>
         <p className="text-base max-w-2xl mx-auto" style={{ color: '#6B7280', lineHeight: 1.75 }}>
@@ -231,7 +231,7 @@ export default async function HowItWorksPage() {
                 <span dangerouslySetInnerHTML={{ __html: p.emoji }} />
               </div>
               <h3 className="text-lg font-semibold mb-4"
-                style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
+                style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>
                 {p.title}
               </h3>
               <div className="flex flex-col gap-2.5 flex-1">
@@ -254,7 +254,7 @@ export default async function HowItWorksPage() {
             <p className="text-[10px] font-bold tracking-widest uppercase mb-3"
               style={{ color: '#9CA3AF' }}>YOUR JOURNEY</p>
             <h2 className="text-3xl font-semibold"
-              style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
+              style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>
               From sign-up to breakthrough
             </h2>
           </div>
@@ -279,7 +279,7 @@ export default async function HowItWorksPage() {
                     <span className="text-[10px] font-bold tracking-widest"
                       style={{ color: s.color }}>{s.number}</span>
                     <h3 className="text-lg font-semibold"
-                      style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
+                      style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>
                       {s.title}
                     </h3>
                   </div>
@@ -308,7 +308,7 @@ export default async function HowItWorksPage() {
             <p className="text-[10px] font-bold tracking-widest uppercase mb-3"
               style={{ color: '#9CA3AF' }}>THE HONEST COMPARISON</p>
             <h2 className="text-3xl font-semibold"
-              style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
+              style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>
               Ascentor vs. traditional coaching
             </h2>
           </div>
@@ -347,7 +347,7 @@ export default async function HowItWorksPage() {
       <section className="py-12 px-5" style={{ background: '#fff' }}>
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-semibold text-center mb-8"
-            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
+            style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>
             Frequently asked questions
           </h2>
           {activeFaqs.map(f => (
@@ -375,7 +375,7 @@ export default async function HowItWorksPage() {
             {ctaEyebrow}
           </div>
           <h2 className="text-3xl md:text-4xl font-semibold mb-4"
-            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#F3F4F6', lineHeight: 1.2 }}>
+            style={{ fontFamily: "'Metropolis', sans-serif", color: '#F3F4F6', lineHeight: 1.2 }}>
             {ctaHeadline}
           </h2>
           <p className="text-sm mb-8 max-w-lg mx-auto" style={{ color: '#9CA3AF', lineHeight: 1.75 }}>

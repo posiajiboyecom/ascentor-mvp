@@ -1,4 +1,4 @@
-﻿import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -63,7 +63,7 @@ export default async function BlogPostPage({ params }: Props) {
       .split('\n\n')
       .map((block, i) => {
         if (block.startsWith('## ')) {
-          return <h2 key={i} className="text-xl font-semibold mt-8 mb-3" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>{block.replace('## ', '')}</h2>;
+          return <h2 key={i} className="text-xl font-semibold mt-8 mb-3" style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>{block.replace('## ', '')}</h2>;
         }
         if (block.startsWith('### ')) {
           return <h3 key={i} className="text-lg font-semibold mt-6 mb-2" style={{ color: '#0C0B08' }}>{block.replace('### ', '')}</h3>;
@@ -127,7 +127,7 @@ export default async function BlogPostPage({ params }: Props) {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: '#FAFAF9', fontFamily: "'Syne', system-ui, sans-serif" }}>
+    <div className="min-h-screen" style={{ background: '#FAFAF9', fontFamily: "'Metropolis', system-ui, sans-serif" }}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -157,7 +157,7 @@ export default async function BlogPostPage({ params }: Props) {
         </div>
 
         <h1 className="text-3xl md:text-4xl font-semibold mb-4 leading-tight"
-          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
+          style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>
           {post.title}
         </h1>
 

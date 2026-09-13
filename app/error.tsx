@@ -21,7 +21,7 @@ export default function ErrorPage({
       alignItems: 'center',
       justifyContent: 'center',
       background: 'var(--bg, #0C0B08)',
-      fontFamily: "'Syne', system-ui, sans-serif",
+      fontFamily: "var(--font-body, Metropolis, system-ui, sans-serif)",
       padding: '24px',
     }}>
       <div style={{ maxWidth: 400, width: '100%', textAlign: 'center' }}>
@@ -38,7 +38,7 @@ export default function ErrorPage({
 
         {/* Heading */}
         <h1 style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: "var(--font-display, Metropolis, sans-serif)",
           fontSize: 28, fontWeight: 700,
           color: '#F1F0EB',
           marginBottom: 10,
@@ -60,7 +60,7 @@ export default function ErrorPage({
             style={{
               padding: '12px 24px', borderRadius: 10, border: 'none',
               background: '#E8A020', color: '#0C0B08',
-              fontFamily: "'Syne', sans-serif",
+              fontFamily: "var(--font-body, Metropolis, sans-serif)",
               fontSize: 14, fontWeight: 700, cursor: 'pointer',
             }}
           >
@@ -73,7 +73,7 @@ export default function ErrorPage({
               padding: '12px 24px', borderRadius: 10,
               border: '1px solid #2E2A22',
               color: '#D4CFC3', background: 'transparent',
-              fontFamily: "'Syne', sans-serif",
+              fontFamily: "var(--font-body, Metropolis, sans-serif)",
               fontSize: 14, fontWeight: 600,
               textDecoration: 'none',
               display: 'inline-block',

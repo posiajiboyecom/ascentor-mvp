@@ -8,15 +8,15 @@ export default function NotFound() {
       alignItems: 'center',
       justifyContent: 'center',
       background: '#FAFAF8',
-      fontFamily: "'Syne', system-ui, sans-serif",
+      fontFamily: "var(--font-body, Metropolis, system-ui, sans-serif)",
       padding: '24px',
     }}>
       <div style={{ maxWidth: 420, width: '100%', textAlign: 'center' }}>
 
         {/* 404 glyph */}
         <div style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: 96, fontWeight: 700, lineHeight: 1,
+          fontFamily: "var(--font-display, Metropolis, sans-serif)",
+          fontSize: 96, fontWeight: 800, lineHeight: 1,
           color: 'rgba(232,160,32,0.12)',
           marginBottom: 8,
           letterSpacing: '-4px',
@@ -25,7 +25,7 @@ export default function NotFound() {
         </div>
 
         <h1 style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: "var(--font-display, Metropolis, sans-serif)",
           fontSize: 30, fontWeight: 700,
           color: '#0F0F0E',
           marginBottom: 10, marginTop: 0,
@@ -48,7 +48,7 @@ export default function NotFound() {
             style={{
               padding: '12px 24px', borderRadius: 10, border: 'none',
               background: '#E8A020', color: '#0C0B08',
-              fontFamily: "'Syne', sans-serif",
+              fontFamily: "var(--font-body, Metropolis, sans-serif)",
               fontSize: 14, fontWeight: 700,
               textDecoration: 'none',
               display: 'inline-block',
@@ -63,7 +63,7 @@ export default function NotFound() {
               padding: '12px 24px', borderRadius: 10,
               border: '1px solid #E8E6E1',
               color: '#0F0F0E', background: 'transparent',
-              fontFamily: "'Syne', sans-serif",
+              fontFamily: "var(--font-body, Metropolis, sans-serif)",
               fontSize: 14, fontWeight: 600,
               textDecoration: 'none',
               display: 'inline-block',

@@ -22,7 +22,7 @@ export default function DownloadPage({
   const gold = '#E8A020';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FAF7F2', fontFamily: "'Syne', system-ui, sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+    <div style={{ minHeight: '100vh', background: '#FAF7F2', fontFamily: "'Metropolis', system-ui, sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
 
       <Link href="/" style={{ marginBottom: 48, display: 'block' }}>
         <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: 32 }} />
@@ -43,14 +43,14 @@ export default function DownloadPage({
         </div>
 
         <h1 style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: "'Metropolis', sans-serif",
           fontSize: 36, fontWeight: 700, color: '#0C0B08', marginBottom: 12,
         }}>
           Your resource is ready
         </h1>
 
         <p style={{
-          fontFamily: "'Syne', sans-serif", fontSize: 16, color: '#4A4438',
+          fontFamily: "'Metropolis', sans-serif", fontSize: 16, color: '#4A4438',
           lineHeight: 1.7, marginBottom: 32,
         }}>
           {title} has been sent to your inbox. You can also download it directly below.
@@ -66,7 +66,7 @@ export default function DownloadPage({
             display: 'inline-flex', alignItems: 'center', gap: 10,
             padding: '14px 28px', borderRadius: 12,
             background: gold, color: '#0C0B08',
-            fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700,
+            fontFamily: "'Metropolis', sans-serif", fontSize: 15, fontWeight: 700,
             textDecoration: 'none', marginBottom: 40,
           }}
         >
@@ -85,7 +85,7 @@ export default function DownloadPage({
             What's next
           </p>
           <p style={{
-            fontFamily: "'Syne', sans-serif", fontSize: 15, color: '#4A4438',
+            fontFamily: "'Metropolis', sans-serif", fontSize: 15, color: '#4A4438',
             lineHeight: 1.7, marginBottom: 20,
           }}>
             {nextStep}
@@ -93,7 +93,7 @@ export default function DownloadPage({
           <Link href={nextStepLink} style={{
             display: 'inline-block', padding: '12px 24px', borderRadius: 10,
             border: `1px solid ${gold}40`, background: `${gold}08`,
-            color: '#0C0B08', fontFamily: "'Syne', sans-serif",
+            color: '#0C0B08', fontFamily: "'Metropolis', sans-serif",
             fontSize: 14, fontWeight: 600, textDecoration: 'none',
           }}>
             {nextStepLabel}
@@ -109,11 +109,11 @@ export default function DownloadPage({
           <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.1em', color: gold, marginBottom: 10 }}>
             TRY THIS IN SAGE
           </p>
-          <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: '#4A4438', lineHeight: 1.7, marginBottom: 12 }}>
+          <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 14, color: '#4A4438', lineHeight: 1.7, marginBottom: 12 }}>
             Open Ascentor and ask Sage: <em style={{ color: '#0C0B08' }}>"I just downloaded {title}. Help me apply it to my specific situation."</em>
           </p>
           <Link href="/signup" style={{
-            fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600,
+            fontFamily: "'Metropolis', sans-serif", fontSize: 13, fontWeight: 600,
             color: gold, textDecoration: 'none',
           }}>
             Start free with Sage →

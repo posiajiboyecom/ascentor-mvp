@@ -149,7 +149,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
       {/* Greeting */}
       <div className="mb-7">
         <h1 className="text-2xl font-semibold mb-1"
-          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
+          style={{ fontFamily: "'Metropolis', sans-serif", color: 'var(--text)' }}>
           Welcome back, {firstName}.
         </h1>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -162,7 +162,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
         {stats.map((s) => (
           <Card key={s.label} className="text-center !p-4">
             <div className="flex justify-center mb-2">{s.icon}</div>
-            <div className="text-2xl font-bold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: s.color }}>
+            <div className="text-2xl font-bold" style={{ fontFamily: "'Metropolis', sans-serif", color: s.color }}>
               {s.value}
             </div>
             <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)', fontFamily: "Metropolis, 'Inter', sans-serif", letterSpacing: '0.06em' }}>

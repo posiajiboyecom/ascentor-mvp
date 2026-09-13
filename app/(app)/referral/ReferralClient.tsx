@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 
@@ -86,7 +86,7 @@ export default function ReferralClient({ firstName, referralCode, referralCount,
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-xl font-semibold mb-1"
-          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
+          style={{ fontFamily: "'Metropolis', sans-serif", color: 'var(--text)' }}>
           Invite &amp; Earn
         </h1>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -104,7 +104,7 @@ export default function ReferralClient({ firstName, referralCode, referralCount,
           <div key={s.label} className="rounded-xl p-4 text-center"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <div className="text-xl mb-1" dangerouslySetInnerHTML={{ __html: s.icon }} />
-            <div className="text-2xl font-bold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: s.color }}>
+            <div className="text-2xl font-bold" style={{ fontFamily: "'Metropolis', sans-serif", color: s.color }}>
               {s.value}
             </div>
             <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>{s.label}</div>

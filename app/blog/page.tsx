@@ -1,4 +1,4 @@
-﻿import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 
 export const metadata = {
@@ -27,7 +27,7 @@ export default async function BlogPage() {
   const hasPosts = posts && posts.length > 0;
 
   return (
-    <div style={{ fontFamily: "'Syne', system-ui, sans-serif", background: '#FFFBF5', color: '#1A1A2E', minHeight: '100vh' }}>
+    <div style={{ fontFamily: "'Metropolis', system-ui, sans-serif", background: '#FFFBF5', color: '#1A1A2E', minHeight: '100vh' }}>
       <nav className="px-4 lg:px-8 py-4" style={{ borderBottom: '1px solid rgba(245,158,11,0.1)' }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="lp-nav-logo">
@@ -44,7 +44,7 @@ export default async function BlogPage() {
       <section className="py-16 lg:py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#E8A020' }}>Blog</span>
-          <h1 className="text-3xl lg:text-4xl font-bold mt-2 mb-3" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Leadership Insights</h1>
+          <h1 className="text-3xl lg:text-4xl font-bold mt-2 mb-3" style={{ fontFamily: "'Metropolis', sans-serif" }}>Leadership Insights</h1>
           <p className="text-base mb-10" style={{ color: '#6B7280' }}>Actionable strategies for purposeful individuals building their leadership edge.</p>
 
           {!hasPosts && (
@@ -95,7 +95,7 @@ function PostCard({ post }: { post: any }) {
           <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: '#FEF3C7', color: '#D97706' }}>{post.category}</span>
           <span className="text-[11px]" style={{ color: '#9CA3AF' }}>{post.read_time_minutes} min read</span>
         </div>
-        <h2 className="text-lg font-bold mb-1" style={{ color: '#1A1A2E', fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{post.title}</h2>
+        <h2 className="text-lg font-bold mb-1" style={{ color: '#1A1A2E', fontFamily: "'Metropolis', sans-serif" }}>{post.title}</h2>
         {post.excerpt && <p className="text-sm mb-2" style={{ color: '#6B7280' }}>{post.excerpt}</p>}
         <div className="text-xs" style={{ color: '#9CA3AF' }}>{post.author_name || 'Ascentor Team'} · {date}</div>
       </article>

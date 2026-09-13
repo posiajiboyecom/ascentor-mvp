@@ -10,7 +10,7 @@ import { NotificationBell } from '@/components/Notifications';
 // ─────────────────────────────────────────────────────────────────
 // ASCENTOR · AppShell · Brand Book v1.0 · 2026
 // Header + BottomNav wrapper for all authenticated pages
-// Gold: #E8A020  Dark: #0C0B08  Font: Syne / Cormorant Garamond
+// Gold: #E8A020  Dark: #0C0B08  Font: Metropolis / Metropolis
 // ─────────────────────────────────────────────────────────────────
 
 export default function AppShell({
@@ -92,7 +92,7 @@ export default function AppShell({
                 background:      'rgba(232,160,32,0.12)',
                 border:          '1.5px solid rgba(232,160,32,0.35)',
                 color:           '#E8A020',
-                fontFamily:      "'Syne', system-ui, sans-serif",
+                fontFamily:      "'Metropolis', system-ui, sans-serif",
                 fontSize:        '12px',
                 fontWeight:      700,
                 cursor:          'pointer',
@@ -121,7 +121,7 @@ export default function AppShell({
                   style={{
                     display:        'block',
                     padding:        '10px 16px',
-                    fontFamily:     "'Syne', system-ui, sans-serif",
+                    fontFamily:     "'Metropolis', system-ui, sans-serif",
                     fontSize:       '13px',
                     fontWeight:     500,
                     color:          '#E8A020',
@@ -136,7 +136,7 @@ export default function AppShell({
                   style={{
                     display:        'block',
                     padding:        '10px 16px',
-                    fontFamily:     "'Syne', system-ui, sans-serif",
+                    fontFamily:     "'Metropolis', system-ui, sans-serif",
                     fontSize:       '13px',
                     fontWeight:     400,
                     color:          '#D4CFC3',
@@ -152,7 +152,7 @@ export default function AppShell({
                     width:      '100%',
                     textAlign:  'left',
                     padding:    '10px 16px',
-                    fontFamily: "'Syne', system-ui, sans-serif",
+                    fontFamily: "'Metropolis', system-ui, sans-serif",
                     fontSize:   '13px',
                     fontWeight: 400,
                     color:      '#EF4444',

@@ -229,7 +229,7 @@ export default function PushPermission() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{
             margin: '0 0 2px',
-            fontFamily: "'Syne', system-ui, sans-serif",
+            fontFamily: "'Metropolis', system-ui, sans-serif",
             fontSize: 13, fontWeight: 700,
             color: 'var(--text, #F5F3EE)',
           }}>
@@ -258,7 +258,7 @@ export default function PushPermission() {
               color:       '#000',
               border:      'none',
               borderRadius: 9,
-              fontFamily:  "'Syne', system-ui, sans-serif",
+              fontFamily:  "'Metropolis', system-ui, sans-serif",
               fontSize:    12,
               fontWeight:  700,
               cursor:      'pointer',

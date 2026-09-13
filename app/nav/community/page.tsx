@@ -589,7 +589,7 @@ export default function CohortFeedPage() {
           </div>
           <div>
             <h2 className="text-xl font-semibold"
-              style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
+              style={{ fontFamily: "'Metropolis', sans-serif", color: 'var(--text)' }}>
               {cohort?.name}
             </h2>
             <div className="flex items-center gap-2">

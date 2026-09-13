@@ -158,7 +158,7 @@ function Shell({
                 background:     'rgba(232,160,32,0.12)',
                 border:         '1.5px solid rgba(232,160,32,0.35)',
                 color:          '#E8A020',
-                fontFamily:     "'Syne', system-ui, sans-serif",
+                fontFamily:     "'Metropolis', system-ui, sans-serif",
                 fontSize:       '12px',
                 fontWeight:     700,
                 cursor:         'pointer',
@@ -188,7 +188,7 @@ function Shell({
                     <Link
                       href="/admin"
                       onClick={() => setShowMenu(false)}
-                      style={{ display: 'block', padding: '10px 16px', fontFamily: "'Syne', sans-serif", fontSize: '13px', fontWeight: 600, color: '#10B981', textDecoration: 'none' }}
+                      style={{ display: 'block', padding: '10px 16px', fontFamily: "'Metropolis', sans-serif", fontSize: '13px', fontWeight: 600, color: '#10B981', textDecoration: 'none' }}
                     >
                       Admin Dashboard
                     </Link>
@@ -199,21 +199,21 @@ function Shell({
                 <Link
                   href="/referral"
                   onClick={() => setShowMenu(false)}
-                  style={{ display: 'block', padding: '10px 16px', fontFamily: "'Syne', sans-serif", fontSize: '13px', fontWeight: 500, color: '#E8A020', textDecoration: 'none' }}
+                  style={{ display: 'block', padding: '10px 16px', fontFamily: "'Metropolis', sans-serif", fontSize: '13px', fontWeight: 500, color: '#E8A020', textDecoration: 'none' }}
                 >
                   Invite &amp; Earn
                 </Link>
                 <Link
                   href="/account"
                   onClick={() => setShowMenu(false)}
-                  style={{ display: 'block', padding: '10px 16px', fontFamily: "'Syne', sans-serif", fontSize: '13px', fontWeight: 400, color: 'var(--app-text)', textDecoration: 'none' }}
+                  style={{ display: 'block', padding: '10px 16px', fontFamily: "'Metropolis', sans-serif", fontSize: '13px', fontWeight: 400, color: 'var(--app-text)', textDecoration: 'none' }}
                 >
                   Settings
                 </Link>
                 <div style={{ height: '1px', background: 'var(--app-border)', margin: '4px 0' }} />
                 <button
                   onClick={handleSignOut}
-                  style={{ width: '100%', textAlign: 'left', padding: '10px 16px', fontFamily: "'Syne', sans-serif", fontSize: '13px', fontWeight: 400, color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}
+                  style={{ width: '100%', textAlign: 'left', padding: '10px 16px', fontFamily: "'Metropolis', sans-serif", fontSize: '13px', fontWeight: 400, color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
                   Sign Out
                 </button>

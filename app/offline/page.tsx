@@ -7,7 +7,7 @@ export default function OfflinePage() {
       <div className="max-w-sm text-center">
         <div className="text-5xl mb-5">📡</div>
         <h1 className="text-2xl font-semibold mb-2"
-          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#F1F0EB' }}>
+          style={{ fontFamily: "'Metropolis', sans-serif", color: '#F1F0EB' }}>
           You're Offline
         </h1>
         <p className="text-sm mb-6" style={{ color: '#8B8A85', lineHeight: 1.7 }}>

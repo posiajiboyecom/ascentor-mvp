@@ -1,4 +1,4 @@
-﻿// FILE: components/subscription/PlanSection.tsx
+// FILE: components/subscription/PlanSection.tsx
 // FIX: #5a — Next billing date visible for active/trialing/cancelled
 //      #5b — displays rich card info from card_details JSONB column
 //            also shows billing_cycle row (Monthly / Annual)
@@ -156,7 +156,7 @@ export function PlanSection({ profile, userId }: PlanSectionProps) {
         <div className="flex justify-between items-start mb-3">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>Current Plan</span>
-            <h2 className="text-lg font-bold mt-0.5" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: meta.color }}>
+            <h2 className="text-lg font-bold mt-0.5" style={{ fontFamily: "'Metropolis', sans-serif", color: meta.color }}>
               {meta.label}
             </h2>
           </div>

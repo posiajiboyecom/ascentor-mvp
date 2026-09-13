@@ -20,8 +20,8 @@ const B = {
   goldBorder: 'var(--border, rgba(232,160,32,0.22))',
   success:    'var(--success, #10B981)',
   border:     'var(--border, rgba(212,207,195,0.10))',
-  fontDisplay:"'Cormorant Garamond', Georgia, serif",
-  fontUI:     "'Syne', system-ui, sans-serif",
+  fontDisplay:"'Metropolis', sans-serif",
+  fontUI:     "'Metropolis', system-ui, sans-serif",
   fontMono:   "Metropolis, 'Inter', sans-serif",
 };
 

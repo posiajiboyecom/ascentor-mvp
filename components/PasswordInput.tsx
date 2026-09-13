@@ -6,7 +6,7 @@ import { useState, forwardRef } from 'react';
 // ASCENTOR · PasswordInput · Brand Book v1.0 · 2026
 // Supports both react-hook-form {...register()} spreads and plain
 // string callbacks via onValueChange.
-// Gold: #E8A020  Dark: #0C0B08  Font: Syne
+// Gold: #E8A020  Dark: #0C0B08  Font: Metropolis
 // ─────────────────────────────────────────────────────────────────
 
 interface PasswordInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -76,7 +76,7 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(function 
     border:       '1px solid rgba(212,207,195,0.10)',
     background:   '#1E1C17',
     color:        '#F7F6F3',
-    fontFamily:   "'Syne', system-ui, sans-serif",
+    fontFamily:   "'Metropolis', system-ui, sans-serif",
     fontSize:     '14px',
     fontWeight:   400,
     outline:      'none',

@@ -73,15 +73,13 @@ export default async function ProductsPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         .prod-page {
           min-height: 100vh;
           background: #FAFAF9;
           color: #1A1A1A;
-          font-family: 'Syne', system-ui, sans-serif;
+          font-family: 'Metropolis', system-ui, sans-serif;
         }
 
         /* ── Nav ── */
@@ -105,7 +103,7 @@ export default async function ProductsPage() {
         }
         .prod-nav-link:hover { color: #1A1A1A; }
         .prod-cta-btn {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Metropolis', sans-serif;
           font-size: 12px; font-weight: 700;
           padding: 8px 18px; border-radius: 8px;
           background: #0C0B08; color: #E8A020;
@@ -131,7 +129,7 @@ export default async function ProductsPage() {
           content: ''; width: 24px; height: 1px; background: #E8A020; display: block;
         }
         .prod-hero h1 {
-          font-family: 'Cormorant Garamond', Georgia, serif;
+          font-family: 'Metropolis', sans-serif;
           font-size: clamp(36px, 5vw, 60px);
           font-weight: 700; line-height: 1.08;
           color: #0C0B08; max-width: 640px;
@@ -151,7 +149,7 @@ export default async function ProductsPage() {
           display: flex; flex-direction: column; gap: 2px;
         }
         .prod-hero-stat-val {
-          font-family: 'Cormorant Garamond', serif;
+          font-family: 'Metropolis', serif;
           font-size: 28px; font-weight: 700; color: #0C0B08; line-height: 1;
         }
         .prod-hero-stat-label {
@@ -240,7 +238,7 @@ export default async function ProductsPage() {
           padding: 3px 9px; border-radius: 999px;
         }
         .prod-card-name {
-          font-family: 'Cormorant Garamond', Georgia, serif;
+          font-family: 'Metropolis', sans-serif;
           font-size: 22px; font-weight: 700; line-height: 1.2;
           color: #0C0B08; margin-bottom: 6px;
         }
@@ -255,12 +253,12 @@ export default async function ProductsPage() {
           margin-top: auto;
         }
         .prod-price {
-          font-family: 'Cormorant Garamond', serif;
+          font-family: 'Metropolis', serif;
           font-size: 24px; font-weight: 700; color: #0C0B08; line-height: 1;
         }
         .prod-price.free { color: #14B8A6; }
         .prod-buy-btn {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Metropolis', sans-serif;
           font-size: 12px; font-weight: 700;
           padding: 9px 20px; border-radius: 9px;
           text-decoration: none; letter-spacing: 0.01em;
@@ -279,7 +277,7 @@ export default async function ProductsPage() {
           text-align: center; padding: 80px 20px;
         }
         .prod-empty h2 {
-          font-family: 'Cormorant Garamond', serif;
+          font-family: 'Metropolis', serif;
           font-size: 32px; color: #C4BFB8; margin-bottom: 10px;
         }
         .prod-empty p {

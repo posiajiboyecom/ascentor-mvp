@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useState } from 'react';
@@ -36,14 +36,14 @@ export default function NewsletterPage() {
 
   return (
     <PublicShell>
-      <div style={{ background: '#FAFAF9', fontFamily: "'Syne', system-ui, sans-serif" }}>
+      <div style={{ background: '#FAFAF9', fontFamily: "'Metropolis', system-ui, sans-serif" }}>
 
       <div className="max-w-lg mx-auto px-5 py-20 text-center">
         <div className="mb-4" style={{ color: '#E8A020', display: 'flex', justifyContent: 'center' }}>
           <Mail size={40} strokeWidth={1.5} />
         </div>
         <h1 className="text-3xl md:text-4xl font-semibold mb-3"
-          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
+          style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>
           The Ascentor Weekly
         </h1>
         <p className="text-base mb-8" style={{ color: '#6B7280', lineHeight: 1.7 }}>
@@ -127,7 +127,7 @@ export default function NewsletterPage() {
             <div style={{ color: status === 'done' ? '#E8A020' : '#EF4444', display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
               {status === 'done' ? <Check size={40} strokeWidth={2} /> : <AlertCircle size={40} strokeWidth={2} />}
             </div>
-            <h3 className="text-xl font-semibold mb-2" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
+            <h3 className="text-xl font-semibold mb-2" style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>
               {status === 'done' ? "You're in!" : 'Something went wrong'}
             </h3>
             <p className="text-sm mb-6" style={{ color: '#6B7280', lineHeight: 1.7 }}>

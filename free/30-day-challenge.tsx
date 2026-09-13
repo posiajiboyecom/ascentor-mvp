@@ -45,8 +45,7 @@ export default function ChallengeOptInPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         .ch-page {
           min-height: 100vh;
@@ -100,7 +99,7 @@ export default function ChallengeOptInPage() {
           margin-bottom: 20px;
         }
         .ch-h1 {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Metropolis', sans-serif;
           font-size: clamp(38px, 5vw, 64px);
           font-weight: 800;
           line-height: 1.05;
@@ -122,7 +121,7 @@ export default function ChallengeOptInPage() {
           flex-wrap: wrap;
         }
         .ch-stat-num {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Metropolis', sans-serif;
           font-size: 36px;
           font-weight: 800;
           color: #1A1610;
@@ -206,7 +205,7 @@ export default function ChallengeOptInPage() {
           margin-bottom: 20px;
         }
         .ch-card-title {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Metropolis', sans-serif;
           font-size: 22px;
           font-weight: 800;
           color: #F0EDE6;
@@ -240,7 +239,7 @@ export default function ChallengeOptInPage() {
           background: #E8A020;
           border: none;
           border-radius: 6px;
-          font-family: 'Syne', sans-serif;
+          font-family: 'Metropolis', sans-serif;
           font-size: 14px;
           font-weight: 700;
           color: #1A1610;

@@ -160,7 +160,7 @@ export function OAuthButton({ provider, onError, disabled, redirectTo }: OAuthBu
         background: 'var(--bg-input, #1A1D2E)',
         color: 'var(--text, #F1F0EB)',
         fontSize: '14px',
-        fontFamily: "'Syne', system-ui, sans-serif",
+        fontFamily: "'Metropolis', system-ui, sans-serif",
         fontWeight: 500,
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,

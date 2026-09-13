@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicShell from '@/components/layout/PublicShell';
 
@@ -179,7 +179,7 @@ export default async function WhoItsForPage() {
   return (
     <PublicShell>
     <div
-      style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'Syne', system-ui, sans-serif" }}>
+      style={{ background: '#FAFAF9', color: '#1A1A1A', fontFamily: "'Metropolis', system-ui, sans-serif" }}>
       {/* Content */}
 
       {/* ── Hero ── */}
@@ -189,7 +189,7 @@ export default async function WhoItsForPage() {
           BUILT FOR AFRICA
         </div>
         <h1 className="text-4xl md:text-5xl font-semibold mb-4"
-          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08', lineHeight: 1.1 }}>
+          style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08', lineHeight: 1.1 }}>
           {heroHeadline}
         </h1>
         <p className="text-base max-w-2xl mx-auto mb-8" style={{ color: '#6B7280', lineHeight: 1.75 }}>
@@ -227,7 +227,7 @@ export default async function WhoItsForPage() {
                 <div>
                   <div className="flex items-center gap-3">
                     <h2 className="text-3xl font-semibold"
-                      style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
+                      style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>
                       {p.stage}
                     </h2>
                     {p.popular && (
@@ -328,7 +328,7 @@ export default async function WhoItsForPage() {
             Where We Operate
           </p>
           <h2 className="text-3xl font-semibold mb-3"
-            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#0C0B08' }}>
+            style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>
             Built for purposeful individuals, everywhere.
           </h2>
           <p className="text-sm max-w-xl mx-auto mb-10" style={{ color: '#6B7280', lineHeight: 1.7 }}>
@@ -356,7 +356,7 @@ export default async function WhoItsForPage() {
             {ctaEyebrow}
           </div>
           <h2 className="text-3xl md:text-4xl font-semibold mb-4"
-            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#F3F4F6', lineHeight: 1.2 }}>
+            style={{ fontFamily: "'Metropolis', sans-serif", color: '#F3F4F6', lineHeight: 1.2 }}>
             {ctaHeadline}
           </h2>
           <p className="text-sm mb-8 max-w-lg mx-auto" style={{ color: '#9CA3AF', lineHeight: 1.75 }}>
