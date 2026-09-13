@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import RoutePreloader from '@/components/RoutePreloader';
 import { ModalProvider } from '@/components/Modal';
 import { NotificationProvider } from '@/components/Notifications';
 import PushPermission from '@/components/PushPermission';
@@ -124,6 +125,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body suppressHydrationWarning>
+        <RoutePreloader />
         <AuthErrorHandler />
         <ModalProvider>
           <NotificationProvider>

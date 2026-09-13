@@ -4,10 +4,13 @@ import { useState, useEffect } from 'react';
 
 type PreloaderProps = {
   minimumVisibleMs?: number;
+  /** Milliseconds for the bar to fill 0→100. Default 2200. */
+  fillMs?: number;
 };
 
-export default function Preloader({ minimumVisibleMs = 1200 }: PreloaderProps) {
+export default function Preloader({ minimumVisibleMs = 1200, fillMs = 2200 }: PreloaderProps) {
   const [progress, setProgress] = useState(0);
+  const [exiting, setExiting] = useState(false);
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -17,20 +20,21 @@ export default function Preloader({ minimumVisibleMs = 1200 }: PreloaderProps) {
       setProgress(pct);
       if (pct >= 100) {
         clearInterval(timer);
-        setTimeout(() => setVisible(false), minimumVisibleMs);
+        // Hold at 100%, sweep the overlay off the top, then unmount
+        // once the transition has finished (650ms).
+        setTimeout(() => setExiting(true), minimumVisibleMs);
+        setTimeout(() => setVisible(false), minimumVisibleMs + 700);
       }
-    }, 22); // 2.2s from 0 to 100%
+    }, fillMs / 100);
 
     return () => clearInterval(timer);
-  }, [minimumVisibleMs]);
+  }, [minimumVisibleMs, fillMs]);
 
   if (!visible) return null;
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Metropolis:wght@400;500;600;700;800&display=swap');
-
         * { box-sizing: border-box; }
         body { margin: 0; }
 
@@ -45,6 +49,13 @@ export default function Preloader({ minimumVisibleMs = 1200 }: PreloaderProps) {
           justify-content: center;
           gap: 32px;
           font-family: Metropolis;
+          transform: translateY(0);
+          transition: transform 0.65s cubic-bezier(0.76, 0, 0.24, 1);
+          will-change: transform;
+        }
+
+        .preloader.exiting {
+          transform: translateY(-100%);
         }
 
         .preloader-logo {
@@ -78,7 +89,7 @@ export default function Preloader({ minimumVisibleMs = 1200 }: PreloaderProps) {
         }
       `}</style>
 
-      <div className="preloader">
+      <div className={`preloader${exiting ? ' exiting' : ''}`}>
         <img
           src="/ascentor-color-for-light-pages.svg"
           alt="Ascentor"

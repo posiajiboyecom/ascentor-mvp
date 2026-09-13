@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ShieldCheck, Users, Rocket, Crown } from 'lucide-react';
 import PublicShell from '@/components/layout/PublicShell';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -354,15 +355,18 @@ export default async function AboutPage() {
 
       {/* Certifications / Credibility */}
       <section style={{ padding: 'clamp(3rem, 6vw, 5rem) 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
           {[
-                  { label: 'TECHNOLOGY', sub: 'Cybersecurity · GRC & Application Security' },
-                  { label: 'MENTORSHIP', sub: 'Securing This Generation and The Next' },
-                  { label: 'ENTREPRENEURSHIP', sub: 'Building The Elevation Platform' },
-                  { label: 'LEADERSHIP', sub: 'Structure, Strategy, and People' },
+                  { label: 'TECHNOLOGY', sub: 'Cybersecurity · GRC & Application Security', Icon: ShieldCheck },
+                  { label: 'MENTORSHIP', sub: 'Securing This Generation and The Next', Icon: Users },
+                  { label: 'ENTREPRENEURSHIP', sub: 'Building The Elevation Platform', Icon: Rocket },
+                  { label: 'LEADERSHIP', sub: 'Structure, Strategy, and People', Icon: Crown },
           ].map((item) => (
-            <div key={item.label} style={{ padding: '1.25rem', background: '#FFFFFF', border: '1px solid #E8E6E1', borderRadius: '0.75rem', textAlign: 'center' }}>
-              <p style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontWeight: 800, fontSize: '1.125rem', color: '#C8A96E', marginBottom: '0.375rem' }}>{item.label}</p>
+            <div key={item.label} style={{ padding: '1.75rem 1.25rem', background: '#FFFFFF', border: '1px solid #E8E6E1', borderRadius: '0.75rem', textAlign: 'center' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(200,169,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                <item.Icon size={22} color="#C8A96E" strokeWidth={2} />
+              </div>
+              <p style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontWeight: 800, fontSize: '1rem', color: '#0F0F0E', marginBottom: '0.375rem', letterSpacing: '0.02em' }}>{item.label}</p>
               <p style={{ fontSize: '0.8125rem', color: '#6B7280', lineHeight: 1.5 }}>{item.sub}</p>
             </div>
           ))}
