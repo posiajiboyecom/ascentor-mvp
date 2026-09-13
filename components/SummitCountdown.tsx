@@ -15,17 +15,22 @@ function getTimeRemaining() {
 }
 
 export default function SummitCountdown() {
-  const [time, setTime] = useState(getTimeRemaining());
+  // null until mounted — computing the time during SSR vs. at hydration
+  // produces different values and triggers a hydration mismatch (React #418).
+  const [time, setTime] = useState<ReturnType<typeof getTimeRemaining> | null>(null);
 
   useEffect(() => {
+    setTime(getTimeRemaining());
     const interval = setInterval(() => setTime(getTimeRemaining()), 1000);
     return () => clearInterval(interval);
   }, []);
 
   const unitLabel =
-    time.total <= 0
-      ? 'The Summit is happening now'
-      : `${time.days} days, ${time.hours} hours, ${time.minutes} minutes, ${time.seconds} seconds remaining`;
+    time === null
+      ? 'Countdown to the Elevation Summit'
+      : time.total <= 0
+        ? 'The Summit is happening now'
+        : `${time.days} days, ${time.hours} hours, ${time.minutes} minutes, ${time.seconds} seconds remaining`;
 
   return (
     <section style={{ background: '#0F0F0E', color: '#FAFAF8', padding: 'clamp(4rem, 8vw, 6rem) 1.5rem' }}>
@@ -38,7 +43,7 @@ export default function SummitCountdown() {
           Every seat taken is one less available. Secure yours before registration closes.
         </p>
 
-        {time.total <= 0 ? (
+        {time !== null && time.total <= 0 ? (
           <p style={{ fontSize: '1.25rem', fontWeight: 600 }}>The Summit is happening now</p>
         ) : (
           <div
@@ -47,11 +52,11 @@ export default function SummitCountdown() {
             aria-label={unitLabel}
           >
             {([
-              ['Days', time.days],
-              ['Hours', time.hours],
-              ['Minutes', time.minutes],
-              ['Seconds', time.seconds],
-            ] as [string, number][]).map(([label, value]) => (
+              ['Days', time?.days],
+              ['Hours', time?.hours],
+              ['Minutes', time?.minutes],
+              ['Seconds', time?.seconds],
+            ] as [string, number | undefined][]).map(([label, value]) => (
               <div
                 key={label}
                 style={{
@@ -63,7 +68,7 @@ export default function SummitCountdown() {
                 }}
               >
                 <div style={{ fontSize: 'clamp(2.5rem, 6vw, 3.5rem)', fontWeight: 800, fontVariantNumeric: 'tabular-nums', fontFamily: 'var(--font-display)', color: '#C8A96E', lineHeight: 1 }}>
-                  {String(value).padStart(2, '0')}
+                  {value === undefined ? '--' : String(value).padStart(2, '0')}
                 </div>
                 <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: '#9CA3AF', marginTop: '0.5rem', fontWeight: 600 }}>
                   {label}
