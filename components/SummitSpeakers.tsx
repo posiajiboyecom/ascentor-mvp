@@ -6,8 +6,10 @@ interface Speaker {
   role?: string;
   topic?: string;
   photo?: string;
-  linkedinUrl?: string;
-  instagramUrl?: string;
+  // null = speaker has no account on that platform (button hidden).
+  // undefined = URL not yet provided (button renders, links to '#').
+  linkedinUrl?: string | null;
+  instagramUrl?: string | null;
 }
 
 // Speakers without a headshot reuse Samuel Peniel's photo as a
@@ -25,6 +27,7 @@ const speakers: Speaker[] = [
     role: 'Setman, Reign Global',
     topic: 'The Discipline to Stay: A Case for Both Narrow Focus and Range in Building a Life That Lasts',
     photo: '/images/speakers/samuel-peniel.jpg',
+    linkedinUrl: null,
     instagramUrl: 'https://www.instagram.com/apostlesamuelpeniel/?hl=en',
   },
   {
@@ -36,13 +39,13 @@ const speakers: Speaker[] = [
   },
   {
     name: "'Lekan Omotosho",
-    role: 'Speaker, Elevation Summit',
+    role: 'Data Scientist & ML Engineer',
     topic: 'The Elevation Within: My Rise from Curiosity to Global AI Impact',
     photo: PLACEHOLDER_PHOTO,
   },
   {
-    name: 'Akintomiwa Samuel O. (Ploy)',
-    role: 'Speaker, Elevation Summit',
+    name: 'Akintomiwa Samuel O.',
+    role: 'Founder/CEO, Ploy',
     topic: "Manual or Machine: A Case for Both the Craft of Small Business and AI as Africa's Next Leap",
     photo: PLACEHOLDER_PHOTO,
   },
@@ -91,36 +94,34 @@ export default function SummitSpeakers() {
                   <p style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9CA3AF', marginTop: '0.875rem' }}>
                     Speaking on
                   </p>
-                  <p style={{ fontSize: '0.875rem', color: '#C8A96E', fontWeight: 600, marginTop: '0.25rem', lineHeight: 1.5 }}>{speaker.topic}</p>
+                  <p style={{ fontSize: '0.875rem', color: '#0F0F0E', fontWeight: 600, marginTop: '0.25rem', lineHeight: 1.5 }}>{speaker.topic}</p>
                 </>
               )}
 
-              {(speaker.linkedinUrl || speaker.instagramUrl) && (
-                <div style={{ display: 'flex', gap: '0.625rem', marginTop: '0.875rem', flexWrap: 'wrap' }}>
-                  {speaker.linkedinUrl && (
-                    <a
-                      href={speaker.linkedinUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${speaker.name} on LinkedIn`}
-                      className="summit-speaker-social summit-speaker-linkedin"
-                    >
-                      <Linkedin size={16} /> LinkedIn
-                    </a>
-                  )}
-                  {speaker.instagramUrl && (
-                    <a
-                      href={speaker.instagramUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${speaker.name} on Instagram`}
-                      className="summit-speaker-social summit-speaker-instagram"
-                    >
-                      <Instagram size={16} /> Instagram
-                    </a>
-                  )}
-                </div>
-              )}
+              <div style={{ display: 'flex', gap: '0.625rem', marginTop: '0.875rem', flexWrap: 'wrap' }}>
+                {speaker.linkedinUrl !== null && (
+                  <a
+                    href={speaker.linkedinUrl ?? '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${speaker.name} on LinkedIn`}
+                    className="summit-speaker-social summit-speaker-linkedin"
+                  >
+                    <Linkedin size={16} /> LinkedIn
+                  </a>
+                )}
+                {speaker.instagramUrl !== null && (
+                  <a
+                    href={speaker.instagramUrl ?? '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${speaker.name} on Instagram`}
+                    className="summit-speaker-social summit-speaker-instagram"
+                  >
+                    <Instagram size={16} /> Instagram
+                  </a>
+                )}
+              </div>
             </div>
           ))}
 
