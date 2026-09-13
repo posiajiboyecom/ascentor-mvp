@@ -13,7 +13,7 @@ import PhoneInput from 'react-phone-number-input';
 import flags from 'react-phone-number-input/flags';
 import { useModal } from '@/components/Modal';
 import { useRouter } from 'next/navigation';
-import { Compass, Hammer, Crown, Sparkles, Network, Monitor, CalendarDays, MapPin, Clock, TicketCheck } from 'lucide-react';
+import { Compass, Hammer, Crown, Sparkles, Network, Monitor, CalendarDays, MapPin, Clock, TicketCheck, Check } from 'lucide-react';
 import SummitCountdown from '@/components/SummitCountdown';
 import SummitSpeakers from '@/components/SummitSpeakers';
 import SummitFAQ from '@/components/SummitFAQ';
@@ -71,14 +71,14 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
   const whatItIs = cms?.sections.what_it_is?.data as Record<string, string> | undefined;
   const whatEyebrow  = whatItIs?.eyebrow  || 'What It Is';
   const whatHeadline = whatItIs?.headline || 'Not a conference.<br /><span style="color:#C8A96E">A defining moment.</span>';
-  const whatBody     = whatItIs?.body     || 'The Elevation Summit is a deliberate interruption of the ordinary rhythms of life - to ask the questions that drift never allows: Who am I becoming? What am I building? What will remain when I am gone?';
+  const whatBody     = whatItIs?.body     || 'The Elevation Summit is a deliberate interruption of the ordinary rhythms of life. To ask the questions that drift never allows: Who am I becoming? What am I building? What will remain when I am gone?';
 
   const regSection = cms?.sections.register?.data as Record<string, string> | undefined;
   const regEyebrow  = regSection?.eyebrow  || 'Event Registration';
   const regHeadline = regSection?.headline || 'Secure your place.';
   const regSubhead  = regSection?.subhead  || 'Registration is open for the inaugural Elevation Summit, 19 November, 2026, Lagos - attend physically or join virtually. Complete the form below - every detail helps us prepare the right experience for you.';
 
-  const { alert, confirm } = useModal();
+  const { alert } = useModal();
   const router = useRouter();
 
   const GALLERY_IMAGES = [
@@ -137,6 +137,15 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
   });
 
   const [activeTab, setActiveTab] = useState<'onsite' | 'virtual'>('onsite');
+  // Non-null while the post-payment success overlay is showing
+  const [paymentSuccess, setPaymentSuccess] = useState<'onsite' | 'virtual' | null>(null);
+  // Non-null while the pre-payment confirmation overlay is showing
+  const [pendingPayment, setPendingPayment] = useState<{
+    registrationId: string;
+    config: any;
+    attendanceType: 'onsite' | 'virtual';
+    amountNaira: number;
+  } | null>(null);
   // Guards against a second Paystack launch while one is already being set up
   const paymentStarting = useRef(false);
 
@@ -182,18 +191,14 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
         return;
       }
 
-      const attendanceType = activeTab;
-      const amountNaira = config.amount / 100;
-      const userConfirmed = await confirm(
-        `You're registering for ${attendanceType === 'virtual' ? 'Virtual' : 'Onsite'} attendance at the Elevation Summit. Total: ₦${amountNaira.toLocaleString()}. ${attendanceType === 'virtual' ? 'Your join link will be emailed once payment is confirmed.' : 'We look forward to seeing you in Lagos.'} Click Confirm to proceed to secure payment.`,
-        'Confirm Your Registration',
-        'success',
-        { confirmLabel: 'Confirm and Pay', cancelLabel: 'Cancel' }
-      );
-
-      if (!userConfirmed) return;
-
-      startPayment(registrationId, config);
+      // Branded confirm overlay — the shared Modal can't render bold
+      // multi-line content and uses dark app tokens that clash here.
+      setPendingPayment({
+        registrationId,
+        config,
+        attendanceType: activeTab,
+        amountNaira: config.amount / 100,
+      });
     } catch (err) {
       await alert(
         "We couldn't process your registration. Please check your details and try again. If this keeps happening, reach out to us for help.",
@@ -254,14 +259,9 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
 
       if (res.ok) {
         reset();
-        const attendanceType = activeTab;
-        // alert() resolves only on explicit dismissal, so the modal is
-        // never clipped by the redirect that follows it.
-        await alert(
-          `Your payment was successful and your ${attendanceType === 'virtual' ? 'virtual' : 'onsite'} spot at the Elevation Summit is secured. A confirmation email is on its way${attendanceType === 'virtual' ? ', including your join link' : ''}. Redirecting you now.`,
-          "You're Confirmed"
-        );
-        router.push('/elevation-summit/confirmed');
+        // Branded success overlay auto-redirects — no click required.
+        setPaymentSuccess(activeTab);
+        window.setTimeout(() => router.push('/elevation-summit/confirmed'), 3200);
       } else {
         const data = await res.json().catch(() => ({} as any));
         await alert(
@@ -292,7 +292,13 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
       {/* Hero — image first in DOM so it always renders on top on mobile;
           desktop reorders to text-left / image-right. Same pattern as the
           landing page hero-grid. */}
-      <section style={{ background: '#FFFFFF', padding: 'clamp(5rem, 10vw, 9rem) 1.5rem clamp(4rem, 8vw, 7rem)' }}>
+      <section style={{
+        background: '#FFFFFF',
+        // SVG texture — graph-paper grid in gold, subtle enough that
+        // the white base still reads through.
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath d='M48 0H0V48' fill='none' stroke='%23C8A96E' stroke-opacity='0.20' stroke-width='1'/%3E%3C/svg%3E")`,
+        padding: 'clamp(5rem, 10vw, 9rem) 1.5rem clamp(4rem, 8vw, 7rem)',
+      }}>
         <div className="summit-hero-grid" style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div className="summit-hero-image">
             <img
@@ -718,6 +724,157 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
           `}</style>
         </div>
       </section>
+
+      {/* Pre-payment confirmation — shows what they're buying in bold,
+          then hands off to Paystack. */}
+      {pendingPayment && (
+        <div
+          role="alertdialog"
+          aria-label="Confirm your registration"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 10000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(15, 15, 14, 0.55)', backdropFilter: 'blur(6px)',
+            padding: '1.5rem', animation: 'summitOverlayIn 0.25s ease-out',
+          }}
+        >
+          <div style={{
+            background: '#FFFFFF', borderRadius: '1.25rem',
+            padding: '2.75rem 2.5rem 2.5rem', maxWidth: '440px', width: '100%',
+            textAlign: 'center', boxShadow: '0 24px 80px rgba(0,0,0,0.35)',
+            animation: 'summitCardIn 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
+          }}>
+            <h2 style={{
+              fontFamily: 'var(--font-display)', color: '#0F0F0E',
+              fontSize: '1.625rem', fontWeight: 700, margin: '0 0 1.5rem',
+            }}>
+              Confirm Your Registration
+            </h2>
+
+            {/* Order summary — the two things that must stand out */}
+            <div style={{
+              background: '#FAFAF8', border: '1.5px solid #F0EDE6',
+              borderRadius: '0.875rem', padding: '1.5rem', marginBottom: '1.5rem',
+            }}>
+              <p style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9CA3AF', margin: '0 0 0.5rem' }}>
+                You're registering for
+              </p>
+              <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0F0F0E', margin: '0 0 0.75rem' }}>
+                {pendingPayment.attendanceType === 'virtual' ? 'Virtual' : 'Onsite'} Attendance
+              </p>
+              <p style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9CA3AF', margin: '0 0 0.25rem' }}>
+                Total
+              </p>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 700, color: '#C8A96E', margin: 0 }}>
+                ₦{pendingPayment.amountNaira.toLocaleString()}
+              </p>
+            </div>
+
+            <p style={{ color: '#6B7280', lineHeight: 1.7, fontSize: '0.9375rem', margin: '0 0 1.75rem' }}>
+              You'll be redirected to <strong style={{ color: '#0F0F0E' }}>Paystack</strong>, our
+              secure third-party payment provider, to complete your payment.
+              {pendingPayment.attendanceType === 'virtual' && ' Your join link will be emailed once payment is confirmed.'}
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => {
+                  const p = pendingPayment;
+                  setPendingPayment(null);
+                  startPayment(p.registrationId, p.config);
+                }}
+                className="btn-gold"
+                style={{ fontSize: '0.9375rem', padding: '0.75rem 1.75rem', border: 'none', cursor: 'pointer' }}
+              >
+                Proceed to Payment →
+              </button>
+              <button
+                onClick={() => setPendingPayment(null)}
+                style={{
+                  fontSize: '0.9375rem', padding: '0.75rem 1.75rem',
+                  background: 'transparent', border: '1.5px solid #E8E6E1',
+                  borderRadius: '0.625rem', color: '#6B7280', fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment success overlay — light-themed to match this page (the
+          shared Modal uses dark app tokens). Auto-redirects after ~3s;
+          the button is a manual escape hatch if navigation stalls. */}
+      {paymentSuccess && (
+        <div
+          role="alertdialog"
+          aria-label="Payment confirmed"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 10000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(15, 15, 14, 0.55)', backdropFilter: 'blur(6px)',
+            padding: '1.5rem', animation: 'summitOverlayIn 0.25s ease-out',
+          }}
+        >
+          <div style={{
+            background: '#FFFFFF', borderRadius: '1.25rem',
+            padding: '3rem 2.5rem 2.5rem', maxWidth: '420px', width: '100%',
+            textAlign: 'center', boxShadow: '0 24px 80px rgba(0,0,0,0.35)',
+            animation: 'summitCardIn 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
+          }}>
+            <div style={{
+              width: '72px', height: '72px', borderRadius: '50%',
+              background: '#C8A96E', margin: '0 auto 1.5rem',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              animation: 'summitCheckPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both',
+            }}>
+              <Check size={36} color="#0F0F0E" strokeWidth={3} />
+            </div>
+            <h2 style={{
+              fontFamily: 'var(--font-display)', color: '#0F0F0E',
+              fontSize: '1.75rem', fontWeight: 700, margin: '0 0 0.75rem',
+            }}>
+              You're Confirmed
+            </h2>
+            <p style={{ color: '#6B7280', lineHeight: 1.7, fontSize: '1rem', margin: '0 0 2rem' }}>
+              Your payment was successful and your {paymentSuccess} spot at the
+              Elevation Summit is secured. A confirmation email is on its way.
+            </p>
+            {/* Progress bar doubles as the redirect countdown */}
+            <div style={{
+              height: '3px', borderRadius: '2px', background: '#F0EDE6',
+              overflow: 'hidden', marginBottom: '1.5rem',
+            }}>
+              <div style={{
+                height: '100%', background: '#C8A96E', width: '0',
+                animation: 'summitBarFill 3s linear forwards',
+              }} />
+            </div>
+            <button
+              onClick={() => router.push('/elevation-summit/confirmed')}
+              className="btn-gold"
+              style={{ fontSize: '0.9375rem', padding: '0.75rem 2rem', border: 'none', cursor: 'pointer' }}
+            >
+              Continue →
+            </button>
+          </div>
+
+          <style>{`
+            @keyframes summitOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes summitCardIn {
+              from { opacity: 0; transform: translateY(16px) scale(0.96); }
+              to { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            @keyframes summitCheckPop {
+              from { transform: scale(0); }
+              to { transform: scale(1); }
+            }
+            @keyframes summitBarFill { from { width: 0; } to { width: 100%; } }
+          `}</style>
+        </div>
+      )}
 
     </>
   );

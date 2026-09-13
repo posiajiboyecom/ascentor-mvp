@@ -3,53 +3,54 @@ import { Linkedin, Instagram } from 'lucide-react';
 
 interface Speaker {
   name: string;
-  role: string;
-  topic: string;
-  photo: string;
+  role?: string;
+  topic?: string;
+  photo?: string;
   linkedinUrl?: string;
   instagramUrl?: string;
 }
 
-// First two entries are real data. The remaining four are placeholders
-// sharing the same photo until their real details arrive.
+// Speakers without a headshot reuse Samuel Peniel's photo as a
+// placeholder until their real photos arrive.
+const PLACEHOLDER_PHOTO = '/images/speakers/samuel-peniel.jpg';
 const speakers: Speaker[] = [
+  {
+    name: 'Posi Ajiboye',
+    role: 'Founder, Ascentor',
+    topic: 'The Rise We Choose: Building the Man, The Nation, and Continent',
+    photo: '/images/speakers/posi-ajiboye.png',
+  },
   {
     name: 'Samuel Peniel',
     role: 'Setman, Reign Global',
-    topic: 'The Emergence Of Culture Shapers',
+    topic: 'The Discipline to Stay: A Case for Both Narrow Focus and Range in Building a Life That Lasts',
     photo: '/images/speakers/samuel-peniel.jpg',
     instagramUrl: 'https://www.instagram.com/apostlesamuelpeniel/?hl=en',
   },
   {
     name: 'Kemeshi Samuel',
     role: 'Co-founder & Chief Marketing Officer, FirstFounders Ltd.',
-    topic: 'Topic to be announced',
+    topic: 'Indigenous or Borrowed Blueprints: A Case for Both the African Mind and Importation of Things That Work as a Way to Fast-Track Our Participation in the Ongoing Global Revolution',
     photo: '/images/speakers/kemeshi-samuel.jpeg',
     linkedinUrl: 'https://www.linkedin.com/in/samuel-kemeshi-610669144',
   },
   {
-    name: 'Speaker Name',
-    role: 'Role to be announced',
-    topic: 'Topic to be announced',
-    photo: '/images/speakers/samuel-peniel.jpg',
+    name: "'Lekan Omotosho",
+    role: 'Speaker, Elevation Summit',
+    topic: 'The Elevation Within: My Rise from Curiosity to Global AI Impact',
+    photo: PLACEHOLDER_PHOTO,
   },
   {
-    name: 'Speaker Name',
-    role: 'Role to be announced',
-    topic: 'Topic to be announced',
-    photo: '/images/speakers/samuel-peniel.jpg',
+    name: 'Akintomiwa Samuel O. (Ploy)',
+    role: 'Speaker, Elevation Summit',
+    topic: "Manual or Machine: A Case for Both the Craft of Small Business and AI as Africa's Next Leap",
+    photo: PLACEHOLDER_PHOTO,
   },
   {
-    name: 'Speaker Name',
+    name: 'Demo Name',
     role: 'Role to be announced',
-    topic: 'Topic to be announced',
-    photo: '/images/speakers/samuel-peniel.jpg',
-  },
-  {
-    name: 'Speaker Name',
-    role: 'Role to be announced',
-    topic: 'Topic to be announced',
-    photo: '/images/speakers/samuel-peniel.jpg',
+    topic: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt',
+    photo: PLACEHOLDER_PHOTO,
   },
 ];
 
@@ -72,7 +73,7 @@ export default function SummitSpeakers() {
             <div key={`${speaker.name}-${i}`} className="summit-speaker-card">
               <div className="summit-speaker-photo" style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', borderRadius: '1rem', overflow: 'hidden', background: '#E8E6E1' }}>
                 <Image
-                  src={speaker.photo}
+                  src={speaker.photo ?? PLACEHOLDER_PHOTO}
                   alt={speaker.name}
                   fill
                   sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
@@ -82,34 +83,38 @@ export default function SummitSpeakers() {
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 700, color: '#0F0F0E', marginTop: '1rem' }}>
                 {speaker.name}
               </h3>
-              <p style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '0.25rem' }}>{speaker.role}</p>
-              <p style={{ fontSize: '0.875rem', color: '#C8A96E', fontWeight: 600, marginTop: '0.25rem' }}>{speaker.topic}</p>
+              {speaker.role && (
+                <p style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '0.25rem' }}>{speaker.role}</p>
+              )}
+              {speaker.topic && (
+                <>
+                  <p style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9CA3AF', marginTop: '0.875rem' }}>
+                    Speaking on
+                  </p>
+                  <p style={{ fontSize: '0.875rem', color: '#C8A96E', fontWeight: 600, marginTop: '0.25rem', lineHeight: 1.5 }}>{speaker.topic}</p>
+                </>
+              )}
 
-              {speaker.linkedinUrl ? (
+              <div style={{ display: 'flex', gap: '0.625rem', marginTop: '0.875rem', flexWrap: 'wrap' }}>
                 <a
-                  href={speaker.linkedinUrl}
+                  href={speaker.linkedinUrl ?? '#'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`Connect with ${speaker.name} on LinkedIn`}
+                  aria-label={`${speaker.name} on LinkedIn`}
                   className="summit-speaker-social summit-speaker-linkedin"
                 >
-                  <Linkedin size={16} /> Connect on LinkedIn
+                  <Linkedin size={16} /> LinkedIn
                 </a>
-              ) : speaker.instagramUrl ? (
                 <a
-                  href={speaker.instagramUrl}
+                  href={speaker.instagramUrl ?? '#'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`Follow ${speaker.name} on Instagram`}
+                  aria-label={`${speaker.name} on Instagram`}
                   className="summit-speaker-social summit-speaker-instagram"
                 >
-                  <Instagram size={16} /> Follow on Instagram
+                  <Instagram size={16} /> Instagram
                 </a>
-              ) : (
-                <span className="summit-speaker-social summit-speaker-linkedin" aria-hidden="true">
-                  <Linkedin size={16} /> Connect on LinkedIn
-                </span>
-              )}
+              </div>
             </div>
           ))}
 
@@ -126,7 +131,6 @@ export default function SummitSpeakers() {
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
-          margin-top: 0.875rem;
           padding: 0.5rem 1rem;
           border-radius: 0.5rem;
           font-size: 0.8125rem;
