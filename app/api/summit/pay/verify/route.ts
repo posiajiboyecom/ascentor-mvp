@@ -31,8 +31,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
     }
 
-    const expectedAmountKobo = Number(process.env.SUMMIT_TICKET_PRICE_NGN) * 100;
-    if (paystackData.data.amount < expectedAmountKobo) {
+    const expectedNaira = registration.attendance_type === 'virtual'
+      ? Number(process.env.SUMMIT_TICKET_PRICE_VIRTUAL_NGN)
+      : Number(process.env.SUMMIT_TICKET_PRICE_ONSITE_NGN);
+    if (paystackData.data.amount < expectedNaira * 100) {
       return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
     }
 
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
       .eq('id', registrationId);
 
     try {
-      await sendPaymentConfirmedEmail(registration.email, registration.full_name);
+      await sendPaymentConfirmedEmail(registration.email, registration.full_name, registration.attendance_type);
       await sendAdminPaymentNotification(registration.full_name, registration.email, registration.organisation);
     } catch (err) {
       console.error('Failed to send payment confirmation emails', err);

@@ -89,6 +89,12 @@ export const strictLimiter = new RateLimiter({
   windowMs: 60 * 1000,
 });
 
+/** Summit registration: 5 submissions per 10 minutes per IP */
+export const summitRegisterLimiter = new RateLimiter({
+  limit:    5,
+  windowMs: 10 * 60 * 1000,
+});
+
 /**
  * Extract the real client IP from request headers.
  * Prefers x-vercel-forwarded-for (Vercel's tamper-proof header, set by the

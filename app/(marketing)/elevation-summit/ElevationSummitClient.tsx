@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { summitFormSchema, SummitFormValues } from './summitFormSchema';
@@ -14,6 +14,9 @@ import flags from 'react-phone-number-input/flags';
 import { useModal } from '@/components/Modal';
 import { useRouter } from 'next/navigation';
 import { Compass, Hammer, Crown, Sparkles, Network, Monitor } from 'lucide-react';
+import SummitCountdown from '@/components/SummitCountdown';
+import SummitSpeakers from '@/components/SummitSpeakers';
+import SummitFAQ from '@/components/SummitFAQ';
 
 const h = (s: string) => s.replace(/<(?!br\s*\/?>)[^>]*>/gi, '');
 
@@ -54,7 +57,9 @@ const ERROR = {
 };
 
 
-export default function ElevationSummitClient({ cms }: { cms: PublishedPage | null }) {
+type SummitPrices = { onsite: number; virtual: number };
+
+export default function ElevationSummitClient({ cms, prices }: { cms: PublishedPage | null; prices: SummitPrices }) {
   // CMS section keys
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
   const heroEyebrow   = hero?.eyebrow    || 'Inaugural Gathering · 19 November, 2026';
@@ -113,11 +118,13 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
     register,
     control,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<SummitFormValues>({
     resolver: zodResolver(summitFormSchema),
     defaultValues: {
+      attendance_type: 'onsite',
       full_name: '',
       email: '',
       whatsapp: '',
@@ -129,6 +136,15 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
     },
   });
 
+  const [activeTab, setActiveTab] = useState<'onsite' | 'virtual'>('onsite');
+  // Guards against a second Paystack launch while one is already being set up
+  const paymentStarting = useRef(false);
+
+  // keep react-hook-form's attendance_type value in sync with the tab
+  useEffect(() => {
+    setValue('attendance_type', activeTab);
+  }, [activeTab, setValue]);
+
   const onSubmit = async (data: SummitFormValues) => {
     try {
       const res = await fetch('/api/summit/register', {
@@ -138,7 +154,10 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       });
 
       if (res.status === 409) {
-        await alert('This email is already confirmed for the Summit.', 'Already registered');
+        await alert(
+          "This email address is already confirmed for the Elevation Summit. Check your inbox for your confirmation email. If you can't find it, contact us and we'll help you locate it.",
+          'Already Registered'
+        );
         return;
       }
 
@@ -156,28 +175,39 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       const config = await payRes.json();
 
       if (!payRes.ok) {
-        await alert(config.error || 'Could not prepare your payment.', 'Payment setup failed');
+        await alert(
+          "We couldn't process your registration. Please check your details and try again. If this keeps happening, reach out to us for help.",
+          'Something Went Wrong'
+        );
         return;
       }
 
-      const naira = (config.amount / 100).toLocaleString('en-NG');
+      const attendanceType = activeTab;
+      const amountNaira = config.amount / 100;
       const userConfirmed = await confirm(
-        `Payment for your ticket confirms your registration. The Elevation Summit costs ₦${naira}. Click OK to proceed to payment.`,
-        'Confirm your registration',
-        'success'
+        `You're registering for ${attendanceType === 'virtual' ? 'Virtual' : 'Onsite'} attendance at the Elevation Summit. Total: ₦${amountNaira.toLocaleString()}. ${attendanceType === 'virtual' ? 'Your join link will be emailed once payment is confirmed.' : 'We look forward to seeing you in Lagos.'} Click Confirm to proceed to secure payment.`,
+        'Confirm Your Registration',
+        'success',
+        { confirmLabel: 'Confirm and Pay', cancelLabel: 'Cancel' }
       );
 
       if (!userConfirmed) return;
 
       startPayment(registrationId, config);
     } catch (err) {
-      await alert('Something went wrong. Please try again in a moment.', 'Registration failed');
+      await alert(
+        "We couldn't process your registration. Please check your details and try again. If this keeps happening, reach out to us for help.",
+        'Something Went Wrong'
+      );
     }
   };
 
   const startPayment = async (registrationId: string, config: any) => {
+    if (paymentStarting.current) return;
+    paymentStarting.current = true;
     try {
       if (typeof (window as any).PaystackPop === 'undefined') {
+        paymentStarting.current = false;
         await alert('The payment script is still loading. Please refresh the page and try again.', 'Payment unavailable');
         return;
       }
@@ -196,13 +226,21 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           verifyAndFinish(response.reference, registrationId);
         },
         onClose: () => {
-          alert('Payment was not completed. You can retry from this page whenever you are ready.', 'Payment not completed');
+          paymentStarting.current = false;
+          alert(
+            'You closed the payment window before finishing your purchase. Your registration details are saved, so you can come back and complete payment at any time to secure your spot.',
+            'Payment Not Completed'
+          );
         },
       });
 
       handler.openIframe();
     } catch (err) {
-      await alert('Could not prepare your payment.', 'Payment setup failed');
+      paymentStarting.current = false;
+      await alert(
+        "We couldn't process your registration. Please check your details and try again. If this keeps happening, reach out to us for help.",
+        'Something Went Wrong'
+      );
     }
   };
 
@@ -216,14 +254,26 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
 
       if (res.ok) {
         reset();
-        await alert('Check your email for payment confirmation.', 'You are confirmed');
+        const attendanceType = activeTab;
+        // alert() resolves only on explicit dismissal, so the modal is
+        // never clipped by the redirect that follows it.
+        await alert(
+          `Your payment was successful and your ${attendanceType === 'virtual' ? 'virtual' : 'onsite'} spot at the Elevation Summit is secured. A confirmation email is on its way${attendanceType === 'virtual' ? ', including your join link' : ''}. Redirecting you now.`,
+          "You're Confirmed"
+        );
         router.push('/elevation-summit/confirmed');
       } else {
         const data = await res.json().catch(() => ({} as any));
-        await alert(data.error || 'Contact us if you were charged.', 'Payment could not be verified');
+        await alert(
+          "If you were charged, your money is safe. Contact us with the email address you registered with and we'll confirm your registration manually within 24 hours.",
+          "We Couldn't Verify Your Payment"
+        );
       }
     } catch (err) {
-      await alert('Contact us if you were charged.', 'Payment could not be verified');
+      await alert(
+        "If you were charged, your money is safe. Contact us with the email address you registered with and we'll confirm your registration manually within 24 hours.",
+        "We Couldn't Verify Your Payment"
+      );
     }
   };
 
@@ -359,6 +409,12 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         </div>
       </section>
 
+      {/* Speakers */}
+      <SummitSpeakers />
+
+      {/* Countdown — sits immediately before the registration form section */}
+      <SummitCountdown />
+
       {/* ── Registration form ── */}
       <section id="register" style={{ padding: 'clamp(4rem, 8vw, 7rem) 1.5rem', background: '#FAFAF8' }}>
         <div style={{ maxWidth: '680px', margin: '0 auto' }}>
@@ -367,6 +423,49 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           <p style={{ color: '#6B7280', lineHeight: 1.75, marginBottom: '2.5rem', textAlign: 'center', fontSize: '1rem' }}>{regSubhead}</p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="summit-form">
+
+            {/* Attendance tabs — both render the same fields; the tab only
+                switches attendance_type and the displayed price. */}
+            <div role="tablist" aria-label="Choose how you will attend"
+              style={{ gridColumn: '1 / -1', display: 'flex', borderBottom: '1px solid #E8E6E1', marginBottom: '0.5rem' }}>
+              {(['onsite', 'virtual'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === t}
+                  onClick={() => setActiveTab(t)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    fontWeight: 600,
+                    fontSize: '0.9375rem',
+                    fontFamily: 'Metropolis, "Inter", sans-serif',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: activeTab === t ? '2px solid #C8A96E' : '2px solid transparent',
+                    color: activeTab === t ? '#0F0F0E' : '#9CA3AF',
+                    marginBottom: '-1px',
+                    cursor: 'pointer',
+                    transition: 'color 0.15s, border-color 0.15s',
+                  }}
+                >
+                  {t === 'onsite'
+                    ? `Onsite, Lagos — ₦${prices.onsite.toLocaleString()}`
+                    : `Virtual — ₦${prices.virtual.toLocaleString()}`}
+                </button>
+              ))}
+            </div>
+
+            {/* key={activeTab} remounts this wrapper on every tab switch,
+                replaying the entrance animation — same fields, fresh feel.
+                RHF keeps values in its own store so nothing is lost. */}
+            <div key={activeTab} className="summit-fields-anim">
+
+            <p style={{ gridColumn: '1 / -1', fontSize: '0.8125rem', color: '#9CA3AF', margin: 0 }}>
+              {activeTab === 'onsite'
+                ? 'Attending in person — Aderemi Makanjuola Lecture Theatre, Lagos.'
+                : 'Joining virtually — your join link arrives by email once payment is confirmed.'}
+            </p>
 
             <div>
               <label style={LABEL}>Full Name *</label>
@@ -447,14 +546,30 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
               Your information is kept private. We will only contact you about The Elevation Summit.
             </p>
 
+            </div>{/* end .summit-fields-anim */}
+
             <style jsx>{`
               .summit-form {
                 display: grid;
                 grid-template-columns: 1fr;
                 gap: 1rem;
               }
+              .summit-fields-anim {
+                grid-column: 1 / -1;
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                animation: summitFieldsIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+              }
+              @keyframes summitFieldsIn {
+                from { opacity: 0; transform: translateY(14px); }
+                to   { opacity: 1; transform: translateY(0); }
+              }
               @media (min-width: 768px) {
                 .summit-form {
+                  grid-template-columns: 1fr 1fr;
+                }
+                .summit-fields-anim {
                   grid-template-columns: 1fr 1fr;
                 }
               }
@@ -555,6 +670,9 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           }
         `}</style>
       </section>
+
+      {/* FAQ — immediately after the gallery section */}
+      <SummitFAQ />
 
       {/* Get Involved */}
       <section id="speak" style={{ background: '#0F0F0E', padding: 'clamp(4rem, 8vw, 6rem) 1.5rem' }}>

@@ -13,14 +13,18 @@ export async function sendRegistrationReceivedEmail(to: string, fullName: string
   });
 }
 
-export async function sendPaymentConfirmedEmail(to: string, fullName: string) {
+export async function sendPaymentConfirmedEmail(to: string, fullName: string, attendanceType?: string) {
+  const isVirtual = attendanceType === 'virtual';
+  const joinLink = process.env.SUMMIT_VIRTUAL_JOIN_LINK;
   await summitMailer.sendMail({
     from: process.env.SUMMIT_MAIL_FROM,
     to,
     subject: 'Your Elevation Summit registration is confirmed',
     html: `
       <p>Hi ${fullName},</p>
-      <p>Your payment has been received and your place at the Elevation Summit, 19 November 2026, Lagos, is confirmed.</p>
+      <p>Your payment has been received and your ${isVirtual ? 'virtual' : 'onsite'} place at the Elevation Summit, 19 November 2026${isVirtual ? '' : ', Lagos'}, is confirmed.</p>
+      ${isVirtual && joinLink ? `<p>Your virtual join link: <a href="${joinLink}">${joinLink}</a></p>` : ''}
+      ${isVirtual && !joinLink ? '<p>Your virtual join link will be sent to you closer to the event.</p>' : ''}
       <p>We look forward to seeing you there.</p>
     `,
   });

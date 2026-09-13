@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendRegistrationReceivedEmail } from '@/lib/summitEmails';
+import { summitRegisterLimiter, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 submissions per IP per 10 minutes (in-memory — see
+  // lib/rate-limit.ts; resets on restart and is per serverless instance)
+  const rateLimit = summitRegisterLimiter.check(getClientIp(req));
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Please wait a few minutes and try again.' },
+      { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfter) } }
+    );
+  }
+
   let data;
   try {
     data = await req.json();
@@ -33,6 +44,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'You must accept the privacy policy to register.' }, { status: 400 });
   }
 
+  const attendanceType = data.attendance_type === 'virtual' ? 'virtual' : 'onsite';
+
   const { data: existing } = await supabaseAdmin
     .from('summit_registrations')
     .select('id, payment_status')
@@ -58,6 +71,7 @@ export async function POST(req: NextRequest) {
       current_role: data.current_role.trim(),
       other_messages: data.other_messages?.trim() || null,
       consent: data.consent === true,
+      attendance_type: attendanceType,
       status: 'pending',
       payment_status: 'pending',
       source: 'web',

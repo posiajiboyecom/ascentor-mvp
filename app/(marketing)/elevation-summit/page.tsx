@@ -58,7 +58,13 @@ export default async function ElevationSummitPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ElevationSummitClient cms={cms} />
+      <ElevationSummitClient
+        cms={cms}
+        prices={{
+          onsite: Number(process.env.SUMMIT_TICKET_PRICE_ONSITE_NGN) || 5000,
+          virtual: Number(process.env.SUMMIT_TICKET_PRICE_VIRTUAL_NGN) || 3000,
+        }}
+      />
     </PublicShell>
   );
 }

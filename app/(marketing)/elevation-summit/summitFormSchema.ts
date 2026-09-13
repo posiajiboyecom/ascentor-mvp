@@ -3,6 +3,7 @@ import { z } from 'zod';
 const sanitizeText = (val: string) => val.replace(/<[^>]*>?/gm, '').trim();
 
 export const summitFormSchema = z.object({
+  attendance_type: z.enum(['onsite', 'virtual']),
   full_name: z.string().trim().min(2, 'Full name is required').transform(sanitizeText),
   email: z.string().trim().email('Enter a valid email address').toLowerCase(),
   whatsapp: z.string().trim().min(8, 'WhatsApp number is required'),

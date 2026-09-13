@@ -15,6 +15,11 @@ interface ModalButton {
   onClick: () => void;
 }
 
+interface ModalConfirmOptions {
+  confirmLabel?: string;
+  cancelLabel?: string;
+}
+
 interface ModalConfig {
   title?: string;
   message: string;
@@ -27,10 +32,12 @@ interface ModalConfig {
   onClose: () => void;
 }
 
+// All colors trace to design tokens in app/globals.css — no hardcoded hex.
+// success → --color-success, warning → --accent (elevation gold), error → --color-error
 const VARIANT_COLORS = {
-  success: '#22C55E',
-  warning: '#E8A020',
-  error: '#EF4444',
+  success: 'var(--color-success, #16A34A)',
+  warning: 'var(--accent, #C8A96E)',
+  error: 'var(--color-error, #DC2626)',
 };
 
 function VariantIcon({ variant }: { variant?: 'success' | 'warning' | 'error' }) {
@@ -38,20 +45,20 @@ function VariantIcon({ variant }: { variant?: 'success' | 'warning' | 'error' })
   const color = VARIANT_COLORS[variant];
   const Icon = variant === 'success' ? Check : variant === 'warning' ? AlertTriangle : XCircle;
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-      <div
-        style={{
-          width: '56px',
-          height: '56px',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: `${color}20`,
-        }}
-      >
-        <Icon size={28} color={color} />
-      </div>
+    <div
+      style={{
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        // color-mix gives the tinted badge background from the token color
+        backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
+      }}
+    >
+      <Icon size={20} color={color} />
     </div>
   );
 }
@@ -59,6 +66,8 @@ function VariantIcon({ variant }: { variant?: 'success' | 'warning' | 'error' })
 // --- Modal Overlay Component ---
 function ModalOverlay({ config }: { config: ModalConfig }) {
   const [inputValue, setInputValue] = useState(config.defaultValue || '');
+  // busy guards every button against double-clicks (e.g. confirm-to-pay)
+  const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -129,27 +138,31 @@ function ModalOverlay({ config }: { config: ModalConfig }) {
           animation: 'modalSlideIn 0.2s ease-out',
         }}
       >
-        <VariantIcon variant={config.variant} />
-
-        {config.title && (
-          <h3 style={{
-            margin: '0 0 8px 0',
-            fontSize: '16px',
-            fontWeight: 600,
-            color: 'var(--text, #F1F0EB)',
-          }}>
-            {config.title}
-          </h3>
-        )}
-
-        <p style={{
-          margin: '0 0 20px 0',
-          fontSize: '14px',
-          color: 'var(--text-muted, #C5C4BF)',
-          lineHeight: 1.5,
-        }}>
-          {config.message}
-        </p>
+        {/* Icon sits left of the title/message row — consistent across
+            alert, confirm, and prompt since they share this render path. */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px' }}>
+          <VariantIcon variant={config.variant} />
+          <div style={{ minWidth: 0 }}>
+            {config.title && (
+              <h3 style={{
+                margin: '0 0 6px 0',
+                fontSize: '16px',
+                fontWeight: 600,
+                color: 'var(--text, #0F0F0E)',
+              }}>
+                {config.title}
+              </h3>
+            )}
+            <p style={{
+              margin: 0,
+              fontSize: '14px',
+              color: 'var(--text-muted, #374151)',
+              lineHeight: 1.5,
+            }}>
+              {config.message}
+            </p>
+          </div>
+        </div>
 
         {config.type === 'prompt' && (
           <input
@@ -183,14 +196,17 @@ function ModalOverlay({ config }: { config: ModalConfig }) {
           {config.buttons.map((btn, i) => (
             <button
               key={i}
+              disabled={busy}
               onClick={() => {
+                if (busy) return;
+                setBusy(true);
                 if (config.type === 'prompt' && btn.variant === 'primary') {
                   // Pass input value via a data attribute on the button click
                   (window as any).__modalInputValue = inputValue;
                 }
                 btn.onClick();
               }}
-              style={buttonStyle(btn.variant)}
+              style={{ ...buttonStyle(btn.variant), opacity: busy ? 0.6 : 1, cursor: busy ? 'not-allowed' : 'pointer' }}
               onMouseEnter={(e) => {
                 (e.target as HTMLButtonElement).style.opacity = '0.85';
               }}
@@ -221,7 +237,7 @@ function ModalOverlay({ config }: { config: ModalConfig }) {
 // --- Modal Context & Provider ---
 interface ModalContextType {
   alert: (message: string, title?: string) => Promise<void>;
-  confirm: (message: string, title?: string, variant?: 'success' | 'warning' | 'error') => Promise<boolean>;
+  confirm: (message: string, title?: string, variant?: 'success' | 'warning' | 'error', options?: ModalConfirmOptions) => Promise<boolean>;
   prompt: (message: string, options?: { title?: string; placeholder?: string; defaultValue?: string; inputType?: string }) => Promise<string | null>;
 }
 
@@ -246,7 +262,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
     });
   }, [closeModal]);
 
-  const confirm = useCallback((message: string, title?: string, variant?: 'success' | 'warning' | 'error'): Promise<boolean> => {
+  const confirm = useCallback((message: string, title?: string, variant?: 'success' | 'warning' | 'error', options?: ModalConfirmOptions): Promise<boolean> => {
     return new Promise((resolve) => {
       setModal({
         type: 'confirm',
@@ -254,8 +270,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         message,
         variant,
         buttons: [
-          { label: 'Cancel', variant: 'secondary', onClick: () => { closeModal(); resolve(false); } },
-          { label: 'OK', variant: 'primary', onClick: () => { closeModal(); resolve(true); } },
+          { label: options?.cancelLabel || 'Cancel', variant: 'secondary', onClick: () => { closeModal(); resolve(false); } },
+          { label: options?.confirmLabel || 'OK', variant: 'primary', onClick: () => { closeModal(); resolve(true); } },
         ],
         onClose: () => { closeModal(); resolve(false); },
       });
