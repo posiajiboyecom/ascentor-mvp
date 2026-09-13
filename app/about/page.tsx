@@ -133,7 +133,7 @@ export default async function AboutPage() {
         }
 
         .eyebrow {
-          font-family: var(--font-body, 'Inter', sans-serif);
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 0.75rem; font-weight: 600;
           letter-spacing: 0.12em; text-transform: uppercase;
           color: #C8A96E;

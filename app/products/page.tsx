@@ -121,7 +121,7 @@ export default async function ProductsPage() {
           border-bottom: 1px solid #E8E5E0;
         }
         .prod-hero-eyebrow {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px; font-weight: 500;
           letter-spacing: 0.14em; text-transform: uppercase;
           color: #E8A020; margin-bottom: 16px;

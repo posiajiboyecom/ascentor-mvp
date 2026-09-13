@@ -3,21 +3,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-type EventItem = {
-  slug: string;
-  title: string;
-  tagline: string | null;
-  event_date: string | null;
-};
-
 type PublicHeaderProps = {
-  events?: EventItem[];
   hasBlogPosts?: boolean;
 };
 
-export default function PublicHeader({ events = [], hasBlogPosts = false }: PublicHeaderProps) {
+export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [eventsOpen, setEventsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -50,38 +41,7 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
       <Link href="/" className="ph-nav-link">Home</Link>
       <Link href="/movement" className="ph-nav-link">The Movement</Link>
       <Link href="/about" className="ph-nav-link">About</Link>
-      <div className="ph-events-wrap" onClick={(e) => e.stopPropagation()}>
-        <button
-          className={`ph-events-btn${eventsOpen ? ' ph-open' : ''}`}
-          onClick={() => setEventsOpen((o) => !o)}
-        >
-          Events
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        {eventsOpen && (
-          <div className="ph-events-menu">
-            {events.length === 0 ? (
-              <p className="ph-events-empty">No upcoming events</p>
-            ) : (
-              events.map((ev) => (
-                <Link
-                  key={ev.slug}
-                  href={`/events/${ev.slug}`}
-                  className="ph-events-item"
-                  onClick={() => setEventsOpen(false)}
-                >
-                  <span className="ph-events-title">{ev.title}</span>
-                  {(ev.event_date || ev.tagline) && (
-                    <span className="ph-events-sub">{ev.event_date || ev.tagline}</span>
-                  )}
-                </Link>
-              ))
-            )}
-          </div>
-        )}
-      </div>
+      <Link href="/elevation-summit" className="ph-nav-link">Events</Link>
       {hasBlogPosts && <Link href="/blog" className="ph-nav-link">Resources</Link>}
       <Link href="/contact" className="ph-nav-link">Contact</Link>
     </>
@@ -100,64 +60,6 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
           white-space: nowrap;
         }
         .ph-nav-link:hover { color: #0F0F0E; }
-
-        .ph-events-wrap { position: relative; }
-        .ph-events-btn {
-          font-family: Metropolis;
-          font-size: 0.9rem;
-          font-weight: 500;
-          color: #374151;
-          background: none;
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 0;
-          transition: color 0.2s;
-        }
-        .ph-events-btn:hover { color: #0F0F0E; }
-        .ph-events-btn svg { transition: transform 0.2s; }
-        .ph-events-btn.ph-open svg { transform: rotate(180deg); }
-        .ph-events-menu {
-          position: absolute;
-          top: calc(100% + 12px);
-          left: 50%;
-          transform: translateX(-50%);
-          background: #FFFFFF;
-          border: 1px solid #E8E6E1;
-          border-radius: 12px;
-          padding: 8px;
-          min-width: 240px;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-          z-index: 60;
-        }
-        .ph-events-empty {
-          padding: 10px 14px;
-          font-size: 0.8125rem;
-          color: #9CA3AF;
-          margin: 0;
-        }
-        .ph-events-item {
-          display: block;
-          padding: 10px 14px;
-          border-radius: 8px;
-          text-decoration: none;
-          transition: background 0.15s;
-        }
-        .ph-events-item:hover { background: #F4F3EF; }
-        .ph-events-title {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: #0F0F0E;
-          display: block;
-        }
-        .ph-events-sub {
-          font-size: 0.75rem;
-          color: #9CA3AF;
-          margin-top: 1px;
-          display: block;
-        }
 
         .ph-desktop-nav { display: none !important; }
         @media(min-width: 860px) { .ph-desktop-nav { display: flex !important; } }
@@ -310,7 +212,6 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
           borderBottom: '1px solid #E8E6E1',
           transition: 'background 0.2s',
         }}
-        onClick={() => setEventsOpen(false)}
       >
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
           <div
@@ -347,7 +248,7 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
 
             <div className="ph-desktop-cta" style={{ marginLeft: 'auto', marginRight: '0.75rem' }}>
               <Link href="/signup" className="ph-cta-btn">
-                Join Ascentor
+                Join Community
               </Link>
             </div>
 
@@ -400,31 +301,9 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
         <Link href="/about" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
           About
         </Link>
-        <p
-          style={{
-            padding: '0.75rem 0',
-            borderBottom: '1px solid #E8E6E1',
-            margin: 0,
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: '#9CA3AF',
-          }}
-        >
+        <Link href="/elevation-summit" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
           Events
-        </p>
-        {events.map((ev) => (
-          <Link
-            key={ev.slug}
-            href={`/events/${ev.slug}`}
-            className="ph-mobile-link"
-            style={{ paddingLeft: '1rem', fontSize: '1rem', fontWeight: 500 }}
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            {ev.title}
-          </Link>
-        ))}
+        </Link>
         {hasBlogPosts && (
           <Link href="/blog" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
             Resources
@@ -444,7 +323,7 @@ export default function PublicHeader({ events = [], hasBlogPosts = false }: Publ
             Sign in
           </Link>
           <Link href="/signup" className="ph-cta-btn" onClick={() => setMobileMenuOpen(false)}>
-            Join Ascentor
+            Join Community
           </Link>
         </div>
       </div>

@@ -16,10 +16,10 @@ function getInitials(name: string): string {
 }
 
 // Matches the fixed summit date shown in DesktopRail's mini-card
-// ("Feb 2027 · Lagos"). Clamped at 0 so it never goes negative once
+// ("19 Nov 2026 · Lagos"). Clamped at 0 so it never goes negative once
 // the date has passed.
 function getSummitDaysAway(): number {
-  const diff = new Date('2027-02-01T00:00:00Z').getTime() - Date.now();
+  const diff = new Date('2026-11-19T00:00:00Z').getTime() - Date.now();
   return diff > 0 ? Math.ceil(diff / 86400000) : 0;
 }
 

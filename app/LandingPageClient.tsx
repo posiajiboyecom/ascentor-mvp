@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { Brain, ShieldCheck, Briefcase, HeartHandshake, Users, Landmark, TrendingUp, Mountain, Compass } from 'lucide-react';
 import PublicHeader from '@/components/layout/PublicHeader';
 import PublicFooter from '@/components/layout/PublicFooter';
 import type { PublishedPage } from '@/lib/supabase/queries/marketing';
@@ -46,6 +47,23 @@ function sanitizeHeroHeadline(html: string): string {
 // hardcoded copy if cms is null or that section hasn't been
 // published yet. The hardcoded strings are the safety net, not dead
 // code — do not delete them when more sections get wired.
+// Icons keyed by card title so CMS-supplied cards get the same treatment
+// as the hardcoded defaults. Compass is the fallback for unknown titles.
+const DIMENSION_ICONS: Record<string, typeof Brain> = {
+  Mind: Brain,
+  Character: ShieldCheck,
+  Vocation: Briefcase,
+  Relationships: HeartHandshake,
+  Community: Users,
+  Legacy: Landmark,
+};
+
+const PILLAR_ICONS: Record<string, typeof Brain> = {
+  Community: Users,
+  Development: TrendingUp,
+  'The Elevation Summit': Mountain,
+};
+
 export default function LandingPageClient({ cms }: { cms: PublishedPage | null }) {
   const supabase = createClient();
 
@@ -55,7 +73,6 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const [subLoading, setSubLoading] = useState(false);
   const [subError, setSubError] = useState('');
   const [userCount, setUserCount] = useState<number | null>(null);
-  const [events, setEvents] = useState<Array<{ slug: string; title: string; tagline: string | null; event_date: string | null; is_featured: boolean }>>([]);
   const [heroSlide, setHeroSlide] = useState(0);
 
   const heroImages = [
@@ -176,10 +193,6 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
       .select('id', { count: 'exact', head: true })
       .then(({ count }) => { if (count) setUserCount(count); });
 
-    fetch('/api/events/list')
-      .then(r => r.json())
-      .then(d => { if (d.events) setEvents(d.events); })
-      .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubscribe = async (e: React.FormEvent) => {
@@ -234,7 +247,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
         .nav-link:hover { color: #0F0F0E; }
 
         .eyebrow {
-          font-family: var(--font-body, 'Inter', sans-serif);
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 0.75rem;
           font-weight: 600;
           letter-spacing: 0.12em;
@@ -304,6 +317,18 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
           background: #C8A96E;
           border-radius: 2px;
           margin-bottom: 1rem;
+        }
+
+        .dimensions-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        @media (min-width: 640px) {
+          .dimensions-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 960px) {
+          .dimensions-grid { grid-template-columns: repeat(3, 1fr); }
         }
 
         .dimension-card {
@@ -480,14 +505,18 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
       `}</style>
 
       {/* ── Navigation ── */}
-      <PublicHeader events={events} hasBlogPosts={hasBlogPosts} />
+      <PublicHeader hasBlogPosts={hasBlogPosts} />
 
       {/* ── Hero ── */}
       <section style={{ padding: 'clamp(3rem, 6vw, 5rem) 1.5rem clamp(3rem, 6vw, 5rem)', maxWidth: '1200px', margin: '0 auto' }}>
         <div className="hero-grid">
           {/* Images Column - shown first on mobile, second on desktop */}
           <div className="hero-carousel" style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '1rem', overflow: 'hidden', background: '#E8E6E1' }}>
+            {/* aspectRatio gives the box real height on mobile — the slides are
+                position:absolute so they don't size the container themselves.
+                On desktop the grid row has a definite height, so height:100%
+                wins and the ratio is ignored. */}
+            <div style={{ position: 'relative', width: '100%', height: '100%', aspectRatio: '4 / 3', borderRadius: '1rem', overflow: 'hidden', background: '#E8E6E1' }}>
               {heroImages.map((src, i) => (
                 <img
                   key={src}
@@ -613,19 +642,26 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
             <h2 className="section-headline" dangerouslySetInnerHTML={{ __html: sanitizeHeroHeadline(pillarsHeadline) }} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-            {pillarCards.map((item) => (
-              <div key={item.pillar} className={`pillar-card ${item.featured === 'true' ? 'featured' : ''}`}>
-                {item.badge && (
-                  <span style={{ display: 'inline-block', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', background: 'rgba(200,169,110,0.15)', color: '#C8A96E', marginBottom: '1rem' }}>{item.badge}</span>
-                )}
-                <div className="gold-bar" />
-                <h3 style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.75rem', color: item.featured === 'true' ? '#FAFAF8' : '#0F0F0E' }}>{item.pillar}</h3>
-                <p style={{ fontSize: '0.9375rem', lineHeight: 1.7, marginBottom: item.cta_label ? '1.5rem' : 0, color: item.featured === 'true' ? '#9CA3AF' : '#6B7280' }}>{item.description}</p>
-                {item.cta_label && item.cta_href && (
-                  <Link href={item.cta_href} style={{ fontSize: '0.875rem', fontWeight: 600, color: '#C8A96E', textDecoration: 'none' }}>{item.cta_label}</Link>
-                )}
-              </div>
-            ))}
+            {pillarCards.map((item) => {
+              const PillarIcon = PILLAR_ICONS[item.pillar] || Compass;
+              // The Summit card always links to the summit page, even if CMS
+              // data carries a stale /events/... href.
+              const ctaHref = /summit/i.test(item.pillar) ? '/elevation-summit' : item.cta_href;
+              return (
+                <div key={item.pillar} className={`pillar-card ${item.featured === 'true' ? 'featured' : ''}`}>
+                  {item.badge && (
+                    <span style={{ display: 'inline-block', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', background: 'rgba(200,169,110,0.15)', color: '#C8A96E', marginBottom: '1rem' }}>{item.badge}</span>
+                  )}
+                  <PillarIcon size={24} style={{ color: '#C8A96E', marginBottom: '0.75rem' }} />
+                  <div className="gold-bar" />
+                  <h3 style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.75rem', color: item.featured === 'true' ? '#FAFAF8' : '#0F0F0E' }}>{item.pillar}</h3>
+                  <p style={{ fontSize: '0.9375rem', lineHeight: 1.7, marginBottom: item.cta_label ? '1.5rem' : 0, color: item.featured === 'true' ? '#9CA3AF' : '#6B7280' }}>{item.description}</p>
+                  {item.cta_label && ctaHref && (
+                    <Link href={ctaHref} style={{ fontSize: '0.875rem', fontWeight: 600, color: '#C8A96E', textDecoration: 'none' }}>{item.cta_label}</Link>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -637,14 +673,18 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
           <h2 className="section-headline" dangerouslySetInnerHTML={{ __html: sanitizeHeroHeadline(totalHeadline) }} />
           <p style={{ color: '#6B7280', lineHeight: 1.7, marginTop: '1rem', fontSize: '1rem' }}>{totalBody}</p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-          {dimensions.map((item) => (
-            <div key={item.dimension} className="dimension-card">
-              <div className="gold-bar" style={{ marginBottom: '0.75rem' }} />
-              <h3>{item.dimension}</h3>
-              <p>{item.description}</p>
-            </div>
-          ))}
+        <div className="dimensions-grid">
+          {dimensions.map((item) => {
+            const DimIcon = DIMENSION_ICONS[item.dimension] || Compass;
+            return (
+              <div key={item.dimension} className="dimension-card">
+                <DimIcon size={22} style={{ color: '#C8A96E', marginBottom: '0.75rem' }} />
+                <div className="gold-bar" style={{ marginBottom: '0.75rem' }} />
+                <h3>{item.dimension}</h3>
+                <p>{item.description}</p>
+              </div>
+            );
+          })}
         </div>
       </section>
 

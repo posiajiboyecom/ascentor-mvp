@@ -56,6 +56,7 @@ export default function ManifestoPage() {
       <style>{`
         body { background: #0F0F0E !important; color: #FAFAF8 !important; }
         .mf-eyebrow {
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em;
           text-transform: uppercase; color: #C8A96E;
         }

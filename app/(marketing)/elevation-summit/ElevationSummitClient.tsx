@@ -236,10 +236,19 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
 
   return (
     <>
-      {/* Hero */}
+      {/* Hero — image first in DOM so it always renders on top on mobile;
+          desktop reorders to text-left / image-right. Same pattern as the
+          landing page hero-grid. */}
       <section style={{ background: '#FFFFFF', padding: 'clamp(5rem, 10vw, 9rem) 1.5rem clamp(4rem, 8vw, 7rem)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', alignItems: 'center' }}>
-          <div>
+        <div className="summit-hero-grid" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div className="summit-hero-image">
+            <img
+              src="/images/elevation-summit-2.jpeg"
+              alt="The Elevation Summit"
+              style={{ width: '100%', borderRadius: '1rem', objectFit: 'cover', maxHeight: '520px', display: 'block' }}
+            />
+          </div>
+          <div className="summit-hero-text">
             <p className="mkt-eyebrow" style={{ marginBottom: '1.5rem' }}>{heroEyebrow}</p>
             <h1 className="mkt-hero-headline" style={{ marginBottom: '1.5rem', maxWidth: '840px', color: '#0F0F0E' }}
               dangerouslySetInnerHTML={{ __html: h(heroHeadline) }} />
@@ -251,20 +260,24 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
               <a href="#what-it-is" className="btn-secondary" style={{ fontSize: '1rem', padding: '0.875rem 2rem', borderColor: '#0F0F0E', color: '#0F0F0E' }}>{heroCta2Label}</a>
             </div>
           </div>
-          <div className="hero-image">
-            <img
-              src="/images/elevation-summit-2.jpeg"
-              alt="The Elevation Summit"
-              style={{ width: '100%', borderRadius: '1rem', objectFit: 'cover', maxHeight: '520px', display: 'block' }}
-            />
-          </div>
         </div>
 
-        <style jsx>{`
-          @media (max-width: 640px) {
-            .hero-image {
-              order: -1;
+        <style>{`
+          .summit-hero-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2.5rem;
+            align-items: center;
+          }
+          .summit-hero-grid .summit-hero-image { order: 1; }
+          .summit-hero-grid .summit-hero-text { order: 2; }
+          @media (min-width: 860px) {
+            .summit-hero-grid {
+              grid-template-columns: 1fr 1fr;
+              gap: 4rem;
             }
+            .summit-hero-grid .summit-hero-image { order: 2; }
+            .summit-hero-grid .summit-hero-text { order: 1; }
           }
         `}</style>
       </section>

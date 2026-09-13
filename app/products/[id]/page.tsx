@@ -225,7 +225,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
         }
         .pd-cat {
-          font-family: 'DM Mono', monospace; font-size: 10px;
+          font-family: Metropolis, 'Inter', sans-serif; font-size: 10px;
           letter-spacing: 0.1em; text-transform: uppercase;
           padding: 4px 12px; border-radius: 999px;
         }

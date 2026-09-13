@@ -212,9 +212,9 @@ export default function AdminEventsPage() {
             {/* Core fields */}
             {[
               ['Title *',    'title',       'text',     'The Elevation Summit'],
-              ['Slug *',     'slug',        'text',     'elevation-summit-2027'],
+              ['Slug *',     'slug',        'text',     'elevation-summit-2026'],
               ['Tagline',    'tagline',     'text',     'One gathering. One decision.'],
-              ['Event Date', 'event_date',  'text',     'February 2027'],
+              ['Event Date', 'event_date',  'text',     'November 2026'],
               ['Date (ISO)', 'event_date_iso','date',   ''],
               ['Location',   'location',    'text',     'Lagos, Nigeria'],
               ['Cover colour','cover_color','color',    '#0F0F0E'],

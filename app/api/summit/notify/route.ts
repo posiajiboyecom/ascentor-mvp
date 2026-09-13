@@ -23,7 +23,7 @@ function buildHtml(opts: { firstName: string; message: string }) {
       <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#161614;border-radius:16px;overflow:hidden;border:1px solid rgba(200,169,110,0.2);">
         <tr><td style="padding:32px 36px;">
           <img src="https://ascentorbi.com/ascentor-color-for-dark-pages.svg" alt="Ascentor" height="26" style="display:block;margin-bottom:28px;">
-          <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#C8A96E;">◇ The Elevation Summit · 2027</p>
+          <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#C8A96E;">◇ The Elevation Summit · 2026</p>
           <p style="margin:20px 0 0;font-size:15px;color:#9CA3AF;line-height:1.8;">${bodyHtml}</p>
           <div style="margin-top:28px;">
             <a href="https://ascentorbi.com/elevation-summit" style="display:inline-block;padding:12px 22px;background:#C8A96E;color:#0F0F0E;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px;">
@@ -33,7 +33,7 @@ function buildHtml(opts: { firstName: string; message: string }) {
         </td></tr>
         <tr><td style="padding:20px 36px;border-top:1px solid rgba(255,255,255,0.06);">
           <p style="margin:0;font-size:11px;color:#4B5563;font-family:'Courier New',monospace;letter-spacing:0.04em;">
-            YOU ARE RECEIVING THIS BECAUSE YOU REGISTERED FOR THE ELEVATION SUMMIT 2027.
+            YOU ARE RECEIVING THIS BECAUSE YOU REGISTERED FOR THE ELEVATION SUMMIT 2026.
           </p>
         </td></tr>
       </table>

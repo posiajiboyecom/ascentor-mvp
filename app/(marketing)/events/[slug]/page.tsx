@@ -1,6 +1,6 @@
 // app/(marketing)/events/[slug]/page.tsx
 // Server component — fetches event data and renders the registration page.
-// Route: /events/[slug]  e.g. /events/elevation-summit-2027
+// Route: /events/[slug]  e.g. /events/elevation-summit-2026
 
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';

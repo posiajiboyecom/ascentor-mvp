@@ -113,7 +113,7 @@ export default function DemoPricingPage() {
           font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #14B8A6; text-transform: uppercase;
         }
         .dp-dot { width: 6px; height: 6px; border-radius: 50%; background: #14B8A6; }
-        .dp-eyebrow { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: #E8A020; text-transform: uppercase; text-align: center; margin-bottom: 14px; }
+        .dp-eyebrow { font-family: Metropolis, 'Inter', sans-serif; font-size: 10px; letter-spacing: 0.2em; color: #E8A020; text-transform: uppercase; text-align: center; margin-bottom: 14px; }
         .dp-headline { font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(32px, 5vw, 50px); font-weight: 700; line-height: 1.08; text-align: center; color: #F7F6F3; margin-bottom: 14px; }
         .dp-headline span { color: #E8A020; }
         .dp-sub { text-align: center; font-size: 14px; color: #8A8272; margin-bottom: 10px; line-height: 1.6; }

@@ -352,7 +352,7 @@ export default async function WhoItsForPage() {
       <section className="py-16 px-5">
         <div className="max-w-3xl mx-auto rounded-2xl p-10 text-center" style={{ background: '#0C0B08' }}>
           <div className="inline-block px-3 py-1 rounded-full text-[10px] font-bold mb-5"
-            style={{ background: 'rgba(245,158,11,0.1)', color: '#E8A020', border: '1px solid rgba(245,158,11,0.2)' }}>
+            style={{ background: 'rgba(245,158,11,0.1)', color: '#E8A020', border: '1px solid rgba(245,158,11,0.2)', fontFamily: "Metropolis, 'Inter', sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             {ctaEyebrow}
           </div>
           <h2 className="text-3xl md:text-4xl font-semibold mb-4"

@@ -57,7 +57,7 @@ const NAV_ITEMS = [
 ];
 
 function summitCountdown() {
-  const diff = new Date('2027-02-01T00:00:00Z').getTime() - Date.now();
+  const diff = new Date('2026-11-19T00:00:00Z').getTime() - Date.now();
   return diff > 0 ? Math.ceil(diff / 86400000) : 0;
 }
 

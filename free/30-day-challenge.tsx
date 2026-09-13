@@ -92,7 +92,7 @@ export default function ChallengeOptInPage() {
         }
         .ch-nav a { color: #E8A020; text-decoration: none; }
         .ch-eyebrow {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px;
           letter-spacing: 0.16em;
           color: #E8A020;

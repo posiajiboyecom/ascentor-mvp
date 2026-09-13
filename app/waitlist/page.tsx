@@ -184,7 +184,7 @@ export default function WaitlistPage() {
     .left-mid{flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px 0}
     .eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:32px}
     .eyebrow-line{width:32px;height:1.5px;background:#E8A020}
-    .eyebrow-text{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#E8A020}
+    .eyebrow-text{font-family:Metropolis,'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#E8A020}
     .headline{font-family:'Cormorant Garamond',serif;font-size:clamp(48px,5.5vw,80px);font-weight:700;line-height:1;color:#F5F0E8;margin-bottom:28px}
     .headline em{font-style:italic;color:#E8A020}
     .sub{font-size:16px;line-height:1.75;color:rgba(245,240,232,.55);max-width:420px;margin-bottom:48px}

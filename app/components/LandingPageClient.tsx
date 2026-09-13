@@ -77,7 +77,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   // Summit Banner
   const banner = cms?.sections.summit_banner?.data as Record<string, string> | undefined;
   const bannerEyebrow = banner?.eyebrow || 'The Elevation Summit';
-  const bannerDate    = banner?.date    || 'February 2027 · Lagos, Nigeria';
+  const bannerDate    = banner?.date    || '19 November, 2026 · Lagos, Nigeria';
   const bannerSub     = banner?.sub     || 'The inaugural gathering. One defining moment.';
   const bannerCta     = banner?.cta     || 'Register Interest →';
   const bannerHref    = banner?.href    || '/elevation-summit';
@@ -110,7 +110,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const defaultPillars = [
     { pillar: 'Community', description: 'A global circle of purposeful individuals. Not a networking group. A brotherhood and sisterhood anchored by shared ideology and mutual accountability.', featured: '', badge: '', cta_label: '', cta_href: '' },
     { pillar: 'Development', description: 'Structured pathways for becoming the total person — in mind, character, vocation, relationships, and civic impact.', featured: '', badge: '', cta_label: '', cta_href: '' },
-    { pillar: 'The Elevation Summit', description: 'Once a year, the community gathers. The annual Summit is the peak moment — inspiration, challenge, and the collective experience of people who chose to ascend.', featured: 'true', badge: 'Next gathering: February 2027', cta_label: 'Learn about The Elevation Summit →', cta_href: '/elevation-summit' },
+    { pillar: 'The Elevation Summit', description: 'Once a year, the community gathers. The annual Summit is the peak moment — inspiration, challenge, and the collective experience of people who chose to ascend.', featured: 'true', badge: 'Next gathering: 19 November, 2026', cta_label: 'Learn about The Elevation Summit →', cta_href: '/elevation-summit' },
   ];
   const pillarCards = pillarItems.length > 0 ? pillarItems : defaultPillars;
 
@@ -219,7 +219,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
         .nav-link:hover { color: #0F0F0E; }
 
         .eyebrow {
-          font-family: var(--font-body, 'Inter', sans-serif);
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 0.75rem;
           font-weight: 600;
           letter-spacing: 0.12em;
@@ -754,7 +754,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
               }}>The Elevation Summit</h4>
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 <Link href="/elevation-summit">About the Summit</Link>
-                <Link href="/elevation-summit#register">February 2027</Link>
+                <Link href="/elevation-summit#register">November 2026</Link>
                 <Link href="/elevation-summit#speak">Become a Speaker</Link>
                 <Link href="/elevation-summit#partner">Partner with Us</Link>
               </nav>

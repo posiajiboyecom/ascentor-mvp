@@ -28,7 +28,7 @@ export function DesktopRail({
   userInitials,
   summitDaysAway,
 }: DesktopRailProps) {
-  const pathname = usePathname();
+  const diff = new Date('2026-11-19T00:00:00Z').getTime() - Date.now();
 
   return (
     <aside
@@ -87,7 +87,7 @@ export function DesktopRail({
           The Elevation Summit
         </p>
         <p className="text-sm font-medium text-[#FAFAF8]">
-          19 Nov 2027 · Lagos
+          19 Nov 2026 · Lagos
         </p>
         <p className="text-xs text-[#C8A96E]/70 mt-1 font-medium">
           {summitDaysAway} days away — Learn more →

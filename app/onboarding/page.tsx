@@ -106,7 +106,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
     <p style={{
       fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
       textTransform: 'uppercase', color: GOLD,
-      fontFamily: fontBody, margin: '0 0 0.875rem',
+      fontFamily: "Metropolis, 'Inter', sans-serif", margin: '0 0 0.875rem',
     }}>
       {children}
     </p>
@@ -528,7 +528,7 @@ export default function OnboardingPage() {
         marginTop: '1.5rem', fontSize: 12,
         color: MUTED, textAlign: 'center', fontFamily: fontBody,
       }}>
-        The Elevation Summit · February 2027 · Lagos, Nigeria
+        The Elevation Summit · 19 November, 2026 · Lagos, Nigeria
       </p>
 
       <style>{`
