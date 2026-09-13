@@ -28,7 +28,7 @@ export function DesktopRail({
   userInitials,
   summitDaysAway,
 }: DesktopRailProps) {
-  const diff = new Date('2026-11-19T00:00:00Z').getTime() - Date.now();
+  const pathname = usePathname();
 
   return (
     <aside
