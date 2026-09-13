@@ -510,7 +510,7 @@ export default function AdminPromoCodesPage() {
                           title={c.auto_apply ? 'Remove from checkout banner' : 'Show as offer on checkout page'}
                           style={{
                             padding: '5px 10px', borderRadius: '7px', cursor: 'pointer',
-                            fontFamily: "'DM Mono', sans-serif", fontSize: '10px', fontWeight: 600,
+                            fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '10px', fontWeight: 600,
                             border: c.auto_apply ? '1px solid rgba(232,160,32,0.4)' : '1px solid var(--admin-bg-input)',
                             background: c.auto_apply ? 'rgba(232,160,32,0.1)' : 'transparent',
                             color: c.auto_apply ? '#E8A020' : 'var(--admin-text-faint)',

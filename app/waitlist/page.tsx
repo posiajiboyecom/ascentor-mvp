@@ -269,7 +269,7 @@ export default function WaitlistPage() {
     .share-btn.wa:hover{border-color:#25D366;color:#25D366}
     .share-btn.li:hover{border-color:#0A66C2;color:#0A66C2}
     .copy-row{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid rgba(245,240,232,.07)}
-    .copy-url{flex:1;padding:11px 14px;font-size:12px;color:rgba(245,240,232,.28);background:#252219;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .copy-url{flex:1;padding:11px 14px;font-size:12px;color:rgba(245,240,232,.28);background:#252219;font-family:Metropolis,'Inter',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .copy-btn{padding:11px 18px;background:rgba(232,160,32,.15);border:none;border-left:1.5px solid rgba(245,240,232,.07);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#E8A020;cursor:pointer;white-space:nowrap;transition:all .2s}
     .copy-btn:hover,.copy-btn.copied{background:#E8A020;color:#0C0B08}
     .back{margin-top:24px;font-size:12px;color:rgba(245,240,232,.28);text-decoration:underline}

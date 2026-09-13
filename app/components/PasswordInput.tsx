@@ -143,7 +143,7 @@ export default function PasswordInput({
             ))}
           </div>
           <span style={{
-            fontFamily:  "'DM Mono', Metropolis, 'Inter', sans-serif",
+            fontFamily:  "Metropolis, 'Inter', sans-serif",
             fontSize:    '10px',
             fontWeight:  500,
             color:       strength.color,

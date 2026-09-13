@@ -1,4 +1,4 @@
-﻿// app/partner/ai-persona/page.tsx
+// app/partner/ai-persona/page.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 // Partner can configure their AI coach's persona here.
 // This replaces the hardcoded system prompt in /api/coach/session/route.ts
@@ -153,7 +153,7 @@ export default function AIPersonaPage() {
             color: '#f8fafc',
             fontSize: '13px',
             lineHeight: 1.7,
-            fontFamily: 'monospace',
+            fontFamily: "Metropolis, 'Inter', sans-serif",
             resize: 'vertical',
             outline: 'none',
           }}

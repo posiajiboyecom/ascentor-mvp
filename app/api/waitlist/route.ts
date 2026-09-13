@@ -118,7 +118,7 @@ function buildConfirmationEmailHtml({
                         <p style="margin:0 0 12px;font-size:13px;color:#92400E;line-height:1.6;">
                           Every friend you refer moves you up. Share your personal link:
                         </p>
-                        <p style="margin:0;font-size:12px;color:#B45309;font-family:monospace;word-break:break-all;">
+                        <p style="margin:0;font-size:12px;color:#B45309;font-family:Metropolis,'Inter',sans-serif;word-break:break-all;">
                           ${referralUrl}
                         </p>
                       </td>

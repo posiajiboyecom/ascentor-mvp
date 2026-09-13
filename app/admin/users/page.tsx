@@ -378,7 +378,7 @@ export default function AdminUsersPage() {
                 </h3>
                 <div style={{ ...mono, fontSize:9, marginTop:3 }}>{selectedUser.role} · {selectedUser.subscription_plan || 'free'}</div>
               </div>
-              <button onClick={() => setSelectedUser(null)} style={{ background:'none', border:'1px solid var(--ledger-line-strong)', borderRadius:'var(--ledger-radius-md)', color:'var(--ledger-ink-faint)', cursor:'pointer', fontSize:18, lineHeight:1, padding:'2px 10px', fontFamily:'monospace' }}>✕</button>
+              <button onClick={() => setSelectedUser(null)} style={{ background:'none', border:'1px solid var(--ledger-line-strong)', borderRadius:'var(--ledger-radius-md)', color:'var(--ledger-ink-faint)', cursor:'pointer', fontSize:18, lineHeight:1, padding:'2px 10px', fontFamily:"Metropolis,'Inter',sans-serif" }}>✕</button>
             </div>
 
             {/* Tabs */}

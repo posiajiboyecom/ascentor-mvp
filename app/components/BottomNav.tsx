@@ -97,7 +97,7 @@ export default function BottomNav() {
           position: relative;
         }
         .asc-nav-label {
-          font-family: 'DM Mono', Metropolis, 'Inter', sans-serif;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           font-weight: 500;
           letter-spacing: 0.08em;

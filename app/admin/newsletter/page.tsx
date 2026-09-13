@@ -260,7 +260,7 @@ export default function AdminNewsletterPage() {
   body{margin:0;padding:0;background:#0E0C0A;font-family:Georgia,'Times New Roman',serif;}
   .wrapper{max-width:640px;margin:0 auto;background:#161210;}
   .header{background:#0E0C0A;padding:32px 40px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08);}
-  .header-tag{font-family:monospace;font-size:10px;letter-spacing:0.15em;color:#E8A020;text-transform:uppercase;margin-bottom:12px;}
+  .header-tag{font-family:Metropolis,'Inter',sans-serif;font-size:10px;letter-spacing:0.15em;color:#E8A020;text-transform:uppercase;margin-bottom:12px;}
   .header-title{font-family:Georgia,serif;font-size:36px;font-weight:700;color:#FEF9EC;margin:12px 0 8px;line-height:1.1;}
   .content{padding:40px;color:#E8E0D5;font-size:16px;line-height:1.8;}
   .content h2{font-family:Georgia,serif;font-size:24px;font-weight:700;color:#FEF9EC;margin:32px 0 12px;}
@@ -268,14 +268,14 @@ export default function AdminNewsletterPage() {
   .content blockquote{border-left:3px solid #E8A020;margin:24px 0;padding:16px 24px;font-style:italic;background:rgba(232,160,32,0.05);}
   .content a{color:#E8A020;}
   .footer{background:#0E0C0A;padding:24px 40px;text-align:center;border-top:1px solid rgba(255,255,255,0.08);}
-  .footer-text{font-family:monospace;font-size:11px;color:#9A8F85;line-height:1.8;}
+  .footer-text{font-family:Metropolis,'Inter',sans-serif;font-size:11px;color:#9A8F85;line-height:1.8;}
   .footer a{color:#E8A020;text-decoration:none;}
 </style></head><body>
 <div class="wrapper">
   <div class="header">
     <div class="header-tag">The Rise Letter &middot; Ascentor &middot; For the Ambitious</div>
     <div class="header-title">${item.subject || 'Untitled'}</div>
-    ${item.preview_text ? `<div style="font-family:monospace;font-size:12px;color:#9A8F85;">${item.preview_text}</div>` : ''}
+    ${item.preview_text ? `<div style="font-family:Metropolis,'Inter',sans-serif;font-size:12px;color:#9A8F85;">${item.preview_text}</div>` : ''}
   </div>
   <div class="content">${bodyContent}</div>
   <div class="footer">

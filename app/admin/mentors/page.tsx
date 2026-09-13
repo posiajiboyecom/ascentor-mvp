@@ -54,7 +54,7 @@ const STAGE_COLORS = {
 const brand = {
   fontDisplay: "'Cormorant Garamond', 'Georgia', serif",
   fontUI:      "'Syne', 'system-ui', sans-serif",
-  fontMono:    "'DM Mono', Metropolis, 'Inter', sans-serif",
+  fontMono:    "Metropolis, 'Inter', sans-serif",
   gold:        '#E8A020',
   goldMuted:   'rgba(232,160,32,0.12)',
   goldBorder:  'rgba(232,160,32,0.22)',

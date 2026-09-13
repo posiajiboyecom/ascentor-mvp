@@ -142,7 +142,7 @@ function founderNotificationEmail(name: string, email: string, org: string, mess
         </tr>
         <tr>
           <td style="padding:10px 0;font-size:13px;color:#8A8272">Enquiry ID</td>
-          <td style="padding:10px 0;font-family:monospace;font-size:12px;color:#8A8272">${enquiryId}</td>
+          <td style="padding:10px 0;font-family:Metropolis,'Inter',sans-serif;font-size:12px;color:#8A8272">${enquiryId}</td>
         </tr>
       </table>
       <div style="margin-top:28px">

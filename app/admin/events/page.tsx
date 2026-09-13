@@ -13,7 +13,7 @@ const B = {
   gold: '#C8A96E', text: '#FAFAF8', muted: '#6B7280', dim: '#4B5563',
   error: '#EF4444', success: '#10B981',
   fontUI: "'Syne','Plus Jakarta Sans',sans-serif",
-  fontMono: "'DM Mono',Metropolis,'Inter',sans-serif",
+  fontMono: "Metropolis,'Inter',sans-serif",
 };
 
 const ALL_FIELDS = [

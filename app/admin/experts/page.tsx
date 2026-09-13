@@ -15,7 +15,7 @@ import { useSearchParams } from 'next/navigation';
 const B = {
   fontDisplay: "'Cormorant Garamond', Georgia, serif",
   fontUI:      "'Syne', system-ui, sans-serif",
-  fontMono:    "'DM Mono', Metropolis, 'Inter', sans-serif",
+  fontMono:    "Metropolis, 'Inter', sans-serif",
   dark:        'var(--admin-bg)',
   dark800:     'var(--admin-bg-deep)',
   dark700:     'var(--admin-bg-card)',
