@@ -6,8 +6,8 @@ import { useModal } from '@/components/Modal';
 
 // ─────────────────────────────────────────────
 // ASCENTOR BRAND TOKENS (Brand Book v1.0 · 2026)
-// Display : Cormorant Garamond 700 / Italic 600
-// UI      : Syne 400–800
+// Display : Metropolis 700 / Italic 600
+// UI      : Metropolis 400–800
 // Mono    : DM Mono 400/500
 // Gold    : #E8A020  Dark: var(--admin-bg)
 // ─────────────────────────────────────────────
@@ -52,8 +52,8 @@ const STAGE_COLORS = {
 
 // ─── Inline brand styles (works in any Next.js app without extra CSS imports) ───
 const brand = {
-  fontDisplay: "'Cormorant Garamond', 'Georgia', serif",
-  fontUI:      "'Syne', 'system-ui', sans-serif",
+  fontDisplay: "'Metropolis', 'Georgia', serif",
+  fontUI:      "'Metropolis', 'system-ui', sans-serif",
   fontMono:    "Metropolis, 'Inter', sans-serif",
   gold:        '#E8A020',
   goldMuted:   'rgba(232,160,32,0.12)',
@@ -181,7 +181,7 @@ export default function AdminMentorsPage() {
     <>
       {/* Font imports — brand book spec */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        
       `}</style>
 
       <div className="animate-fade-up" style={{ fontFamily: brand.fontUI }}>
@@ -190,7 +190,7 @@ export default function AdminMentorsPage() {
         <div style={{ marginBottom: '6px' }}>
           <div className="ascentor-header-row" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '4px' }}>
             <div>
-              {/* Cormorant Garamond display headline — brand spec */}
+              {/* Metropolis display headline — brand spec */}
               <h1 style={{
                 fontFamily: brand.fontDisplay,
                 fontWeight: 700,
@@ -301,7 +301,7 @@ export default function AdminMentorsPage() {
                 onBlur={e => (e.target.style.borderColor = brand.border)}
               />
 
-              {/* Tab bar — Syne font, brand active state */}
+              {/* Tab bar — Metropolis font, brand active state */}
               <div style={{
                 display: 'flex',
                 gap: '2px',
@@ -514,7 +514,7 @@ export default function AdminMentorsPage() {
               height: 'fit-content',
             }}>
 
-              {/* Panel header — Cormorant display name */}
+              {/* Panel header — Metropolis display name */}
               <div style={{
                 padding: '20px 22px',
                 borderBottom: `1px solid ${brand.border}`,
@@ -618,7 +618,7 @@ export default function AdminMentorsPage() {
                   </div>
                 </div>
 
-                {/* Profile info — DM Mono labels + Syne values */}
+                {/* Profile info — DM Mono labels + Metropolis values */}
                 <div style={{ padding: '18px 22px', borderBottom: `1px solid ${brand.border}` }}>
                   <MonoTag color={brand.dark500}>Profile</MonoTag>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
@@ -694,7 +694,7 @@ export default function AdminMentorsPage() {
                   </div>
                 </div>
 
-                {/* Written responses — Cormorant section labels */}
+                {/* Written responses — Metropolis section labels */}
                 {[
                   { label: 'Career Summary', value: selected.career_summary },
                   { label: 'Why They Want to Mentor', value: selected.why_mentor },
@@ -975,7 +975,7 @@ function ActionButton({
     <button
       onClick={onClick}
       style={{
-        fontFamily: "'Syne', sans-serif",
+        fontFamily: "'Metropolis', sans-serif",
         fontSize: '11px',
         fontWeight: 600,
         letterSpacing: '0.01em',

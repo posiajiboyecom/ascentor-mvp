@@ -11,8 +11,8 @@ import { createClient } from '@/lib/supabase/client';
 const B = {
   gold:'#E8A020',goldMuted:'rgba(232,160,32,0.08)',goldBorder:'rgba(232,160,32,0.20)',
   teal:'#14B8A6',purple:'#8B5CF6',green:'#22C55E',red:'#EF4444',
-  fontMono:"Metropolis, 'Inter', sans-serif",fontUI:"'Syne', system-ui, sans-serif",
-  fontDisplay:"'Cormorant Garamond', Georgia, serif",
+  fontMono:"Metropolis, 'Inter', sans-serif",fontUI:"'Metropolis', system-ui, sans-serif",
+  fontDisplay:"'Metropolis', sans-serif",
 };
 const CARD:React.CSSProperties={background:'var(--admin-bg-deep)',border:'1px solid var(--admin-bg-input)',borderRadius:12};
 const MONO_LABEL:React.CSSProperties={fontFamily:B.fontMono,fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--admin-text-faint)',display:'block',marginBottom:5};
@@ -40,7 +40,7 @@ export default function CommunityIntelPage(){
   return(
     <div style={{animation:'asc-fade-up 0.35s ease both'}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        
         @keyframes asc-fade-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
         @keyframes asc-spin{to{transform:rotate(360deg)}}
         .msg-row:hover{background:rgba(255,255,255,0.02);border-radius:8px;}

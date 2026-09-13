@@ -22,7 +22,7 @@ interface CMsg {
 const G = '#E8A020';
 const mono: React.CSSProperties = { fontFamily:"Metropolis,'Inter',sans-serif", fontSize:10, letterSpacing:'0.09em', textTransform:'uppercase' as const, color:'var(--admin-text-faint)' };
 const card: React.CSSProperties = { background:'var(--admin-bg-deep)', border:'1px solid var(--admin-bg-input)', borderRadius:12 };
-const inp: React.CSSProperties  = { padding:'9px 13px', borderRadius:8, border:'1px solid var(--admin-bg-input)', background:'var(--admin-bg-card)', color:'var(--admin-text)', fontSize:13, fontFamily:"'Syne',sans-serif", outline:'none' };
+const inp: React.CSSProperties  = { padding:'9px 13px', borderRadius:8, border:'1px solid var(--admin-bg-input)', background:'var(--admin-bg-card)', color:'var(--admin-text)', fontSize:13, fontFamily:"'Metropolis',sans-serif", outline:'none' };
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true });
@@ -158,7 +158,7 @@ export default function AdminCommunityPage() {
       {/* Header */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
         <div>
-          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:28, fontWeight:700, color:'var(--admin-text-heading)', margin:0, marginBottom:6 }}>
+          <h1 style={{ fontFamily:"'Metropolis',serif", fontSize:28, fontWeight:700, color:'var(--admin-text-heading)', margin:0, marginBottom:6 }}>
             Community Management
           </h1>
           <p style={{ ...mono }}>Monitor, moderate, and broadcast across all channels</p>
@@ -190,7 +190,7 @@ export default function AdminCommunityPage() {
                     return (
                       <button key={ch.slug} className="ch-btn" onClick={() => setChannel(ch.slug)}
                         style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'7px 14px', background:active ? 'rgba(232,160,32,0.1)' : 'transparent', border:'none', borderLeft:`3px solid ${active ? G : 'transparent'}`, cursor:'pointer', textAlign:'left' }}>
-                        <span style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:active ? G : 'var(--admin-text-muted)', fontWeight:active ? 600 : 400 }}>
+                        <span style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, color:active ? G : 'var(--admin-text-muted)', fontWeight:active ? 600 : 400 }}>
                           #{ch.name}
                         </span>
                       </button>
@@ -205,7 +205,7 @@ export default function AdminCommunityPage() {
               return (
                 <button key={ch.slug} className="ch-btn" onClick={() => setChannel(ch.slug)}
                   style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'7px 14px', background:active ? 'rgba(232,160,32,0.1)' : 'transparent', border:'none', borderLeft:`3px solid ${active ? G : 'transparent'}`, cursor:'pointer', textAlign:'left' }}>
-                  <span style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:active ? G : 'var(--admin-text-muted)', fontWeight:active ? 600 : 400 }}>
+                  <span style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, color:active ? G : 'var(--admin-text-muted)', fontWeight:active ? 600 : 400 }}>
                     #{ch.name}
                   </span>
                 </button>
@@ -220,11 +220,11 @@ export default function AdminCommunityPage() {
           {/* Channel header + search */}
           <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
             <div style={{ flex:1 }}>
-              <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:18, color:'var(--admin-text-heading)' }}>
+              <div style={{ fontFamily:"'Metropolis',sans-serif", fontWeight:700, fontSize:18, color:'var(--admin-text-heading)' }}>
                 #{currentCh?.name || channel}
               </div>
               {currentCh?.description && (
-                <div style={{ fontFamily:"'Syne',sans-serif", fontSize:12, color:'var(--admin-text-faint)', marginTop:2 }}>{currentCh.description}</div>
+                <div style={{ fontFamily:"'Metropolis',sans-serif", fontSize:12, color:'var(--admin-text-faint)', marginTop:2 }}>{currentCh.description}</div>
               )}
             </div>
             <input type="text" placeholder="Search messages..." value={search} onChange={e => setSearch(e.target.value)}
@@ -251,13 +251,13 @@ export default function AdminCommunityPage() {
                   {/* Content */}
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', alignItems:'baseline', gap:8, marginBottom:3 }}>
-                      <span style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:700, color:'var(--admin-text)' }}>{msg.author_name}</span>
+                      <span style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, fontWeight:700, color:'var(--admin-text)' }}>{msg.author_name}</span>
                       <span style={{ fontFamily:"Metropolis,'Inter',sans-serif", fontSize:10, color:'var(--admin-text-faint)' }}>{msg.author_email}</span>
                       <span style={{ fontFamily:"Metropolis,'Inter',sans-serif", fontSize:10, color:'var(--admin-text-faint)', marginLeft:'auto' }}>{fmtDate(msg.created_at)}</span>
                     </div>
                     {msg.deleted && <span style={{ ...mono, color:'#EF4444', fontSize:9, marginBottom:3, display:'block' }}>DELETED</span>}
                     {msg.pinned  && <span style={{ ...mono, color:G, fontSize:9, marginBottom:3, display:'block' }}>📌 PINNED</span>}
-                    <p style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:'var(--admin-text-muted)', margin:0, lineHeight:1.6, wordBreak:'break-word' }}>
+                    <p style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, color:'var(--admin-text-muted)', margin:0, lineHeight:1.6, wordBreak:'break-word' }}>
                       {isVoice(msg.content) ? '🎙 Voice message' : msg.content}
                     </p>
                     {msg.likes.length > 0 && (

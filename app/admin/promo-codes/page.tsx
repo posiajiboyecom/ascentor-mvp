@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 // ============================================================
 // ADMIN PROMO CODES — /admin/promo-codes
 // Create, manage, enable/disable promotional codes
-// Ascentor brand: Dark var(--admin-bg) · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
+// Ascentor brand: Dark var(--admin-bg) · Gold #E8A020 · Metropolis · DM Mono · Metropolis
 // ============================================================
 
 interface PromoCode {
@@ -164,7 +164,7 @@ export default function AdminPromoCodesPage() {
     background: 'var(--admin-bg-card)',
     color: 'var(--admin-text)',
     fontSize: '13px',
-    fontFamily: "'Syne', sans-serif",
+    fontFamily: "'Metropolis', sans-serif",
     outline: 'none',
     width: '100%',
     transition: 'border-color 0.2s',
@@ -191,7 +191,7 @@ export default function AdminPromoCodesPage() {
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        
 
         .asc-input:focus       { border-color: #E8A020 !important; }
         .asc-input:hover       { border-color: var(--admin-text-faint) !important; }
@@ -208,7 +208,7 @@ export default function AdminPromoCodesPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "'Metropolis', serif",
             fontSize: '28px',
             fontWeight: 700,
             color: 'var(--admin-text-heading)',
@@ -229,7 +229,7 @@ export default function AdminPromoCodesPage() {
             border: 'none',
             background: showCreate ? 'var(--admin-bg-input)' : '#E8A020',
             color: showCreate ? 'var(--admin-text-muted)' : 'var(--admin-bg)',
-            fontFamily: "'Syne', sans-serif",
+            fontFamily: "'Metropolis', sans-serif",
             fontWeight: 700,
             fontSize: '13px',
             cursor: 'pointer',
@@ -262,7 +262,7 @@ export default function AdminPromoCodesPage() {
       {showCreate && (
         <div style={{ ...card, padding: '24px', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '20px', fontWeight: 700, color: 'var(--admin-text-heading)', margin: 0 }}>
+            <h3 style={{ fontFamily: "'Metropolis', serif", fontSize: '20px', fontWeight: 700, color: 'var(--admin-text-heading)', margin: 0 }}>
               Create Promo Code
             </h3>
             {/* Mode toggle */}
@@ -346,7 +346,7 @@ export default function AdminPromoCodesPage() {
                     <input type="checkbox" checked={newPlans.includes(p)}
                       onChange={(e) => setNewPlans(e.target.checked ? [...newPlans, p] : newPlans.filter(x => x !== p))}
                       className="asc-checkbox" />
-                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: 'var(--admin-text)', textTransform: 'capitalize' }}>{p}</span>
+                    <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: '12px', color: 'var(--admin-text)', textTransform: 'capitalize' }}>{p}</span>
                   </label>
                 ))}
               </div>
@@ -364,7 +364,7 @@ export default function AdminPromoCodesPage() {
           <button onClick={createCode} disabled={creating}
             style={{
               marginTop: '20px', padding: '11px 24px', borderRadius: '8px', border: 'none',
-              background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Syne', sans-serif",
+              background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Metropolis', sans-serif",
               fontWeight: 700, fontSize: '13px', cursor: creating ? 'not-allowed' : 'pointer',
               opacity: creating ? 0.45 : 1, transition: 'background 0.2s, opacity 0.2s', letterSpacing: '0.02em',
             }}>
@@ -387,7 +387,7 @@ export default function AdminPromoCodesPage() {
           </div>
         ) : codes.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center' }}>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', color: 'var(--admin-text-faint)', marginBottom: '4px' }}>No promo codes yet.</p>
+            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: '14px', color: 'var(--admin-text-faint)', marginBottom: '4px' }}>No promo codes yet.</p>
             <p style={{ ...monoLabel }}>Create one above to get started.</p>
           </div>
         ) : (
@@ -431,14 +431,14 @@ export default function AdminPromoCodesPage() {
 
                     {/* Discount */}
                     <td style={{ padding: '13px 16px' }}>
-                      <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '17px', fontWeight: 700, color: 'var(--admin-text)' }}>
+                      <span style={{ fontFamily: "'Metropolis', serif", fontSize: '17px', fontWeight: 700, color: 'var(--admin-text)' }}>
                         {Math.round(c.discount * 100)}%
                       </span>
                     </td>
 
                     {/* Label */}
                     <td style={{ padding: '13px 16px' }}>
-                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', color: 'var(--admin-text-muted)' }}>{c.label}</span>
+                      <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: '12px', color: 'var(--admin-text-muted)' }}>{c.label}</span>
                     </td>
 
                     {/* Plans */}
@@ -524,7 +524,7 @@ export default function AdminPromoCodesPage() {
                           style={{
                             padding: '5px 10px', borderRadius: '7px',
                             border: '1px solid var(--admin-bg-input)', background: 'transparent',
-                            color: 'var(--admin-text-muted)', fontFamily: "'Syne', sans-serif",
+                            color: 'var(--admin-text-muted)', fontFamily: "'Metropolis', sans-serif",
                             fontSize: '11px', fontWeight: 600, cursor: 'pointer',
                           }}
                         >
@@ -535,7 +535,7 @@ export default function AdminPromoCodesPage() {
                           style={{
                             padding: '5px 10px', borderRadius: '7px',
                             border: '1px solid rgba(239,68,68,0.25)', background: 'transparent',
-                            color: '#EF4444', fontFamily: "'Syne', sans-serif",
+                            color: '#EF4444', fontFamily: "'Metropolis', sans-serif",
                             fontSize: '11px', fontWeight: 600, cursor: 'pointer',
                           }}
                         >

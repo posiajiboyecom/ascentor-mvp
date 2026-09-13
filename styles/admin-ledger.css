@@ -20,8 +20,8 @@
 
 [data-ledger] {
   /* ── Type ──────────────────────────────────────────────── */
-  --ledger-font-serif: 'Cormorant Garamond', Georgia, serif;
-  --ledger-font-ui:    'Syne', system-ui, sans-serif;
+  --ledger-font-serif: Metropolis, 'Inter', sans-serif;
+  --ledger-font-ui:    Metropolis, system-ui, sans-serif;
   --ledger-font-mono:  Metropolis, 'Inter', sans-serif;
 
   /* ── Spacing scale (4px base) ──────────────────────────── */

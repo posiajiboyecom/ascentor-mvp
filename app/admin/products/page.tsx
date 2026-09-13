@@ -10,8 +10,8 @@ import { createClient } from '@/lib/supabase/client';
 // ─────────────────────────────────────────────────────────────────
 
 const brand = {
-  fontDisplay: "'Cormorant Garamond', Georgia, serif",
-  fontUI:      "'Syne', system-ui, sans-serif",
+  fontDisplay: "'Metropolis', sans-serif",
+  fontUI:      "'Metropolis', system-ui, sans-serif",
   fontMono:    "Metropolis, 'Inter', sans-serif",
   gold:        '#E8A020',
   goldMuted:   'rgba(232,160,32,0.08)',
@@ -206,9 +206,9 @@ export default function AdminProductsPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        
         .prod-input {
-          font-family: 'Syne', sans-serif; font-size: 13px;
+          font-family: 'Metropolis', sans-serif; font-size: 13px;
           padding: 10px 14px; border-radius: 9px; width: 100%;
           background: var(--admin-bg-card); color: var(--admin-text);
           border: 1px solid var(--admin-border); outline: none;

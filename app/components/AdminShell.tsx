@@ -138,7 +138,7 @@ const STYLES = `
   .admin-nav-link {
     display: flex; align-items: center; gap: 10px;
     padding: 9px 10px; border-radius: 8px; margin-bottom: 1px;
-    font-family: 'Syne', system-ui, sans-serif;
+    font-family: 'Metropolis', system-ui, sans-serif;
     font-size: 13px; font-weight: 400;
     color: #7A7260; text-decoration: none;
     transition: background 0.15s, color 0.15s;
@@ -241,13 +241,13 @@ export default function AdminShell({
             background: 'rgba(232,160,32,0.12)',
             border: '1.5px solid rgba(232,160,32,0.25)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: "'Syne', sans-serif", fontSize: '11px',
+            fontFamily: "'Metropolis', sans-serif", fontSize: '11px',
             fontWeight: 700, color: '#E8A020', flexShrink: 0,
           }}>
             {name.charAt(0).toUpperCase()}
           </div>
           <p style={{
-            fontFamily: "'Syne', sans-serif",
+            fontFamily: "'Metropolis', sans-serif",
             fontSize: '12px', fontWeight: 600, color: '#D4CFC3',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
           }}>
@@ -261,7 +261,7 @@ export default function AdminShell({
             style={{
               fontSize: '11px', padding: '5px 10px', borderRadius: '7px',
               color: '#7A7260', border: '1px solid rgba(212,207,195,0.12)',
-              textDecoration: 'none', fontFamily: "'Syne', sans-serif",
+              textDecoration: 'none', fontFamily: "'Metropolis', sans-serif",
               transition: 'color 0.15s',
             }}
           >
@@ -273,7 +273,7 @@ export default function AdminShell({
               fontSize: '11px', padding: '5px 10px', borderRadius: '7px',
               color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)',
               background: 'transparent', cursor: 'pointer',
-              fontFamily: "'Syne', sans-serif",
+              fontFamily: "'Metropolis', sans-serif",
             }}
           >
             Sign Out

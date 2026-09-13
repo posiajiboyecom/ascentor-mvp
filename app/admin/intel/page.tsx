@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/client';
 const G = '#E8A020';
 const mono: React.CSSProperties = { fontFamily:"Metropolis,'Inter',sans-serif", fontSize:10, letterSpacing:'0.09em', textTransform:'uppercase' as const, color:'var(--admin-text-faint)' };
 const card: React.CSSProperties = { background:'var(--admin-bg-deep)', border:'1px solid var(--admin-bg-input)', borderRadius:12 };
-const inp: React.CSSProperties  = { padding:'9px 13px', borderRadius:8, border:'1px solid var(--admin-bg-input)', background:'var(--admin-bg-card)', color:'var(--admin-text)', fontSize:13, fontFamily:"'Syne',sans-serif", outline:'none' };
+const inp: React.CSSProperties  = { padding:'9px 13px', borderRadius:8, border:'1px solid var(--admin-bg-input)', background:'var(--admin-bg-card)', color:'var(--admin-text)', fontSize:13, fontFamily:"'Metropolis',sans-serif", outline:'none' };
 
 const REPORT_TYPES = [
   {
@@ -339,22 +339,22 @@ Analyze this data and provide strategic insights.`;
   function renderMarkdown(text: string) {
     const lines = text.split('\n');
     return lines.map((line, i) => {
-      if (line.startsWith('## ')) return <h3 key={i} style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:'var(--admin-text-heading)', margin:'18px 0 8px', borderBottom:'1px solid var(--admin-bg-input)', paddingBottom:6 }}>{line.slice(3)}</h3>;
-      if (line.startsWith('### ')) return <h4 key={i} style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:700, color:G, margin:'14px 0 6px' }}>{line.slice(4)}</h4>;
+      if (line.startsWith('## ')) return <h3 key={i} style={{ fontFamily:"'Metropolis',serif", fontSize:20, fontWeight:700, color:'var(--admin-text-heading)', margin:'18px 0 8px', borderBottom:'1px solid var(--admin-bg-input)', paddingBottom:6 }}>{line.slice(3)}</h3>;
+      if (line.startsWith('### ')) return <h4 key={i} style={{ fontFamily:"'Metropolis',sans-serif", fontSize:14, fontWeight:700, color:G, margin:'14px 0 6px' }}>{line.slice(4)}</h4>;
       if (line.startsWith('- ') || line.startsWith('• ')) return (
         <div key={i} style={{ display:'flex', gap:8, margin:'4px 0', paddingLeft:4 }}>
           <span style={{ color:G, flexShrink:0, marginTop:2 }}>▸</span>
-          <span style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:'var(--admin-text-muted)', lineHeight:1.6 }}>
+          <span style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, color:'var(--admin-text-muted)', lineHeight:1.6 }}>
             {line.slice(2).replace(/\*\*(.*?)\*\*/g, '**$1**')}
           </span>
         </div>
       );
-      if (line.startsWith('**') && line.endsWith('**')) return <p key={i} style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:700, color:'var(--admin-text)', margin:'8px 0 2px' }}>{line.slice(2,-2)}</p>;
+      if (line.startsWith('**') && line.endsWith('**')) return <p key={i} style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, fontWeight:700, color:'var(--admin-text)', margin:'8px 0 2px' }}>{line.slice(2,-2)}</p>;
       if (!line.trim()) return <div key={i} style={{ height:8 }} />;
       // Bold inline
       const parts = line.split(/(\*\*.*?\*\*)/g);
       return (
-        <p key={i} style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:'var(--admin-text-muted)', lineHeight:1.7, margin:'2px 0' }}>
+        <p key={i} style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, color:'var(--admin-text-muted)', lineHeight:1.7, margin:'2px 0' }}>
           {parts.map((part, pi) =>
             part.startsWith('**') && part.endsWith('**')
               ? <strong key={pi} style={{ color:'var(--admin-text)', fontWeight:700 }}>{part.slice(2,-2)}</strong>
@@ -378,10 +378,10 @@ Analyze this data and provide strategic insights.`;
 
       {/* Header */}
       <div style={{ marginBottom:32 }}>
-        <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:32, fontWeight:700, color:'var(--admin-text-heading)', margin:0, marginBottom:8 }}>
+        <h1 style={{ fontFamily:"'Metropolis',serif", fontSize:32, fontWeight:700, color:'var(--admin-text-heading)', margin:0, marginBottom:8 }}>
           Intelligence Center
         </h1>
-        <p style={{ fontFamily:"'Syne',sans-serif", fontSize:14, color:'var(--admin-text-faint)', margin:0, lineHeight:1.6 }}>
+        <p style={{ fontFamily:"'Metropolis',sans-serif", fontSize:14, color:'var(--admin-text-faint)', margin:0, lineHeight:1.6 }}>
           On-demand AI analysis of all platform data. Select a report type, set your date range, and run analysis when you're ready. No automatic reports.
         </p>
       </div>
@@ -400,8 +400,8 @@ Analyze this data and provide strategic insights.`;
               style={{ padding:'12px 14px', borderRadius:10, border:'1px solid var(--admin-bg-input)', background:'var(--admin-bg-card)', cursor:'pointer', textAlign:'left', transition:'all 0.15s' }}
             >
               <div style={{ fontSize:20, marginBottom:6 }}>{r.icon}</div>
-              <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:600, color:'var(--admin-text)', marginBottom:3, lineHeight:1.3 }}>{r.label}</div>
-              <div style={{ fontFamily:"'Syne',sans-serif", fontSize:11, color:'var(--admin-text-faint)', lineHeight:1.4 }}>{r.description}</div>
+              <div style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, fontWeight:600, color:'var(--admin-text)', marginBottom:3, lineHeight:1.3 }}>{r.label}</div>
+              <div style={{ fontFamily:"'Metropolis',sans-serif", fontSize:11, color:'var(--admin-text-faint)', lineHeight:1.4 }}>{r.description}</div>
             </button>
           ))}
         </div>
@@ -464,8 +464,8 @@ Analyze this data and provide strategic insights.`;
       {results.length === 0 && (
         <div style={{ ...card, padding:48, textAlign:'center' }}>
           <div style={{ fontSize:40, marginBottom:12 }}>⚡</div>
-          <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:600, color:'var(--admin-text-heading)', marginBottom:8 }}>No analyses yet</div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:'var(--admin-text-faint)', lineHeight:1.6, maxWidth:380, margin:'0 auto' }}>
+          <div style={{ fontFamily:"'Metropolis',serif", fontSize:22, fontWeight:600, color:'var(--admin-text-heading)', marginBottom:8 }}>No analyses yet</div>
+          <div style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, color:'var(--admin-text-faint)', lineHeight:1.6, maxWidth:380, margin:'0 auto' }}>
             Select a report type above and click Run Analysis. Claude will fetch your platform data and generate strategic insights.
           </div>
         </div>
@@ -477,7 +477,7 @@ Analyze this data and provide strategic insights.`;
           <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:20 }}>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
-                <span style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:'var(--admin-text-heading)' }}>
+                <span style={{ fontFamily:"'Metropolis',serif", fontSize:22, fontWeight:700, color:'var(--admin-text-heading)' }}>
                   {REPORT_TYPES.find(r => r.id === result.reportType)?.icon} {result.label}
                 </span>
                 {result.streaming && (

@@ -118,7 +118,7 @@ is_free: form.plan_tier === 'free',
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-xl md:text-2xl font-semibold"
-            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: 'var(--text)' }}>
+            style={{ fontFamily: "'Metropolis', sans-serif", color: 'var(--text)' }}>
             Expert Events
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>

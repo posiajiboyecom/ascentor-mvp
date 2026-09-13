@@ -133,14 +133,14 @@ export default function AdminReportsPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        
         *, *::before, *::after { box-sizing: border-box; }
 
         .rp-root {
           padding: 32px 28px;
           max-width: 1200px;
           margin: 0 auto;
-          font-family: 'Syne', sans-serif;
+          font-family: 'Metropolis', sans-serif;
         }
 
         /* ── Header ── */
@@ -151,7 +151,7 @@ export default function AdminReportsPage() {
           color: #E8A020; margin-bottom: 8px;
         }
         .rp-title {
-          font-family: 'Cormorant Garamond', serif;
+          font-family: 'Metropolis', serif;
           font-weight: 700; font-size: 32px; letter-spacing: -0.3px;
           color: #fff; margin-bottom: 6px;
         }
@@ -232,7 +232,7 @@ export default function AdminReportsPage() {
           gap: 12px; flex-wrap: wrap;
         }
         .rp-result-title {
-          font-family: 'Cormorant Garamond', serif;
+          font-family: 'Metropolis', serif;
           font-weight: 700; font-size: 22px; color: #fff; margin-bottom: 4px;
         }
         .rp-result-meta {
@@ -270,7 +270,7 @@ export default function AdminReportsPage() {
           color: var(--admin-text-faint); margin-bottom: 8px;
         }
         .rp-stat-value {
-          font-family: 'Cormorant Garamond', serif;
+          font-family: 'Metropolis', serif;
           font-weight: 700; font-size: 26px; color: #fff; line-height: 1;
         }
 

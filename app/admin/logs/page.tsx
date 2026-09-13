@@ -5,15 +5,15 @@ import { createClient } from '@/lib/supabase/client';
 
 // ============================================================
 // ASCENTOR BRAND TOKENS · Brand Book v1.0 · 2026
-// Display : Cormorant Garamond 700 / Italic 600
-// UI      : Syne 400–800
+// Display : Metropolis 700 / Italic 600
+// UI      : Metropolis 400–800
 // Mono    : DM Mono 400/500
 // Gold    : #E8A020   Dark: var(--admin-bg)
 // ============================================================
 
 const B = {
-  fontDisplay: "'Cormorant Garamond', Georgia, serif",
-  fontUI:      "'Syne', system-ui, sans-serif",
+  fontDisplay: "'Metropolis', sans-serif",
+  fontUI:      "'Metropolis', system-ui, sans-serif",
   fontMono:    "Metropolis, 'Inter', sans-serif",
   // Dark scale
   dark:        'var(--admin-bg)',
@@ -161,7 +161,7 @@ export default function AdminAuditLogsPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        
         *, *::before, *::after { box-sizing: border-box; }
 
         .asc-input {
@@ -389,7 +389,7 @@ export default function AdminAuditLogsPage() {
                         </span>
                       </td>
 
-                      {/* User — Syne for name, Mono for ID fallback */}
+                      {/* User — Metropolis for name, Mono for ID fallback */}
                       <td style={{ padding: '13px 16px', minWidth: '140px' }}>
                         {log.profiles?.full_name ? (
                           <div>
@@ -453,7 +453,7 @@ export default function AdminAuditLogsPage() {
                         </span>
                       </td>
 
-                      {/* Details — truncated, Syne body */}
+                      {/* Details — truncated, Metropolis body */}
                       <td style={{
                         padding:      '13px 16px',
                         maxWidth:     '200px',

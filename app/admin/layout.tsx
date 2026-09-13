@@ -32,12 +32,10 @@ import { headers } from 'next/headers';
 // Clean in the happy path, safe in the unmigrated path.
 // ═══════════════════════════════════════════════════════════
 
-// THE LEDGER — design system fonts, loaded once here so every page
-// under /admin can use var(--ledger-font-serif) / var(--ledger-font-ui) /
-// var(--ledger-font-mono) or the .ledger-* utility classes from
-// styles/admin-ledger.css without re-importing anything per-page.
-const LEDGER_FONTS_URL =
-  'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap';
+// THE LEDGER — typography is Metropolis, loaded locally via @font-face
+// in globals.css (public/fonts/metropolis/). The previous Google Fonts
+// link (Cormorant Garamond / Syne / DM Mono) was removed — none of those
+// families are referenced by the Ledger tokens anymore.
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Read per-request nonce from middleware (M-06)
@@ -79,8 +77,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <>
-      <link rel="stylesheet" href={LEDGER_FONTS_URL} />
-
       {/* Theme initialiser — mirrors the pattern in app/layout.tsx for
           the user-facing app's data-app-theme. Runs synchronously
           before paint so there's no flash from dark (the default) to

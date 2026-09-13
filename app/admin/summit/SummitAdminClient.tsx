@@ -15,7 +15,7 @@ const B = {
   text:     '#FAFAF8',
   muted:    '#6B7280',
   dim:      '#4B5563',
-  fontUI:   "'Syne', 'Plus Jakarta Sans', sans-serif",
+  fontUI:   "'Metropolis', 'Plus Jakarta Sans', sans-serif",
   fontMono: "Metropolis, 'Inter', sans-serif",
 };
 

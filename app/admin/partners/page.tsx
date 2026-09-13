@@ -177,7 +177,7 @@ function ApproveModal({
         borderRadius: 14, padding: 28, width: '100%', maxWidth: 400,
       }}>
         <h3 style={{
-          fontFamily: "'Cormorant Garamond', serif",
+          fontFamily: "'Metropolis', serif",
           fontSize: 22, color: 'var(--admin-text-heading)', marginBottom: 6,
         }}>
           Approve {partner.name}
@@ -201,7 +201,7 @@ function ApproveModal({
             <span style={{
               fontSize: 22, fontWeight: 700,
               color: '#E8A020',
-              fontFamily: "'Cormorant Garamond', serif",
+              fontFamily: "'Metropolis', serif",
               minWidth: 48, textAlign: 'right',
             }}>
               {share}%
@@ -266,7 +266,7 @@ function RevenueModal({
         background: 'var(--admin-bg-card)', border: '1px solid var(--admin-border)',
         borderRadius: 14, padding: 28, width: '100%', maxWidth: 380,
       }}>
-        <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, color: 'var(--admin-text-heading)', marginBottom: 16 }}>
+        <h3 style={{ fontFamily: "'Metropolis', serif", fontSize: 20, color: 'var(--admin-text-heading)', marginBottom: 16 }}>
           Edit Revenue Share — {partner.name}
         </h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
@@ -276,7 +276,7 @@ function RevenueModal({
             onChange={e => setShare(Number(e.target.value))}
             style={{ flex: 1, accentColor: '#E8A020' }}
           />
-          <span style={{ fontSize: 22, fontWeight: 700, color: '#E8A020', fontFamily: "'Cormorant Garamond', serif", minWidth: 48, textAlign: 'right' }}>
+          <span style={{ fontSize: 22, fontWeight: 700, color: '#E8A020', fontFamily: "'Metropolis', serif", minWidth: 48, textAlign: 'right' }}>
             {share}%
           </span>
         </div>
@@ -431,7 +431,7 @@ function AdminPartnersPageInner() {
 
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: 'var(--admin-text-heading)', marginBottom: 4 }}>
+        <h1 style={{ fontFamily: "'Metropolis', serif", fontSize: 28, color: 'var(--admin-text-heading)', marginBottom: 4 }}>
           Partners
         </h1>
         <p style={{ fontSize: 13, color: 'var(--admin-text-muted)' }}>
@@ -449,7 +449,7 @@ function AdminPartnersPageInner() {
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--admin-bg-card)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: '14px 16px' }}>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--admin-text-faint)', marginBottom: 6 }}>{s.label}</p>
-            <p style={{ fontSize: 24, fontWeight: 700, color: s.color, fontFamily: "'Cormorant Garamond', serif" }}>{s.value}</p>
+            <p style={{ fontSize: 24, fontWeight: 700, color: s.color, fontFamily: "'Metropolis', serif" }}>{s.value}</p>
           </div>
         ))}
       </div>
@@ -560,7 +560,7 @@ function AdminPartnersPageInner() {
                 </p>
 
                 {/* Revenue share */}
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#E8A020', fontFamily: "'Cormorant Garamond', serif" }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#E8A020', fontFamily: "'Metropolis', serif" }}>
                   {p.revenue_share_percent}%
                 </p>
 

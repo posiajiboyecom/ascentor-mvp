@@ -145,7 +145,7 @@ function ActionBtn({
 }
 
 // ── CSS ──────────────────────────────────────────────────────────
-// Font @import removed — Cormorant Garamond / Syne / DM Mono are now
+// Font @import removed — Metropolis / Metropolis / DM Mono are now
 // loaded once in app/admin/layout.tsx for every /admin page, so this
 // page no longer needs its own <link>/@import. Re-importing per-page
 // was harmless but redundant (browser dedupes identical font

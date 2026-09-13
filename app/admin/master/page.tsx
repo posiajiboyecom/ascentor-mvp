@@ -9,7 +9,7 @@ import SageLoader from '@/components/SageLoader';
 // Full Ascentor Marketing System Dashboard
 // Sections: KPIs · MailerLite · Content Calendar · Lead Magnets
 //           Social Queue · AI Agents
-// Brand: var(--admin-bg) · #E8A020 · Cormorant Garamond · Syne · DM Mono
+// Brand: var(--admin-bg) · #E8A020 · Metropolis · Metropolis · DM Mono
 // ============================================================
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ const card: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   padding: '9px 13px', borderRadius: 8, border: '1px solid var(--admin-bg-input)',
   background: 'var(--admin-bg-card)', color: 'var(--admin-text)',
-  fontFamily: "'Syne', sans-serif", fontSize: 13, outline: 'none', width: '100%',
+  fontFamily: "'Metropolis', sans-serif", fontSize: 13, outline: 'none', width: '100%',
 };
 const mono = (text: string, gold = false, small = true): React.CSSProperties => ({
   fontFamily: "Metropolis, 'Inter', sans-serif",
@@ -134,7 +134,7 @@ function SectionHeader({ eyebrow, title, right }: { eyebrow: string; title: stri
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
       <div>
         <p style={mono(eyebrow, true)}>{eyebrow}</p>
-        <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '4px 0 0', lineHeight: 1.1 }}>{title}</h2>
+        <h2 style={{ fontFamily: "'Metropolis', serif", fontSize: 22, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '4px 0 0', lineHeight: 1.1 }}>{title}</h2>
       </div>
       {right}
     </div>
@@ -158,7 +158,7 @@ function KPICard({ label, value, sub, color, trend }: { label: string; value: st
     <div style={{ ...card, padding: '20px 18px', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${color || '#E8A020'}, transparent)` }} />
       <p style={mono(label)}>{label}</p>
-      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 36, fontWeight: 700, color: color || '#E8A020', margin: '6px 0 4px', lineHeight: 1 }}>{value}</p>
+      <p style={{ fontFamily: "'Metropolis', serif", fontSize: 36, fontWeight: 700, color: color || '#E8A020', margin: '6px 0 4px', lineHeight: 1 }}>{value}</p>
       {sub && <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: trend === 'up' ? '#10B981' : trend === 'down' ? '#EF4444' : 'var(--admin-text-faint)', letterSpacing: '0.06em' }}>{sub}</p>}
     </div>
   );
@@ -381,7 +381,7 @@ export default function MasterAdminPage() {
   return (
     <div style={{ animation: 'ma-fade 0.35s ease both' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap');
+        
         @keyframes ma-fade { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         select option { background:var(--admin-bg-card); color:var(--admin-text); }
         input:focus, textarea:focus, select:focus { border-color: rgba(232,160,32,0.5) !important; }
@@ -419,10 +419,10 @@ export default function MasterAdminPage() {
               <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#E8A020', margin: '0 0 6px' }}>
                 Content Researcher
               </p>
-              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 6px' }}>
+              <h3 style={{ fontFamily: "'Metropolis', serif", fontSize: 22, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 6px' }}>
                 Which audience are you targeting?
               </h3>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', margin: 0 }}>
+              <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', margin: 0 }}>
                 Select a stage. The researcher will tailor the brief and trigger the writer accordingly.
               </p>
             </div>
@@ -442,10 +442,10 @@ export default function MasterAdminPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                    <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color }}>{label}</span>
+                    <span style={{ fontFamily: "'Metropolis', serif", fontSize: 20, fontWeight: 700, color }}>{label}</span>
                     <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.1em', padding: '2px 8px', borderRadius: 100, background: `${color}18`, color, border: `1px solid ${color}30` }}>TARGET {share}</span>
                   </div>
-                  <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text)', margin: '0 0 4px', fontWeight: 600 }}>{desc}</p>
+                  <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text)', margin: '0 0 4px', fontWeight: 600 }}>{desc}</p>
                   <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)', margin: 0, letterSpacing: '0.04em' }}>{who}</p>
                 </button>
               ))}
@@ -466,7 +466,7 @@ export default function MasterAdminPage() {
         <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#E8A020', marginBottom: 6 }}>
           Marketing System Control
         </p>
-        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 30, fontWeight: 700, color: 'var(--admin-text-heading)', margin: 0, lineHeight: 1.1 }}>
+        <h1 style={{ fontFamily: "'Metropolis', serif", fontSize: 30, fontWeight: 700, color: 'var(--admin-text-heading)', margin: 0, lineHeight: 1.1 }}>
           Master Admin
         </h1>
         <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)', letterSpacing: '0.08em', marginTop: 6 }}>
@@ -496,8 +496,8 @@ export default function MasterAdminPage() {
           <div style={{ ...card, padding: '24px', background: 'linear-gradient(135deg, var(--admin-bg-deep) 60%, rgba(232,160,32,0.05))', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #E8A020 40%, #E8A020 60%, transparent)' }} />
             <p style={mono('★ North Star Metric', true)}>★ North Star Metric</p>
-            <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 72, fontWeight: 700, color: '#E8A020', margin: '8px 0 4px', lineHeight: 1 }}>{kpi.wacu}</p>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 600, color: 'var(--admin-text-heading)', margin: 0 }}>Weekly Active Coached Users (WACU)</p>
+            <p style={{ fontFamily: "'Metropolis', serif", fontSize: 72, fontWeight: 700, color: '#E8A020', margin: '8px 0 4px', lineHeight: 1 }}>{kpi.wacu}</p>
+            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 16, fontWeight: 600, color: 'var(--admin-text-heading)', margin: 0 }}>Weekly Active Coached Users (WACU)</p>
             <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)', marginTop: 6, letterSpacing: '0.08em' }}>Users with ≥1 coaching session this week · drives retention, word-of-mouth, conversion</p>
           </div>
 
@@ -526,7 +526,7 @@ export default function MasterAdminPage() {
                 return (
                   <div key={row.label}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text)' }}>{row.label}</span>
+                      <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text)' }}>{row.label}</span>
                       <div style={{ display: 'flex', gap: 16 }}>
                         <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020' }}>{row.current} / {row.m3} M3</span>
                         <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)' }}>M12: {row.m12}</span>
@@ -555,7 +555,7 @@ export default function MasterAdminPage() {
               ].map(f => (
                 <div key={f.stage} style={{ padding: '12px 14px', background: 'var(--admin-bg-card)', borderRadius: 10, border: '1px solid var(--admin-bg-input)' }}>
                   <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.12em', color: '#E8A020', margin: '0 0 6px' }}>{f.stage}</p>
-                  <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: 'var(--admin-text-muted)', margin: '0 0 8px', lineHeight: 1.4 }}>{f.tactic}</p>
+                  <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 11, color: 'var(--admin-text-muted)', margin: '0 0 8px', lineHeight: 1.4 }}>{f.tactic}</p>
                   <StatusBadge status={f.status as any} />
                 </div>
               ))}
@@ -578,7 +578,7 @@ export default function MasterAdminPage() {
               <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', letterSpacing: '0.1em', marginBottom: 12 }}>
                 MAILERLITE NOT CONNECTED
               </p>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text-muted)', lineHeight: 1.6 }}>
+              <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text-muted)', lineHeight: 1.6 }}>
                 Add <code style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 12, color: '#E8A020' }}>MAILERLITE_API_KEY</code> to your Vercel environment variables and redeploy.
               </p>
             </div>
@@ -600,8 +600,8 @@ export default function MasterAdminPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginTop: 14 }}>
                     {mlData.groups.map((g, i) => (
                       <div key={g.id} className="ma-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < mlData.groups.length - 1 ? '1px solid var(--admin-bg-input)' : 'none' }}>
-                        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text)' }}>{g.name}</span>
-                        <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: '#E8A020' }}>{g.total.toLocaleString()}</span>
+                        <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text)' }}>{g.name}</span>
+                        <span style={{ fontFamily: "'Metropolis', serif", fontSize: 20, fontWeight: 700, color: '#E8A020' }}>{g.total.toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
@@ -617,15 +617,15 @@ export default function MasterAdminPage() {
                   {mlData.recentCampaigns.map((c, i) => (
                     <div key={c.id} className="ma-row" style={{ padding: '14px 20px', borderBottom: i < mlData.recentCampaigns.length - 1 ? '1px solid var(--admin-bg-input)' : 'none', display: 'grid', gridTemplateColumns: '1fr auto auto auto auto', gap: 16, alignItems: 'center' }}>
                       <div>
-                        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text)', margin: '0 0 2px', fontWeight: 600 }}>{c.name}</p>
+                        <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text)', margin: '0 0 2px', fontWeight: 600 }}>{c.name}</p>
                         <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)', margin: 0, letterSpacing: '0.06em' }}>{c.subject}</p>
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: '#3B82F6', margin: 0 }}>{c.opens_count}</p>
+                        <p style={{ fontFamily: "'Metropolis', serif", fontSize: 18, color: '#3B82F6', margin: 0 }}>{c.opens_count}</p>
                         <p style={mono('opens')}>opens</p>
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: '#10B981', margin: 0 }}>{c.clicks_count}</p>
+                        <p style={{ fontFamily: "'Metropolis', serif", fontSize: 18, color: '#10B981', margin: 0 }}>{c.clicks_count}</p>
                         <p style={mono('clicks')}>clicks</p>
                       </div>
                       <StatusBadge status={c.status === 'sent' ? 'published' : 'scheduled'} />
@@ -642,7 +642,7 @@ export default function MasterAdminPage() {
           {/* 14-email sequence tracker */}
           <div style={{ ...card, padding: 20 }}>
             <p style={mono('14-Email Welcome & Nurture Sequence', true, false)}>14-Email Welcome Sequence</p>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', marginTop: 4, marginBottom: 16 }}>Write once · load into MailerLite Automation · fires automatically for every new subscriber · 30-day nurture to conversion</p>
+            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', marginTop: 4, marginBottom: 16 }}>Write once · load into MailerLite Automation · fires automatically for every new subscriber · 30-day nurture to conversion</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {[
                 { day: 0,  tag: 'WELCOME',     subject: 'Your access to Ascentor is ready',                   goal: 'Deliver, orient, build trust immediately' },
@@ -665,7 +665,7 @@ export default function MasterAdminPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                       <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 8, letterSpacing: '0.1em', padding: '2px 6px', borderRadius: 100, background: 'rgba(232,160,32,0.1)', color: '#E8A020', flexShrink: 0 }}>{email.tag}</span>
-                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, color: 'var(--admin-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email.subject}</span>
+                      <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, fontWeight: 600, color: 'var(--admin-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email.subject}</span>
                     </div>
                     <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)', margin: 0, letterSpacing: '0.02em' }}>{email.goal}</p>
                   </div>
@@ -684,7 +684,7 @@ export default function MasterAdminPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <SectionHeader eyebrow="Content Marketing Engine" title="Content Calendar"
             right={
-              <button onClick={() => setShowAddContent(true)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+              <button onClick={() => setShowAddContent(true)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
                 + Add Content
               </button>
             }
@@ -702,7 +702,7 @@ export default function MasterAdminPage() {
           {/* 4-1-1 rule reminder */}
           <div style={{ padding: '12px 16px', background: 'rgba(232,160,32,0.04)', border: '1px solid rgba(232,160,32,0.15)', borderRadius: 10 }}>
             <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', letterSpacing: '0.1em', margin: '0 0 4px' }}>LINKEDIN 4-1-1 RULE / WEEK</p>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>4 value posts · 1 social proof post · 1 soft CTA post — never hard sell</p>
+            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>4 value posts · 1 social proof post · 1 soft CTA post — never hard sell</p>
           </div>
 
           {/* Filters */}
@@ -751,8 +751,8 @@ export default function MasterAdminPage() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                <button onClick={addContent} disabled={!newContent.title} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', opacity: !newContent.title ? 0.4 : 1 }}>Save</button>
-                <button onClick={() => setShowAddContent(false)} style={{ padding: '9px 16px', borderRadius: 8, border: '1px solid var(--admin-bg-input)', background: 'transparent', color: 'var(--admin-text-muted)', fontFamily: "'Syne', sans-serif", fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={addContent} disabled={!newContent.title} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', opacity: !newContent.title ? 0.4 : 1 }}>Save</button>
+                <button onClick={() => setShowAddContent(false)} style={{ padding: '9px 16px', borderRadius: 8, border: '1px solid var(--admin-bg-input)', background: 'transparent', color: 'var(--admin-text-muted)', fontFamily: "'Metropolis', sans-serif", fontSize: 12, cursor: 'pointer' }}>Cancel</button>
               </div>
             </div>
           )}
@@ -804,7 +804,7 @@ export default function MasterAdminPage() {
                     {/* Row */}
                     <div className="ma-row" style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 100px 100px 120px 100px', padding: '12px 16px', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: '#E8A020' }}>W{item.week}</span>
-                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text)', fontWeight: 600 }}>{item.title}</span>
+                      <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text)', fontWeight: 600 }}>{item.title}</span>
                       <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-muted)', letterSpacing: '0.06em' }}>{item.type}</span>
                       <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-muted)' }}>{item.platform}</span>
                       <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: pillar?.color || 'var(--admin-text-faint)' }}>{pillar?.label.split(' ')[0]}</span>
@@ -867,7 +867,7 @@ export default function MasterAdminPage() {
                             )}
                             {/* LinkedIn hook */}
                             {item.type === 'LinkedIn Post' && cd?.hook && (
-                              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: '#E8A020', fontWeight: 700, margin: '0 0 8px', lineHeight: 1.4 }}>
+                              <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: '#E8A020', fontWeight: 700, margin: '0 0 8px', lineHeight: 1.4 }}>
                                 Hook: {cd.hook}
                               </p>
                             )}
@@ -879,7 +879,7 @@ export default function MasterAdminPage() {
                                   {cd.slides.map((slide: string, si: number) => (
                                     <div key={si} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '6px 10px', background: 'var(--admin-bg-card)', borderRadius: 6, border: '1px solid var(--admin-bg-input)' }}>
                                       <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: '#E1306C', flexShrink: 0, paddingTop: 1 }}>{si + 1}</span>
-                                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text)', lineHeight: 1.4 }}>{slide}</span>
+                                      <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text)', lineHeight: 1.4 }}>{slide}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -904,7 +904,7 @@ export default function MasterAdminPage() {
                             {/* Main content */}
                             <pre style={{
                               fontFamily: item.type === 'Blog Post' || item.type === 'Email Newsletter'
-                                ? "'Syne', sans-serif" : "Metropolis, 'Inter', sans-serif",
+                                ? "'Metropolis', sans-serif" : "Metropolis, 'Inter', sans-serif",
                               fontSize: item.type === 'Blog Post' || item.type === 'Email Newsletter' ? 13 : 12,
                               color: 'var(--admin-text)',
                               margin: 0,
@@ -945,8 +945,8 @@ export default function MasterAdminPage() {
                 <div key={i} style={{ display: 'flex', gap: 12, padding: '10px 14px', background: 'var(--admin-bg-card)', borderRadius: 8, alignItems: 'flex-start' }}>
                   <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', width: 44, flexShrink: 0, paddingTop: 1 }}>{s.time}</span>
                   <div>
-                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, color: 'var(--admin-text)', margin: '0 0 2px' }}>{s.step}</p>
-                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', margin: 0 }}>{s.desc}</p>
+                    <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, fontWeight: 600, color: 'var(--admin-text)', margin: '0 0 2px' }}>{s.step}</p>
+                    <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', margin: 0 }}>{s.desc}</p>
                   </div>
                 </div>
               ))}
@@ -961,12 +961,12 @@ export default function MasterAdminPage() {
       {activeTab === 'leads' && !isLoading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <SectionHeader eyebrow="Lead Capture Engine" title="Lead Magnets"
-            right={<button onClick={() => setShowAddMagnet(true)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>+ Add Magnet</button>}
+            right={<button onClick={() => setShowAddMagnet(true)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>+ Add Magnet</button>}
           />
 
           <div style={{ padding: '12px 16px', background: 'rgba(232,160,32,0.04)', border: '1px solid rgba(232,160,32,0.15)', borderRadius: 10 }}>
             <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', margin: '0 0 4px', letterSpacing: '0.1em' }}>TARGET: 3 ACTIVE LEAD MAGNETS MINIMUM</p>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>Each magnet feeds a dedicated MailerLite automation sequence · A subscriber is 40× more likely to convert than a social follower</p>
+            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>Each magnet feeds a dedicated MailerLite automation sequence · A subscriber is 40× more likely to convert than a social follower</p>
           </div>
 
           {/* Lead magnets — Ascentor global platform */}
@@ -1043,14 +1043,14 @@ export default function MasterAdminPage() {
                   </div>
                   {/* Centre: content */}
                   <div style={{ flex: 1, minWidth: 200 }}>
-                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 4px', lineHeight: 1.3 }}>{m.name}</p>
+                    <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 4px', lineHeight: 1.3 }}>{m.name}</p>
                     <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'rgba(232,160,32,0.7)', letterSpacing: '0.04em', margin: '0 0 8px', fontStyle: 'italic' }}>"{m.problem}"</p>
-                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', lineHeight: 1.6, margin: 0 }}>{m.desc}</p>
+                    <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', lineHeight: 1.6, margin: 0 }}>{m.desc}</p>
                   </div>
                   {/* Right: conversion path */}
                   <div style={{ flex: '0 0 220px', borderLeft: '1px solid var(--admin-bg-input)', paddingLeft: 16 }}>
                     <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: '#E8A020', letterSpacing: '0.1em', margin: '0 0 6px' }}>CONVERSION PATH</p>
-                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: 'var(--admin-text-muted)', lineHeight: 1.6, margin: '0 0 10px' }}>{m.conversionPath}</p>
+                    <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 11, color: 'var(--admin-text-muted)', lineHeight: 1.6, margin: '0 0 10px' }}>{m.conversionPath}</p>
                     <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)', margin: '0 0 4px' }}>URL</p>
                     <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#14B8A6', margin: 0 }}>ascentorbi.com{m.url}</p>
                   </div>
@@ -1074,8 +1074,8 @@ export default function MasterAdminPage() {
                 <div><label style={mono('Initial Downloads')}>Downloads</label><input type="number" value={newMagnet.downloads} onChange={e => setNewMagnet(p => ({ ...p, downloads: parseInt(e.target.value) }))} style={{ ...inputStyle, marginTop: 6 }} /></div>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                <button onClick={addMagnet} disabled={!newMagnet.name} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', opacity: !newMagnet.name ? 0.4 : 1 }}>Save</button>
-                <button onClick={() => setShowAddMagnet(false)} style={{ padding: '9px 16px', borderRadius: 8, border: '1px solid var(--admin-bg-input)', background: 'transparent', color: 'var(--admin-text-muted)', fontFamily: "'Syne', sans-serif", fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={addMagnet} disabled={!newMagnet.name} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', opacity: !newMagnet.name ? 0.4 : 1 }}>Save</button>
+                <button onClick={() => setShowAddMagnet(false)} style={{ padding: '9px 16px', borderRadius: 8, border: '1px solid var(--admin-bg-input)', background: 'transparent', color: 'var(--admin-text-muted)', fontFamily: "'Metropolis', sans-serif", fontSize: 12, cursor: 'pointer' }}>Cancel</button>
               </div>
             </div>
           )}
@@ -1091,19 +1091,19 @@ export default function MasterAdminPage() {
                 return (
                   <div key={m.id} className="ma-row" style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px 80px', padding: '14px 20px', borderBottom: i < magnets.length - 1 ? '1px solid var(--admin-bg-input)' : 'none', alignItems: 'center', gap: 12 }}>
                     <div>
-                      <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--admin-text)', margin: '0 0 2px' }}>{m.name}</p>
+                      <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--admin-text)', margin: '0 0 2px' }}>{m.name}</p>
                       <span style={mono(m.type)}>{m.type}</span>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#3B82F6', margin: 0 }}>{m.downloads}</p>
+                      <p style={{ fontFamily: "'Metropolis', serif", fontSize: 22, color: '#3B82F6', margin: 0 }}>{m.downloads}</p>
                       <p style={mono('downloads')}>downloads</p>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#10B981', margin: 0 }}>{m.conversions}</p>
+                      <p style={{ fontFamily: "'Metropolis', serif", fontSize: 22, color: '#10B981', margin: 0 }}>{m.conversions}</p>
                       <p style={mono('conversions')}>paid conversions</p>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#E8A020', margin: 0 }}>{convRate}%</p>
+                      <p style={{ fontFamily: "'Metropolis', serif", fontSize: 22, color: '#E8A020', margin: 0 }}>{convRate}%</p>
                       <p style={mono('conv. rate')}>conv. rate</p>
                     </div>
                     <button onClick={() => toggleMagnet(m.id, m.active)} style={{ padding: '5px 12px', borderRadius: 6, border: `1px solid ${m.active ? '#10B981' : 'var(--admin-text-faint)'}20`, background: 'transparent', color: m.active ? '#10B981' : 'var(--admin-text-faint)', cursor: 'pointer', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
@@ -1118,7 +1118,7 @@ export default function MasterAdminPage() {
           {/* Referral tiers */}
           <div style={{ ...card, padding: 20 }}>
             <p style={mono('Referral Reward Tiers', true, false)}>Referral Growth Engine</p>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', marginTop: 4, marginBottom: 16 }}>Target: 30% of all new users from referrals by Month 6 · Lowest CAC · Highest LTV</p>
+            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', marginTop: 4, marginBottom: 16 }}>Target: 30% of all new users from referrals by Month 6 · Lowest CAC · Highest LTV</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
                 { trigger: 'Free user refers 1 paid user',   reward: '1 free month Premium · Referee gets 20% off first month' },
@@ -1129,7 +1129,7 @@ export default function MasterAdminPage() {
               ].map((tier, i) => (
                 <div key={i} style={{ display: 'flex', gap: 16, padding: '10px 14px', background: 'var(--admin-bg-card)', borderRadius: 8, border: '1px solid var(--admin-bg-input)' }}>
                   <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', width: 260, flexShrink: 0 }}>{tier.trigger}</span>
-                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)' }}>{tier.reward}</span>
+                  <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)' }}>{tier.reward}</span>
                 </div>
               ))}
             </div>
@@ -1143,7 +1143,7 @@ export default function MasterAdminPage() {
       {activeTab === 'social' && !isLoading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <SectionHeader eyebrow="Social Media Automation" title="Social Queue"
-            right={<button onClick={() => setShowAddSocial(true)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>+ Queue Post</button>}
+            right={<button onClick={() => setShowAddSocial(true)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>+ Queue Post</button>}
           />
 
           {/* Platform priority */}
@@ -1158,10 +1158,10 @@ export default function MasterAdminPage() {
             ].map(p => (
               <div key={p.platform} style={{ ...card, padding: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, color: 'var(--admin-text)' }}>{p.platform}</span>
+                  <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, fontWeight: 700, color: 'var(--admin-text)' }}>{p.platform}</span>
                   <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: p.color, border: `1px solid ${p.color}30`, borderRadius: 100, padding: '2px 7px', letterSpacing: '0.06em' }}>{p.priority}</span>
                 </div>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', margin: 0, lineHeight: 1.5 }}>{p.note}</p>
+                <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', margin: 0, lineHeight: 1.5 }}>{p.note}</p>
               </div>
             ))}
           </div>
@@ -1193,8 +1193,8 @@ export default function MasterAdminPage() {
                 <textarea value={newSocial.content} onChange={e => setNewSocial(p => ({ ...p, content: e.target.value }))} rows={4} placeholder="Write your post..." style={{ ...inputStyle, marginTop: 6, lineHeight: 1.6 }} />
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                <button onClick={addSocial} disabled={!newSocial.content || !newSocial.scheduled_for} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', opacity: (!newSocial.content || !newSocial.scheduled_for) ? 0.4 : 1 }}>Queue Post</button>
-                <button onClick={() => setShowAddSocial(false)} style={{ padding: '9px 16px', borderRadius: 8, border: '1px solid var(--admin-bg-input)', background: 'transparent', color: 'var(--admin-text-muted)', fontFamily: "'Syne', sans-serif", fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={addSocial} disabled={!newSocial.content || !newSocial.scheduled_for} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#E8A020', color: 'var(--admin-bg)', fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 12, cursor: 'pointer', opacity: (!newSocial.content || !newSocial.scheduled_for) ? 0.4 : 1 }}>Queue Post</button>
+                <button onClick={() => setShowAddSocial(false)} style={{ padding: '9px 16px', borderRadius: 8, border: '1px solid var(--admin-bg-input)', background: 'transparent', color: 'var(--admin-text-muted)', fontFamily: "'Metropolis', sans-serif", fontSize: 12, cursor: 'pointer' }}>Cancel</button>
               </div>
             </div>
           )}
@@ -1223,7 +1223,7 @@ export default function MasterAdminPage() {
                         <button onClick={() => deleteSocial(post.id)} style={{ background: 'none', border: 'none', color: 'var(--admin-text-faint)', cursor: 'pointer', fontSize: 16 }}>×</button>
                       </div>
                     </div>
-                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text-muted)', margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{post.content}</p>
+                    <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text-muted)', margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{post.content}</p>
                   </div>
                 );
               })}
@@ -1243,8 +1243,8 @@ export default function MasterAdminPage() {
                 <div key={row.week} style={{ display: 'flex', gap: 12, padding: '12px 14px', background: 'var(--admin-bg-card)', borderRadius: 8 }}>
                   <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', width: 52, flexShrink: 0, paddingTop: 1 }}>Week {row.week}</span>
                   <div>
-                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--admin-text)', margin: '0 0 2px' }}>{row.theme}</p>
-                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', margin: 0 }}>{row.mix}</p>
+                    <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--admin-text)', margin: '0 0 2px' }}>{row.theme}</p>
+                    <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', margin: 0 }}>{row.mix}</p>
                   </div>
                 </div>
               ))}
@@ -1270,7 +1270,7 @@ export default function MasterAdminPage() {
 
           <div style={{ padding: '12px 16px', background: 'rgba(232,160,32,0.04)', border: '1px solid rgba(232,160,32,0.15)', borderRadius: 10 }}>
             <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', margin: '0 0 4px', letterSpacing: '0.1em' }}>LIVE AGENTS — CONNECTED TO TRIGGER.DEV</p>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>
+            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>
               Trigger agents manually · view last run status · monitor cron schedules · all runs logged to audit trail
             </p>
           </div>
@@ -1280,7 +1280,7 @@ export default function MasterAdminPage() {
               <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', letterSpacing: '0.1em' }}>
                 LOADING AGENTS... · Deploy Trigger.dev tasks first if this persists
               </p>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', marginTop: 8 }}>
+              <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-faint)', marginTop: 8 }}>
                 Run <code style={{ color: '#E8A020' }}>npx trigger.dev@latest deploy</code> from your project root
               </p>
             </div>
@@ -1306,14 +1306,14 @@ export default function MasterAdminPage() {
                         background: agent.status === 'building' ? 'var(--admin-border-strong)' : 'rgba(232,160,32,0.1)',
                         border: `1.5px solid ${agent.status === 'building' ? 'var(--admin-bg-input)' : 'rgba(232,160,32,0.3)'}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontFamily: "'Cormorant Garamond', serif", fontSize: 15, fontWeight: 700,
+                        fontFamily: "'Metropolis', serif", fontSize: 15, fontWeight: 700,
                         color: agent.status === 'building' ? 'var(--admin-text-faint)' : '#E8A020',
                       }}>{i + 1}</div>
                       <div style={{ minWidth: 0 }}>
-                        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {agent.name}
                         </p>
-                        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', margin: 0, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', margin: 0, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {agent.description}
                         </p>
                       </div>
@@ -1350,7 +1350,7 @@ export default function MasterAdminPage() {
                         </div>
                         <div>
                           <p style={mono('Runs This Week')}>Runs This Week</p>
-                          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#E8A020', margin: '3px 0 0', lineHeight: 1 }}>
+                          <p style={{ fontFamily: "'Metropolis', serif", fontSize: 22, color: '#E8A020', margin: '3px 0 0', lineHeight: 1 }}>
                             {agent.runsThisWeek}
                           </p>
                         </div>
@@ -1407,7 +1407,7 @@ export default function MasterAdminPage() {
                               padding: '8px 20px', borderRadius: 8, border: 'none',
                               background: isTriggeringThis ? 'var(--admin-bg-input)' : '#E8A020',
                               color: isTriggeringThis ? 'var(--admin-text-faint)' : 'var(--admin-bg)',
-                              fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12,
+                              fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 12,
                               cursor: isTriggeringThis ? 'not-allowed' : 'pointer',
                               transition: 'all 0.15s',
                             }}
@@ -1455,7 +1455,7 @@ export default function MasterAdminPage() {
           {/* Deployment banner */}
           <div style={{ ...card, padding: 20, border: '1px solid rgba(232,160,32,0.2)', background: 'rgba(232,160,32,0.03)' }}>
             <p style={mono('Deploy Trigger.dev Tasks First', true, false)}>Required: Deploy to Trigger.dev</p>
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: '8px 0 14px', lineHeight: 1.7 }}>
+            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: '8px 0 14px', lineHeight: 1.7 }}>
               Agent controls won't work until tasks are deployed to Trigger.dev cloud. Run this command once from your project root:
             </p>
             <div style={{ padding: '12px 16px', background: 'var(--admin-bg)', borderRadius: 8, border: '1px solid var(--admin-bg-input)' }}>

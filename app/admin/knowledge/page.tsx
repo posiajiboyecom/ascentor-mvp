@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 const brand = {
-  fontDisplay: "'Cormorant Garamond', 'Georgia', serif",
-  fontUI:      "'Syne', 'system-ui', sans-serif",
+  fontDisplay: "'Metropolis', 'Georgia', serif",
+  fontUI:      "'Metropolis', 'system-ui', sans-serif",
   fontMono:    "Metropolis, 'Inter', sans-serif",
   gold:        '#E8A020',
   goldMuted:   'rgba(232,160,32,0.10)',
@@ -866,7 +866,7 @@ export default function AdminKnowledgePage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+        
         * { box-sizing: border-box; }
         input::placeholder, textarea::placeholder { color: var(--admin-text-faint) !important; }
         select option { background: var(--admin-bg-card); color: var(--admin-text); }

@@ -11,8 +11,8 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 const B = {
-  fontDisplay: "'Cormorant Garamond', Georgia, serif",
-  fontUI:      "'Syne', system-ui, sans-serif",
+  fontDisplay: "'Metropolis', sans-serif",
+  fontUI:      "'Metropolis', system-ui, sans-serif",
   fontMono:    "Metropolis, 'Inter', sans-serif",
   gold:        '#E8A020',
   goldMuted:   'rgba(232,160,32,0.10)',

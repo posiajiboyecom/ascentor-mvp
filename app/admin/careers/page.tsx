@@ -53,7 +53,7 @@ const INPUT_BASE: React.CSSProperties = {
   width: '100%', padding: '10px 14px', borderRadius: 8,
   border: '1px solid var(--admin-bg-input)', background: 'var(--admin-bg-card)',
   color: 'var(--admin-text)', fontSize: 13,
-  fontFamily: "'Syne', sans-serif", outline: 'none', boxSizing: 'border-box',
+  fontFamily: "'Metropolis', sans-serif", outline: 'none', boxSizing: 'border-box',
 };
 const LABEL_STYLE: React.CSSProperties = {
   fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10,
@@ -133,7 +133,7 @@ function ActionBtn({ onClick, color, children }: { onClick: () => void; color: s
     <button onClick={onClick} style={{
       padding: '4px 12px', borderRadius: 6, border: `1px solid ${color}30`,
       background: 'transparent', color, cursor: 'pointer',
-      fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 600,
+      fontFamily: "'Metropolis', sans-serif", fontSize: 11, fontWeight: 600,
     }}>
       {children}
     </button>
@@ -333,7 +333,7 @@ function JobForm({ form, setForm, onSave, onCancel, saving, msg }: {
             transition: 'left 0.2s',
           }} />
         </div>
-        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text)' }}>
+        <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text)' }}>
           {form.is_active ? 'Published — visible on /careers' : 'Draft — hidden from public'}
         </span>
       </div>
@@ -360,7 +360,7 @@ function JobForm({ form, setForm, onSave, onCancel, saving, msg }: {
           style={{
             padding: '11px 24px', borderRadius: 8, border: 'none',
             background: '#E8A020', color: 'var(--admin-bg)',
-            fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13,
+            fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 13,
             cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1,
           }}
         >
@@ -372,7 +372,7 @@ function JobForm({ form, setForm, onSave, onCancel, saving, msg }: {
           style={{
             padding: '11px 20px', borderRadius: 8,
             border: '1px solid var(--admin-bg-input)', background: 'transparent',
-            color: 'var(--admin-text-muted)', fontFamily: "'Syne', sans-serif",
+            color: 'var(--admin-text-muted)', fontFamily: "'Metropolis', sans-serif",
             fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}
         >
@@ -512,7 +512,7 @@ export default function AdminCareersPage() {
   return (
     <div style={{ animation: 'asc-fade-up 0.35s ease both' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        
         @keyframes asc-fade-up { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         @keyframes asc-spin { to { transform: rotate(360deg); } }
         select option { background: var(--admin-bg-card); color: var(--admin-text); }
@@ -522,7 +522,7 @@ export default function AdminCareersPage() {
 
       {/* ── Page header ─────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, flexWrap: 'wrap', gap: 10 }}>
-        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 700, color: 'var(--admin-text-heading)', margin: 0 }}>
+        <h1 style={{ fontFamily: "'Metropolis', serif", fontSize: 28, fontWeight: 700, color: 'var(--admin-text-heading)', margin: 0 }}>
           Careers
         </h1>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -536,7 +536,7 @@ export default function AdminCareersPage() {
             <button onClick={openCreate} style={{
               padding: '8px 18px', borderRadius: 8, border: 'none',
               background: '#E8A020', color: 'var(--admin-bg)',
-              fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, cursor: 'pointer',
+              fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 13, cursor: 'pointer',
             }}>+ New Role</button>
           )}
         </div>
@@ -593,7 +593,7 @@ export default function AdminCareersPage() {
               </div>
             ) : jobs.length === 0 ? (
               <div style={{ ...CARD_STYLE, padding: '48px 24px', textAlign: 'center' }}>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: 'var(--admin-text-faint)', margin: 0 }}>No job listings yet. Create one to get started.</p>
+                <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 14, color: 'var(--admin-text-faint)', margin: 0 }}>No job listings yet. Create one to get started.</p>
               </div>
             ) : (
               <div style={{ ...CARD_STYLE, overflow: 'hidden' }}>
@@ -607,7 +607,7 @@ export default function AdminCareersPage() {
                   return (
                     <div key={job.id} style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px 90px 160px', padding: '14px 20px', borderBottom: '1px solid var(--admin-bg-input)', alignItems: 'center', opacity: job.is_active ? 1 : 0.55 }}>
                       <div>
-                        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 600, color: 'var(--admin-text-heading)', margin: '0 0 5px' }}>{job.title}</p>
+                        <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 14, fontWeight: 600, color: 'var(--admin-text-heading)', margin: '0 0 5px' }}>{job.title}</p>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                           <MonoTag text={job.is_active ? 'Live' : 'Draft'} gold={job.is_active} />
                           {appCount > 0 && (
@@ -637,7 +637,7 @@ export default function AdminCareersPage() {
           {/* Create / Edit form — JobForm is a stable external component */}
           {(tab === 'create' || tab === 'edit') && (
             <div style={{ ...CARD_STYLE, padding: 28 }}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 24px' }}>
+              <h2 style={{ fontFamily: "'Metropolis', serif", fontSize: 22, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 24px' }}>
                 {tab === 'create' ? 'New Role' : `Editing: ${editing?.title}`}
               </h2>
               <JobForm
@@ -678,7 +678,7 @@ export default function AdminCareersPage() {
             </div>
           ) : filteredApps.length === 0 ? (
             <div style={{ ...CARD_STYLE, padding: '48px 24px', textAlign: 'center' }}>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: 'var(--admin-text-faint)', margin: 0 }}>No applications yet.</p>
+              <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 14, color: 'var(--admin-text-faint)', margin: 0 }}>No applications yet.</p>
             </div>
           ) : (
             <div style={{ ...CARD_STYLE, overflow: 'hidden' }}>
@@ -689,7 +689,7 @@ export default function AdminCareersPage() {
                     onClick={() => setExpandedApp(expandedApp === app.id ? null : app.id)}
                     style={{ display: 'grid', gridTemplateColumns: '1fr 180px 110px 130px', padding: '14px 20px', alignItems: 'center', gap: 8, cursor: 'pointer', transition: 'background 0.15s' }}>
                     <div>
-                      <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--admin-text-heading)', margin: '0 0 3px' }}>{app.full_name}</p>
+                      <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--admin-text-heading)', margin: '0 0 3px' }}>{app.full_name}</p>
                       <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)', margin: 0 }}>{app.email}</p>
                     </div>
                     <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)' }}>{app.job_title}</span>
@@ -714,7 +714,7 @@ export default function AdminCareersPage() {
                         {/* Header row */}
                         <div style={{ padding: '14px 18px', background: 'var(--admin-bg-deep)', borderBottom: '1px solid var(--admin-bg-input)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                           <div>
-                            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 2px' }}>{app.full_name}</p>
+                            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 2px' }}>{app.full_name}</p>
                             <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)', margin: 0 }}>
                               {app.job_title} · {app.department}
                               {app.years_experience ? ` · ${app.years_experience}` : ''}
@@ -746,7 +746,7 @@ export default function AdminCareersPage() {
                         {/* Cover letter */}
                         <div style={{ padding: '16px 18px' }}>
                           <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#E8A020', margin: '0 0 10px' }}>Cover Letter</p>
-                          <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text)', lineHeight: 1.75, margin: '0 0 20px', whiteSpace: 'pre-wrap' }}>{app.cover_letter}</p>
+                          <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text)', lineHeight: 1.75, margin: '0 0 20px', whiteSpace: 'pre-wrap' }}>{app.cover_letter}</p>
                           <button onClick={() => deleteApp(app.id)}
                             style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.08em', color: '#EF4444', background: 'none', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer' }}>
                             Delete Application

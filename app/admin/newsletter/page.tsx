@@ -7,7 +7,7 @@ import { useModal } from '@/components/Modal';
 // ============================================================
 // ADMIN NEWSLETTER — /admin/newsletter
 // Compose, send, manage subscribers and history
-// Ascentor brand: Dark var(--admin-bg) · Gold #E8A020 · Syne · DM Mono · Cormorant Garamond
+// Ascentor brand: Dark var(--admin-bg) · Gold #E8A020 · Metropolis · DM Mono · Metropolis
 // ============================================================
 
 export default function AdminNewsletterPage() {
@@ -183,7 +183,7 @@ export default function AdminNewsletterPage() {
     if (title) {
       editorRef.current?.focus();
       document.execCommand('insertHTML', false,
-        `<h2 style="font-size:22px;font-weight:700;color:#FEF9EC;margin:32px 0 12px;font-family:'Cormorant Garamond',serif;">${num}. ${title.toUpperCase()}</h2><p><br></p>`
+        `<h2 style="font-size:22px;font-weight:700;color:#FEF9EC;margin:32px 0 12px;font-family:'Metropolis',serif;">${num}. ${title.toUpperCase()}</h2><p><br></p>`
       );
     }
   };
@@ -197,12 +197,12 @@ export default function AdminNewsletterPage() {
   .wrapper{max-width:640px;margin:0 auto;background:#161210;}
   .header{background:#0E0C0A;padding:32px 40px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08);}
   .header-tag{font-family:Metropolis,'Inter',sans-serif,sans-serif;font-size:10px;letter-spacing:0.15em;color:#E8A020;text-transform:uppercase;margin-bottom:12px;}
-  .header-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;font-weight:700;color:#FEF9EC;margin:12px 0 8px;line-height:1.1;}
+  .header-title{font-family:'Metropolis',Georgia,serif;font-size:36px;font-weight:700;color:#FEF9EC;margin:12px 0 8px;line-height:1.1;}
   .header-subtitle{font-family:Metropolis,'Inter',sans-serif,sans-serif;font-size:12px;color:#9A8F85;letter-spacing:0.06em;}
   .header-vol{font-family:Metropolis,'Inter',sans-serif,sans-serif;font-size:11px;color:#9A8F85;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);letter-spacing:0.08em;text-transform:uppercase;}
   .content{padding:40px;color:#E8E0D5;font-size:16px;line-height:1.8;}
-  .content h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:700;color:#FEF9EC;margin:32px 0 12px;}
-  .content h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:600;color:#FEF9EC;margin:24px 0 8px;}
+  .content h2{font-family:'Metropolis',Georgia,serif;font-size:24px;font-weight:700;color:#FEF9EC;margin:32px 0 12px;}
+  .content h3{font-family:'Metropolis',Georgia,serif;font-size:20px;font-weight:600;color:#FEF9EC;margin:24px 0 8px;}
   .content p{margin:0 0 16px;}
   .content blockquote{border-left:3px solid #E8A020;margin:24px 0;padding:16px 24px;font-style:italic;font-size:17px;color:#E8E0D5;background:rgba(232,160,32,0.05);border-radius:0 8px 8px 0;}
   .content img{max-width:100%;height:auto;border-radius:8px;margin:16px 0;}
@@ -354,7 +354,7 @@ export default function AdminNewsletterPage() {
     width: '100%', padding: '10px 14px', borderRadius: '8px',
     border: '1px solid var(--admin-bg-input)', background: 'var(--admin-bg-card)',
     color: 'var(--admin-text)', fontSize: '13px',
-    fontFamily: "'Syne', sans-serif", outline: 'none',
+    fontFamily: "'Metropolis', sans-serif", outline: 'none',
     transition: 'border-color 0.2s',
   };
   const monoLabel: React.CSSProperties = {
@@ -375,7 +375,7 @@ export default function AdminNewsletterPage() {
         background: active ? 'rgba(232,160,32,0.15)' : 'transparent',
         color: active ? '#E8A020' : 'var(--admin-text-muted)',
         border: active ? '1px solid rgba(232,160,32,0.35)' : '1px solid transparent',
-        fontFamily: "'Syne', sans-serif",
+        fontFamily: "'Metropolis', sans-serif",
         fontSize: '11px', fontWeight: active ? 700 : 400,
         cursor: 'pointer',
         transition: 'all 0.15s',
@@ -393,7 +393,7 @@ export default function AdminNewsletterPage() {
   return (
     <div style={{ animation: 'asc-fade-up 0.35s ease both' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes asc-fade-up { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:translateY(0);} }
         @keyframes asc-spin    { to { transform:rotate(360deg);} }
@@ -404,9 +404,9 @@ export default function AdminNewsletterPage() {
         .asc-ghost:hover       { border-color: #E8A020 !important; color: #E8A020 !important; }
         .asc-sub-row:hover     { background: var(--admin-bg-deep) !important; }
         .asc-history-row:hover { border-color: var(--admin-text-faint) !important; }
-        .asc-editor { line-height: 1.8; font-family: 'Syne', sans-serif; }
-        .asc-editor h2 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: #FEF9EC; margin: 28px 0 10px; }
-        .asc-editor h3 { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: #FEF9EC; margin: 20px 0 8px; }
+        .asc-editor { line-height: 1.8; font-family: 'Metropolis', sans-serif; }
+        .asc-editor h2 { font-family: 'Metropolis', serif; font-size: 22px; font-weight: 700; color: #FEF9EC; margin: 28px 0 10px; }
+        .asc-editor h3 { font-family: 'Metropolis', serif; font-size: 18px; font-weight: 600; color: #FEF9EC; margin: 20px 0 8px; }
         .asc-editor p  { margin: 0 0 14px; }
         .asc-editor a  { color: #E8A020; }
         .asc-editor blockquote { border-left: 3px solid #E8A020; margin: 20px 0; padding: 14px 20px; font-style: italic; background: rgba(232,160,32,0.05); border-radius: 0 8px 8px 0; color: var(--admin-text); }
@@ -416,7 +416,7 @@ export default function AdminNewsletterPage() {
 
       {/* ─── Page Header ──────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px', flexWrap: 'wrap', gap: '10px' }}>
-        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '28px', fontWeight: 700, color: 'var(--admin-text-heading)', margin: 0, lineHeight: 1.1 }}>
+        <h1 style={{ fontFamily: "'Metropolis', serif", fontSize: '28px', fontWeight: 700, color: 'var(--admin-text-heading)', margin: 0, lineHeight: 1.1 }}>
           Newsletter
         </h1>
         <span style={{
@@ -593,7 +593,7 @@ export default function AdminNewsletterPage() {
                   border: 'none',
                   background: '#E8A020',
                   color: 'var(--admin-bg)',
-                  fontFamily: "'Syne', sans-serif",
+                  fontFamily: "'Metropolis', sans-serif",
                   fontWeight: 700,
                   fontSize: '13px',
                   cursor: sending || !subject.trim() ? 'not-allowed' : 'pointer',
@@ -613,7 +613,7 @@ export default function AdminNewsletterPage() {
                   border: '1px solid var(--admin-bg-input)',
                   background: 'transparent',
                   color: 'var(--admin-text-muted)',
-                  fontFamily: "'Syne', sans-serif",
+                  fontFamily: "'Metropolis', sans-serif",
                   fontWeight: 600,
                   fontSize: '13px',
                   cursor: 'pointer',
@@ -696,7 +696,7 @@ export default function AdminNewsletterPage() {
                     Queued {new Date(item.queued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     {item.pillar && <span style={{ marginLeft: 10, color: 'var(--admin-text-faint)' }}>{item.pillar}</span>}
                   </div>
-                  <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '20px', fontWeight: 700, color: '#FEF9EC', margin: '0 0 4px', lineHeight: 1.2 }}>{item.subject}</h3>
+                  <h3 style={{ fontFamily: "'Metropolis', serif", fontSize: '20px', fontWeight: 700, color: '#FEF9EC', margin: '0 0 4px', lineHeight: 1.2 }}>{item.subject}</h3>
                   {item.preview_text && <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '10px', color: 'var(--admin-text-faint)', margin: 0 }}>{item.preview_text}</p>}
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
@@ -707,20 +707,20 @@ export default function AdminNewsletterPage() {
                       await supabase.from('newsletter_queue').update({ status: 'discarded' }).eq('id', item.id);
                       loadData();
                     }}
-                    style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.25)', background: 'transparent', color: '#EF4444', fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.25)', background: 'transparent', color: '#EF4444', fontFamily: "'Metropolis', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                     Discard
                   </button>
                   <button
                     onClick={() => sendQueuedNewsletter(item)}
                     disabled={sendingQueue === item.id}
-                    style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#E8A020', color: '#0C0B08', fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, cursor: sendingQueue === item.id ? 'not-allowed' : 'pointer', opacity: sendingQueue === item.id ? 0.6 : 1 }}>
+                    style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#E8A020', color: '#0C0B08', fontFamily: "'Metropolis', sans-serif", fontSize: 12, fontWeight: 700, cursor: sendingQueue === item.id ? 'not-allowed' : 'pointer', opacity: sendingQueue === item.id ? 0.6 : 1 }}>
                     {sendingQueue === item.id ? 'Sending…' : `Send to ${subCount} subscribers`}
                   </button>
                 </div>
               </div>
               <details>
                 <summary style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--admin-text-faint)', cursor: 'pointer', userSelect: 'none' as const }}>Preview body</summary>
-                <div style={{ marginTop: 10, padding: '14px', borderRadius: 8, background: 'var(--admin-bg-card)', border: '1px solid var(--admin-bg-input)', fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text)', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: 300, overflowY: 'auto' as const }}>
+                <div style={{ marginTop: 10, padding: '14px', borderRadius: 8, background: 'var(--admin-bg-card)', border: '1px solid var(--admin-bg-input)', fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text)', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: 300, overflowY: 'auto' as const }}>
                   {item.body || 'No body content'}
                 </div>
               </details>
@@ -740,7 +740,7 @@ export default function AdminNewsletterPage() {
             {/* Top row */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 14 }}>
               <div>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--admin-text-heading)', marginBottom: 4 }}>
+                <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--admin-text-heading)', marginBottom: 4 }}>
                   MailerLite Sync
                 </p>
                 <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)', letterSpacing: '0.04em', maxWidth: 500 }}>
@@ -755,7 +755,7 @@ export default function AdminNewsletterPage() {
                   style={{
                     padding: '8px 14px', borderRadius: 8, cursor: 'pointer',
                     background: 'transparent', border: '1px solid var(--admin-bg-input)',
-                    color: 'var(--admin-text-muted)', fontFamily: "'Syne', sans-serif",
+                    color: 'var(--admin-text-muted)', fontFamily: "'Metropolis', sans-serif",
                     fontSize: 12, fontWeight: 600,
                   }}
                 >
@@ -767,7 +767,7 @@ export default function AdminNewsletterPage() {
                   style={{
                     padding: '8px 18px', borderRadius: 8, cursor: mlSyncing ? 'not-allowed' : 'pointer',
                     background: mlSyncing ? 'rgba(232,160,32,0.3)' : '#E8A020',
-                    color: '#0C0B08', fontFamily: "'Syne', sans-serif",
+                    color: '#0C0B08', fontFamily: "'Metropolis', sans-serif",
                     fontSize: 13, fontWeight: 700, border: 'none',
                     display: 'flex', alignItems: 'center', gap: 8,
                     transition: 'background 0.15s',
@@ -839,7 +839,7 @@ export default function AdminNewsletterPage() {
 
           {subscribers.length === 0 ? (
             <div style={{ padding: '48px', textAlign: 'center' }}>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', color: 'var(--admin-text-faint)' }}>No subscribers yet.</p>
+              <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: '14px', color: 'var(--admin-text-faint)' }}>No subscribers yet.</p>
             </div>
           ) : (
             <div style={{ ...card, overflow: 'hidden' }}>
@@ -856,8 +856,8 @@ export default function AdminNewsletterPage() {
                   <tbody>
                     {subscribers.map((sub) => (
                       <tr key={sub.id} className="asc-sub-row" style={{ borderBottom: '1px solid var(--admin-bg-input)', opacity: sub.is_active ? 1 : 0.5 }}>
-                        <td style={{ padding: '12px 16px', fontFamily: "'Syne', sans-serif", color: 'var(--admin-text)', fontSize: '13px' }}>{sub.email}</td>
-                        <td style={{ padding: '12px 16px', fontFamily: "'Syne', sans-serif", color: 'var(--admin-text-muted)', fontSize: '12px' }}>{sub.first_name || '—'}</td>
+                        <td style={{ padding: '12px 16px', fontFamily: "'Metropolis', sans-serif", color: 'var(--admin-text)', fontSize: '13px' }}>{sub.email}</td>
+                        <td style={{ padding: '12px 16px', fontFamily: "'Metropolis', sans-serif", color: 'var(--admin-text-muted)', fontSize: '12px' }}>{sub.first_name || '—'}</td>
                         <td style={{ padding: '12px 16px' }}>
                           <span style={{ ...monoLabel, background: 'rgba(232,160,32,0.08)', color: '#E8A020', padding: '2px 8px', borderRadius: '100px', fontSize: '9px' }}>
                             {sub.source || 'website'}
@@ -886,7 +886,7 @@ export default function AdminNewsletterPage() {
                               style={{
                                 padding: '4px 10px', borderRadius: '6px',
                                 border: '1px solid var(--admin-bg-input)', background: 'transparent',
-                                color: 'var(--admin-text-muted)', fontFamily: "'Syne', sans-serif",
+                                color: 'var(--admin-text-muted)', fontFamily: "'Metropolis', sans-serif",
                                 fontSize: '11px', fontWeight: 600, cursor: 'pointer',
                                 transition: 'border-color 0.15s, color 0.15s',
                               }}
@@ -898,7 +898,7 @@ export default function AdminNewsletterPage() {
                               style={{
                                 padding: '4px 10px', borderRadius: '6px',
                                 border: '1px solid rgba(239,68,68,0.25)', background: 'transparent',
-                                color: '#EF4444', fontFamily: "'Syne', sans-serif",
+                                color: '#EF4444', fontFamily: "'Metropolis', sans-serif",
                                 fontSize: '11px', fontWeight: 600, cursor: 'pointer',
                               }}
                             >
@@ -921,14 +921,14 @@ export default function AdminNewsletterPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {history.length === 0 && (
             <div style={{ padding: '48px', textAlign: 'center' }}>
-              <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', color: 'var(--admin-text-faint)' }}>No newsletters sent yet.</p>
+              <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: '14px', color: 'var(--admin-text-faint)' }}>No newsletters sent yet.</p>
             </div>
           )}
           {history.map((item) => (
             <div key={item.id} className="asc-history-row" style={{ ...card, padding: '18px 20px', transition: 'border-color 0.15s' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '10px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h4 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '18px', fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 4px' }}>
+                  <h4 style={{ fontFamily: "'Metropolis', serif", fontSize: '18px', fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 4px' }}>
                     {item.subject}
                   </h4>
                   <p style={{ ...monoLabel }}>

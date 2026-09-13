@@ -17,8 +17,8 @@
 export type LedgerTheme = 'dark' | 'light';
 
 export const ledgerFonts = {
-  serif: "'Cormorant Garamond', Georgia, serif",
-  ui:    "'Syne', system-ui, sans-serif",
+  serif: "Metropolis, 'Inter', sans-serif",
+  ui:    "Metropolis, system-ui, sans-serif",
   mono:  "Metropolis, 'Inter', sans-serif",
 } as const;
 

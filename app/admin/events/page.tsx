@@ -12,7 +12,7 @@ const B = {
   bg: '#0F0F0E', card: '#161614', border: 'rgba(255,255,255,0.08)',
   gold: '#C8A96E', text: '#FAFAF8', muted: '#6B7280', dim: '#4B5563',
   error: '#EF4444', success: '#10B981',
-  fontUI: "'Syne','Plus Jakarta Sans',sans-serif",
+  fontUI: "'Metropolis','Plus Jakarta Sans',sans-serif",
   fontMono: "Metropolis,'Inter',sans-serif",
 };
 

@@ -6,15 +6,15 @@ import { useSearchParams } from 'next/navigation';
 
 // ============================================================
 // ASCENTOR BRAND TOKENS · Brand Book v1.0 · 2026
-// Display : Cormorant Garamond 700 / Italic 600
-// UI      : Syne 400–800
+// Display : Metropolis 700 / Italic 600
+// UI      : Metropolis 400–800
 // Mono    : DM Mono 400/500
 // Gold    : #E8A020   Dark: var(--admin-bg)
 // ============================================================
 
 const B = {
-  fontDisplay: "'Cormorant Garamond', Georgia, serif",
-  fontUI:      "'Syne', system-ui, sans-serif",
+  fontDisplay: "'Metropolis', sans-serif",
+  fontUI:      "'Metropolis', system-ui, sans-serif",
   fontMono:    "Metropolis, 'Inter', sans-serif",
   dark:        'var(--admin-bg)',
   dark800:     'var(--admin-bg-deep)',
@@ -103,7 +103,7 @@ function StatusPill({ status }: { status: string }) {
 }
 
 // ── CSS strings ──────────────────────────────────────────────────
-const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');`;
+const FONTS = ``;
 
 const FIELD_CSS = `
   .asc-field {
