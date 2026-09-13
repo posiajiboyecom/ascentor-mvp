@@ -10,8 +10,8 @@ interface Speaker {
   instagramUrl?: string;
 }
 
-// First entry is real data. The other five are placeholders sharing the
-// same photo until their real details arrive.
+// First two entries are real data. The remaining four are placeholders
+// sharing the same photo until their real details arrive.
 const speakers: Speaker[] = [
   {
     name: 'Samuel Peniel',
@@ -21,10 +21,11 @@ const speakers: Speaker[] = [
     instagramUrl: 'https://www.instagram.com/apostlesamuelpeniel/?hl=en',
   },
   {
-    name: 'Speaker Name',
-    role: 'Role to be announced',
+    name: 'Kemeshi Samuel',
+    role: 'Co-founder & Chief Marketing Officer, FirstFounders Ltd.',
     topic: 'Topic to be announced',
-    photo: '/images/speakers/samuel-peniel.jpg',
+    photo: '/images/speakers/kemeshi-samuel.jpeg',
+    linkedinUrl: 'https://www.linkedin.com/in/samuel-kemeshi-610669144',
   },
   {
     name: 'Speaker Name',
@@ -75,7 +76,7 @@ export default function SummitSpeakers() {
                   alt={speaker.name}
                   fill
                   sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
-                  style={{ objectFit: 'cover' }}
+                  style={{ objectFit: 'cover', objectPosition: 'center top' }}
                 />
               </div>
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 700, color: '#0F0F0E', marginTop: '1rem' }}>

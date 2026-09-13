@@ -13,7 +13,7 @@ import PhoneInput from 'react-phone-number-input';
 import flags from 'react-phone-number-input/flags';
 import { useModal } from '@/components/Modal';
 import { useRouter } from 'next/navigation';
-import { Compass, Hammer, Crown, Sparkles, Network, Monitor } from 'lucide-react';
+import { Compass, Hammer, Crown, Sparkles, Network, Monitor, CalendarDays, MapPin, Clock, TicketCheck } from 'lucide-react';
 import SummitCountdown from '@/components/SummitCountdown';
 import SummitSpeakers from '@/components/SummitSpeakers';
 import SummitFAQ from '@/components/SummitFAQ';
@@ -339,16 +339,20 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
       <section style={{ background: '#C8A96E', padding: '1.5rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '1rem' }}>
           {[
-            { value: '19 November, 2026', label: 'Inaugural Gathering' },
-            { value: 'Lagos, Nigeria', label: 'Location' },
-            { value: '1 Day', label: 'Defining Moment' },
-            { value: 'Open', label: 'Registration' },
-          ].map((stat) => (
-            <div key={stat.label} style={{ textAlign: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.25rem', color: '#0F0F0E', display: 'block' }}>{stat.value}</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(15,15,14,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{stat.label}</span>
-            </div>
-          ))}
+            { value: '19 November, 2026', label: 'Inaugural Gathering', icon: CalendarDays },
+            { value: 'Lagos, Nigeria', label: 'Location', icon: MapPin },
+            { value: '1 Day', label: 'Defining Moment', icon: Clock },
+            { value: 'Open', label: 'Registration', icon: TicketCheck },
+          ].map((stat) => {
+            const StatIcon = stat.icon;
+            return (
+              <div key={stat.label} style={{ textAlign: 'center' }}>
+                <StatIcon size={22} strokeWidth={2} style={{ color: '#0F0F0E', display: 'block', margin: '0 auto 0.5rem' }} aria-hidden="true" />
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.25rem', color: '#0F0F0E', display: 'block' }}>{stat.value}</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(15,15,14,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{stat.label}</span>
+              </div>
+            );
+          })}
         </div>
       </section>
 
