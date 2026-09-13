@@ -5,24 +5,19 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { brandedEmailLayout, esc, goldButton } from '@/lib/emailTemplate';
 
-function buildHtml(opts: { firstName: string; eventTitle: string; message: string }) {
-  const body = opts.message.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#0F0F0E;font-family:'Helvetica Neue',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#0F0F0E;padding:48px 20px;">
-<tr><td align="center">
-<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#161614;border-radius:16px;border:1px solid rgba(200,169,110,0.2);">
-<tr><td style="padding:32px 36px;">
-  <img src="https://ascentorbi.com/ascentor-color-for-dark-pages.svg" alt="Ascentor" height="26" style="display:block;margin-bottom:24px;">
-  <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#C8A96E;">◇ ${opts.eventTitle}</p>
-  <p style="margin:18px 0 0;font-size:15px;color:#9CA3AF;line-height:1.8;">${body}</p>
-  <div style="margin-top:24px;"><a href="https://ascentorbi.com/events" style="display:inline-block;padding:11px 20px;background:#C8A96E;color:#0F0F0E;text-decoration:none;border-radius:8px;font-weight:700;font-size:13px;">View all events →</a></div>
-</td></tr>
-<tr><td style="padding:18px 36px;border-top:1px solid rgba(255,255,255,0.06);">
-  <p style="margin:0;font-size:11px;color:#4B5563;font-family:Metropolis,'Inter',sans-serif;">YOU ARE REGISTERED FOR ${opts.eventTitle.toUpperCase()} · ASCENTOR</p>
-</td></tr>
-</table></td></tr></table></body></html>`;
+function buildHtml(opts: { firstName: string; eventTitle: string; message: string; recipient: string }) {
+  const body = esc(opts.message).replace(/\n/g, '<br>');
+  return brandedEmailLayout({
+    preheader: `An update from ${opts.eventTitle}.`,
+    eyebrow: esc(opts.eventTitle),
+    heading: `Hi ${esc(opts.firstName)},`,
+    recipient: opts.recipient,
+    content:
+      `<p style="margin:0 0 16px;">${body}</p>` +
+      goldButton('View all events →', 'https://ascentorbi.com/events'),
+  });
 }
 
 export async function POST(req: Request) {
@@ -64,7 +59,7 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           from: 'Ascentor <notifications@ascentorbi.com>',
           to: r.email, subject: subject.trim(),
-          html: buildHtml({ firstName, eventTitle: event.title, message: personalised }),
+          html: buildHtml({ firstName, eventTitle: event.title, message: personalised, recipient: r.email }),
         }),
       });
       if (res.ok) sent++; else failed++;

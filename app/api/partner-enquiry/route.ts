@@ -31,6 +31,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { brandedEmailLayout, esc, p, goldButton, outlineButton, summaryRow, summaryBox, messageBlock } from '@/lib/emailTemplate'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,80 +41,23 @@ const supabase = createClient(
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'asamuel@ascentorbi.com'
 const RESEND_API_KEY = process.env.RESEND_API_KEY!
 
-// Brand tokens for email
-const BRAND = {
-  gold:   '#E8A020',
-  dark:   '#0C0B08',
-  card:   '#1E1C17',
-  text:   '#F7F6F3',
-  muted:  '#8A8272',
-  border: 'rgba(232,160,32,0.2)',
-}
-
-function emailLayout(content: string, preheader: string = '') {
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  ${preheader ? `<span style="display:none;max-height:0;overflow:hidden;mso-hide:all">${preheader}</span>` : ''}
-</head>
-<body style="margin:0;padding:0;background:#0C0B08;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0C0B08">
-    <tr><td align="center" style="padding:40px 20px">
-      <table width="100%" cellpadding="0" cellspacing="0"
-             style="max-width:560px;background:#1E1C17;border-radius:16px;border:1px solid rgba(232,160,32,0.2)">
-        <tr><td style="padding:28px 32px 20px;border-bottom:1px solid rgba(232,160,32,0.12);text-align:center">
-          <span style="font-family:Georgia,serif;font-size:20px;font-weight:700;color:#F7F6F3;letter-spacing:-0.3px">
-            <span style="color:#E8A020">Ascent</span>or
-          </span>
-        </td></tr>
-        <tr><td style="padding:32px">${content}</td></tr>
-        <tr><td style="padding:20px 32px 28px;text-align:center;border-top:1px solid rgba(212,207,195,0.08)">
-          <p style="margin:0;font-size:11px;color:#8A8272">
-            © ${new Date().getFullYear()} Ascentor · ascentorbi.com
-          </p>
-          <p style="margin:6px 0 0;font-size:11px;color:#8A8272">
-            <a href="https://ascentorbi.com/terms" style="color:#8A8272;text-decoration:none">Terms</a> ·
-            <a href="https://ascentorbi.com/privacy" style="color:#8A8272;text-decoration:none">Privacy</a>
-          </p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`
-}
-
-function acknowledgementEmail(name: string, org: string) {
+function acknowledgementEmail(name: string, org: string, recipient: string) {
   const firstName = name.split(' ')[0] || name
   return {
     subject: `We received your enquiry, ${firstName} — Ascentor Partners`,
-    html: emailLayout(`
-      <h1 style="margin:0 0 16px;font-family:Georgia,serif;font-size:26px;font-weight:700;color:#F7F6F3;line-height:1.2">
-        Thanks for reaching out, ${firstName}.
-      </h1>
-      <p style="margin:0 0 16px;font-size:15px;color:#C8C3B8;line-height:1.7">
-        We've received your enquiry for <strong style="color:#F7F6F3">${org}</strong> and our team will be in touch shortly to discuss how Ascentor can work for your organisation.
-      </p>
-      <div style="background:#0C0B08;border:1px solid rgba(232,160,32,0.18);border-radius:12px;padding:20px 24px;margin:24px 0">
-        <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#E8A020">
-          What happens next
-        </p>
-        <p style="margin:0;font-size:14px;color:#C8C3B8;line-height:1.7">
-          Our team reviews every enquiry personally. You can expect a reply within <strong style="color:#F7F6F3">1–2 business days</strong>. We'll share details on how the partner programme works and schedule a walkthrough of the platform.
-        </p>
-      </div>
-      <p style="margin:0 0 24px;font-size:14px;color:#8A8272;line-height:1.7">
-        In the meantime, feel free to explore the platform as a user — it's the best way to understand the experience you'd be offering your members.
-      </p>
-      <div style="text-align:center;margin:0 0 8px">
-        <a href="https://ascentorbi.com/signup"
-           style="display:inline-block;padding:13px 32px;background:#E8A020;color:#0C0B08;font-size:14px;font-weight:700;text-decoration:none;border-radius:10px">
-          Explore the platform →
-        </a>
-      </div>
-    `, `We received your Ascentor partner enquiry for ${org}`)
+    html: brandedEmailLayout({
+      preheader: `We received your Ascentor partner enquiry for ${org}`,
+      eyebrow: 'Partner Enquiry Received',
+      heading: `Thanks for reaching out, ${esc(firstName)}.`,
+      recipient,
+      content:
+        p(`We've received your enquiry for <strong>${esc(org)}</strong> and our team will be in touch shortly to discuss how Ascentor can work for your organisation.`) +
+        summaryBox(
+          summaryRow('What happens next', 'Our team reviews every enquiry personally. You can expect a reply within <strong>1–2 business days</strong>. We\'ll share details on how the partner programme works and schedule a walkthrough of the platform.')
+        ) +
+        p('In the meantime, feel free to explore the platform as a user — it\'s the best way to understand the experience you\'d be offering your members.') +
+        goldButton('Explore the platform →', 'https://ascentorbi.com/signup'),
+    }),
   }
 }
 
@@ -121,41 +65,26 @@ function founderNotificationEmail(name: string, email: string, org: string, mess
   const adminUrl = `https://ascentorbi.com/admin/partners`
   return {
     subject: `New Partner Enquiry: ${org}`,
-    html: emailLayout(`
-      <h2 style="margin:0 0 20px;font-family:Georgia,serif;font-size:22px;font-weight:700;color:#F7F6F3">
-        New Partner Enquiry
-      </h2>
-      <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse">
-        ${[
-          ['Name',         name],
-          ['Email',        `<a href="mailto:${email}" style="color:#E8A020;text-decoration:none">${email}</a>`],
-          ['Organisation', org],
-        ].map(([label, value]) => `
-          <tr>
-            <td style="padding:10px 0;font-size:13px;color:#8A8272;width:130px;vertical-align:top">${label}</td>
-            <td style="padding:10px 0;font-size:14px;color:#F7F6F3;font-weight:600">${value}</td>
-          </tr>
-        `).join('')}
-        <tr>
-          <td style="padding:10px 0;font-size:13px;color:#8A8272;vertical-align:top">Message</td>
-          <td style="padding:10px 0;font-size:14px;color:#C8C3B8;line-height:1.6">${message || '—'}</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;font-size:13px;color:#8A8272">Enquiry ID</td>
-          <td style="padding:10px 0;font-family:Metropolis,'Inter',sans-serif;font-size:12px;color:#8A8272">${enquiryId}</td>
-        </tr>
-      </table>
-      <div style="margin-top:28px">
-        <a href="${adminUrl}"
-           style="display:inline-block;padding:12px 24px;background:#E8A020;color:#0C0B08;font-size:13px;font-weight:700;text-decoration:none;border-radius:8px">
-          View in Admin Panel →
-        </a>
-        <a href="mailto:${email}?subject=Re: Your Ascentor partner enquiry&body=Hi ${name.split(' ')[0]},"
-           style="display:inline-block;margin-left:10px;padding:12px 24px;background:transparent;color:#F7F6F3;font-size:13px;font-weight:600;text-decoration:none;border-radius:8px;border:1px solid rgba(212,207,195,0.2)">
-          Reply directly →
-        </a>
-      </div>
-    `)
+    html: brandedEmailLayout({
+      preheader: `New partner enquiry from ${org}`,
+      eyebrow: 'Admin Notification',
+      heading: 'New Partner Enquiry',
+      recipient: FOUNDER_EMAIL,
+      content:
+        summaryBox(
+          summaryRow('Name', esc(name)) +
+          summaryRow('Email', `<a href="mailto:${esc(email)}" style="color:#0F0F0E;text-decoration:none;">${esc(email)}</a>`) +
+          summaryRow('Organisation', esc(org)) +
+          summaryRow('Enquiry ID', `<span style="font-size:12px;color:#9CA3AF;">${esc(enquiryId)}</span>`)
+        ) +
+        p('<strong>Message</strong>') +
+        messageBlock(esc(message || '—')) +
+        `<table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td>${goldButton('View in Admin Panel →', adminUrl)}</td>
+          <td style="width:12px;">&nbsp;</td>
+          <td>${outlineButton('Reply directly →', `mailto:${esc(email)}?subject=Re: Your Ascentor partner enquiry&body=Hi ${encodeURIComponent(name.split(' ')[0])},`)}</td>
+        </tr></table>`,
+    }),
   }
 }
 
@@ -218,7 +147,7 @@ export async function POST(req: NextRequest) {
 
     // ── Acknowledgement to prospect ───────────────────────────────────────────
     try {
-      const ackEmail = acknowledgementEmail(name, org)
+      const ackEmail = acknowledgementEmail(name, org, email)
       await sendEmail(email, ackEmail.subject, ackEmail.html)
     } catch (emailErr) {
       console.warn('[partner-enquiry] Acknowledgement email failed (non-fatal):', emailErr)

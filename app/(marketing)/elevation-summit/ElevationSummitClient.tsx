@@ -746,33 +746,29 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
           }}>
             <h2 style={{
               fontFamily: 'var(--font-display)', color: '#0F0F0E',
-              fontSize: '1.625rem', fontWeight: 700, margin: '0 0 1.5rem',
+              fontSize: '1.625rem', fontWeight: 700, margin: '0 0 1.75rem',
             }}>
               Confirm Your Registration
             </h2>
 
-            {/* Order summary — the two things that must stand out */}
-            <div style={{
-              background: '#FAFAF8', border: '1.5px solid #F0EDE6',
-              borderRadius: '0.875rem', padding: '1.5rem', marginBottom: '1.5rem',
-            }}>
-              <p style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9CA3AF', margin: '0 0 0.5rem' }}>
-                You're registering for
-              </p>
-              <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0F0F0E', margin: '0 0 0.75rem' }}>
-                {pendingPayment.attendanceType === 'virtual' ? 'Virtual' : 'Onsite'} Attendance
-              </p>
-              <p style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9CA3AF', margin: '0 0 0.25rem' }}>
-                Total
-              </p>
-              <p style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 700, color: '#C8A96E', margin: 0 }}>
-                ₦{pendingPayment.amountNaira.toLocaleString()}
-              </p>
-            </div>
+            <p style={{ color: '#374151', lineHeight: 1.8, fontSize: '1rem', margin: '0 0 1.25rem' }}>
+              You're registering for{' '}
+              <strong style={{ color: '#0F0F0E' }}>
+                {pendingPayment.attendanceType === 'virtual' ? 'Virtual' : 'Onsite'} attendance
+              </strong>{' '}
+              at the Elevation Summit.
+            </p>
 
-            <p style={{ color: '#6B7280', lineHeight: 1.7, fontSize: '0.9375rem', margin: '0 0 1.75rem' }}>
-              You'll be redirected to <strong style={{ color: '#0F0F0E' }}>Paystack</strong>, our
-              secure third-party payment provider, to complete your payment.
+            <p style={{ fontSize: '1.125rem', margin: '0 0 1.25rem' }}>
+              <strong style={{ color: '#0F0F0E' }}>
+                Ticket Amount: ₦{pendingPayment.amountNaira.toLocaleString()}
+              </strong>
+            </p>
+
+            <p style={{ color: '#6B7280', lineHeight: 1.8, fontSize: '0.9375rem', margin: '0 0 2rem' }}>
+              Click Confirm to proceed to secure payment. You'll be redirected
+              to <strong style={{ color: '#0F0F0E' }}>Paystack</strong>, our secure
+              third-party payment provider.
               {pendingPayment.attendanceType === 'virtual' && ' Your join link will be emailed once payment is confirmed.'}
             </p>
 
@@ -786,7 +782,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
                 className="btn-gold"
                 style={{ fontSize: '0.9375rem', padding: '0.75rem 1.75rem', border: 'none', cursor: 'pointer' }}
               >
-                Proceed to Payment →
+                Confirm →
               </button>
               <button
                 onClick={() => setPendingPayment(null)}

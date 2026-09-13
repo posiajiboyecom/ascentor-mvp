@@ -27,6 +27,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { createInviteToken } from '@/lib/inviteToken';
+import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -268,23 +269,16 @@ export async function POST(req: NextRequest) {
                 from:    `${partner.name} <noreply@ascentorbi.com>`,
                 to:      email,
                 subject: `You've been invited to ${partner.name}`,
-                html: `
-                  <div style="font-family: sans-serif; max-width: 480px; margin: auto; padding: 32px; background: #0C0B08; color: #D4CFC3; border-radius: 16px;">
-                    <h2 style="color: #E8A020; font-size: 22px; margin-bottom: 16px;">${partner.name}</h2>
-                    <p style="line-height: 1.7; color: #9C9890; margin-bottom: 24px;">
-                      You've been personally invited to join <strong style="color: #D4CFC3;">${partner.name}</strong> — a private coaching community.
-                    </p>
-                    <a href="${inviteUrl}"
-                       style="display: inline-block; padding: 14px 28px; background: #E8A020; color: #000;
-                              text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px;">
-                      Accept Invitation →
-                    </a>
-                    <p style="margin-top: 28px; color: #5C5850; font-size: 11px; line-height: 1.6;">
-                      This invite is for ${email} only.<br/>
-                      Powered by <a href="https://ascentorbi.com" style="color: #E8A020;">Ascentor</a>
-                    </p>
-                  </div>
-                `,
+                html: brandedEmailLayout({
+                  preheader: `You've been invited to join ${partner.name}.`,
+                  eyebrow: esc(partner.name),
+                  heading: 'You\'re invited.',
+                  recipient: email,
+                  content:
+                    p(`You've been personally invited to join <strong>${esc(partner.name)}</strong> — a private coaching community.`) +
+                    goldButton('Accept Invitation →', inviteUrl) +
+                    p(`<span style="color:#9CA3AF;font-size:13px;">This invite is for ${esc(email)} only.</span>`),
+                }),
               }),
             });
           } catch (emailErr) {
@@ -375,15 +369,15 @@ export async function PATCH(req: NextRequest) {
             from:    `${partner.name} <noreply@ascentorbi.com>`,
             to:      member.email,
             subject: `Reminder: Your invite to ${partner.name}`,
-            html: `
-              <div style="font-family: sans-serif; max-width: 480px; margin: auto; padding: 32px; background: #0C0B08; color: #D4CFC3; border-radius: 16px;">
-                <h2 style="color: #E8A020;">${partner.name}</h2>
-                <p style="color: #9C9890; line-height: 1.7;">A reminder that you have a pending invitation to join <strong style="color: #D4CFC3;">${partner.name}</strong>.</p>
-                <a href="${inviteUrl}" style="display: inline-block; margin-top: 16px; padding: 14px 28px; background: #E8A020; color: #000; text-decoration: none; border-radius: 10px; font-weight: 700;">
-                  Accept Invitation →
-                </a>
-              </div>
-            `,
+            html: brandedEmailLayout({
+              preheader: `Your invitation to ${partner.name} is still waiting.`,
+              eyebrow: esc(partner.name),
+              heading: 'Still waiting for you.',
+              recipient: member.email,
+              content:
+                p(`A reminder that you have a pending invitation to join <strong>${esc(partner.name)}</strong>.`) +
+                goldButton('Accept Invitation →', inviteUrl),
+            }),
           }),
         });
       } catch (emailErr) {

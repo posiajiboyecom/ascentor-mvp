@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
+import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from '@/lib/emailTemplate';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -115,28 +116,22 @@ export async function POST(req: NextRequest) {
           from:    'Ascentor Partners <noreply@ascentorbi.com>',
           to:      FOUNDER_EMAIL,
           subject: `New Partner Application: ${platform_name}`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 520px; margin: auto; padding: 32px;">
-              <h2>New Partner Application</h2>
-              <table style="border-collapse: collapse; width: 100%;">
-                <tr><td style="padding: 8px 0; color: #666; width: 140px;">Platform</td><td style="padding: 8px 0; font-weight: 600;">${platform_name}</td></tr>
-                <tr><td style="padding: 8px 0; color: #666;">Subdomain</td><td style="padding: 8px 0; font-weight: 600;">${cleanSubdomain}.ascentorbi.com</td></tr>
-                <tr><td style="padding: 8px 0; color: #666;">Applicant</td><td style="padding: 8px 0;">${applicantEmail}</td></tr>
-                <tr><td style="padding: 8px 0; color: #666;">Niche</td><td style="padding: 8px 0;">${coaching_niche || '—'}</td></tr>
-                <tr><td style="padding: 8px 0; color: #666;">Bio</td><td style="padding: 8px 0;">${bio || '—'}</td></tr>
-              </table>
-              <div style="margin-top: 28px; display: flex; gap: 12px;">
-                <a href="${adminApproveUrl}"
-                   style="display: inline-block; padding: 12px 24px; background: #10B981; color: #fff;
-                          text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; margin-right: 10px;">
-                  ✓ Review &amp; Approve in Admin Panel
-                </a>
-              </div>
-              <p style="margin-top: 20px; color: #888; font-size: 12px;">
-                Log in to your admin account at ascentorbi.com/admin/partners to approve, reject, or adjust the revenue share.
-              </p>
-            </div>
-          `,
+          html: brandedEmailLayout({
+            preheader: `New partner application: ${platform_name}`,
+            eyebrow: 'Admin Notification',
+            heading: 'New Partner Application',
+            recipient: FOUNDER_EMAIL,
+            content:
+              summaryBox(
+                summaryRow('Platform', esc(platform_name)) +
+                summaryRow('Subdomain', `${esc(cleanSubdomain)}.ascentorbi.com`) +
+                summaryRow('Applicant', esc(applicantEmail)) +
+                summaryRow('Niche', esc(coaching_niche || '—')) +
+                summaryRow('Bio', esc(bio || '—'))
+              ) +
+              goldButton('Review &amp; Approve in Admin Panel →', adminApproveUrl) +
+              p('<span style="color:#9CA3AF;font-size:13px;">Log in to your admin account at ascentorbi.com/admin/partners to approve, reject, or adjust the revenue share.</span>'),
+          }),
         }),
       });
     } catch (emailErr) {

@@ -22,6 +22,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { sendPushToUser } from '@/lib/push';
+import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -79,43 +80,21 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
 }
 
 // ── Build email HTML from push payload ──────────────────────────────────────
-function buildEmailHtml(payload: NotifyPayload): string {
+function buildEmailHtml(payload: NotifyPayload, recipient: string): string {
   const url = payload.url
     ? `https://ascentorbi.com${payload.url.startsWith('/') ? '' : '/'}${payload.url}`
     : 'https://ascentorbi.com/dashboard';
 
-  return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#FAF7F2;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF7F2;padding:40px 20px;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E5DDD0;">
-        <!-- Header -->
-        <tr><td style="background:#0C0B08;padding:24px 32px;">
-          <img src="https://ascentorbi.com/ascentor-logo-for-dark.svg" alt="Ascentor" height="28" style="display:block;">
-        </td></tr>
-        <!-- Body -->
-        <tr><td style="padding:32px;">
-          <h2 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#0C0B08;line-height:1.3;">${payload.title}</h2>
-          <p style="margin:0 0 28px;font-size:15px;color:#4A4438;line-height:1.6;">${payload.body}</p>
-          <a href="${url}" style="display:inline-block;padding:13px 24px;background:#E8A020;color:#0C0B08;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">
-            View in Ascentor →
-          </a>
-        </td></tr>
-        <!-- Footer -->
-        <tr><td style="padding:20px 32px;border-top:1px solid #F0E8DC;">
-          <p style="margin:0;font-size:11px;color:#9A9080;font-family:Metropolis,'Inter',sans-serif;letter-spacing:0.04em;">
-            YOU ARE RECEIVING THIS BECAUSE YOU HAVE AN ASCENTOR ACCOUNT.<br>
-            <a href="https://ascentorbi.com/account" style="color:#C8841A;text-decoration:none;">MANAGE NOTIFICATION PREFERENCES</a>
-          </p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+  return brandedEmailLayout({
+    preheader: payload.body,
+    eyebrow: 'Ascentor Notification',
+    heading: payload.title,
+    recipient,
+    content:
+      p(esc(payload.body)) +
+      goldButton('View in Ascentor →', url) +
+      p('<span style="color:#9CA3AF;font-size:13px;">You are receiving this because you have an Ascentor account. <a href="https://ascentorbi.com/account" style="color:#C8A96E;text-decoration:none;">Manage notification preferences</a></span>'),
+  });
 }
 
 // ── Main notify function ─────────────────────────────────────────────────────
@@ -140,7 +119,7 @@ export async function notify(userId: string, payload: NotifyPayload): Promise<vo
     if (payload.emailSubject) {
       const email = await getUserEmail(userId);
       if (email) {
-        const html = payload.emailHtml || buildEmailHtml(payload);
+        const html = payload.emailHtml || buildEmailHtml(payload, email);
         await sendEmail(email, payload.emailSubject, html);
       }
     }

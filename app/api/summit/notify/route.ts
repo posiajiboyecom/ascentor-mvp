@@ -8,39 +8,20 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { brandedEmailLayout, esc, goldButton } from '@/lib/emailTemplate';
 
-function buildHtml(opts: { firstName: string; message: string }) {
-  const bodyHtml = opts.message
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/\n/g, '<br>');
+function buildHtml(opts: { firstName: string; message: string; recipient: string }) {
+  const bodyHtml = esc(opts.message).replace(/\n/g, '<br>');
 
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0F0F0E;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0F0F0E;padding:48px 20px;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#161614;border-radius:16px;overflow:hidden;border:1px solid rgba(200,169,110,0.2);">
-        <tr><td style="padding:32px 36px;">
-          <img src="https://ascentorbi.com/ascentor-color-for-dark-pages.svg" alt="Ascentor" height="26" style="display:block;margin-bottom:28px;">
-          <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#C8A96E;">◇ The Elevation Summit · 2026</p>
-          <p style="margin:20px 0 0;font-size:15px;color:#9CA3AF;line-height:1.8;">${bodyHtml}</p>
-          <div style="margin-top:28px;">
-            <a href="https://ascentorbi.com/elevation-summit" style="display:inline-block;padding:12px 22px;background:#C8A96E;color:#0F0F0E;text-decoration:none;border-radius:9px;font-weight:700;font-size:13px;">
-              View Summit details →
-            </a>
-          </div>
-        </td></tr>
-        <tr><td style="padding:20px 36px;border-top:1px solid rgba(255,255,255,0.06);">
-          <p style="margin:0;font-size:11px;color:#4B5563;font-family:Metropolis,'Inter',sans-serif;letter-spacing:0.04em;">
-            YOU ARE RECEIVING THIS BECAUSE YOU REGISTERED FOR THE ELEVATION SUMMIT 2026.
-          </p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+  return brandedEmailLayout({
+    preheader: 'An update from The Elevation Summit.',
+    eyebrow: 'The Elevation Summit · 2026',
+    heading: `Hi ${esc(opts.firstName)},`,
+    recipient: opts.recipient,
+    content:
+      `<p style="margin:0 0 16px;">${bodyHtml}</p>` +
+      goldButton('View Summit details →', 'https://ascentorbi.com/elevation-summit'),
+  });
 }
 
 export async function POST(req: Request) {
@@ -93,7 +74,7 @@ export async function POST(req: Request) {
           from: 'Ascentor <notifications@ascentorbi.com>',
           to: r.email,
           subject: (subject as string).trim(),
-          html: buildHtml({ firstName, message: personalised }),
+          html: buildHtml({ firstName, message: personalised, recipient: r.email }),
         }),
       });
       if (res.ok) sent++; else failed++;

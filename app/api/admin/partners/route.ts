@@ -20,6 +20,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -218,30 +219,42 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (ownerProfile?.email) {
+      const partnerName = esc(partner.name);
       const messages: Record<string, { subject: string; body: string }> = {
         approve: {
           subject: `Your partner application is approved — ${partner.name}`,
-          body: `
-            <div style="font-family: sans-serif; max-width: 480px; margin: auto; padding: 32px; background: #0C0B08; color: #D4CFC3; border-radius: 16px;">
-              <h2 style="color: #E8A020; margin-bottom: 16px;">🎉 You're approved!</h2>
-              <p style="color: #9C9890; line-height: 1.7; margin-bottom: 20px;">
-                Your partner platform <strong style="color: #D4CFC3;">${partner.name}</strong> is now live at
-                <a href="https://${partner.subdomain}.ascentorbi.com" style="color: #E8A020;">${partner.subdomain}.ascentorbi.com</a>.
-              </p>
-              <p style="color: #9C9890; font-size: 13px;">Head to your partner dashboard to customise your brand and invite members.</p>
-              <a href="https://ascentorbi.com/partner/brand" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #E8A020; color: #000; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px;">
-                Go to Partner Dashboard →
-              </a>
-            </div>
-          `,
+          body: brandedEmailLayout({
+            preheader: `${partner.name} is now live.`,
+            eyebrow: 'Partner Application',
+            heading: 'You\'re approved.',
+            recipient: ownerProfile.email,
+            content:
+              p(`Your partner platform <strong>${partnerName}</strong> is now live at <a href="https://${esc(partner.subdomain)}.ascentorbi.com" style="color:#C8A96E;text-decoration:none;">${esc(partner.subdomain)}.ascentorbi.com</a>.`) +
+              p('Head to your partner dashboard to customise your brand and invite members.') +
+              goldButton('Go to Partner Dashboard →', 'https://ascentorbi.com/partner/brand'),
+          }),
         },
         suspend: {
           subject: `Your partner account has been suspended — ${partner.name}`,
-          body: `<div style="font-family: sans-serif; max-width: 480px; margin: auto; padding: 32px;"><p>Your partner account <strong>${partner.name}</strong> has been suspended. Contact support for more information.</p></div>`,
+          body: brandedEmailLayout({
+            preheader: `Your partner account ${partner.name} has been suspended.`,
+            eyebrow: 'Partner Account',
+            heading: 'Account suspended.',
+            recipient: ownerProfile.email,
+            content:
+              p(`Your partner account <strong>${partnerName}</strong> has been suspended. Contact support for more information.`),
+          }),
         },
         reject: {
           subject: `Partner application update — ${partner.name}`,
-          body: `<div style="font-family: sans-serif; max-width: 480px; margin: auto; padding: 32px;"><p>Unfortunately your application for <strong>${partner.name}</strong> was not approved at this time. You can reapply after 30 days.</p></div>`,
+          body: brandedEmailLayout({
+            preheader: `An update on your partner application for ${partner.name}.`,
+            eyebrow: 'Partner Application',
+            heading: 'Application update.',
+            recipient: ownerProfile.email,
+            content:
+              p(`Unfortunately your application for <strong>${partnerName}</strong> was not approved at this time. You can reapply after 30 days.`),
+          }),
         },
       };
 
