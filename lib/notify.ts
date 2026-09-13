@@ -106,7 +106,7 @@ function buildEmailHtml(payload: NotifyPayload): string {
         </td></tr>
         <!-- Footer -->
         <tr><td style="padding:20px 32px;border-top:1px solid #F0E8DC;">
-          <p style="margin:0;font-size:11px;color:#9A9080;font-family:'Courier New',monospace;letter-spacing:0.04em;">
+          <p style="margin:0;font-size:11px;color:#9A9080;font-family:Metropolis,'Inter',sans-serif;letter-spacing:0.04em;">
             YOU ARE RECEIVING THIS BECAUSE YOU HAVE AN ASCENTOR ACCOUNT.<br>
             <a href="https://ascentorbi.com/account" style="color:#C8841A;text-decoration:none;">MANAGE NOTIFICATION PREFERENCES</a>
           </p>

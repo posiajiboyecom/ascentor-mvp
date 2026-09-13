@@ -20,7 +20,7 @@ function buildHtml(opts: { firstName: string; eventTitle: string; message: strin
   <div style="margin-top:24px;"><a href="https://ascentorbi.com/events" style="display:inline-block;padding:11px 20px;background:#C8A96E;color:#0F0F0E;text-decoration:none;border-radius:8px;font-weight:700;font-size:13px;">View all events →</a></div>
 </td></tr>
 <tr><td style="padding:18px 36px;border-top:1px solid rgba(255,255,255,0.06);">
-  <p style="margin:0;font-size:11px;color:#4B5563;font-family:'Courier New',monospace;">YOU ARE REGISTERED FOR ${opts.eventTitle.toUpperCase()} · ASCENTOR</p>
+  <p style="margin:0;font-size:11px;color:#4B5563;font-family:Metropolis,'Inter',sans-serif;">YOU ARE REGISTERED FOR ${opts.eventTitle.toUpperCase()} · ASCENTOR</p>
 </td></tr>
 </table></td></tr></table></body></html>`;
 }

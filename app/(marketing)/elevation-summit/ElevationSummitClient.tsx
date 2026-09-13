@@ -8,6 +8,9 @@ import type { PublishedPage } from '@/lib/supabase/queries/marketing';
 import '@/styles/marketing.css';
 import 'react-phone-number-input/style.css';
 import PhoneInput from 'react-phone-number-input';
+// Bundled inline-SVG flags — the default flag <img> tags load from an
+// external CDN which fails in production. This renders flags locally.
+import flags from 'react-phone-number-input/flags';
 import { useModal } from '@/components/Modal';
 import { useRouter } from 'next/navigation';
 import { Compass, Hammer, Crown, Sparkles, Network, Monitor } from 'lucide-react';
@@ -389,6 +392,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
                     onChange={field.onChange}
                     international
                     defaultCountry="NG"
+                    flags={flags}
                     className="phone-input"
                     numberInputProps={{ style: INPUT, placeholder: '+234 800 000 0000' }}
                   />

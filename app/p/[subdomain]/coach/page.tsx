@@ -318,7 +318,7 @@ export default function CoachPage() {
                 background: 'var(--bg-card)',
                 border: '1px solid var(--accent)',
                 color: 'var(--accent)',
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: "Metropolis, 'Inter', sans-serif",
                 letterSpacing: '0.03em',
               }}
             >
@@ -366,7 +366,7 @@ export default function CoachPage() {
                       <span className="flex-1">{t.label}</span>
                       {!available && tierLabel && (
                         <span style={{
-                          fontSize: 9, fontFamily: "'DM Mono', monospace",
+                          fontSize: 9, fontFamily: "Metropolis, 'Inter', sans-serif",
                           color: '#E8A020', letterSpacing: '0.08em',
                           background: 'rgba(232,160,32,0.10)',
                           border: '1px solid rgba(232,160,32,0.2)',
@@ -395,7 +395,7 @@ export default function CoachPage() {
                 background: limitReached ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.06)',
                 color:      limitReached ? 'var(--error, #EF4444)' : 'var(--text-dim)',
                 border:     `1px solid ${limitReached ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.12)'}`,
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: "Metropolis, 'Inter', sans-serif",
                 fontSize:   10,
                 letterSpacing: '0.06em',
               }}
@@ -428,7 +428,7 @@ export default function CoachPage() {
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border)',
                 color: 'var(--text-muted)',
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: "Metropolis, 'Inter', sans-serif",
               }}
             >
               {loadingEarlier ? 'Loading...' : `Load ${Math.min(PAGE_SIZE, historyTotal - historyLoaded)} earlier sessions`}

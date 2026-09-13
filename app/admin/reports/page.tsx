@@ -146,7 +146,7 @@ export default function AdminReportsPage() {
         /* ── Header ── */
         .rp-header { margin-bottom: 32px; }
         .rp-eyebrow {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
           color: #E8A020; margin-bottom: 8px;
         }
@@ -165,7 +165,7 @@ export default function AdminReportsPage() {
         }
         .rp-range-btn {
           padding: 7px 16px; border-radius: 8px; border: none; cursor: pointer;
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px; letter-spacing: 0.1em;
           transition: all 0.18s;
         }
@@ -194,7 +194,7 @@ export default function AdminReportsPage() {
         .rp-type-btn:hover { border-color: rgba(232,160,32,0.3); transform: translateY(-2px); }
         .rp-type-btn.active { border-color: rgba(232,160,32,0.5); background: rgba(232,160,32,0.04); }
         .rp-type-mono {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
           color: #E8A020; margin-bottom: 10px;
         }
@@ -214,7 +214,7 @@ export default function AdminReportsPage() {
           text-align: center;
         }
         .rp-loading-label {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
           color: var(--admin-text-faint); animation: rp-pulse 1.5s ease-in-out infinite;
         }
@@ -236,13 +236,13 @@ export default function AdminReportsPage() {
           font-weight: 700; font-size: 22px; color: #fff; margin-bottom: 4px;
         }
         .rp-result-meta {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px; letter-spacing: 0.08em; color: var(--admin-text-faint);
         }
         .rp-export-row { display: flex; gap: 8px; }
         .rp-export-btn {
           padding: 8px 16px; border-radius: 8px; cursor: pointer;
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px; letter-spacing: 0.08em;
           background: var(--admin-bg-card); color: var(--admin-text-muted);
           border: 1px solid var(--admin-bg-input);
@@ -265,7 +265,7 @@ export default function AdminReportsPage() {
           border: 1px solid var(--admin-bg-input);
         }
         .rp-stat-label {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
           color: var(--admin-text-faint); margin-bottom: 8px;
         }
@@ -283,7 +283,7 @@ export default function AdminReportsPage() {
         }
         .rp-table th {
           padding: 10px 16px; text-align: left;
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
           color: var(--admin-text-faint); font-weight: 400;
           border-bottom: 1px solid var(--admin-bg-input);
@@ -294,13 +294,13 @@ export default function AdminReportsPage() {
           padding: 10px 16px; color: var(--admin-text-muted);
           border-bottom: 1px solid var(--admin-bg-card);
           max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-          font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.02em;
+          font-family: Metropolis, 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.02em;
         }
         .rp-table tr:last-child td { border-bottom: none; }
         .rp-table tr:hover td { background: rgba(232,160,32,0.02); color: var(--admin-text); }
         .rp-table-footer {
           padding: 12px 16px; text-align: center;
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px; letter-spacing: 0.08em; color: var(--admin-text-faint);
           border-top: 1px solid var(--admin-bg-input);
         }

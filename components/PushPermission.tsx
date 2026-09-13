@@ -237,7 +237,7 @@ export default function PushPermission() {
           </p>
           <p style={{
             margin: 0,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: "Metropolis, 'Inter', sans-serif",
             fontSize: 10,
             color: 'var(--text-dim, #7A7260)',
             letterSpacing: '0.02em',

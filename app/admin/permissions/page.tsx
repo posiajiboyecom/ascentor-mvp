@@ -10,7 +10,7 @@ import {
 } from '@/lib/permissions';
 
 const G = {
-  font: "'Syne', system-ui, sans-serif", mono: "'DM Mono', monospace",
+  font: "'Syne', system-ui, sans-serif", mono: "Metropolis, 'Inter', sans-serif",
   serif: "'Cormorant Garamond', Georgia, serif",
   gold: '#E8A020', goldPale: 'rgba(232,160,32,0.08)', goldBord: 'rgba(232,160,32,0.22)',
   teal: '#14B8A6', tealPale: 'rgba(20,184,166,0.08)', tealBord: 'rgba(20,184,166,0.22)',

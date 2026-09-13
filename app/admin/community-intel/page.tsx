@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 // app/admin/community-intel/page.tsx
 // Two tabs:
@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/client';
 const B = {
   gold:'#E8A020',goldMuted:'rgba(232,160,32,0.08)',goldBorder:'rgba(232,160,32,0.20)',
   teal:'#14B8A6',purple:'#8B5CF6',green:'#22C55E',red:'#EF4444',
-  fontMono:"'DM Mono', monospace",fontUI:"'Syne', system-ui, sans-serif",
+  fontMono:"Metropolis, 'Inter', sans-serif",fontUI:"'Syne', system-ui, sans-serif",
   fontDisplay:"'Cormorant Garamond', Georgia, serif",
 };
 const CARD:React.CSSProperties={background:'var(--admin-bg-deep)',border:'1px solid var(--admin-bg-input)',borderRadius:12};

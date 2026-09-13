@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 // app/admin/intelligence/page.tsx
 // Central Intelligence — on-demand AI analysis of all platform data
 // Claude analyzes: coach sessions, community chats, signups, logins,
@@ -9,7 +9,7 @@ import { useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 const G = '#E8A020';
-const mono: React.CSSProperties = { fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.09em', textTransform:'uppercase' as const, color:'var(--admin-text-faint)' };
+const mono: React.CSSProperties = { fontFamily:"Metropolis,'Inter',sans-serif", fontSize:10, letterSpacing:'0.09em', textTransform:'uppercase' as const, color:'var(--admin-text-faint)' };
 const card: React.CSSProperties = { background:'var(--admin-bg-deep)', border:'1px solid var(--admin-bg-input)', borderRadius:12 };
 const inp: React.CSSProperties  = { padding:'9px 13px', borderRadius:8, border:'1px solid var(--admin-bg-input)', background:'var(--admin-bg-card)', color:'var(--admin-text)', fontSize:13, fontFamily:"'Syne',sans-serif", outline:'none' };
 
@@ -435,7 +435,7 @@ Analyze this data and provide strategic insights.`;
               padding:'10px 28px', borderRadius:10, border:'none',
               background: analysing ? 'var(--admin-bg-input)' : G,
               color: analysing ? 'var(--admin-text-faint)' : '#0C0B08',
-              fontFamily:"'DM Mono',monospace", fontSize:13, fontWeight:700,
+              fontFamily:"Metropolis,'Inter',sans-serif", fontSize:13, fontWeight:700,
               cursor: analysing ? 'default' : 'pointer',
               display:'flex', alignItems:'center', gap:10, transition:'all 0.15s',
             }}
@@ -453,7 +453,7 @@ Analyze this data and provide strategic insights.`;
             )}
           </button>
           {fetchStatus && (
-            <div style={{ fontFamily:"'DM Mono',monospace", fontSize:11, color:G, alignSelf:'center' }}>
+            <div style={{ fontFamily:"Metropolis,'Inter',sans-serif", fontSize:11, color:G, alignSelf:'center' }}>
               {fetchStatus}
             </div>
           )}
@@ -481,7 +481,7 @@ Analyze this data and provide strategic insights.`;
                   {REPORT_TYPES.find(r => r.id === result.reportType)?.icon} {result.label}
                 </span>
                 {result.streaming && (
-                  <span style={{ fontFamily:"'DM Mono',monospace", fontSize:9, color:G, letterSpacing:'0.1em', textTransform:'uppercase', background:'rgba(232,160,32,0.1)', padding:'2px 8px', borderRadius:4, border:'1px solid rgba(232,160,32,0.2)' }}>
+                  <span style={{ fontFamily:"Metropolis,'Inter',sans-serif", fontSize:9, color:G, letterSpacing:'0.1em', textTransform:'uppercase', background:'rgba(232,160,32,0.1)', padding:'2px 8px', borderRadius:4, border:'1px solid rgba(232,160,32,0.2)' }}>
                     Streaming
                   </span>
                 )}
@@ -492,7 +492,7 @@ Analyze this data and provide strategic insights.`;
             </div>
             <button
               onClick={() => clearResult(result.id)}
-              style={{ background:'none', border:'1px solid var(--admin-bg-input)', borderRadius:6, color:'var(--admin-text-faint)', cursor:'pointer', padding:'4px 10px', fontSize:12, fontFamily:"'DM Mono',monospace" }}
+              style={{ background:'none', border:'1px solid var(--admin-bg-input)', borderRadius:6, color:'var(--admin-text-faint)', cursor:'pointer', padding:'4px 10px', fontSize:12, fontFamily:"Metropolis,'Inter',sans-serif" }}
             >
               ✕ Clear
             </button>
@@ -513,7 +513,7 @@ Analyze this data and provide strategic insights.`;
             ) : (
               <div style={{ display:'flex', alignItems:'center', gap:12, color:'var(--admin-text-faint)' }}>
                 <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid var(--admin-bg-input)`, borderTopColor:G, animation:'asc-spin 0.8s linear infinite', flexShrink:0 }} />
-                <span style={{ fontFamily:"'DM Mono',monospace", fontSize:11 }}>Fetching data and initializing analysis…</span>
+                <span style={{ fontFamily:"Metropolis,'Inter',sans-serif", fontSize:11 }}>Fetching data and initializing analysis…</span>
               </div>
             )}
           </div>

@@ -10,7 +10,7 @@ export default function SalaryToolkitDownloadPage() {
         body { background: #FAFAF8; }
         .sd { min-height: 100vh; background: #FAFAF8; display: flex; align-items: center; justify-content: center; padding: 40px 24px; font-family: 'Inter', sans-serif; }
         .sd-card { max-width: 500px; width: 100%; }
-        .sd-tag { display: inline-block; background: #111; color: #FAFAF8; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; padding: 4px 12px; border-radius: 3px; margin-bottom: 24px; }
+        .sd-tag { display: inline-block; background: #111; color: #FAFAF8; font-family: Metropolis, 'Inter', sans-serif; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; padding: 4px 12px; border-radius: 3px; margin-bottom: 24px; }
         .sd-h1 { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 700; line-height: 1.1; color: #111; margin-bottom: 16px; }
         .sd-h1 em { font-style: italic; color: #C4860A; }
         .sd-sub { font-size: 15px; color: rgba(17,17,17,0.55); line-height: 1.7; margin-bottom: 36px; }
@@ -18,7 +18,7 @@ export default function SalaryToolkitDownloadPage() {
         .sd-btn:hover { background: #333; }
         .sd-note { font-size: 12px; color: rgba(17,17,17,0.35); margin-bottom: 48px; }
         .sd-next { border: 1px solid rgba(17,17,17,0.1); border-radius: 10px; padding: 24px; background: #fff; }
-        .sd-next-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(17,17,17,0.35); margin-bottom: 10px; }
+        .sd-next-label { font-family: Metropolis, 'Inter', sans-serif; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(17,17,17,0.35); margin-bottom: 10px; }
         .sd-next-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 700; color: #111; margin-bottom: 8px; }
         .sd-next-desc { font-size: 13px; color: rgba(17,17,17,0.55); line-height: 1.6; margin-bottom: 14px; }
         .sd-next-link { font-size: 13px; color: #C4860A; text-decoration: none; font-weight: 600; }

@@ -46,7 +46,7 @@ function confirmationHtml(opts: {
           </a>
         </td></tr>
         <tr><td style="padding:20px 36px;border-top:1px solid rgba(255,255,255,0.06);">
-          <p style="margin:0;font-size:11px;color:#4B5563;font-family:'Courier New',monospace;letter-spacing:0.04em;">
+          <p style="margin:0;font-size:11px;color:#4B5563;font-family:Metropolis,'Inter',sans-serif;letter-spacing:0.04em;">
             YOU REGISTERED FOR ${opts.eventTitle.toUpperCase()} · ASCENTOR
           </p>
         </td></tr>

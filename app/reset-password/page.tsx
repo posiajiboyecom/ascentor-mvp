@@ -192,7 +192,7 @@ export default function ResetPasswordPage() {
 
         .otp-input {
           text-align: center;
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 1.5rem;
           letter-spacing: 0.5em;
         }

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -82,7 +82,7 @@ export default function ChallengeOptInPage() {
 
         /* Left */
         .ch-nav {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px;
           letter-spacing: 0.12em;
           color: rgba(26,22,16,0.35);
@@ -129,7 +129,7 @@ export default function ChallengeOptInPage() {
           line-height: 1;
         }
         .ch-stat-label {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           letter-spacing: 0.1em;
           color: rgba(26,22,16,0.4);
@@ -140,7 +140,7 @@ export default function ChallengeOptInPage() {
 
         /* Timeline */
         .ch-timeline-label {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           letter-spacing: 0.14em;
           text-transform: uppercase;
@@ -167,7 +167,7 @@ export default function ChallengeOptInPage() {
           background: #fff;
           border: 2px solid rgba(232,160,32,0.4);
           display: flex; align-items: center; justify-content: center;
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           font-weight: 500;
           color: #E8A020;
@@ -198,7 +198,7 @@ export default function ChallengeOptInPage() {
           border: 1px solid rgba(232,160,32,0.2);
           border-radius: 4px;
           padding: 4px 12px;
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           letter-spacing: 0.12em;
           color: #E8A020;
@@ -266,7 +266,7 @@ export default function ChallengeOptInPage() {
         }
         .ch-card-divider { height: 1px; background: rgba(240,237,230,0.08); margin-bottom: 20px; }
         .ch-card-includes-label {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           letter-spacing: 0.12em;
           text-transform: uppercase;

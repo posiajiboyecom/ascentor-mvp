@@ -79,7 +79,7 @@ export default function DownloadPage({
         {/* Divider */}
         <div style={{ borderTop: '1px solid rgba(42,40,32,0.1)', paddingTop: 32, marginBottom: 32 }}>
           <p style={{
-            fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.12em',
+            fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.12em',
             color: '#9A9080', textTransform: 'uppercase', marginBottom: 12,
           }}>
             What's next
@@ -106,7 +106,7 @@ export default function DownloadPage({
           border: '1px solid rgba(42,40,32,0.08)',
           padding: '24px', textAlign: 'left',
         }}>
-          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: gold, marginBottom: 10 }}>
+          <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.1em', color: gold, marginBottom: 10 }}>
             TRY THIS IN SAGE
           </p>
           <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: '#4A4438', lineHeight: 1.7, marginBottom: 12 }}>

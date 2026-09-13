@@ -22,7 +22,7 @@ const B = {
   border:     'var(--border, rgba(212,207,195,0.10))',
   fontDisplay:"'Cormorant Garamond', Georgia, serif",
   fontUI:     "'Syne', system-ui, sans-serif",
-  fontMono:   "'DM Mono', monospace",
+  fontMono:   "Metropolis, 'Inter', sans-serif",
 };
 
 // ─── Types ────────────────────────────────────────────────────

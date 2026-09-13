@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 
@@ -155,7 +155,7 @@ export default async function ProductsPage() {
           font-size: 28px; font-weight: 700; color: #0C0B08; line-height: 1;
         }
         .prod-hero-stat-label {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px; letter-spacing: 0.08em; color: #9CA3AF;
           text-transform: uppercase;
         }
@@ -169,7 +169,7 @@ export default async function ProductsPage() {
           padding: 56px 20px;
         }
         .prod-section-label {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px; font-weight: 500;
           letter-spacing: 0.12em; text-transform: uppercase;
           color: #9CA3AF; margin-bottom: 28px;
@@ -222,7 +222,7 @@ export default async function ProductsPage() {
         /* Badge overlay */
         .prod-badge-overlay {
           position: absolute; top: 12px; left: 12px;
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px; font-weight: 500; letter-spacing: 0.08em;
           text-transform: uppercase; padding: 4px 10px;
           border-radius: 999px; backdrop-filter: blur(8px);
@@ -234,7 +234,7 @@ export default async function ProductsPage() {
         .prod-card-body { padding: 22px 22px 20px; flex: 1; display: flex; flex-direction: column; }
         .prod-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
         .prod-card-cat {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px; font-weight: 500;
           letter-spacing: 0.08em; text-transform: uppercase;
           padding: 3px 9px; border-radius: 999px;
@@ -283,7 +283,7 @@ export default async function ProductsPage() {
           font-size: 32px; color: #C4BFB8; margin-bottom: 10px;
         }
         .prod-empty p {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 11px; color: #C4BFB8; letter-spacing: 0.06em;
         }
 
@@ -298,12 +298,12 @@ export default async function ProductsPage() {
           flex-wrap: wrap; gap: 16px;
         }
         .prod-footer-copy {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px; color: #9CA3AF; letter-spacing: 0.06em;
         }
         .prod-footer-links { display: flex; gap: 20px; }
         .prod-footer-link {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px; color: #9CA3AF; letter-spacing: 0.06em;
           text-decoration: none; transition: color 0.15s;
         }
@@ -440,7 +440,7 @@ function ProductCard({ product: p }: { product: Product }) {
             {p.category}
           </span>
           {p.is_featured && (
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', color: '#E8A020', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '9px', color: '#E8A020', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               ★ Featured
             </span>
           )}

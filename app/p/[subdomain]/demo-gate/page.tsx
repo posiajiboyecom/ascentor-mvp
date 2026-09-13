@@ -64,7 +64,7 @@ export default function DemoGatePage() {
         .dg-badge {
           display: inline-block; padding: 4px 14px; border-radius: 100px;
           background: rgba(232,160,32,0.10); border: 1px solid rgba(232,160,32,0.22);
-          font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.18em;
+          font-family: Metropolis, 'Inter', sans-serif; font-size: 9px; letter-spacing: 0.18em;
           color: #E8A020; text-transform: uppercase; margin-bottom: 20px;
         }
         .dg-headline {
@@ -87,7 +87,7 @@ export default function DemoGatePage() {
         .dg-email {
           display: inline-block; padding: 10px 20px; border-radius: 8px;
           background: rgba(232,160,32,0.08); border: 1px solid rgba(232,160,32,0.2);
-          font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500;
+          font-family: Metropolis, 'Inter', sans-serif; font-size: 14px; font-weight: 500;
           color: #E8A020; letter-spacing: 0.02em; margin-bottom: 28px; word-break: break-all;
         }
         .dg-cta {
@@ -97,7 +97,7 @@ export default function DemoGatePage() {
           transition: background 0.15s; margin-bottom: 14px;
         }
         .dg-cta:hover { background: #F5C55A; }
-        .dg-secondary { font-size: 12px; color: #4A4438; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; }
+        .dg-secondary { font-size: 12px; color: #4A4438; font-family: Metropolis, 'Inter', sans-serif; letter-spacing: 0.04em; }
         .dg-secondary a { color: #8A8272; text-decoration: underline; text-underline-offset: 3px; }
         .dg-secondary a:hover { color: #C8C3B8; }
         @media (max-width: 480px) { .dg-card { padding: 36px 24px; } }
@@ -106,7 +106,7 @@ export default function DemoGatePage() {
       <div className="dg-wrap">
         <div className="dg-logo">
           ASCENT<span>OR</span>
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#4A4438', letterSpacing: '0.12em', marginLeft: 4 }}>DEMO</span>
+          <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#4A4438', letterSpacing: '0.12em', marginLeft: 4 }}>DEMO</span>
         </div>
 
         <div className="dg-card">
@@ -149,7 +149,7 @@ export default function DemoGatePage() {
             </div>
           </div>
 
-          <p style={{ fontSize: 11, fontFamily: "'DM Mono', monospace", color: '#4A4438', letterSpacing: '0.1em', marginBottom: 10, textTransform: 'uppercase' }}>
+          <p style={{ fontSize: 11, fontFamily: "Metropolis, 'Inter', sans-serif", color: '#4A4438', letterSpacing: '0.1em', marginBottom: 10, textTransform: 'uppercase' }}>
             Contact Team Ascentor
           </p>
           <div className="dg-email">asamuel@ascentorbi.com</div>
@@ -171,7 +171,7 @@ export default function DemoGatePage() {
           </p>
         </div>
 
-        <p style={{ marginTop: 40, fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#2E2A22', letterSpacing: '0.08em' }}>
+        <p style={{ marginTop: 40, fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#2E2A22', letterSpacing: '0.08em' }}>
           © {new Date().getFullYear()} Ascentor Inc. · demo.ascentorbi.com
         </p>
       </div>

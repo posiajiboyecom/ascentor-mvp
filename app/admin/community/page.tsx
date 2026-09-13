@@ -20,7 +20,7 @@ interface CMsg {
 }
 
 const G = '#E8A020';
-const mono: React.CSSProperties = { fontFamily:"'DM Mono',monospace", fontSize:10, letterSpacing:'0.09em', textTransform:'uppercase' as const, color:'var(--admin-text-faint)' };
+const mono: React.CSSProperties = { fontFamily:"Metropolis,'Inter',sans-serif", fontSize:10, letterSpacing:'0.09em', textTransform:'uppercase' as const, color:'var(--admin-text-faint)' };
 const card: React.CSSProperties = { background:'var(--admin-bg-deep)', border:'1px solid var(--admin-bg-input)', borderRadius:12 };
 const inp: React.CSSProperties  = { padding:'9px 13px', borderRadius:8, border:'1px solid var(--admin-bg-input)', background:'var(--admin-bg-card)', color:'var(--admin-text)', fontSize:13, fontFamily:"'Syne',sans-serif", outline:'none' };
 
@@ -150,7 +150,7 @@ export default function AdminCommunityPage() {
 
       {/* Toast */}
       {toast && (
-        <div style={{ position:'fixed', top:20, right:20, zIndex:9999, background:G, color:'#0C0B08', padding:'10px 20px', borderRadius:10, fontFamily:"'DM Mono',monospace", fontSize:12, fontWeight:600, boxShadow:'0 4px 20px rgba(0,0,0,0.4)', animation:'none' }}>
+        <div style={{ position:'fixed', top:20, right:20, zIndex:9999, background:G, color:'#0C0B08', padding:'10px 20px', borderRadius:10, fontFamily:"Metropolis,'Inter',sans-serif", fontSize:12, fontWeight:600, boxShadow:'0 4px 20px rgba(0,0,0,0.4)', animation:'none' }}>
           {toast}
         </div>
       )}
@@ -245,15 +245,15 @@ export default function AdminCommunityPage() {
               ) : filtered.map(msg => (
                 <div key={msg.id} className="msg-row" style={{ display:'flex', gap:10, padding:'8px 16px', alignItems:'flex-start', opacity:msg.deleted ? 0.45 : 1, background:msg.pinned ? 'rgba(232,160,32,0.04)' : 'transparent', borderLeft:msg.pinned ? `3px solid ${G}` : '3px solid transparent' }}>
                   {/* Avatar */}
-                  <div style={{ width:32, height:32, borderRadius:'50%', background:'var(--admin-bg-card)', border:'1px solid var(--admin-bg-input)', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'DM Mono',monospace", fontSize:12, fontWeight:600, color:G }}>
+                  <div style={{ width:32, height:32, borderRadius:'50%', background:'var(--admin-bg-card)', border:'1px solid var(--admin-bg-input)', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"Metropolis,'Inter',sans-serif", fontSize:12, fontWeight:600, color:G }}>
                     {(msg.author_name || 'U')[0].toUpperCase()}
                   </div>
                   {/* Content */}
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', alignItems:'baseline', gap:8, marginBottom:3 }}>
                       <span style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:700, color:'var(--admin-text)' }}>{msg.author_name}</span>
-                      <span style={{ fontFamily:"'DM Mono',monospace", fontSize:10, color:'var(--admin-text-faint)' }}>{msg.author_email}</span>
-                      <span style={{ fontFamily:"'DM Mono',monospace", fontSize:10, color:'var(--admin-text-faint)', marginLeft:'auto' }}>{fmtDate(msg.created_at)}</span>
+                      <span style={{ fontFamily:"Metropolis,'Inter',sans-serif", fontSize:10, color:'var(--admin-text-faint)' }}>{msg.author_email}</span>
+                      <span style={{ fontFamily:"Metropolis,'Inter',sans-serif", fontSize:10, color:'var(--admin-text-faint)', marginLeft:'auto' }}>{fmtDate(msg.created_at)}</span>
                     </div>
                     {msg.deleted && <span style={{ ...mono, color:'#EF4444', fontSize:9, marginBottom:3, display:'block' }}>DELETED</span>}
                     {msg.pinned  && <span style={{ ...mono, color:G, fontSize:9, marginBottom:3, display:'block' }}>📌 PINNED</span>}
@@ -275,12 +275,12 @@ export default function AdminCommunityPage() {
                     </button>
                     {msg.deleted ? (
                       <button onClick={() => restoreMsg(msg.id)}
-                        style={{ padding:'4px 10px', borderRadius:6, border:'1px solid rgba(20,184,166,0.3)', background:'rgba(20,184,166,0.08)', color:'#14B8A6', cursor:'pointer', fontSize:11, fontFamily:"'DM Mono',monospace" }}>
+                        style={{ padding:'4px 10px', borderRadius:6, border:'1px solid rgba(20,184,166,0.3)', background:'rgba(20,184,166,0.08)', color:'#14B8A6', cursor:'pointer', fontSize:11, fontFamily:"Metropolis,'Inter',sans-serif" }}>
                         Restore
                       </button>
                     ) : (
                       <button onClick={() => { if (confirm('Delete this message?')) deleteMsg(msg.id); }}
-                        style={{ padding:'4px 10px', borderRadius:6, border:'1px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.06)', color:'#EF4444', cursor:'pointer', fontSize:11, fontFamily:"'DM Mono',monospace" }}>
+                        style={{ padding:'4px 10px', borderRadius:6, border:'1px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.06)', color:'#EF4444', cursor:'pointer', fontSize:11, fontFamily:"Metropolis,'Inter',sans-serif" }}>
                         Delete
                       </button>
                     )}
@@ -303,7 +303,7 @@ export default function AdminCommunityPage() {
                 style={{ ...inp, flex:1, fontSize:13 }}
               />
               <button onClick={sendBroadcast} disabled={sending || !broadcast.trim()}
-                style={{ padding:'9px 18px', borderRadius:8, background:G, border:'none', color:'#0C0B08', fontFamily:"'DM Mono',monospace", fontSize:12, fontWeight:700, cursor:broadcast.trim() ? 'pointer' : 'default', opacity:broadcast.trim() ? 1 : 0.4 }}>
+                style={{ padding:'9px 18px', borderRadius:8, background:G, border:'none', color:'#0C0B08', fontFamily:"Metropolis,'Inter',sans-serif", fontSize:12, fontWeight:700, cursor:broadcast.trim() ? 'pointer' : 'default', opacity:broadcast.trim() ? 1 : 0.4 }}>
                 {sending ? '…' : 'Send'}
               </button>
             </div>

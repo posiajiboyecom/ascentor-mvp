@@ -66,7 +66,7 @@ export default function BlueprintDownloadPage() {
         }
         .dl-btn:hover { background: #F5C55A; }
         .dl-note {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px;
           letter-spacing: 0.1em;
           color: rgba(240,237,230,0.3);
@@ -74,7 +74,7 @@ export default function BlueprintDownloadPage() {
           margin-bottom: 48px;
         }
         .dl-next-label {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           letter-spacing: 0.14em;
           color: rgba(240,237,230,0.3);

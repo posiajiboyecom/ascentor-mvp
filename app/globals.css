@@ -111,7 +111,7 @@
 
   --font-sans: Metropolis;
   --font-serif: Metropolis;
-  --font-mono: 'DM Mono', monospace;
+  --font-mono: Metropolis, 'Inter', sans-serif;
 }
 
 

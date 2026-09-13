@@ -530,7 +530,7 @@ function AdminPartnersPageInner() {
                       </span>
                     )}
                   </div>
-                  <p style={{ fontSize: 11, color: 'var(--admin-text-faint)', fontFamily: "'DM Mono', monospace" }}>
+                  <p style={{ fontSize: 11, color: 'var(--admin-text-faint)', fontFamily: "Metropolis, 'Inter', sans-serif" }}>
                     {p.subdomain}.ascentorbi.com
                   </p>
                   <p style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 2 }}>

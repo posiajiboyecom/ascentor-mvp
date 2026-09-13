@@ -270,7 +270,9 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
           gap: 2.5rem;
           align-items: stretch;
         }
-        .hero-grid .hero-carousel { order: 1; display: flex; }
+        .hero-grid .hero-carousel { order: 1; 
+display: flex; align-items: center; justify-content: center; }
+        .hero-grid .hero-carousel > div { aspect-ratio: 4/3; width: 100%; height: auto; }
         .hero-grid .hero-text { order: 2; display: flex; flex-direction: column; justify-content: center; }
         @media (min-width: 860px) {
           .hero-grid {
@@ -511,12 +513,12 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
       <section style={{ padding: 'clamp(3rem, 6vw, 5rem) 1.5rem clamp(3rem, 6vw, 5rem)', maxWidth: '1200px', margin: '0 auto' }}>
         <div className="hero-grid">
           {/* Images Column - shown first on mobile, second on desktop */}
-          <div className="hero-carousel" style={{ position: 'relative', width: '100%', height: '100%' }}>
-            {/* aspectRatio gives the box real height on mobile — the slides are
-                position:absolute so they don't size the container themselves.
-                On desktop the grid row has a definite height, so height:100%
-                wins and the ratio is ignored. */}
-            <div style={{ position: 'relative', width: '100%', height: '100%', aspectRatio: '4 / 3', borderRadius: '1rem', overflow: 'hidden', background: '#E8E6E1' }}>
+          <div className="hero-carousel" style={{ position: 'relative', width: '100%' }}>
+            {/* Fixed 4:3 box on every viewport — the slides are
+                position:absolute so they can't size the container
+                themselves, and a fixed ratio can never overflow the
+                grid row (which is what height:100% + aspectRatio did). */}
+            <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', borderRadius: '1rem', overflow: 'hidden', background: '#E8E6E1' }}>
               {heroImages.map((src, i) => (
                 <img
                   key={src}

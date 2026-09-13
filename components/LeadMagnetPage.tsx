@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useState } from 'react';
@@ -100,12 +100,12 @@ export default function LeadMagnetPage({
           {/* Type badge */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
             <span style={{
-              fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.12em',
+              fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.12em',
               color: gold, background: `${gold}15`, border: `1px solid ${gold}30`,
               borderRadius: 100, padding: '4px 12px', textTransform: 'uppercase' as const,
             }}>{type}</span>
             <span style={{
-              fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.08em',
+              fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.08em',
               color: '#6B6456', background: 'rgba(42,40,32,0.06)',
               borderRadius: 100, padding: '4px 12px',
             }}>{persona}</span>
@@ -131,7 +131,7 @@ export default function LeadMagnetPage({
           {/* What's inside */}
           <div style={{ marginBottom: 40 }}>
             <p style={{
-              fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.12em',
+              fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.12em',
               color: '#7A7260', textTransform: 'uppercase' as const, marginBottom: 16,
             }}>What's inside</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -214,7 +214,7 @@ export default function LeadMagnetPage({
 
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
-                  <label style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: '#7A7260', display: 'block', marginBottom: 6, textTransform: 'uppercase' as const }}>
+                  <label style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.1em', color: '#7A7260', display: 'block', marginBottom: 6, textTransform: 'uppercase' as const }}>
                     First name
                   </label>
                   <input
@@ -231,7 +231,7 @@ export default function LeadMagnetPage({
                   />
                 </div>
                 <div>
-                  <label style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: '#7A7260', display: 'block', marginBottom: 6, textTransform: 'uppercase' as const }}>
+                  <label style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.1em', color: '#7A7260', display: 'block', marginBottom: 6, textTransform: 'uppercase' as const }}>
                     Email address *
                   </label>
                   <input
@@ -270,7 +270,7 @@ export default function LeadMagnetPage({
                   {status === 'loading' ? 'Sending...' : ctaLabel}
                 </button>
 
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#9A9080', textAlign: 'center' as const, margin: 0, letterSpacing: '0.04em' }}>
+                <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#9A9080', textAlign: 'center' as const, margin: 0, letterSpacing: '0.04em' }}>
                   No spam. Unsubscribe anytime. We respect your inbox.
                 </p>
               </form>

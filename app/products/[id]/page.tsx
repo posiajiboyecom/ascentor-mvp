@@ -160,7 +160,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#FAFAF9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: '#9CA3AF', letterSpacing: '0.08em' }}>Loading…</p>
+        <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', letterSpacing: '0.08em' }}>Loading…</p>
       </div>
     );
   }
@@ -189,7 +189,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           height: 60px;
         }
         .pd-back {
-          font-family: 'DM Mono', monospace; font-size: 11px;
+          font-family: Metropolis, 'Inter', sans-serif; font-size: 11px;
           letter-spacing: 0.08em; color: #9CA3AF; text-decoration: none;
           padding: 6px 14px; border-radius: 8px; border: 1px solid #E8E5E0;
           transition: color 0.15s;
@@ -230,7 +230,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           padding: 4px 12px; border-radius: 999px;
         }
         .pd-badge {
-          font-family: 'DM Mono', monospace; font-size: 10px;
+          font-family: Metropolis, 'Inter', sans-serif; font-size: 10px;
           letter-spacing: 0.1em; text-transform: uppercase;
           padding: 4px 12px; border-radius: 999px;
           background: rgba(12,11,8,0.06); color: #4B5563;
@@ -264,11 +264,11 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         }
         .pd-price.free-price { color: #14B8A6; }
         .pd-currency {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 12px; letter-spacing: 0.08em; color: #9CA3AF;
         }
         .pd-price-note {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px; letter-spacing: 0.06em; color: #9CA3AF;
           margin-bottom: 24px;
         }
@@ -291,7 +291,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         }
         .pd-trust-item {
           display: flex; align-items: center; gap: 8px;
-          font-family: 'DM Mono', monospace; font-size: 10px;
+          font-family: Metropolis, 'Inter', sans-serif; font-size: 10px;
           letter-spacing: 0.06em; color: #9CA3AF;
         }
 
@@ -337,7 +337,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             </span>
             {product.badge && <span className="pd-badge">{product.badge}</span>}
             {product.is_featured && (
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: '#E8A020' }}>★ Featured</span>
+              <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '10px', color: '#E8A020' }}>★ Featured</span>
             )}
           </div>
 

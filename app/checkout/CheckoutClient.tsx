@@ -1,4 +1,4 @@
-﻿// FILE: app/checkout/page.tsx
+// FILE: app/checkout/page.tsx
 // FIXES: #1 theme-aware logo · #2 global theme toggle sync · #3 Most Popular badge visible
 
 'use client'
@@ -270,7 +270,7 @@ export default function CheckoutClient() {
                       <span style={{ color: currentMeta.stageColor }}>CURRENT PLAN</span>
                     </div>
                     <h3 className="co-plan-name" style={{ color: currentMeta.stageColor }}>{currentMeta.name}</h3>
-                    <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", letterSpacing: '0.04em' }}>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: "Metropolis, 'Inter', sans-serif", letterSpacing: '0.04em' }}>
                       {subEnd ? `Access until ${new Date(subEnd).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}` : 'Active'}
                     </p>
                   </div>
@@ -440,7 +440,7 @@ export default function CheckoutClient() {
                   )}
                   {billing === 'annual' && (
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6, padding: '3px 10px', borderRadius: 20, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                      <span style={{ color: '#10B981', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "'DM Mono', monospace" }}>
+                      <span style={{ color: '#10B981', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "Metropolis, 'Inter', sans-serif" }}>
                         ✓ SAVE &#8358;{yearlySavings(plan).toLocaleString()}/YR
                       </span>
                     </div>
@@ -485,7 +485,7 @@ export default function CheckoutClient() {
             padding: '16px 28px', borderRadius: 12,
             background: 'var(--bg2)', border: '1px solid var(--bord)',
           }}>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
               Free Plan Includes
             </p>
             <p style={{ fontSize: 13, color: 'var(--text-mid)' }}>
@@ -496,7 +496,7 @@ export default function CheckoutClient() {
               disabled={goingFree}
               style={{
                 marginTop: 4, background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: '0.05em',
+                fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, letterSpacing: '0.05em',
                 color: '#7A7260', textDecoration: 'underline',
                 opacity: goingFree ? 0.5 : 1,
               }}
@@ -597,7 +597,7 @@ function checkoutStyles(isDark: boolean): string {
       font-size: 20px; color: var(--heading);
     }
     .co-back-btn {
-      font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em;
+      font-family: Metropolis, 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.08em;
       color: var(--text-muted); text-decoration: none;
       padding: 7px 14px; border-radius: 8px; border: 1px solid var(--bord);
     }
@@ -613,7 +613,7 @@ function checkoutStyles(isDark: boolean): string {
     .co-hero-badge {
       display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px;
       border-radius: 100px; margin-bottom: 28px;
-      font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      font-family: Metropolis, 'Inter', sans-serif; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
       background: rgba(20,184,166,0.08); border: 1px solid rgba(20,184,166,0.2); color: #14B8A6;
     }
     .co-hero-heading {
@@ -639,7 +639,7 @@ function checkoutStyles(isDark: boolean): string {
     .co-billing-btn.off { background: transparent; color: var(--text-muted); }
     .co-save-pill {
       display: inline-block; margin-left: 6px; padding: 2px 8px;
-      border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.08em;
+      border-radius: 4px; font-family: Metropolis, 'Inter', sans-serif; font-size: 9px; letter-spacing: 0.08em;
     }
     .on  .co-save-pill { background: rgba(12,11,8,0.25); color: #0C0B08; }
     .off .co-save-pill { background: rgba(232,160,32,0.1); color: #E8A020; }
@@ -673,13 +673,13 @@ function checkoutStyles(isDark: boolean): string {
     .co-popular {
       position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
       padding: 4px 16px; border-radius: 100px; white-space: nowrap;
-      font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+      font-family: Metropolis, 'Inter', sans-serif; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
       background: #E8A020; color: #0C0B08;
     }
     .co-stage {
       display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
       border-radius: 100px; margin-bottom: 20px; width: fit-content;
-      font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+      font-family: Metropolis, 'Inter', sans-serif; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
     }
     .co-plan-name {
       font-family: 'Cormorant Garamond', serif; font-weight: 700;
@@ -699,7 +699,7 @@ function checkoutStyles(isDark: boolean): string {
     .co-price-per { font-size: 13px; color: var(--text-muted); align-self: flex-end; margin-bottom: 4px; }
     .co-price-note {
       font-size: 11px; color: var(--text-faint); margin-top: 5px;
-      font-family: 'DM Mono', monospace; letter-spacing: 0.04em;
+      font-family: Metropolis, 'Inter', sans-serif; letter-spacing: 0.04em;
     }
 
     .co-features {
@@ -716,7 +716,7 @@ function checkoutStyles(isDark: boolean): string {
     .co-trial-box {
       text-align: center; padding: 14px 20px; margin-bottom: 14px; border-radius: 10px;
       background: var(--toggle-bg); border: 1px solid var(--bord);
-      font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em;
+      font-family: Metropolis, 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.06em;
       color: var(--text-muted); line-height: 1.6;
     }
     .co-trial-box strong { color: var(--heading); }
@@ -728,7 +728,7 @@ function checkoutStyles(isDark: boolean): string {
     }
     .co-cta:disabled { opacity: 0.4; cursor: not-allowed; }
     .co-cta-note {
-      font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.06em;
+      font-family: Metropolis, 'Inter', sans-serif; font-size: 10px; letter-spacing: 0.06em;
       color: #4A4438; text-align: center; margin-top: 8px;
     }
 
@@ -741,7 +741,7 @@ function checkoutStyles(isDark: boolean): string {
     }
     .co-trust-item {
       display: flex; align-items: center; gap: 7px;
-      font-family: 'DM Mono', monospace; font-size: 10px;
+      font-family: Metropolis, 'Inter', sans-serif; font-size: 10px;
       letter-spacing: 0.06em; color: var(--text-muted);
     }
     .co-trust-note { font-size: 12px; color: var(--text-muted); line-height: 1.65; }

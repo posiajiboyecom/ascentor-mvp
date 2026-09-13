@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/client';
 const B = {
   fontDisplay: "'Cormorant Garamond', Georgia, serif",
   fontUI:      "'Syne', system-ui, sans-serif",
-  fontMono:    "'DM Mono', 'Courier New', monospace",
+  fontMono:    "'DM Mono', Metropolis, 'Inter', sans-serif",
   gold:        '#E8A020',
   goldMuted:   'rgba(232,160,32,0.10)',
   goldBorder:  'rgba(232,160,32,0.25)',

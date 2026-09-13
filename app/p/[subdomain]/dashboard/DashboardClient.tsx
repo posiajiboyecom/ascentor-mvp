@@ -120,7 +120,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
             <div className="text-2xl font-bold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: s.color }}>
               {s.value}
             </div>
-            <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)', fontFamily: "'DM Mono', monospace", letterSpacing: '0.06em' }}>
+            <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)', fontFamily: "Metropolis, 'Inter', sans-serif", letterSpacing: '0.06em' }}>
               {s.label}
             </div>
           </Card>

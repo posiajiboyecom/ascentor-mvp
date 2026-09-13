@@ -56,7 +56,7 @@ const INPUT_BASE: React.CSSProperties = {
   fontFamily: "'Syne', sans-serif", outline: 'none', boxSizing: 'border-box',
 };
 const LABEL_STYLE: React.CSSProperties = {
-  fontFamily: "'DM Mono', monospace", fontSize: 10,
+  fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10,
   letterSpacing: '0.1em', textTransform: 'uppercase',
   color: 'var(--admin-text-faint)', display: 'block', marginBottom: 6,
 };
@@ -111,7 +111,7 @@ function CvDownloadBtn({ cvUrl, cvFilename, supabase }: {
         onClick={handleDownload}
         disabled={loading}
         style={{
-          fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#22C55E',
+          fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#22C55E',
           background: 'none', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 5,
           padding: '3px 10px', cursor: loading ? 'not-allowed' : 'pointer',
           opacity: loading ? 0.6 : 1,
@@ -120,7 +120,7 @@ function CvDownloadBtn({ cvUrl, cvFilename, supabase }: {
         {loading ? 'Generating link…' : `⇩ Download CV${cvFilename ? ` — ${cvFilename}` : ''}`}
       </button>
       {error && (
-        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#EF4444' }}>
+        <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: '#EF4444' }}>
           {error}
         </span>
       )}
@@ -143,7 +143,7 @@ function ActionBtn({ onClick, color, children }: { onClick: () => void; color: s
 function MonoTag({ text, gold }: { text: string; gold?: boolean }) {
   return (
     <span style={{
-      fontFamily: "'DM Mono', monospace", fontSize: 9,
+      fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9,
       letterSpacing: '0.1em', textTransform: 'uppercase',
       color: gold ? '#E8A020' : 'var(--admin-text-muted)',
       padding: '2px 8px',
@@ -195,7 +195,7 @@ function ListField({ label, value, onChange }: {
             padding: '7px 14px', borderRadius: 6,
             border: '1px dashed var(--admin-bg-input)',
             background: 'transparent', color: 'var(--admin-text-faint)',
-            cursor: 'pointer', fontFamily: "'DM Mono', monospace",
+            cursor: 'pointer', fontFamily: "Metropolis, 'Inter', sans-serif",
             fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase',
             textAlign: 'left',
           }}
@@ -345,7 +345,7 @@ function JobForm({ form, setForm, onSave, onCancel, saving, msg }: {
           background: msg.ok ? 'rgba(20,184,166,0.08)' : 'rgba(239,68,68,0.08)',
           border: `1px solid ${msg.ok ? 'rgba(20,184,166,0.2)' : 'rgba(239,68,68,0.2)'}`,
           color: msg.ok ? '#14B8A6' : '#EF4444',
-          fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: '0.06em',
+          fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, letterSpacing: '0.06em',
         }}>
           {msg.text}
         </div>
@@ -529,7 +529,7 @@ export default function AdminCareersPage() {
           <a href="/careers" target="_blank" rel="noopener noreferrer" style={{
             padding: '8px 16px', borderRadius: 8, border: '1px solid var(--admin-bg-input)',
             background: 'transparent', color: 'var(--admin-text-muted)',
-            fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.1em',
+            fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.1em',
             textTransform: 'uppercase', textDecoration: 'none',
           }}>View Page ↗</a>
           {mainTab === 'listings' && tab === 'listings' && (
@@ -542,7 +542,7 @@ export default function AdminCareersPage() {
         </div>
       </div>
 
-      <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--admin-text-faint)', marginBottom: 20 }}>
+      <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--admin-text-faint)', marginBottom: 20 }}>
         {jobs.filter(j => j.is_active).length} published · {jobs.filter(j => !j.is_active).length} drafts · {applications.length} applications
       </p>
 
@@ -556,7 +556,7 @@ export default function AdminCareersPage() {
             padding: '7px 18px', borderRadius: 7, border: 'none',
             background: mainTab === t.key ? 'var(--admin-bg-deep)' : 'transparent',
             color: mainTab === t.key ? '#E8A020' : 'var(--admin-text-faint)',
-            fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.1em',
+            fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.1em',
             textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap',
           }}>{t.label}</button>
         ))}
@@ -578,7 +578,7 @@ export default function AdminCareersPage() {
                   padding: '7px 16px', borderRadius: 7, border: 'none',
                   background: tab === t.key ? 'var(--admin-bg-deep)' : 'transparent',
                   color: tab === t.key ? '#E8A020' : 'var(--admin-text-faint)',
-                  fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.1em',
+                  fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.1em',
                   textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap',
                 }}>{t.label}</button>
               ))}
@@ -599,7 +599,7 @@ export default function AdminCareersPage() {
               <div style={{ ...CARD_STYLE, overflow: 'hidden' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px 90px 160px', padding: '10px 20px', borderBottom: '1px solid var(--admin-bg-input)' }}>
                   {['Role', 'Department', 'Type', 'Mode', 'Actions'].map(h => (
-                    <span key={h} style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--admin-text-faint)' }}>{h}</span>
+                    <span key={h} style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--admin-text-faint)' }}>{h}</span>
                   ))}
                 </div>
                 {jobs.map(job => {
@@ -611,15 +611,15 @@ export default function AdminCareersPage() {
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                           <MonoTag text={job.is_active ? 'Live' : 'Draft'} gold={job.is_active} />
                           {appCount > 0 && (
-                            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#8B5CF6', padding: '2px 8px', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 100 }}>
+                            <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: '#8B5CF6', padding: '2px 8px', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 100 }}>
                               {appCount} application{appCount !== 1 ? 's' : ''}
                             </span>
                           )}
                         </div>
                       </div>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)' }}>{job.department}</span>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)' }}>{job.type}</span>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)' }}>{job.mode}</span>
+                      <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)' }}>{job.department}</span>
+                      <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)' }}>{job.type}</span>
+                      <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)' }}>{job.mode}</span>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <ActionBtn onClick={() => openEdit(job)} color="#E8A020">Edit</ActionBtn>
                         <ActionBtn onClick={() => toggleActive(job)} color={job.is_active ? 'var(--admin-text-muted)' : '#14B8A6'}>
@@ -690,15 +690,15 @@ export default function AdminCareersPage() {
                     style={{ display: 'grid', gridTemplateColumns: '1fr 180px 110px 130px', padding: '14px 20px', alignItems: 'center', gap: 8, cursor: 'pointer', transition: 'background 0.15s' }}>
                     <div>
                       <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--admin-text-heading)', margin: '0 0 3px' }}>{app.full_name}</p>
-                      <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)', margin: 0 }}>{app.email}</p>
+                      <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)', margin: 0 }}>{app.email}</p>
                     </div>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)' }}>{app.job_title}</span>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)' }}>
+                    <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)' }}>{app.job_title}</span>
+                    <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)' }}>
                       {new Date(app.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{
-                        fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase',
+                        fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase',
                         color: STATUS_COLOR[app.status], padding: '2px 8px',
                         background: `${STATUS_COLOR[app.status]}14`, border: `1px solid ${STATUS_COLOR[app.status]}30`, borderRadius: 100,
                       }}>{app.status}</span>
@@ -715,7 +715,7 @@ export default function AdminCareersPage() {
                         <div style={{ padding: '14px 18px', background: 'var(--admin-bg-deep)', borderBottom: '1px solid var(--admin-bg-input)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                           <div>
                             <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 2px' }}>{app.full_name}</p>
-                            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)', margin: 0 }}>
+                            <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)', margin: 0 }}>
                               {app.job_title} · {app.department}
                               {app.years_experience ? ` · ${app.years_experience}` : ''}
                               {app.location ? ` · ${app.location}` : ''}
@@ -729,10 +729,10 @@ export default function AdminCareersPage() {
 
                         {/* Links row */}
                         <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--admin-bg-input)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-                          <a href={`mailto:${app.email}`} style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', textDecoration: 'none' }}>✉ {app.email}</a>
-                          {app.phone && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)' }}>☎ {app.phone}</span>}
-                          {app.linkedin_url && <a href={app.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#14B8A6', textDecoration: 'none' }}>↗ LinkedIn</a>}
-                          {app.portfolio_url && <a href={app.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#8B5CF6', textDecoration: 'none' }}>↗ Portfolio</a>}
+                          <a href={`mailto:${app.email}`} style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', textDecoration: 'none' }}>✉ {app.email}</a>
+                          {app.phone && <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)' }}>☎ {app.phone}</span>}
+                          {app.linkedin_url && <a href={app.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#14B8A6', textDecoration: 'none' }}>↗ LinkedIn</a>}
+                          {app.portfolio_url && <a href={app.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#8B5CF6', textDecoration: 'none' }}>↗ Portfolio</a>}
                           {app.cv_url && (
                             <CvDownloadBtn
                               cvUrl={app.cv_url}
@@ -740,15 +740,15 @@ export default function AdminCareersPage() {
                               supabase={supabase}
                             />
                           )}
-                          {app.how_did_you_hear && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)' }}>via {app.how_did_you_hear}</span>}
+                          {app.how_did_you_hear && <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)' }}>via {app.how_did_you_hear}</span>}
                         </div>
 
                         {/* Cover letter */}
                         <div style={{ padding: '16px 18px' }}>
-                          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#E8A020', margin: '0 0 10px' }}>Cover Letter</p>
+                          <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#E8A020', margin: '0 0 10px' }}>Cover Letter</p>
                           <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text)', lineHeight: 1.75, margin: '0 0 20px', whiteSpace: 'pre-wrap' }}>{app.cover_letter}</p>
                           <button onClick={() => deleteApp(app.id)}
-                            style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.08em', color: '#EF4444', background: 'none', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer' }}>
+                            style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.08em', color: '#EF4444', background: 'none', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer' }}>
                             Delete Application
                           </button>
                         </div>

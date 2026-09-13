@@ -68,7 +68,7 @@ export default function SalaryToolkitPage() {
 
         /* Top bar */
         .st-nav {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px;
           letter-spacing: 0.12em;
           color: rgba(17,17,17,0.35);
@@ -84,7 +84,7 @@ export default function SalaryToolkitPage() {
           display: inline-block;
           background: #111;
           color: #FAFAF8;
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           letter-spacing: 0.16em;
           text-transform: uppercase;
@@ -109,7 +109,7 @@ export default function SalaryToolkitPage() {
           max-width: 500px;
         }
         .st-includes-label {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           letter-spacing: 0.14em;
           text-transform: uppercase;
@@ -151,7 +151,7 @@ export default function SalaryToolkitPage() {
           top: 40px;
         }
         .st-form-label {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           letter-spacing: 0.14em;
           text-transform: uppercase;

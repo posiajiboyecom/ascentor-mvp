@@ -110,7 +110,7 @@ export default function DemoPricingPage() {
         .dp-approved-badge {
           display: inline-flex; align-items: center; gap: 7px; padding: 5px 14px; border-radius: 100px;
           background: rgba(20,184,166,0.10); border: 1px solid rgba(20,184,166,0.25);
-          font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #14B8A6; text-transform: uppercase;
+          font-family: Metropolis, 'Inter', sans-serif; font-size: 9px; letter-spacing: 0.14em; color: #14B8A6; text-transform: uppercase;
         }
         .dp-dot { width: 6px; height: 6px; border-radius: 50%; background: #14B8A6; }
         .dp-eyebrow { font-family: Metropolis, 'Inter', sans-serif; font-size: 10px; letter-spacing: 0.2em; color: #E8A020; text-transform: uppercase; text-align: center; margin-bottom: 14px; }
@@ -121,7 +121,7 @@ export default function DemoPricingPage() {
           display: flex; align-items: center; gap: 10px; max-width: 600px; margin: 0 auto 40px;
           background: rgba(20,184,166,0.07); border: 1px solid rgba(20,184,166,0.18);
           border-radius: 10px; padding: 10px 16px; font-size: 12px; color: #8A8272;
-          font-family: 'DM Mono', monospace; letter-spacing: 0.02em;
+          font-family: Metropolis, 'Inter', sans-serif; letter-spacing: 0.02em;
         }
         .dp-toggle-row { display: flex; justify-content: flex-end; margin-bottom: 24px; }
         .dp-toggle {
@@ -149,14 +149,14 @@ export default function DemoPricingPage() {
           font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
           padding: 4px 14px; border-radius: 100px; white-space: nowrap;
         }
-        .dp-plan-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: #4A4438; margin-bottom: 4px; }
+        .dp-plan-label { font-family: Metropolis, 'Inter', sans-serif; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: #4A4438; margin-bottom: 4px; }
         .dp-plan-name { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 24px; font-weight: 700; color: #F7F6F3; margin-bottom: 18px; }
         .dp-price { font-family: 'Syne', sans-serif; font-size: clamp(20px, 3.5vw, 28px); font-weight: 800; color: #F7F6F3; line-height: 1; }
-        .dp-price-unit { font-size: 12px; color: #4A4438; font-family: 'DM Mono', monospace; }
+        .dp-price-unit { font-size: 12px; color: #4A4438; font-family: Metropolis, 'Inter', sans-serif; }
         .dp-seat-note { font-size: 12px; color: #8A8272; margin-top: 6px; }
         .dp-seat-note strong { color: #C8C3B8; }
-        .dp-capacity { font-size: 10px; color: #4A4438; font-family: 'DM Mono', monospace; margin-top: 4px; letter-spacing: 0.04em; }
-        .dp-save-note { font-size: 11px; color: #14B8A6; font-family: 'DM Mono', monospace; margin-top: 4px; min-height: 16px; letter-spacing: 0.02em; }
+        .dp-capacity { font-size: 10px; color: #4A4438; font-family: Metropolis, 'Inter', sans-serif; margin-top: 4px; letter-spacing: 0.04em; }
+        .dp-save-note { font-size: 11px; color: #14B8A6; font-family: Metropolis, 'Inter', sans-serif; margin-top: 4px; min-height: 16px; letter-spacing: 0.02em; }
         .dp-divider { height: 1px; background: rgba(212,207,195,0.10); margin: 16px 0; }
         .dp-features { list-style: none; flex: 1; margin-bottom: 20px; display: flex; flex-direction: column; gap: 9px; }
         .dp-feat { display: flex; align-items: flex-start; gap: 9px; font-size: 12px; line-height: 1.45; }
@@ -171,7 +171,7 @@ export default function DemoPricingPage() {
         .dp-cta.primary:hover { background: #F5C55A; }
         .dp-cta.secondary { background: transparent; border: 1px solid rgba(212,207,195,0.2); color: #C8C3B8; }
         .dp-cta.secondary:hover { border-color: rgba(232,160,32,0.45); color: #E8A020; }
-        .dp-footer-note { margin-top: 48px; text-align: center; font-size: 12px; color: #4A4438; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; line-height: 1.7; }
+        .dp-footer-note { margin-top: 48px; text-align: center; font-size: 12px; color: #4A4438; font-family: Metropolis, 'Inter', sans-serif; letter-spacing: 0.04em; line-height: 1.7; }
         .dp-footer-note a { color: #8A8272; text-decoration: underline; text-underline-offset: 3px; }
         .dp-footer-note a:hover { color: #C8C3B8; }
       `}</style>
@@ -182,7 +182,7 @@ export default function DemoPricingPage() {
           <div className="dp-topbar">
             <div className="dp-logo">
               ASCENT<span>OR</span>
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#4A4438', letterSpacing: '0.12em', marginLeft: 6 }}>PARTNER DEMO</span>
+              <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#4A4438', letterSpacing: '0.12em', marginLeft: 6 }}>PARTNER DEMO</span>
             </div>
             <div className="dp-approved-badge">
               <span className="dp-dot" />

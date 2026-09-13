@@ -16,7 +16,7 @@ const B = {
   muted:    '#6B7280',
   dim:      '#4B5563',
   fontUI:   "'Syne', 'Plus Jakarta Sans', sans-serif",
-  fontMono: "'DM Mono', 'Courier New', monospace",
+  fontMono: "'DM Mono', Metropolis, 'Inter', sans-serif",
 };
 
 const STATUSES = ['pending', 'confirmed'];

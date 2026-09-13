@@ -14,7 +14,7 @@ import { createClient } from '@/lib/supabase/client';
 const B = {
   fontDisplay: "'Cormorant Garamond', Georgia, serif",
   fontUI:      "'Syne', system-ui, sans-serif",
-  fontMono:    "'DM Mono', 'Courier New', monospace",
+  fontMono:    "'DM Mono', Metropolis, 'Inter', sans-serif",
   // Dark scale
   dark:        'var(--admin-bg)',
   dark900:     'var(--admin-bg)',

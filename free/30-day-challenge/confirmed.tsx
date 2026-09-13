@@ -14,7 +14,7 @@ export default function ChallengeConfirmedPage() {
         .cc-h1 { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; color: #1A1610; margin-bottom: 16px; line-height: 1.1; }
         .cc-sub { font-size: 16px; color: rgba(26,22,16,0.55); line-height: 1.7; margin-bottom: 40px; }
         .cc-box { background: #1A1610; border-radius: 12px; padding: 28px 32px; text-align: left; margin-bottom: 32px; }
-        .cc-box-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.14em; color: #E8A020; text-transform: uppercase; margin-bottom: 12px; }
+        .cc-box-label { font-family: Metropolis, 'Inter', sans-serif; font-size: 9px; letter-spacing: 0.14em; color: #E8A020; text-transform: uppercase; margin-bottom: 12px; }
         .cc-box-text { font-size: 14px; color: rgba(240,237,230,0.6); line-height: 1.7; }
         .cc-link { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: #E8A020; text-decoration: none; font-weight: 600; }
         .cc-link:hover { text-decoration: underline; }

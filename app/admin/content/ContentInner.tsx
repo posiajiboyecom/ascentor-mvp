@@ -494,7 +494,7 @@ export default function AdminContentPage() {
                 </button>
               ))}
               {tab === 'assigned' && (
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)', letterSpacing: '0.08em' }}>
+                <div style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)', letterSpacing: '0.08em' }}>
                   Showing {assignedToMe} item{assignedToMe !== 1 ? 's' : ''} assigned to you
                 </div>
               )}
@@ -801,7 +801,7 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
 
           {isApprov && !isBlog && item.type !== 'Email Newsletter' && (
             <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(232,160,32,0.08)', border: '1px solid rgba(232,160,32,0.2)' }}>
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#E8A020', letterSpacing: '0.06em', margin: 0 }}>
+              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', letterSpacing: '0.06em', margin: 0 }}>
                 ✓ Approved · Now: attach image (optional) → click send button → goes to Social Queue
               </p>
             </div>
@@ -816,7 +816,7 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
                 </button>
               </div>
               {isSchd && item.scheduled_date && (
-                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#3B82F6', letterSpacing: '0.06em' }}>
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#3B82F6', letterSpacing: '0.06em' }}>
                   📅 Scheduled for {fmtDate(item.scheduled_date)}
                 </div>
               )}
@@ -834,14 +834,14 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
                 <>
                   {/* Image upload for social posts */}
                   <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(232,160,32,0.05)', border: '1px solid rgba(232,160,32,0.15)' }}>
-                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E8A020', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 8 }}>Attach Image (optional)</p>
+                    <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: '#E8A020', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 8 }}>Attach Image (optional)</p>
                     {uploadedImg ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <img src={uploadedImg} alt="Attached" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(232,160,32,0.3)' }} />
-                        <button onClick={() => setUploadedImg('')} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 10 }}>✕ Remove</button>
+                        <button onClick={() => setUploadedImg('')} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10 }}>✕ Remove</button>
                       </div>
                     ) : (
-                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, border: '1px solid var(--admin-bg-input)', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-faint)' }}>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, border: '1px solid var(--admin-bg-input)', cursor: 'pointer', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)' }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                         {uploading ? 'Uploading…' : 'Upload image'}
                         <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImgUpload} disabled={uploading} />
@@ -883,7 +883,7 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
 
           {isDone && (
             <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#10B981', letterSpacing: '0.08em' }}>
+              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#10B981', letterSpacing: '0.08em' }}>
                 ✓ Published {item.published_at ? fmtDate(item.published_at) : ''}
               </p>
             </div>
@@ -982,10 +982,10 @@ function ContentPreview({ item, d }: { item: CalItem; d: any }) {
                   {slide.imageUrl ? (
                     <img src={slide.imageUrl} alt={`Slide ${i + 1}`} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', display: 'block' }} />
                   ) : (
-                    <div style={{ width: '100%', aspectRatio: '1/1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontSize: 11, fontFamily: "'DM Mono', monospace" }}>No image</div>
+                    <div style={{ width: '100%', aspectRatio: '1/1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontSize: 11, fontFamily: "Metropolis, 'Inter', sans-serif" }}>No image</div>
                   )}
                   <div style={{ padding: '8px 10px' }}>
-                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#E8A020', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
+                    <div style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: '#E8A020', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
                       {i + 1} · {slide.purpose}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--admin-text-faint)', lineHeight: 1.4, marginBottom: 8 }}>{slide.text}</div>
@@ -995,7 +995,7 @@ function ContentPreview({ item, d }: { item: CalItem; d: any }) {
                         download={`carousel-slide-${i + 1}.jpg`}
                         target="_blank"
                         rel="noreferrer"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 5, border: '1px solid var(--admin-bg-input)', color: '#E8A020', fontFamily: "'DM Mono', monospace", fontSize: 9, textDecoration: 'none', letterSpacing: '0.06em' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 5, border: '1px solid var(--admin-bg-input)', color: '#E8A020', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, textDecoration: 'none', letterSpacing: '0.06em' }}
                       >
                         ↓ Download
                       </a>
@@ -1011,14 +1011,14 @@ function ContentPreview({ item, d }: { item: CalItem; d: any }) {
                   download="carousel-cover.jpg"
                   target="_blank"
                   rel="noreferrer"
-                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--admin-bg-input)', color: '#E8A020', fontFamily: "'DM Mono', monospace", fontSize: 10, textDecoration: 'none', letterSpacing: '0.06em' }}
+                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--admin-bg-input)', color: '#E8A020', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, textDecoration: 'none', letterSpacing: '0.06em' }}
                 >
                   ↓ Download Cover Slide
                 </a>
                 <a
                   href={`data:text/plain;charset=utf-8,${encodeURIComponent(slides.map((s: any) => s.imageUrl).filter(Boolean).join('\n'))}`}
                   download="carousel-all-urls.txt"
-                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--admin-bg-input)', color: '#6B7280', fontFamily: "'DM Mono', monospace", fontSize: 10, textDecoration: 'none', letterSpacing: '0.06em' }}
+                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--admin-bg-input)', color: '#6B7280', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, textDecoration: 'none', letterSpacing: '0.06em' }}
                 >
                   ↓ All Image URLs
                 </a>
@@ -1028,7 +1028,7 @@ function ContentPreview({ item, d }: { item: CalItem; d: any }) {
                     download="carousel-slide-texts.txt"
                     target="_blank"
                     rel="noreferrer"
-                    style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid rgba(232,160,32,0.4)', color: '#E8A020', fontFamily: "'DM Mono', monospace", fontSize: 10, textDecoration: 'none', letterSpacing: '0.06em' }}
+                    style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid rgba(232,160,32,0.4)', color: '#E8A020', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, textDecoration: 'none', letterSpacing: '0.06em' }}
                   >
                     ↓ Slide Texts (.txt)
                   </a>
@@ -1052,7 +1052,7 @@ function BriefCard({ brief }: { brief: any }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 8 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.1em', padding: '3px 10px', borderRadius: 6, textTransform: 'uppercase' as const, background: pc + '18', color: pc, border: '1px solid ' + pc + '28' }}>{brief.pillar}</span>
+            <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.1em', padding: '3px 10px', borderRadius: 6, textTransform: 'uppercase' as const, background: pc + '18', color: pc, border: '1px solid ' + pc + '28' }}>{brief.pillar}</span>
             <span className="cp-muted">Week {brief.week_number}</span>
           </div>
           <div className="cp-brief-topic">{brief.topic}</div>
@@ -1061,7 +1061,7 @@ function BriefCard({ brief }: { brief: any }) {
       </div>
       {d.angle && <p className="cp-brief-angle">{d.angle}</p>}
       {(d.seoKeywords ?? brief.trends_raw ?? []).slice(0, 5).map((k: string, i: number) => (
-        <span key={i} style={{ display: 'inline-block', marginRight: 6, marginBottom: 4, padding: '2px 8px', borderRadius: 4, fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.06em', background: 'var(--admin-bg-deep, #0C0B08)', border: '1px solid var(--admin-bg-input)', color: 'var(--admin-text-faint)' }}>{k}</span>
+        <span key={i} style={{ display: 'inline-block', marginRight: 6, marginBottom: 4, padding: '2px 8px', borderRadius: 4, fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.06em', background: 'var(--admin-bg-deep, #0C0B08)', border: '1px solid var(--admin-bg-input)', color: 'var(--admin-text-faint)' }}>{k}</span>
       ))}
       {expanded && d.keyMessages?.length > 0 && (
         <div style={{ marginTop: 16, borderTop: '1px solid var(--admin-bg-input)', paddingTop: 14 }}>
@@ -1079,18 +1079,18 @@ const CSS = `
   .cp-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px}
   .cp-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:#fff;line-height:1}
   .cp-title em{color:#E8A020;font-style:italic}
-  .cp-subtitle{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--admin-text-faint);margin-top:6px;text-transform:uppercase}
+  .cp-subtitle{font-family:Metropolis,'Inter',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--admin-text-faint);margin-top:6px;text-transform:uppercase}
   .cp-stats{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
   .cp-stat{background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:12px;padding:14px 20px;min-width:110px}
   .cp-stat-num{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;line-height:1}
-  .cp-stat-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--admin-text-faint);margin-top:4px}
+  .cp-stat-lbl{font-family:Metropolis,'Inter',sans-serif;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--admin-text-faint);margin-top:4px}
   .cp-tabs{display:flex;gap:2px;background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:10px;padding:3px;margin-bottom:24px;width:fit-content}
   .cp-tab{padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.04em;transition:all .15s}
   .cp-tab.on{background:var(--admin-bg-input);color:#E8A020}
   .cp-tab.off{background:transparent;color:var(--admin-text-faint)}
   .cp-tab.off:hover{color:var(--admin-text)}
   .cp-filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
-  .cp-fbtn{padding:5px 14px;border-radius:6px;border:1px solid var(--admin-bg-input);background:transparent;cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--admin-text-faint);transition:all .15s}
+  .cp-fbtn{padding:5px 14px;border-radius:6px;border:1px solid var(--admin-bg-input);background:transparent;cursor:pointer;font-family:Metropolis,'Inter',sans-serif;font-size:10px;letter-spacing:.06em;color:var(--admin-text-faint);transition:all .15s}
   .cp-fbtn.on{background:rgba(232,160,32,.10);border-color:rgba(232,160,32,.25);color:#E8A020}
   .cp-fbtn:hover:not(.on){color:var(--admin-text);border-color:var(--admin-text-faint)}
   .cp-fsep{width:1px;height:20px;background:var(--admin-bg-input);margin:0 4px}
@@ -1101,24 +1101,24 @@ const CSS = `
   .cp-item:hover{border-color:var(--admin-text-faint)}
   .cp-item.sel{border-color:rgba(232,160,32,.4);background:var(--admin-bg-card-hover,#1E1C17)}
   .cp-item-row1{display:flex;align-items:center;gap:8px;margin-bottom:7px}
-  .cp-type-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:5px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.07em;font-weight:500;white-space:nowrap}
+  .cp-type-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:5px;font-family:Metropolis,'Inter',sans-serif;font-size:9px;letter-spacing:.07em;font-weight:500;white-space:nowrap}
   .cp-item-title{font-size:13px;font-weight:600;color:var(--admin-text);line-height:1.4}
   .cp-item-meta{display:flex;align-items:center;gap:10px;margin-top:7px}
   .cp-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-  .cp-muted{font-family:'DM Mono',monospace;font-size:9px;color:var(--admin-text-faint)}
+  .cp-muted{font-family:Metropolis,'Inter',sans-serif;font-size:9px;color:var(--admin-text-faint)}
   .cp-detail{background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:14px;position:sticky;top:16px;max-height:calc(100vh - 100px);overflow-y:auto;display:flex;flex-direction:column}
   .cp-detail-head{padding:20px 22px 16px;border-bottom:1px solid var(--admin-bg-input)}
   .cp-detail-body{padding:18px 22px;flex:1;overflow-y:auto}
   .cp-detail-foot{padding:16px 22px;border-top:1px solid var(--admin-bg-input);background:var(--admin-bg-card);border-radius:0 0 14px 14px}
   .cp-empty-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;height:320px;gap:10px}
-  .cp-empty-msg{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--admin-text-faint)}
+  .cp-empty-msg{font-family:Metropolis,'Inter',sans-serif;font-size:10px;letter-spacing:.08em;color:var(--admin-text-faint)}
   .cp-d-type{display:flex;align-items:center;gap:8px;margin-bottom:10px}
   .cp-d-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#fff;line-height:1.3;margin-bottom:14px}
-  .cp-status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase}
-  .cp-section-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--admin-text-faint);margin-bottom:6px;margin-top:14px}
+  .cp-status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-family:Metropolis,'Inter',sans-serif;font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+  .cp-section-lbl{font-family:Metropolis,'Inter',sans-serif;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--admin-text-faint);margin-bottom:6px;margin-top:14px}
   .cp-content-box{background:var(--admin-bg-deep,#0C0B08);border:1px solid var(--admin-bg-input);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--admin-text-dim,#7A7260);line-height:1.75;white-space:pre-wrap;max-height:280px;overflow-y:auto}
   .cp-sub-box{background:var(--admin-bg-deep,#0C0B08);border:1px solid var(--admin-bg-input);border-radius:8px;padding:10px 14px;margin-bottom:8px}
-  .cp-sub-lbl{font-family:'DM Mono',monospace;font-size:9px;color:#E8A020;letter-spacing:.08em;margin-bottom:5px}
+  .cp-sub-lbl{font-family:Metropolis,'Inter',sans-serif;font-size:9px;color:#E8A020;letter-spacing:.08em;margin-bottom:5px}
   .cp-sub-text{font-size:12px;color:var(--admin-text-dim,#7A7260);line-height:1.7;white-space:pre-wrap}
   .cp-actions{display:flex;flex-direction:column;gap:8px}
   .cp-action-row{display:flex;gap:8px}
@@ -1126,7 +1126,7 @@ const CSS = `
   .cp-btn-approve:hover:not(:disabled){background:#F5C55A}
   .cp-btn-approve:disabled{opacity:.4;cursor:not-allowed}
   .cp-schedule-row{display:flex;gap:8px;align-items:center}
-  .cp-date-input{flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--admin-bg-input);background:var(--admin-bg-deep,#0C0B08);color:var(--admin-text);font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.04em;outline:none}
+  .cp-date-input{flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--admin-bg-input);background:var(--admin-bg-deep,#0C0B08);color:var(--admin-text);font-family:Metropolis,'Inter',sans-serif;font-size:12px;letter-spacing:.04em;outline:none}
   .cp-date-input:focus{border-color:rgba(59,130,246,.5)}
   .cp-btn-sched{padding:9px 16px;border-radius:8px;border:1px solid rgba(59,130,246,.2);background:rgba(59,130,246,.12);color:#3B82F6;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s}
   .cp-btn-sched:hover:not(:disabled){background:rgba(59,130,246,.2)}
@@ -1139,16 +1139,16 @@ const CSS = `
   .cp-btn-pub:disabled{opacity:.4;cursor:not-allowed}
   .cp-notes{width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--admin-bg-input);background:var(--admin-bg-deep,#0C0B08);color:var(--admin-text);font-family:'Syne',sans-serif;font-size:12px;line-height:1.6;resize:vertical;outline:none;min-height:64px;box-sizing:border-box}
   .cp-notes:focus{border-color:rgba(232,160,32,.3)}
-  .cp-kbd{font-family:'DM Mono',monospace;font-size:9px;color:var(--admin-text-faint);letter-spacing:.06em;text-align:right}
+  .cp-kbd{font-family:Metropolis,'Inter',sans-serif;font-size:9px;color:var(--admin-text-faint);letter-spacing:.06em;text-align:right}
   .cp-kbd kbd{background:var(--admin-bg-input);border:1px solid var(--admin-text-faint);border-radius:3px;padding:1px 4px;font-size:9px}
   .cp-divider{height:1px;background:var(--admin-bg-input);margin:12px 0}
   .cp-topbtns{display:flex;gap:8px}
   .cp-runbtn{padding:8px 18px;border-radius:8px;border:1px solid rgba(232,160,32,.35);background:rgba(232,160,32,.08);color:#E8A020;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
   .cp-runbtn:hover{background:rgba(232,160,32,.16);border-color:rgba(232,160,32,.6)}
-  .cp-refbtn{padding:8px 16px;border-radius:8px;border:1px solid var(--admin-bg-input);background:transparent;color:var(--admin-text-faint);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;cursor:pointer;transition:all .15s}
+  .cp-refbtn{padding:8px 16px;border-radius:8px;border:1px solid var(--admin-bg-input);background:transparent;color:var(--admin-text-faint);font-family:Metropolis,'Inter',sans-serif;font-size:10px;letter-spacing:.08em;cursor:pointer;transition:all .15s}
   .cp-refbtn:hover{color:#E8A020;border-color:rgba(232,160,32,.3)}
   .cp-qitem{background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:10px;padding:14px 16px;display:flex;gap:14px;margin-bottom:8px}
-  .cp-qtime{font-family:'DM Mono',monospace;font-size:10px;color:var(--admin-text-faint);white-space:nowrap;min-width:80px;padding-top:2px}
+  .cp-qtime{font-family:Metropolis,'Inter',sans-serif;font-size:10px;color:var(--admin-text-faint);white-space:nowrap;min-width:80px;padding-top:2px}
   .cp-qtext{flex:1;font-size:13px;color:var(--admin-text-dim,#7A7260);line-height:1.6}
   .cp-brief{background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:14px;padding:20px 22px;margin-bottom:12px}
   .cp-brief-topic{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#fff;line-height:1.25;margin-bottom:8px}
@@ -1157,17 +1157,17 @@ const CSS = `
   .cp-brief-items li{font-size:12px;color:var(--admin-text-muted,#9CA3AF);padding-left:14px;position:relative;line-height:1.5}
   .cp-brief-items li::before{content:'→';position:absolute;left:0;color:var(--admin-text-faint);font-size:10px}
   .cp-empty{text-align:center;padding:60px 24px}
-  .cp-empty-text{font-family:'DM Mono',monospace;font-size:11px;color:var(--admin-text-faint);letter-spacing:.08em}
-  .cp-loading{padding:40px 0;text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--admin-text-faint);letter-spacing:.1em}
-  .cp-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;z-index:1000;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.08em;white-space:nowrap;pointer-events:none}
+  .cp-empty-text{font-family:Metropolis,'Inter',sans-serif;font-size:11px;color:var(--admin-text-faint);letter-spacing:.08em}
+  .cp-loading{padding:40px 0;text-align:center;font-family:Metropolis,'Inter',sans-serif;font-size:10px;color:var(--admin-text-faint);letter-spacing:.1em}
+  .cp-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;z-index:1000;font-family:Metropolis,'Inter',sans-serif;font-size:11px;letter-spacing:.08em;white-space:nowrap;pointer-events:none}
   .cp-toast.ok{background:var(--admin-bg-card,#1E1A12);border:1px solid rgba(232,160,32,.3);color:#E8A020}
   .cp-toast.err{background:var(--admin-bg-card,#1E1A12);border:1px solid rgba(239,68,68,.3);color:#EF4444}
   .cp-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
   .cp-modal{background:var(--admin-bg-card);border:1px solid var(--admin-bg-input);border-radius:16px;padding:28px;width:100%;max-width:440px}
   .cp-modal-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#fff;margin-bottom:4px}
-  .cp-modal-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--admin-text-faint);letter-spacing:.08em;margin-bottom:22px}
+  .cp-modal-sub{font-family:Metropolis,'Inter',sans-serif;font-size:10px;color:var(--admin-text-faint);letter-spacing:.08em;margin-bottom:22px}
   .cp-field{margin-bottom:16px}
-  .cp-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--admin-text-faint);margin-bottom:6px;display:block}
+  .cp-label{font-family:Metropolis,'Inter',sans-serif;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--admin-text-faint);margin-bottom:6px;display:block}
   .cp-input{width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--admin-bg-input);background:var(--admin-bg-deep,#0C0B08);color:var(--admin-text);font-family:'Syne',sans-serif;font-size:13px;outline:none;box-sizing:border-box}
   .cp-input:focus{border-color:rgba(232,160,32,.4)}
   .cp-select{width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--admin-bg-input);background:var(--admin-bg-deep,#0C0B08);color:var(--admin-text);font-family:'Syne',sans-serif;font-size:13px;outline:none;cursor:pointer}
@@ -1308,7 +1308,7 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
       {/* Header + filter */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: 'var(--admin-text-faint)', textTransform: 'uppercase' as const }}>
+          <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.1em', color: 'var(--admin-text-faint)', textTransform: 'uppercase' as const }}>
             {queue.length} posts total · {totalPending} pending · {totalSent} sent to Buffer
           </p>
         </div>
@@ -1316,7 +1316,7 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
           {(['all', 'pending', 'sent'] as const).map(s => (
             <button key={s} onClick={() => setFilterStatus(s)} style={{
               padding: '5px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
-              fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.08em',
+              fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.08em',
               background: filterStatus === s ? 'var(--admin-bg-input)' : 'transparent',
               color: filterStatus === s ? '#E8A020' : 'var(--admin-text-faint)',
               transition: 'all 0.15s',
@@ -1349,7 +1349,7 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
                   <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, color: cfg.color }}>
                     {cfg.label}
                   </span>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.08em', color: 'var(--admin-text-faint)', marginLeft: 4 }}>
+                  <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, letterSpacing: '0.08em', color: 'var(--admin-text-faint)', marginLeft: 4 }}>
                     {shown.length} post{shown.length !== 1 ? 's' : ''}
                   </span>
                 </div>
@@ -1398,11 +1398,11 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
                               gap: 4,
                             }}>
                               {isUploading ? (
-                                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: cfg.color }}>…</span>
+                                <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 8, color: cfg.color }}>…</span>
                               ) : (
                                 <>
                                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={cfg.color} strokeWidth="2" style={{ opacity: 0.7 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 7, color: cfg.color, opacity: 0.8, textAlign: 'center' as const }}>ADD IMAGE</span>
+                                  <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 7, color: cfg.color, opacity: 0.8, textAlign: 'center' as const }}>ADD IMAGE</span>
                                 </>
                               )}
                               {!isSent && <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(post.id, f); e.target.value = ''; }} />}
@@ -1415,21 +1415,21 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
                           {/* Meta row */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' as const }}>
                             {post.pillar && (
-                              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, letterSpacing: '0.1em', padding: '2px 7px', borderRadius: 4, background: 'var(--admin-bg-deep)', color: 'var(--admin-text-faint)', textTransform: 'uppercase' as const }}>
+                              <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 8, letterSpacing: '0.1em', padding: '2px 7px', borderRadius: 4, background: 'var(--admin-bg-deep)', color: 'var(--admin-text-faint)', textTransform: 'uppercase' as const }}>
                                 {post.pillar}
                               </span>
                             )}
                             {post.scheduled_for && (
-                              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, color: '#3B82F6', letterSpacing: '0.06em' }}>
+                              <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 8, color: '#3B82F6', letterSpacing: '0.06em' }}>
                                 📅 {new Date(post.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                               </span>
                             )}
                             {isSent ? (
-                              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, padding: '2px 8px', borderRadius: 4, background: 'rgba(16,185,129,0.1)', color: '#10B981', letterSpacing: '0.06em' }}>
+                              <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 8, padding: '2px 8px', borderRadius: 4, background: 'rgba(16,185,129,0.1)', color: '#10B981', letterSpacing: '0.06em' }}>
                                 ✓ Sent to Buffer
                               </span>
                             ) : (
-                              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 8, padding: '2px 8px', borderRadius: 4, background: 'rgba(232,160,32,0.08)', color: '#E8A020', letterSpacing: '0.06em' }}>
+                              <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 8, padding: '2px 8px', borderRadius: 4, background: 'rgba(232,160,32,0.08)', color: '#E8A020', letterSpacing: '0.06em' }}>
                                 Pending
                               </span>
                             )}
@@ -1460,14 +1460,14 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
                                   <>{cfg.icon} Send to {cfg.label}</>
                                 )}
                               </button>
-                              <button onClick={() => removeFromQueue(post.id)} style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.2)', background: 'transparent', color: '#EF4444', fontFamily: "'DM Mono', monospace", fontSize: 10, cursor: 'pointer' }}>
+                              <button onClick={() => removeFromQueue(post.id)} style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.2)', background: 'transparent', color: '#EF4444', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, cursor: 'pointer' }}>
                                 Remove
                               </button>
                             </div>
                           )}
 
                           {isSent && post.buffer_update_id && (
-                            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#10B981', letterSpacing: '0.06em' }}>
+                            <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: '#10B981', letterSpacing: '0.06em' }}>
                               Buffer ID: {post.buffer_update_id}
                             </p>
                           )}
@@ -1739,53 +1739,53 @@ function CarouselTab({ showToast }: { showToast: (msg: string, ok?: boolean) => 
     setRunning(false);
   }
 
-  const pill = (active: boolean) => ({ padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontFamily: "'DM Mono', monospace", textTransform: 'capitalize' as const, border: `1px solid ${active ? '#A0720A' : '#E2DDD4'}`, background: active ? '#A0720A' : '#F5F3EE', color: active ? '#fff' : '#6B6860' });
+  const pill = (active: boolean) => ({ padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontFamily: "Metropolis, 'Inter', sans-serif", textTransform: 'capitalize' as const, border: `1px solid ${active ? '#A0720A' : '#E2DDD4'}`, background: active ? '#A0720A' : '#F5F3EE', color: active ? '#fff' : '#6B6860' });
 
   return (
     <div style={{ padding: '24px 0', maxWidth: 620 }}>
-      <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#A0720A', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Agent 13 · Carousel Agent</p>
+      <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#A0720A', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Agent 13 · Carousel Agent</p>
       <p style={{ fontSize: 13, color: '#6B6860', lineHeight: 1.65, marginBottom: 24 }}>Claude + GPT-image-1 → 6-slide portrait carousels → Content Calendar drafts → Queue Social → Buffer. ~${cost} per session.</p>
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Pillar</label>
+        <label style={{ display: 'block', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Pillar</label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{pillars.map(p => <button key={p} style={pill(pillar === p)} onClick={() => setPillar(p)}>{p}</button>)}</div>
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Platform</label>
+        <label style={{ display: 'block', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Platform</label>
         <div style={{ display: 'flex', gap: 8 }}>{platforms.map(p => <button key={p} style={pill(platform === p)} onClick={() => setPlatform(p)}>{p}</button>)}</div>
       </div>
 
       <div style={{ display: 'flex', gap: 32, marginBottom: 16 }}>
         <div>
-          <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Posts</label>
-          <div style={{ display: 'flex', gap: 6 }}>{[1,2,3,5].map(n => <button key={n} onClick={() => setPostCount(n)} style={{ width: 36, height: 36, borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: "'DM Mono', monospace", border: `1px solid ${postCount===n?'#A0720A':'#E2DDD4'}`, background: postCount===n?'#A0720A':'#F5F3EE', color: postCount===n?'#fff':'#6B6860' }}>{n}</button>)}</div>
+          <label style={{ display: 'block', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Posts</label>
+          <div style={{ display: 'flex', gap: 6 }}>{[1,2,3,5].map(n => <button key={n} onClick={() => setPostCount(n)} style={{ width: 36, height: 36, borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: "Metropolis, 'Inter', sans-serif", border: `1px solid ${postCount===n?'#A0720A':'#E2DDD4'}`, background: postCount===n?'#A0720A':'#F5F3EE', color: postCount===n?'#fff':'#6B6860' }}>{n}</button>)}</div>
         </div>
         <div>
-          <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Week</label>
-          <input type="number" min={1} max={52} value={week} onChange={e => setWeek(Number(e.target.value))} style={{ width: 64, padding: '6px 10px', border: '1px solid #E2DDD4', borderRadius: 6, background: '#F5F3EE', fontSize: 13, fontFamily: "'DM Mono', monospace", color: '#0C0B08' }} />
+          <label style={{ display: 'block', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Week</label>
+          <input type="number" min={1} max={52} value={week} onChange={e => setWeek(Number(e.target.value))} style={{ width: 64, padding: '6px 10px', border: '1px solid #E2DDD4', borderRadius: 6, background: '#F5F3EE', fontSize: 13, fontFamily: "Metropolis, 'Inter', sans-serif", color: '#0C0B08' }} />
         </div>
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Hooks from hook bank <span style={{ color: '#9E9B94', fontWeight: 400, textTransform: 'none', fontSize: 10 }}>— optional, one per line</span></label>
-        <textarea value={hooks} onChange={e => setHooks(e.target.value)} rows={3} placeholder={"My manager said I wasn't ready for a promotion. My Ascentor mentor asked me one question that changed everything.\nI almost quit my job. My mentor showed me I wasn't stuck — I was just invisible to the right people."} style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2DDD4', borderRadius: 8, background: '#F5F3EE', fontSize: 12, fontFamily: "'DM Mono', monospace", color: '#0C0B08', resize: 'vertical', lineHeight: 1.65 }} />
+        <label style={{ display: 'block', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Hooks from hook bank <span style={{ color: '#9E9B94', fontWeight: 400, textTransform: 'none', fontSize: 10 }}>— optional, one per line</span></label>
+        <textarea value={hooks} onChange={e => setHooks(e.target.value)} rows={3} placeholder={"My manager said I wasn't ready for a promotion. My Ascentor mentor asked me one question that changed everything.\nI almost quit my job. My mentor showed me I wasn't stuck — I was just invisible to the right people."} style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2DDD4', borderRadius: 8, background: '#F5F3EE', fontSize: 12, fontFamily: "Metropolis, 'Inter', sans-serif", color: '#0C0B08', resize: 'vertical', lineHeight: 1.65 }} />
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F5F3EE', border: '1px solid #E2DDD4', borderRadius: 8, padding: '10px 16px', marginBottom: 16 }}>
-        <span style={{ fontSize: 12, color: '#6B6860', fontFamily: "'DM Mono', monospace" }}>Estimated cost</span>
-        <span style={{ fontSize: 13, fontFamily: "'DM Mono', monospace", color: '#0C0B08' }}>~${cost} <span style={{ color: '#9E9B94', fontSize: 11 }}>({postCount} posts × 6 × ${PRICE_PER_IMAGE})</span></span>
+        <span style={{ fontSize: 12, color: '#6B6860', fontFamily: "Metropolis, 'Inter', sans-serif" }}>Estimated cost</span>
+        <span style={{ fontSize: 13, fontFamily: "Metropolis, 'Inter', sans-serif", color: '#0C0B08' }}>~${cost} <span style={{ color: '#9E9B94', fontSize: 11 }}>({postCount} posts × 6 × ${PRICE_PER_IMAGE})</span></span>
       </div>
 
-      <button onClick={run} disabled={running} style={{ width: '100%', padding: '12px 0', borderRadius: 8, border: 'none', cursor: running?'not-allowed':'pointer', background: running?'#9E9B94':'#0C0B08', color: '#fff', fontSize: 13, fontFamily: "'DM Mono', monospace", letterSpacing: '0.04em' }}>
+      <button onClick={run} disabled={running} style={{ width: '100%', padding: '12px 0', borderRadius: 8, border: 'none', cursor: running?'not-allowed':'pointer', background: running?'#9E9B94':'#0C0B08', color: '#fff', fontSize: 13, fontFamily: "Metropolis, 'Inter', sans-serif", letterSpacing: '0.04em' }}>
         {running ? 'Running\u2026 (~3 min for image generation)' : `\u25b6  Generate ${postCount} carousel${postCount>1?'s':''} \u2014 ${platform}`}
       </button>
 
-      {done && <div style={{ marginTop: 14, padding: '12px 16px', borderRadius: 8, background: '#E8F4F0', border: '1px solid #9FE1CB', fontSize: 12, color: '#1A5C4A', fontFamily: "'DM Mono', monospace", lineHeight: 1.7 }}>\u2713 Agent started. When done (~3 min):<br/>1. Content tab \u2192 filter: Instagram Carousel<br/>2. Review \u2192 Approve<br/>3. Queue Social \u2192 cover slide auto-attaches to Buffer<br/>4. TikTok: drafts \u2192 add trending sound \u2192 publish</div>}
+      {done && <div style={{ marginTop: 14, padding: '12px 16px', borderRadius: 8, background: '#E8F4F0', border: '1px solid #9FE1CB', fontSize: 12, color: '#1A5C4A', fontFamily: "Metropolis, 'Inter', sans-serif", lineHeight: 1.7 }}>\u2713 Agent started. When done (~3 min):<br/>1. Content tab \u2192 filter: Instagram Carousel<br/>2. Review \u2192 Approve<br/>3. Queue Social \u2192 cover slide auto-attaches to Buffer<br/>4. TikTok: drafts \u2192 add trending sound \u2192 publish</div>}
 
       <div style={{ marginTop: 20, padding: '14px 16px', borderRadius: 8, background: '#0C0B08' }}>
-        <p style={{ fontSize: 10, color: '#A0720A', fontFamily: "'DM Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>The winning formula</p>
-        <p style={{ fontSize: 12, color: '#F5F3EE', fontFamily: "'DM Mono', monospace", lineHeight: 1.8 }}>[PERSON] + [CONFLICT] \u2192 [ASCENTOR MOMENT] \u2192 [MIND CHANGED]</p>
+        <p style={{ fontSize: 10, color: '#A0720A', fontFamily: "Metropolis, 'Inter', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>The winning formula</p>
+        <p style={{ fontSize: 12, color: '#F5F3EE', fontFamily: "Metropolis, 'Inter', sans-serif", lineHeight: 1.8 }}>[PERSON] + [CONFLICT] \u2192 [ASCENTOR MOMENT] \u2192 [MIND CHANGED]</p>
       </div>
     </div>
   );

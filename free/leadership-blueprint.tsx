@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -88,7 +88,7 @@ export default function LeadershipBlueprintPage() {
           box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(232,160,32,0.08);
         }
         .lb-cover-label {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           letter-spacing: 0.18em;
           color: #E8A020;
@@ -152,7 +152,7 @@ export default function LeadershipBlueprintPage() {
           width: 100%;
         }
         .lb-nav {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px;
           letter-spacing: 0.12em;
           color: rgba(240,237,230,0.35);
@@ -171,7 +171,7 @@ export default function LeadershipBlueprintPage() {
           border: 1px solid rgba(232,160,32,0.22);
           border-radius: 4px;
           padding: 5px 12px;
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           letter-spacing: 0.14em;
           color: #E8A020;
@@ -248,7 +248,7 @@ export default function LeadershipBlueprintPage() {
         }
         .lb-divider-line { flex: 1; height: 1px; background: rgba(240,237,230,0.08); }
         .lb-divider-text {
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px;
           letter-spacing: 0.12em;
           color: rgba(240,237,230,0.25);
@@ -270,7 +270,7 @@ export default function LeadershipBlueprintPage() {
         .lb-what-item::before {
           content: '→';
           color: #E8A020;
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 11px;
           padding-top: 1px;
           flex-shrink: 0;

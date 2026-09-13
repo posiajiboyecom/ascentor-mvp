@@ -213,7 +213,7 @@ export default function CareersPage() {
           border: 1px solid #2E2A22;
           background: transparent;
           color: #7A7260;
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 11px;
           letter-spacing: 0.08em;
           text-transform: uppercase;
@@ -270,7 +270,7 @@ export default function CareersPage() {
           text-align: center;
           padding: 80px 24px;
           color: #4A4438;
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 13px;
           letter-spacing: 0.06em;
           text-transform: uppercase;
@@ -332,7 +332,7 @@ export default function CareersPage() {
           color: #FEF9EC; margin: 0 0 4px;
         }
         .cr-app-form-sub {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
           color: #4A4438; margin: 0 0 24px;
         }
@@ -345,7 +345,7 @@ export default function CareersPage() {
         @media (max-width: 600px) { .cr-field-row { grid-template-columns: 1fr; } }
         .cr-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
         .cr-label {
-          font-family: 'DM Mono', monospace;
+          font-family: Metropolis, 'Inter', sans-serif;
           font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
           color: #7A7260;
         }
@@ -370,7 +370,7 @@ export default function CareersPage() {
         .cr-app-error {
           background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
           border-radius: 8px; padding: 10px 14px;
-          font-family: 'DM Mono', monospace; font-size: 11px;
+          font-family: Metropolis, 'Inter', sans-serif; font-size: 11px;
           color: #F87171; margin-bottom: 16px;
         }
         .cr-form-actions { display: flex; gap: 12px; align-items: center; margin-top: 20px; flex-wrap: wrap; }
@@ -397,7 +397,7 @@ export default function CareersPage() {
         <section className="cr-hero">
           <div className="cr-hero-inner">
             <p style={{
-              fontFamily: "'DM Mono', monospace", fontSize: 11,
+              fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11,
               letterSpacing: '0.18em', textTransform: 'uppercase',
               color: '#E8A020', marginBottom: 20,
             }}>
@@ -426,7 +426,7 @@ export default function CareersPage() {
                 { label: 'Mission-driven', },
               ].map(p => (
                 <span key={p.label} style={{
-                  fontFamily: "'DM Mono', monospace", fontSize: 10,
+                  fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10,
                   letterSpacing: '0.12em', textTransform: 'uppercase',
                   color: '#4A4438', padding: '5px 14px',
                   border: '1px solid #2E2A22', borderRadius: 100,
@@ -471,7 +471,7 @@ export default function CareersPage() {
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
                     {[job.department, job.type, job.mode].map(tag => (
                       <span key={tag} style={{
-                        fontFamily: "'DM Mono', monospace", fontSize: 9,
+                        fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9,
                         letterSpacing: '0.1em', textTransform: 'uppercase',
                         color: '#7A7260', padding: '2px 8px',
                         background: '#1E1C17', border: '1px solid #2E2A22',
@@ -489,7 +489,7 @@ export default function CareersPage() {
                     {job.title}
                   </h3>
                   <p style={{
-                    fontFamily: "'DM Mono', monospace", fontSize: 11,
+                    fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11,
                     color: '#4A4438', letterSpacing: '0.06em', margin: 0,
                     textTransform: 'uppercase',
                   }}>
@@ -517,7 +517,7 @@ export default function CareersPage() {
                   {job.requirements?.length > 0 && (
                     <div style={{ marginBottom: 20 }}>
                       <p style={{
-                        fontFamily: "'DM Mono', monospace", fontSize: 10,
+                        fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10,
                         letterSpacing: '0.12em', textTransform: 'uppercase',
                         color: '#E8A020', marginBottom: 12,
                       }}>
@@ -534,7 +534,7 @@ export default function CareersPage() {
                   {job.nice_to_have?.length > 0 && (
                     <div style={{ marginBottom: 28 }}>
                       <p style={{
-                        fontFamily: "'DM Mono', monospace", fontSize: 10,
+                        fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10,
                         letterSpacing: '0.12em', textTransform: 'uppercase',
                         color: '#4A4438', marginBottom: 12,
                       }}>
@@ -556,7 +556,7 @@ export default function CareersPage() {
                         <p style={{ margin: '0 0 4px', fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: '#FEF9EC' }}>
                           Application received.
                         </p>
-                        <p style={{ margin: 0, fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#7A7260', letterSpacing: '0.04em', lineHeight: 1.6 }}>
+                        <p style={{ margin: 0, fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: '#7A7260', letterSpacing: '0.04em', lineHeight: 1.6 }}>
                           We review every application personally. You'll hear from us within 5–7 business days.
                         </p>
                       </div>
@@ -633,12 +633,12 @@ export default function CareersPage() {
                           background: '#1A1710', border: `1px solid ${cvFile ? '#E8A020' : '#2E2A22'}`,
                           borderRadius: 8, padding: '10px 14px', cursor: 'pointer', transition: 'border-color 0.15s',
                         }}>
-                          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#E8A020' }}>↑</span>
+                          <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: '#E8A020' }}>↑</span>
                           <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: cvFile ? '#D4CFC3' : '#3A3830' }}>
                             {cvFile ? cvFile.name : 'Choose file…'}
                           </span>
                           {cvFile && (
-                            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#4A4438', marginLeft: 'auto' }}>
+                            <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#4A4438', marginLeft: 'auto' }}>
                               {(cvFile.size / 1024).toFixed(0)}KB
                             </span>
                           )}
@@ -647,7 +647,7 @@ export default function CareersPage() {
                         </label>
                         {cvFile && (
                           <button onClick={() => setCvFile(null)}
-                            style={{ alignSelf: 'flex-start', marginTop: 4, background: 'none', border: 'none', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#4A4438', cursor: 'pointer', padding: 0, letterSpacing: '0.06em' }}>
+                            style={{ alignSelf: 'flex-start', marginTop: 4, background: 'none', border: 'none', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#4A4438', cursor: 'pointer', padding: 0, letterSpacing: '0.06em' }}>
                             ✕ Remove
                           </button>
                         )}

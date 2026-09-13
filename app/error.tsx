@@ -87,7 +87,7 @@ export default function ErrorPage({
         {error.digest && (
           <p style={{
             marginTop: 24,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: "Metropolis, 'Inter', sans-serif",
             fontSize: 10, color: '#4A4438',
             letterSpacing: '0.08em',
           }}>

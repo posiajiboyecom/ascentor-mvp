@@ -196,10 +196,10 @@ export default function AdminNewsletterPage() {
   body{margin:0;padding:0;background:#0E0C0A;font-family:Georgia,'Times New Roman',serif;}
   .wrapper{max-width:640px;margin:0 auto;background:#161210;}
   .header{background:#0E0C0A;padding:32px 40px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08);}
-  .header-tag{font-family:'DM Mono',monospace,sans-serif;font-size:10px;letter-spacing:0.15em;color:#E8A020;text-transform:uppercase;margin-bottom:12px;}
+  .header-tag{font-family:Metropolis,'Inter',sans-serif,sans-serif;font-size:10px;letter-spacing:0.15em;color:#E8A020;text-transform:uppercase;margin-bottom:12px;}
   .header-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;font-weight:700;color:#FEF9EC;margin:12px 0 8px;line-height:1.1;}
-  .header-subtitle{font-family:'DM Mono',monospace,sans-serif;font-size:12px;color:#9A8F85;letter-spacing:0.06em;}
-  .header-vol{font-family:'DM Mono',monospace,sans-serif;font-size:11px;color:#9A8F85;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);letter-spacing:0.08em;text-transform:uppercase;}
+  .header-subtitle{font-family:Metropolis,'Inter',sans-serif,sans-serif;font-size:12px;color:#9A8F85;letter-spacing:0.06em;}
+  .header-vol{font-family:Metropolis,'Inter',sans-serif,sans-serif;font-size:11px;color:#9A8F85;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);letter-spacing:0.08em;text-transform:uppercase;}
   .content{padding:40px;color:#E8E0D5;font-size:16px;line-height:1.8;}
   .content h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:700;color:#FEF9EC;margin:32px 0 12px;}
   .content h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:600;color:#FEF9EC;margin:24px 0 8px;}
@@ -214,11 +214,11 @@ export default function AdminNewsletterPage() {
   .final-word p{color:#C4B8A8;font-family:Georgia,serif;font-size:16px;line-height:1.6;margin:0 0 8px;}
   .final-word .highlight{color:#E8A020;font-weight:700;}
   .footer{background:#0E0C0A;padding:24px 40px;text-align:center;border-top:1px solid rgba(255,255,255,0.08);}
-  .footer-brand{font-family:'DM Mono',monospace,sans-serif;font-size:10px;letter-spacing:0.15em;color:#E8A020;text-transform:uppercase;margin-bottom:8px;}
-  .footer-text{font-family:'DM Mono',monospace,sans-serif;font-size:11px;color:#9A8F85;line-height:1.8;letter-spacing:0.04em;}
+  .footer-brand{font-family:Metropolis,'Inter',sans-serif,sans-serif;font-size:10px;letter-spacing:0.15em;color:#E8A020;text-transform:uppercase;margin-bottom:8px;}
+  .footer-text{font-family:Metropolis,'Inter',sans-serif,sans-serif;font-size:11px;color:#9A8F85;line-height:1.8;letter-spacing:0.04em;}
   .footer a{color:#E8A020;text-decoration:none;}
   .social-links{margin:12px 0;}
-  .social-links a{display:inline-block;margin:0 8px;color:#C4B8A8;font-family:'DM Mono',monospace,sans-serif;font-size:11px;text-decoration:none;}
+  .social-links a{display:inline-block;margin:0 8px;color:#C4B8A8;font-family:Metropolis,'Inter',sans-serif,sans-serif;font-size:11px;text-decoration:none;}
   @media(max-width:640px){.header{padding:24px 20px 16px;}.header-title{font-size:28px;}.content{padding:24px 20px;}.final-word{padding:24px 20px;}.footer{padding:20px;}}
 </style></head><body>
 <div class="wrapper">
@@ -232,7 +232,7 @@ export default function AdminNewsletterPage() {
   <div class="final-word">
     <p>The world isn\u2019t waiting for a perfect leader.</p>
     <p>It\u2019s waiting for a <span class="highlight">real one.</span></p>
-    <p style="color:var(--admin-text-faint);font-size:13px;margin-top:16px;font-family:'DM Mono',monospace,sans-serif;letter-spacing:0.06em;text-transform:uppercase;">That\u2019s you \u2014 if you choose to show up.</p>
+    <p style="color:var(--admin-text-faint);font-size:13px;margin-top:16px;font-family:Metropolis,'Inter',sans-serif,sans-serif;letter-spacing:0.06em;text-transform:uppercase;">That\u2019s you \u2014 if you choose to show up.</p>
   </div>
   <div class="footer">
     <div class="footer-brand">Ascentor</div>
@@ -358,7 +358,7 @@ export default function AdminNewsletterPage() {
     transition: 'border-color 0.2s',
   };
   const monoLabel: React.CSSProperties = {
-    fontFamily: "'DM Mono', monospace", fontSize: '10px',
+    fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '10px',
     letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--admin-text-faint)',
   };
   const fieldLabel: React.CSSProperties = { ...monoLabel, display: 'block', marginBottom: '6px' };
@@ -448,7 +448,7 @@ export default function AdminNewsletterPage() {
               border: 'none',
               background: tab === t ? 'var(--admin-bg-deep)' : 'transparent',
               color: tab === t ? '#E8A020' : 'var(--admin-text-faint)',
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "Metropolis, 'Inter', sans-serif",
               fontSize: '10px',
               fontWeight: 500,
               letterSpacing: '0.1em',
@@ -531,7 +531,7 @@ export default function AdminNewsletterPage() {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/></svg>
               </ToolBtn>
               <ToolBtn onClick={insertNumberedSection} title="Numbered Section">
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', fontWeight: 700 }}>#</span>
+                <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '10px', fontWeight: 700 }}>#</span>
               </ToolBtn>
               <ToolSep />
               <ToolBtn onClick={() => toggleList('insertUnorderedList')} title="Bullet List" active={activeFormats.has('bullets')}>
@@ -657,7 +657,7 @@ export default function AdminNewsletterPage() {
                   <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10B981', opacity: 0.8 }} />
                 </div>
                 <span style={{
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: "Metropolis, 'Inter', sans-serif",
                   fontSize: '10px', letterSpacing: '0.12em',
                   textTransform: 'uppercase' as const, color: '#E8A020', flex: 1, textAlign: 'center',
                 }}>
@@ -686,18 +686,18 @@ export default function AdminNewsletterPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {newsletterQueue.length === 0 ? (
             <div style={{ padding: '48px', textAlign: 'center' }}>
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: 'var(--admin-text-faint)', letterSpacing: '0.08em' }}>No newsletters queued — approve an Email Newsletter from the Content Pipeline</p>
+              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '11px', color: 'var(--admin-text-faint)', letterSpacing: '0.08em' }}>No newsletters queued — approve an Email Newsletter from the Content Pipeline</p>
             </div>
           ) : newsletterQueue.map((item) => (
             <div key={item.id} style={{ background: 'var(--admin-bg-deep)', border: '1px solid var(--admin-bg-input)', borderRadius: '14px', padding: '20px 22px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: '#E8A020', marginBottom: 6 }}>
+                  <div style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: '#E8A020', marginBottom: 6 }}>
                     Queued {new Date(item.queued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     {item.pillar && <span style={{ marginLeft: 10, color: 'var(--admin-text-faint)' }}>{item.pillar}</span>}
                   </div>
                   <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '20px', fontWeight: 700, color: '#FEF9EC', margin: '0 0 4px', lineHeight: 1.2 }}>{item.subject}</h3>
-                  {item.preview_text && <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: 'var(--admin-text-faint)', margin: 0 }}>{item.preview_text}</p>}
+                  {item.preview_text && <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '10px', color: 'var(--admin-text-faint)', margin: 0 }}>{item.preview_text}</p>}
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                   <button
@@ -719,7 +719,7 @@ export default function AdminNewsletterPage() {
                 </div>
               </div>
               <details>
-                <summary style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--admin-text-faint)', cursor: 'pointer', userSelect: 'none' as const }}>Preview body</summary>
+                <summary style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--admin-text-faint)', cursor: 'pointer', userSelect: 'none' as const }}>Preview body</summary>
                 <div style={{ marginTop: 10, padding: '14px', borderRadius: 8, background: 'var(--admin-bg-card)', border: '1px solid var(--admin-bg-input)', fontFamily: "'Syne', sans-serif", fontSize: 13, color: 'var(--admin-text)', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: 300, overflowY: 'auto' as const }}>
                   {item.body || 'No body content'}
                 </div>
@@ -743,7 +743,7 @@ export default function AdminNewsletterPage() {
                 <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--admin-text-heading)', marginBottom: 4 }}>
                   MailerLite Sync
                 </p>
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--admin-text-muted)', letterSpacing: '0.04em', maxWidth: 500 }}>
+                <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)', letterSpacing: '0.04em', maxWidth: 500 }}>
                   Upserts all app users + newsletter subscribers into MailerLite.
                   Auto-creates groups if env vars are missing. Safe to run anytime.
                 </p>
@@ -783,19 +783,19 @@ export default function AdminNewsletterPage() {
             {/* Sync result */}
             {mlSyncResult && mlSyncResult.failed === -1 && (
               <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', marginBottom: 10 }}>
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#EF4444' }}>✗ Sync failed — check that MAILERLITE_API_KEY is set in Vercel environment variables</p>
+                <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#EF4444' }}>✗ Sync failed — check that MAILERLITE_API_KEY is set in Vercel environment variables</p>
               </div>
             )}
             {mlSyncResult && mlSyncResult.failed !== -1 && (
               <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(20,184,166,0.06)', border: '1px solid rgba(20,184,166,0.2)', marginBottom: 10 }}>
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#14B8A6', marginBottom: 4 }}>
+                <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: '#14B8A6', marginBottom: 4 }}>
                   ✓ Synced {mlSyncResult.synced} of {mlSyncResult.total} contacts
                   {mlSyncResult.failed > 0 ? ` · ${mlSyncResult.failed} failed` : ' · No errors'}
                 </p>
                 {mlSyncResult.groups && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                     {Object.entries(mlSyncResult.groups).map(([k,v]) => v ? (
-                      <span key={k} style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, padding: '2px 8px', borderRadius: 100, background: 'rgba(20,184,166,0.08)', color: '#14B8A6', letterSpacing: '0.06em' }}>
+                      <span key={k} style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, padding: '2px 8px', borderRadius: 100, background: 'rgba(20,184,166,0.08)', color: '#14B8A6', letterSpacing: '0.06em' }}>
                         {k}: {v}
                       </span>
                     ) : null)}
@@ -803,9 +803,9 @@ export default function AdminNewsletterPage() {
                 )}
                 {mlSyncResult.errors && mlSyncResult.errors.length > 0 && (
                   <details style={{ marginTop: 8 }}>
-                    <summary style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#EF4444', cursor: 'pointer' }}>{mlSyncResult.errors.length} errors (click to expand)</summary>
+                    <summary style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#EF4444', cursor: 'pointer' }}>{mlSyncResult.errors.length} errors (click to expand)</summary>
                     <div style={{ marginTop: 4, maxHeight: 120, overflowY: 'auto' }}>
-                      {mlSyncResult.errors.map((e,i) => <p key={i} style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#EF4444' }}>{e}</p>)}
+                      {mlSyncResult.errors.map((e,i) => <p key={i} style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: '#EF4444' }}>{e}</p>)}
                     </div>
                   </details>
                 )}
@@ -815,15 +815,15 @@ export default function AdminNewsletterPage() {
             {/* ML Groups diagnostic */}
             {mlDiag && (
               <div style={{ marginTop: 4 }}>
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
                   MailerLite Groups ({mlDiag.groups.length})
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {mlDiag.groups.length === 0
-                    ? <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#EF4444' }}>No groups found — run sync to auto-create them</span>
+                    ? <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#EF4444' }}>No groups found — run sync to auto-create them</span>
                     : mlDiag.groups.map(g => (
                       <span key={g.id} style={{
-                        fontFamily: "'DM Mono', monospace", fontSize: 9,
+                        fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9,
                         padding: '3px 10px', borderRadius: 100,
                         background: 'var(--admin-bg-input)', color: 'var(--admin-text-muted)',
                         letterSpacing: '0.04em',

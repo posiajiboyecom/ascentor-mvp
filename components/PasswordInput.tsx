@@ -155,7 +155,7 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(function 
             ))}
           </div>
           <span style={{
-            fontFamily:  "'DM Mono', 'Courier New', monospace",
+            fontFamily:  "'DM Mono', Metropolis, 'Inter', sans-serif",
             fontSize:    '10px',
             fontWeight:  500,
             color:       strength.color,

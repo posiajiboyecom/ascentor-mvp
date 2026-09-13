@@ -130,7 +130,7 @@ const NAV = [
 const STYLES = `
   .admin-sidebar-nav { padding: 8px; }
   .admin-nav-group-label {
-    font-family: 'DM Mono', monospace;
+    font-family: Metropolis, 'Inter', sans-serif;
     font-size: 9px; font-weight: 500;
     letter-spacing: 0.14em; text-transform: uppercase;
     color: #4A4438; padding: 0 10px; margin: 8px 0 4px;
@@ -198,7 +198,7 @@ export default function AdminShell({
           />
         </Link>
         <span style={{
-          fontFamily: "'DM Mono', monospace",
+          fontFamily: "Metropolis, 'Inter', sans-serif",
           fontSize: '9px', fontWeight: 500,
           letterSpacing: '0.12em', textTransform: 'uppercase' as const,
           color: '#E8A020',
@@ -300,7 +300,7 @@ export default function AdminShell({
         <img src="/ascentor-color-for-dark-pages.svg" alt="Ascentor" style={{ height: '24px', width: 'auto' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{
-            fontFamily: "'DM Mono', monospace", fontSize: '9px', fontWeight: 500,
+            fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '9px', fontWeight: 500,
             letterSpacing: '0.12em', textTransform: 'uppercase' as const,
             color: '#E8A020', background: 'rgba(232,160,32,0.10)',
             border: '1px solid rgba(232,160,32,0.20)',

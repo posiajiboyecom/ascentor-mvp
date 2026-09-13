@@ -171,7 +171,7 @@ export default function AdminPromoCodesPage() {
   };
 
   const monoLabel: React.CSSProperties = {
-    fontFamily: "'DM Mono', monospace",
+    fontFamily: "Metropolis, 'Inter', sans-serif",
     fontSize: '10px',
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
@@ -180,7 +180,7 @@ export default function AdminPromoCodesPage() {
 
   const fieldLabel: React.CSSProperties = {
     display: 'block',
-    fontFamily: "'DM Mono', monospace",
+    fontFamily: "Metropolis, 'Inter', sans-serif",
     fontSize: '10px',
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
@@ -248,7 +248,7 @@ export default function AdminPromoCodesPage() {
           borderRadius: '8px',
           background: message.startsWith('Error') ? 'rgba(239,68,68,0.08)' : 'rgba(20,184,166,0.08)',
           color: message.startsWith('Error') ? '#EF4444' : '#14B8A6',
-          fontFamily: "'DM Mono', monospace",
+          fontFamily: "Metropolis, 'Inter', sans-serif",
           fontSize: '12px',
           letterSpacing: '0.04em',
           border: `1px solid ${message.startsWith('Error') ? 'rgba(239,68,68,0.2)' : 'rgba(20,184,166,0.2)'}`,
@@ -270,7 +270,7 @@ export default function AdminPromoCodesPage() {
               {(['single', 'event'] as const).map(m => (
                 <button key={m} onClick={() => setMode(m)} style={{
                   padding: '5px 16px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                  fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.08em',
+                  fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, letterSpacing: '0.08em',
                   background: mode === m ? '#E8A020' : 'transparent',
                   color: mode === m ? '#0C0B08' : 'var(--admin-text-faint)',
                   fontWeight: mode === m ? 700 : 400, transition: 'all 0.15s',
@@ -288,7 +288,7 @@ export default function AdminPromoCodesPage() {
                 <label style={{ ...fieldLabel }}>Code</label>
                 <input value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())}
                   placeholder="e.g. LAUNCH50" className="asc-input"
-                  style={{ ...inputBase, fontFamily: "'DM Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase' }} />
+                  style={{ ...inputBase, fontFamily: "Metropolis, 'Inter', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' }} />
               </div>
             ) : (
               <>
@@ -296,8 +296,8 @@ export default function AdminPromoCodesPage() {
                   <label style={{ ...fieldLabel }}>Code Prefix</label>
                   <input value={bulkPrefix} onChange={(e) => setBulkPrefix(e.target.value.toUpperCase())}
                     placeholder="e.g. SUMMIT" className="asc-input"
-                    style={{ ...inputBase, fontFamily: "'DM Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase' }} />
-                  <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
+                    style={{ ...inputBase, fontFamily: "Metropolis, 'Inter', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' }} />
+                  <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
                     Codes will be: SUMMIT<span style={{ color: '#E8A020' }}>A1B2C</span>, SUMMIT<span style={{ color: '#E8A020' }}>X9Y3Z</span>…
                   </p>
                 </div>
@@ -305,7 +305,7 @@ export default function AdminPromoCodesPage() {
                   <label style={{ ...fieldLabel }}>Number of Codes</label>
                   <input type="number" value={bulkCount} onChange={(e) => setBulkCount(e.target.value)}
                     placeholder="50" min="1" max="1000" className="asc-input" style={{ ...inputBase }} />
-                  <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
+                  <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
                     Each code is single-use · max 1000
                   </p>
                 </div>
@@ -334,7 +334,7 @@ export default function AdminPromoCodesPage() {
               <label style={{ ...fieldLabel }}>Expires — date &amp; time (optional)</label>
               <input type="datetime-local" value={newExpiry} onChange={(e) => setNewExpiry(e.target.value)}
                 className="asc-input" style={{ ...inputBase, colorScheme: 'dark' }} />
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
+              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
                 Set a future date + time for the countdown timer to show on checkout
               </p>
             </div>
@@ -355,7 +355,7 @@ export default function AdminPromoCodesPage() {
 
           {bulkResult && (
             <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 8, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#10B981' }}>
+              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: '#10B981' }}>
                 ✓ {bulkResult.count} codes generated with prefix "{bulkResult.prefix}" — all active and ready to share
               </p>
             </div>
@@ -399,7 +399,7 @@ export default function AdminPromoCodesPage() {
                     <th key={h} style={{
                       padding: '12px 16px',
                       textAlign: 'left',
-                      fontFamily: "'DM Mono', monospace",
+                      fontFamily: "Metropolis, 'Inter', sans-serif",
                       fontSize: '10px',
                       letterSpacing: '0.1em',
                       textTransform: 'uppercase',
@@ -419,7 +419,7 @@ export default function AdminPromoCodesPage() {
                     {/* Code */}
                     <td style={{ padding: '13px 16px' }}>
                       <span style={{
-                        fontFamily: "'DM Mono', monospace",
+                        fontFamily: "Metropolis, 'Inter', sans-serif",
                         fontSize: '12px',
                         fontWeight: 500,
                         color: '#E8A020',
@@ -448,7 +448,7 @@ export default function AdminPromoCodesPage() {
 
                     {/* Uses */}
                     <td style={{ padding: '13px 16px' }}>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '12px', color: 'var(--admin-text-muted)' }}>
+                      <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '12px', color: 'var(--admin-text-muted)' }}>
                         {c.current_uses}{c.max_uses ? `/${c.max_uses}` : ''}
                       </span>
                     </td>
@@ -478,7 +478,7 @@ export default function AdminPromoCodesPage() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         <span style={{
                           padding: '3px 10px', borderRadius: '100px',
-                          fontFamily: "'DM Mono', monospace", fontSize: '10px',
+                          fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '10px',
                           fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase',
                           background: c.active ? 'rgba(20,184,166,0.1)' : 'var(--admin-border)',
                           color: c.active ? '#14B8A6' : 'var(--admin-text-faint)',
@@ -489,7 +489,7 @@ export default function AdminPromoCodesPage() {
                         {c.auto_apply && (
                           <span style={{
                             padding: '2px 8px', borderRadius: '100px',
-                            fontFamily: "'DM Mono', monospace", fontSize: '9px',
+                            fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '9px',
                             fontWeight: 600, letterSpacing: '0.06em',
                             background: 'rgba(232,160,32,0.1)', color: '#E8A020',
                             border: '1px solid rgba(232,160,32,0.25)',

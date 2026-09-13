@@ -12,7 +12,7 @@ import { createClient } from '@/lib/supabase/client';
 const brand = {
   fontDisplay: "'Cormorant Garamond', Georgia, serif",
   fontUI:      "'Syne', system-ui, sans-serif",
-  fontMono:    "'DM Mono', monospace",
+  fontMono:    "Metropolis, 'Inter', sans-serif",
   gold:        '#E8A020',
   goldMuted:   'rgba(232,160,32,0.08)',
   goldBorder:  'rgba(232,160,32,0.22)',
@@ -218,7 +218,7 @@ export default function AdminProductsPage() {
         .prod-input::placeholder { color: var(--admin-text-faint); }
         select.prod-input option { background: var(--admin-bg-card); }
         .prod-label {
-          font-family: 'DM Mono', monospace; font-size: 10px;
+          font-family: Metropolis, 'Inter', sans-serif; font-size: 10px;
           font-weight: 500; letter-spacing: 0.08em;
           text-transform: uppercase; color: var(--admin-text-muted);
           display: block; margin-bottom: 6px;

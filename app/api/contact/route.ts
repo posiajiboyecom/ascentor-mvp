@@ -117,7 +117,7 @@ function adminEmailHtml(name: string, email: string, subject: string, message: s
           </div>
         </td></tr>
         <tr><td style="padding:16px 28px;border-top:1px solid #E8E6E1;">
-          <p style="margin:0;font-size:11px;color:#9CA3AF;font-family:'Courier New',monospace;letter-spacing:0.04em;">ASCENTOR ADMIN · CONTACT MESSAGE</p>
+          <p style="margin:0;font-size:11px;color:#9CA3AF;font-family:Metropolis,'Inter',sans-serif;letter-spacing:0.04em;">ASCENTOR ADMIN · CONTACT MESSAGE</p>
         </td></tr>
       </table>
     </td></tr>
@@ -148,7 +148,7 @@ function ackEmailHtml(firstName: string, subjectLabel: string): string {
           </a>
         </td></tr>
         <tr><td style="padding:16px 32px;border-top:1px solid rgba(255,255,255,0.06);">
-          <p style="margin:0;font-size:11px;color:#4B5563;font-family:'Courier New',monospace;letter-spacing:0.04em;">ASCENTOR · LAGOS, NIGERIA</p>
+          <p style="margin:0;font-size:11px;color:#4B5563;font-family:Metropolis,'Inter',sans-serif;letter-spacing:0.04em;">ASCENTOR · LAGOS, NIGERIA</p>
         </td></tr>
       </table>
     </td></tr>
