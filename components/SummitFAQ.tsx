@@ -27,7 +27,7 @@ const leftColumnFaqs = [
   {
     question: 'Do I need to bring anything if attending onsite',
     answer:
-      'Bring a valid form of identification and your confirmation email. Further onsite logistics details will be shared closer to the event date.',
+      'Come ready to learn and to network. Bring a notepad or something to take notes with, and whatever helps you stay fully present for the day. Onsite logistics details will be shared closer to the event date.',
   },
 ];
 
@@ -35,27 +35,35 @@ const rightColumnFaqs = [
   {
     question: 'Will sessions be recorded',
     answer:
-      'This has not yet been finalized. Check back closer to the event date or contact the organizers for the latest update. This answer is a placeholder pending confirmation from the event team.',
+      'Sessions will not be recorded. Highlights and key moments will be shared on our social media channels after the event.',
   },
   {
     question: 'What is the refund and cancellation policy',
-    answer:
-      'This has not yet been finalized. This answer is a placeholder pending confirmation from the event team before publishing.',
+    answer: (
+      <>
+        Our refund and cancellation policy is being finalized and will be published here before the event. If you need help with a specific situation, reach out through our{' '}
+        <a href="/contact" style={{ color: '#C8A96E', textDecoration: 'underline' }}>contact page</a>.
+      </>
+    ),
   },
   {
     question: 'Is there a dress code',
-    answer:
-      'This has not yet been finalized. This answer is a placeholder pending confirmation from the event team before publishing.',
+    answer: 'No. There is no dress code. Come as you are.',
   },
   {
     question: 'Can I switch from a virtual ticket to an onsite ticket',
     answer:
-      'Contact the organizers directly if you would like to change your attendance type after registering.',
+      'No. Tickets cannot be switched after purchase, so please choose the attendance type that works for you before completing registration.',
   },
   {
     question: 'How do I contact the organizers',
-    answer:
-      'Reach out through the contact details listed elsewhere on this site, or reply to your registration confirmation email.',
+    answer: (
+      <>
+        Reach out through our{' '}
+        <a href="/contact" style={{ color: '#C8A96E', textDecoration: 'underline' }}>contact page</a>
+        {' '}or reply to your registration confirmation email.
+      </>
+    ),
   },
 ];
 
@@ -65,7 +73,7 @@ function FaqItem({
   isOpen,
   onToggle,
 }: {
-  faq: { question: string; answer: string };
+  faq: { question: string; answer: React.ReactNode };
   id: string;
   isOpen: boolean;
   onToggle: () => void;
@@ -102,13 +110,13 @@ function FaqItem({
           }}
         />
       </button>
-      <div id={id} role="region" className={`faq-answer${isOpen ? ' open' : ''}`}>
-        <div style={{ overflow: 'hidden', minHeight: 0 }}>
+      {isOpen && (
+        <div id={id} role="region" className="faq-answer-open">
           <p style={{ fontSize: '0.875rem', color: '#6B7280', lineHeight: 1.7, paddingBottom: '1.25rem', margin: 0 }}>
             {faq.answer}
           </p>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -156,13 +164,12 @@ export default function SummitFAQ() {
           grid-template-columns: 1fr;
           gap: 0 3rem;
         }
-        .faq-answer {
-          display: grid;
-          grid-template-rows: 0fr;
-          transition: grid-template-rows 0.3s ease;
+        .faq-answer-open {
+          animation: faqFadeIn 0.2s ease;
         }
-        .faq-answer.open {
-          grid-template-rows: 1fr;
+        @keyframes faqFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
         @media (min-width: 768px) {
           .summit-faq-grid {
