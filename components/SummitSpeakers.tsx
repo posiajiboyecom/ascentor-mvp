@@ -57,22 +57,13 @@ const speakers: Speaker[] = [
     instagramUrl: undefined,
   },
   {
-    name: 'Akintomiwa Samuel O.',
+    name: 'Akintomiwa Ola',
     role: 'Founder/CEO, Ploy',
     topic: "Manual or Machine: A Case for Both the Craft of Small Business and AI as Africa's Next Leap",
-    bio: 'Akintomiwa Samuel O. is the Founder and CEO of Ploy, a platform reimagining how small businesses in Africa operate and scale. He is an entrepreneur and systems thinker who believes that the next leap for African business lies at the intersection of deep craft and intelligent technology. His work at Ploy is building the tools that bridge that gap for thousands of entrepreneurs.',
-    photo: PLACEHOLDER_PHOTO,
-    linkedinUrl: undefined,
-    instagramUrl: undefined,
-  },
-  {
-    name: 'Speaker TBA',
-    role: 'To be announced',
-    topic: 'Topic to be announced',
-    bio: 'Details for this speaker will be shared soon. We are curating voices that will challenge, stretch, and inspire everyone in the room.',
-    photo: PLACEHOLDER_PHOTO,
-    linkedinUrl: null,
-    instagramUrl: null,
+    bio: 'Akintomiwa Ola is the Founder and CEO of Ploy, a platform reimagining how small businesses in Africa operate and scale. He is an entrepreneur and systems thinker who believes that the next leap for African business lies at the intersection of deep craft and intelligent technology. His work at Ploy is building the tools that bridge that gap for thousands of entrepreneurs.',
+    photo: '/images/speakers/akintomiwa-ola.jpg',
+    linkedinUrl: 'https://www.linkedin.com/in/akintom',
+    instagramUrl: 'https://www.instagram.com/akintomiwa.ola/',
   },
 ];
 
