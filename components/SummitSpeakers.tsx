@@ -13,6 +13,7 @@ interface Speaker {
   // undefined = not yet provided (icon renders, links to '#').
   linkedinUrl?: string | null;
   instagramUrl?: string | null;
+  spotifyUrl?: string | null;
   host?: boolean;
 }
 
@@ -23,47 +24,52 @@ const speakers: Speaker[] = [
     name: 'Posi Ajiboye',
     role: 'Founder, Ascentor',
     topic: 'The Rise We Choose: Building the Man, The Nation, and Continent',
-    bio: 'Posi Ajiboye is a Quality Assurance Analyst at Anifie Inc., a creative and multimedia company based in Irvine, California, whose clients include Honda, Toyota, Cartier, Hitachi, and Fujitsu. He brings together technical rigor with a passion for purposeful leadership - holding a degree in Information Systems among many professional certifications. He maintains an independent security research portfolio spanning Security Engineering, API security, and AI/LLM security. He is also the founder behind Ascentor, the platform of The Elevation Summit, a global community and movement dedicated to purposeful living, leadership, and lasting impact, culminating in yearly convocation of intellectuals and builders across Africa. His work sits at the intersection of Technology, Business, and Human development, building things that connect people and help them build lives that outlast them.',
+    bio: 'Posi Ajiboye is a Quality Assurance Analyst at Anifie Inc., a creative and multimedia company based in Irvine, California, whose clients include Honda, Toyota, Cartier, Hitachi, and Fujitsu.\n\nHe brings together technical rigor with a passion for purposeful leadership, holding a degree in Information Systems among many professional certifications.\n\nHe maintains an independent security research portfolio spanning Security Engineering, API security, and AI/LLM security.\n\nHe is also the founder behind Ascentor, the platform of The Elevation Summit, a global community and movement dedicated to purposeful living, leadership, and lasting impact, culminating in yearly convocation of intellectuals and builders across Africa.\n\nHis work sits at the intersection of Technology, Business, and Human development, building things that connect people and help them build lives that outlast them.',
     photo: '/images/speakers/posi-ajiboye.png',
     linkedinUrl: 'https://www.linkedin.com/in/ayomiposiajiboye/',
     instagramUrl: 'https://www.instagram.com/posi_ajiboye/',
+    spotifyUrl: null,
     host: true,
   },
   {
     name: 'Samuel Peniel',
     role: 'President, Reign Global',
     topic: 'The Discipline to Stay: A Case for Both Narrow Focus and Range in Building a Life That Lasts',
-    bio: 'Apostle Afolabi Samuel Peniel is a dynamic Nigerian preacher, revivalist, and youth mentor, and the President and Lead Visionary of REIGN Global, a gathering of kings and queens raised for Kingdom influence. REIGN is not just a name, but a divine mandate: Righteousness Everywhere In Gentile Nations. He holds a B.Tech in Information Systems from the Federal University of Technology, Akure, but long before graduation, he was already setting campuses ablaze with the fire of revival. From his undergraduate days, he has remained passionately committed to raising men and women who burn for God. Through this mandate, he leads the Righteousness Enforcement Agents (REA), a growing movement building, equipping, and sending young people as kingdom-driven leaders and lights in a dark world. His ministry expression spans conferences, crusades, campus invasions, churches, and even secular institutions, where the undiluted and transformative Word of God is proclaimed with power. He is also the President of Cave Adullam Academy, where he serves as Lead Instructor, shaping and discipling the next generation in kingdom principles and purpose. His flagship program, the Recharge Conference, has become a major catalyst for revival and transformation across campuses and beyond. Known for messages that ignite a contagious and uncompromising revival fire, his influence continues to spread across nations, raising a generation with one clear assignment, to enforce righteousness in every sphere of society.',
+    bio: 'Afolabi Samuel Peniel is a Nigerian speaker, mentor, and organizational leader recognized for his work in youth development and leadership formation. He is the Founder and President of REIGN Global, an organization focused on raising young leaders for influence across various sectors of society.\n\nHe holds a B.Tech in Information Systems from the Federal University of Technology, Akure, where he began developing his interest in mentorship and community leadership as an undergraduate.\n\nHe leads the Righteousness Enforcement Agents (REA), an initiative focused on training, equipping, and deploying young people into leadership roles within their communities and institutions. His work spans conferences, campus programs, and public speaking engagements, where he addresses themes of purpose, character, and personal development.\n\nHe also serves as President and Lead Instructor at Cave Adullam Academy, an institution dedicated to leadership training and mentorship for young people. His flagship initiative, the Recharge Conference, has grown into a notable platform for youth development and transformation across university campuses and beyond.\n\nKnown for a direct and compelling communication style, his work continues to expand across communities and institutions, centered on developing principled leadership in the next generation.',
     photo: '/images/speakers/samuel-peniel.jpg',
     linkedinUrl: null,
     instagramUrl: 'https://www.instagram.com/apostlesamuelpeniel/?hl=en',
+    spotifyUrl: null,
   },
   {
     name: 'Kemeshi Samuel',
     role: 'Co-founder & Chief Marketing Officer, FirstFounders Ltd.',
     topic: 'Indigenous or Borrowed Blueprints: A Case for Both the African Mind and Importation of Things That Work as a Way to Fast-Track Our Participation in the Ongoing Global Revolution',
-    bio: 'Kemeshi Samuel is Co-founder and Chief Marketing Officer at FirstFounders Ltd., a venture studio and ecosystem collective focused on helping early-stage African tech startups develop ideas into investable businesses. He is a VC analyst, ecosystem builder, and host of the Made in Africa podcast by Jamit, a show crafted to tell the stories of successful African founders to inspire young entrepreneurs to greatness. Some of the world-class founders he has interviewed include David Lanre Messan (Founder and CEO at FirstFounders Inc.), Iyinoluwa Aboyeji (Founding Partner at Future Africa), Babatunde Akin Moses (Co-founder and CEO at Sycamore), and Fisayo Fosudo (Tech YouTuber and Filmmaker), among others. Kemeshi Samuel is a trained and certified content marketer, one-time TEDx speaker, and founder of The Hustle Run Club.',
+    bio: 'Kemeshi Samuel is Co-founder and Chief Marketing Officer at FirstFounders Ltd., a venture studio and ecosystem collective focused on helping early-stage African tech startups develop ideas into investable businesses.\n\nHe is a VC analyst, ecosystem builder, and host of the Made in Africa podcast by Jamit, a show crafted to tell the stories of successful African founders to inspire young entrepreneurs to greatness.\n\nSome of the world-class founders he has interviewed include David Lanre Messan (Founder and CEO at FirstFounders Inc.), Iyinoluwa Aboyeji (Founding Partner at Future Africa), Babatunde Akin Moses (Co-founder and CEO at Sycamore), and Fisayo Fosudo (Tech YouTuber and Filmmaker), among others.\n\nKemeshi Samuel is a trained and certified content marketer, one-time TEDx speaker, and founder of The Hustle Run Club.',
     photo: '/images/speakers/kemeshi-samuel.jpeg',
     linkedinUrl: 'https://www.linkedin.com/in/samuel-kemeshi-610669144',
-    instagramUrl: undefined,
+    instagramUrl: null,
+    spotifyUrl: 'https://open.spotify.com/show/0fdacgRv6uEPELZIadGYkO?si=746cf9c53c0f4e64&nd=1&dlsi=1dd4400d2f164bfe',
   },
   {
-    name: "'Lekan Omotosho",
+    name: 'Lekan Omotosho',
     role: 'AI Engineer, Turing',
     topic: 'The Elevation Within: My Rise from Curiosity to Global AI Impact',
-    bio: "Olamilekan Matthew Omotosho is a Data Scientist and AI Engineer with over four years of experience working across machine learning, Generative AI, and AI research. He currently works with Turing, where he contributes to the development and evaluation of Large Language Models through reinforcement learning, supervised fine-tuning, and AI evaluation. A graduate of the Federal University of Technology, Akure, Olamilekan was the Best Graduating Student in the School of Computing, graduating with a CGPA of 4.83/5.00. His journey began with a simple curiosity about data and has grown into work spanning AI, healthcare, and intelligent systems. Beyond his professional work, Olamilekan is passionate about building communities and helping young Africans participate in technology. He has served as a Zindi Ambassador, Community Lead at Data Science Nigeria FUTA, Microsoft Learn Student Ambassador, and mentor across several tech communities. His contributions have earned him recognition within Nigeria's technology ecosystem and connected him with global AI, data science, and developer communities.",
+    bio: "Olamilekan Matthew Omotosho is a Data Scientist and AI Engineer with over four years of experience working across machine learning, Generative AI, and AI research.\n\nHe currently works with Turing, where he contributes to the development and evaluation of Large Language Models through reinforcement learning, supervised fine-tuning, and AI evaluation.\n\nA graduate of the Federal University of Technology, Akure, Olamilekan was the Best Graduating Student in the School of Computing, graduating with a CGPA of 4.83/5.00.\n\nHis journey began with a simple curiosity about data and has grown into work spanning AI, healthcare, and intelligent systems.\n\nBeyond his professional work, Olamilekan is passionate about building communities and helping young Africans participate in technology.\n\nHe has served as a Zindi Ambassador, Community Lead at Data Science Nigeria FUTA, Microsoft Learn Student Ambassador, and mentor across several tech communities.\n\nHis contributions have earned him recognition within Nigeria's technology ecosystem and connected him with global AI, data science, and developer communities.",
     photo: '/images/speakers/lekan-omotosho.jpg',
     linkedinUrl: 'https://www.linkedin.com/in/olamilekan-omotosho',
     instagramUrl: null,
+    spotifyUrl: null,
   },
   {
     name: 'Akintomiwa Ola',
     role: 'Founder/CEO, Ploy',
     topic: "Manual or Machine: A Case for Both the Craft of Small Business and AI as Africa's Next Leap",
-    bio: 'Akintomiwa Ola is the Founder and CEO of Ploy, a platform reimagining how small businesses in Africa operate and scale. He is an entrepreneur and systems thinker who believes that the next leap for African business lies at the intersection of deep craft and intelligent technology. His work at Ploy is building the tools that bridge that gap for thousands of entrepreneurs.',
+    bio: 'Akintomiwa Ola is the Founder and CEO of Ploy, a platform reimagining how small businesses in Africa operate and scale.\n\nHe is an entrepreneur and systems thinker who believes that the next leap for African business lies at the intersection of deep craft and intelligent technology.\n\nHis work at Ploy is building the tools that bridge that gap for thousands of entrepreneurs.',
     photo: '/images/speakers/akintomiwa-ola.jpg',
     linkedinUrl: 'https://www.linkedin.com/in/akintom',
     instagramUrl: 'https://www.instagram.com/akintomiwa.ola/',
+    spotifyUrl: null,
   },
 ];
 
@@ -156,6 +162,20 @@ export default function SummitSpeakers() {
                       </svg>
                     </a>
                   )}
+                  {speaker.spotifyUrl !== null && (
+                    <a
+                      href={speaker.spotifyUrl ?? '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${speaker.name} on Spotify`}
+                      className="summit-social-icon summit-social-spotify"
+                    >
+                      {/* Spotify icon */}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.281-2.1-10.44-1.14-.418.102-.84-.24-.942-.66-.102-.42.24-.84.66-.942 4.561-1.021 8.52-.6 11.761 1.32.42.18.479.66.24 1.02-.001 0-.001 0-.001 0zm1.44-3.3c-.301.42-.842.539-1.262.24-3.24-2.04-8.159-2.64-11.939-1.44-.48.12-1.02-.18-1.14-.66-.12-.48.18-1.021.66-1.141 4.32-1.38 9.6-.72 13.199 1.68.42.18.54.72.24 1.08-.001 0-.001 0-.001 0zm.12-3.36c-3.9-2.34-10.32-2.52-14.04-1.38-.6.18-1.26-.18-1.44-.78-.18-.6.18-1.26.78-1.44 4.26-1.26 11.34-1.08 15.78 1.5.54.3.72 1.02.42 1.56-.3.54-1.02.72-1.56.42 0 .001 0 .001-.001.001z"/>
+                      </svg>
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
@@ -217,6 +237,14 @@ export default function SummitSpeakers() {
                     </svg>
                   </a>
                 )}
+                {selected.spotifyUrl !== null && (
+                  <a href={selected.spotifyUrl ?? '#'} target="_blank" rel="noopener noreferrer"
+                     aria-label="Spotify" className="summit-social-icon summit-social-spotify">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.281-2.1-10.44-1.14-.418.102-.84-.24-.942-.66-.102-.42.24-.84.66-.942 4.561-1.021 8.52-.6 11.761 1.32.42.18.479.66.24 1.02-.001 0-.001 0-.001 0zm1.44-3.3c-.301.42-.842.539-1.262.24-3.24-2.04-8.159-2.64-11.939-1.44-.48.12-1.02-.18-1.14-.66-.12-.48.18-1.021.66-1.141 4.32-1.38 9.6-.72 13.199 1.68.42.18.54.72.24 1.08-.001 0-.001 0-.001 0zm.12-3.36c-3.9-2.34-10.32-2.52-14.04-1.38-.6.18-1.26-.18-1.44-.78-.18-.6.18-1.26.78-1.44 4.26-1.26 11.34-1.08 15.78 1.5.54.3.72 1.02.42 1.56-.3.54-1.02.72-1.56.42 0 .001 0 .001-.001.001z"/>
+                    </svg>
+                  </a>
+                )}
               </div>
             </div>
 
@@ -233,7 +261,11 @@ export default function SummitSpeakers() {
 
             {/* Bio */}
             {selected.bio && (
-              <p className="ssp-bio">{selected.bio}</p>
+              <div className="ssp-bio">
+                {selected.bio.split(/\n\n+/).map((para, i) => (
+                  <p key={i}>{para.trim()}</p>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -345,6 +377,7 @@ export default function SummitSpeakers() {
         .summit-social-icon:hover { transform: scale(1.12); opacity: 0.85; }
         .summit-social-linkedin { background: #0A66C2; color: #FFFFFF; }
         .summit-social-instagram { background: #E1306C; color: #FFFFFF; }
+        .summit-social-spotify { background: #1DB954; color: #FFFFFF; }
 
         /* ── Read Profile button ── */
         .summit-read-profile {
@@ -483,7 +516,12 @@ export default function SummitSpeakers() {
           font-size: 0.9375rem;
           color: #3F3F3C;
           line-height: 1.8;
-          margin: 0;
+        }
+        .ssp-bio p {
+          margin: 0 0 0.875rem;
+        }
+        .ssp-bio p:last-child {
+          margin-bottom: 0;
         }
       `}</style>
     </section>

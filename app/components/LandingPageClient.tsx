@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import type { PublishedPage } from '@/lib/supabase/queries/marketing';
 
-// Narrow sanitizer for the hero headline specifically — allows ONLY
+// Narrow sanitizer for the hero headline specifically  -  allows ONLY
 // <br> / <br/> tags (needed for the two-line headline layout) and
 // strips everything else, including script tags and event handler
 // attributes. Writes to marketing_sections are already gated to
 // admin/moderator role via RLS + the API route's auth check, so this
-// isn't defending against an untrusted public writer — it's defense
+// isn't defending against an untrusted public writer  -  it's defense
 // in depth in case that assumption ever changes, and it keeps this
 // one field from becoming a general-purpose "admin can inject any
 // HTML" surface just because it needed one tag.
@@ -19,6 +19,15 @@ function sanitizeHeroHeadline(html: string): string {
     .replace(/<(?!br\s*\/?>)[^>]*>/gi, '') // strip every tag except <br> / <br/>
     .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, '')
     .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, '');
+}
+
+function removeEmDashes(value: unknown): unknown {
+  if (typeof value === 'string') return value.replace(/—/g, ' - ');
+  if (Array.isArray(value)) return value.map(removeEmDashes);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, removeEmDashes(v)]));
+  }
+  return value;
 }
 
 // app/LandingPageClient.tsx
@@ -31,21 +40,22 @@ function sanitizeHeroHeadline(html: string): string {
 // client, which a 'use client' component can't call directly).
 //
 // CMS WIRING STATUS: only the Hero section is wired so far (see the
-// `cms?.sections.hero?.data` usage below) — this is the first proof
+// `cleanCms?.sections.hero?.data` usage below)  -  this is the first proof
 // of the full CMS loop end to end. The remaining sections (Summit
 // Banner, Problem, Who It's For, Three Pillars, Total Person, Quote,
 // Newsletter, Final CTA, Footer) are NOT yet wired and still render
 // their original hardcoded copy. Wiring those is a separate,
-// section-by-section follow-up — see the chat log for why this was
+// section-by-section follow-up  -  see the chat log for why this was
 // deliberately scoped to one section first rather than all at once.
 //
 // FALLBACK CONTRACT (see lib/supabase/queries/marketing.ts usage
 // note): every CMS-sourced value below falls back to the ORIGINAL
 // hardcoded copy if cms is null or that section hasn't been
 // published yet. The hardcoded strings are the safety net, not dead
-// code — do not delete them when more sections get wired.
+// code  -  do not delete them when more sections get wired.
 export default function LandingPageClient({ cms }: { cms: PublishedPage | null }) {
   const supabase = createClient();
+  const cleanCms = useMemo(() => (cms ? removeEmDashes(cms) as PublishedPage | null : null), [cms]);
 
   const [email, setEmail] = useState('');
   const [hasBlogPosts, setHasBlogPosts] = useState(false);
@@ -57,25 +67,25 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const [events, setEvents] = useState<Array<{ slug: string; title: string; tagline: string | null; event_date: string | null; is_featured: boolean }>>([]);
   const [eventsOpen, setEventsOpen] = useState(false);
 
-  // Hero content — CMS first, hardcoded fallback second. The CMS
+  // Hero content  -  CMS first, hardcoded fallback second. The CMS
   // shape (set via the 'structured' field editor in
   // /admin/marketing-pages/landing) is whatever fields an admin
-  // chooses to add — headline/subhead/cta_label/cta_href/eyebrow are
+  // chooses to add  -  headline/subhead/cta_label/cta_href/eyebrow are
   // the field NAMES this component looks for, but nothing enforces
   // an admin actually creating fields with exactly these names. If
   // a field is missing or misnamed, that one value silently falls
   // back to hardcoded copy rather than rendering blank or crashing.
-  const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
+  const hero = cleanCms?.sections.hero?.data as Record<string, string> | undefined;
   const heroEyebrow  = hero?.eyebrow   || 'The Elevation Summit Movement';
   const heroHeadline = hero?.headline  || 'You were not built<br />to drift.';
-  const heroSubhead  = hero?.subhead   || 'Ascentor is the daily platform of The Elevation Summit — a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.';
+  const heroSubhead  = hero?.subhead   || 'Ascentor is the daily platform of The Elevation Summit, a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.';
   const heroCtaLabel    = hero?.cta_label    || 'Join the Movement →';
   const heroCtaHref     = hero?.cta_href     || '/signup';
   const heroCta2Label   = hero?.cta2_label   || 'What is The Elevation Summit?';
   const heroCta2Href    = hero?.cta2_href    || '/elevation-summit';
 
   // Summit Banner
-  const banner = cms?.sections.summit_banner?.data as Record<string, string> | undefined;
+  const banner = cleanCms?.sections.summit_banner?.data as Record<string, string> | undefined;
   const bannerEyebrow = banner?.eyebrow || 'The Elevation Summit';
   const bannerDate    = banner?.date    || '19 November, 2026 · Lagos, Nigeria';
   const bannerSub     = banner?.sub     || 'The inaugural gathering. One defining moment.';
@@ -83,67 +93,67 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const bannerHref    = banner?.href    || '/elevation-summit';
 
   // Problem Section
-  const problem = cms?.sections.problem?.data as Record<string, string> | undefined;
+  const problem = cleanCms?.sections.problem?.data as Record<string, string> | undefined;
   const problemHeadline  = problem?.headline  || 'Most people don\'t fail because they lack talent.<br /><span style="color:#C8A96E">They fail because they lack architecture.</span>';
   const problemBody1     = problem?.body1     || 'No framework for their life. No community holding them accountable. No ideology anchoring their decisions. Just reaction after reaction to whatever the world demands of them.';
   const problemBody2     = problem?.body2     || 'Ascentor exists for the ones who are done reacting.';
 
   // Who It's For section header
-  const whoHeader = cms?.sections.who_header?.data as Record<string, string> | undefined;
+  const whoHeader = cleanCms?.sections.who_header?.data as Record<string, string> | undefined;
   const whoEyebrow   = whoHeader?.eyebrow   || "Who It's For";
   const whoHeadline  = whoHeader?.headline  || 'One platform.<br />Every stage of ascent.';
   // Who It's For: repeating persona cards
-  const whoItems = (cms?.sections.who_cards?.items || []) as Array<Record<string, string>>;
+  const whoItems = (cleanCms?.sections.who_cards?.items || []) as Array<Record<string, string>>;
   const defaultWhoCards = [
     { stage: 'The Seeker', description: 'Still finding the thread. You know there is more, but you have not named it yet. Ascentor helps you find your purpose framework and start building toward it.' },
     { stage: 'The Builder', description: 'You know where you are going. Now you are doing the daily work of getting there. Ascentor gives you community, accountability, and development to build faster.' },
-    { stage: 'The Leader', description: 'You have built something. Now you are responsible for others. Ascentor connects you with people operating at your level — and challenges you toward the century-long impact you were built for.' },
+    { stage: 'The Leader', description: 'You have built something. Now you are responsible for others. Ascentor connects you with people operating at your level, and challenges you toward the century-long impact you were built for.' },
   ];
   const whoCards = whoItems.length > 0 ? whoItems : defaultWhoCards;
 
   // Three Pillars section header
-  const pillarsHeader = cms?.sections.pillars_header?.data as Record<string, string> | undefined;
+  const pillarsHeader = cleanCms?.sections.pillars_header?.data as Record<string, string> | undefined;
   const pillarsEyebrow  = pillarsHeader?.eyebrow  || 'How It Works';
   const pillarsHeadline = pillarsHeader?.headline || 'Three forces.<br />One direction.';
   // Repeating pillar cards
-  const pillarItems = (cms?.sections.pillars?.items || []) as Array<Record<string, string>>;
+  const pillarItems = (cleanCms?.sections.pillars?.items || []) as Array<Record<string, string>>;
   const defaultPillars = [
     { pillar: 'Community', description: 'A global circle of purposeful individuals. Not a networking group. A brotherhood and sisterhood anchored by shared ideology and mutual accountability.', featured: '', badge: '', cta_label: '', cta_href: '' },
-    { pillar: 'Development', description: 'Structured pathways for becoming the total person — in mind, character, vocation, relationships, and civic impact.', featured: '', badge: '', cta_label: '', cta_href: '' },
-    { pillar: 'The Elevation Summit', description: 'Once a year, the community gathers. The annual Summit is the peak moment — inspiration, challenge, and the collective experience of people who chose to ascend.', featured: 'true', badge: 'Next gathering: 19 November, 2026', cta_label: 'Learn about The Elevation Summit →', cta_href: '/elevation-summit' },
+    { pillar: 'Development', description: 'Structured pathways for becoming the total person in mind, character, vocation, relationships, and civic impact.', featured: '', badge: '', cta_label: '', cta_href: '' },
+    { pillar: 'The Elevation Summit', description: 'Once a year, the community gathers. The annual Summit is the peak moment, inspiration, challenge, and the collective experience of people who chose to ascend.', featured: 'true', badge: 'Next gathering: 19 November, 2026', cta_label: 'Learn about The Elevation Summit →', cta_href: '/elevation-summit' },
   ];
   const pillarCards = pillarItems.length > 0 ? pillarItems : defaultPillars;
 
   // Total Person section
-  const totalHeader = cms?.sections.total_person_header?.data as Record<string, string> | undefined;
+  const totalHeader = cleanCms?.sections.total_person_header?.data as Record<string, string> | undefined;
   const totalEyebrow  = totalHeader?.eyebrow  || 'The Total Person';
   const totalHeadline = totalHeader?.headline || 'Six dimensions.<br />One complete life.';
   const totalBody     = totalHeader?.body     || 'Ascentor is built around a single conviction: that human development cannot be reduced to career outcomes. Every feature, every conversation, every resource is oriented toward these six dimensions.';
   // Repeating dimension cards
-  const dimensionItems = (cms?.sections.dimensions?.items || []) as Array<Record<string, string>>;
+  const dimensionItems = (cleanCms?.sections.dimensions?.items || []) as Array<Record<string, string>>;
   const defaultDimensions = [
-    { dimension: 'Mind', description: 'How you think — independently, critically, and without the distortion of trend or fear.' },
-    { dimension: 'Character', description: 'How you live — your private and public life as one consistent, principled whole.' },
-    { dimension: 'Vocation', description: 'How you work — with purpose, not just productivity. For impact, not just income.' },
-    { dimension: 'Relationships', description: 'How you lead others — as a partner, parent, friend, mentor, and example.' },
-    { dimension: 'Community', description: 'What you build beyond yourself — civic contribution and national responsibility.' },
-    { dimension: 'Legacy', description: 'What remains when you are gone — the institutions, ideas, and people you set in motion.' },
+    { dimension: 'Mind', description: 'How you think: independently, critically, and without the distortion of trend or fear.' },
+    { dimension: 'Character', description: 'How you live: your private and public life as one consistent, principled whole.' },
+    { dimension: 'Vocation', description: 'How you work: with purpose, not just productivity. For impact, not just income.' },
+    { dimension: 'Relationships', description: 'How you lead others: as a partner, parent, friend, mentor, and example.' },
+    { dimension: 'Community', description: 'What you build beyond yourself: civic contribution and national responsibility.' },
+    { dimension: 'Legacy', description: 'What remains when you are gone: the institutions, ideas, and people you set in motion.' },
   ];
   const dimensions = dimensionItems.length > 0 ? dimensionItems : defaultDimensions;
 
   // Quote Section
-  const quote = cms?.sections.quote?.data as Record<string, string> | undefined;
+  const quote = cleanCms?.sections.quote?.data as Record<string, string> | undefined;
   const quoteText       = quote?.text       || '"An unbuilt person cannot build anything that lasts."';
   const quoteAttrib     = quote?.attribution || 'The founding conviction of Ascentor';
 
   // Newsletter Section
-  const newsletter = cms?.sections.newsletter?.data as Record<string, string> | undefined;
+  const newsletter = cleanCms?.sections.newsletter?.data as Record<string, string> | undefined;
   const newsletterEyebrow  = newsletter?.eyebrow  || 'Stay Connected';
   const newsletterHeadline = newsletter?.headline || 'Join the movement newsletter.';
-  const newsletterBody     = newsletter?.body     || 'Insights on purposeful living, updates on The Elevation Summit, and the ideas shaping the movement — delivered weekly.';
+  const newsletterBody     = newsletter?.body     || 'Insights on purposeful living, updates on The Elevation Summit, and the ideas shaping the movement, delivered weekly.';
 
   // Final CTA
-  const finalCta = cms?.sections.final_cta?.data as Record<string, string> | undefined;
+  const finalCta = cleanCms?.sections.final_cta?.data as Record<string, string> | undefined;
   const finalCtaEyebrow  = finalCta?.eyebrow  || 'Your ascent begins here';
   const finalCtaHeadline = finalCta?.headline || 'Build a life that<br />outlasts you.';
   const finalCtaBody     = finalCta?.body     || 'Ascentor is not for everyone. It is for the ones who have decided.';
