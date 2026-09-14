@@ -1,7 +1,5 @@
 import { task } from "@trigger.dev/sdk/v3";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY!);
+import { sendEmail } from "@/lib/nodemailer";
 
 type Recipient = { email: string; first_name: string };
 
@@ -89,8 +87,7 @@ export const sendNewsletter = task({
               recipient.first_name || "there"
             );
 
-            await resend.emails.send({
-              from: "Ascentor <hello@ascentorbi.com>",
+            await sendEmail({
               to: recipient.email,
               subject: payload.subject,
               html: personalizedHTML,

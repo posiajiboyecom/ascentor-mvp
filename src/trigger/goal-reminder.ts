@@ -1,10 +1,8 @@
 import { schedules } from "@trigger.dev/sdk/v3";
-import { Resend } from "resend";
+import { sendEmail } from "@/lib/nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { goalReminderEmail } from "./emails/email-templates";
 import { sendPushToUser } from "@/lib/push";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -71,8 +69,7 @@ export const dailyGoalReminder = schedules.task({
       );
 
       try {
-        await resend.emails.send({
-          from: "Ascentor <hello@ascentorbi.com>",
+        await sendEmail({
           to: profile.email,
           subject: template.subject,
           html: template.html,
@@ -86,7 +83,7 @@ export const dailyGoalReminder = schedules.task({
       try {
         const dayText = daysSince === 1 ? 'yesterday' : `${daysSince} days ago`;
         await sendPushToUser(supabase, profile.id, {
-          title: 'Your coach is waiting 🌱',
+          title: 'Your coach is waiting',
           body:  `Last session was ${dayText}. 5 minutes with Sage keeps momentum going.`,
           url:   '/coach',
           tag:   'goal-reminder',

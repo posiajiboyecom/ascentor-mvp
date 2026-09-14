@@ -320,7 +320,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
           <div className="summit-hero-image">
             <img
               src="/images/elevation-summit-flyer.jpg"
-              alt="The Elevation Summit — The Rise We Choose, 19 November 2026, Aderemi Makanjuola Hall, Lagos State University"
+              alt="The Elevation Summit: The Rise We Choose, 19 November 2026, Aderemi Makanjuola Hall, Lagos State University"
               style={{ width: '100%', height: 'auto', borderRadius: '1rem', display: 'block' }}
             />
           </div>
@@ -491,10 +491,10 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
           <div className="summit-hero-text">
             <p className="mkt-eyebrow" style={{ marginBottom: '1.5rem' }}>The Venue</p>
             <h2 className="mkt-section-headline" style={{ color: '#0F0F0E', marginBottom: '1.5rem' }}>
-              Aderemi Makanjuola Hall,<br />Lagos State University.
+              Aderemi Makanjuola Hall, Lagos State University.
             </h2>
             <p style={{ fontSize: '1.0625rem', color: '#6B7280', lineHeight: 1.8, maxWidth: '560px', marginBottom: '2.5rem' }}>
-              A landmark room for a landmark decision. Set on Iba Road, Lagos, the Hall hosts the inaugural Elevation Summit on 19 November, 2026 — come physically, or join from anywhere in the world.
+              A landmark room for a landmark decision. Set on Iba Road, Lagos, the Hall hosts the inaugural Elevation Summit on 19 November, 2026. Come physically, or join from anywhere in the world.
             </p>
             <div>
               <a href="#register" className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>Secure your place →</a>
@@ -538,8 +538,8 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
                   }}
                 >
                   {t === 'onsite'
-                    ? `Onsite, Lagos — ₦${prices.onsite.toLocaleString()}`
-                    : `Virtual — ₦${prices.virtual.toLocaleString()}`}
+                    ? `Onsite, Lagos · ₦${prices.onsite.toLocaleString()}`
+                    : `Virtual · ₦${prices.virtual.toLocaleString()}`}
                 </button>
               ))}
             </div>
@@ -551,8 +551,8 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
 
             <p style={{ gridColumn: '1 / -1', fontSize: '0.8125rem', color: '#9CA3AF', margin: 0 }}>
               {activeTab === 'onsite'
-                ? 'Attending in person — Aderemi Makanjuola Lecture Theatre, Lagos.'
-                : 'Joining virtually — your join link arrives by email once payment is confirmed.'}
+                ? 'Attending in person, Aderemi Makanjuola Lecture Theatre, Lagos.'
+                : 'Joining virtually. Your join link arrives by email once payment is confirmed.'}
             </p>
 
             <div>
@@ -761,6 +761,95 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
 
       {/* FAQ — immediately after the gallery section */}
       <SummitFAQ />
+
+      {/* Partners Marquee — infinite dual-row scroll, paused on hover */}
+      <section style={{ background: '#FAFAF8', padding: 'clamp(4rem, 7vw, 6rem) 0', overflow: 'hidden' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto', textAlign: 'center', padding: '0 1.5rem 3rem' }}>
+          <p className="mkt-eyebrow" style={{ marginBottom: '1rem' }}>Partners &amp; Supporters</p>
+          <h2 className="mkt-section-headline" style={{ color: '#0F0F0E', fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}>
+            Organisations that believe in the rise.
+          </h2>
+        </div>
+
+        {/* Row 1 — scrolls left */}
+        <div className="pm-outer">
+          <div className="pm-track pm-left">
+            {[1, 2, 3, 4].flatMap(() => [
+              <span key={Math.random()} className="pm-item"><img src="/logos/ploy-logo-dark.svg"       alt="Ploy"          className="pm-logo" /></span>,
+              <span key={Math.random()} className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></span>,
+              <span key={Math.random()} className="pm-item"><img src="/logos/dear-tech-bro-logo.jpg"   alt="Dear Tech Bro" className="pm-logo" /></span>,
+            ])}
+          </div>
+        </div>
+
+        {/* Row 2 — scrolls right */}
+        <div className="pm-outer" style={{ marginTop: '2rem' }}>
+          <div className="pm-track pm-right">
+            {[1, 2, 3, 4].flatMap(() => [
+              <span key={Math.random()} className="pm-item"><img src="/logos/dear-tech-bro-logo.jpg"   alt="Dear Tech Bro" className="pm-logo" /></span>,
+              <span key={Math.random()} className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></span>,
+              <span key={Math.random()} className="pm-item"><img src="/logos/ploy-logo-dark.svg"       alt="Ploy"          className="pm-logo" /></span>,
+            ])}
+          </div>
+        </div>
+
+        <style>{`
+          .pm-outer {
+            overflow: hidden;
+            width: 100%;
+            /* fade edges for a polished look */
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
+          }
+          .pm-track {
+            display: flex;
+            align-items: center;
+            width: max-content;
+            gap: 0;
+          }
+          .pm-left {
+            animation: pm-scroll-left 28s linear infinite;
+          }
+          .pm-right {
+            animation: pm-scroll-right 28s linear infinite;
+          }
+          .pm-outer:hover .pm-track {
+            animation-play-state: paused;
+          }
+          @keyframes pm-scroll-left {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-50%); }
+          }
+          @keyframes pm-scroll-right {
+            from { transform: translateX(-50%); }
+            to   { transform: translateX(0); }
+          }
+          .pm-item {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 2.5rem;
+            border-right: 1px solid #E8E6E1;
+            flex-shrink: 0;
+          }
+          .pm-logo {
+            height: 44px;
+            width: auto;
+            max-width: 160px;
+            object-fit: contain;
+            filter: grayscale(1);
+            opacity: 0.65;
+            transition: filter 0.2s, opacity 0.2s;
+          }
+          .pm-item:hover .pm-logo {
+            filter: grayscale(0);
+            opacity: 1;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .pm-left, .pm-right { animation: none; }
+          }
+        `}</style>
+      </section>
 
       {/* Get Involved */}
       <section id="speak" style={{ background: '#0F0F0E', padding: 'clamp(4rem, 8vw, 6rem) 1.5rem' }}>

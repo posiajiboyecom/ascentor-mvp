@@ -1,10 +1,9 @@
 import { task } from "@trigger.dev/sdk/v3";
-import { Resend } from "resend";
+import { sendEmail } from "@/lib/nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 import { coachingSummaryEmail } from "./emails/email-templates";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const supabase = createClient(
@@ -17,7 +16,6 @@ export const processCoachingSummary = task({
   run: async (payload: { sessionId: string; userId: string }) => {
     const { sessionId, userId } = payload;
 
-    // Get session messages
     const { data: session } = await supabase
       .from("coaching_sessions")
       .select("*")
@@ -26,7 +24,6 @@ export const processCoachingSummary = task({
 
     if (!session) throw new Error(`Session ${sessionId} not found`);
 
-    // Get user profile
     const { data: profile } = await supabase
       .from("profiles")
       .select("full_name, email")
@@ -38,19 +35,16 @@ export const processCoachingSummary = task({
       return { success: true, skipped: true };
     }
 
-    // Get conversation messages
     const messages = session.messages || [];
     if (messages.length < 4) {
       console.log("Session too short for summary");
       return { success: true, skipped: true, reason: "too_short" };
     }
 
-    // Build conversation text for Claude
     const conversationText = messages
       .map((m: any) => `${m.role === "user" ? "User" : "Coach"}: ${m.content}`)
       .join("\n\n");
 
-    // Ask Claude to summarize
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 800,
@@ -87,7 +81,6 @@ Respond in this exact JSON format:
       };
     }
 
-    // Save summary to DB
     await supabase
       .from("coaching_sessions")
       .update({
@@ -98,7 +91,6 @@ Respond in this exact JSON format:
       })
       .eq("id", sessionId);
 
-    // Send summary email
     const template = coachingSummaryEmail(
       profile.full_name || "there",
       parsed.summary,
@@ -106,8 +98,7 @@ Respond in this exact JSON format:
       parsed.nextSteps
     );
 
-    await resend.emails.send({
-      from: "Ascentor <onboarding@resend.dev>",
+    await sendEmail({
       to: profile.email,
       subject: template.subject,
       html: template.html,

@@ -1,11 +1,10 @@
 import { task } from "@trigger.dev/sdk/v3";
-import { Resend } from "resend";
+import { sendEmail } from "@/lib/nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { sendPushToUser } from "@/lib/push";
 import Anthropic from "@anthropic-ai/sdk";
 import { coachingSummaryEmail } from "./emails/email-templates";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const supabase = createClient(
@@ -107,8 +106,7 @@ Respond in this exact JSON format:
       parsed.nextSteps
     );
 
-    await resend.emails.send({
-      from: "Ascentor <hello@ascentorbi.com>",
+    await sendEmail({
       to: profile.email,
       subject: template.subject,
       html: template.html,
@@ -119,7 +117,7 @@ Respond in this exact JSON format:
     // Push notification — lands on phone immediately
     try {
       await sendPushToUser(supabase, userId, {
-        title: '✨ Your coaching summary is ready',
+        title: 'Your coaching summary is ready',
         body:  'Sage has captured your key takeaways and next steps.',
         url:   '/coach',
         tag:   'coaching-summary',

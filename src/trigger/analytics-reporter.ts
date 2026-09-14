@@ -6,14 +6,13 @@
 // ═══════════════════════════════════════════════════════════
 import { schedules } from "@trigger.dev/sdk/v3";
 import { createClient } from "@supabase/supabase-js";
-import { Resend } from "resend";
 import Anthropic from "@anthropic-ai/sdk";
+import { sendEmail } from "@/lib/nodemailer";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-const resend = new Resend(process.env.RESEND_API_KEY);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export const analyticsReporterAgent = schedules.task({
@@ -197,10 +196,10 @@ Return plain text only (no JSON, no markdown headers).`,
 
     const founderEmail = process.env.FOUNDER_EMAIL || process.env.FOUNDER_EMAIL || "hello@ascentorbi.com";
 
-    await resend.emails.send({
+    await sendEmail({
       from: "Ascentor Reports <hello@ascentorbi.com>",
       to: founderEmail,
-      subject: `📊 Week of ${now.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} — ${metrics.new_signups} new signups · ${metrics.wacu} WACU · $${metrics.mrr_estimate} MRR`,
+      subject: `Week of ${now.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} - ${metrics.new_signups} new signups, ${metrics.wacu} WACU, $${metrics.mrr_estimate} MRR`,
       html,
     });
 

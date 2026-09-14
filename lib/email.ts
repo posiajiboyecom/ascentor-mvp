@@ -18,14 +18,12 @@ export async function sendPasswordResetOTP({ to, otpCode, firstName }: SendPassw
       p('Use the code below to reset your Ascentor password. This code expires in <strong>15 minutes</strong>.') +
       codeBox(esc(otpCode)) +
       p('<span style="color:#9CA3AF;font-size:13px;">If you did not request a password reset, you can safely ignore this email. Your account remains secure.</span>') +
-      p('— The Ascentor Team'),
+      p('The Ascentor Team'),
   });
 
-  await transporter.sendMail({
-    from,
+  await sendEmail({
     to,
     subject: 'Reset your Ascentor password',
     html,
   });
 }
-Em
