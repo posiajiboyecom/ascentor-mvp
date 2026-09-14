@@ -31,7 +31,7 @@ const speakers: Speaker[] = [
   },
   {
     name: 'Samuel Peniel',
-    role: 'Setman, Reign Global',
+    role: 'President, Reign Global',
     topic: 'The Discipline to Stay: A Case for Both Narrow Focus and Range in Building a Life That Lasts',
     bio: 'Samuel Peniel is the Setman of Reign Global, a ministry and community movement centred on raising whole men and women of purpose. He is a teacher, preacher, and leader whose work bridges the gap between spiritual depth and practical living. His sessions are known for their rigour, clarity, and lasting impact on those who encounter them.',
     photo: '/images/speakers/samuel-peniel.jpg',
@@ -40,7 +40,7 @@ const speakers: Speaker[] = [
   },
   {
     name: 'Kemeshi Samuel',
-    role: 'Co-founder & Chief Mar keting Officer, FirstFounders Ltd.',
+    role: 'Co-founder & Chief Marketing Officer, FirstFounders Ltd.',
     topic: 'Indigenous or Borrowed Blueprints: A Case for Both the African Mind and Importation of Things That Work as a Way to Fast-Track Our Participation in the Ongoing Global Revolution',
     bio: 'Kemeshi Samuel is Co-founder and Chief Marketing Officer at FirstFounders Ltd., a venture studio and ecosystem collective focused on helping early-stage African tech startups develop ideas into investable businesses. He is a VC analyst, ecosystem builder, and host of the Made in Africa podcast by Jamit, a show crafted to tell the stories of successful African founders to inspire young entrepreneurs to greatness. Some of the world-class founders he has interviewed include David Lanre Messan (Founder and CEO at FirstFounders Inc.), Iyinoluwa Aboyeji (Founding Partner at Future Africa), Babatunde Akin Moses (Co-founder and CEO at Sycamore), and Fisayo Fosudo (Tech YouTuber and Filmmaker), among others. Kemeshi Samuel is a trained and certified content marketer, one-time TEDx speaker, and founder of The Hustle Run Club.',
     photo: '/images/speakers/kemeshi-samuel.jpeg',

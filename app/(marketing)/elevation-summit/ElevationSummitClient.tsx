@@ -818,7 +818,6 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
         <div className="pm-outer">
           <div className="pm-track pm-left">
             {[1, 2, 3, 4].flatMap(() => [
-              <span key={Math.random()} className="pm-item"><img src="/logos/ploy-logo-dark.svg"       alt="Ploy"          className="pm-logo" /></span>,
               <span key={Math.random()} className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></span>,
               <span key={Math.random()} className="pm-item"><img src="/logos/dear-tech-bro-logo.jpg"   alt="Dear Tech Bro" className="pm-logo" /></span>,
             ])}
@@ -831,7 +830,6 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
             {[1, 2, 3, 4].flatMap(() => [
               <span key={Math.random()} className="pm-item"><img src="/logos/dear-tech-bro-logo.jpg"   alt="Dear Tech Bro" className="pm-logo" /></span>,
               <span key={Math.random()} className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></span>,
-              <span key={Math.random()} className="pm-item"><img src="/logos/ploy-logo-dark.svg"       alt="Ploy"          className="pm-logo" /></span>,
             ])}
           </div>
         </div>
