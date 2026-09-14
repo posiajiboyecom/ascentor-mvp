@@ -64,7 +64,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
   const heroEyebrow   = hero?.eyebrow    || 'Inaugural Gathering · 19 November, 2026';
   const heroHeadline  = hero?.headline   || 'The Elevation<br />Summit';
-  const heroSubhead   = 'One gathering. One decision. The rest of your life.';
+  const heroSubhead   = 'One gathering. One decision. The rest of your life. The Elevation Summit is a one-day convening for people ready to stop drifting and start building. It is where the right question, the right conversation, and the right community meet. Be in the room in Lagos or join us from anywhere in the world. Either way, you will leave with a clearer sense of who you are becoming and what you are building.';
   const heroCtaLabel  = hero?.cta_label  || 'Register Now →';
   const heroCta2Label = hero?.cta2_label || 'What is The Summit?';
 
@@ -328,7 +328,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
             <p className="mkt-eyebrow" style={{ marginBottom: '1.5rem' }}>{heroEyebrow}</p>
             <h1 className="mkt-hero-headline" style={{ marginBottom: '1.5rem', maxWidth: '840px', color: '#0F0F0E' }}
               dangerouslySetInnerHTML={{ __html: h(heroHeadline) }} />
-            <p style={{ fontSize: 'clamp(1.35rem, 3.2vw, 1.75rem)', color: '#4B5563', lineHeight: 1.6, maxWidth: '720px', marginBottom: '3rem', fontWeight: 500 }}>
+            <p style={{ fontSize: '1.0625rem', color: '#4B5563', lineHeight: 1.75, maxWidth: '720px', marginBottom: '3rem' }}>
               {heroSubhead}
             </p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
