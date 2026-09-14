@@ -6,7 +6,7 @@ export const sendWelcomeEmail = task({
   id: "send-welcome-email",
   run: async (payload: { email: string; name: string; userId: string }) => {
     const { email, name } = payload;
-    const template = welcomeEmail(name);
+    const template = welcomeEmail(name, email);
 
     await sendEmail({
       to: email,

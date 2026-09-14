@@ -103,7 +103,8 @@ Respond in this exact JSON format:
       profile.full_name || "there",
       parsed.summary,
       parsed.keyTakeaways,
-      parsed.nextSteps
+      parsed.nextSteps,
+      profile.email
     );
 
     await sendEmail({

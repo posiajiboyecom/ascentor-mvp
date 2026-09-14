@@ -1,5 +1,9 @@
 import nodemailer from 'nodemailer';
 
+// Inferred from the factory — avoids namespace-reference errors
+// across different TypeScript/module-resolution configurations.
+type Mailer = ReturnType<typeof nodemailer.createTransport>;
+
 export const summitMailer = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
@@ -16,9 +20,9 @@ export const summitMailer = nodemailer.createTransport({
 // so a single mailbox can carry the whole system during early stages.
 // ---------------------------------------------------------------------------
 
-let cachedMailer: nodemailer.Transporter | null = null;
+let cachedMailer: Mailer | null = null;
 
-export function getMailer(): nodemailer.Transporter | null {
+export function getMailer(): Mailer | null {
   const user = process.env.SMTP_USER || process.env.SUMMIT_GMAIL_USER;
   const pass = process.env.SMTP_PASS || process.env.SUMMIT_GMAIL_APP_PASSWORD;
   if (!user || !pass) return null;

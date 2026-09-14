@@ -65,7 +65,8 @@ export const dailyGoalReminder = schedules.task({
       const template = goalReminderEmail(
         profile.full_name || "there",
         goals,
-        daysSince
+        daysSince,
+        profile.email
       );
 
       try {
