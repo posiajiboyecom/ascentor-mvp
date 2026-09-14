@@ -14,6 +14,7 @@ interface Speaker {
   linkedinUrl?: string | null;
   instagramUrl?: string | null;
   spotifyUrl?: string | null;
+  facebookUrl?: string | null;
   host?: boolean;
 }
 
@@ -29,6 +30,7 @@ const speakers: Speaker[] = [
     linkedinUrl: 'https://www.linkedin.com/in/ayomiposiajiboye/',
     instagramUrl: 'https://www.instagram.com/posi_ajiboye/',
     spotifyUrl: null,
+    facebookUrl: null,
     host: true,
   },
   {
@@ -40,6 +42,7 @@ const speakers: Speaker[] = [
     linkedinUrl: null,
     instagramUrl: 'https://www.instagram.com/apostlesamuelpeniel/?hl=en',
     spotifyUrl: null,
+    facebookUrl: 'https://web.facebook.com/p/Apostle-Samuel-Peniel-61559142705360/?_rdc=1&_rdr#',
   },
   {
     name: 'Kemeshi Samuel',
@@ -50,6 +53,7 @@ const speakers: Speaker[] = [
     linkedinUrl: 'https://www.linkedin.com/in/samuel-kemeshi-610669144',
     instagramUrl: null,
     spotifyUrl: 'https://open.spotify.com/show/0fdacgRv6uEPELZIadGYkO?si=746cf9c53c0f4e64&nd=1&dlsi=1dd4400d2f164bfe',
+    facebookUrl: null,
   },
   {
     name: 'Lekan Omotosho',
@@ -60,6 +64,7 @@ const speakers: Speaker[] = [
     linkedinUrl: 'https://www.linkedin.com/in/olamilekan-omotosho',
     instagramUrl: null,
     spotifyUrl: null,
+    facebookUrl: null,
   },
   {
     name: 'Akintomiwa Ola',
@@ -70,6 +75,7 @@ const speakers: Speaker[] = [
     linkedinUrl: 'https://www.linkedin.com/in/akintom',
     instagramUrl: 'https://www.instagram.com/akintomiwa.ola/',
     spotifyUrl: null,
+    facebookUrl: null,
   },
 ];
 
@@ -176,6 +182,20 @@ export default function SummitSpeakers() {
                       </svg>
                     </a>
                   )}
+                  {speaker.facebookUrl !== null && (
+                    <a
+                      href={speaker.facebookUrl ?? '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${speaker.name} on Facebook`}
+                      className="summit-social-icon summit-social-facebook"
+                    >
+                      {/* Facebook icon */}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
@@ -242,6 +262,14 @@ export default function SummitSpeakers() {
                      aria-label="Spotify" className="summit-social-icon summit-social-spotify">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.281-2.1-10.44-1.14-.418.102-.84-.24-.942-.66-.102-.42.24-.84.66-.942 4.561-1.021 8.52-.6 11.761 1.32.42.18.479.66.24 1.02-.001 0-.001 0-.001 0zm1.44-3.3c-.301.42-.842.539-1.262.24-3.24-2.04-8.159-2.64-11.939-1.44-.48.12-1.02-.18-1.14-.66-.12-.48.18-1.021.66-1.141 4.32-1.38 9.6-.72 13.199 1.68.42.18.54.72.24 1.08-.001 0-.001 0-.001 0zm.12-3.36c-3.9-2.34-10.32-2.52-14.04-1.38-.6.18-1.26-.18-1.44-.78-.18-.6.18-1.26.78-1.44 4.26-1.26 11.34-1.08 15.78 1.5.54.3.72 1.02.42 1.56-.3.54-1.02.72-1.56.42 0 .001 0 .001-.001.001z"/>
+                    </svg>
+                  </a>
+                )}
+                {selected.facebookUrl !== null && (
+                  <a href={selected.facebookUrl ?? '#'} target="_blank" rel="noopener noreferrer"
+                     aria-label="Facebook" className="summit-social-icon summit-social-facebook">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                     </svg>
                   </a>
                 )}
@@ -378,6 +406,7 @@ export default function SummitSpeakers() {
         .summit-social-linkedin { background: #0A66C2; color: #FFFFFF; }
         .summit-social-instagram { background: #E1306C; color: #FFFFFF; }
         .summit-social-spotify { background: #1DB954; color: #FFFFFF; }
+        .summit-social-facebook { background: #1877F2; color: #FFFFFF; }
 
         /* ── Read Profile button ── */
         .summit-read-profile {
