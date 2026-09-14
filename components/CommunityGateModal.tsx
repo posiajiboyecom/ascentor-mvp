@@ -1,19 +1,45 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+
+// Inner component can safely call useSearchParams()
+function GateWatcher({ onOpen }: { onOpen: () => void }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (searchParams.get('gate') === '1') {
+      onOpen();
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('gate');
+      const clean = params.toString() ? `${pathname}?${params}` : pathname;
+      router.replace(clean, { scroll: false });
+    }
+  }, [searchParams, pathname, router, onOpen]);
+
+  return null;
+}
 
 export default function CommunityGateModal() {
   const [open, setOpen] = useState(false);
 
+  // Listen for programmatic event (from GateButton and other onClick triggers)
   useEffect(() => {
     const show = () => setOpen(true);
     window.addEventListener('community-gate', show);
     return () => window.removeEventListener('community-gate', show);
   }, []);
 
-  if (!open) return null;
-
   return (
+    <>
+      {/* URL watcher — detects ?gate=1 and opens modal directly (no event timing issue) */}
+      <Suspense fallback={null}>
+        <GateWatcher onOpen={() => setOpen(true)} />
+      </Suspense>
+
+      {!open ? null : (
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
@@ -65,5 +91,7 @@ export default function CommunityGateModal() {
         </button>
       </div>
     </div>
+      )}
+    </>
   );
 }
