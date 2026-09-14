@@ -5,7 +5,7 @@
 // Submits to POST /api/contact which saves to contact_messages and
 // emails the admin. No auth required.
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import PublicHeader from '@/components/layout/PublicHeader';
 import PublicFooter from '@/components/layout/PublicFooter';
@@ -26,24 +26,124 @@ const SUBJECTS = [
   { value: 'other',       label: 'Something else'          },
 ];
 
+const initialTouched = { name: false, email: false, subject: false, message: false };
+
+function CustomSubjectSelect({
+  value,
+  onChange,
+  onBlur,
+  error,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onBlur: () => void;
+  error: string;
+  disabled: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = SUBJECTS.find(s => s.value === value);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        if (open) onBlur();
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open, onBlur]);
+
+  function select(v: string) {
+    onChange(v);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={ref} className={`field-group custom-select ${open ? 'open' : ''} ${error ? 'has-error' : ''}`}>
+      <label className="field-label" htmlFor="ct-subject">What is this about?</label>
+      <button
+        type="button"
+        id="ct-subject"
+        className="custom-select-trigger"
+        onClick={() => !disabled && setOpen(o => !o)}
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={selected ? '' : 'placeholder'}>
+          {selected ? selected.label : 'Select a topic'}
+        </span>
+        <svg className="custom-select-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 4l4 4 4-4" />
+        </svg>
+      </button>
+      {open && (
+        <div className="custom-select-options" role="listbox">
+          {SUBJECTS.map(s => (
+            <div
+              key={s.value}
+              className={`custom-select-option ${s.value === value ? 'active' : ''}`}
+              onClick={() => select(s.value)}
+              role="option"
+              aria-selected={s.value === value}
+            >
+              {s.label}
+            </div>
+          ))}
+        </div>
+      )}
+      {error && <p className="field-error">{error}</p>}
+    </div>
+  );
+}
+
 export default function ContactPage() {
   const [form, setForm] = useState({
     name: '', email: '', subject: '', message: '',
   });
+  const [touched, setTouched] = useState(initialTouched);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
-  function set(field: string, value: string) {
+  function update(field: string, value: string) {
     setForm(f => ({ ...f, [field]: value }));
+    validateField(field, value);
+  }
+
+  function blur(field: string) {
+    setTouched(t => ({ ...t, [field]: true }));
+    validateField(field, form[field as keyof typeof form]);
+  }
+
+  function validateField(field: string, value: string) {
+    let msg = '';
+    if (field === 'name' && !value.trim()) msg = 'Please enter your name.';
+    if (field === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      if (!value.trim()) msg = 'Please enter your email.';
+      else msg = 'Please enter a valid email.';
+    }
+    if (field === 'subject' && !value) msg = 'Please select a topic.';
+    if (field === 'message' && !value.trim()) msg = 'Please write a message.';
+    setErrors(e => ({ ...e, [field]: msg }));
+    return msg;
+  }
+
+  function validateAll() {
+    const next: Record<string, string> = {};
+    (['name', 'email', 'subject', 'message'] as const).forEach(k => {
+      next[k] = validateField(k, form[k]);
+    });
+    setTouched({ name: true, email: true, subject: true, message: true });
+    return Object.values(next).some(Boolean) === false;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim() || !form.subject || !form.message.trim()) {
-      setStatus('error');
-      setErrorMsg('Please fill in all fields.');
-      return;
-    }
+    if (!validateAll()) return;
     setStatus('loading');
     setErrorMsg('');
     try {
@@ -56,6 +156,8 @@ export default function ContactPage() {
       if (!res.ok) throw new Error(data.error || 'Something went wrong.');
       setStatus('success');
       setForm({ name: '', email: '', subject: '', message: '' });
+      setTouched(initialTouched);
+      setErrors({});
     } catch (err: unknown) {
       setStatus('error');
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -107,6 +209,11 @@ export default function ContactPage() {
           font-size: 0.8125rem; font-weight: 600;
           color: ${DARK}; margin-bottom: 0.4rem;
         }
+        .field-group.has-error .field-input,
+        .field-group.has-error .custom-select-trigger {
+          border-color: #DC2626;
+          background-color: #FEF2F2;
+        }
         .field-input {
           width: 100%; padding: 0.875rem 1rem;
           background: #FFFFFF;
@@ -120,6 +227,57 @@ export default function ContactPage() {
         .field-input:focus { border-color: ${GOLD}; }
         textarea.field-input { resize: vertical; min-height: 140px; line-height: 1.6; }
         select.field-input { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 2.5rem; }
+
+        .field-error {
+          font-family: Metropolis;
+          font-size: 0.75rem;
+          color: #DC2626;
+          margin-top: 0.35rem;
+          min-height: 1rem;
+        }
+
+        .custom-select { position: relative; }
+        .custom-select-trigger {
+          width: 100%; padding: 0.875rem 1rem;
+          background: #FFFFFF;
+          border: 1.5px solid ${BORDER};
+          border-radius: 0.625rem;
+          font-family: Metropolis;
+          font-size: 0.9375rem; color: ${DARK};
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: space-between;
+          transition: border-color 0.15s;
+        }
+        .custom-select-trigger:focus { outline: none; border-color: ${GOLD}; }
+        .custom-select-trigger .placeholder { color: ${FAINT}; }
+        .custom-select-arrow {
+          width: 12px; height: 12px;
+          transition: transform 0.2s;
+        }
+        .custom-select.open .custom-select-arrow { transform: rotate(180deg); }
+        .custom-select-options {
+          position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+          background: #FFFFFF;
+          border: 1px solid ${BORDER};
+          border-radius: 0.625rem;
+          box-shadow: 0 12px 32px rgba(15,15,14,0.08);
+          z-index: 10;
+          overflow: hidden;
+          padding: 0.375rem;
+        }
+        .custom-select-option {
+          padding: 0.625rem 0.75rem;
+          border-radius: 0.375rem;
+          cursor: pointer;
+          font-size: 0.875rem;
+          color: ${DARK};
+          transition: background 0.12s;
+        }
+        .custom-select-option:hover,
+        .custom-select-option.active {
+          background: #F4F3EF;
+          color: #0F0F0E;
+        }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         @media (max-width: 540px) { .grid-2 { grid-template-columns: 1fr; } }
@@ -181,7 +339,7 @@ export default function ContactPage() {
           <p className="eyebrow">Get in touch</p>
           <h1 className="page-title">Contact Ascentor</h1>
           <p className="page-sub">
-            Whether you want to partner, speak at the Summit, ask about the platform, or just say something — we read every message.
+            Send us a message about partnerships, the Summit, or the platform. We read every one.
           </p>
 
           {status === 'success' ? (
@@ -195,7 +353,7 @@ export default function ContactPage() {
                 Message received.
               </h2>
               <p style={{ fontSize: '0.9375rem', color: MUTED, lineHeight: 1.6, margin: '0 0 1.5rem' }}>
-                We'll be in touch within 2–3 business days.
+                We'll be in touch within 2 or 3 business days.
               </p>
               <button
                 type="button"
@@ -213,48 +371,51 @@ export default function ContactPage() {
           ) : (
             <form onSubmit={handleSubmit} noValidate>
               <div className="grid-2">
-                <div className="field-group">
+                <div className={`field-group ${touched.name && errors.name ? 'has-error' : ''}`}>
                   <label className="field-label" htmlFor="ct-name">Full name</label>
                   <input
                     id="ct-name" className="field-input" type="text"
                     placeholder="Ajiboye Samuel"
-                    value={form.name} onChange={e => set('name', e.target.value)}
+                    value={form.name}
+                    onChange={e => update('name', e.target.value)}
+                    onBlur={() => blur('name')}
                     disabled={status === 'loading'} autoComplete="name"
                   />
+                  {touched.name && <p className="field-error">{errors.name}</p>}
                 </div>
-                <div className="field-group">
+                <div className={`field-group ${touched.email && errors.email ? 'has-error' : ''}`}>
                   <label className="field-label" htmlFor="ct-email">Email address</label>
                   <input
                     id="ct-email" className="field-input" type="email"
                     placeholder="you@example.com"
-                    value={form.email} onChange={e => set('email', e.target.value)}
+                    value={form.email}
+                    onChange={e => update('email', e.target.value)}
+                    onBlur={() => blur('email')}
                     disabled={status === 'loading'} autoComplete="email"
                   />
+                  {touched.email && <p className="field-error">{errors.email}</p>}
                 </div>
               </div>
 
-              <div className="field-group">
-                <label className="field-label" htmlFor="ct-subject">What is this about?</label>
-                <select
-                  id="ct-subject" className="field-input"
-                  value={form.subject} onChange={e => set('subject', e.target.value)}
-                  disabled={status === 'loading'}
-                >
-                  <option value="">Select a topic…</option>
-                  {SUBJECTS.map(s => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
-              </div>
+              <CustomSubjectSelect
+                value={form.subject}
+                onChange={(v: string) => update('subject', v)}
+                onBlur={() => blur('subject')}
+                error={touched.subject ? errors.subject : ''}
+                disabled={status === 'loading'}
+              />
 
-              <div className="field-group">
+              <div className={`field-group ${touched.message && errors.message ? 'has-error' : ''}`}>
                 <label className="field-label" htmlFor="ct-message">Your message</label>
                 <textarea
                   id="ct-message" className="field-input"
                   placeholder="Tell us what's on your mind…"
-                  value={form.message} onChange={e => set('message', e.target.value)}
+                  value={form.message}
+                  onChange={e => update('message', e.target.value)}
+                  onBlur={() => blur('message')}
                   disabled={status === 'loading'}
                 />
+                {touched.message && <p className="field-error">{errors.message}</p>}
               </div>
 
               <button className="submit-btn" type="submit" disabled={status === 'loading'}>

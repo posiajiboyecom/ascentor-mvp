@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ShieldCheck, Users, Rocket, Crown } from 'lucide-react';
+import { ShieldCheck, Users, Rocket, Crown, MessageSquare, BookOpen, Mountain, Target, Shield, Globe, Clock, AlertTriangle } from 'lucide-react';
 import PublicShell from '@/components/layout/PublicShell';
 import GateButton from '@/components/GateButton';
 
@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'About Ascentor',
     description:
-      'Ascentor (formerly AscentorBI) is a purposeful living and leadership development platform: AI coaching with Sage, community in The Circle, expert sessions, and The Elevation Summit — its annual gathering in Lagos.',
+      'Ascentor (formerly AscentorBI) is a purposeful living and leadership development platform: AI coaching with Sage, community in The Circle, expert sessions, and The Elevation Summit, its annual gathering in Lagos.',
     alternates: { canonical: 'https://ascentorbi.com/about' },
     openGraph: {
       title: 'About Ascentor',
@@ -77,9 +77,9 @@ export default async function AboutPage() {
     .map((p) => p.trim())
     .filter(Boolean);
   const founderParas = founderBioParas.length > 0 ? founderBioParas : [
-    'Ajiboye is a Lagos-based technology and security professional, the founder of Guardsmann Technologies, and the creator of Ascentor — the official platform of The Elevation Summit.',
-    'He built Ascentor because he grew up inside the crisis it exists to solve. He watched people around him drift — not because they were incapable, but because no one had ever shown them what a built life looked like, or challenged them to think architecturally about their existence.',
-    'The Elevation Summit is not his career. It is not his brand. It is his life\'s purpose given organizational form — and he is building it to outlast him.',
+    'Ajiboye is a Lagos-based technology and security professional, the founder of Guardsmann Technologies, and the creator of Ascentor, the official platform of The Elevation Summit.',
+    'He built Ascentor because he grew up inside the crisis it exists to solve. He watched people around him drift, not because they were incapable, but because no one had ever shown them what a built life looked like, or challenged them to think architecturally about their existence.',
+    'The Elevation Summit is not his career. It is not his brand. It is his life\'s purpose given organizational form, and he is building it to outlast him.',
   ];
   const founderQuote = founder?.quote || '"I will not drift. And I will spend my life making it harder for others to drift."';
   const founderQuoteAttr = founder?.quote_attribution || `${founderName} · Founder, Ascentor`;
@@ -197,7 +197,7 @@ export default async function AboutPage() {
           <span style={{ color: '#C8A96E' }}>drift is a choice.</span>
         </h1>
         <p style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: '#374151', lineHeight: 1.75, maxWidth: '620px' }}>
-          Ascentor is the official daily platform of The Elevation Summit movement — built for purposeful individuals who have decided to build lives of meaning, leadership, and lasting impact.
+          Ascentor is the official daily platform of The Elevation Summit movement, built for purposeful individuals who have decided to build lives of meaning, leadership, and lasting impact.
         </p>
       </section>
 
@@ -214,10 +214,10 @@ export default async function AboutPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {[
-              { label: 'The Circle', desc: 'A global community of purposeful individuals holding each other accountable.' },
-              { label: 'The Coach', desc: 'AI-powered development support, available whenever you need to think clearly.' },
-              { label: 'The Resources', desc: 'Structured learning pathways built around the six dimensions of the total person.' },
-              { label: 'The Elevation Summit', desc: 'The Rise We Choose. The Elevation Story. 19 November 2026, Lagos.' },
+              { label: 'The Circle', desc: 'A global community of purposeful individuals holding each other accountable.', Icon: Users },
+              { label: 'The Coach', desc: 'AI-powered development support, available whenever you need to think clearly.', Icon: MessageSquare },
+              { label: 'The Resources', desc: 'Structured learning pathways built around the six dimensions of the total person.', Icon: BookOpen },
+              { label: 'The Elevation Summit', desc: 'The Rise We Choose. The Elevation Story. 19 November 2026, Lagos.', Icon: Mountain },
             ].map((item) => (
               <div key={item.label} style={{
                 padding: '1.25rem 1.5rem',
@@ -225,7 +225,10 @@ export default async function AboutPage() {
                 border: '1px solid rgba(255,255,255,0.07)',
                 borderRadius: '0.875rem',
               }}>
-                <p style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontWeight: 700, fontSize: '0.9375rem', color: '#C8A96E', marginBottom: '0.375rem' }}>{item.label}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.375rem' }}>
+                  <item.Icon size={18} color="#C8A96E" strokeWidth={2} />
+                  <p style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontWeight: 700, fontSize: '0.9375rem', color: '#C8A96E', margin: 0 }}>{item.label}</p>
+                </div>
                 <p style={{ fontSize: '0.875rem', color: '#6B7280', lineHeight: 1.6 }}>{item.desc}</p>
               </div>
             ))}
@@ -245,31 +248,39 @@ export default async function AboutPage() {
             {
               title: 'Purpose is built, not found',
               body: 'We do not believe in waiting to "discover" your purpose. Purpose is constructed through deliberate confrontation with your own capacity and calling.',
+              Icon: Target,
             },
             {
               title: 'Character is the foundation',
               body: 'No strategy, skill, or network substitutes for character. We build around the conviction that who you are determines what you build.',
+              Icon: Shield,
             },
             {
               title: 'Community accelerates everything',
               body: 'No person ascends alone. The quality of your community determines the ceiling of your growth. We are intentional about who is in The Circle.',
+              Icon: Users,
             },
             {
               title: 'The individual and the nation rise together',
               body: 'We believe that building purposeful individuals is the highest form of nation building. Africa needs built people, not just resourced ones.',
+              Icon: Globe,
             },
             {
               title: 'Think in centuries',
               body: 'We orient everything toward legacy. Decisions made with great-grandchildren in mind are different decisions. We build that instinct into the platform.',
+              Icon: Clock,
             },
             {
               title: 'Mediocrity is a betrayal',
-              body: 'Not of some external standard — of your own potential. We hold each other to the standard of becoming who we were built to be.',
+              body: 'Not of some external standard. Of your own potential. We hold each other to the standard of becoming who we were built to be.',
+              Icon: AlertTriangle,
             },
           ].map((item) => (
             <div key={item.title} className="value-card">
-              <div className="gold-bar" />
-              <h3>{item.title}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.5rem' }}>
+                <item.Icon size={20} color="#C8A96E" strokeWidth={2} />
+                <h3 style={{ margin: 0 }}>{item.title}</h3>
+              </div>
               <p>{item.body}</p>
             </div>
           ))}

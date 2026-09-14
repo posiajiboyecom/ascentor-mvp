@@ -4,7 +4,7 @@ import '@/styles/marketing.css';
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
 import PublicShell from '@/components/layout/PublicShell';
 import GateButton from '@/components/GateButton';
-import { Brain, Shield, Briefcase, Users, Globe, Clock } from 'lucide-react';
+import { Brain, Shield, Briefcase, Users, Globe, Clock, Landmark, Lightbulb, Star, Building } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'The Movement',
@@ -187,18 +187,14 @@ export default async function MovementPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }} className="movement-dimensions-grid">
               {(dimItems.length > 0 ? dimItems : defaultDimensions).map((dim) => (
                 <div key={dim.name} className="mkt-dimension-card">
-                  <div className="mkt-gold-bar" />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                    {dim.Icon && (
-                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(200,169,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <dim.Icon size={18} color="#C8A96E" strokeWidth={2} />
-                      </div>
-                    )}
-                    <div>
-                      <h3 style={{ fontFamily: 'Metropolis', fontSize: '1.125rem', fontWeight: 700, color: '#0F0F0E', marginBottom: '0.125rem' }}>{dim.name}</h3>
-                      <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{dim.subtitle}</p>
+                  {dim.Icon && (
+                    <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(200,169,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                      <dim.Icon size={20} color="#C8A96E" strokeWidth={2} />
                     </div>
-                  </div>
+                  )}
+                  <div className="mkt-gold-bar" style={{ marginBottom: '1rem' }} />
+                  <h3 style={{ fontFamily: 'Metropolis', fontSize: '1.125rem', fontWeight: 700, color: '#0F0F0E', marginBottom: '0.125rem' }}>{dim.name}</h3>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.75rem' }}>{dim.subtitle}</p>
                   <p style={{ fontSize: '0.9375rem', color: '#374151', lineHeight: 1.7 }}>{dim.description}</p>
                   <p className="contrast">{dim.contrast}</p>
                 </div>
@@ -218,16 +214,21 @@ export default async function MovementPage() {
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1.5rem', marginBottom: '4rem' }} className="movement-vision-grid">
               {[
-                { title: 'World Leaders', sub: 'In government, diplomacy, and global institutions' },
-                { title: 'Business Titans', sub: 'Building enterprises that solve real problems at scale' },
-                { title: 'Political Architects', sub: 'Redesigning the systems that govern nations' },
-                { title: 'Thought Leaders', sub: 'Producing the ideas that shape culture and civilization' },
-                { title: 'Culture Shapers', sub: 'Defining what excellence and integrity look like in their generation' },
-                { title: 'Nation Builders', sub: 'Leaving their nations measurably better than they found them' },
+                { title: 'World Leaders', sub: 'In government, diplomacy, and global institutions', Icon: Globe },
+                { title: 'Business Titans', sub: 'Building enterprises that solve real problems at scale', Icon: Briefcase },
+                { title: 'Political Architects', sub: 'Redesigning the systems that govern nations', Icon: Landmark },
+                { title: 'Thought Leaders', sub: 'Producing the ideas that shape culture and civilization', Icon: Lightbulb },
+                { title: 'Culture Shapers', sub: 'Defining what excellence and integrity look like in their generation', Icon: Star },
+                { title: 'Nation Builders', sub: 'Leaving their nations measurably better than they found them', Icon: Building },
               ].map((item) => (
                 <div key={item.title} style={{ padding: '1.5rem', background: '#FFFFFF', border: '1px solid #E8E6E1', borderRadius: '0.75rem' }}>
+                  {item.Icon && (
+                    <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(200,169,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                      <item.Icon size={20} color="#C8A96E" strokeWidth={2} />
+                    </div>
+                  )}
                   <div className="mkt-gold-bar" style={{ marginBottom: '0.75rem' }} />
                   <h3 style={{
                     fontFamily: 'Metropolis',
