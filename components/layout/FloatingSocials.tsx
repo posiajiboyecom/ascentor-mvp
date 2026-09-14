@@ -4,8 +4,17 @@ import { useEffect, useState } from 'react';
 
 const SOCIALS = [
   {
+    label: 'WhatsApp',
+    href: 'https://wa.me/+2348168692012',
+    bg: '#25D366',
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.92 0 1.75.46 3.45 1.32 4.95L2 22l5.4-1.42a9.9 9.9 0 0 0 4.64 1.15h.03c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.85 9.85 0 0 0 12.04 2zm5.71 13.82c-.24.68-1.37 1.24-1.91 1.32-.51.07-1 .15-3.01-.65-1.83-.75-3.36-2.19-4.46-4.04-.7-1.18-1.18-2.5-1.33-3.88-.08-.78.42-1.18.88-1.45.32-.19.68-.3 1.05-.31.08 0 .16 0 .24.01.35.03.53.04.73.31.22.31.46.9.62 1.2.08.15.1.33.03.49-.07.16-.22.28-.37.4-.11.09-.23.18-.34.28-.1.09-.21.19-.28.3-.22.32-.19.58-.06.86.34.71.77 1.36 1.29 1.93.62.68 1.36 1.2 2.18 1.54.25.1.48.06.66-.13.09-.09.18-.21.27-.32.18-.21.34-.44.52-.65.3-.35.62-.45 1-.24.37.21 1.05.55 1.37.73.32.18.52.28.6.44.08.16.04.38-.1.9z"/></svg>
+    ),
+  },
+  {
     label: 'X / Twitter',
     href: 'https://x.com/joinascentor',
+    bg: '#0F1419',
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16z"/><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/></svg>
     ),
@@ -13,6 +22,7 @@ const SOCIALS = [
   {
     label: 'LinkedIn',
     href: 'https://linkedin.com/company/joinascentor',
+    bg: '#0A66C2',
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
     ),
@@ -20,6 +30,7 @@ const SOCIALS = [
   {
     label: 'Instagram',
     href: 'https://instagram.com/joinascentor',
+    bg: 'linear-gradient(135deg, #F58529 0%, #DD2A7B 50%, #8134AF 100%)',
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
     ),
@@ -66,8 +77,8 @@ export default function FloatingSocials() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 0.25rem;
-          padding: 0.5rem 0.375rem;
+          gap: 0.75rem;
+          padding: 0.75rem 0.375rem;
           background: rgba(250, 250, 248, 0.88);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
@@ -96,20 +107,21 @@ export default function FloatingSocials() {
           align-items: center;
           justify-content: center;
           border-radius: 50%;
-          color: #6B7280;
+          color: #FFFFFF;
           text-decoration: none;
           opacity: 0;
           animation: fs-item-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-          transition: color 0.2s, background 0.2s, scale 0.2s;
+          transition: scale 0.2s, box-shadow 0.2s;
+          scale: 1.05;
+          box-shadow: 0 4px 12px rgba(15, 15, 14, 0.12);
         }
         @keyframes fs-item-in {
           from { opacity: 0; transform: translateX(-14px); }
           to   { opacity: 1; transform: translateX(0); }
         }
         .fs-link:hover {
-          color: #C8A96E;
-          background: rgba(200, 169, 110, 0.12);
           scale: 1.1;
+          box-shadow: 0 6px 16px rgba(15, 15, 14, 0.18);
         }
         .fs-label {
           position: absolute;
@@ -146,12 +158,16 @@ export default function FloatingSocials() {
         @media (max-width: 640px) {
           .fs-rail {
             left: 0.6rem;
-            padding: 0.375rem 0.25rem;
-            gap: 0.125rem;
+            padding: 0.625rem 0.25rem;
+            gap: 0.625rem;
           }
-          .fs-link { width: 34px; height: 34px; }
+          .fs-link { width: 36px; height: 36px; }
           .fs-link svg { width: 15px; height: 15px; }
-          .fs-label { display: none; }
+          .fs-label {
+            left: calc(100% + 0.5rem);
+            font-size: 0.6875rem;
+            padding: 0.3rem 0.5rem;
+          }
         }
         @media (prefers-reduced-motion: reduce) {
           .fs-rail, .fs-link {
@@ -170,7 +186,7 @@ export default function FloatingSocials() {
           rel="noopener noreferrer"
           className="fs-link"
           aria-label={s.label}
-          style={{ animationDelay: `${baseDelay + 250 + i * 140}ms` }}
+          style={{ animationDelay: `${baseDelay + 250 + i * 140}ms`, background: s.bg }}
         >
           {s.icon}
           <span className="fs-label">{s.label}</span>
