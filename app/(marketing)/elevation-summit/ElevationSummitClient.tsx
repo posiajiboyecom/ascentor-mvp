@@ -893,6 +893,15 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
             filter: grayscale(0);
             opacity: 1;
           }
+          @media (max-width: 640px) {
+            .pm-outer {
+              -webkit-mask-image: none;
+              mask-image: none;
+            }
+            .pm-left, .pm-right { animation-duration: 14s; }
+            .pm-item { padding: 0 1.5rem; }
+            .pm-logo { height: 36px; max-width: 120px; }
+          }
           @media (prefers-reduced-motion: reduce) {
             .pm-left, .pm-right { animation: none; }
           }
