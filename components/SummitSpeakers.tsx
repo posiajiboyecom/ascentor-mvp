@@ -38,7 +38,7 @@ const speakers: Speaker[] = [
   },
   {
     name: 'Kemeshi Samuel',
-    role: 'Co-founder & Chief Marketing Officer, FirstFounders Ltd.',
+    role: 'Co-founder & Chief Mar keting Officer, FirstFounders Ltd.',
     topic: 'Indigenous or Borrowed Blueprints: A Case for Both the African Mind and Importation of Things That Work as a Way to Fast-Track Our Participation in the Ongoing Global Revolution',
     bio: 'Kemeshi Samuel is Co-founder and Chief Marketing Officer at FirstFounders Ltd., a venture studio and ecosystem collective focused on helping early-stage African tech startups develop ideas into investable businesses. He is a VC analyst, ecosystem builder, and host of the Made in Africa podcast by Jamit, a show crafted to tell the stories of successful African founders to inspire young entrepreneurs to greatness. Some of the world-class founders he has interviewed include David Lanre Messan (Founder and CEO at FirstFounders Inc.), Iyinoluwa Aboyeji (Founding Partner at Future Africa), Babatunde Akin Moses (Co-founder and CEO at Sycamore), and Fisayo Fosudo (Tech YouTuber and Filmmaker), among others. Kemeshi Samuel is a trained and certified content marketer, one-time TEDx speaker, and founder of The Hustle Run Club.',
     photo: '/images/speakers/kemeshi-samuel.jpeg',
@@ -49,7 +49,7 @@ const speakers: Speaker[] = [
     name: "'Lekan Omotosho",
     role: 'AI Engineer, Turing',
     topic: 'The Elevation Within: My Rise from Curiosity to Global AI Impact',
-    bio: "'Lekan Omotosho is an AI Engineer at Turing, where he works on cutting-edge artificial intelligence systems for some of the world's leading technology companies. Born and raised in Nigeria, his journey from curiosity to global impact is a testament to what deliberate learning and relentless pursuit of excellence can produce. He brings a practitioner's perspective to the conversation on Africa's role in the global AI revolution.",
+    bio: "Olamilekan Matthew Omotosho is a Data Scientist and AI Engineer with over four years of experience working across machine learning, Generative AI, and AI research. He currently works with Turing, where he contributes to the development and evaluation of Large Language Models through reinforcement learning, supervised fine-tuning, and AI evaluation. A graduate of the Federal University of Technology, Akure, Olamilekan was the Best Graduating Student in the School of Computing, graduating with a CGPA of 4.83/5.00. His journey began with a simple curiosity about data and has grown into work spanning AI, healthcare, and intelligent systems. Beyond his professional work, Olamilekan is passionate about building communities and helping young Africans participate in technology. He has served as a Zindi Ambassador, Community Lead at Data Science Nigeria FUTA, Microsoft Learn Student Ambassador, and mentor across several tech communities. His contributions have earned him recognition within Nigeria's technology ecosystem and connected him with global AI, data science, and developer communities.",
     photo: '/images/speakers/lekan-omotosho.jpg',
     linkedinUrl: undefined,
     instagramUrl: undefined,
@@ -116,8 +116,21 @@ export default function SummitSpeakers() {
                 </>
               )}
 
-              {/* Actions row: circular social icons + Read profile button */}
+              {/* Actions row: Read Profile button then circular social icons */}
               <div className="summit-speaker-actions">
+                {speaker.bio && (
+                  <button
+                    className="summit-read-profile"
+                    onClick={() => setSelected(speaker)}
+                  >
+                    Read Profile
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '0.375rem' }}>
+                      <path d="M5 12h14" />
+                      <path d="M12 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
+
                 <div className="summit-social-row">
                   {speaker.linkedinUrl !== null && (
                     <a
@@ -148,15 +161,6 @@ export default function SummitSpeakers() {
                     </a>
                   )}
                 </div>
-
-                {speaker.bio && (
-                  <button
-                    className="summit-read-profile"
-                    onClick={() => setSelected(speaker)}
-                  >
-                    Read profile
-                  </button>
-                )}
               </div>
             </div>
           ))}
@@ -198,25 +202,25 @@ export default function SummitSpeakers() {
               <div className="ssp-header-text">
                 <h2 className="ssp-name">{selected.name}</h2>
                 {selected.role && <p className="ssp-role">{selected.role}</p>}
-                {/* Circular social icons in modal header */}
-                <div className="summit-social-row" style={{ marginTop: '0.625rem' }}>
-                  {selected.linkedinUrl !== null && (
-                    <a href={selected.linkedinUrl ?? '#'} target="_blank" rel="noopener noreferrer"
-                       aria-label="LinkedIn" className="summit-social-icon summit-social-linkedin">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                      </svg>
-                    </a>
-                  )}
-                  {selected.instagramUrl !== null && (
-                    <a href={selected.instagramUrl ?? '#'} target="_blank" rel="noopener noreferrer"
-                       aria-label="Instagram" className="summit-social-icon summit-social-instagram">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
-                      </svg>
-                    </a>
-                  )}
-                </div>
+              </div>
+              {/* Social icons sit in the same row, beside the name/title column */}
+              <div className="ssp-header-socials">
+                {selected.linkedinUrl !== null && (
+                  <a href={selected.linkedinUrl ?? '#'} target="_blank" rel="noopener noreferrer"
+                     aria-label="LinkedIn" className="summit-social-icon summit-social-linkedin">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                  </a>
+                )}
+                {selected.instagramUrl !== null && (
+                  <a href={selected.instagramUrl ?? '#'} target="_blank" rel="noopener noreferrer"
+                     aria-label="Instagram" className="summit-social-icon summit-social-instagram">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+                    </svg>
+                  </a>
+                )}
               </div>
             </div>
 
@@ -334,16 +338,17 @@ export default function SummitSpeakers() {
         .summit-social-linkedin { background: #0A66C2; color: #FFFFFF; }
         .summit-social-instagram { background: #E1306C; color: #FFFFFF; }
 
-        /* ── Read profile button ── */
+        /* ── Read Profile button ── */
         .summit-read-profile {
           display: inline-flex;
           align-items: center;
+          justify-content: center;
           gap: 0.375rem;
           padding: 0.5rem 1rem;
-          border-radius: 999px;
-          border: 1.5px solid #C8A96E;
-          background: transparent;
-          color: #0F0F0E;
+          border-radius: 10px;
+          border: none;
+          background: #0F0F0E;
+          color: #FFFFFF;
           font-family: Metropolis, 'Inter', sans-serif;
           font-size: 0.8125rem;
           font-weight: 600;
@@ -414,20 +419,26 @@ export default function SummitSpeakers() {
         /* ── Modal header ── */
         .ssp-header {
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           gap: 1.25rem;
           padding-right: 2.5rem;
+          flex-wrap: wrap;
         }
         .ssp-avatar {
           position: relative;
-          width: 80px;
-          height: 80px;
+          width: 72px;
+          height: 72px;
           border-radius: 50%;
           overflow: hidden;
           background: #E8E6E1;
           flex-shrink: 0;
         }
-        .ssp-header-text { flex: 1; }
+        .ssp-header-text { flex: 1; min-width: 160px; }
+        .ssp-header-socials {
+          display: flex;
+          gap: 0.875rem;
+          align-items: center;
+        }
         .ssp-name {
           font-family: var(--font-display);
           font-size: 1.25rem;

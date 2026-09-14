@@ -42,7 +42,7 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
       <Link href="/" className="ph-nav-link">Home</Link>
       <Link href="/movement" className="ph-nav-link">The Movement</Link>
       <Link href="/about" className="ph-nav-link">About</Link>
-      <Link href="/elevation-summit" className="ph-nav-link">Events</Link>
+      <Link href="/elevation-summit" className="ph-nav-link">The Elevation Summit</Link>
       {hasBlogPosts && <Link href="/blog" className="ph-nav-link">Resources</Link>}
       <Link href="/contact" className="ph-nav-link">Contact</Link>
     </>
@@ -60,7 +60,7 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
           transition: color 0.2s;
           white-space: nowrap;
         }
-        .ph-nav-link:hover { color: #0F0F0E; }
+        .ph-nav-link:hover { color: #C8A96E; }
 
         .ph-desktop-nav { display: none !important; }
         @media(min-width: 860px) { .ph-desktop-nav { display: flex !important; } }
@@ -72,10 +72,10 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
           width: 36px;
           height: 36px;
           background: none;
-          border: 1.5px solid #E8E6E1;
-          border-radius: 8px;
+          border: none;
+          border-radius: 0;
           cursor: pointer;
-          color: #374151;
+          color: #0F0F0E;
           flex-direction: column;
           gap: 4px;
           padding: 0;
@@ -208,8 +208,9 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
           position: 'sticky',
           top: 0,
           zIndex: 50,
-          background: scrolled ? 'rgba(250,250,248,0.98)' : 'rgba(250,250,248,0.95)',
-          backdropFilter: 'blur(12px)',
+          background: scrolled ? 'rgba(250,250,248,0.92)' : 'rgba(250,250,248,0.72)',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
           borderBottom: '1px solid #E8E6E1',
           transition: 'background 0.2s',
         }}
@@ -303,7 +304,7 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
           About
         </Link>
         <Link href="/elevation-summit" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
-          Events
+          The Elevation Summit
         </Link>
         {hasBlogPosts && (
           <Link href="/blog" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>

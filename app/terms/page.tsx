@@ -103,7 +103,7 @@ export default function TermsPage() {
               <ul>
                 <li><strong>Access</strong> your personal data at any time through your account</li>
                 <li><strong>Correct</strong> inaccurate information via your profile settings</li>
-                <li><strong>Delete</strong> your account and associated data by contacting us at hello@ascentorbi.com</li>
+                <li><strong>Delete</strong> your account and associated data by contacting us at joinascentor@gmail.com</li>
                 <li><strong>Export</strong> your data in a machine-readable format upon request</li>
                 <li><strong>Withdraw consent</strong> for marketing communications at any time</li>
                 <li><strong>Lodge a complaint</strong> with the Nigeria Data Protection Commission (NDPC) or relevant supervisory authority</li>
@@ -141,8 +141,8 @@ export default function TermsPage() {
 
             <Section title="12. Contact">
               <p>For questions about these Terms, your data, or to exercise your data rights:</p>
-              <p><strong>Email:</strong> hello@ascentorbi.com</p>
-              <p><strong>Data Protection Officer:</strong> dpo@ascentorbi.com</p>
+              <p><strong>Email:</strong> joinascentor@gmail.com</p>
+              <p><strong>Data Protection Officer:</strong> joinascentor@gmail.com</p>
             </Section>
           </div>
         </div>

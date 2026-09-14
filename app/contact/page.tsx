@@ -272,7 +272,7 @@ export default function ContactPage() {
             <div>
               <p className="info-item-label">Email</p>
               <p className="info-item-value">
-                <a href="mailto:hello@ascentorbi.com">hello@ascentorbi.com</a>
+                <a href="mailto:joinascentor@gmail.com">joinascentor@gmail.com</a>
               </p>
             </div>
             <div>

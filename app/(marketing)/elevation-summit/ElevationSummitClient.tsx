@@ -13,7 +13,7 @@ import PhoneInput from 'react-phone-number-input';
 import flags from 'react-phone-number-input/flags';
 import { useModal } from '@/components/Modal';
 import { useRouter } from 'next/navigation';
-import { Compass, Hammer, Crown, Sparkles, Network, Monitor, CalendarDays, MapPin, Clock, TicketCheck, Check } from 'lucide-react';
+import { Compass, Hammer, Crown, Sparkles, Network, Monitor, CalendarDays, MapPin, Clock, TicketCheck, Check, ArrowRight } from 'lucide-react';
 import SummitCountdown from '@/components/SummitCountdown';
 import SummitSpeakers from '@/components/SummitSpeakers';
 import SummitFAQ from '@/components/SummitFAQ';
@@ -64,7 +64,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
   const heroEyebrow   = hero?.eyebrow    || 'Inaugural Gathering · 19 November, 2026';
   const heroHeadline  = hero?.headline   || 'The Elevation<br />Summit';
-  const heroSubhead   = hero?.subhead    || 'One gathering. One decision. The rest of your life.';
+  const heroSubhead   = 'One gathering. One decision. The rest of your life.';
   const heroCtaLabel  = hero?.cta_label  || 'Register Now →';
   const heroCta2Label = hero?.cta2_label || 'What is The Summit?';
 
@@ -321,14 +321,14 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
             <img
               src="/images/elevation-summit-flyer.jpg"
               alt="The Elevation Summit: The Rise We Choose, 19 November 2026, Aderemi Makanjuola Hall, Lagos State University"
-              style={{ width: '100%', height: 'auto', borderRadius: '1rem', display: 'block' }}
+              style={{ width: '100%', height: 'auto', borderRadius: '1rem', display: 'block', border: '5px solid #0F0F0E' }}
             />
           </div>
           <div className="summit-hero-text">
             <p className="mkt-eyebrow" style={{ marginBottom: '1.5rem' }}>{heroEyebrow}</p>
             <h1 className="mkt-hero-headline" style={{ marginBottom: '1.5rem', maxWidth: '840px', color: '#0F0F0E' }}
               dangerouslySetInnerHTML={{ __html: h(heroHeadline) }} />
-            <p style={{ fontSize: 'clamp(1.125rem, 2.5vw, 1.375rem)', color: '#6B7280', lineHeight: 1.75, maxWidth: '600px', marginBottom: '3rem' }}>
+            <p style={{ fontSize: 'clamp(1.35rem, 3.2vw, 1.75rem)', color: '#4B5563', lineHeight: 1.6, maxWidth: '720px', marginBottom: '3rem', fontWeight: 500 }}>
               {heroSubhead}
             </p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -406,6 +406,49 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
             })}
           </div>
         </div>
+      </section>
+
+      {/* Theme, Date & Venue */}
+      <section style={{ background: '#FFFFFF', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <p className="mkt-eyebrow" style={{ marginBottom: '1rem' }}>SUMMIT THEME</p>
+          <h2 className="mkt-section-headline" style={{ color: '#0F0F0E', marginBottom: '1rem' }}>The Rise We Choose</h2>
+          <p style={{ fontSize: '1.0625rem', color: '#6B7280', lineHeight: 1.7, maxWidth: '640px', margin: '0 auto 3.5rem' }}>
+            The rise is not an accident; it is a decision. The Elevation Summit is the space where you choose it, in person or with us virtually.
+          </p>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', marginBottom: '3.5rem' }}>
+            <div style={{ flex: '1 1 220px', maxWidth: 280, padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <CalendarDays size={24} style={{ color: '#C8A96E', marginBottom: '0.75rem' }} />
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: '#0F0F0E', margin: 0, textAlign: 'center' }}>Date</p>
+              <p style={{ fontSize: '0.9375rem', color: '#6B7280', margin: '0.25rem 0 0', lineHeight: 1.6, textAlign: 'center' }}>Thursday 19th November, 2026</p>
+            </div>
+            <span className="summit-pipe" style={{ color: '#D1D5DB', fontSize: '1.5rem', fontWeight: 300, display: 'flex', alignItems: 'center' }}>|</span>
+            <div style={{ flex: '1 1 220px', maxWidth: 280, padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <Clock size={24} style={{ color: '#C8A96E', marginBottom: '0.75rem' }} />
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: '#0F0F0E', margin: 0, textAlign: 'center' }}>Time</p>
+              <p style={{ fontSize: '0.9375rem', color: '#6B7280', margin: '0.25rem 0 0', lineHeight: 1.6, textAlign: 'center' }}>10:00 AM WAT</p>
+            </div>
+            <span className="summit-pipe" style={{ color: '#D1D5DB', fontSize: '1.5rem', fontWeight: 300, display: 'flex', alignItems: 'center' }}>|</span>
+            <div style={{ flex: '1 1 220px', maxWidth: 280, padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <MapPin size={24} style={{ color: '#C8A96E', marginBottom: '0.75rem' }} />
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: '#0F0F0E', margin: 0, textAlign: 'center' }}>Venue</p>
+              <p style={{ fontSize: '0.9375rem', color: '#6B7280', margin: '0.25rem 0 0', lineHeight: 1.6, textAlign: 'center' }}>Aderemi Makanjuola Hall, Lagos State University</p>
+            </div>
+          </div>
+
+          <a href="#register" className="summit-register-cta" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#0F0F0E', color: '#FFFFFF', padding: '0.875rem 2rem', borderRadius: '0.625rem', fontWeight: 600, fontSize: '1rem', textDecoration: 'none', transition: 'background 0.2s, color 0.2s' }}>
+            Register Now
+            <ArrowRight size={18} />
+          </a>
+        </div>
+        <style>{`
+          .summit-pipe { color: #D1D5DB; font-weight: 300; display: flex; align-items: center; font-size: 1.5rem; }
+          .summit-register-cta:hover { background: #C8A96E !important; color: #0F0F0E !important; }
+          @media (max-width: 720px) {
+            .summit-pipe { display: none; }
+          }
+        `}</style>
       </section>
 
       {/* Who Attends */}
@@ -862,10 +905,10 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
             The Elevation Summit is built by people who have built something real - and by organisations that serve them. If you have a story worth telling to purposeful people, or you want to bring your organisation into the conversation, we would love to hear from you.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <a className="summit-cta-link" href="mailto:asamuel@ascentorbi.com?subject=Elevation Summit - Speaker Interest">
+            <a className="summit-cta-link" href="mailto:joinascentor@gmail.com?subject=Elevation Summit - Speaker Interest">
               Express speaker interest →
             </a>
-            <a className="summit-cta-link" href="mailto:asamuel@ascentorbi.com?subject=Elevation Summit - Partnership Interest">
+            <a className="summit-cta-link" href="mailto:joinascentor@gmail.com?subject=Elevation Summit - Partnership Interest">
               Explore partnership →
             </a>
           </div>
