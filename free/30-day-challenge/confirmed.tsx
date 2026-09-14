@@ -33,9 +33,9 @@ export default function ChallengeConfirmedPage() {
               Each one takes under 10 minutes. By Day 30 you'll have a complete 90-day leadership plan.
             </div>
           </div>
-          <Link href="/signup" className="cc-link">
+          <button className="cc-link" style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }} onClick={() => window.dispatchEvent(new Event('community-gate'))}>
             Want more? Try Ascentor free →
-          </Link>
+          </button>
         </div>
       </div>
     </>

@@ -328,8 +328,8 @@ export default async function ProductsPage() {
             <div className="prod-nav-links">
               <Link href="/pricing" className="prod-nav-link">Pricing</Link>
               <Link href="/blog" className="prod-nav-link">Blog</Link>
-              <Link href="/login" className="prod-nav-link">Log In</Link>
-              <Link href="/signup" className="prod-cta-btn">Get Started</Link>
+              <Link href="/?gate=1" className="prod-nav-link">Log In</Link>
+              <Link href="/?gate=1" className="prod-cta-btn">Get Started</Link>
             </div>
           </div>
         </nav>

@@ -189,7 +189,7 @@ export default async function BlogPostPage({ params }: Props) {
 
         <div className="mt-12 pt-8 text-center" style={{ borderTop: '1px solid #E5E5E4' }}>
           <p className="text-sm mb-4" style={{ color: '#6B7280' }}>Ready to invest in your leadership growth?</p>
-          <Link href="/signup" className="inline-block px-8 py-3.5 rounded-xl text-sm font-semibold"
+          <Link href="/?gate=1" className="inline-block px-8 py-3.5 rounded-xl text-sm font-semibold"
             style={{ background: '#E8A020', color: '#000' }}>
             Join Ascentor Trial →
           </Link>

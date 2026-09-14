@@ -37,7 +37,7 @@ export default async function BlogPage() {
               style={{ height: '32px', width: 'auto' }}
             />
             </Link>
-          <Link href="/signup" className="px-4 py-2 rounded-lg font-semibold text-sm" style={{ background: '#E8A020', color: '#000' }}>Sign Up</Link>
+          <Link href="/?gate=1" className="px-4 py-2 rounded-lg font-semibold text-sm" style={{ background: '#E8A020', color: '#000' }}>Sign Up</Link>
         </div>
       </nav>
 

@@ -141,9 +141,9 @@ function Nav() {
             style={{ color: '#6B7280' }}>How It Works</Link>
           <Link href="/pricing" className="text-sm hidden md:block"
             style={{ color: '#6B7280' }}>Pricing</Link>
-          <Link href="/login" className="text-sm hidden md:block"
+          <Link href="/?gate=1" className="text-sm hidden md:block"
             style={{ color: '#6B7280' }}>Log In</Link>
-          <Link href="/signup"
+          <Link href="/?gate=1"
             className="px-5 py-2 rounded-lg text-sm font-semibold"
             style={{ background: '#E8A020', color: '#000' }}>
             Join Ascentor Trial

@@ -3,6 +3,8 @@ import Link from 'next/link';
 import '@/styles/marketing.css';
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
 import PublicShell from '@/components/layout/PublicShell';
+import GateButton from '@/components/GateButton';
+import { Brain, Shield, Briefcase, Users, Globe, Clock } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'The Movement',
@@ -17,6 +19,7 @@ const dimensions = [
     description:
       'The total person thinks independently. They assess what is happening around them without the distortion of bias, trend, or fear. They read. They question. They hold complexity without collapsing into simplicity.',
     contrast: 'The unbuilt person reacts. The total person reflects, then responds.',
+    Icon: Brain,
   },
   {
     name: 'Character',
@@ -24,27 +27,31 @@ const dimensions = [
     description:
       'The total person is morally grounded. Their private life and their public life are the same life. They keep their word. They take responsibility for their failures. Their integrity is not situational.',
     contrast: 'The unbuilt person performs virtue. The total person practices it.',
+    Icon: Shield,
   },
   {
     name: 'Vocation',
     subtitle: 'How You Work',
     description:
-      'The total person works with purpose, not just productivity. They understand that their work is not merely a source of income — it is an expression of their calling and a contribution to something larger than themselves.',
+      'The total person works with purpose, not just productivity. They understand that their work is not merely a source of income. It is an expression of their calling and a contribution to something larger than themselves.',
     contrast: 'The unbuilt person works for approval. The total person works for impact.',
+    Icon: Briefcase,
   },
   {
     name: 'Relationships',
     subtitle: 'How You Lead Others',
     description:
-      'The total person understands that no life is built in isolation. They invest in relationships with intention — as a partner, parent, friend, leader, and mentor. They lead through the earned trust of consistent example.',
+      'The total person understands that no life is built in isolation. They invest in relationships with intention. As a partner, parent, friend, leader, and mentor. They lead through the earned trust of consistent example.',
     contrast: 'The unbuilt person uses relationships. The total person builds them.',
+    Icon: Users,
   },
   {
     name: 'Community',
     subtitle: 'What You Build Beyond Yourself',
     description:
-      'The total person is civic. They understand that their life is embedded in a community, a nation, a generation — and that they bear responsibility for what that community becomes. They do not merely consume. They contribute.',
+      'The total person is civic. They understand that their life is embedded in a community, a nation, a generation. And that they bear responsibility for what that community becomes. They do not merely consume. They contribute.',
     contrast: 'The unbuilt person asks what they can get. The total person asks what they can build.',
+    Icon: Globe,
   },
   {
     name: 'Legacy',
@@ -52,6 +59,7 @@ const dimensions = [
     description:
       'The total person thinks in centuries, not quarters. They make decisions with their great-grandchildren in mind. They build institutions, not just careers. They plant trees under whose shade they will never sit.',
     contrast: 'The unbuilt person lives for today. The total person builds for tomorrow.',
+    Icon: Clock,
   },
 ];
 
@@ -62,7 +70,7 @@ export default async function MovementPage() {
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
   const heroEyebrow  = hero?.eyebrow  || 'The Movement';
   const heroHeadline = hero?.headline || 'A generation is drifting.<br /><span style="color:#C8A96E">We exist to change that.</span>';
-  const heroSubhead  = hero?.subhead  || 'Ascentor is not a product. It is a movement — built around one uncompromising conviction about what is wrong with the world and what is required to fix it.';
+  const heroSubhead  = hero?.subhead  || 'Ascentor is not a product. It is a movement, built around one uncompromising conviction about what is wrong with the world and what is required to fix it.';
 
   const crisis = cms?.sections.crisis?.data as Record<string, string> | undefined;
   const crisisHeadline = crisis?.headline || 'The Crisis';
@@ -70,7 +78,7 @@ export default async function MovementPage() {
     ? crisis.paragraphs.split('\n').filter(Boolean)
     : [
         'Something has gone deeply wrong. Not with resources. Not with intelligence. Not with opportunity alone. What has gone wrong is internal.',
-        'A generation of people exists without architecture. They wake up each day and respond — to notifications, to trends, to the expectations of others, to the gravity of immediate gain. They are not lazy. They are not unintelligent. They are not bad.',
+        'A generation of people exists without architecture. They wake up each day and respond: to notifications, to trends, to the expectations of others, to the gravity of immediate gain. They are not lazy. They are not unintelligent. They are not bad.',
         'They are unbuilt.',
         'Leaders without vision, managing rather than building. Professionals without purpose, performing rather than creating. Communities without direction, reacting rather than architecting. Nations without ideology, surviving rather than ascending.',
         'This is not a political problem. It is not an economic problem. It is a human architecture problem. And it demands a movement.',
@@ -78,7 +86,7 @@ export default async function MovementPage() {
 
   const vision = cms?.sections.vision?.data as Record<string, string> | undefined;
   const visionHeadline = vision?.headline || 'The Vision';
-  const visionBody     = vision?.body     || 'A global community of purposeful, ideologically grounded individuals — in every nation, at every level of society — who have chosen to ascend rather than drift. Who are developing themselves completely. Who are building things that last.';
+  const visionBody     = vision?.body     || 'A global community of purposeful, ideologically grounded individuals, in every nation, at every level of society, who have chosen to ascend rather than drift. Who are developing themselves completely. Who are building things that last.';
 
   const dimHeader = cms?.sections.dimensions_header?.data as Record<string, string> | undefined;
   const dimHeadline = dimHeader?.headline || 'The Total Person';
@@ -146,16 +154,16 @@ export default async function MovementPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {[
-                { label: 'Purpose is not discovered passively', text: '— it is built through deliberate confrontation with one\'s own capacity and calling.' },
-                { label: 'Character is not inherited', text: '— it is forged through discipline, accountability, and the willingness to be challenged.' },
-                { label: 'Impact is not accidental', text: '— it is the result of people who thought in decades and centuries, not quarters and trends.' },
-                { label: 'The individual and the community rise together', text: '— no person ascends alone, and no community ascends without purposeful individuals within it.' },
-                { label: 'The world does not need more talented people', text: '— it needs more built people.' },
+                { label: 'Purpose is not discovered passively', text: 'it is built through deliberate confrontation with one\'s own capacity and calling.' },
+                { label: 'Character is not inherited', text: 'it is forged through discipline, accountability, and the willingness to be challenged.' },
+                { label: 'Impact is not accidental', text: 'it is the result of people who thought in decades and centuries, not quarters and trends.' },
+                { label: 'The individual and the community rise together', text: 'no person ascends alone, and no community ascends without purposeful individuals within it.' },
+                { label: 'The world does not need more talented people', text: 'it needs more built people.' },
               ].map((item, i) => (
                 <div key={i} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                   <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#C8A96E', marginTop: '0.6rem', flexShrink: 0 }} />
                   <p style={{ fontSize: '1.0625rem', color: '#374151', lineHeight: 1.75 }}>
-                    <strong style={{ color: '#0F0F0E', fontWeight: 600 }}>{item.label}</strong> {item.text}
+                    <strong style={{ color: '#0F0F0E', fontWeight: 600 }}>{item.label}</strong>. {item.text}
                   </p>
                 </div>
               ))}
@@ -176,12 +184,21 @@ export default async function MovementPage() {
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }} className="movement-dimensions-grid">
               {(dimItems.length > 0 ? dimItems : defaultDimensions).map((dim) => (
                 <div key={dim.name} className="mkt-dimension-card">
                   <div className="mkt-gold-bar" />
-                  <h3 style={{ fontFamily: 'Metropolis', fontSize: '1.125rem', fontWeight: 700, color: '#0F0F0E', marginBottom: '0.25rem' }}>{dim.name}</h3>
-                  <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#9CA3AF', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{dim.subtitle}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                    {dim.Icon && (
+                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(200,169,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <dim.Icon size={18} color="#C8A96E" strokeWidth={2} />
+                      </div>
+                    )}
+                    <div>
+                      <h3 style={{ fontFamily: 'Metropolis', fontSize: '1.125rem', fontWeight: 700, color: '#0F0F0E', marginBottom: '0.125rem' }}>{dim.name}</h3>
+                      <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{dim.subtitle}</p>
+                    </div>
+                  </div>
                   <p style={{ fontSize: '0.9375rem', color: '#374151', lineHeight: 1.7 }}>{dim.description}</p>
                   <p className="contrast">{dim.contrast}</p>
                 </div>
@@ -231,10 +248,10 @@ export default async function MovementPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 {[
                   'I did not choose this mission because it was convenient. I chose it because I grew up inside the crisis it exists to solve.',
-                  'I came from lack and limitation. I watched men and women around me drift — not because they were incapable but because no one had ever shown them what a built life looked like.',
-                  'I was not spared those circumstances. But somewhere in the middle of them, something was decided in me — not perfectly, not finally, but decisively:',
+                  'I came from lack and limitation. I watched men and women around me drift, not because they were incapable but because no one had ever shown them what a built life looked like.',
+                  'I was not spared those circumstances. But somewhere in the middle of them, something was decided in me, not perfectly, not finally, but decisively:',
                   'I will not drift. And I will spend my life making it harder for others to drift.',
-                  'Everything I build — every company, every community, every platform, every conversation — is in service of that one thing: to build and raise people of value and of great impact.',
+                  'Everything I build, every company, every community, every platform, every conversation, is in service of that one thing: to build and raise people of value and of great impact.'
                 ].map((para, i) => (
                   <p key={i} style={{
                     fontSize: para.startsWith('I will not') ? '1.25rem' : '1.0625rem',
@@ -275,12 +292,12 @@ export default async function MovementPage() {
               If you have read this far, something in you recognized itself in these words.
             </h2>
             <p style={{ color: '#6B7280', fontSize: '1.0625rem', lineHeight: 1.75, marginBottom: '2.5rem' }}>
-              Ascentor is not for everyone. It is for the ones who have decided. If that is you — your ascent begins here.
+              Ascentor is not for everyone. It is for the ones who have decided. If that is you, your ascent begins here.
             </p>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem', border: 'none', cursor: 'pointer', font: 'inherit' }} onClick={() => window.dispatchEvent(new Event('community-gate'))}>
+              <GateButton className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>
                 Join Ascentor
-              </button>
+              </GateButton>
               <Link href="/elevation-summit" className="btn-secondary" style={{ fontSize: '1rem', padding: '0.875rem 2rem', borderColor: 'rgba(255,255,255,0.15)', color: '#FAFAF8' }}>
                 The Elevation Summit
               </Link>

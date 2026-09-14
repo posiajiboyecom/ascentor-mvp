@@ -7,6 +7,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicShell from '@/components/layout/PublicShell';
+import GateButton from '@/components/GateButton';
 
 export const metadata: Metadata = {
   title: 'The Ascentor Manifesto',
@@ -135,16 +136,12 @@ export default function ManifestoPage() {
         <span className="mf-line" aria-hidden="true" style={{ margin: '3.5rem 0 2rem' }} />
 
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => window.dispatchEvent(new Event('community-gate'))}
-            style={{
+          <GateButton style={{
               background: '#C8A96E', color: '#0F0F0E', fontWeight: 600,
               padding: '0.8rem 1.6rem', borderRadius: 8, fontSize: '0.9rem',
-              border: 'none', cursor: 'pointer', font: 'inherit',
-            }}
-          >
+            }}>
             Join Ascentor
-          </button>
+          </GateButton>
           <Link
             href="/elevation-summit"
             style={{

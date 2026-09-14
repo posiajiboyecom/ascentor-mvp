@@ -33,8 +33,13 @@ export default function ErrorPage({
           border: '1px solid rgba(239,68,68,0.2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 24px',
-          fontSize: 28,
-        }}>⚠️</div>
+        }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(239,68,68,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </div>
 
         {/* Heading */}
         <h1 style={{
@@ -50,7 +55,7 @@ export default function ErrorPage({
           fontSize: 14, color: '#7A7260',
           lineHeight: 1.7, marginBottom: 28,
         }}>
-          An unexpected error occurred. Your data is safe — please try again
+          An unexpected error occurred. Your data is safe. Please try again
           or return to your dashboard.
         </p>
 

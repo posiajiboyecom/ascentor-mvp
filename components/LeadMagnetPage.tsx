@@ -84,13 +84,13 @@ export default function LeadMagnetPage({
         <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
           <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: 28 }} />
         </Link>
-        <Link href="/signup" style={{
+        <button onClick={() => window.dispatchEvent(new Event('community-gate'))} style={{
           padding: '8px 18px', borderRadius: 8, background: gold, color: '#0C0B08',
           fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 13,
-          textDecoration: 'none',
+          border: 'none', cursor: 'pointer',
         }}>
           Join Ascentor →
-        </Link>
+        </button>
       </nav>
 
       <div style={{ maxWidth: 1040, margin: '0 auto', padding: '64px 24px 80px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: 64, alignItems: 'start' }}>
@@ -284,12 +284,12 @@ export default function LeadMagnetPage({
                 <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: '#9A9080', marginBottom: 8 }}>
                   Want more than a guide?
                 </p>
-                <Link href="/signup" style={{
+                <button onClick={() => window.dispatchEvent(new Event('community-gate'))} style={{
                   fontFamily: "'Metropolis', sans-serif", fontSize: 13, fontWeight: 600,
-                  color: gold, textDecoration: 'none',
+                  color: gold, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                 }}>
                   Try Sage free for 7 days →
-                </Link>
+                </button>
               </div>
             </>
           )}

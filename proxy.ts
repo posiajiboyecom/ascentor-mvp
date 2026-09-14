@@ -141,7 +141,7 @@ const PROTECTED_API_PREFIXES = [
 
 // Public routes — no auth needed
 const PUBLIC_ROUTES = [
-  '/login', '/signup', '/checkout',
+  '/checkout',
   '/auth/callback',
   '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
   '/how-it-works', '/who-its-for', '/waitlist', '/newsletter',
@@ -164,6 +164,25 @@ export default async function proxy(request: NextRequest) {
     pathname.includes('.')
   ) {
     return NextResponse.next();
+  }
+
+  // Community gate: /login and /signup are not yet open.
+  // Redirect back to the referrer page (so the modal appears there), or
+  // fall back to the home page if there is no referrer.
+  if (pathname === '/login' || pathname === '/signup') {
+    const referer = request.headers.get('referer');
+    let dest: URL;
+    try {
+      dest = referer ? new URL(referer) : new URL('/', request.url);
+      // Avoid redirect loops: if the referer is itself /login or /signup, go home
+      if (dest.pathname === '/login' || dest.pathname === '/signup') {
+        dest = new URL('/', request.url);
+      }
+    } catch {
+      dest = new URL('/', request.url);
+    }
+    dest.searchParams.set('gate', '1');
+    return NextResponse.redirect(dest);
   }
 
   // Always pass through public page routes — still attach nonce for theme scripts

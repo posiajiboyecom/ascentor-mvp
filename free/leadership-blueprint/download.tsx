@@ -138,7 +138,7 @@ export default function BlueprintDownloadPage() {
             <div className="dl-next-desc">
               Ascentor gives you an AI leadership coach trained on African business context — available 24/7, remembers your goals, challenges your thinking.
             </div>
-            <Link href="/signup" className="dl-next-link">Start free → No credit card needed</Link>
+            <button className="dl-next-link" style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0 }} onClick={() => window.dispatchEvent(new Event('community-gate'))}>Start free → No credit card needed</button>
           </div>
         </div>
       </div>

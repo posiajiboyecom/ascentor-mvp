@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import CommunityGateModal from '@/components/CommunityGateModal';
+import GateAutoOpen from '@/components/GateAutoOpen';
 import RoutePreloader from '@/components/RoutePreloader';
 import { ModalProvider } from '@/components/Modal';
 import { NotificationProvider } from '@/components/Notifications';
@@ -130,6 +131,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ModalProvider>
           <NotificationProvider>
             <MobileInit />
+            <GateAutoOpen />
             {children}
             <CommunityGateModal />
             <PushPermission />

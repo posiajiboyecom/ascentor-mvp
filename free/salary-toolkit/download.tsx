@@ -49,7 +49,7 @@ export default function SalaryToolkitDownloadPage() {
               an AI coach that helps you think through negotiations, manage stakeholders,
               and lead with confidence.
             </div>
-            <Link href="/signup" className="sd-next-link">Try Ascentor free →</Link>
+            <button className="sd-next-link" style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0 }} onClick={() => window.dispatchEvent(new Event('community-gate'))}>Try Ascentor free →</button>
           </div>
         </div>
       </div>

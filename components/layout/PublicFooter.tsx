@@ -133,9 +133,9 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                 Community
               </h4>
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                <Link href="/signup" className="pf-link">
+                <button className="pf-link" style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, textAlign: 'left' }} onClick={() => window.dispatchEvent(new Event('community-gate'))}>
                   Join Free
-                </Link>
+                </button>
                 <Link href="/community" className="pf-link">
                   The Circle
                 </Link>
