@@ -63,7 +63,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
   // CMS section keys
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
   const heroEyebrow   = hero?.eyebrow    || 'Inaugural Gathering · 19 November, 2026';
-  const heroHeadline  = hero?.headline   || 'The Elevation<br />Summit';
+  const heroHeadline  = 'The Elevation Summit 2.0';
   const heroSubhead   = 'One gathering. One decision. The rest of your life. The Elevation Summit is a one-day convening for people ready to stop drifting and start building. It is where the right question, the right conversation, and the right community meet. Be in the room in Lagos or join us from anywhere in the world. Either way, you will leave with a clearer sense of who you are becoming and what you are building.';
   const heroCtaLabel  = hero?.cta_label  || 'Register Now →';
   const heroCta2Label = hero?.cta2_label || 'What is The Summit?';

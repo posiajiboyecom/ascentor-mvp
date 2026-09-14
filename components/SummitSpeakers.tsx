@@ -13,6 +13,7 @@ interface Speaker {
   // undefined = not yet provided (icon renders, links to '#').
   linkedinUrl?: string | null;
   instagramUrl?: string | null;
+  host?: boolean;
 }
 
 const PLACEHOLDER_PHOTO = '/images/speakers/samuel-peniel.jpg';
@@ -26,6 +27,7 @@ const speakers: Speaker[] = [
     photo: '/images/speakers/posi-ajiboye.png',
     linkedinUrl: 'https://www.linkedin.com/in/ayomiposiajiboye/',
     instagramUrl: 'https://www.instagram.com/posi_ajiboye/',
+    host: true,
   },
   {
     name: 'Samuel Peniel',
@@ -108,6 +110,9 @@ export default function SummitSpeakers() {
               <h3 className="summit-speaker-name">{speaker.name}</h3>
               {speaker.role && (
                 <p className="summit-speaker-role">{speaker.role}</p>
+              )}
+              {speaker.host && (
+                <span className="summit-host-pill">Host</span>
               )}
               {speaker.topic && (
                 <>
@@ -293,6 +298,18 @@ export default function SummitSpeakers() {
           font-size: 0.875rem;
           color: #6B7280;
           margin: 0.25rem 0 0;
+        }
+        .summit-host-pill {
+          display: inline-block;
+          background: #0F0F0E;
+          color: #FFFFFF;
+          font-size: 0.6875rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          padding: 0.35rem 0.75rem;
+          border-radius: 999px;
+          margin-top: 0.5rem;
         }
         .summit-speaker-label {
           font-size: 0.6875rem;

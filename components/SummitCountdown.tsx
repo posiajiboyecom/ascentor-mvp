@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { CalendarDays, Clock, MapPin } from 'lucide-react';
 
 // WAT (UTC+1). NOTE: 09:00 start time is an assumption, still unconfirmed.
 const EVENT_DATE = new Date('2026-11-19T09:00:00+01:00');
@@ -78,7 +79,17 @@ export default function SummitCountdown() {
           </div>
         )}
 
-        <p style={{ fontSize: '0.875rem', color: '#9CA3AF', marginTop: '2rem' }}>19 November 2026, Lagos, Nigeria</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '1.25rem', marginTop: '2rem', color: '#9CA3AF', fontSize: '0.875rem' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+            <CalendarDays size={16} /> 19 November 2026
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Clock size={16} /> 10:00 AM WAT
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+            <MapPin size={16} /> Aderemi Makanjuola Hall, Lagos State University
+          </span>
+        </div>
 
         <a
           href="#register"
