@@ -23,6 +23,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { sendPushToUser } from '@/lib/push';
 import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
+import { sendEmail as sendMail } from '@/lib/nodemailer';
 
 const service = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -56,23 +57,11 @@ async function getUserEmail(userId: string): Promise<string | null> {
   return data?.user?.email || null;
 }
 
-// ── Send email via Resend ────────────────────────────────────────────────────
+// ── Send email via shared SMTP mailer ───────────────────────────────────────
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) { console.warn('[notify] RESEND_API_KEY not set'); return false; }
-
   try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        from: 'Ascentor <notifications@ascentorbi.com>',
-        to,
-        subject,
-        html,
-      }),
-    });
-    return res.ok;
+    await sendMail({ from: 'Ascentor <notifications@ascentorbi.com>', to, subject, html });
+    return true;
   } catch (err: any) {
     console.error('[notify] email send error:', err.message);
     return false;

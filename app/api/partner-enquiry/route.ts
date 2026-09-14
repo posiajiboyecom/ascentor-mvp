@@ -32,6 +32,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { brandedEmailLayout, esc, p, goldButton, outlineButton, summaryRow, summaryBox, messageBlock } from '@/lib/emailTemplate'
+import { sendEmail as sendMail } from '@/lib/nodemailer'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,7 +40,6 @@ const supabase = createClient(
 )
 
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'asamuel@ascentorbi.com'
-const RESEND_API_KEY = process.env.RESEND_API_KEY!
 
 function acknowledgementEmail(name: string, org: string, recipient: string) {
   const firstName = name.split(' ')[0] || name
@@ -89,24 +89,7 @@ function founderNotificationEmail(name: string, email: string, org: string, mess
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: 'Ascentor Partners <noreply@ascentorbi.com>',
-      to,
-      subject,
-      html,
-    }),
-  })
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`Resend error: ${err}`)
-  }
-  return res.json()
+  await sendMail({ from: 'Ascentor Partners <noreply@ascentorbi.com>', to, subject, html })
 }
 
 export async function POST(req: NextRequest) {

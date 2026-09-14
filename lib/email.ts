@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import { sendEmail } from './nodemailer';
 import { brandedEmailLayout, esc, p, codeBox } from './emailTemplate';
 
 type SendPasswordResetOTPParams = {
@@ -8,24 +8,6 @@ type SendPasswordResetOTPParams = {
 };
 
 export async function sendPasswordResetOTP({ to, otpCode, firstName }: SendPasswordResetOTPParams) {
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = Number(process.env.SMTP_PORT || 587);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.EMAIL_FROM || 'Ascentor <no-reply@ascentorbi.com>';
-
-  if (!user || !pass) {
-    console.warn('[email] SMTP credentials not configured. Skipping email send.');
-    return;
-  }
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
-
   const html = brandedEmailLayout({
     preheader: `Your Ascentor password reset code is ${otpCode}`,
     eyebrow: 'Account Security',
@@ -46,3 +28,4 @@ export async function sendPasswordResetOTP({ to, otpCode, firstName }: SendPassw
     html,
   });
 }
+Em

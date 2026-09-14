@@ -111,6 +111,15 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
     '/images/PXL_20250125_115416461.jpg',
   ];
 
+  // Venue carousel — Aderemi Makanjuola Hall, Lagos State University.
+  // Same crossfade pattern as the landing page hero carousel.
+  const VENUE_IMAGES = [
+    '/images/venue-1.jpg',
+    '/images/venue-2.jpg',
+    '/images/venue-3.jpg',
+    '/images/venue-4.jpg',
+  ];
+
   const shuffledTop = useMemo(() => GALLERY_IMAGES, []);
   const shuffledBottom = useMemo(() => [...GALLERY_IMAGES].reverse(), []);
 
@@ -137,6 +146,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
   });
 
   const [activeTab, setActiveTab] = useState<'onsite' | 'virtual'>('onsite');
+  const [venueSlide, setVenueSlide] = useState(0);
   // Non-null while the post-payment success overlay is showing
   const [paymentSuccess, setPaymentSuccess] = useState<'onsite' | 'virtual' | null>(null);
   // Non-null while the pre-payment confirmation overlay is showing
@@ -278,6 +288,13 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
   };
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      setVenueSlide((prev) => (prev + 1) % VENUE_IMAGES.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [VENUE_IMAGES.length]);
+
+  useEffect(() => {
     if (typeof window !== 'undefined' && !document.getElementById('paystack-script')) {
       const s = document.createElement('script');
       s.id = 'paystack-script';
@@ -302,9 +319,9 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
         <div className="summit-hero-grid" style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div className="summit-hero-image">
             <img
-              src="/images/elevation-summit-2.jpeg"
-              alt="The Elevation Summit"
-              style={{ width: '100%', borderRadius: '1rem', objectFit: 'cover', maxHeight: '520px', display: 'block' }}
+              src="/images/elevation-summit-flyer.jpg"
+              alt="The Elevation Summit — The Rise We Choose, 19 November 2026, Aderemi Makanjuola Hall, Lagos State University"
+              style={{ width: '100%', height: 'auto', borderRadius: '1rem', display: 'block' }}
             />
           </div>
           <div className="summit-hero-text">
@@ -424,6 +441,67 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
 
       {/* Countdown — sits immediately before the registration form section */}
       <SummitCountdown />
+
+      {/* The Venue — image column first in DOM so it renders on top on
+          mobile; desktop reorders to text-left / image-right. Reuses the
+          summit-hero-grid classes and the landing page hero carousel
+          pattern (fixed 4:3 box, crossfade, dot nav). */}
+      <section style={{ background: '#F4F3EF', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
+        <div className="summit-hero-grid" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div className="summit-hero-image">
+            <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', borderRadius: '1rem', overflow: 'hidden', background: '#E8E6E1' }}>
+              {VENUE_IMAGES.map((src, i) => (
+                <img
+                  key={src}
+                  src={src}
+                  alt="Aderemi Makanjuola Hall, Lagos State University"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    opacity: venueSlide === i ? 1 : 0,
+                    transition: 'opacity 0.6s ease',
+                    pointerEvents: 'none',
+                  }}
+                />
+              ))}
+              <div style={{ position: 'absolute', bottom: '1rem', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '0.5rem', zIndex: 2 }}>
+                {VENUE_IMAGES.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setVenueSlide(i)}
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      border: 'none',
+                      background: venueSlide === i ? '#0F0F0E' : 'rgba(255,255,255,0.7)',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s, transform 0.15s',
+                      padding: 0,
+                    }}
+                    aria-label={`Go to venue photo ${i + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="summit-hero-text">
+            <p className="mkt-eyebrow" style={{ marginBottom: '1.5rem' }}>The Venue</p>
+            <h2 className="mkt-section-headline" style={{ color: '#0F0F0E', marginBottom: '1.5rem' }}>
+              Aderemi Makanjuola Hall,<br />Lagos State University.
+            </h2>
+            <p style={{ fontSize: '1.0625rem', color: '#6B7280', lineHeight: 1.8, maxWidth: '560px', marginBottom: '2.5rem' }}>
+              A landmark room for a landmark decision. Set on Iba Road, Lagos, the Hall hosts the inaugural Elevation Summit on 19 November, 2026 — come physically, or join from anywhere in the world.
+            </p>
+            <div>
+              <a href="#register" className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>Secure your place →</a>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── Registration form ── */}
       <section id="register" style={{ padding: 'clamp(4rem, 8vw, 7rem) 1.5rem', background: '#FAFAF8' }}>

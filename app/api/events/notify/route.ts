@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { brandedEmailLayout, esc, goldButton } from '@/lib/emailTemplate';
+import { sendEmail, getMailer } from '@/lib/nodemailer';
 
 function buildHtml(opts: { firstName: string; eventTitle: string; message: string; recipient: string }) {
   const body = esc(opts.message).replace(/\n/g, '<br>');
@@ -36,8 +37,7 @@ export async function POST(req: Request) {
   if (!eventId || !status || !subject?.trim() || !message?.trim())
     return NextResponse.json({ error: 'eventId, status, subject and message are required' }, { status: 400 });
 
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 });
+  if (!getMailer()) return NextResponse.json({ error: 'SMTP credentials not configured' }, { status: 500 });
 
   const { data: event } = await supabaseAdmin.from('public_events').select('title').eq('id', eventId).single();
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
@@ -53,16 +53,13 @@ export async function POST(req: Request) {
     const firstName = r.full_name.trim().split(/\s+/)[0];
     const personalised = (message as string).replace(/\{name\}/gi, firstName);
     try {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          from: 'Ascentor <notifications@ascentorbi.com>',
-          to: r.email, subject: subject.trim(),
-          html: buildHtml({ firstName, eventTitle: event.title, message: personalised, recipient: r.email }),
-        }),
+      await sendEmail({
+        from: 'Ascentor <notifications@ascentorbi.com>',
+        to: r.email,
+        subject: subject.trim(),
+        html: buildHtml({ firstName, eventTitle: event.title, message: personalised, recipient: r.email }),
       });
-      if (res.ok) sent++; else failed++;
+      sent++;
     } catch { failed++; }
   }));
 

@@ -21,6 +21,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
+import { sendEmail } from '@/lib/nodemailer';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -260,18 +261,11 @@ export async function PATCH(req: NextRequest) {
 
       const msg = messages[action];
       if (msg) {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            Authorization:  `Bearer ${process.env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from:    'Ascentor Partners <noreply@ascentorbi.com>',
-            to:      ownerProfile.email,
-            subject: msg.subject,
-            html:    msg.body,
-          }),
+        await sendEmail({
+          from:    'Ascentor Partners <noreply@ascentorbi.com>',
+          to:      ownerProfile.email,
+          subject: msg.subject,
+          html:    msg.body,
         });
       }
     }

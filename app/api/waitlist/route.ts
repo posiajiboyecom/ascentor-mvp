@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/nodemailer';
+import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from '@/lib/emailTemplate';
 
 // ── Lazy clients (never executed at build/module-eval time) ─
 function getSupabase() {
@@ -10,18 +11,16 @@ function getSupabase() {
   );
 }
 
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY!);
-}
-
 // ── Email HTML builder ─────────────────────────────────────
 function buildConfirmationEmailHtml({
   name,
+  email,
   position,
   token,
   refCode,
 }: {
   name: string;
+  email: string;
   position: number;
   token: string;
   refCode: string;
@@ -29,7 +28,6 @@ function buildConfirmationEmailHtml({
   const confirmUrl  = `${process.env.NEXT_PUBLIC_APP_URL}/waitlist/confirm?token=${token}`;
   const referralUrl = `${process.env.NEXT_PUBLIC_APP_URL}/waitlist?ref=${refCode}`;
   const unsubUrl    = `${process.env.NEXT_PUBLIC_APP_URL}/waitlist/unsubscribe?token=${token}`;
-  const year        = new Date().getFullYear();
 
   const perks = [
     'Meet Sage — your 24/7 AI mentor, trained on African career context',
@@ -38,128 +36,33 @@ function buildConfirmationEmailHtml({
     'Career tools from student to executive level',
   ];
 
-  return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>You're on the Ascentor waitlist</title>
-    </head>
-    <body style="margin:0;padding:0;background:#FAFAF9;font-family:'DM Sans',Arial,sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAFAF9;padding:40px 16px;">
-        <tr>
-          <td align="center">
-            <table width="560" cellpadding="0" cellspacing="0"
-              style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E5E5E4;max-width:560px;width:100%;">
+  const perkRows = perks.map(item => `
+    <tr>
+      <td style="width:24px;vertical-align:top;padding:4px 0;"><span style="color:#C8A96E;font-size:14px;">✓</span></td>
+      <td style="padding:4px 0;font-size:14px;color:#3F3F3C;line-height:1.5;">${item}</td>
+    </tr>`).join('');
 
-              <!-- Header -->
-              <tr>
-                <td style="background:#0A0E17;padding:32px 40px;text-align:center;">
-                  <p style="margin:0;font-size:22px;font-weight:700;color:#F59E0B;font-family:Georgia,serif;">
-                    ⬆ Ascentor
-                  </p>
-                </td>
-              </tr>
-
-              <!-- Body -->
-              <tr>
-                <td style="padding:40px 40px 32px;">
-                  <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#0A0E17;font-family:Georgia,serif;line-height:1.2;">
-                    You're in, ${name}. 🎉
-                  </h1>
-                  <p style="margin:0 0 24px;font-size:15px;color:#6B7280;line-height:1.7;">
-                    Welcome to the Ascentor waitlist. You're position
-                    <strong style="color:#0A0E17;">#${position}</strong> in line.
-                    Early members get <strong style="color:#F59E0B;">3 months free</strong> on launch.
-                  </p>
-
-                  <!-- Position card -->
-                  <table width="100%" cellpadding="0" cellspacing="0"
-                    style="background:#0A0E17;border-radius:12px;margin-bottom:28px;">
-                    <tr>
-                      <td style="padding:24px 28px;">
-                        <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6B7280;">
-                          YOUR WAITLIST POSITION
-                        </p>
-                        <p style="margin:0 0 4px;font-size:48px;font-weight:700;color:#F59E0B;font-family:Georgia,serif;line-height:1;">
-                          #${position}
-                        </p>
-                        <p style="margin:0;font-size:12px;color:#6B7280;">
-                          3 months free on any plan · No credit card needed
-                        </p>
-                      </td>
-                    </tr>
-                  </table>
-
-                  <!-- Confirm CTA -->
-                  <p style="margin:0 0 16px;font-size:14px;color:#6B7280;line-height:1.6;">
-                    Confirm your email to fully secure your spot:
-                  </p>
-                  <table cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-                    <tr>
-                      <td style="background:#F59E0B;border-radius:10px;">
-                        <a href="${confirmUrl}"
-                          style="display:inline-block;padding:14px 32px;font-size:14px;font-weight:700;color:#000000;text-decoration:none;">
-                          Confirm My Email →
-                        </a>
-                      </td>
-                    </tr>
-                  </table>
-
-                  <!-- Referral nudge -->
-                  <table width="100%" cellpadding="0" cellspacing="0"
-                    style="background:#FFF9EB;border-radius:12px;border:1px solid rgba(245,158,11,0.25);margin-bottom:28px;">
-                    <tr>
-                      <td style="padding:20px 24px;">
-                        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#B45309;">
-                          🚀 Move up the list faster
-                        </p>
-                        <p style="margin:0 0 12px;font-size:13px;color:#92400E;line-height:1.6;">
-                          Every friend you refer moves you up. Share your personal link:
-                        </p>
-                        <p style="margin:0;font-size:12px;color:#B45309;font-family:Metropolis,'Inter',sans-serif;word-break:break-all;">
-                          ${referralUrl}
-                        </p>
-                      </td>
-                    </tr>
-                  </table>
-
-                  <!-- What is coming -->
-                  <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#0A0E17;">
-                    What you're getting access to:
-                  </p>
-                  ${perks.map(item => `
-                  <table cellpadding="0" cellspacing="0" style="margin-bottom:8px;width:100%;">
-                    <tr>
-                      <td style="width:20px;vertical-align:top;padding-top:1px;">
-                        <span style="color:#F59E0B;font-size:13px;">✓</span>
-                      </td>
-                      <td style="font-size:13px;color:#374151;line-height:1.5;">${item}</td>
-                    </tr>
-                  </table>`).join('')}
-                </td>
-              </tr>
-
-              <!-- Footer -->
-              <tr>
-                <td style="padding:20px 40px;border-top:1px solid #E5E5E4;text-align:center;">
-                  <p style="margin:0;font-size:12px;color:#9CA3AF;line-height:1.8;">
-                    © ${year} Ascentor Inc. ·
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/terms" style="color:#9CA3AF;text-decoration:none;">Terms</a>
-                    ·
-                    <a href="${unsubUrl}" style="color:#9CA3AF;text-decoration:none;">Unsubscribe</a>
-                  </p>
-                </td>
-              </tr>
-
-            </table>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>
-  `;
+  return brandedEmailLayout({
+    preheader: `You're on the Ascentor waitlist — position #${position}.`,
+    eyebrow: 'Waitlist Confirmed',
+    heading: `You're in, ${esc(name)}.`,
+    recipient: email,
+    content:
+      p(`Welcome to the Ascentor waitlist. You're position <strong>#${position}</strong> in line. Early members get <strong style="color:#C8A96E;">3 months free</strong> on launch.`) +
+      summaryBox(
+        summaryRow('Your position', `<span style="font-size:24px;color:#C8A96E;">#${position}</span>`) +
+        summaryRow('Launch perk', '3 months free on any plan · No credit card needed')
+      ) +
+      p('Confirm your email to fully secure your spot:') +
+      goldButton('Confirm My Email →', confirmUrl) +
+      summaryBox(
+        summaryRow('Move up faster', `Every friend you refer moves you up the list.`) +
+        summaryRow('Your link', `<a href="${referralUrl}" style="color:#C8A96E;text-decoration:none;word-break:break-all;">${referralUrl}</a>`)
+      ) +
+      p('<strong>What you\'re getting access to:</strong>') +
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">${perkRows}</table>` +
+      p(`<span style="color:#9CA3AF;font-size:12px;"><a href="${unsubUrl}" style="color:#9CA3AF;">Unsubscribe</a> from waitlist emails</span>`),
+  });
 }
 
 // ── POST /api/waitlist ─────────────────────────────────────
@@ -212,21 +115,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Send confirmation email — non-blocking (failure does not break the response)
-    const { error: emailError } = await getResend().emails.send({
-      from:    'Ascentor <hello@ascentorbi.com>',
-      to:      body.email,
-      subject: `You're on the Ascentor waitlist — position #${data.position} 🎉`,
-      html:    buildConfirmationEmailHtml({
-        name:     body.first_name,
-        position: data.position,
-        token:    data.confirmation_token,
-        refCode:  data.referral_code,
-      }),
-    });
-
-    if (emailError) {
+    try {
+      await sendEmail({
+        from:    'Ascentor <hello@ascentorbi.com>',
+        to:      body.email,
+        subject: `You're on the Ascentor waitlist — position #${data.position}`,
+        html:    buildConfirmationEmailHtml({
+          name:     body.first_name,
+          email:    body.email,
+          position: data.position,
+          token:    data.confirmation_token,
+          refCode:  data.referral_code,
+        }),
+      });
+    } catch (emailError) {
       // User is already saved — log only, do not fail the request
-      console.error('[waitlist] Resend error:', emailError);
+      console.error('[waitlist] Email error:', emailError);
     }
 
     return NextResponse.json(

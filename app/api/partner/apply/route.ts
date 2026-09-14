@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from '@/lib/emailTemplate';
+import { sendEmail } from '@/lib/nodemailer';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -106,17 +107,11 @@ export async function POST(req: NextRequest) {
       // Build a signed approval URL pointing to the admin partners page
       const adminApproveUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://ascentorbi.com'}/admin/partners?action=approve&id=${partner.id}`;
 
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from:    'Ascentor Partners <noreply@ascentorbi.com>',
-          to:      FOUNDER_EMAIL,
-          subject: `New Partner Application: ${platform_name}`,
-          html: brandedEmailLayout({
+      await sendEmail({
+        from:    'Ascentor Partners <noreply@ascentorbi.com>',
+        to:      FOUNDER_EMAIL,
+        subject: `New Partner Application: ${platform_name}`,
+        html: brandedEmailLayout({
             preheader: `New partner application: ${platform_name}`,
             eyebrow: 'Admin Notification',
             heading: 'New Partner Application',
@@ -131,7 +126,6 @@ export async function POST(req: NextRequest) {
               ) +
               goldButton('Review &amp; Approve in Admin Panel →', adminApproveUrl) +
               p('<span style="color:#9CA3AF;font-size:13px;">Log in to your admin account at ascentorbi.com/admin/partners to approve, reject, or adjust the revenue share.</span>'),
-          }),
         }),
       });
     } catch (emailErr) {

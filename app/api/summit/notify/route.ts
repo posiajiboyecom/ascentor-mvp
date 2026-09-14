@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { brandedEmailLayout, esc, goldButton } from '@/lib/emailTemplate';
+import { sendEmail, getMailer } from '@/lib/nodemailer';
 
 function buildHtml(opts: { firstName: string; message: string; recipient: string }) {
   const bodyHtml = esc(opts.message).replace(/\n/g, '<br>');
@@ -48,8 +49,7 @@ export async function POST(req: Request) {
   if (typeof message !== 'string' || !message.trim())
     return NextResponse.json({ error: 'message is required' }, { status: 400 });
 
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 });
+  if (!getMailer()) return NextResponse.json({ error: 'SMTP credentials not configured' }, { status: 500 });
 
   // Fetch registrants with the given status
   const { data: regs } = await supabaseAdmin
@@ -67,17 +67,13 @@ export async function POST(req: Request) {
     const personalised = (message as string).replace(/\{name\}/gi, firstName);
 
     try {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          from: 'Ascentor <notifications@ascentorbi.com>',
-          to: r.email,
-          subject: (subject as string).trim(),
-          html: buildHtml({ firstName, message: personalised, recipient: r.email }),
-        }),
+      await sendEmail({
+        from: 'Ascentor <notifications@ascentorbi.com>',
+        to: r.email,
+        subject: (subject as string).trim(),
+        html: buildHtml({ firstName, message: personalised, recipient: r.email }),
       });
-      if (res.ok) sent++; else failed++;
+      sent++;
     } catch { failed++; }
   }));
 

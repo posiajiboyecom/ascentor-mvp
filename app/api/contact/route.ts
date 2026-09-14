@@ -27,13 +27,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { brandedEmailLayout, esc, p, goldButton, outlineButton, summaryRow, summaryBox, messageBlock } from '@/lib/emailTemplate';
+import { sendEmail as sendMail } from '@/lib/nodemailer';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-const RESEND_API_KEY  = process.env.RESEND_API_KEY!;
 const ADMIN_EMAIL     = process.env.FOUNDER_EMAIL || 'asamuel@ascentorbi.com';
 const FROM_ADDRESS    = 'Ascentor <notifications@ascentorbi.com>';
 
@@ -49,22 +49,7 @@ const SUBJECT_LABELS: Record<string, string> = {
 // ── Email sender ─────────────────────────────────────────────────────────────
 
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  if (!RESEND_API_KEY) {
-    console.warn('[contact] RESEND_API_KEY not set — skipping email');
-    return;
-  }
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ from: FROM_ADDRESS, to, subject, html }),
-  });
-  if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error(`Resend error ${res.status}: ${err}`);
-  }
+  await sendMail({ from: FROM_ADDRESS, to, subject, html });
 }
 
 // ── Email templates ──────────────────────────────────────────────────────────

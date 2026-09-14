@@ -28,6 +28,7 @@ import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { createInviteToken } from '@/lib/inviteToken';
 import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
+import { sendEmail } from '@/lib/nodemailer';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -259,26 +260,19 @@ export async function POST(req: NextRequest) {
             const token     = createInviteToken(partner.id, email);
             const inviteUrl = `https://${partner.subdomain}.ascentorbi.com/join?token=${encodeURIComponent(token)}`;
 
-            await fetch('https://api.resend.com/emails', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                from:    `${partner.name} <noreply@ascentorbi.com>`,
-                to:      email,
-                subject: `You've been invited to ${partner.name}`,
-                html: brandedEmailLayout({
-                  preheader: `You've been invited to join ${partner.name}.`,
-                  eyebrow: esc(partner.name),
-                  heading: 'You\'re invited.',
-                  recipient: email,
-                  content:
-                    p(`You've been personally invited to join <strong>${esc(partner.name)}</strong> — a private coaching community.`) +
-                    goldButton('Accept Invitation →', inviteUrl) +
-                    p(`<span style="color:#9CA3AF;font-size:13px;">This invite is for ${esc(email)} only.</span>`),
-                }),
+            await sendEmail({
+              from:    `${partner.name} <noreply@ascentorbi.com>`,
+              to:      email,
+              subject: `You've been invited to ${partner.name}`,
+              html: brandedEmailLayout({
+                preheader: `You've been invited to join ${partner.name}.`,
+                eyebrow: esc(partner.name),
+                heading: 'You\'re invited.',
+                recipient: email,
+                content:
+                  p(`You've been personally invited to join <strong>${esc(partner.name)}</strong> — a private coaching community.`) +
+                  goldButton('Accept Invitation →', inviteUrl) +
+                  p(`<span style="color:#9CA3AF;font-size:13px;">This invite is for ${esc(email)} only.</span>`),
               }),
             });
           } catch (emailErr) {
@@ -359,29 +353,22 @@ export async function PATCH(req: NextRequest) {
       const token     = createInviteToken(partner.id, member.email);
       const inviteUrl = `https://${partner.subdomain}.ascentorbi.com/join?token=${encodeURIComponent(token)}`;
       try {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from:    `${partner.name} <noreply@ascentorbi.com>`,
-            to:      member.email,
-            subject: `Reminder: Your invite to ${partner.name}`,
-            html: brandedEmailLayout({
-              preheader: `Your invitation to ${partner.name} is still waiting.`,
-              eyebrow: esc(partner.name),
-              heading: 'Still waiting for you.',
-              recipient: member.email,
-              content:
-                p(`A reminder that you have a pending invitation to join <strong>${esc(partner.name)}</strong>.`) +
-                goldButton('Accept Invitation →', inviteUrl),
-            }),
+        await sendEmail({
+          from:    `${partner.name} <noreply@ascentorbi.com>`,
+          to:      member.email,
+          subject: `Reminder: Your invite to ${partner.name}`,
+          html: brandedEmailLayout({
+            preheader: `Your invitation to ${partner.name} is still waiting.`,
+            eyebrow: esc(partner.name),
+            heading: 'Still waiting for you.',
+            recipient: member.email,
+            content:
+              p(`A reminder that you have a pending invitation to join <strong>${esc(partner.name)}</strong>.`) +
+              goldButton('Accept Invitation →', inviteUrl),
           }),
         });
       } catch (emailErr) {
-        console.warn('[Members PATCH] Resend email failed:', emailErr);
+        console.warn('[Members PATCH] Email send failed:', emailErr);
       }
 
       await supabase

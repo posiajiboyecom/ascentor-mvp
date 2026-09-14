@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from '@/lib/emailTemplate';
+import { sendEmail } from '@/lib/nodemailer';
 
 function confirmationHtml(opts: {
   firstName: string;
@@ -86,27 +87,20 @@ export async function POST(req: Request) {
 
   // Send confirmation email (non-fatal)
   try {
-    const apiKey = process.env.RESEND_API_KEY;
-    if (apiKey) {
-      const firstName = (full_name as string).trim().split(/\s+/)[0];
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          from:    'Ascentor <notifications@ascentorbi.com>',
-          to:      (email as string).trim().toLowerCase(),
-          subject: event.confirmation_subject || `You're registered — ${event.title}`,
-          html:    confirmationHtml({
-            firstName,
-            eventTitle:        event.title,
-            eventDate:         event.event_date || '',
-            eventLocation:     event.location   || '',
-            confirmationBody:  event.confirmation_body || "We have your details and will be in touch closer to the event.",
-            recipient:         (email as string).trim().toLowerCase(),
-          }),
-        }),
-      });
-    }
+    const firstName = (full_name as string).trim().split(/\s+/)[0];
+    await sendEmail({
+      from:    'Ascentor <notifications@ascentorbi.com>',
+      to:      (email as string).trim().toLowerCase(),
+      subject: event.confirmation_subject || `You're registered — ${event.title}`,
+      html:    confirmationHtml({
+        firstName,
+        eventTitle:        event.title,
+        eventDate:         event.event_date || '',
+        eventLocation:     event.location   || '',
+        confirmationBody:  event.confirmation_body || "We have your details and will be in touch closer to the event.",
+        recipient:         (email as string).trim().toLowerCase(),
+      }),
+    });
   } catch (err: any) { console.warn('[events/register] email non-fatal:', err.message); }
 
   return NextResponse.json({ ok: true });

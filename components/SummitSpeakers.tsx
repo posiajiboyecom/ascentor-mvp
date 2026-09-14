@@ -39,9 +39,9 @@ const speakers: Speaker[] = [
   },
   {
     name: "'Lekan Omotosho",
-    role: 'Data Scientist & ML Engineer',
+    role: 'AI Engineer, Turing',
     topic: 'The Elevation Within: My Rise from Curiosity to Global AI Impact',
-    photo: PLACEHOLDER_PHOTO,
+    photo: '/images/speakers/lekan-omotosho.jpg',
   },
   {
     name: 'Akintomiwa Samuel O.',

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import FloatingSocials from '@/components/layout/FloatingSocials';
 
 type PublicHeaderProps = {
   hasBlogPosts?: boolean;
@@ -329,6 +330,7 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
       </div>
 
       <ScrollToTop />
+      <FloatingSocials />
     </>
   );
 }
