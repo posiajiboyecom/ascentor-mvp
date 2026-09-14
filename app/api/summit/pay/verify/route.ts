@@ -55,8 +55,21 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', registrationId);
 
+    const amountPaid = paystackData.data.amount / 100;
+    const currency   = paystackData.data.currency ?? 'NGN';
+
     try {
-      await sendPaymentConfirmedEmail(registration.email, registration.full_name, registration.attendance_type);
+      await sendPaymentConfirmedEmail({
+        email:          registration.email,
+        fullName:       registration.full_name,
+        whatsapp:       registration.whatsapp ?? '',
+        organisation:   registration.organisation ?? '',
+        attendanceType: registration.attendance_type as 'onsite' | 'virtual',
+        amountPaid,
+        currency,
+        registrationId: String(registration.id),
+        reference,
+      });
       await sendAdminPaymentNotification(registration.full_name, registration.email, registration.organisation);
     } catch (err) {
       console.error('Failed to send payment confirmation emails', err);

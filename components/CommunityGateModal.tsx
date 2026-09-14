@@ -42,10 +42,10 @@ export default function CommunityGateModal() {
           </svg>
         </div>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, color: '#0F0F0E', margin: '0 0 0.75rem' }}>
-          Not Open Yet
+          Something&apos;s Coming
         </h2>
         <p style={{ fontSize: '0.9375rem', color: '#6B7280', lineHeight: 1.7, margin: '0 0 1.75rem' }}>
-          The Ascentor community platform is not yet open to the public. Join us at The Elevation Summit and be among the first to gain access when it launches.
+          The Ascentor community platform isn&apos;t live yet, but it&apos;s close. Be at The Elevation Summit and you&apos;ll be among the first through the door when we open.
         </p>
         <button
           onClick={() => setOpen(false)}

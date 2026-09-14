@@ -37,7 +37,17 @@ export async function handleSummitWebhookEvent(payload: any) {
     .eq('id', existing.id);
 
   try {
-    await sendPaymentConfirmedEmail(existing.email, existing.full_name);
+    await sendPaymentConfirmedEmail({
+      email:          existing.email,
+      fullName:       existing.full_name,
+      whatsapp:       existing.whatsapp ?? '',
+      organisation:   existing.organisation ?? '',
+      attendanceType: existing.attendance_type as 'onsite' | 'virtual',
+      amountPaid:     payload.data.amount / 100,
+      currency:       payload.data.currency ?? 'NGN',
+      registrationId: String(existing.id),
+      reference:      payload.data.reference,
+    });
     await sendAdminPaymentNotification(existing.full_name, existing.email, existing.organisation);
   } catch (err) {
     console.error('Failed to send payment confirmation emails from webhook', err);

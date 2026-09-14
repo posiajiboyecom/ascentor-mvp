@@ -819,9 +819,10 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
           <div className="pm-track pm-left">
             {[1, 2, 3, 4].flatMap((_, i) => [
               <a key={`r1-rexta-${i}`} href="https://rextatech.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></a>,
-              <a key={`r1-dtb-${i}`}   href="https://deartechbro.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/dear-tech-bro-logo.jpg"   alt="Dear Tech Bro" className="pm-logo" /></a>,
+              <a key={`r1-dtb-${i}`}   href="https://deartechbro.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/dear-tech-bro-logo.png"   alt="Dear Tech Bro" className="pm-logo" /></a>,
               <a key={`r1-px-${i}`}    href="https://www.projectx.ng/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/projectx-logo.png"         alt="Project X"     className="pm-logo" /></a>,
               <a key={`r1-olem-${i}`}  href="https://wa.me/2348118466555" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/olem-studio-logo.png"       alt="Olem Studio"   className="pm-logo" /></a>,
+              <a key={`r1-fp-${i}`}    href="https://tinyurl.com/2k54hf7v" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/fountain-print-logo.png"      alt="Fountain Print" className="pm-logo" /></a>,
             ])}
           </div>
         </div>
@@ -831,8 +832,9 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
           <div className="pm-track pm-right">
             {[1, 2, 3, 4].flatMap((_, i) => [
               <a key={`r2-olem-${i}`}  href="https://wa.me/2348118466555" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/olem-studio-logo.png"       alt="Olem Studio"   className="pm-logo" /></a>,
+              <a key={`r2-fp-${i}`}    href="https://tinyurl.com/2k54hf7v" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/fountain-print-logo.png"      alt="Fountain Print" className="pm-logo" /></a>,
               <a key={`r2-px-${i}`}    href="https://www.projectx.ng/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/projectx-logo.png"         alt="Project X"     className="pm-logo" /></a>,
-              <a key={`r2-dtb-${i}`}   href="https://deartechbro.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/dear-tech-bro-logo.jpg"   alt="Dear Tech Bro" className="pm-logo" /></a>,
+              <a key={`r2-dtb-${i}`}   href="https://deartechbro.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/dear-tech-bro-logo.png"   alt="Dear Tech Bro" className="pm-logo" /></a>,
               <a key={`r2-rexta-${i}`} href="https://rextatech.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></a>,
             ])}
           </div>

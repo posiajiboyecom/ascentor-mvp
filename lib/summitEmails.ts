@@ -1,5 +1,6 @@
 import { summitMailer } from './nodemailer';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from './emailTemplate';
+import { generateSummitTicket, type TicketData } from './summitTicket';
 
 const SUMMIT_URL = 'https://ascentorbi.com/elevation-summit';
 
@@ -24,35 +25,56 @@ export async function sendRegistrationReceivedEmail(to: string, fullName: string
   });
 }
 
-export async function sendPaymentConfirmedEmail(to: string, fullName: string, attendanceType?: string) {
+export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
+  const { email, fullName, attendanceType } = {
+    email:          ticketData.email,
+    fullName:       ticketData.fullName,
+    attendanceType: ticketData.attendanceType,
+  };
   const isVirtual = attendanceType === 'virtual';
-  // The Zoom link is created and shared manually by the organizers,
-  // not injected from an env var. If this is ever automated, a
-  // per-event or per-registration link store would be needed instead.
   const attendanceBlock = isVirtual
     ? p('Your Zoom link for the virtual session will be shared with you separately closer to the event date. Keep an eye on your inbox.')
     : p('Venue details will follow closer to the event date.');
+
+  // Generate branded PDF ticket
+  let pdfBuffer: Buffer | null = null;
+  try {
+    pdfBuffer = await generateSummitTicket(ticketData);
+  } catch (err) {
+    console.error('[summitTicket] PDF generation failed:', err);
+  }
+
   await summitMailer.sendMail({
     from: process.env.SUMMIT_MAIL_FROM,
-    to,
+    to: email,
     subject: 'Your Elevation Summit registration is confirmed',
     html: brandedEmailLayout({
-      preheader: 'Your payment is confirmed — see you at the Elevation Summit.',
+      preheader: 'Your payment is confirmed. Your ticket is attached.',
       eyebrow: 'Elevation Summit · 19 November 2026',
       heading: "You're confirmed.",
-      recipient: to,
+      recipient: email,
       content:
         p(`Hi ${esc(fullName)},`) +
-        p(`Your payment has been received and your <strong>${isVirtual ? 'virtual' : 'onsite'} place</strong> at the Elevation Summit is confirmed.`) +
+        p(`Your payment has been received and your <strong>${isVirtual ? 'virtual' : 'onsite'} place</strong> at the Elevation Summit is confirmed. Your admission ticket is attached to this email as a PDF.`) +
         summaryBox(
-          summaryRow('Attendance', isVirtual ? 'Virtual' : 'Onsite — Lagos') +
+          summaryRow('Attendance', isVirtual ? 'Virtual' : 'Onsite, Lagos') +
           summaryRow('Date', '19 November 2026') +
+          summaryRow('Amount', `\u20a6${ticketData.amountPaid.toLocaleString('en-NG')}`) +
           summaryRow('Status', '<span style="color:#C8A96E;">Confirmed &amp; Paid</span>')
         ) +
         attendanceBlock +
-        p('We look forward to seeing you there.') +
+        p('Please keep your ticket safe and present it on the day of the event. We look forward to seeing you there.') +
         goldButton('View Event Details →', SUMMIT_URL),
     }),
+    ...(pdfBuffer ? {
+      attachments: [
+        {
+          filename: 'Elevation-Summit-2026-Ticket.pdf',
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        },
+      ],
+    } : {}),
   });
 }
 
