@@ -817,9 +817,11 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
         {/* Row 1 — scrolls left */}
         <div className="pm-outer">
           <div className="pm-track pm-left">
-            {[1, 2, 3, 4].flatMap(() => [
-              <span key={Math.random()} className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></span>,
-              <span key={Math.random()} className="pm-item"><img src="/logos/dear-tech-bro-logo.jpg"   alt="Dear Tech Bro" className="pm-logo" /></span>,
+            {[1, 2, 3, 4].flatMap((_, i) => [
+              <a key={`r1-rexta-${i}`} href="https://rextatech.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></a>,
+              <a key={`r1-dtb-${i}`}   href="https://deartechbro.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/dear-tech-bro-logo.jpg"   alt="Dear Tech Bro" className="pm-logo" /></a>,
+              <a key={`r1-px-${i}`}    href="https://www.projectx.ng/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/projectx-logo.png"         alt="Project X"     className="pm-logo" /></a>,
+              <a key={`r1-olem-${i}`}  href="https://wa.me/2348118466555" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/olem-studio-logo.png"       alt="Olem Studio"   className="pm-logo" /></a>,
             ])}
           </div>
         </div>
@@ -827,9 +829,11 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
         {/* Row 2 — scrolls right */}
         <div className="pm-outer" style={{ marginTop: '2rem' }}>
           <div className="pm-track pm-right">
-            {[1, 2, 3, 4].flatMap(() => [
-              <span key={Math.random()} className="pm-item"><img src="/logos/dear-tech-bro-logo.jpg"   alt="Dear Tech Bro" className="pm-logo" /></span>,
-              <span key={Math.random()} className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></span>,
+            {[1, 2, 3, 4].flatMap((_, i) => [
+              <a key={`r2-olem-${i}`}  href="https://wa.me/2348118466555" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/olem-studio-logo.png"       alt="Olem Studio"   className="pm-logo" /></a>,
+              <a key={`r2-px-${i}`}    href="https://www.projectx.ng/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/projectx-logo.png"         alt="Project X"     className="pm-logo" /></a>,
+              <a key={`r2-dtb-${i}`}   href="https://deartechbro.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/dear-tech-bro-logo.jpg"   alt="Dear Tech Bro" className="pm-logo" /></a>,
+              <a key={`r2-rexta-${i}`} href="https://rextatech.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></a>,
             ])}
           </div>
         </div>
@@ -872,6 +876,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
             padding: 0 2.5rem;
             border-right: 1px solid #E8E6E1;
             flex-shrink: 0;
+            text-decoration: none;
           }
           .pm-logo {
             height: 44px;

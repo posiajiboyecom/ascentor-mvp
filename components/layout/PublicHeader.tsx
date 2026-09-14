@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import FloatingSocials from '@/components/layout/FloatingSocials';
 
+const openGate = () => window.dispatchEvent(new Event('community-gate'));
+
 type PublicHeaderProps = {
   hasBlogPosts?: boolean;
 };
@@ -249,9 +251,9 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
             </div>
 
             <div className="ph-desktop-cta" style={{ marginLeft: 'auto', marginRight: '0.75rem' }}>
-              <Link href="/signup" className="ph-cta-btn">
+              <button className="ph-cta-btn" onClick={openGate} style={{ cursor: 'pointer' }}>
                 Join Community
-              </Link>
+              </button>
             </div>
 
             <button
@@ -316,17 +318,16 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
         </Link>
 
         <div className="ph-mobile-cta">
-          <Link
-            href="/login"
+          <button
             className="ph-mobile-link"
-            style={{ border: 'none', fontSize: '0.9375rem', color: '#6B7280' }}
-            onClick={() => setMobileMenuOpen(false)}
+            style={{ border: 'none', fontSize: '0.9375rem', color: '#6B7280', background: 'none', cursor: 'pointer' }}
+            onClick={() => { setMobileMenuOpen(false); openGate(); }}
           >
             Sign in
-          </Link>
-          <Link href="/signup" className="ph-cta-btn" onClick={() => setMobileMenuOpen(false)}>
+          </button>
+          <button className="ph-cta-btn" style={{ cursor: 'pointer' }} onClick={() => { setMobileMenuOpen(false); openGate(); }}>
             Join Community
-          </Link>
+          </button>
         </div>
       </div>
 

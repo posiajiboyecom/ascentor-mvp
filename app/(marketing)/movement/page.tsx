@@ -278,9 +278,9 @@ export default async function MovementPage() {
               Ascentor is not for everyone. It is for the ones who have decided. If that is you — your ascent begins here.
             </p>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link href="/signup" className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>
+              <button className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem', border: 'none', cursor: 'pointer', font: 'inherit' }} onClick={() => window.dispatchEvent(new Event('community-gate'))}>
                 Join Ascentor
-              </Link>
+              </button>
               <Link href="/elevation-summit" className="btn-secondary" style={{ fontSize: '1rem', padding: '0.875rem 2rem', borderColor: 'rgba(255,255,255,0.15)', color: '#FAFAF8' }}>
                 The Elevation Summit
               </Link>

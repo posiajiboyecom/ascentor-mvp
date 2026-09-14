@@ -135,16 +135,16 @@ export default function ManifestoPage() {
         <span className="mf-line" aria-hidden="true" style={{ margin: '3.5rem 0 2rem' }} />
 
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <Link
-            href="/signup"
+          <button
+            onClick={() => window.dispatchEvent(new Event('community-gate'))}
             style={{
               background: '#C8A96E', color: '#0F0F0E', fontWeight: 600,
               padding: '0.8rem 1.6rem', borderRadius: 8, fontSize: '0.9rem',
-              textDecoration: 'none',
+              border: 'none', cursor: 'pointer', font: 'inherit',
             }}
           >
             Join Ascentor
-          </Link>
+          </button>
           <Link
             href="/elevation-summit"
             style={{

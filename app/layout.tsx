@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import CommunityGateModal from '@/components/CommunityGateModal';
 import RoutePreloader from '@/components/RoutePreloader';
 import { ModalProvider } from '@/components/Modal';
 import { NotificationProvider } from '@/components/Notifications';
@@ -131,7 +131,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <NotificationProvider>
             <MobileInit />
             {children}
-            <PWAInstallPrompt />
+            <CommunityGateModal />
             <PushPermission />
           </NotificationProvider>
         </ModalProvider>

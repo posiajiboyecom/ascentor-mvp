@@ -462,7 +462,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
             </Link>
             <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }} className="desktop-nav">
               <Link href="/movement" className="nav-link">The Movement</Link>
-              <Link href="/signup" className="nav-link">Join Community</Link>
+              <button className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }} onClick={() => window.dispatchEvent(new Event('community-gate'))}>Join Community</button>
               <div className="events-dropdown-wrap" onClick={e => e.stopPropagation()}>
                 <button className={`events-dropdown-btn${eventsOpen ? ' open' : ''}`} onClick={() => setEventsOpen(o => !o)}>
                   Events
@@ -504,7 +504,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
       {mobileMenuOpen && (
         <div className="mobile-menu-overlay" onClick={() => setMobileMenuOpen(false)}>
           <Link href="/movement" className="mobile-menu-link">The Movement</Link>
-          <Link href="/signup" className="mobile-menu-link">Join Community</Link>
+          <button className="mobile-menu-link" style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', width: '100%', textAlign: 'left' }} onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('community-gate')); }}>Join Community</button>
           <p style={{ padding: '0.75rem 0', borderBottom: '1px solid #E8E6E1', margin: 0, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>Events</p>
           {events.map(ev => (
             <Link key={ev.slug} href={`/events/${ev.slug}`} className="mobile-menu-link" style={{ paddingLeft: '1rem', fontSize: '1rem', fontWeight: 500 }}>
@@ -514,8 +514,8 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
           {hasBlogPosts && <Link href="/blog" className="mobile-menu-link">Resources</Link>}
           <Link href="/about" className="mobile-menu-link">About</Link>
           <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <Link href="/login" className="mobile-menu-link" style={{ border: 'none', fontSize: '0.9375rem', color: '#6B7280' }}>Sign in</Link>
-            <Link href="/signup" className="btn-primary" style={{ textAlign: 'center', padding: '0.875rem' }}>Join Ascentor →</Link>
+            <button className="mobile-menu-link" style={{ background: 'none', border: 'none', fontSize: '0.9375rem', color: '#6B7280', cursor: 'pointer', font: 'inherit' }} onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('community-gate')); }}>Sign in</button>
+            <button className="btn-primary" style={{ textAlign: 'center', padding: '0.875rem', border: 'none', cursor: 'pointer', font: 'inherit', width: '100%' }} onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('community-gate')); }}>Join Ascentor →</button>
           </div>
         </div>
       )}
@@ -735,7 +735,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
                 marginBottom: '1rem',
               }}>Community</h4>
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                <Link href="/signup">Join Free</Link>
+                <button style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', color: 'inherit', textDecoration: 'none' }} onClick={() => window.dispatchEvent(new Event('community-gate'))}>Join Free</button>
                 <Link href="/community">The Circle</Link>
                 {hasBlogPosts && <Link href="/blog">Resources</Link>}
                 <Link href="/products">Products</Link>

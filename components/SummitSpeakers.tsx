@@ -23,7 +23,7 @@ const speakers: Speaker[] = [
     name: 'Posi Ajiboye',
     role: 'Founder, Ascentor',
     topic: 'The Rise We Choose: Building the Man, The Nation, and Continent',
-    bio: 'Posi Ajiboye is the founder of Ascentor and the convener of The Elevation Summit. A builder, thinker, and advocate for purposeful living, he launched Ascentor to create the infrastructure for Africa\'s next generation of leaders. His work centres on the belief that lasting impact begins with the intentional construction of self.',
+    bio: 'Posi Ajiboye is a Quality Assurance Analyst at Anifie Inc., a creative and multimedia company based in Irvine, California, whose clients include Honda, Toyota, Cartier, Hitachi, and Fujitsu. He brings together technical rigor with a passion for purposeful leadership - holding a degree in Information Systems among many professional certifications. He maintains an independent security research portfolio spanning Security Engineering, API security, and AI/LLM security. He is also the founder behind Ascentor, the platform of The Elevation Summit, a global community and movement dedicated to purposeful living, leadership, and lasting impact, culminating in yearly convocation of intellectuals and builders across Africa. His work sits at the intersection of Technology, Business, and Human development, building things that connect people and help them build lives that outlast them.',
     photo: '/images/speakers/posi-ajiboye.png',
     linkedinUrl: 'https://www.linkedin.com/in/ayomiposiajiboye/',
     instagramUrl: 'https://www.instagram.com/posi_ajiboye/',

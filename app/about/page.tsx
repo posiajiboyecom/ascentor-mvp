@@ -391,14 +391,15 @@ export default async function AboutPage() {
               fontWeight: 700, fontSize: '1rem',
               borderRadius: '0.5rem', textDecoration: 'none',
             }}>Register Interest →</Link>
-            <Link href="/signup" style={{
+            <button onClick={() => window.dispatchEvent(new Event('community-gate'))} style={{
               padding: '0.875rem 2rem',
               background: 'transparent', color: '#FAFAF8',
               fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
               fontWeight: 600, fontSize: '1rem',
-              borderRadius: '0.5rem', textDecoration: 'none',
+              borderRadius: '0.5rem',
               border: '1.5px solid rgba(255,255,255,0.15)',
-            }}>Join Ascentor →</Link>
+              cursor: 'pointer',
+            }}>Join Ascentor →</button>
           </div>
         </div>
       </section>

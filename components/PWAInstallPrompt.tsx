@@ -34,6 +34,10 @@ const T = {
 };
 
 export default function PWAInstallPrompt() {
+  // PWA install prompt is disabled until the community platform launches.
+  return null;
+
+  // eslint-disable-next-line no-unreachable
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner]         = useState(false);
   const [isInstalled, setIsInstalled]       = useState(false);
