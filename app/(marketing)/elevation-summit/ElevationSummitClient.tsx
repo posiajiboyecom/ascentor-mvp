@@ -319,7 +319,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
         <div className="summit-hero-grid" style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div className="summit-hero-image">
             <img
-              src="/images/elevation-summit-flyer.jpg"
+              src="/images/elevation-summit-flyer.jpg?v=2"
               alt="The Elevation Summit: The Rise We Choose, 19 November 2026, Aderemi Makanjuola Hall, Lagos State University"
               style={{ width: '100%', height: 'auto', borderRadius: '1rem', display: 'block', border: '5px solid #0F0F0E' }}
             />

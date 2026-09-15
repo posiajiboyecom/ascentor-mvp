@@ -59,7 +59,7 @@ const speakers: Speaker[] = [
     name: 'Lekan Omotosho',
     role: 'AI Engineer, Turing',
     topic: 'The Elevation Within: My Rise from Curiosity to Global AI Impact',
-    bio: "Olamilekan Matthew Omotosho is a Data Scientist and AI Engineer with over four years of experience working across machine learning, Generative AI, and AI research.\n\nHe currently works with Turing, where he contributes to the development and evaluation of Large Language Models through reinforcement learning, supervised fine-tuning, and AI evaluation.\n\nA graduate of the Federal University of Technology, Akure, Olamilekan was the Best Graduating Student in the School of Computing, graduating with a CGPA of 4.83/5.00.\n\nHis journey began with a simple curiosity about data and has grown into work spanning AI, healthcare, and intelligent systems.\n\nBeyond his professional work, Olamilekan is passionate about building communities and helping young Africans participate in technology.\n\nHe has served as a Zindi Ambassador, Community Lead at Data Science Nigeria FUTA, Microsoft Learn Student Ambassador, and mentor across several tech communities.\n\nHis contributions have earned him recognition within Nigeria's technology ecosystem and connected him with global AI, data science, and developer communities.",
+    bio: "Olamilekan Matthew Omotosho is a Data Scientist and AI Engineer with over four years of experience working across machine learning, Generative AI, and AI research.\n\nHe currently works with Turing, where he contributes to the development and evaluation of Large Language Models through reinforcement learning, supervised fine-tuning, and AI evaluation.\n\nA graduate of the Federal University of Technology, Akure, Olamilekan was the Best Graduating Student in the School of Computing. He holds a BTech in Information Systems, an MBA in Artificial Intelligence, and is currently pursuing an MSc in Financial Engineering. His journey began with a simple curiosity about data and has grown into work spanning AI, healthcare, financial technology, and intelligent systems, including his work on Parentyn at Codematic.\n\nBeyond his professional work, Olamilekan is passionate about building communities and helping young Africans participate in technology.\n\nHe has served as a Zindi Ambassador, Community Lead at Data Science Nigeria FUTA, Microsoft Learn Student Ambassador, and mentor across several tech communities.\n\nHis contributions have earned him recognition within Nigeria's technology ecosystem and connected him with global AI, data science, and developer communities.",
     photo: '/images/speakers/lekan-omotosho.jpg',
     linkedinUrl: 'https://www.linkedin.com/in/olamilekan-omotosho',
     instagramUrl: null,
@@ -67,7 +67,7 @@ const speakers: Speaker[] = [
     facebookUrl: null,
   },
   {
-    name: 'Akintomiwa Ola',
+    name: 'Akintomiwa Samuel O.',
     role: 'Founder/CEO, Ploy',
     topic: "Manual or Machine: A Case for Both the Craft of Small Business and AI as Africa's Next Leap",
     bio: 'Akintomiwa Ola is the Founder and CEO of Ploy, a platform reimagining how small businesses in Africa operate and scale.\n\nHe is an entrepreneur and systems thinker who believes that the next leap for African business lies at the intersection of deep craft and intelligent technology.\n\nHis work at Ploy is building the tools that bridge that gap for thousands of entrepreneurs.',

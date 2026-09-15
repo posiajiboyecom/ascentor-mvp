@@ -38,7 +38,7 @@ const SOCIALS = [
 ];
 
 /**
- * Floating social rail — fixed on the left edge, vertically centred.
+ * Floating social rail — fixed on the left edge, bottom aligned.
  * Rendered by PublicHeader, so it only ever appears on public pages.
  *
  * Entrance animation is staggered per icon and timed to lift after the
@@ -71,8 +71,7 @@ export default function FloatingSocials() {
         .fs-rail {
           position: fixed;
           left: 1.25rem;
-          top: 50%;
-          transform: translateY(-50%);
+          bottom: 1.25rem;
           z-index: 85;
           display: flex;
           flex-direction: column;
@@ -89,8 +88,8 @@ export default function FloatingSocials() {
           animation: fs-rail-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         @keyframes fs-rail-in {
-          from { opacity: 0; transform: translate(-20px, -50%); }
-          to   { opacity: 1; transform: translate(0, -50%); }
+          from { opacity: 0; transform: translateX(-20px); }
+          to   { opacity: 1; transform: translateX(0); }
         }
         .fs-line {
           width: 14px;
@@ -158,6 +157,7 @@ export default function FloatingSocials() {
         @media (max-width: 640px) {
           .fs-rail {
             left: 0.6rem;
+            bottom: 0.75rem;
             padding: 0.625rem 0.25rem;
             gap: 0.625rem;
           }
