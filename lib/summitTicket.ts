@@ -46,6 +46,7 @@ export interface TicketData {
   currency:       string;
   registrationId: string;
   reference?:     string;
+  paidAt?:        string;
 }
 
 // ── Main generator ────────────────────────────────────────────────────────────
@@ -110,15 +111,15 @@ export async function generateSummitTicket(data: TicketData): Promise<Buffer> {
     // Date line
     doc
       .font('Metro-SemiBold').fontSize(7).fillColor(GOLD)
-      .text('19 NOVEMBER 2026  \u00b7  ADEREMI MAKANJUOLA HALL, LAGOS', PAD, 114, {
+      .text('THURSDAY 19 NOVEMBER 2026  -  10:00AM WAT  -  ADEREMI MAKANJUOLA HALL, LAGOS', PAD, 114, {
         width: W - PAD * 2, align: 'center', characterSpacing: 0.5,
       });
 
     // Attendance badge pill
-    const isVirtual = data.attendanceType === 'virtual';
+    const isVirtual  = data.attendanceType === 'virtual';
     const badgeLabel = isVirtual ? '  VIRTUAL  ' : '  ONSITE  ';
-    const badgeBg    = isVirtual ? '#1D4ED8' : GOLD;
-    const badgeTxt   = isVirtual ? WHITE : BLACK;
+    const badgeBg    = GOLD;
+    const badgeTxt   = BLACK;
     const badgeW     = 64;
     const badgeX     = (W - badgeW) / 2;
     const badgeY     = 130;
@@ -131,7 +132,7 @@ export async function generateSummitTicket(data: TicketData): Promise<Buffer> {
     doc.rect(0, HEADER_H, W, 4).fill(GOLD);
 
     // ── BODY ──────────────────────────────────────────────────────────────
-    const FOOTER_H = 95;
+    const FOOTER_H = 130;
     const BODY_Y   = HEADER_H + 4;
     const FOOTER_Y = H - FOOTER_H;
     const BODY_H   = FOOTER_Y - BODY_Y;
@@ -191,8 +192,8 @@ export async function generateSummitTicket(data: TicketData): Promise<Buffer> {
 
     const rows: [string, string][] = [
       ['Attendance', isVirtual ? 'Virtual Access' : 'Onsite, Lagos'],
-      ['Date',       '19 November 2026'],
-      ['Time',       '10:00 AM WAT'],
+      ['Date',       'Thursday, 19 November 2026'],
+      ['Time',       '10:00AM WAT'],
       ['Venue',      isVirtual ? 'Online (Zoom)' : 'Aderemi Makanjuola Hall, LASU'],
       ['Amount Paid', formatAmount(data.amountPaid, data.currency)],
     ];
@@ -214,22 +215,38 @@ export async function generateSummitTicket(data: TicketData): Promise<Buffer> {
     // "Valid" stamp
     doc
       .font('Metro-ExtraBold').fontSize(8).fillColor(BLACK)
-      .text('VALID FOR ADMISSION  \u00b7  THE ELEVATION SUMMIT 2026', PAD, FOOTER_Y + 15, {
+      .text('VALID FOR ADMISSION  -  THE ELEVATION SUMMIT 2026', PAD, FOOTER_Y + 15, {
         width: W - PAD * 2, align: 'center', characterSpacing: 0.4,
       });
 
+    // Divider above socials
+    doc.rect(PAD, FOOTER_Y + 34, W - PAD * 2, 0.5).fill(DIVIDER);
+
     // Socials
     doc
-      .font('Metro-Regular').fontSize(7.5).fillColor(GRAY)
-      .text('@joinascentor   \u00b7   instagram.com/joinascentor   \u00b7   ascentorbi.com', PAD, FOOTER_Y + 32, {
+      .font('Metro-Regular').fontSize(6.5).fillColor(GRAY)
+      .text('X: @joinascentor  -  instagram.com/joinascentor  -  ascentorbi.com', PAD, FOOTER_Y + 44, {
         width: W - PAD * 2, align: 'center',
       });
 
+    // Divider above reference
+    doc.rect(PAD, FOOTER_Y + 62, W - PAD * 2, 0.5).fill(DIVIDER);
+
     // Ticket reference
-    const refLine = `Ref: ${data.registrationId}${data.reference ? '  \u00b7  ' + data.reference : ''}`;
     doc
       .font('Metro-Light').fontSize(6).fillColor(MUTED_GRAY)
-      .text(refLine, PAD, FOOTER_Y + 50, { width: W - PAD * 2, align: 'center' });
+      .text(`Ref: ${data.registrationId}`, PAD, FOOTER_Y + 72, { width: W - PAD * 2, align: 'center' });
+    if (data.reference) {
+      doc
+        .font('Metro-Light').fontSize(6).fillColor(MUTED_GRAY)
+        .text(`Payment ref: ${data.reference}`, PAD, FOOTER_Y + 82, { width: W - PAD * 2, align: 'center' });
+    }
+
+    // Purchase timestamp
+    const purchaseLine = `Purchased on ${formatPurchaseDate(data.paidAt ?? new Date().toISOString())}`;
+    doc
+      .font('Metro-Light').fontSize(6).fillColor(MUTED_GRAY)
+      .text(purchaseLine, PAD, FOOTER_Y + 96, { width: W - PAD * 2, align: 'center' });
 
     doc.end();
   });
@@ -240,6 +257,36 @@ export async function generateSummitTicket(data: TicketData): Promise<Buffer> {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function formatAmount(amount: number, currency: string): string {
   if (!amount) return 'N/A';
-  const symbol = (currency ?? '').toUpperCase() === 'NGN' ? '\u20a6' : `${currency} `;
+  const symbol = (currency ?? '').toUpperCase() === 'NGN' ? 'NGN ' : `${currency} `;
   return `${symbol}${amount.toLocaleString('en-NG')}`;
+}
+
+function daySuffix(n: number): string {
+  if (n > 3 && n < 21) return 'th';
+  switch (n % 10) {
+    case 1:  return 'st';
+    case 2:  return 'nd';
+    case 3:  return 'rd';
+    default: return 'th';
+  }
+}
+
+function formatPurchaseDate(iso: string): string {
+  const d = new Date(iso);
+  const lagos = new Date(d.getTime() + 60 * 60 * 1000); // WAT = UTC+1
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const day = lagos.getUTCDate();
+  const weekday = days[lagos.getUTCDay()];
+  const month = months[lagos.getUTCMonth()];
+  const year = lagos.getUTCFullYear();
+
+  let h = lagos.getUTCHours();
+  const m = String(lagos.getUTCMinutes()).padStart(2, '0');
+  const ampm = h >= 12 ? 'pm' : 'am';
+  h = h % 12 || 12;
+  const hour = String(h).padStart(2, '0');
+
+  return `${weekday} ${day}${daySuffix(day)} ${month} ${year}, ${hour}:${m}${ampm}.`;
 }

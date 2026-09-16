@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Shared branded email shell — used by every email the system sends
+// Shared branded email shell  -  used by every email the system sends
 // (summit emails in summitEmails.ts, auth emails in email.ts).
 // Table layout + inline styles: the only combination that renders reliably
 // across Gmail, Outlook, and Apple Mail. Assets are hosted PNGs because
@@ -10,6 +10,7 @@ const SITE_URL = 'https://ascentorbi.com';
 const LOGO_URL = `${SITE_URL}/images/ascentor-logo-email.png`;
 
 const SOCIALS = [
+  { label: 'WhatsApp', url: 'https://wa.me/+2348168692012', icon: `${SITE_URL}/images/email/icon-whatsapp.png` },
   { label: 'X', url: 'https://x.com/joinascentor', icon: `${SITE_URL}/images/email/icon-x.png` },
   { label: 'LinkedIn', url: 'https://linkedin.com/company/joinascentor', icon: `${SITE_URL}/images/email/icon-linkedin.png` },
   { label: 'Instagram', url: 'https://instagram.com/joinascentor', icon: `${SITE_URL}/images/email/icon-instagram.png` },
@@ -78,7 +79,7 @@ export function brandedEmailLayout(opts: {
           <tr>
             <td align="center" style="padding:0 40px;">
               <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.7;color:#6B7280;">
-                Ascentor is the official platform of The Elevation Summit movement — a global gathering
+                Ascentor is the official platform of The Elevation Summit movement, a global gathering
                 for purposeful individuals building lives of meaning, leadership, and lasting impact.
               </p>
             </td>
@@ -146,7 +147,7 @@ export const summaryBox = (rows: string) => `
     <tr><td style="padding:14px 20px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table></td></tr>
   </table>`;
 
-// Secondary/outline button — pairs with goldButton for two-action emails.
+// Secondary/outline button  -  pairs with goldButton for two-action emails.
 export const outlineButton = (label: string, url: string) => `
   <table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 4px;">
     <tr>
@@ -156,7 +157,7 @@ export const outlineButton = (label: string, url: string) => `
     </tr>
   </table>`;
 
-// Quoted message block — renders a user's free-text message safely.
+// Quoted message block  -  renders a user's free-text message safely.
 // Input must already be escaped; newlines become <br>.
 export const messageBlock = (escapedText: string) => `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;background-color:#FAFAF8;border:1px solid #F0EDE6;border-radius:10px;">

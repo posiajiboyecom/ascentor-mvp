@@ -12,7 +12,7 @@ export async function sendRegistrationReceivedEmail(to: string, fullName: string
     to,
     subject: 'We received your Elevation Summit registration',
     html: brandedEmailLayout({
-      preheader: 'One step left — complete payment to secure your place.',
+      preheader: 'One step left. Complete payment to secure your place.',
       eyebrow: 'Elevation Summit · 19 November 2026',
       heading: 'Registration received.',
       recipient: to,
@@ -94,7 +94,7 @@ export async function sendAdminPaymentNotification(fullName: string, email: stri
         summaryBox(
           summaryRow('Name', esc(fullName)) +
           summaryRow('Email', esc(email)) +
-          summaryRow('Company', esc(organisation) || '—')
+          summaryRow('Company', esc(organisation) || '-')
         ),
     }),
   });
