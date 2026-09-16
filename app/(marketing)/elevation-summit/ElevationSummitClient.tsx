@@ -317,7 +317,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
         // SVG texture — graph-paper grid in gold, subtle enough that
         // the white base still reads through.
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath d='M48 0H0V48' fill='none' stroke='%23C8A96E' stroke-opacity='0.20' stroke-width='1'/%3E%3C/svg%3E")`,
-        padding: 'clamp(5rem, 10vw, 9rem) 1.5rem clamp(4rem, 8vw, 7rem)',
+        padding: 'clamp(3rem, 6vw, 5rem) 1.5rem clamp(4rem, 8vw, 7rem)',
       }}>
         <div className="summit-hero-grid" style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div className="summit-hero-image">

@@ -15,6 +15,7 @@ interface Speaker {
   instagramUrl?: string | null;
   spotifyUrl?: string | null;
   facebookUrl?: string | null;
+  websiteUrl?: string | null;
   host?: boolean;
 }
 
@@ -31,6 +32,7 @@ const speakers: Speaker[] = [
     instagramUrl: 'https://www.instagram.com/posi_ajiboye/',
     spotifyUrl: null,
     facebookUrl: null,
+    websiteUrl: null,
     host: true,
   },
   {
@@ -43,6 +45,7 @@ const speakers: Speaker[] = [
     instagramUrl: 'https://www.instagram.com/apostlesamuelpeniel/?hl=en',
     spotifyUrl: null,
     facebookUrl: 'https://web.facebook.com/p/Apostle-Samuel-Peniel-61559142705360/?_rdc=1&_rdr#',
+    websiteUrl: null,
   },
   {
     name: 'Kemeshi Samuel',
@@ -54,6 +57,7 @@ const speakers: Speaker[] = [
     instagramUrl: null,
     spotifyUrl: 'https://open.spotify.com/show/0fdacgRv6uEPELZIadGYkO?si=746cf9c53c0f4e64&nd=1&dlsi=1dd4400d2f164bfe',
     facebookUrl: null,
+    websiteUrl: null,
   },
   {
     name: 'Lekan Omotosho',
@@ -65,6 +69,7 @@ const speakers: Speaker[] = [
     instagramUrl: null,
     spotifyUrl: null,
     facebookUrl: null,
+    websiteUrl: null,
   },
   {
     name: 'Akintomiwa Samuel O.',
@@ -76,6 +81,19 @@ const speakers: Speaker[] = [
     instagramUrl: 'https://www.instagram.com/akintomiwa.ola/',
     spotifyUrl: null,
     facebookUrl: null,
+    websiteUrl: null,
+  },
+  {
+    name: 'Divine Mmachukwu Chukwuemeka',
+    role: 'Founder, EmigrateEase',
+    topic: 'The Audacity to Choose: To Leave or to Stay: A Case for Decision Making That Builds the Man',
+    bio: 'Divine Mmachukwu Chukwuemeka is a Migration Researcher, TEDx speaker, and founder working at the intersection of global mobility, youth development, and opportunity access.\n\nShe holds a First-Class Bachelor\'s degree in History and International Studies from Anchor University and currently serves as a Graduate Research Assistant at CEPDeR, Covenant University, where she contributes to research on migration and development. Her work focuses on migration trends among young professionals, with a growing interest in policy, development outcomes, and the lived realities shaping contemporary mobility.\n\nDivine is a recognized voice in migration and youth development conversations. She has spoken on diverse platforms, including TEDx at Anchor University, University of Nigeria, Nsukka, and Adekunle Ajasin University. She also served as a discussant at HistoCON, hosted by the Federal Agency for Civic Education, contributing to high-level conversations on history, identity, and global issues.\n\nBeyond research and speaking, Divine is deeply committed to youth impact. She actively leads school outreach programs, mentorship initiatives, and capacity-building sessions that equip young people to access global opportunities. Through her digital presence across LinkedIn, X, Instagram, Facebook, and TikTok, she engages a growing audience with insights on migration, career growth, and visibility.\n\nShe is a convener and community builder, leading initiatives such as Beyond Borders and the AheadGen Mentorship Program, where she creates spaces for meaningful dialogue, mentorship, and access to opportunities. Through her platform, Linked On LinkedIn, she has trained and equipped hundreds of students and young professionals to leverage digital platforms for career advancement and global access.\n\nAs the founder of EmigrateEase, Divine provides advisory support to individuals navigating migration decisions, helping them approach global mobility with clarity, structure, and strategy.\n\nThrough her work, Divine combines research, advocacy, and real-world impact to shape migration conversations, build ecosystems of opportunity, and empower individuals to make informed, life-changing decisions on a global scale.',
+    photo: '/images/speakers/divine-mmachukwu-chukwuemeka.jpg',
+    linkedinUrl: 'https://www.linkedin.com/in/divinechukwuemeka/',
+    instagramUrl: 'https://www.instagram.com/thejapaqueen/',
+    spotifyUrl: null,
+    facebookUrl: null,
+    websiteUrl: 'https://www.japaqueen.com/',
   },
 ];
 
@@ -196,6 +214,22 @@ export default function SummitSpeakers() {
                       </svg>
                     </a>
                   )}
+                  {speaker.websiteUrl !== null && (
+                    <a
+                      href={speaker.websiteUrl ?? '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${speaker.name} website`}
+                      className="summit-social-icon summit-social-website"
+                    >
+                      {/* Website icon */}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M2 12h20"/>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                      </svg>
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
@@ -270,6 +304,16 @@ export default function SummitSpeakers() {
                      aria-label="Facebook" className="summit-social-icon summit-social-facebook">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                  </a>
+                )}
+                {selected.websiteUrl !== null && (
+                  <a href={selected.websiteUrl ?? '#'} target="_blank" rel="noopener noreferrer"
+                     aria-label="Website" className="summit-social-icon summit-social-website">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/>
+                      <path d="M2 12h20"/>
+                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
                     </svg>
                   </a>
                 )}
@@ -410,6 +454,7 @@ export default function SummitSpeakers() {
         .summit-social-instagram { background: #E1306C; color: #FFFFFF; }
         .summit-social-spotify { background: #1DB954; color: #FFFFFF; }
         .summit-social-facebook { background: #1877F2; color: #FFFFFF; }
+        .summit-social-website { background: #0F0F0E; color: #FFFFFF; }
 
         /* ── Read Profile button ── */
         .summit-read-profile {
