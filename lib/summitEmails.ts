@@ -79,7 +79,7 @@ export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
 }
 
 export async function sendAdminPaymentNotification(fullName: string, email: string, organisation: string) {
-  const adminEmail = process.env.ADMIN_EMAIL ?? '';
+  const adminEmail = process.env.ADMIN_EMAIL ?? 'joinascentor@gmail.com';
   await summitMailer.sendMail({
     from: process.env.SUMMIT_MAIL_FROM,
     to: adminEmail,

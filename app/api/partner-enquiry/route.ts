@@ -39,7 +39,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'asamuel@ascentorbi.com'
+const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'joinascentor@gmail.com'
 
 function acknowledgementEmail(name: string, org: string, recipient: string) {
   const firstName = name.split(' ')[0] || name

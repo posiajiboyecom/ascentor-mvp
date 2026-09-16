@@ -16,7 +16,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'asamuel@ascentorbi.com';
+const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'joinascentor@gmail.com';
 
 function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
