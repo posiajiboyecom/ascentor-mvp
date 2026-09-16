@@ -289,10 +289,13 @@ export default function SummitSpeakers() {
 
             {/* Bio */}
             {selected.bio && (
-              <div className="ssp-bio">
-                {selected.bio.split(/\n\n+/).map((para, i) => (
-                  <p key={i}>{para.trim()}</p>
-                ))}
+              <div>
+                <p className="summit-speaker-label" style={{ marginBottom: '0.375rem' }}>Speaker Profile</p>
+                <div className="ssp-bio">
+                  {selected.bio.split(/\n\n+/).map((para, i) => (
+                    <p key={i}>{para.trim()}</p>
+                  ))}
+                </div>
               </div>
             )}
           </div>
