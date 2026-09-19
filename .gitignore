@@ -27,3 +27,9 @@ Thumbs.db
 # --- Misc ---
 *.zip
 .gstack/
+
+# --- Build / tooling artifacts (were committed by mistake) ---
+.trigger/
+supabase/.temp/
+*.tsbuildinfo
+.vercel

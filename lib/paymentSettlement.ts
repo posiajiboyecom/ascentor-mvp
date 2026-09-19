@@ -1,0 +1,461 @@
+// lib/paymentSettlement.ts
+// ─────────────────────────────────────────────────────────────────────────────
+// SINGLE SOURCE OF TRUTH for turning a Paystack transaction into a fulfilled
+// order. Used by every path that can learn a payment succeeded:
+//
+//   • /api/summit/pay/verify   (browser callback after the popup)
+//   • /api/pay/callback        (Paystack redirect for subscriptions)
+//   • /api/pay/webhook         (charge.success)
+//   • lib/paymentReconciliation (scheduled sweep)
+//
+// Guarantees:
+//   1. A transaction only fulfils an order if its reference exists in
+//      payment_attempts (we created it) - unknown references are rejected, so a
+//      payment made outside our flow (e.g. a N100 inline-popup transaction with
+//      forged metadata) can never grant anything.
+//   2. Amount, currency and owner are compared to what the SERVER recorded when
+//      the attempt was created, never to anything the client/metadata says.
+//   3. Fulfilment is claimed with a conditional UPDATE (status pending ->
+//      success), so concurrent verify/webhook/cron runs fulfil exactly once and
+//      emails are sent exactly once.
+//   4. If fulfilment throws after the claim, the claim is released so the next
+//      retry (Paystack webhook retry / cron) can complete it.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import 'server-only';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { PLAN_PRICING_MAP } from '@/lib/pricing';
+import { sendPaymentConfirmedEmail, sendAdminPaymentNotification } from '@/lib/summitEmails';
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+export type AttemptKind = 'subscription' | 'summit';
+export type AttemptStatus = 'pending' | 'success' | 'failed' | 'abandoned' | 'duplicate';
+
+export interface PaymentAttempt {
+  id:              string;
+  reference:       string;
+  kind:            AttemptKind;
+  status:          AttemptStatus;
+  user_id:         string | null;
+  plan_id:         string | null;
+  billing:         string | null;
+  registration_id: string | null;
+  email:           string | null;
+  amount_kobo:     number | null;
+  currency:        string | null;
+  created_at:      string;
+  recovery_sent_at: string | null;
+  admin_notified_at: string | null;
+}
+
+export type SettleResult =
+  | { state: 'settled';  attempt: PaymentAttempt; alreadySettled: boolean }
+  | { state: 'pending';  attempt: PaymentAttempt; providerStatus: string }
+  | { state: 'failed';   attempt: PaymentAttempt; providerStatus: string }
+  | { state: 'notfound'; attempt: PaymentAttempt }
+  | { state: 'rejected'; reason: string; attempt: PaymentAttempt | null };
+
+export interface PaystackTransaction {
+  id:        number;
+  status:    string;
+  reference: string;
+  amount:    number;
+  currency:  string;
+  channel?:  string;
+  paid_at?:  string;
+  metadata?: Record<string, any> | null;
+  authorization?: Record<string, any> | null;
+  customer?: { email?: string } | null;
+}
+
+// ── Pricing (server-side, single source: lib/pricing.ts) ─────────────────────
+
+export function subscriptionAmountKobo(planId: string, billing: string): number | null {
+  const plan = PLAN_PRICING_MAP[planId];
+  if (!plan) return null;
+  if (billing === 'annual')  return plan.yearlyPrice  * 100;
+  if (billing === 'monthly') return plan.monthlyPrice * 100;
+  return null;
+}
+
+export interface SummitPrices { onsite: number; virtual: number }
+
+/** Reads the per-type ticket prices; returns null (never NaN) when misconfigured. */
+export function getSummitPricesNaira(): SummitPrices | null {
+  const onsite  = Number(process.env.SUMMIT_TICKET_PRICE_ONSITE_NGN);
+  const virtual = Number(process.env.SUMMIT_TICKET_PRICE_VIRTUAL_NGN);
+  if (!Number.isFinite(onsite) || onsite <= 0)   return null;
+  if (!Number.isFinite(virtual) || virtual <= 0) return null;
+  return { onsite, virtual };
+}
+
+const LEGACY_PLAN_MAP: Record<string, string> = { pro: 'builder', elite: 'climber' };
+const normalisePlanId = (raw: string | null | undefined) =>
+  !raw ? 'explorer' : (LEGACY_PLAN_MAP[raw] ?? raw);
+
+// ── Paystack ─────────────────────────────────────────────────────────────────
+
+type PaystackLookup =
+  | { found: true;  tx: PaystackTransaction }
+  | { found: false };
+
+/**
+ * Verifies a reference with Paystack.
+ * Returns { found:false } when Paystack has never seen the reference (checkout
+ * opened but never started). Throws on network/5xx so callers can retry.
+ */
+export async function fetchPaystackTransaction(reference: string): Promise<PaystackLookup> {
+  const secret = process.env.PAYSTACK_SECRET_KEY;
+  if (!secret) throw new Error('PAYSTACK_SECRET_KEY is not configured');
+
+  const res = await fetch(
+    `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+    { headers: { Authorization: `Bearer ${secret}` }, cache: 'no-store' }
+  );
+  const body = await res.json().catch(() => null);
+
+  if (res.status === 404 || (body && body.status === false && /not found/i.test(String(body.message ?? '')))) {
+    return { found: false };
+  }
+  if (!res.ok || !body?.status || !body.data) {
+    throw new Error(`Paystack verify failed (${res.status}): ${body?.message ?? 'no body'}`);
+  }
+  return { found: true, tx: body.data as PaystackTransaction };
+}
+
+// ── Attempts ─────────────────────────────────────────────────────────────────
+
+const ATTEMPT_COLUMNS =
+  'id, reference, kind, status, user_id, plan_id, billing, registration_id, email, amount_kobo, currency, created_at, recovery_sent_at, admin_notified_at';
+
+export async function getAttemptByReference(reference: string): Promise<PaymentAttempt | null> {
+  const { data, error } = await supabaseAdmin
+    .from('payment_attempts')
+    .select(ATTEMPT_COLUMNS)
+    .eq('reference', reference)
+    .maybeSingle();
+  if (error) throw new Error(`payment_attempts lookup failed: ${error.message}`);
+  return (data as PaymentAttempt | null) ?? null;
+}
+
+export async function createAttempt(input: {
+  reference:       string;
+  kind:            AttemptKind;
+  amountKobo:      number;
+  email:           string;
+  userId?:         string | null;
+  planId?:         string | null;
+  billing?:        string | null;
+  registrationId?: string | null;
+}): Promise<void> {
+  const { error } = await supabaseAdmin.from('payment_attempts').insert({
+    reference:       input.reference,
+    kind:            input.kind,
+    status:          'pending',
+    user_id:         input.userId ?? null,
+    plan_id:         input.planId ?? null,
+    billing:         input.billing ?? null,
+    registration_id: input.registrationId ?? null,
+    email:           input.email,
+    amount_kobo:     input.amountKobo,
+    currency:        'NGN',
+  });
+  if (error) throw new Error(`Could not record payment attempt: ${error.message}`);
+}
+
+async function setAttemptStatus(
+  reference: string,
+  from: AttemptStatus[],
+  patch: Record<string, unknown>,
+): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from('payment_attempts')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('reference', reference)
+    .in('status', from)
+    .select('id');
+  if (error) throw new Error(`payment_attempts update failed: ${error.message}`);
+  return (data?.length ?? 0) > 0;
+}
+
+// ── Admin notifications ──────────────────────────────────────────────────────
+
+/** In-app notification for every admin + one email to the admin mailbox. */
+export async function notifyAdmins(input: {
+  title:   string;
+  message: string;
+  link?:   string;
+  type?:   string;
+  emailHtml?: string;
+}): Promise<void> {
+  try {
+    const { data: admins } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin');
+
+    if (admins?.length) {
+      await supabaseAdmin.from('notifications').insert(
+        admins.map((a: { id: string }) => ({
+          user_id: a.id,
+          type:    input.type ?? 'payment_alert',
+          title:   input.title,
+          message: input.message,
+          link:    input.link ?? '/admin',
+        }))
+      );
+    }
+  } catch (err) {
+    console.error('[notifyAdmins] in-app notification failed:', err);
+  }
+
+  try {
+    const { sendEmail } = await import('@/lib/nodemailer');
+    const { brandedEmailLayout, esc, p, goldButton } = await import('@/lib/emailTemplate');
+    const adminEmail = process.env.ADMIN_EMAIL ?? 'joinascentor@gmail.com';
+    const base = process.env.NEXT_PUBLIC_URL || 'https://ascentorbi.com';
+    await sendEmail({
+      to: adminEmail,
+      subject: input.title,
+      html: brandedEmailLayout({
+        preheader: input.message.slice(0, 120),
+        eyebrow:   'Admin Alert',
+        heading:   input.title,
+        recipient: adminEmail,
+        content:
+          (input.emailHtml ?? p(esc(input.message))) +
+          goldButton('Open admin dashboard', `${base}${input.link ?? '/admin'}`),
+      }),
+    });
+  } catch (err) {
+    console.error('[notifyAdmins] email failed:', err);
+  }
+}
+
+// ── Fulfilment ───────────────────────────────────────────────────────────────
+
+type FulfilOutcome = 'fulfilled' | 'duplicate';
+
+async function fulfilSummit(attempt: PaymentAttempt, tx: PaystackTransaction): Promise<FulfilOutcome> {
+  if (!attempt.registration_id) throw new Error('Summit attempt has no registration_id');
+
+  const nowIso = new Date().toISOString();
+  const { data: rows, error } = await supabaseAdmin
+    .from('summit_registrations')
+    .update({
+      payment_status:         'paid',
+      status:                 'confirmed',
+      payment_reference:      attempt.reference,
+      amount_paid:            tx.amount / 100,
+      currency:               tx.currency,
+      payment_provider_tx_id: String(tx.id),
+      paid_at:                nowIso,
+      confirmed_at:           nowIso,
+      updated_at:             nowIso,
+    })
+    .eq('id', attempt.registration_id)
+    .neq('payment_status', 'paid')
+    .select('*');
+  if (error) throw new Error(`summit_registrations update failed: ${error.message}`);
+
+  const registration = rows?.[0];
+  if (!registration) {
+    // Either the registration is already paid (customer paid twice) or it no
+    // longer exists. Both need a human: flag for a refund.
+    return 'duplicate';
+  }
+
+  // Claim winner only: emails are sent exactly once. Failures never undo a paid ticket.
+  try {
+    await sendPaymentConfirmedEmail({
+      email:          registration.email,
+      fullName:       registration.full_name,
+      whatsapp:       registration.whatsapp ?? '',
+      organisation:   registration.organisation ?? '',
+      attendanceType: registration.attendance_type as 'onsite' | 'virtual',
+      amountPaid:     tx.amount / 100,
+      currency:       tx.currency ?? 'NGN',
+      registrationId: String(registration.id),
+      reference:      attempt.reference,
+    });
+    await sendAdminPaymentNotification(registration.full_name, registration.email, registration.organisation);
+  } catch (err) {
+    console.error('[paymentSettlement] summit confirmation email failed:', err);
+  }
+  return 'fulfilled';
+}
+
+async function fulfilSubscription(attempt: PaymentAttempt, tx: PaystackTransaction): Promise<FulfilOutcome> {
+  if (!attempt.user_id) throw new Error('Subscription attempt has no user_id');
+
+  const planId  = normalisePlanId(attempt.plan_id);
+  const billing = attempt.billing === 'annual' ? 'annual' : 'monthly';
+  const now     = new Date();
+
+  // Preserved product behaviour: 7-day grace on top of the paid period.
+  const end = new Date(now);
+  end.setDate(end.getDate() + 7);
+  if (billing === 'annual') end.setFullYear(end.getFullYear() + 1);
+  else end.setMonth(end.getMonth() + 1);
+
+  const auth = tx.authorization;
+  const cardDetails = auth ? {
+    last4:     auth.last4 || null,
+    card_type: auth.card_type || auth.brand || null,
+    exp_month: auth.exp_month || null,
+    exp_year:  auth.exp_year || null,
+    bank:      auth.bank || null,
+    channel:   auth.channel || tx.channel || 'card',
+    auth_code: auth.authorization_code || null,
+  } : null;
+
+  const { error: profileErr } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      subscription_plan:    planId,
+      subscription_status:  'trialing',
+      subscription_start:   now.toISOString(),
+      subscription_end:     end.toISOString(),
+      billing_cycle:        billing,
+      payment_method:       tx.channel || 'paystack',
+      ...(cardDetails ? { card_details: cardDetails } : {}),
+      onboarding_completed: true,
+      updated_at:           now.toISOString(),
+    })
+    .eq('id', attempt.user_id);
+  if (profileErr) throw new Error(`profiles update failed: ${profileErr.message}`);
+
+  const { error: payErr } = await supabaseAdmin.from('payments').insert({
+    user_id:   attempt.user_id,
+    reference: attempt.reference,
+    plan_id:   planId,
+    billing,
+    amount:    tx.amount / 100,
+    currency:  tx.currency || 'NGN',
+    provider:  'paystack',
+    status:    'success',
+    paid_at:   tx.paid_at || now.toISOString(),
+  });
+  // 23505 = already recorded by an earlier partial run; anything else must retry.
+  if (payErr && payErr.code !== '23505') throw new Error(`payments insert failed: ${payErr.message}`);
+
+  try {
+    await supabaseAdmin.from('notifications').insert({
+      user_id: attempt.user_id,
+      type:    'payment_success',
+      title:   'Payment received',
+      message: `Your ${planId} plan is now active.`,
+      link:    '/account',
+    });
+  } catch { /* non-critical */ }
+
+  return 'fulfilled';
+}
+
+// ── Public: settle one reference ─────────────────────────────────────────────
+
+/**
+ * Verifies `reference` with Paystack and fulfils the matching attempt exactly
+ * once. Safe to call repeatedly and concurrently. Throws only for transient
+ * problems (Paystack/DB unavailable) - callers should turn that into a 5xx so
+ * Paystack retries.
+ */
+export async function settleReference(reference: string): Promise<SettleResult> {
+  if (!reference || typeof reference !== 'string' || reference.length > 200) {
+    return { state: 'rejected', reason: 'invalid_reference', attempt: null };
+  }
+
+  const attempt = await getAttemptByReference(reference);
+  if (!attempt) {
+    return { state: 'rejected', reason: 'unknown_reference', attempt: null };
+  }
+  if (attempt.status === 'success' || attempt.status === 'duplicate') {
+    return { state: 'settled', attempt, alreadySettled: true };
+  }
+
+  const lookup = await fetchPaystackTransaction(reference);
+  if (!lookup.found) {
+    return { state: 'notfound', attempt };
+  }
+  const tx = lookup.tx;
+
+  if (tx.status !== 'success') {
+    if (tx.status === 'failed' || tx.status === 'reversed') {
+      await setAttemptStatus(reference, ['pending', 'abandoned'], {
+        status: 'failed', provider_status: tx.status, failure_reason: `Paystack status: ${tx.status}`,
+      });
+      return { state: 'failed', attempt, providerStatus: tx.status };
+    }
+    // abandoned | ongoing | pending | processing | queued
+    await supabaseAdmin
+      .from('payment_attempts')
+      .update({ provider_status: tx.status, updated_at: new Date().toISOString() })
+      .eq('reference', reference)
+      .eq('status', 'pending');
+    return { state: 'pending', attempt, providerStatus: tx.status };
+  }
+
+  // ── Paystack says success: validate against what WE recorded ──
+  const expectedKobo =
+    attempt.amount_kobo ??
+    (attempt.kind === 'subscription'
+      ? subscriptionAmountKobo(normalisePlanId(attempt.plan_id), attempt.billing ?? 'monthly')
+      : null);
+
+  let reject: string | null = null;
+  if (expectedKobo == null)                                          reject = 'no_expected_amount';
+  else if (tx.amount < expectedKobo)                                 reject = `amount_mismatch (paid ${tx.amount}, expected ${expectedKobo})`;
+  else if ((tx.currency || 'NGN') !== (attempt.currency || 'NGN'))   reject = `currency_mismatch (${tx.currency})`;
+  else if (attempt.user_id && tx.metadata?.user_id && tx.metadata.user_id !== attempt.user_id) reject = 'user_mismatch';
+
+  if (reject) {
+    console.error(`[paymentSettlement] REJECTED ${reference}: ${reject}`);
+    await setAttemptStatus(reference, ['pending', 'abandoned'], {
+      status: 'failed', provider_status: 'success', failure_reason: `rejected: ${reject}`,
+    });
+    await notifyAdmins({
+      title:   'Payment rejected - needs review',
+      message: `Reference ${reference} succeeded at Paystack but failed validation: ${reject}. No access was granted.`,
+      link:    '/admin/summit',
+      type:    'payment_alert',
+    });
+    return { state: 'rejected', reason: reject, attempt };
+  }
+
+  // ── Claim (exactly-once) ──
+  const claimed = await setAttemptStatus(reference, ['pending', 'abandoned', 'failed'], {
+    status:          'success',
+    provider_status: 'success',
+    provider_tx_id:  String(tx.id),
+    paid_at:         tx.paid_at || new Date().toISOString(),
+    failure_reason:  null,
+  });
+  if (!claimed) {
+    // Another request won the race and is fulfilling (or has fulfilled) it.
+    return { state: 'settled', attempt, alreadySettled: true };
+  }
+
+  try {
+    const outcome = attempt.kind === 'summit'
+      ? await fulfilSummit(attempt, tx)
+      : await fulfilSubscription(attempt, tx);
+
+    if (outcome === 'duplicate') {
+      await setAttemptStatus(reference, ['success'], { status: 'duplicate', failure_reason: 'registration already paid' });
+      await notifyAdmins({
+        title:   'Duplicate payment - refund needed',
+        message: `${attempt.email ?? 'A customer'} paid twice for the same Summit registration (ref ${reference}). Please refund one payment in Paystack.`,
+        link:    '/admin/summit',
+        type:    'payment_alert',
+      });
+    }
+    return { state: 'settled', attempt: { ...attempt, status: outcome === 'duplicate' ? 'duplicate' : 'success' }, alreadySettled: false };
+  } catch (err) {
+    // Release the claim so the next webhook retry / cron run can finish the job.
+    await setAttemptStatus(reference, ['success'], {
+      status: 'pending', failure_reason: `fulfilment error: ${(err as Error).message}`.slice(0, 500),
+    }).catch(() => undefined);
+    throw err;
+  }
+}

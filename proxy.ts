@@ -117,6 +117,8 @@ const PUBLIC_API_ROUTES = [
   '/api/pay/promo',
   // Checkout pending — non-destructive marketing hook, called pre-auth
   '/api/checkout-pending',
+  // Vercel Cron — authenticates itself with the CRON_SECRET bearer token
+  '/api/cron',
 ];
 
 // API route prefixes that require authentication.

@@ -1,81 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/admin';
-import { sendPaymentConfirmedEmail, sendAdminPaymentNotification } from '@/lib/summitEmails';
+import { settleReference } from '@/lib/paymentSettlement';
+import { paymentLimiter, getClientIp } from '@/lib/rate-limit';
 
+// Called by the browser right after the Paystack popup reports success.
+// It does NOT trust the browser: the reference must belong to a payment_attempts
+// row we created for THIS registration, and Paystack must confirm the amount
+// and currency we recorded. Settlement is shared with the webhook and cron.
 export async function POST(req: NextRequest) {
-  try {
-    const { reference, registrationId } = await req.json();
+  const limit = paymentLimiter.check(getClientIp(req));
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Please wait a moment and try again.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } }
+    );
+  }
 
-    const secret = process.env.PAYSTACK_SECRET_KEY;
-    if (!secret) {
-      return NextResponse.json({ error: 'Payment system misconfigured' }, { status: 500 });
+  try {
+    const body = await req.json().catch(() => null);
+    const reference      = body?.reference;
+    const registrationId = body?.registrationId;
+
+    if (typeof reference !== 'string' || typeof registrationId !== 'string') {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
-    const paystackRes = await fetch(
-      `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
-      { headers: { Authorization: `Bearer ${secret}` }, cache: 'no-store' }
-    );
-    const paystackData = await paystackRes.json();
+    const result = await settleReference(reference);
 
-    if (!paystackData.status || paystackData.data?.status !== 'success') {
+    if (result.state === 'rejected') {
+      // Unknown reference or failed validation. Deliberately generic.
       return NextResponse.json({ error: 'Payment not verified' }, { status: 400 });
     }
 
-    const { data: registration } = await supabaseAdmin
-      .from('summit_registrations')
-      .select('*')
-      .eq('id', registrationId)
-      .single();
-
-    if (!registration) {
-      return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
+    // The reference must have been issued for the registration being claimed.
+    if (result.attempt.kind !== 'summit' || result.attempt.registration_id !== registrationId) {
+      return NextResponse.json({ error: 'Payment not verified' }, { status: 400 });
     }
 
-    const expectedNaira = registration.attendance_type === 'virtual'
-      ? Number(process.env.SUMMIT_TICKET_PRICE_VIRTUAL_NGN)
-      : Number(process.env.SUMMIT_TICKET_PRICE_ONSITE_NGN);
-    if (paystackData.data.amount < expectedNaira * 100) {
-      return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
-    }
-
-    if (registration.payment_status === 'paid') {
+    if (result.state === 'settled') {
       return NextResponse.json({ success: true });
     }
 
-    await supabaseAdmin
-      .from('summit_registrations')
-      .update({
-        payment_status: 'paid',
-        status: 'confirmed',
-        amount_paid: paystackData.data.amount / 100,
-        currency: paystackData.data.currency,
-        payment_provider_tx_id: String(paystackData.data.id),
-        paid_at: new Date().toISOString(),
-        confirmed_at: new Date().toISOString(),
-      })
-      .eq('id', registrationId);
-
-    const amountPaid = paystackData.data.amount / 100;
-    const currency   = paystackData.data.currency ?? 'NGN';
-
-    try {
-      await sendPaymentConfirmedEmail({
-        email:          registration.email,
-        fullName:       registration.full_name,
-        whatsapp:       registration.whatsapp ?? '',
-        organisation:   registration.organisation ?? '',
-        attendanceType: registration.attendance_type as 'onsite' | 'virtual',
-        amountPaid,
-        currency,
-        registrationId: String(registration.id),
-        reference,
-      });
-      await sendAdminPaymentNotification(registration.full_name, registration.email, registration.organisation);
-    } catch (err) {
-      console.error('Failed to send payment confirmation emails', err);
-    }
-
-    return NextResponse.json({ success: true });
+    // pending / failed / not found at Paystack yet. The webhook and the
+    // scheduled reconciliation will complete it if the payment lands later.
+    return NextResponse.json(
+      { error: 'Payment not confirmed yet', pending: result.state === 'pending' },
+      { status: 402 }
+    );
   } catch (err: any) {
     console.error('[summit/pay/verify] Unexpected error:', err);
     return NextResponse.json({ error: 'Could not verify payment' }, { status: 500 });

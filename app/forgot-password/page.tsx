@@ -339,7 +339,7 @@ export default function ForgotPasswordPage() {
                 <div className="modal-icon success">✓</div>
                 <h2 className="modal-title">Check your inbox</h2>
                 <p className="modal-text">
-                  If an account exists for <strong>{modal.email}</strong>, a 6-digit reset code has been sent. Please check your inbox and spam folder.
+                  If an account exists for <strong>{modal.email}</strong>, a 6-digit reset code has been sent. Please check your inbox and spam folder. If you signed up with Google or LinkedIn, sign in with that account instead.
                 </p>
                 <Link href="/reset-password" className="modal-btn" style={{ marginTop: 12 }}>
                   Enter reset code →

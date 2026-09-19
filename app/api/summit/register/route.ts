@@ -57,6 +57,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (existing) {
+    // Retrying with a different ticket type must change the price we charge.
+    // Only touch unpaid rows, and only the ticket type (the price driver).
+    await supabaseAdmin
+      .from('summit_registrations')
+      .update({ attendance_type: attendanceType, updated_at: new Date().toISOString() })
+      .eq('id', existing.id)
+      .neq('payment_status', 'paid');
     return NextResponse.json({ registrationId: existing.id });
   }
 

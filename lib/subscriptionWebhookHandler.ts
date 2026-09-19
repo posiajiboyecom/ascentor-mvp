@@ -83,57 +83,17 @@ async function auditLog(userId: string, action: string, details: object) {
 
 // ── EVENT HANDLERS ────────────────────────────────────────────────────────────
 
+// charge.success is settled in /api/pay/webhook via lib/paymentSettlement, which
+// only fulfils references we created and validates amount/currency/owner.
+// Previously this handler granted a plan straight from webhook metadata, which
+// an attacker could forge with the public Paystack key. Anything that reaches
+// this point is not a checkout we started, so it is logged and never granted.
 async function handleChargeSuccess(data: any) {
-  const metadata = data.metadata ?? {};
-  const userId   = metadata.user_id;
-  const rawPlan  = metadata.plan_id;
-  const billing  = metadata.billing ?? 'monthly';
-  const email    = data.customer?.email;
-
-  const profile = userId
-    ? await getProfileById(userId)
-    : email
-    ? await getProfileByEmail(email)
-    : null;
-
-  if (!profile) {
-    console.warn('[pay/webhook] charge.success — could not find profile', { userId, email });
-    return;
-  }
-
-  if (profile.subscription_status === 'active' || profile.subscription_status === 'trialing') {
-    console.log(`[pay/webhook] charge.success — already active, skipping (${profile.id})`);
-    return;
-  }
-
-  const planId = normalisePlanId(rawPlan);
-  const now    = new Date();
-  const subEnd = new Date(now);
-  subEnd.setDate(subEnd.getDate() + 7);
-  if (billing === 'annual') {
-    subEnd.setFullYear(subEnd.getFullYear() + 1);
-  } else {
-    subEnd.setMonth(subEnd.getMonth() + 1);
-  }
-
-  await supabaseAdmin.from('profiles').update({
-    subscription_plan:    planId,
-    subscription_status:  'trialing',
-    subscription_start:   now.toISOString(),
-    subscription_end:     subEnd.toISOString(),
-    payment_method:       'paystack',
-    onboarding_completed: true,
-    updated_at:           now.toISOString(),
-  }).eq('id', profile.id);
-
-  await auditLog(profile.id, 'webhook_charge_success_recovery', {
-    reference: data.reference,
-    amount:    data.amount,
-    planId,
-    billing,
+  console.warn('[pay/webhook] charge.success not matched to a checkout attempt - no access granted', {
+    reference: data?.reference,
+    amount:    data?.amount,
+    email:     data?.customer?.email,
   });
-
-  console.log(`[pay/webhook] ✅ charge.success recovery → ${profile.id} on ${planId}`);
 }
 
 async function handleSubscriptionCreate(data: any) {
@@ -296,7 +256,8 @@ export async function handleSubscriptionWebhookEvent(payload: any) {
 
     return NextResponse.json({ received: true });
   } catch (err: any) {
+    // Surface the failure: the webhook route answers 5xx so Paystack retries.
     console.error('[pay/webhook] Fatal error:', err);
-    return NextResponse.json({ received: true, warning: 'Processing error logged' });
+    throw err;
   }
 }

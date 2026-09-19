@@ -1,88 +1,91 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendPasswordResetOTP } from '@/lib/email';
+import { strictLimiter, getClientIp } from '@/lib/rate-limit';
+import { generateOtp, hashOtp, isPlausibleEmail, OTP_TTL_MS, OTP_MAX_PER_HOUR } from '@/lib/otp';
+
+// The response is identical whether or not the account exists, so this endpoint
+// cannot be used to discover which emails are registered.
+const UNIFORM = {
+  success: true,
+  status: 'sent',
+  message: 'If an account exists, a reset code has been sent.',
+} as const;
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json();
-
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    const limit = strictLimiter.check(getClientIp(req));
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait a minute and try again.' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } }
+      );
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-
-    // Look up user in auth.users to check provider
-    const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-    if (authError) {
-      console.error('[forgot-password] list users error:', authError);
-      return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+    const body = await req.json().catch(() => null);
+    if (!isPlausibleEmail(body?.email)) {
+      return NextResponse.json({ error: 'A valid email is required' }, { status: 400 });
     }
+    const email = (body.email as string).toLowerCase().trim();
 
-    const authUser = authUsers.users.find(u => u.email?.toLowerCase() === normalizedEmail);
+    // Per-email cap, stored in the database so it holds across serverless
+    // instances (the in-memory limiter above is best-effort only).
+    const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count } = await supabaseAdmin
+      .from('password_reset_otps')
+      .select('id', { count: 'exact', head: true })
+      .eq('email', email)
+      .gte('created_at', hourAgo);
+    if ((count ?? 0) >= OTP_MAX_PER_HOUR) return NextResponse.json(UNIFORM);
 
-    if (!authUser) {
-      // Email not found - return specific response
-      return NextResponse.json({
-        success: false,
-        status: 'not_found',
-        message: 'No account found with that email address.',
-      });
-    }
-
-    // Check if user signed up with OAuth provider
-    const provider = authUser.app_metadata?.provider;
-    if (provider === 'google' || provider === 'linkedin') {
-      return NextResponse.json({
-        success: false,
-        status: 'oauth_only',
-        provider: provider === 'google' ? 'Google' : 'LinkedIn',
-        message: `You signed up with ${provider === 'google' ? 'Google' : 'LinkedIn'}. Please use your social account to sign in. Password reset is not available for social accounts.`,
-      });
-    }
-
-    // Get profile for name
+    // Look up by profile (indexed) instead of listing every auth user, which
+    // only returned the first page and did not scale.
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('id, full_name')
-      .eq('email', normalizedEmail)
+      .eq('email', email)
       .maybeSingle();
+    if (!profile) return NextResponse.json(UNIFORM);
 
-    // Generate 6-digit OTP
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const { data: authRes } = await supabaseAdmin.auth.admin.getUserById(profile.id);
+    const provider = authRes?.user?.app_metadata?.provider;
+    if (provider === 'google' || provider === 'linkedin') {
+      return NextResponse.json(UNIFORM); // social accounts have no password to reset
+    }
 
-    // Store OTP
+    // Only the newest code is ever valid.
+    await supabaseAdmin
+      .from('password_reset_otps')
+      .update({ used: true })
+      .eq('email', email)
+      .eq('used', false);
+
+    const otp = generateOtp();
     const { error: insertError } = await supabaseAdmin
       .from('password_reset_otps')
       .insert({
-        email: normalizedEmail,
-        otp_code: otpCode,
-        expires_at: expiresAt.toISOString(),
-        used: false,
+        email,
+        otp_code:   hashOtp(email, otp),
+        expires_at: new Date(Date.now() + OTP_TTL_MS).toISOString(),
+        used:       false,
+        attempts:   0,
       });
-
     if (insertError) {
       console.error('[forgot-password] insert error:', insertError);
-      return NextResponse.json({ error: 'Failed to generate reset code' }, { status: 500 });
+      return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
     }
 
-    // Send email
     try {
       await sendPasswordResetOTP({
-        to: normalizedEmail,
-        otpCode,
-        firstName: profile?.full_name || 'there',
+        to: email,
+        otpCode: otp,
+        firstName: profile.full_name || 'there',
       });
     } catch (emailError) {
       console.error('[forgot-password] email error:', emailError);
     }
 
-    return NextResponse.json({
-      success: true,
-      status: 'sent',
-      message: 'If an account exists, a reset code has been sent.',
-    });
+    return NextResponse.json(UNIFORM);
   } catch (err) {
     console.error('[forgot-password] unexpected error:', err);
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });

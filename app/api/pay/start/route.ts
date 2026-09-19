@@ -26,15 +26,12 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
-import { supabaseAdmin } from '@/lib/supabase/admin'
+import { createAttempt, subscriptionAmountKobo } from '@/lib/paymentSettlement'
+import { paymentLimiter, getClientIp } from '@/lib/rate-limit'
 
-// Plan amounts in kobo (NGN × 100)
-// These are used directly — no Paystack plan codes needed.
-const PLAN_AMOUNTS: Record<string, Record<string, number>> = {
-  explorer: { monthly: 1200000,  annual: 11520000  }, // ₦12,000 / ₦115,200 in kobo
-  builder:  { monthly: 2500000,  annual: 24000000  }, // ₦25,000 / ₦240,000 in kobo
-  climber:  { monthly: 6000000,  annual: 57600000  }, // ₦60,000 / ₦576,000 in kobo
-}
+// Plan prices live in lib/pricing.ts (single source of truth) and are read via
+// subscriptionAmountKobo(); the same value is stored on the payment attempt and
+// re-checked when the payment settles.
 
 const VALID_PLANS   = ['explorer', 'builder', 'climber'] as const
 const VALID_BILLING = ['monthly', 'annual'] as const
@@ -42,6 +39,14 @@ const VALID_BILLING = ['monthly', 'annual'] as const
 const APP_URL = process.env.NEXT_PUBLIC_URL || 'https://ascentorbi.com'
 
 export async function POST(req: NextRequest) {
+  const limit = paymentLimiter.check(getClientIp(req))
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Please wait a minute and try again.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } }
+    )
+  }
+
   try {
     // ── 1. Auth ──────────────────────────────────────────────────────────────
     const auth = await createAuthClient()
@@ -67,7 +72,7 @@ export async function POST(req: NextRequest) {
     // ── 3. Resolve plan amount ────────────────────────────────────────────────
     // Plan codes (PLN_xxx) are no longer passed to Paystack — they lock channels.
     // Amount is derived directly from PLAN_AMOUNTS instead.
-    const planAmount = PLAN_AMOUNTS[planId]?.[billing]
+    const planAmount = subscriptionAmountKobo(planId, billing)
     if (!planAmount) {
       console.error(`[pay/start] Missing amount for ${planId}/${billing}`)
       return NextResponse.json(
@@ -100,7 +105,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         email:        user.email,
-        amount:       PLAN_AMOUNTS[planId]?.[billing],
+        amount:       planAmount,
         callback_url: `${APP_URL}/api/pay/callback`,
         channels:     ['card', 'bank', 'bank_transfer', 'mobile_money', 'ussd', 'qr'],
         metadata: {
@@ -127,18 +132,26 @@ export async function POST(req: NextRequest) {
 
     const { authorization_url, access_code, reference } = psData.data
 
-    // ── 6. Log pending attempt ───────────────────────────────────────────────
+    // ── 6. Record the attempt ────────────────────────────────────────────────
+    // Mandatory: settlement only fulfils references that exist here, with the
+    // amount/plan/user recorded server-side. If this fails the customer must
+    // not be sent to pay for something we could not later match.
     try {
-      await supabaseAdmin.from('payment_attempts').upsert({
-        user_id:    user.id,
+      await createAttempt({
         reference,
-        plan_id:    planId,
+        kind:      'subscription',
+        amountKobo: planAmount,
+        email:     user.email,
+        userId:    user.id,
+        planId,
         billing,
-        status:     'pending',
-        created_at: new Date().toISOString(),
-      }, { onConflict: 'reference' })
+      })
     } catch (e) {
-      console.warn('[pay/start] Could not log attempt (non-critical):', e)
+      console.error('[pay/start] Could not record payment attempt:', e)
+      return NextResponse.json(
+        { error: 'Could not start checkout. Please try again.' },
+        { status: 500 }
+      )
     }
 
     // ── 7. Return both access_code (inline popup) and authorizationUrl (hosted page) ──

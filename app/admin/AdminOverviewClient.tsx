@@ -27,6 +27,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import SageLoader from '@/components/SageLoader';
+import PaymentHealth from '@/components/admin/PaymentHealth';
 
 // Safe-ish SVG icon renderer — strips <script> tags and inline event
 // handlers before injecting. For admin-controlled content only.
@@ -230,6 +231,9 @@ export default function AdminOverviewClient() {
           </Link>
         ))}
       </div>
+
+      {/* ═══ PAYMENT HEALTH (abandoned / failed checkouts) ═══ */}
+      <PaymentHealth />
 
       {/* ═══ ACTIVITY CHART (last 14 days) ═══ */}
       <div className="rounded-xl p-5 mb-5 ledger-panel">
