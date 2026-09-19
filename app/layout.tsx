@@ -5,7 +5,6 @@ import CommunityGateModal from '@/components/CommunityGateModal';
 import RoutePreloader from '@/components/RoutePreloader';
 import { ModalProvider } from '@/components/Modal';
 import { NotificationProvider } from '@/components/Notifications';
-import PushPermission from '@/components/PushPermission';
 import { MobileInit } from '@/components/MobileInit';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import StructuredData from '@/components/StructuredData';
@@ -87,34 +86,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     // This is intentional and safe — it only suppresses the warning on <html>.
       <html
         lang="en"
+        data-app-theme="light"
         suppressHydrationWarning
       >
       <head>
         <StructuredData />
         <link rel="apple-touch-icon" sizes="180x180" href="/icon/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/icon/icon-192.png" />
-
-        {/* Theme initialiser — runs synchronously before paint to prevent flash.
-            Sets data-app-theme on <html> before React hydrates.
-            suppressHydrationWarning on <html> above handles the mismatch. */}
-        <script
-          nonce={nonce}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var stored = localStorage.getItem('asc-theme');
-                  var explicit = localStorage.getItem('asc-theme-explicit');
-                  var theme = (stored === 'dark' && explicit === '1') ? 'dark'
-                            : (stored === 'light') ? 'light'
-                            : 'light';
-                  document.documentElement.setAttribute('data-app-theme', theme);
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
 
         {/* Plausible Analytics */}
         <Script
@@ -133,7 +111,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <MobileInit />
             {children}
             <CommunityGateModal />
-            <PushPermission />
           </NotificationProvider>
         </ModalProvider>
       </body>

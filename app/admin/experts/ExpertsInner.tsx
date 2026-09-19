@@ -1,6 +1,7 @@
 'use client';
 
 import SageLoader from '@/components/SageLoader';
+import { confirmAction } from '@/components/Modal';
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -96,7 +97,7 @@ is_free: form.plan_tier === 'free',
   }
 
   async function handleDelete(id: string, title: string) {
-    if (!confirm(`Delete "${title}"?`)) return;
+    if (!(await confirmAction(`Delete "${title}"?`))) return;
     await supabase.from('expert_sessions').delete().eq('id', id);
     loadEvents();
   }

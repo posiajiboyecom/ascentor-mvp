@@ -518,12 +518,44 @@ the account exists; social-login accounts are told to use their provider.
 
 | Piece | Behaviour |
 |-------|-----------|
-| Sidebar | Collapses to an icon rail on desktop (state saved per dashboard); react-tooltip labels appear on collapsed items. Below 1024 px it is an off-canvas drawer with backdrop, Escape to close and scroll lock |
-| Header | Sticky; page title (from the active nav item), search, theme toggle, extra actions (notification bell for members), avatar menu with account links and sign out |
+| Sidebar | Always black. Full logo (`ascentor-color-for-dark-pages.svg`) when open, logo mark only (`ascentor-LM-gold.svg`) when collapsed; every item has an icon and react-tooltip labels appear when collapsed. The avatar at the bottom opens Settings (`/account`) and the logout icon signs out after a confirmation dialog. Collapses on desktop (state saved per dashboard); below 1024 px it is an off-canvas drawer with backdrop, Escape to close and scroll lock |
+| Header | Sticky; page title (from the active nav item), search, extra actions (notification bell for members), avatar menu with account links and sign out |
 | Global search | `Ctrl/Cmd + K` opens a command palette: matching pages plus debounced server results from `/api/admin/search` or `/api/search` |
 | Page-scoped search | A page calls `usePageSearch('Search…')` and filters its own data with the returned query; the header input then filters that page and a **Global** button opens the palette |
-| Theming | Admin follows THE LEDGER tokens (`data-ledger-theme`), members follow `data-app-theme`; both map onto `--sh-*` variables in `styles/shell.css` |
+| Theming | **Light only; there is no dark mode.** Admin uses THE LEDGER tokens (`[data-ledger]`), members use the `--app-*` tokens (`<html data-app-theme="light">`); both map onto `--sh-*` variables in `styles/shell.css`. The sidebar uses its own black `--sb-*` tokens |
 
 To add an admin page: create `app/admin/<name>/page.tsx` and add an entry to
 `NAV_GROUPS` in `components/AdminShell.tsx` (optionally with a `permission`).
 To make a page searchable from the header, call `usePageSearch` in it.
+
+### Confirmation dialogs
+
+Every sensitive action asks first, using the in-app dialog in
+`components/Modal.tsx` instead of the browser's `confirm()`:
+
+- `confirmAction(message, options?)` works anywhere (event handlers, plain
+  functions). It infers the title, button label and red "danger" styling from the
+  wording (delete / remove / ban / discard / unpublish ...), or accepts
+  `{ title, confirmLabel, cancelLabel, danger }`.
+- `useModal()` exposes `alert`, `confirm` and `prompt` inside components.
+- Covered actions include sign out (all shells), deletes (courses, events,
+  experts, careers, promo codes, messages, channels, marketing content, billboards),
+  banning users, removing admins, changing a user's plan, unpublishing,
+  publishing a blog post, approving a draft, sending to Buffer, broadcasts,
+  newsletters, marking a lesson complete and marking all notifications as read.
+  Flows that already had their own inline confirmation (typing DELETE to delete an
+  account, the subscription-cancel step, blog and product delete) are unchanged.
+- Destructive dialogs focus **Cancel** first, trap Tab focus, close on Escape and
+  restore focus afterwards.
+
+### Sage, the floating AI coach
+
+`components/shell/SageFloat.tsx` renders a floating orb in the member app. Once
+per login session (`sessionStorage["sage:greeted"]`, cleared on sign-out) it
+plays a soft synthesised chime, shows a typing indicator, then types a
+personalised greeting based on the time of day with a **Talk to Sage** shortcut
+to `/coach`. Clicking the orb reopens the panel at any time. Sound can be muted
+(`localStorage["sage:muted"]`); if the browser blocks audio until the user has
+interacted, the chime is armed for the first click or key press in the next
+10 seconds instead of failing. It respects `prefers-reduced-motion` and is hidden
+on `/coach`.

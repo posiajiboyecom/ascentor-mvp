@@ -1,6 +1,7 @@
 'use client';
 
 import SageLoader from '@/components/SageLoader';
+import { confirmAction } from '@/components/Modal';
 import ExportPanel from '@/components/admin/ExportPanel';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -218,7 +219,7 @@ export default function AdminCoachingPage() {
     // H-06: ref-based guard prevents concurrent deletes from double-click
     if (deletingRef.current) return;
     const count = selectedSessionIds.size;
-    if (!confirm(`Permanently delete ${count} coaching session${count === 1 ? '' : 's'}? This cannot be undone.`)) return;
+    if (!(await confirmAction(`Permanently delete ${count} coaching session${count === 1 ? '' : 's'}? This cannot be undone.`))) return;
 
     deletingRef.current = true;
     setDeleting(true);
@@ -261,7 +262,7 @@ export default function AdminCoachingPage() {
     // H-06: ref-based guard prevents concurrent deletes from double-click
     if (deletingRef.current) return;
     const count = selectedMessageIds.size;
-    if (!confirm(`Delete ${count} message${count === 1 ? '' : 's'}? This removes them from the community view.`)) return;
+    if (!(await confirmAction(`Delete ${count} message${count === 1 ? '' : 's'}? This removes them from the community view.`))) return;
 
     deletingRef.current = true;
     setDeleting(true);
@@ -670,7 +671,7 @@ export default function AdminCoachingPage() {
                         </button>
                         <button
                           onClick={async () => {
-                            if (!confirm('Delete this message? This cannot be undone from this view.')) return;
+                            if (!(await confirmAction('Delete this message? This cannot be undone from this view.'))) return;
                             const { data: { session } } = await supabase.auth.getSession();
                             await fetch('/api/admin/community-messages', {
                               method: 'PATCH',

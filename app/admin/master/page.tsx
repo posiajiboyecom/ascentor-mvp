@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import SageLoader from '@/components/SageLoader';
 
@@ -333,7 +334,7 @@ export default function MasterAdminPage() {
   }
 
   async function deleteContent(id: string) {
-    if (!confirm('Delete this content item?')) return;
+    if (!(await confirmAction('Delete this content item?'))) return;
     await supabase.from('content_calendar').delete().eq('id', id);
     load('content');
   }
@@ -356,7 +357,7 @@ export default function MasterAdminPage() {
   }
 
   async function deleteSocial(id: string) {
-    if (!confirm('Remove this post from the queue?')) return;
+    if (!(await confirmAction('Remove this post from the queue?'))) return;
     await supabase.from('social_queue').delete().eq('id', id);
     load('social');
   }

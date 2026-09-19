@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 // toggle publish/registration-open, configure registration fields, email registrants.
 
 import { useState, useEffect, useMemo } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
 const B = {
@@ -120,7 +121,7 @@ export default function AdminEventsPage() {
   }
 
   async function handleDelete(id: string, title: string) {
-    if (!confirm(`Delete "${title}"? This also deletes all registrations.`)) return;
+    if (!(await confirmAction(`Delete "${title}"? This also deletes all registrations.`))) return;
     await supabase.from('public_events').delete().eq('id', id);
     setEvents(prev => prev.filter(e => e.id !== id));
     if (activeEventId === id) setActiveEventId(null);

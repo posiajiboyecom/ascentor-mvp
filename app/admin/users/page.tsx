@@ -17,6 +17,7 @@
 // setPermissions, togglePerm. This is a styling-only pass.
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
 interface User {
@@ -312,7 +313,7 @@ export default function AdminUsersPage() {
                                 Unban
                               </button>
                             ) : (
-                              <button onClick={() => { if (confirm(`Ban ${u.full_name || u.email}?`)) doAction(u.id, 'ban'); }} disabled={actionLoading}
+                              <button onClick={async () => { if ((await confirmAction(`Ban ${u.full_name || u.email}?`))) doAction(u.id, 'ban'); }} disabled={actionLoading}
                                 style={{ ...inp, padding:'5px 12px', fontSize:11, cursor:'pointer', color:'var(--ledger-bad)', borderColor:'rgba(200,74,56,0.3)' }}>
                                 Ban
                               </button>
@@ -420,10 +421,10 @@ export default function AdminUsersPage() {
 
                   {/* Plan change */}
                   <div style={{ display:'flex', gap:8, marginTop:20 }}>
-                    <select onChange={e => {
+                    <select onChange={async e => {
                         const plan = e.target.value;
                         if (!plan) return;
-                        if (confirm(`Change plan to "${plan}" for ${selectedUser.full_name || selectedUser.email}?`)) {
+                        if ((await confirmAction(`Change plan to "${plan}" for ${selectedUser.full_name || selectedUser.email}?`))) {
                           doAction(selectedUser.id, 'change_plan', plan);
                         }
                         (e.target as HTMLSelectElement).value = '';
@@ -446,7 +447,7 @@ export default function AdminUsersPage() {
                         ✓ Unban this user
                       </button>
                     ) : (
-                      <button onClick={() => { if (confirm('Ban this user?')) { doAction(selectedUser.id, 'ban'); setSelectedUser(null); } }}
+                      <button onClick={async () => { if ((await confirmAction('Ban this user?'))) { doAction(selectedUser.id, 'ban'); setSelectedUser(null); } }}
                         style={{ ...inp, width:'100%', cursor:'pointer', color:'var(--ledger-bad)', borderColor:'rgba(200,74,56,0.3)', textAlign:'center' }}>
                         ⛔ Ban this user
                       </button>

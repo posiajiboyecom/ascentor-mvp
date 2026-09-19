@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, createContext, useContext } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
 // ============================================================
@@ -292,7 +293,13 @@ export function NotificationBell() {
               </span>
               {unreadCount > 0 && (
                 <button
-                  onClick={markAllAsRead}
+                  onClick={async () => {
+                    const ok = await confirmAction(
+                      `Mark all ${unreadCount} notification${unreadCount === 1 ? '' : 's'} as read?`,
+                      { title: 'Mark all as read?', confirmLabel: 'Mark all read' },
+                    );
+                    if (ok) markAllAsRead();
+                  }}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
                     color: 'var(--accent)', fontSize: '12px', fontWeight: 500,

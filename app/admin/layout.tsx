@@ -1,12 +1,10 @@
 export const dynamic = 'force-dynamic';
 
 import AdminShell from '@/components/AdminShell';
-import { AdminThemeProvider } from '@/components/AdminThemeProvider';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import type { Permission } from '@/lib/permissions';
 import '@/styles/admin-ledger.css';
-import { headers } from 'next/headers';
 
 // ═══════════════════════════════════════════════════════════
 // Admin layout
@@ -38,10 +36,6 @@ import { headers } from 'next/headers';
 // families are referenced by the Ledger tokens anymore.
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  // Read per-request nonce from middleware (M-06)
-  const headersList = await headers();
-  const nonce = headersList.get('x-nonce') ?? '';
-
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/admin-login');
@@ -85,33 +79,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <>
-      {/* Theme initialiser — mirrors the pattern in app/layout.tsx for
-          the user-facing app's data-app-theme. Runs synchronously
-          before paint so there's no flash from dark (the default) to
-          whatever was last chosen. AdminThemeProvider's own effect
-          re-confirms this value on mount; this script only prevents
-          the first-paint flash. suppressHydrationWarning isn't needed
-          here because this script runs inside <body>, not on <html>
-          (admin doesn't own the root <html> tag — app/layout.tsx does). */}
-      <script
-        nonce={nonce}
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function() {
-              try {
-                var stored = localStorage.getItem('ledger-theme');
-                var explicit = localStorage.getItem('ledger-theme-explicit');
-                var theme = (stored === 'light' && explicit === '1') ? 'light'
-                          : (stored === 'dark') ? 'dark'
-                          : 'dark';
-                document.documentElement.setAttribute('data-ledger-theme', theme);
-              } catch(e) {}
-            })();
-          `,
-        }}
-      />
-
-      <AdminThemeProvider>
+      <div data-ledger data-ledger-theme="light" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <AdminShell
           name={profile.full_name || user.email || 'Admin'}
           role={profile.role}
@@ -241,7 +209,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             {children}
           </div>
         </AdminShell>
-      </AdminThemeProvider>
+      </div>
     </>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
 // ============================================================
@@ -140,7 +141,7 @@ export default function AdminPromoCodesPage() {
   };
 
   const deleteCode = async (id: string) => {
-    if (!confirm('Delete this promo code?')) return;
+    if (!(await confirmAction('Delete this promo code?'))) return;
     const { data: { session } } = await supabase.auth.getSession();
     await fetch('/api/admin/promo-codes', {
       method: 'DELETE',

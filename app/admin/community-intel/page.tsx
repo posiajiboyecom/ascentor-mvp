@@ -6,6 +6,7 @@
 //   2. Community Intelligence — AI cohort recommendations
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
 const B = {
@@ -108,7 +109,7 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
   }
 
   async function deleteCategory(id:string,name:string){
-    if(!confirm(`Delete category "${name}"? Channels in it will become uncategorised.`))return;
+    if(!(await confirmAction(`Delete category "${name}"? Channels in it will become uncategorised.`)))return;
     setDeleting(d=>({...d,[id]:true}));
     await supabase.from('community_channels').update({category_id:null}).eq('category_id',id);
     const{error}=await supabase.from('community_categories').delete().eq('id',id);
@@ -134,7 +135,7 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
   }
 
   async function deleteChannel(slug:string){
-    if(!confirm(`Delete #${slug}?`))return;
+    if(!(await confirmAction(`Delete #${slug}?`)))return;
     setDeleting(d=>({...d,[slug]:true}));
     const{error}=await supabase.from('community_channels').delete().eq('slug',slug);
     if(error){showToast(error.message,false);}else{showToast(`#${slug} deleted`);load();}

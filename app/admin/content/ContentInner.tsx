@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
 
@@ -172,6 +173,7 @@ export default function AdminContentPage() {
 
   async function handleApprove() {
     if (!selectedItem || saving || selectedItem.status !== 'draft') return;
+    if (!(await confirmAction('Approve this draft so it can be published?', { title: 'Approve draft?', confirmLabel: 'Approve' }))) return;
     setSaving(true);
 
     // Patch local state FIRST so the UI updates before filter switches
@@ -288,6 +290,7 @@ export default function AdminContentPage() {
 
   async function handlePublishBlog(item: CalItem) {
     if (item.type !== 'Blog Post' || saving) return;
+    if (!(await confirmAction('Publish this blog post to the live site?', { title: 'Publish post?', confirmLabel: 'Publish' }))) return;
     setSaving(true);
     const d = item.content_data || {};
     const { error } = await supabase.from('blog_posts').insert({
@@ -1269,6 +1272,7 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
   }
 
   async function sendToBuffer(post: any) {
+    if (!(await confirmAction('Send this post to Buffer for publishing?', { title: 'Send to Buffer?', confirmLabel: 'Send' }))) return;
     setSending(post.id);
     const imageUrl = postImages[post.id] || post.image_url;
 
@@ -1294,6 +1298,7 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
   }
 
   async function removeFromQueue(postId: string) {
+    if (!(await confirmAction('Remove this post from the queue?'))) return;
     const { createClient } = await import('@/lib/supabase/client');
     await createClient().from('social_queue').delete().eq('id', postId);
     showToast('Removed from queue');

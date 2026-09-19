@@ -19,7 +19,7 @@
 // Styling: The Ledger (styles/admin-ledger.css). Assumes this
 // component is rendered inside the [data-ledger] scope, which
 // is true for everything under /admin since app/admin/layout.tsx
-// wraps all children in <AdminThemeProvider>.
+// wraps all children in <div data-ledger>.
 // ============================================================
 
 import { useState } from 'react';

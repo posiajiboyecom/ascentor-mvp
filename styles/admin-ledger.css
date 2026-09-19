@@ -6,7 +6,7 @@
    never leak into or collide with the user-facing app's
    --bg / --text / --accent globals defined in app/globals.css.
 
-   Theme: set <html data-ledger data-ledger-theme="dark|light">
+   Theme: light only (wrap pages in <div data-ledger>)
    Default (no attribute, or "dark") = Summit Black briefing room.
    "light" = Summit White, same structure, inverted surfaces.
 
@@ -59,30 +59,9 @@
 }
 
 /* ============================================================
-   DARK — "Summit Black" (default)
+   THEME — "Summit White" (light only; there is no dark mode)
    ============================================================ */
-[data-ledger][data-ledger-theme="dark"],
-[data-ledger]:not([data-ledger-theme]) {
-  --ledger-bg:            #0F0E0C;
-  --ledger-bg-deep:       #080807;
-  --ledger-bg-card:       #17150F;
-  --ledger-bg-card-hover: #1E1C15;
-  --ledger-bg-input:      #1E1C15;
-
-  --ledger-ink:           #F5F2EA;
-  --ledger-ink-soft:      #C9C2B2;
-  --ledger-ink-faint:     #7A7567;
-
-  --ledger-line:          rgba(245,242,234,0.10);
-  --ledger-line-strong:   rgba(245,242,234,0.18);
-
-  --ledger-shadow: 0 4px 24px rgba(0,0,0,0.40);
-}
-
-/* ============================================================
-   LIGHT — "Summit White"
-   ============================================================ */
-[data-ledger][data-ledger-theme="light"] {
+[data-ledger] {
   --ledger-bg:            #FAFAF8;
   --ledger-bg-deep:       #F2EFE7;
   --ledger-bg-card:       #FFFFFF;
@@ -223,11 +202,6 @@
 [data-ledger] .ledger-btn-primary {
   background: var(--ledger-ink);
   color: var(--ledger-bg);
-}
-[data-ledger][data-ledger-theme="dark"] .ledger-btn-primary,
-[data-ledger]:not([data-ledger-theme]) .ledger-btn-primary {
-  background: var(--ledger-gold);
-  color: var(--ledger-bg-deep);
 }
 
 [data-ledger] .ledger-btn-ghost {

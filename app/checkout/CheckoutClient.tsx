@@ -115,7 +115,6 @@ export default function CheckoutClient() {
   const supabase     = useMemo(() => createClient(), [])
   const fromOnboarding = searchParams.get('from') === 'onboarding'
 
-  const [isDark,        setIsDark]        = useState(true)
   const [user,          setUser]          = useState<any>(null)
   const [profile,       setProfile]       = useState<any>(null)
   const [loading,       setLoading]       = useState(true)
@@ -126,32 +125,6 @@ export default function CheckoutClient() {
   const [paying,        setPaying]        = useState(false)
   const [error,         setError]         = useState('')
   const [goingFree,     setGoingFree]     = useState(false)
-
-  // Theme — reads from localStorage/html attr and keeps in sync with AppThemeProvider
-  useEffect(() => {
-    const attr = document.documentElement.getAttribute('data-app-theme')
-    if (attr === 'light' || attr === 'dark') {
-      setIsDark(attr === 'dark')
-    } else {
-      const stored = localStorage.getItem('asc-theme')
-      setIsDark(stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches)
-    }
-    // Listen for theme changes made by AppThemeProvider on other pages
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === 'asc-theme') setIsDark(e.newValue === 'dark')
-    }
-    // Also listen for same-page changes via custom event
-    const onThemeChange = () => {
-      const a = document.documentElement.getAttribute('data-app-theme')
-      if (a === 'light' || a === 'dark') setIsDark(a === 'dark')
-    }
-    window.addEventListener('storage', onStorage)
-    window.addEventListener('asc-theme-change', onThemeChange)
-    return () => {
-      window.removeEventListener('storage', onStorage)
-      window.removeEventListener('asc-theme-change', onThemeChange)
-    }
-  }, [])
 
   // Auth + profile
   useEffect(() => {
@@ -230,8 +203,8 @@ export default function CheckoutClient() {
 
     return (
       <>
-        <style>{checkoutStyles(isDark)}</style>
-        <div className="co-root" data-co-theme={isDark ? 'dark' : 'light'}>
+        <style>{checkoutStyles()}</style>
+        <div className="co-root" data-co-theme="light">
           <nav className="co-nav">
             <Link href="/dashboard" className="co-back-btn">← Dashboard</Link>
           </nav>
@@ -349,32 +322,17 @@ export default function CheckoutClient() {
   // ── Free / new user view ───────────────────────────────────────
   return (
     <>
-      <style>{checkoutStyles(isDark)}</style>
-      <div className="co-root" data-co-theme={isDark ? 'dark' : 'light'}>
+      <style>{checkoutStyles()}</style>
+      <div className="co-root" data-co-theme="light">
 
         <nav className="co-nav">
           <Link href="/" className="co-nav-logo">
-            <LogoImg isDark={isDark} />
+            <LogoImg />
             <span className="co-logo-text">Ascentor</span>
           </Link>
           {!fromOnboarding && (
             <Link href="/dashboard" className="co-back-btn">← Dashboard</Link>
           )}
-          <button
-            onClick={() => {
-              const next = isDark ? 'light' : 'dark'
-              setIsDark(!isDark)
-              localStorage.setItem('asc-theme', next)
-              document.documentElement.setAttribute('data-app-theme', next)
-              window.dispatchEvent(new Event('asc-theme-change'))
-            }}
-            className="co-theme-btn"
-          >
-            {isDark
-              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
-              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            }
-          </button>
         </nav>
 
         <div className="co-hero">
@@ -514,12 +472,11 @@ export default function CheckoutClient() {
 
 // ── Shared components ──────────────────────────────────────────
 
-function LogoImg({ isDark }: { isDark: boolean }) {
+function LogoImg() {
   return (
     <img
-      src={isDark ? '/ascentor-color-for-dark-pages.svg' : '/ascentor-color-for-light-pages.svg'}
+      src="/ascentor-color-for-light-pages.svg"
       alt="Ascentor"
-      onError={(e) => { (e.target as HTMLImageElement).src = '/ascentor-color-for-dark-pages.svg'; }}
       style={{ height: 30, width: 'auto' }}
     />
   )
@@ -546,17 +503,10 @@ function TrustBar() {
   )
 }
 
-function checkoutStyles(isDark: boolean): string {
+function checkoutStyles(): string {
   return `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    .co-root[data-co-theme="dark"] {
-      --bg: #0C0B08; --bg2: #1E1C17; --card: #141310;
-      --text: #D4CFC3; --text-mid: #A09880; --text-muted: #7A7260; --text-faint: #4A4438;
-      --bord: #2E2A22; --bord-med: #3E3A32;
-      --toggle-bg: #1E1C17; --price: #FFFFFF; --heading: #FFFFFF;
-      --glow: rgba(232,160,32,0.045); --grid: rgba(232,160,32,0.02); --shadow: none;
-    }
     .co-root[data-co-theme="light"] {
       --bg: #FAF7F2; --bg2: #F2EDE4; --card: #FFFFFF;
       --text: #2A2820; --text-mid: #4A4438; --text-muted: #6B6456; --text-faint: #9A9080;

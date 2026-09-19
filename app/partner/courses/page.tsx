@@ -2,6 +2,7 @@
 // app/partner/courses/page.tsx — full partner course manager with tier gating
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { useApiBase } from '@/lib/useApiBase';
 
 const DIFF_OPTS = ['beginner','intermediate','advanced'];
@@ -63,7 +64,7 @@ export default function PartnerCoursesPage() {
   };
 
   const deleteCourse = async (id: string) => {
-    if (!confirm('Delete this course?')) return;
+    if (!(await confirmAction('Delete this course?'))) return;
     await fetch(`${apiBase}/api/partner/courses?courseId=${id}`, { method:'DELETE' });
     await load();
   };

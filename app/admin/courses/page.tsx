@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 
@@ -176,14 +177,8 @@ const CSS = `
     text-transform: uppercase;
     appearance: none;
     /* Color baked into this data URI as a literal hex (#948C7C =
-       --ledger-ink-faint, LIGHT theme value) because CSS custom
-       properties can't be referenced inside a data: URI. This means
-       the arrow will be slightly lighter than ideal in dark mode
-       (#7A7567) — a real but minor limitation, not fixed here since
-       it'd require either a second CSS rule keyed to
-       [data-ledger-theme="dark"] with its own data URI, or switching
-       this to an inline SVG element instead of a background-image.
-       Flagging rather than leaving unexplained. */
+       --ledger-ink-faint) because CSS custom properties can't be
+       referenced inside a data: URI. */
     background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%23948C7C' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
@@ -432,7 +427,7 @@ function AdminCoursesInner() {
 
   async function handleDelete(id: string, title: string) {
     // TODO: swap for useModal() confirm when available in this subtree
-    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    if (!(await confirmAction(`Delete "${title}"? This cannot be undone.`))) return;
     await supabase.from('courses').delete().eq('id', id);
     loadCourses();
   }

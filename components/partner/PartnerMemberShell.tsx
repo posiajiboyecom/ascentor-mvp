@@ -20,6 +20,7 @@
 'use client';
 
 import type { Partner } from '@/types/partner';
+import { confirmAction } from '@/components/Modal';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -86,6 +87,7 @@ export default function PartnerMemberShell({
   );
 
   async function handleSignOut() {
+    if (!(await confirmAction('Sign out of Ascentor on this device?', { title: 'Sign out?', confirmLabel: 'Sign out' }))) return;
     await supabase.auth.signOut();
     router.push('/login');
   }

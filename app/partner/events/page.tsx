@@ -2,6 +2,7 @@
 // app/partner/events/page.tsx — partner expert event scheduler with tier gating
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { useApiBase } from '@/lib/useApiBase';
 const S: Record<string,React.CSSProperties> = {
   card:  { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', padding:'20px' },
@@ -76,13 +77,13 @@ export default function PartnerEventsPage() {
   };
 
   const setStatus = async (id:string, status:string) => {
-    if (status==='cancelled' && !confirm('Cancel this event? Registered attendees will not be automatically notified.')) return;
+    if (status==='cancelled' && !(await confirmAction('Cancel this event? Registered attendees will not be automatically notified.'))) return;
     await fetch(`${apiBase}/api/partner/events`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ eventId:id, status }) });
     await load();
   };
 
   const deleteEvent = async (id:string) => {
-    if (!confirm('Delete this draft event?')) return;
+    if (!(await confirmAction('Delete this draft event?'))) return;
     await fetch(`${apiBase}/api/partner/events?eventId=${id}`, { method:'DELETE' });
     await load();
   };

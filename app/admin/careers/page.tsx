@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
 // ============================================================
@@ -488,7 +489,7 @@ export default function AdminCareersPage() {
   }
 
   async function deleteJob(job: Job) {
-    if (!confirm(`Delete "${job.title}"? This cannot be undone.`)) return;
+    if (!(await confirmAction(`Delete "${job.title}"? This cannot be undone.`))) return;
     await supabase.from('job_listings').delete().eq('id', job.id);
     fetchJobs();
   }
@@ -499,7 +500,7 @@ export default function AdminCareersPage() {
   }
 
   async function deleteApp(id: string) {
-    if (!confirm('Delete this application? This cannot be undone.')) return;
+    if (!(await confirmAction('Delete this application? This cannot be undone.'))) return;
     await supabase.from('job_applications').delete().eq('id', id);
     fetchApplications();
   }

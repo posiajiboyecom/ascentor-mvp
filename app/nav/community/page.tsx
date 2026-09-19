@@ -1,6 +1,7 @@
 'use client';
 
 import SageLoader from '@/components/SageLoader';
+import { confirmAction } from '@/components/Modal';
 
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -527,7 +528,7 @@ export default function CohortFeedPage() {
   }
 
   async function leaveCohort() {
-    if (!userId || !confirm('Leave this circle? You can always rejoin later.')) return;
+    if (!userId || !(await confirmAction('Leave this circle? You can always rejoin later.'))) return;
     await supabase.from('cohort_members').delete()
       .eq('cohort_id', String(cohortId)).eq('user_id', userId);
     router.push('/community');

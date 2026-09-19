@@ -8,6 +8,7 @@
 // - Filter by channel, search content, date range
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
 interface Channel  { slug: string; name: string; description: string; category_id: string | null; }
@@ -122,6 +123,7 @@ export default function AdminCommunityPage() {
 
   async function sendBroadcast() {
     if (!broadcast.trim() || !adminId) return;
+    if (!(await confirmAction(`Send this broadcast to everyone in #${channel}?`, { title: 'Send broadcast?', confirmLabel: 'Send broadcast' }))) return;
     setSending(true);
     const { error } = await supabase.from('community_messages').insert({
       user_id: adminId, channel, content: `📣 ${broadcast.trim()}`, likes: [],
@@ -279,7 +281,7 @@ export default function AdminCommunityPage() {
                         Restore
                       </button>
                     ) : (
-                      <button onClick={() => { if (confirm('Delete this message?')) deleteMsg(msg.id); }}
+                      <button onClick={async () => { if ((await confirmAction('Delete this message?'))) deleteMsg(msg.id); }}
                         style={{ padding:'4px 10px', borderRadius:6, border:'1px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.06)', color:'#EF4444', cursor:'pointer', fontSize:11, fontFamily:"Metropolis,'Inter',sans-serif" }}>
                         Delete
                       </button>

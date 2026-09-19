@@ -15,6 +15,7 @@
 // needs revisiting — it cannot be verified without real data.
 
 import Link from 'next/link';
+import { confirmAction } from '@/components/Modal';
 import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, Play, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -294,6 +295,7 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
   }
 
   async function handleDeletePost(postId: string) {
+    if (!(await confirmAction('Delete this post? This cannot be undone.'))) return;
     await supabase.from('course_discussions').delete().eq('id', postId).eq('user_id', userId);
     setPosts(prev => prev.filter(p => p.id !== postId && p.reply_to_id !== postId));
   }
@@ -318,6 +320,11 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
   async function markComplete() {
     if (!activeLesson) return;
     const wasComplete = activeLesson.completed;
+    const ok = await confirmAction(
+      wasComplete ? 'Mark this lesson as not complete?' : 'Mark this lesson as complete?',
+      { title: wasComplete ? 'Undo completion?' : 'Complete lesson?', confirmLabel: wasComplete ? 'Undo' : 'Mark complete' },
+    );
+    if (!ok) return;
 
     setAllLessons((prev) =>
       prev.map((l) => (l.id === activeLesson.id ? { ...l, completed: !wasComplete } : l))

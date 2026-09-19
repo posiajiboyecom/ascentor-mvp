@@ -34,6 +34,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   files and a stale `next.config` copy; added them to `.gitignore`.
 
 ### Added
+- **Sage, the floating AI coach:** an animated orb in the member app that, once
+  per login session, plays a soft chime and types a personalised, time-of-day
+  greeting with a shortcut to `/coach`. Mutable, respects reduced motion, defers
+  the sound if the browser blocks audio, hidden on `/coach`.
+- **Confirmation dialogs everywhere:** `confirmAction()` in `components/Modal.tsx`
+  (wording-aware title, label and red danger styling). All 27 native `confirm()`
+  calls were converted, and sign out (every shell), mark lesson complete, delete
+  post, mark all notifications read, publish blog post, approve draft, send to
+  Buffer, remove from queue and broadcast now ask first.
+- **Sidebar redesign:** always black; full logo when open and the logo mark only
+  when collapsed; an icon on every item; the signed-in avatar opens Settings and
+  a logout icon signs out after confirmation.
 - **Abandoned-checkout handling:** a daily Vercel cron
   (`/api/cron/reconcile-payments`, Hobby-plan compatible) re-verifies pending
   attempts with Paystack, recovers payments whose webhook was lost, marks stale
@@ -63,6 +75,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   access, deployment checklist).
 
 ### Changed
+- **Elevation Summit speakers:** "Lekan Omotosho" is now "Olamilekan Omotosho",
+  and Divine Mmachukwu Chukwuemeka moved from 6th to 4th.
+- **Light theme only.** Dark mode was removed everywhere: the theme toggles (shell
+  header, account "Display" section, checkout, legacy shells), the dark CSS token
+  blocks, the theme-initialiser scripts and both theme providers. The app renders
+  with `<html data-app-theme="light">` and admin pages inside a plain
+  `<div data-ledger>`.
+- The confirmation modal was rebuilt: light styling, red destructive button,
+  Cancel focused first for destructive actions, focus trap, Escape to close and
+  proper dialog roles.
 - Plan prices are read from `lib/pricing.ts` everywhere (removed the duplicate
   table in `pay/start`).
 - Summit ticket prices are validated per attendance type; a missing or invalid
@@ -86,6 +108,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   previously produced hundreds of false errors.
 
 ### Removed
+- The "Stay in the loop" push-notification banner (`PushPermission`) is disabled
+  completely: it is no longer mounted in `app/layout.tsx`, so visitors are never
+  prompted. The component is kept, marked DISABLED, in case it is re-enabled.
+- `components/AppThemeProvider.tsx`, `components/AdminThemeProvider.tsx`, the
+  "Display" (dark mode) section of the account page and every dark-mode toggle.
 - Legacy `lib/summitWebhookHandler.ts` and metadata-based plan grants in the
   subscription webhook handler.
 - Unused duplicate `app/components/AdminShell.tsx` and

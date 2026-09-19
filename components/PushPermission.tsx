@@ -1,6 +1,12 @@
 'use client';
 
 // PushPermission.tsx
+//
+// *** DISABLED ***  The "Stay in the loop" banner is intentionally not mounted
+// anywhere (it was removed from app/layout.tsx), so no visitor is ever prompted.
+// The code is kept only so it can be re-enabled later by rendering
+// <PushPermission /> again. Do not mount it without checking with the team.
+//
 // Asks the user to enable native phone notifications.
 // Shows a card that slides up above the bottom nav.
 // Only displayed when:

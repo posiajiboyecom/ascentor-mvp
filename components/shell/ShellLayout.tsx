@@ -3,18 +3,20 @@
 // Shared dashboard shell used by BOTH /admin and the member app.
 //
 //   ┌────────────┬──────────────────────────────────────────────┐
-//   │  Sidebar   │  Sticky header: menu · title · search · me   │
-//   │  (collapse │──────────────────────────────────────────────│
-//   │   on ≥lg,  │  Page content (scrolls)                      │
-//   │   drawer   │                                              │
-//   │   below)   │                                              │
+//   │  BLACK     │  Sticky header: menu · title · search · me   │
+//   │  sidebar   │──────────────────────────────────────────────│
+//   │  logo      │  Page content (light theme, scrolls)         │
+//   │  nav       │                                              │
+//   │  avatar ⎋  │                                              │
 //   └────────────┴──────────────────────────────────────────────┘
 //
-// - Sidebar collapses to an icon rail on desktop (state persisted per variant);
-//   collapsed items get react-tooltip labels.
-// - Below 1024px the sidebar becomes an off-canvas drawer with a backdrop.
-// - Header is sticky and carries: drawer toggle, page title, search, theme
-//   toggle, extra actions (e.g. notifications) and the avatar menu.
+// - Light theme only. The sidebar is black; everything else is light.
+// - Sidebar: full logo when open, logo mark only when collapsed (desktop);
+//   items have icons (react-tooltip labels when collapsed); the signed-in
+//   avatar links to settings and the logout icon asks for confirmation.
+//   Below 1024px it becomes an off-canvas drawer.
+// - Header is sticky: drawer toggle, page title, search, extra actions
+//   (e.g. notifications) and an avatar menu.
 // - Search is two-tier: the header input filters the current page when the
 //   page registered via usePageSearch(); everything else goes through the
 //   global command palette (Ctrl/Cmd+K).
@@ -23,10 +25,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Tooltip } from 'react-tooltip';
-import {
-  ChevronsLeft, LogOut, Menu, Moon, Search, Sun, X,
-} from 'lucide-react';
+import { ChevronsLeft, LogOut, Menu, Search, X } from 'lucide-react';
 import '@/styles/shell.css';
+import { confirmAction } from '@/components/Modal';
 import CommandPalette from './CommandPalette';
 import { PageSearchProvider, usePageSearchContext } from './PageSearch';
 import {
@@ -34,18 +35,22 @@ import {
   type ShellMenuLink, type ShellNavGroup, type ShellUser,
 } from './types';
 
+// Brand assets (public/): the sidebar is black, so use the versions made for dark backgrounds.
+const LOGO_FULL = '/ascentor-color-for-dark-pages.svg'; // gold mark + white wordmark
+const LOGO_MARK = '/ascentor-LM-gold.svg';              // logo mark only
+
 export interface ShellLayoutProps {
   variant: 'admin' | 'app';
   groups: ShellNavGroup[];
   user: ShellUser;
-  logoSrc: string;
   homeHref: string;
+  /** Where the sidebar avatar and "My account" go. */
+  settingsHref: string;
   searchEndpoint: string;
   searchPlaceholder: string;
-  isDark: boolean;
-  onToggleTheme: () => void;
+  /** Runs after the user confirms the sign-out dialog. */
   onSignOut: () => void;
-  /** Links shown in the avatar menu, above sign out. */
+  /** Links shown in the header avatar menu, above sign out. */
   menuLinks?: ShellMenuLink[];
   /** Extra header controls, e.g. <NotificationBell />. */
   headerActions?: React.ReactNode;
@@ -73,8 +78,8 @@ export default function ShellLayout(props: ShellLayoutProps) {
 }
 
 function ShellInner({
-  variant, groups, user, logoSrc, homeHref, searchEndpoint, searchPlaceholder,
-  isDark, onToggleTheme, onSignOut, menuLinks = [], headerActions, sidebarExtra,
+  variant, groups, user, homeHref, settingsHref, searchEndpoint, searchPlaceholder,
+  onSignOut, menuLinks = [], headerActions, sidebarExtra,
   padded = false, children,
 }: ShellLayoutProps) {
   const pathname = usePathname();
@@ -140,6 +145,16 @@ function ShellInner({
     return () => document.removeEventListener('mousedown', onDown);
   }, [menuOpen]);
 
+  // ── sign out always asks first ────────────────────────────────────────────
+  const requestSignOut = useCallback(async () => {
+    setMenuOpen(false);
+    const ok = await confirmAction('You will need to sign in again to get back to your dashboard.', {
+      title: 'Sign out?',
+      confirmLabel: 'Sign out',
+    });
+    if (ok) onSignOut();
+  }, [onSignOut]);
+
   // ── title = active nav label ──────────────────────────────────────────────
   const title = useMemo(() => {
     let best: { label: string; len: number } | null = null;
@@ -150,8 +165,9 @@ function ShellInner({
         }
       }
     }
+    if (!best && isActivePath(pathname, settingsHref)) return 'Settings';
     return best?.label ?? (variant === 'admin' ? 'Admin' : 'Ascentor');
-  }, [groups, pathname, variant]);
+  }, [groups, pathname, variant, settingsHref]);
 
   const tip = (label: string) =>
     collapsed ? { 'data-tooltip-id': 'sh-tip', 'data-tooltip-content': label } : {};
@@ -187,7 +203,7 @@ function ShellInner({
       {/* ── Drawer backdrop (mobile) ── */}
       {drawerOpen && <div className="sh-backdrop" onClick={() => setDrawerOpen(false)} aria-hidden="true" />}
 
-      {/* ── Sidebar ── */}
+      {/* ── Sidebar (black) ── */}
       <aside
         className="sh-sidebar"
         data-collapsed={collapsed}
@@ -196,14 +212,17 @@ function ShellInner({
       >
         <div className="sh-brand">
           <Link href={homeHref} className="sh-brand-link" onClick={() => setDrawerOpen(false)} aria-label="Ascentor home">
-            <span className="sh-brand-mark" aria-hidden="true">A</span>
+            {/* Full logo when open, logo mark only when collapsed (CSS swaps them) */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={logoSrc} alt="Ascentor" />
+            <img className="sh-logo-full" src={LOGO_FULL} alt="Ascentor" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="sh-logo-mark" src={LOGO_MARK} alt="" aria-hidden="true" />
           </Link>
           {user.role && variant === 'admin' && <span className="sh-role">{user.role}</span>}
           <button
             type="button"
             className="sh-icon-btn sh-drawer-only"
+            style={{ color: '#A8A29A' }}
             onClick={() => setDrawerOpen(false)}
             aria-label="Close menu"
           >
@@ -239,10 +258,35 @@ function ShellInner({
 
         {sidebarExtra && <div className="sh-sidebar-extra">{sidebarExtra}</div>}
 
-        <div className="sh-sidebar-foot sh-desktop-only">
+        <div className="sh-sidebar-foot">
+          <div className="sh-user">
+            <Link
+              href={settingsHref}
+              className="sh-user-link"
+              aria-label={`${user.name}, account settings`}
+              onClick={() => setDrawerOpen(false)}
+              {...tip(`${user.name} · Settings`)}
+            >
+              <Avatar user={user} />
+              <span className="sh-user-text">
+                <span className="sh-user-name">{user.name}</span>
+                <span className="sh-user-sub">{user.role && user.role !== 'member' ? user.role : 'Settings'}</span>
+              </span>
+            </Link>
+            <button
+              type="button"
+              className="sh-logout"
+              onClick={requestSignOut}
+              aria-label="Sign out"
+              {...tip('Sign out')}
+            >
+              <LogOut />
+            </button>
+          </div>
+
           <button
             type="button"
-            className="sh-foot-btn"
+            className="sh-foot-btn sh-desktop-only"
             onClick={toggleCollapsed}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-pressed={collapsed}
@@ -254,7 +298,7 @@ function ShellInner({
         </div>
       </aside>
 
-      {/* ── Content column ── */}
+      {/* ── Content column (light) ── */}
       <div className="sh-col">
         <header className="sh-header">
           <div className="sh-header-row">
@@ -296,12 +340,6 @@ function ShellInner({
               >
                 <Search />
               </button>
-              <button
-                type="button" className="sh-icon-btn" onClick={onToggleTheme}
-                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {isDark ? <Sun /> : <Moon />}
-              </button>
               {headerActions}
 
               <div className="sh-menu-wrap" ref={menuRef}>
@@ -333,7 +371,7 @@ function ShellInner({
                     {menuLinks.length > 0 && <div className="sh-menu-sep" />}
                     <button
                       type="button" className="sh-menu-item" data-danger="true" role="menuitem"
-                      onClick={() => { setMenuOpen(false); onSignOut(); }}
+                      onClick={requestSignOut}
                     >
                       <LogOut />Sign out
                     </button>
@@ -368,7 +406,7 @@ function ShellInner({
         positionStrategy="fixed"
         style={{
           zIndex: 200, padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-          background: 'var(--sh-fg)', color: 'var(--sh-bg)',
+          background: '#FAFAF8', color: '#0F0F0E', boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
         }}
       />
     </div>

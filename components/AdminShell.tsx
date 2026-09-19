@@ -9,7 +9,6 @@ import {
   ScrollText, ShieldCheck, Tag, Ticket, Users, Workflow, ArrowLeftRight, UserRound,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { useAdminTheme } from '@/components/AdminThemeProvider';
 import { userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
 import ShellLayout from '@/components/shell/ShellLayout';
 import type { ShellNavGroup } from '@/components/shell/types';
@@ -114,7 +113,6 @@ export default function AdminShell({
 }) {
   const router   = useRouter();
   const supabase = useMemo(() => createClient(), []);
-  const { toggle, isDark } = useAdminTheme();
 
   const groups: ShellNavGroup[] = useMemo(
     () =>
@@ -138,12 +136,10 @@ export default function AdminShell({
       variant="admin"
       groups={groups}
       user={{ name, email, avatarUrl, role }}
-      logoSrc={isDark ? '/ascentor-color-for-dark-pages.svg' : '/ascentor-color-for-light-pages.svg'}
       homeHref="/admin"
+      settingsHref="/account"
       searchEndpoint="/api/admin/search"
       searchPlaceholder="Search users, payments, content…"
-      isDark={isDark}
-      onToggleTheme={toggle}
       onSignOut={handleSignOut}
       menuLinks={[
         { href: '/dashboard', label: 'Open member app', icon: <ArrowLeftRight /> },

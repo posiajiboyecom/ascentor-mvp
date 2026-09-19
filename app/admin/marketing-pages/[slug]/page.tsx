@@ -23,6 +23,7 @@
 //                   shapes during schema design).
 
 import { useState, useEffect, useCallback } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -209,7 +210,7 @@ export default function MarketingPageEditor() {
   }
 
   async function unpublishSection(section: SectionRow) {
-    if (!confirm(`Unpublish "${section.label}"? The live site will keep showing the last published version until you publish again.`)) return;
+    if (!(await confirmAction(`Unpublish "${section.label}"? The live site will keep showing the last published version until you publish again.`))) return;
     setSaving(section.id);
     try {
       await callAction({ action: 'unpublish_section', sectionId: section.id });
@@ -249,7 +250,7 @@ export default function MarketingPageEditor() {
   }
 
   async function deleteItem(item: ItemRow) {
-    if (!confirm('Delete this item? This cannot be undone.')) return;
+    if (!(await confirmAction('Delete this item? This cannot be undone.'))) return;
     try {
       await callAction({ action: 'delete_item', itemId: item.id });
       showToast('Item deleted');

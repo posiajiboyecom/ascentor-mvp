@@ -1,13 +1,13 @@
 'use client';
 
 import BottomNav from './BottomNav';
+import { confirmAction } from '@/components/Modal';
 import DesktopRail from './DesktopRail';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { NotificationBell } from '@/components/Notifications';
-import { AppThemeProvider, useAppTheme } from '@/components/AppThemeProvider';
 import { usePlanSync } from '@/hooks/usePlanSync';
 
 // ─────────────────────────────────────────────────────────────────
@@ -15,52 +15,6 @@ import { usePlanSync } from '@/hooks/usePlanSync';
 // Header + BottomNav wrapper for all authenticated pages
 // Supports light / dark theme toggle (mirrors admin pattern)
 // ─────────────────────────────────────────────────────────────────
-
-function ThemeToggle() {
-  const { isDark, toggle } = useAppTheme();
-  return (
-    <button
-      onClick={toggle}
-      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      style={{
-        width:           '34px',
-        height:          '34px',
-        borderRadius:    '8px',
-        display:         'flex',
-        alignItems:      'center',
-        justifyContent:  'center',
-        background:      'var(--app-bg-card)',
-        border:          '1px solid var(--app-border)',
-        color:           'var(--app-text-dim)',
-        cursor:          'pointer',
-        transition:      'background 0.15s, border-color 0.15s, color 0.15s',
-        flexShrink:      0,
-      }}
-    >
-      {isDark ? (
-        /* Sun icon — shown in dark mode, click to go light */
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="5"/>
-          <line x1="12" y1="1" x2="12" y2="3"/>
-          <line x1="12" y1="21" x2="12" y2="23"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="1" y1="12" x2="3" y2="12"/>
-          <line x1="21" y1="12" x2="23" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-        </svg>
-      ) : (
-        /* Moon icon — shown in light mode, click to go dark */
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
-      )}
-    </button>
-  );
-}
 
 function Shell({
   children,
@@ -80,7 +34,6 @@ function Shell({
   const supabase        = createClient();
   const router          = useRouter();
   const pathname        = usePathname();
-  const { isDark }      = useAppTheme();
   const [showMenu, setShowMenu] = useState(false);
 
   // Community page gets full-screen immersive layout
@@ -95,14 +48,13 @@ function Shell({
   usePlanSync(userId);
 
   const handleSignOut = async () => {
+    if (!(await confirmAction('Sign out of Ascentor on this device?', { title: 'Sign out?', confirmLabel: 'Sign out' }))) return;
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
   };
 
-  const logoSrc = isDark
-    ? '/ascentor-color-for-dark-pages.svg'
-    : '/ascentor-color-for-light-pages.svg';
+  const logoSrc = '/ascentor-color-for-light-pages.svg';
 
   return (
     <div style={{ height: '100dvh', minHeight: '100vh', display: 'flex', flexDirection: 'row', background: 'var(--app-bg)', overflow: 'hidden' }}>
@@ -141,7 +93,6 @@ function Shell({
 
         {/* Right: theme toggle + bell + avatar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <ThemeToggle />
           <NotificationBell />
 
           {/* Avatar + dropdown */}
@@ -247,7 +198,6 @@ function Shell({
   );
 }
 
-// Wrap Shell in the theme provider so every child can useAppTheme()
 export default function AppShell({
   children,
   initials = 'U',
@@ -264,10 +214,8 @@ export default function AppShell({
   userId?: string;
 }) {
   return (
-    <AppThemeProvider>
-      <Shell initials={initials} fullName={fullName} isAdmin={isAdmin} chatLayout={chatLayout} userId={userId}>
-        {children}
-      </Shell>
-    </AppThemeProvider>
+    <Shell initials={initials} fullName={fullName} isAdmin={isAdmin} chatLayout={chatLayout} userId={userId}>
+      {children}
+    </Shell>
   );
 }

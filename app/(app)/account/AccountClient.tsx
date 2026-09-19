@@ -4,9 +4,9 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useAppTheme } from '@/components/AppThemeProvider';
 
 const industries = [
   'Technology', 'Finance & Banking', 'Consulting', 'Healthcare',
@@ -22,7 +22,7 @@ const timeOptions = [
   { value: '60min', label: '1 hour/day' },
 ];
 
-type Section = 'profile' | 'security' | 'plan' | 'notifications' | 'appearance' | 'danger';
+type Section = 'profile' | 'security' | 'plan' | 'notifications' | 'danger';
 
 export default function AccountClient({ profile, email, authProvider, userId, notifications }: {
   profile: any;
@@ -34,7 +34,6 @@ export default function AccountClient({ profile, email, authProvider, userId, no
   const supabase = createClient();
   const router = useRouter();
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const { theme, toggle: toggleTheme, isDark } = useAppTheme();
 
   const [section, setSection] = useState<Section>('profile');
 
@@ -256,6 +255,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
   };
 
   const handleSignOut = async () => {
+    if (!(await confirmAction('Sign out of Ascentor on this device?', { title: 'Sign out?', confirmLabel: 'Sign out' }))) return;
     setSigningOut(true);
     await supabase.auth.signOut();
     router.push('/login');
@@ -266,7 +266,6 @@ export default function AccountClient({ profile, email, authProvider, userId, no
     { key: 'security',      label: 'Security' },
     { key: 'plan',          label: 'Plan' },
     { key: 'notifications', label: 'Alerts' },
-    { key: 'appearance',    label: 'Display' },
     { key: 'danger',        label: 'Account' },
   ];
 
@@ -759,51 +758,6 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               {notifSaving ? 'Saving...' : 'Save Preferences'}
             </button>
             {notifSaved && <span className="text-xs font-semibold animate-fade-up" style={{ color: 'var(--success)' }}>Saved</span>}
-          </div>
-        </div>
-      )}
-
-      {/* ═══════════════════════════════════════════ */}
-      {/* ═══ 5. APPEARANCE ═══ */}
-      {/* ═══════════════════════════════════════════ */}
-      {section === 'appearance' && (
-        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Display</h2>
-          <p className="text-xs mb-5" style={{ color: 'var(--text-dim)' }}>Choose how Ascentor looks on this device.</p>
-
-          <div className="flex flex-col gap-3">
-            {/* Dark / Light toggle */}
-            <div className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-              <div className="flex-1 pr-4">
-                <p className="text-sm" style={{ color: 'var(--text)' }}>Dark mode</p>
-                <p className="text-[11px]" style={{ color: 'var(--text-dim)' }}>Easier on the eyes in low-light environments</p>
-              </div>
-              <button
-                onClick={toggleTheme}
-                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                className="w-10 h-5 rounded-full transition-all shrink-0 relative"
-                style={{
-                  background: isDark ? 'var(--accent)' : 'var(--bg-input)',
-                  border: `1px solid ${isDark ? 'var(--accent)' : 'var(--border)'}`,
-                }}
-              >
-                <div
-                  className="w-3.5 h-3.5 rounded-full transition-all absolute top-0.5"
-                  style={{ background: isDark ? '#000' : 'var(--text-dim)', left: isDark ? '20px' : '3px' }}
-                />
-              </button>
-            </div>
-
-            {/* Theme indicator */}
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[11px]" style={{ color: 'var(--text-dim)' }}>
-                Currently using: <strong style={{ color: 'var(--text)' }}>{isDark ? 'Dark' : 'Light'} mode</strong>
-              </span>
-              <span
-                className="inline-block w-2 h-2 rounded-full"
-                style={{ background: isDark ? '#C8A96E' : '#374151' }}
-              />
-            </div>
           </div>
         </div>
       )}

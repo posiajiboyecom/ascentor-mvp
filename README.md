@@ -97,10 +97,15 @@ vercel.json       Cron schedule
 Both the admin console and the member app use one shell,
 [`components/shell/ShellLayout.tsx`](components/shell/ShellLayout.tsx):
 
-- Collapsible sidebar (icon rail with react-tooltip labels on desktop, drawer on
-  mobile). The collapsed state is remembered per dashboard.
-- Sticky header with page title, search, theme toggle, notifications (member)
-  and an avatar menu.
+- **Light theme only.** There is no dark mode anywhere in the app; only the
+  sidebar is black.
+- Black collapsible sidebar: the full logo when open, just the logo mark when
+  collapsed, an icon on every item (react-tooltip labels on desktop when
+  collapsed) and a drawer on mobile. The collapsed state is remembered per
+  dashboard. The signed-in avatar at the bottom opens Settings and the logout
+  icon signs out after a confirmation dialog.
+- Sticky header with page title, search, notifications (member) and an avatar
+  menu.
 - **Global search**: press `Ctrl/Cmd + K`. Admin search covers users, payments,
   Summit registrations and content, and respects permissions. Member search
   covers courses and sessions.
@@ -111,6 +116,32 @@ Both the admin console and the member app use one shell,
   const query = usePageSearch('Search courses…');
   // filter your list with `query`
   ```
+
+### Confirmation dialogs
+
+Sensitive actions (delete, remove, ban, sign out, mark complete, mark all as
+read, publish, broadcast, ...) must ask first. Do not use the browser's
+`confirm()`; use the in-app dialog:
+
+```tsx
+import { confirmAction } from '@/components/Modal';
+
+if (!(await confirmAction('Delete "Course A"? This cannot be undone.'))) return;
+```
+
+The title, button label and red "danger" styling are inferred from the wording
+(or pass `{ title, confirmLabel, danger }`). Inside components you can also use
+`const { confirm, alert, prompt } = useModal()`. Enclosing functions must be
+`async`.
+
+### Sage (floating AI coach)
+
+`components/shell/SageFloat.tsx` shows a floating orb in the member app. Once per
+login session it plays a soft chime and types out a personalised, time-of-day
+greeting with a shortcut to `/coach`. The sound can be muted from the panel
+(remembered), it respects `prefers-reduced-motion`, and if the browser blocks
+audio until the first click the chime is deferred rather than lost. It is hidden
+on `/coach`. Signing out clears the flag so the next login is greeted again.
 
 ### Payments
 

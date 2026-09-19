@@ -46,6 +46,7 @@ export const dynamic = 'force-dynamic';
 // ─────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import SageLoader from '@/components/SageLoader';
 
@@ -201,7 +202,7 @@ export default function AdminBillboardsPage() {
   }
 
   async function handleDelete(id: string, title: string) {
-    if (!confirm(`Delete "${title}"?`)) return;
+    if (!(await confirmAction(`Delete "${title}"?`))) return;
     await supabase.from('rail_billboards').delete().eq('id', id);
     load();
   }

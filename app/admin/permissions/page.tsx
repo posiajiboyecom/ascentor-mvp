@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import {
   ROLE_PERMISSIONS,
@@ -97,7 +98,7 @@ export default function PermissionsPage() {
   }
 
   async function revoke(m:Staff){
-    if(!confirm(`Remove ${m.full_name||m.email} from the admin team?`))return;
+    if(!(await confirmAction(`Remove ${m.full_name||m.email} from the admin team?`)))return;
     const { data:{session} } = await sb.auth.getSession();
     const res = await fetch('/api/admin/permissions', {
       method:'POST',

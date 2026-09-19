@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 
@@ -319,7 +320,7 @@ function AdminExpertsPageInner() {
 
   async function handleDelete(id: string, title: string) {
     // TODO: replace with useModal() confirm when modal provider is available here
-    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    if (!(await confirmAction(`Delete "${title}"? This cannot be undone.`))) return;
     await supabase.from('expert_sessions').delete().eq('id', id);
     loadEvents();
   }

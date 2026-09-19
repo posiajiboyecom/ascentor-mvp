@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 //   meeting_url, registration_url, max_attendees, current_attendees.
 
 import { useState, useEffect } from 'react';
+import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import SageLoader from '@/components/SageLoader';
 
@@ -162,7 +163,7 @@ export default function AdminCommunityEventsPage() {
   }
 
   async function handleDelete(id: string, title: string) {
-    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    if (!(await confirmAction(`Delete "${title}"? This cannot be undone.`))) return;
     await supabase.from('expert_sessions').delete().eq('id', id);
     load();
   }
