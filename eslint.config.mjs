@@ -12,6 +12,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated / tooling output that is not our source:
+    ".trigger/**",   // Trigger.dev build artifacts
+    ".kilo/**",      // agent worktrees (full repo copies)
+    "android/**",
+    "ios/**",
+    "supabase/.temp/**",
+    "public/**",
+    "fix-fonts.js",  // one-off CommonJS script
   ]),
   {
     rules: {

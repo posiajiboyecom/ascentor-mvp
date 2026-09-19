@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { signInPathAfterReset } from '@/lib/resetOrigin';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -40,6 +41,9 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [signInHref, setSignInHref] = useState('/login');
+
+  useEffect(() => { setSignInHref(signInPathAfterReset()); }, []);
 
   const {
     register,
@@ -70,7 +74,7 @@ export default function ResetPasswordPage() {
         setError(result.error || 'Failed to reset password');
       } else {
         setSuccess(true);
-        setTimeout(() => router.push('/login'), 2500);
+        setTimeout(() => router.push(signInPathAfterReset()), 2500);
       }
     } catch {
       setError('Network error. Please try again.');
@@ -293,7 +297,7 @@ export default function ResetPasswordPage() {
             }}>
               <p style={{ fontSize: '0.875rem', color: '#6B7280', margin: 0 }}>
                 Remember your password?{' '}
-                <Link href="/login" style={{ color: '#C8A96E', fontWeight: 700, textDecoration: 'none' }}>
+                <Link href={signInHref} style={{ color: '#C8A96E', fontWeight: 700, textDecoration: 'none' }}>
                   Sign in
                 </Link>
               </p>

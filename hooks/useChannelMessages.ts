@@ -15,7 +15,7 @@
 // feed (forum channel), which is never the same slug as an open chat channel.
 // ─────────────────────────────────────────────────────────────────────────
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Message } from '@/components/community/types';
 
@@ -28,7 +28,7 @@ interface Options {
 }
 
 export function useChannelMessages(channelSlug: string, { userId, userName }: Options) {
-  const supabase = useRef(createClient()).current;
+  const supabase = useMemo(() => createClient(), []);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const profileCache = useRef<Record<string, string>>({});
@@ -36,7 +36,7 @@ export function useChannelMessages(channelSlug: string, { userId, userName }: Op
   // Keep a ref to the latest messages so send/react callbacks never read a
   // stale closure (e.g. looking up a reply's parent to bump reply_count).
   const messagesRef = useRef<Message[]>([]);
-  messagesRef.current = messages;
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   // ── Shared error toast ──
   const [errorToast, setErrorToast] = useState<string | null>(null);

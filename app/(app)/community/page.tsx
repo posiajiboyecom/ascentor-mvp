@@ -181,7 +181,7 @@ export default async function CommunityPage() {
   // N parallel count queries are cheaper than a single self-join on large
   // message tables. If perf becomes an issue, this is easily replaced with a
   // single SQL function or a Supabase Edge Function.
-  let unreadCounts: Record<string, number> = {};
+  const unreadCounts: Record<string, number> = {};
 
   const readPositions = readPositionsRes.data ?? [];
   if (readPositions.length > 0) {

@@ -1,21 +1,15 @@
 // app/(app)/layout.tsx
-// Shared shell for all authenticated screens (Home, Coach, Circle,
-// Sessions, Resources). Renders the desktop left rail at >= lg and
-// the mobile bottom tab bar below it. Auth + subscription gating
-// already happens in proxy.ts — this layout assumes a valid session.
+// Shared shell for all authenticated member screens (Home, Coach, Circle,
+// Sessions, Learn, Account, Referral). Renders the collapsible sidebar
+// (drawer on mobile) and the sticky header with avatar + search via
+// components/shell/UserShell. Auth + subscription gating already happens in
+// proxy.ts - this layout assumes a valid session.
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { DesktopRail } from '@/components/nav/DesktopRail';
-import { MobileTabBar } from '@/components/nav/MobileTabBar';
+import UserShell from '@/components/shell/UserShell';
 
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-// Matches the fixed summit date shown in DesktopRail's mini-card
+// Matches the fixed summit date shown in the sidebar's mini-card
 // ("19 Nov 2026 · Lagos"). Clamped at 0 so it never goes negative once
 // the date has passed.
 function getSummitDaysAway(): number {
@@ -35,25 +29,32 @@ export default async function AppLayout({
 
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
+  // Full query first; fall back to the original single column so a missing
+  // optional column can never blank the whole app.
+  let profile: { full_name: string | null; role?: string | null; avatar_url?: string | null } | null = null;
+  const full = await supabase
     .from('profiles')
-    .select('full_name')
+    .select('full_name, role, avatar_url')
     .eq('id', user.id)
     .single();
+  if (full.data) {
+    profile = full.data;
+  } else {
+    const basic = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
+    profile = basic.data;
+  }
 
-  const userName = profile?.full_name?.trim() || 'there';
+  const userName = profile?.full_name?.trim() || user.email?.split('@')[0] || 'there';
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--color-background-primary)]">
-      <DesktopRail
-        userName={userName}
-        userInitials={getInitials(userName)}
-        summitDaysAway={getSummitDaysAway()}
-      />
-      <div className="flex-1 min-w-0 h-full pb-[78px] lg:pb-0">
-        {children}
-      </div>
-      <MobileTabBar />
-    </div>
+    <UserShell
+      userName={userName}
+      email={user.email}
+      avatarUrl={profile?.avatar_url ?? null}
+      role={profile?.role ?? null}
+      summitDaysAway={getSummitDaysAway()}
+    >
+      {children}
+    </UserShell>
   );
 }

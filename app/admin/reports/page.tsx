@@ -47,7 +47,7 @@ export default function AdminReportsPage() {
     const since = getSinceDate(range).toISOString();
 
     try {
-      let result: any = { type, range, generatedAt: new Date().toISOString(), rows: [] };
+      const result: any = { type, range, generatedAt: new Date().toISOString(), rows: [] };
 
       if (type === 'users') {
         const { count: total }  = await supabase.from('profiles').select('*', { count: 'exact', head: true });

@@ -136,6 +136,7 @@ const PROTECTED_API_PREFIXES = [
   '/api/push',
   '/api/admin',
   '/api/account',
+  '/api/search',
   '/api/goals',
   '/api/intel-analyse',
   '/api/lead-magnet',
@@ -148,7 +149,15 @@ const PUBLIC_ROUTES = [
   '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
   '/how-it-works', '/who-its-for', '/waitlist', '/newsletter',
   '/mentor-apply', '/offline',
+  // Dedicated staff sign-in. /login and /signup are closed to the public
+  // (community gate), so admins need their own entry point. Same accounts,
+  // same Supabase auth; the page verifies the admin/moderator role itself.
+  '/admin-login',
 ];
+
+// Where an unauthenticated visitor is sent for a given path.
+const loginPathFor = (pathname: string) =>
+  pathname === '/admin' || pathname.startsWith('/admin/') ? '/admin-login' : '/login';
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -198,7 +207,7 @@ export default async function proxy(request: NextRequest) {
   }
 
   // Build Supabase client
-  let response = NextResponse.next({ request });
+  const response = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -233,8 +242,9 @@ export default async function proxy(request: NextRequest) {
         // Sign out server-side
         await supabase.auth.signOut();
         // Clear cookies and redirect to login
-        const loginUrl = new URL('/login', request.url);
+        const loginUrl = new URL(loginPathFor(pathname), request.url);
         loginUrl.searchParams.set('reason', 'session_expired');
+        if (pathname.startsWith('/admin')) loginUrl.searchParams.set('redirect', pathname);
         const redirectResponse = NextResponse.redirect(loginUrl);
         redirectResponse.cookies.delete('last_active');
         return redirectResponse;
@@ -261,7 +271,7 @@ export default async function proxy(request: NextRequest) {
 
   // ── Protect page routes ───────────────────────────────────────────
   if (!user && AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL(loginPathFor(pathname), request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }

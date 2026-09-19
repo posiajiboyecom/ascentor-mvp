@@ -7,7 +7,101 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Profiles:** a database trigger now blocks clients from editing billing and
+  privilege columns (`subscription_*`, `billing_cycle`, `payment_method`,
+  `card_details`, `paystack_*`, `referral_count`, `role`, `permissions`).
+  Previously any signed-in user could grant themselves a paid plan from the
+  browser console.
+- **Summit registrations:** removed the client-side insert and delete RLS
+  policies; registrations are created only through the API.
+- **Payments:** every checkout now creates a `payment_attempts` row. A payment
+  is only honoured if its reference belongs to an attempt we created, and its
+  amount, currency and owner match what the server recorded. This closes ticket
+  replay (one payment unlocking many registrations) and forged-metadata plan
+  upgrades made with the public Paystack key.
+- **Webhook:** the shared Paystack webhook settles through one code path, ignores
+  references we did not create, and returns 5xx on real failures so Paystack
+  retries. The legacy Summit webhook handler (which used a single, possibly unset
+  price) was removed.
+- **Password reset:** codes use `crypto.randomInt` and are stored hashed; five
+  guesses per code (atomic, so parallel requests cannot multiply them); five
+  codes per email per hour; per-IP limits; identical responses whether or not an
+  account exists; lookups no longer scan `auth.admin.listUsers()` (which only
+  returned the first page).
+- Removed committed build artifacts (`.trigger/`, `supabase/.temp`,
+  `tsbuildinfo`), a saved web page under `public/icon`, empty `git`/`main`
+  files and a stale `next.config` copy; added them to `.gitignore`.
+
 ### Added
+- **Abandoned-checkout handling:** a daily Vercel cron
+  (`/api/cron/reconcile-payments`, Hobby-plan compatible) re-verifies pending
+  attempts with Paystack, recovers payments whose webhook was lost, marks stale
+  attempts abandoned, sends admins one digest (in-app notification and email)
+  and emails customers a recovery link. Requires `CRON_SECRET`.
+- **Admin dashboard redesign:** new shared shell with a collapsible sidebar and
+  react-tooltip labels, a mobile drawer, and a sticky header with avatar menu,
+  theme toggle and search. The overview now shows KPIs and Recharts graphs
+  (revenue, subscriber mix, signups vs sessions, checkout funnel) backed by one
+  server-side endpoint (`/api/admin/analytics`).
+- **Admin → Payments** page: ledger of every checkout attempt with status
+  filters, page-scoped search and a **Reconcile now** action; abandoned and
+  failed counts on the overview.
+- **Global search** (`Ctrl/Cmd + K`) for admin (`/api/admin/search`, permission
+  aware) and members (`/api/search`), plus **page-scoped search** in the header
+  (`usePageSearch`), wired into Learn, Experts and Payments.
+- **Member app redesign:** the fixed rail and bottom tab bar are replaced by the
+  same collapsible sidebar and mobile drawer, with sticky header, notifications
+  and avatar menu. Rail billboards and the Summit countdown card are kept.
+- **`/admin-login`:** dedicated, unindexed staff sign-in (same accounts; role
+  verified after sign-in), needed because `/login` and `/signup` are closed
+  behind the community gate. Password reset returns to it when started from it.
+- Migration `20260919_payment_security.sql` (idempotent); it also creates
+  `password_reset_otps` if missing.
+- Dependencies: `recharts`, `react-tooltip`.
+- README rewritten (setup, environment variables, structure, payments, admin
+  access, deployment checklist).
+
+### Changed
+- Plan prices are read from `lib/pricing.ts` everywhere (removed the duplicate
+  table in `pay/start`).
+- Summit ticket prices are validated per attendance type; a missing or invalid
+  price now fails initiation instead of silently disabling the check.
+- Re-registering a pending Summit email now updates the ticket type so the price
+  charged matches the selection.
+- A second successful payment for an already-paid registration is flagged to
+  admins as a duplicate needing a refund.
+- Unauthenticated `/admin` visits and expired admin sessions redirect to
+  `/admin-login` instead of the closed gate.
+- Payment initiate/verify and `pay/start` are rate limited.
+- **Lint and build are clean:** `npx eslint .` reports 0 errors (980 style
+  warnings remain, mostly `any` and hook-dependency notes that the config
+  deliberately downgrades) and `npm run build` succeeds. Fixed 26 pre-existing
+  errors: `prefer-const` (10 files), refs read during render (`useMemo` instead
+  of `useRef(...).current` in `hooks/useChannelMessages.ts` and
+  `admin/community-intel`), a `require()` in the personal-brand image route, and
+  a component created during render in the legacy `nav/coach` page.
+- `eslint.config.mjs` now ignores generated and tooling output (`.trigger`,
+  `.kilo` worktrees, `android`, `ios`, `public`, `supabase/.temp`) which
+  previously produced hundreds of false errors.
+
+### Removed
+- Legacy `lib/summitWebhookHandler.ts` and metadata-based plan grants in the
+  subscription webhook handler.
+- Unused duplicate `app/components/AdminShell.tsx` and
+  `components/ui/AdminShell.tsx`.
+
+### Known issues
+- `/login` and `/signup` remain closed behind the community gate.
+- `app/api/subscription/webhook` is a second, legacy webhook that is blocked at
+  the edge today; it should be deleted.
+- Duplicate code trees (`components/proxy.ts`, `app/lib`, `app/components`,
+  `nav/`, `free/`) and the now-unused `components/nav/DesktopRail` and
+  `MobileTabBar` still need cleanup.
+- Referral lookup runs under the member's own session and is blocked by RLS.
+- The base database schema is not yet captured in `database/`.
+
+### Added (earlier, unreleased)
 - Hero section image carousel with auto-rotation and dot navigation
 - Terms & Conditions page (`/terms`)
 - Privacy Policy page (`/privacy`)
@@ -15,12 +109,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Social media icon links in footer with hover effects
 - Documentation: README.md, wiki.md, security.md, contributing.md
 
-### Changed
+### Changed (earlier, unreleased)
 - Mobile off-canvas menu z-index increased to appear above navigation bar
 - Footer layout restructured: social links moved under logo as icon buttons
 - Footer bottom now shows copyright + legal links instead of quote + social texts
 
-### Fixed
+### Fixed (earlier, unreleased)
 - Off-canvas menu appearing behind navigation bar on mobile
 
 ---

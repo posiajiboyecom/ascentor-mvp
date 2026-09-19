@@ -14,6 +14,8 @@
 10. [API Reference](#api-reference)
 11. [Database Schema](#database-schema)
 12. [Deployment Architecture](#deployment-architecture)
+13. [Payments & Checkout](#payments--checkout)
+14. [Dashboard Shell & Search](#dashboard-shell--search)
 
 ---
 
@@ -288,6 +290,39 @@ Circle (8-12 members)
 | Partner Admin | Partner management |
 | Finance Admin | Payments, subscriptions |
 
+> **In code**, access is a `role` on `profiles` (`admin`, `moderator`, `member`)
+> plus optional granular `permissions` (see `lib/permissions.ts`, e.g.
+> `users.view`, `payments.view`). The named roles above describe intended
+> responsibilities, not separate database roles.
+
+### Admin Access
+
+- Admins use the **same accounts** as members; there is no separate user system.
+- Staff sign in at **`/admin-login`** (unlisted, not indexed, not linked publicly).
+  This exists because the public `/login` and `/signup` routes are currently
+  redirected to the community gate. After sign-in the page checks the role and
+  signs out anyone who is not an admin or moderator.
+- Unauthenticated visits to `/admin/*` and expired admin sessions (24 h
+  inactivity) redirect to `/admin-login`.
+- Forgot password uses the standard OTP reset flow; started from `/admin-login`
+  it returns there afterwards.
+- `app/admin/layout.tsx` enforces the role server-side; API routes enforce
+  role/permissions again (defence in depth).
+
+### Admin Dashboard
+
+- **Overview:** KPI strip (total users, active subscribers, estimated MRR,
+  30-day revenue, checkout completion, AI sessions) and Recharts graphs
+  (revenue, subscriber mix, signups vs sessions, checkout funnel). Data comes
+  from `GET /api/admin/analytics`, computed server-side. Revenue figures require
+  `payments.view`. MRR excludes promo and admin-granted plans.
+- **Payments** (`/admin/payments`): every checkout attempt with status filters
+  (paid, pending, abandoned, failed, duplicate), search and **Reconcile now**.
+- **Checkout switch:** toggles paid access vs free mode
+  (`platform_settings.checkout_enabled`).
+- Layout, search and navigation are described in
+  [Dashboard Shell & Search](#dashboard-shell--search).
+
 ### Moderation Tools
 
 - Content reporting system
@@ -311,7 +346,19 @@ Circle (8-12 members)
 | `/api/careers` | GET | Career opportunities |
 | `/api/newsletter` | POST | Newsletter signup |
 | `/api/usage/check` | GET | Usage limit checking |
-| `/api/pay/webhook` | POST | Paystack webhook handler |
+| `/api/pay/start` | POST | Start a subscription checkout (records a `payment_attempts` row) |
+| `/api/pay/callback` | GET | Paystack redirect; settles the payment |
+| `/api/pay/webhook` | POST | Paystack webhook (HMAC-verified; settles `charge.success`) |
+| `/api/summit/register` | POST | Create or update a Summit registration |
+| `/api/summit/pay/initiate` | POST | Create a Summit payment attempt |
+| `/api/summit/pay/verify` | POST | Settle a Summit payment (reference must match the registration) |
+| `/api/auth/forgot-password` | POST | Send a password-reset code (uniform response) |
+| `/api/auth/reset-password` | POST | Reset a password with a code (attempt-limited) |
+| `/api/search` | GET | Member global search (courses, sessions) |
+| `/api/admin/search` | GET | Admin global search (permission aware) |
+| `/api/admin/analytics` | GET | Overview KPIs and chart series |
+| `/api/admin/payments` | GET / POST | Payment health and attempt list / run reconciliation |
+| `/api/cron/reconcile-payments` | GET | Daily reconciliation (requires `CRON_SECRET`) |
 
 ---
 
@@ -337,11 +384,32 @@ community_posts (id, user_id, circle_id, content, ...)
 
 -- Newsletter
 newsletter_subscribers (email, is_active, source, ...)
+
+-- Checkout attempts (subscriptions + Summit tickets), one row per attempt
+payment_attempts (id, reference UNIQUE, kind, status, user_id, plan_id, billing,
+                  registration_id, email, amount_kobo, currency, provider_tx_id,
+                  provider_status, failure_reason, paid_at, abandoned_at,
+                  admin_notified_at, recovery_sent_at, created_at, updated_at)
+-- status: pending | success | failed | abandoned | duplicate
+
+-- Password reset (codes stored as HMAC hashes)
+password_reset_otps (id, email, otp_code, expires_at, used, attempts, created_at)
 ```
 
 ### Row-Level Security
 
-All tables have RLS policies ensuring users can only access their own data or publicly accessible content.
+RLS is enabled on the tables covered by the migrations in `database/migrations/`;
+the base schema predates them, so confirm RLS on every table in the live
+database (see the audit notes in the README).
+
+- `profiles`: members can read and update their own row, but a trigger blocks
+  changes to `role`, `permissions`, `subscription_*`, `billing_cycle`,
+  `payment_method`, `card_details`, `paystack_*` and `referral_count` for client
+  roles. Service-role API routes and admins are unaffected.
+- `summit_registrations`: members can read their own row; inserts and deletes
+  happen only through the API.
+- `payment_attempts`, `password_reset_otps`: no client access (admins can read
+  `payment_attempts`); API routes use the service role.
 
 ---
 
@@ -362,9 +430,100 @@ Push to main → Vercel Preview → E2E Tests → Production Deploy
 Push to feature → Vercel Preview → Automated Tests → PR Check
 ```
 
+### Scheduled jobs
+
+`vercel.json` defines one cron: `/api/cron/reconcile-payments`, daily at 07:00
+UTC. Vercel Hobby allows at most two crons, each at most once per day, fired
+within the scheduled hour, with a 60 s function limit; the job is designed as a
+batch sweep for that. It authenticates with `Authorization: Bearer $CRON_SECRET`
+and refuses to run if `CRON_SECRET` is not set. Trigger.dev runs the content and
+email tasks.
+
+### Release checklist (database or payment changes)
+
+1. Apply new SQL migrations in Supabase **before** deploying.
+2. Add any new environment variables in Vercel, then redeploy.
+3. Verify the Paystack webhook URL points at `/api/pay/webhook`.
+4. After the first scheduled run, confirm a `200` in Vercel Cron logs.
+
 ### Monitoring
 
 - Vercel Analytics for performance
 - Sentry for error tracking
 - Supabase Logs for database queries
 - Custom audit logs for sensitive actions
+
+---
+
+## Payments & Checkout
+
+### Flow
+
+```
+Client → /api/pay/start or /api/summit/pay/initiate
+           creates payment_attempts (reference, amount_kobo, owner)  ← server-priced
+Client → Paystack (hosted page or inline popup)
+Paystack → /api/pay/callback | /api/summit/pay/verify | /api/pay/webhook
+           └─ all call settleReference(reference)   (lib/paymentSettlement.ts)
+```
+
+`settleReference` is the single place a payment becomes access:
+
+1. The reference must exist in `payment_attempts` (we created it). Unknown
+   references are ignored, so a payment made outside our flow, or with forged
+   metadata, never grants anything.
+2. The transaction is verified with Paystack; amount (>= expected), currency and
+   owner are compared to the **recorded attempt**, not to client data. Prices
+   come from `lib/pricing.ts` (plans) and the `SUMMIT_TICKET_PRICE_*_NGN`
+   variables (tickets).
+3. The attempt is claimed with a conditional update (`pending → success`), so
+   concurrent verify/webhook/cron runs fulfil exactly once and emails are sent
+   once. If fulfilment throws, the claim is released for the next retry.
+4. Fulfilment: subscriptions update the profile and write a `payments` row;
+   Summit tickets mark the registration paid and send the ticket email. A second
+   payment for an already-paid registration becomes status `duplicate` and
+   alerts admins to refund it.
+
+The webhook returns **5xx** on real processing errors so Paystack retries.
+
+### Abandoned checkouts
+
+Paystack has no "abandoned" webhook, so `lib/paymentReconciliation.ts` polls:
+
+| Paystack says | Result |
+|---------------|--------|
+| success | Fulfil now (recovers lost webhooks) |
+| failed / reversed | Mark `failed` |
+| not started / pending, older than 60 min | Mark `abandoned` |
+
+New abandoned attempts trigger **one** admin digest (in-app notification for
+each admin plus an email to `ADMIN_EMAIL`) and **one** recovery email to the
+customer with a link to finish paying. Attempts older than 7 days are closed
+silently, and customers who have since paid are skipped. It runs daily via
+Vercel Cron and on demand from **Admin → Payments → Reconcile now**.
+
+### Password reset
+
+Codes come from `crypto.randomInt`, are stored as an HMAC (`lib/otp.ts`),
+expire after 15 minutes, allow 5 guesses (counted atomically before comparison)
+and are limited to 5 per email per hour. Responses are identical whether or not
+the account exists; social-login accounts are told to use their provider.
+
+---
+
+## Dashboard Shell & Search
+
+`components/shell/ShellLayout.tsx` renders both dashboards; `AdminShell` and
+`UserShell` only supply navigation, branding and theme.
+
+| Piece | Behaviour |
+|-------|-----------|
+| Sidebar | Collapses to an icon rail on desktop (state saved per dashboard); react-tooltip labels appear on collapsed items. Below 1024 px it is an off-canvas drawer with backdrop, Escape to close and scroll lock |
+| Header | Sticky; page title (from the active nav item), search, theme toggle, extra actions (notification bell for members), avatar menu with account links and sign out |
+| Global search | `Ctrl/Cmd + K` opens a command palette: matching pages plus debounced server results from `/api/admin/search` or `/api/search` |
+| Page-scoped search | A page calls `usePageSearch('Search…')` and filters its own data with the returned query; the header input then filters that page and a **Global** button opens the palette |
+| Theming | Admin follows THE LEDGER tokens (`data-ledger-theme`), members follow `data-app-theme`; both map onto `--sh-*` variables in `styles/shell.css` |
+
+To add an admin page: create `app/admin/<name>/page.tsx` and add an entry to
+`NAV_GROUPS` in `components/AdminShell.tsx` (optionally with a `permission`).
+To make a page searchable from the header, call `usePageSearch` in it.

@@ -5,7 +5,7 @@
 //   1. Message Monitor — live moderation of community_messages
 //   2. Community Intelligence — AI cohort recommendations
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 const B = {
@@ -35,7 +35,7 @@ interface AnalysisResult{total_users_analysed:number;summary:string;recommendati
 interface AdminMessage{id:string;user_id:string;channel:string;content:string;flagged:boolean;deleted:boolean;created_at:string;author_name:string;}
 
 export default function CommunityIntelPage(){
-  const supabase=useRef(createClient()).current;
+  const supabase=useMemo(()=>createClient(),[]);
   const [tab,setTab]=useState<'monitor'|'channels'|'intel'>('monitor');
   return(
     <div style={{animation:'asc-fade-up 0.35s ease both'}}>

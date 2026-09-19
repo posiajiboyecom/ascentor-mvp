@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useState, useMemo } from 'react';
 import { Lock, Check } from 'lucide-react';
 import { canAccess, TIER_META, type PlanTier } from '@/lib/planTier';
+import { usePageSearch } from '@/components/shell/PageSearch';
 
 // ── Types — match the real schema, not database.ts's stale fields ──
 
@@ -319,10 +320,21 @@ export function LearnClient({ courses, userPlan }: LearnClientProps) {
     return counts;
   }, [courses]);
 
-  const filtered = useMemo(
-    () => (activeCategory === 'All' ? courses : courses.filter((c) => c.category === activeCategory)),
-    [courses, activeCategory]
-  );
+  // Header search box filters this page (registered as the page-scoped search).
+  const query = usePageSearch('Search courses…');
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return courses.filter((c) => {
+      if (activeCategory !== 'All' && c.category !== activeCategory) return false;
+      if (!q) return true;
+      return (
+        c.title.toLowerCase().includes(q) ||
+        (c.category ?? '').toLowerCase().includes(q) ||
+        (c.description ?? '').toLowerCase().includes(q)
+      );
+    });
+  }, [courses, activeCategory, query]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, Course[]>();

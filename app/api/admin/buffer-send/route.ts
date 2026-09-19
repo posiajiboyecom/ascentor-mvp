@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     // Use image from request body (freshly uploaded) or fall back to what's in DB
     const imageUrl = bodyImageUrl || post.image_url || null;
-    let text = post.content || '';
+    const text = post.content || '';
 
     const results = await scheduleBufferPost({
       profile_ids: profileIds,

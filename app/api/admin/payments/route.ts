@@ -4,7 +4,7 @@
 //
 // Auth: cookie session + role/permission check (payments.view).
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
@@ -33,9 +33,30 @@ async function requirePaymentsAccess() {
   return { user };
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const gate = await requirePaymentsAccess();
   if (gate.error) return gate.error;
+
+  // ?list=1 -> recent checkout attempts for the Payments page
+  if (req.nextUrl.searchParams.get('list') === '1') {
+    const status = req.nextUrl.searchParams.get('status') ?? 'all';
+    const term = (req.nextUrl.searchParams.get('q') ?? '').replace(/[%*,()"':]/g, ' ').trim().slice(0, 60);
+
+    let query = supabaseAdmin
+      .from('payment_attempts')
+      .select('reference, kind, status, email, amount_kobo, currency, created_at, paid_at, abandoned_at, provider_status, failure_reason, recovery_sent_at')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    if (status !== 'all') query = query.eq('status', status);
+    if (term) query = query.or(`email.ilike.%${term}%,reference.ilike.%${term}%`);
+
+    const { data, error } = await query;
+    if (error) {
+      console.error('[admin/payments] list failed:', error.message);
+      return NextResponse.json({ error: 'Could not load payments' }, { status: 500 });
+    }
+    return NextResponse.json({ attempts: data ?? [] });
+  }
 
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
   const { data, error } = await supabaseAdmin

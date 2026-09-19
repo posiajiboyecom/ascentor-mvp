@@ -16,6 +16,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Check } from 'lucide-react';
 import { canAccess, TIER_META, type PlanTier } from '@/lib/planTier';
+import { usePageSearch } from '@/components/shell/PageSearch';
 
 // ── Types — match the real schema, not database.ts's stale fields ──
 
@@ -554,8 +555,15 @@ export function ExpertsClient({
     return counts;
   }, [sessions]);
 
+  // Header search box filters this page (registered as the page-scoped search).
+  const query = usePageSearch('Search sessions or experts…');
+
   const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
     return sessions.filter((s) => {
+      if (q && !s.title.toLowerCase().includes(q) && !s.expert_name.toLowerCase().includes(q) && !(s.dimension ?? '').toLowerCase().includes(q)) {
+        return false;
+      }
       const dimOk = activeDimension === 'All' || s.dimension === activeDimension;
       const statusOk =
         activeStatus === 'all'
@@ -565,7 +573,7 @@ export function ExpertsClient({
             : !registeredIds.has(s.id); // 'open'
       return dimOk && statusOk;
     });
-  }, [sessions, activeDimension, activeStatus, registeredIds]);
+  }, [sessions, activeDimension, activeStatus, registeredIds, query]);
 
   const liveSessions = filtered.filter((s) => isLive(s.scheduled_at, s.duration_minutes, s.status));
   // Today includes live sessions too — the prototype shows the live session

@@ -16,12 +16,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 
 export const maxDuration = 90;
 
 function getService() {
-  const { createClient: sc } = require('@supabase/supabase-js');
-  return sc(
+  return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );

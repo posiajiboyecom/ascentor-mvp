@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
 
     // Fetch enrollment counts per course
     const courseIds = (courses || []).map(c => c.id);
-    let enrollmentMap: Record<string, number> = {};
+    const enrollmentMap: Record<string, number> = {};
 
     if (courseIds.length > 0) {
       const { data: enrollments } = await supabase

@@ -29,7 +29,7 @@ const supabase = createClient(
 
 // ── Robust JSON extractor ────────────────────────────────────
 function extractJSON(raw: string): any {
-  let text = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  const text = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
   try { return JSON.parse(text); } catch { /* continue */ }
 
   function repairJSON(s: string): string {

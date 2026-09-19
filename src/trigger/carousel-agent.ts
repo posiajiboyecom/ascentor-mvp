@@ -64,7 +64,7 @@ interface CarouselBrief {
 
 // ── JSON extractor — same pattern as content-writer.ts ───────
 function extractJSON(raw: string): any {
-  let text = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  const text = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
   try { return JSON.parse(text); } catch { /* continue */ }
 
   function repair(s: string): string {

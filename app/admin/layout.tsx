@@ -44,7 +44,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  if (!user) redirect('/admin-login');
 
   // Try the full query first (includes permissions).
   let profile: { full_name: string | null; role: string; permissions: Permission[] | null } | null = null;
@@ -74,6 +74,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!profile || !['admin', 'moderator'].includes(profile.role)) {
     redirect('/dashboard');
   }
+
+  // Avatar is fetched separately so a missing column can never break the
+  // permissions fallback above.
+  const { data: avatarRow } = await supabase
+    .from('profiles')
+    .select('avatar_url')
+    .eq('id', user.id)
+    .maybeSingle();
 
   return (
     <>
@@ -108,6 +116,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           name={profile.full_name || user.email || 'Admin'}
           role={profile.role}
           userPermissions={profile.permissions}
+          email={user.email}
+          avatarUrl={(avatarRow as { avatar_url?: string | null } | null)?.avatar_url ?? null}
         >
           <div className="admin-wrapper">
             <style>{`

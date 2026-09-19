@@ -28,6 +28,7 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import SageLoader from '@/components/SageLoader';
 import PaymentHealth from '@/components/admin/PaymentHealth';
+import OverviewCharts from '@/components/admin/OverviewCharts';
 
 // Safe-ish SVG icon renderer — strips <script> tags and inline event
 // handlers before injecting. For admin-controlled content only.
@@ -203,79 +204,11 @@ export default function AdminOverviewClient() {
         </div>
       )}
 
-      {/* ═══ TOP STAT CARDS ═══ */}
-      <div className="grid grid-cols-2 lg:grid-cols-7 gap-2.5 mb-6">
-        {[
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', value: stats.totalUsers, label: 'Total Users', sub: `+${stats.newUsers7d} this week`, color: 'var(--ledger-info)', href: '/admin/users' },
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>', value: stats.totalSessions, label: 'AI Sessions', sub: `+${stats.sessions7d} this week`, color: 'var(--ledger-gold)', href: '/admin/coaching' },
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>', value: 'Chat', label: 'Community', sub: 'Manage channels', color: 'var(--ledger-info)', href: '/admin/community-intel' },
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', value: stats.publishedCourses, label: 'Courses', sub: 'Published', color: 'var(--ledger-gold)', href: '/admin/courses' },
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>', value: stats.upcomingEvents, label: 'Upcoming Events', sub: 'Scheduled', color: 'var(--ledger-good)', href: '/admin/experts' },
-          { icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>', value: stats.openJobs, label: 'Open Roles', sub: 'Live on /careers', color: 'var(--ledger-gold)', href: '/admin/careers' },
-        ].map((s) => (
-          <Link key={s.label} href={s.href}>
-            <div className="rounded-xl p-3.5 transition-all cursor-pointer ledger-panel"
-              style={{ borderRadius: 'var(--ledger-radius-lg)' }}>
-              <div className="flex justify-between items-start mb-1.5">
-                <span className="text-xl" dangerouslySetInnerHTML={{ __html: sanitiseIcon(s.icon) }} style={{ color: 'var(--ledger-ink-soft)' }} />
-                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full ledger-mono"
-                  style={{ background: `color-mix(in srgb, ${s.color} 14%, transparent)`, color: s.color, fontSize: 9 }}>
-                  {s.sub}
-                </span>
-              </div>
-              <div className="text-xl lg:text-2xl ledger-number" style={{ color: s.color, fontSize: 26 }}>
-                {s.value.toLocaleString()}
-              </div>
-              <div className="text-[10px] mt-0.5 ledger-label" style={{ textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>{s.label}</div>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {/* ═══ KPIs + CHARTS (server-side aggregates, Recharts) ═══ */}
+      <OverviewCharts />
 
-      {/* ═══ PAYMENT HEALTH (abandoned / failed checkouts) ═══ */}
+      {/* ═══ PAYMENT HEALTH (abandoned / failed checkouts, reconcile) ═══ */}
       <PaymentHealth />
-
-      {/* ═══ ACTIVITY CHART (last 14 days) ═══ */}
-      <div className="rounded-xl p-5 mb-5 ledger-panel">
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-sm font-semibold flex items-center gap-2 ledger-h2" style={{ fontSize: 15 }}>
-            <SvgIcon html='<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>' />
-            Activity — Last 14 Days
-          </span>
-          <div className="flex gap-3 text-[10px] ledger-mono">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full" style={{ background: 'var(--ledger-gold)' }} /> Sessions
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full" style={{ background: 'var(--ledger-info)' }} /> Active Users
-            </span>
-          </div>
-        </div>
-        <div className="flex items-end gap-[3px] h-32">
-          {dailyActivity.map((d) => (
-            <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
-              <div className="w-full flex flex-col items-center justify-end h-24 relative">
-                <div className="w-full rounded-t-sm transition-all"
-                  style={{
-                    height: `${Math.max((d.sessions / maxSessions) * 100, 2)}%`,
-                    background: 'var(--ledger-gold)',
-                    opacity: 0.7,
-                  }} />
-                {d.users > 0 && (
-                  <div className="absolute w-1.5 h-1.5 rounded-full"
-                    style={{
-                      background: 'var(--ledger-info)',
-                      bottom: `${Math.max((d.users / maxUsers) * 100, 5)}%`,
-                    }} />
-                )}
-              </div>
-              <span className="text-[8px] leading-none ledger-mono" style={{ fontSize: 8 }}>
-                {new Date(d.day).toLocaleDateString('en-US', { day: 'numeric' })}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* ═══ TWO COLUMNS ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">

@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
 
   const partnerIds = (partners || []).map((p: any) => p.id);
 
-  let memberCounts: Record<string, number> = {};
+  const memberCounts: Record<string, number> = {};
   if (partnerIds.length > 0) {
     const { data: memberData } = await supabase
       .from('partner_members')

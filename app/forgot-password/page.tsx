@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { rememberResetOrigin, signInPathAfterReset } from '@/lib/resetOrigin';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,6 +26,12 @@ type ModalState =
 export default function ForgotPasswordPage() {
   const [modal, setModal] = useState<ModalState>({ type: 'idle' });
   const [loading, setLoading] = useState(false);
+  const [signInHref, setSignInHref] = useState('/login');
+
+  useEffect(() => {
+    rememberResetOrigin();
+    setSignInHref(signInPathAfterReset());
+  }, []);
 
   const {
     register,
@@ -320,7 +327,7 @@ export default function ForgotPasswordPage() {
             }}>
               <p style={{ fontSize: '0.875rem', color: '#6B7280', margin: 0 }}>
                 Remember your password?{' '}
-                <Link href="/login" style={{ color: '#C8A96E', fontWeight: 700, textDecoration: 'none' }}>
+                <Link href={signInHref} style={{ color: '#C8A96E', fontWeight: 700, textDecoration: 'none' }}>
                   Sign in
                 </Link>
               </p>
@@ -354,7 +361,7 @@ export default function ForgotPasswordPage() {
                 <p className="modal-text">
                   You signed up with <strong>{modal.provider}</strong>. Please use your {modal.provider} account to sign in. Password reset is not available for social accounts.
                 </p>
-                <Link href="/login" className="modal-btn">
+                <Link href={signInHref} className="modal-btn">
                   Back to login
                 </Link>
               </>

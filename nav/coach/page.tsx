@@ -80,6 +80,21 @@ type Message = {
   action?: string;
 };
 
+// The circular coach avatar (module scope: components must not be created during render)
+function CoachAvatar() {
+  return (
+    <div style={{
+      width: '34px', height: '34px', borderRadius: '50%',
+      flexShrink: 0,
+      background: 'linear-gradient(135deg, rgba(247,246,243,0.10), rgba(247,246,243,0.20))',
+      border: '1.5px solid rgba(247,246,243,0.25)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <AscentorMark size={18} />
+    </div>
+  );
+}
+
 export default function CoachPage() {
   const [messages,     setMessages]     = useState<Message[]>([]);
   const [input,        setInput]        = useState('');
@@ -122,19 +137,6 @@ export default function CoachPage() {
     }
     setLoading(false);
   };
-
-  // The circular coach avatar
-  const CoachAvatar = () => (
-    <div style={{
-      width: '34px', height: '34px', borderRadius: '50%',
-      flexShrink: 0,
-      background: 'linear-gradient(135deg, rgba(247,246,243,0.10), rgba(247,246,243,0.20))',
-      border: '1.5px solid rgba(247,246,243,0.25)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <AscentorMark size={18} />
-    </div>
-  );
 
   return (
     <div className="animate-fade-up flex flex-col" style={{ height: 'calc(100vh - 120px)', paddingTop: 16 }}>
