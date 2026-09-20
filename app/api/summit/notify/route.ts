@@ -52,10 +52,12 @@ export async function POST(req: Request) {
   if (!getMailer()) return NextResponse.json({ error: 'SMTP credentials not configured' }, { status: 500 });
 
   // Fetch registrants with the given status
-  const { data: regs } = await supabaseAdmin
-    .from('summit_registrations')
-    .select('email, full_name')
-    .eq('status', status);
+  // "confirmed" means PAID. Never trust the manual status flag for who gets confirmed mail.
+  let regsQuery = supabaseAdmin.from('summit_registrations').select('email, full_name');
+  regsQuery = status === 'confirmed'
+    ? regsQuery.eq('payment_status', 'paid')
+    : regsQuery.eq('status', status).neq('payment_status', 'paid');
+  const { data: regs } = await regsQuery;
 
   if (!regs || regs.length === 0)
     return NextResponse.json({ ok: true, sent: 0, message: 'No registrants with that status.' });
@@ -92,7 +94,7 @@ export async function POST(req: Request) {
   if (status === 'confirmed' && sent > 0) {
     await supabaseAdmin.from('summit_registrations')
       .update({ notified_at: new Date().toISOString() })
-      .eq('status', 'confirmed');
+      .eq('payment_status', 'paid');
   }
 
   return NextResponse.json({ ok: true, sent, failed, total: regs.length });

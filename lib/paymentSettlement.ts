@@ -25,7 +25,7 @@
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { PLAN_PRICING_MAP } from '@/lib/pricing';
-import { sendPaymentConfirmedEmail, sendAdminPaymentNotification } from '@/lib/summitEmails';
+import { deliverPaidEmails } from '@/lib/summitEmails';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,6 +63,7 @@ export interface PaystackTransaction {
   amount:    number;
   currency:  string;
   channel?:  string;
+  fees?:     number | null;
   paid_at?:  string;
   metadata?: Record<string, any> | null;
   authorization?: Record<string, any> | null;
@@ -266,23 +267,18 @@ async function fulfilSummit(attempt: PaymentAttempt, tx: PaystackTransaction): P
     return 'duplicate';
   }
 
-  // Claim winner only: emails are sent exactly once. Failures never undo a paid ticket.
-  try {
-    await sendPaymentConfirmedEmail({
-      email:          registration.email,
-      fullName:       registration.full_name,
-      whatsapp:       registration.whatsapp ?? '',
-      organisation:   registration.organisation ?? '',
-      attendanceType: registration.attendance_type as 'onsite' | 'virtual',
-      amountPaid:     tx.amount / 100,
-      currency:       tx.currency ?? 'NGN',
-      registrationId: String(registration.id),
-      reference:      attempt.reference,
-    });
-    await sendAdminPaymentNotification(registration.full_name, registration.email, registration.organisation);
-  } catch (err) {
-    console.error('[paymentSettlement] summit confirmation email failed:', err);
+  // Paystack fee (kobo). Best-effort: needs the paystack_fee column and must
+  // never be able to undo a paid ticket.
+  if (tx.fees != null) {
+    try {
+      await supabaseAdmin.from('summit_registrations')
+        .update({ paystack_fee: tx.fees / 100 }).eq('id', registration.id);
+    } catch { /* column not migrated yet */ }
   }
+
+  // Claim winner only. Customer + admin emails are independent and tracked;
+  // failures never undo a paid ticket and are retried by reconciliation / admin Resend.
+  await deliverPaidEmails(registration, tx.amount / 100, tx.currency ?? 'NGN', attempt.reference);
   return 'fulfilled';
 }
 

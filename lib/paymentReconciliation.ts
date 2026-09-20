@@ -23,8 +23,11 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import {
   settleReference,
   notifyAdmins,
+  createAttempt,
+  getSummitPricesNaira,
   type PaymentAttempt,
 } from '@/lib/paymentSettlement';
+import { deliverPaidEmails } from '@/lib/summitEmails';
 
 const MIN_AGE_MINUTES       = 30;   // ignore attempts still likely mid-checkout
 const ABANDON_AFTER_MINUTES = 60;   // pending this long => abandoned
@@ -40,6 +43,8 @@ export interface ReconcileSummary {
   abandoned:          number; // newly marked abandoned this run
   adminNotified:      number; // abandoned attempts included in the admin digest
   recoveryEmailsSent: number;
+  adopted:            number; // paid at Paystack with no attempt row (pre-hardening) - now settled
+  emailsRetried:      number; // paid registrations whose confirmation email had failed
   errors:             number;
 }
 
@@ -109,14 +114,23 @@ async function sendRecoveryEmail(a: PaymentAttempt): Promise<boolean> {
 export async function reconcilePayments(): Promise<ReconcileSummary> {
   const summary: ReconcileSummary = {
     checked: 0, recovered: 0, failed: 0, abandoned: 0,
-    adminNotified: 0, recoveryEmailsSent: 0, errors: 0,
+    adminNotified: 0, recoveryEmailsSent: 0, adopted: 0, emailsRetried: 0, errors: 0,
   };
+
+  // ── 0. Adopt Summit payments made before payment_attempts existed ─────────
+  try {
+    summary.adopted = await adoptLegacySummitPayments();
+  } catch (err) {
+    summary.errors++;
+    console.error('[reconcile] legacy adoption failed:', (err as Error).message);
+  }
 
   // ── 1. Re-check stale pending attempts against Paystack ───────────────────
   const { data: pending, error: pendingErr } = await supabaseAdmin
     .from('payment_attempts')
-    .select('reference, created_at')
-    .eq('status', 'pending')
+    .select('reference, created_at, status')
+    .in('status', ['pending', 'abandoned'])
+    .gte('created_at', daysAgoIso(RECOVERY_WINDOW_DAYS))
     .lt('created_at', minutesAgoIso(MIN_AGE_MINUTES))
     .order('created_at', { ascending: true })
     .limit(MAX_PER_RUN);
@@ -136,7 +150,7 @@ export async function reconcilePayments(): Promise<ReconcileSummary> {
         return;
       }
       if (result.state === 'pending' || result.state === 'notfound') {
-        if (row.created_at < minutesAgoIso(ABANDON_AFTER_MINUTES)) {
+        if (row.status === 'pending' && row.created_at < minutesAgoIso(ABANDON_AFTER_MINUTES)) {
           const stale = row.created_at < daysAgoIso(RECOVERY_WINDOW_DAYS);
           const nowIso = new Date().toISOString();
           const { data: updated } = await supabaseAdmin
@@ -233,5 +247,107 @@ export async function reconcilePayments(): Promise<ReconcileSummary> {
   }
   summary.recoveryEmailsSent = sent;
 
+  // ── 4. Retry confirmation emails that failed after a successful payment ───
+  try {
+    summary.emailsRetried = await retryFailedConfirmationEmails();
+  } catch (err) {
+    console.error('[reconcile] email retry failed:', (err as Error).message);
+  }
+
   return summary;
+}
+
+// ── Legacy adoption ──────────────────────────────────────────────────────────
+
+const SUMMIT_REF_RE = /^summit-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-d+$/i;
+const PAYSTACK_PAGES = 3; // 300 most recent successful transactions per run
+
+/**
+ * Before 19 Sep, Summit checkouts were not recorded in payment_attempts, so a
+ * customer who paid but whose browser callback never landed can never be
+ * settled by the webhook/cron ("unknown reference"). This scans Paystack's
+ * recent successful transactions, finds summit-<registrationId>-<ts>
+ * references we have no attempt for, records them and settles them.
+ */
+async function adoptLegacySummitPayments(): Promise<number> {
+  const secret = process.env.PAYSTACK_SECRET_KEY;
+  if (!secret) return 0;
+  const prices = getSummitPricesNaira();
+  if (!prices) return 0;
+
+  let adopted = 0;
+  for (let page = 1; page <= PAYSTACK_PAGES; page++) {
+    const res = await fetch(
+      `https://api.paystack.co/transaction?status=success&perPage=100&page=${page}`,
+      { headers: { Authorization: `Bearer ${secret}` }, cache: 'no-store' },
+    );
+    const body = await res.json().catch(() => null);
+    if (!res.ok || !body?.status) throw new Error(`Paystack list failed (${res.status})`);
+    const txs: any[] = body.data ?? [];
+    if (txs.length === 0) break;
+
+    const candidates = txs.filter(t => typeof t.reference === 'string' && SUMMIT_REF_RE.test(t.reference));
+    if (candidates.length) {
+      const { data: known } = await supabaseAdmin
+        .from('payment_attempts')
+        .select('reference')
+        .in('reference', candidates.map(t => t.reference));
+      const knownSet = new Set((known ?? []).map((k: { reference: string }) => k.reference));
+
+      for (const tx of candidates) {
+        if (knownSet.has(tx.reference)) continue;
+        try {
+          const registrationId = tx.reference.match(SUMMIT_REF_RE)![1];
+          const { data: reg } = await supabaseAdmin
+            .from('summit_registrations')
+            .select('id, email, attendance_type, payment_status, payment_provider_tx_id')
+            .eq('id', registrationId)
+            .maybeSingle();
+          if (!reg) continue;
+
+          const expectedKobo = Math.round((reg.attendance_type === 'virtual' ? prices.virtual : prices.onsite) * 100);
+          await createAttempt({
+            reference: tx.reference, kind: 'summit', amountKobo: expectedKobo,
+            email: reg.email, registrationId: reg.id,
+          });
+
+          // Already recorded as paid by the old flow with this very transaction: just link it.
+          if (reg.payment_status === 'paid' && reg.payment_provider_tx_id === String(tx.id)) {
+            await supabaseAdmin.from('payment_attempts')
+              .update({ status: 'success', provider_status: 'success', provider_tx_id: String(tx.id), paid_at: tx.paid_at ?? null })
+              .eq('reference', tx.reference);
+            continue;
+          }
+
+          const result = await settleReference(tx.reference);
+          if (result.state === 'settled' && !result.alreadySettled) adopted++;
+        } catch (err) {
+          console.error(`[reconcile] adopt ${tx.reference}:`, (err as Error).message);
+        }
+      }
+    }
+    if (txs.length < 100) break;
+  }
+  return adopted;
+}
+
+// ── Email retry ──────────────────────────────────────────────────────────────
+
+/** Only rows where a send was attempted and FAILED (error recorded) are retried; older rows are left to the admin "Resend" button so nobody gets a surprise duplicate. */
+async function retryFailedConfirmationEmails(): Promise<number> {
+  const { data, error } = await supabaseAdmin
+    .from('summit_registrations')
+    .select('*')
+    .eq('payment_status', 'paid')
+    .is('confirmation_email_sent_at', null)
+    .not('confirmation_email_error', 'is', null)
+    .limit(20);
+  if (error) return 0; // tracking columns not migrated yet
+
+  let n = 0;
+  for (const reg of data ?? []) {
+    const out = await deliverPaidEmails(reg, Number(reg.amount_paid ?? 0), reg.currency ?? 'NGN', reg.payment_reference ?? '', { customer: true });
+    if (out.customer) n++;
+  }
+  return n;
 }

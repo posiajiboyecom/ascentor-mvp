@@ -161,6 +161,36 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
   } | null>(null);
   // Guards against a second Paystack launch while one is already being set up
   const paymentStarting = useRef(false);
+  // Reference/registration of a payment that has been opened but not confirmed.
+  // Used to tell the server immediately if the visitor walks away, so the team
+  // hears about it now rather than in the daily sweep.
+  const openPayment = useRef<{ reference: string; registrationId: string } | null>(null);
+
+  const reportAbandoned = (reference: string, registrationId: string) => {
+    try {
+      fetch('/api/summit/pay/abandon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference, registrationId }),
+        keepalive: true,
+      }).catch(() => undefined);
+    } catch { /* best-effort */ }
+  };
+
+  useEffect(() => {
+    const onLeave = () => {
+      const op = openPayment.current;
+      if (!op) return;
+      try {
+        navigator.sendBeacon(
+          '/api/summit/pay/abandon',
+          new Blob([JSON.stringify(op)], { type: 'application/json' }),
+        );
+      } catch { /* best-effort */ }
+    };
+    window.addEventListener('pagehide', onLeave);
+    return () => window.removeEventListener('pagehide', onLeave);
+  }, []);
 
   // keep react-hook-form's attendance_type value in sync with the tab
   useEffect(() => {
@@ -230,6 +260,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
         return;
       }
 
+      openPayment.current = { reference: config.reference, registrationId };
       const handler = (window as any).PaystackPop.setup({
         key: config.public_key,
         email: config.email,
@@ -241,10 +272,15 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
           full_name: config.full_name,
         },
         callback: (response: { reference: string }) => {
+          openPayment.current = null;
           verifyAndFinish(response.reference, registrationId);
         },
         onClose: () => {
           paymentStarting.current = false;
+          if (openPayment.current) {
+            reportAbandoned(openPayment.current.reference, openPayment.current.registrationId);
+            openPayment.current = null;
+          }
           alert(
             'You closed the payment window before finishing your purchase. Your registration details are saved, so you can come back and complete payment at any time to secure your spot.',
             'Payment Not Completed'
@@ -1012,7 +1048,10 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
                 Confirm →
               </button>
               <button
-                onClick={() => setPendingPayment(null)}
+                onClick={() => {
+                  reportAbandoned(pendingPayment.config.reference, pendingPayment.registrationId);
+                  setPendingPayment(null);
+                }}
                 style={{
                   fontSize: '0.9375rem', padding: '0.75rem 1.75rem',
                   background: 'transparent', border: '1.5px solid #E8E6E1',

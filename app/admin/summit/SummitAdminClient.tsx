@@ -19,28 +19,56 @@ const B = {
   fontMono: "Metropolis, 'Inter', sans-serif",
 };
 
-const STATUSES = ['pending', 'confirmed'];
+// Email-blast audiences. "confirmed" = PAID (enforced server-side), "pending" = registered but unpaid.
+const AUDIENCES: { value: string; label: string }[] = [
+  { value: 'confirmed', label: 'Paid' },
+  { value: 'pending', label: 'Not yet paid' },
+];
 const TICKET_TYPES = ['general', 'vip', 'speaker', 'partner', 'press'];
 
-const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
-  pending:   { color: '#92400E', bg: '#FEF3C7' },
-  confirmed: { color: '#065F46', bg: '#D1FAE5' },
+type PaymentState = 'paid' | 'in_progress' | 'abandoned' | 'not_started';
+type Reg = SummitRegistration & {
+  payment_state: PaymentState;
+  attempt_count: number;
+  attendance_type?: string | null;
+  paystack_fee?: number | null;
+  confirmation_email_sent_at?: string | null;
+  confirmation_email_error?: string | null;
 };
+
+const STATE_META: Record<PaymentState, { label: string; color: string; bg: string }> = {
+  paid:        { label: 'Paid',                 color: '#065F46', bg: '#D1FAE5' },
+  in_progress: { label: 'Paying now',           color: '#1E40AF', bg: '#DBEAFE' },
+  abandoned:   { label: 'Abandoned payment',    color: '#991B1B', bg: '#FEE2E2' },
+  not_started: { label: 'Registered, not paid', color: '#92400E', bg: '#FEF3C7' },
+};
+
+// Paystack local card fee: 1.5% (+₦100 when the amount is ₦2,500 or more), capped at ₦2,000.
+// Used only when Paystack's real fee was not stored for a payment.
+function estimateFee(amount: number): number {
+  if (!amount) return 0;
+  return Math.min(amount * 0.015 + (amount >= 2500 ? 100 : 0), 2000);
+}
+const feeOf = (r: Reg) => (r.paystack_fee != null ? Number(r.paystack_fee) : estimateFee(Number(r.amount_paid ?? 0)));
+const naira = (n: number) => `₦${Math.round(n).toLocaleString('en-NG')}`;
 
 export default function SummitAdminClient() {
   const supabase = createClient();
-  const [regs, setRegs] = useState<SummitRegistration[]>([]);
+  const [regs, setRegs] = useState<Reg[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterType, setFilterType] = useState('all');
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [localNotes, setLocalNotes] = useState<Record<string, string>>({});
 
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
-  const [emailTargetStatus, setEmailTargetStatus] = useState('pending');
+  const [emailTargetStatus, setEmailTargetStatus] = useState('confirmed');
   const [emailSending, setEmailSending] = useState(false);
   const [emailResult, setEmailResult] = useState<string | null>(null);
 
@@ -65,7 +93,7 @@ export default function SummitAdminClient() {
         setLoading(false);
         return;
       }
-      const list: SummitRegistration[] = data.registrations || [];
+      const list: Reg[] = data.registrations || [];
       setRegs(list);
       const notes: Record<string, string> = {};
       list.forEach((r) => { notes[r.id] = r.notes || ''; });
@@ -81,35 +109,56 @@ export default function SummitAdminClient() {
 
   const filtered = useMemo(() => {
     return regs.filter((r) => {
-      const matchStatus = filterStatus === 'all' || r.status === filterStatus;
+      const matchStatus = filterStatus === 'all' || r.payment_state === filterStatus;
+      const matchType = filterType === 'all' || (r.attendance_type ?? 'onsite') === filterType;
       const q = search.toLowerCase();
       const matchSearch = !q ||
         r.full_name.toLowerCase().includes(q) ||
         r.email.toLowerCase().includes(q) ||
+        (r.whatsapp || '').toLowerCase().includes(q) ||
         r.location.toLowerCase().includes(q) ||
         (r.organisation || '').toLowerCase().includes(q);
-      return matchStatus && matchSearch;
+      return matchStatus && matchType && matchSearch;
     });
-  }, [regs, filterStatus, search]);
+  }, [regs, filterStatus, filterType, search]);
 
-  async function updateField(id: string, updates: Partial<SummitRegistration>) {
+  async function authedFetch(method: string, body: unknown) {
+    const { data: { session } } = await supabase.auth.getSession();
+    return fetch('/api/admin/summit-registrations', {
+      method,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+      body: JSON.stringify(body),
+    });
+  }
+
+  async function updateField(id: string, updates: Partial<Reg>) {
     setSavingId(id);
-    await supabase.from('summit_registrations').update({
-      ...updates,
-      updated_at: new Date().toISOString(),
-      ...(updates.status === 'confirmed' ? { confirmed_at: new Date().toISOString() } : {}),
-    }).eq('id', id);
-    setRegs((prev) => prev.map((r) => r.id === id ? { ...r, ...updates } : r));
+    const res = await authedFetch('PATCH', { id, ...updates });
+    if (res.ok) setRegs((prev) => prev.map((r) => r.id === id ? { ...r, ...updates } : r));
+    else setActionMsg('Save failed. Nothing was changed.');
     setSavingId(null);
   }
 
   async function saveNotes(id: string) {
     setSavingId(id);
-    await supabase.from('summit_registrations').update({
-      notes: localNotes[id] || null,
-    }).eq('id', id);
-    setRegs((prev) => prev.map((r) => r.id === id ? { ...r, notes: localNotes[id] } : r as SummitRegistration));
+    const res = await authedFetch('PATCH', { id, notes: localNotes[id] || null });
+    if (res.ok) setRegs((prev) => prev.map((r) => r.id === id ? { ...r, notes: localNotes[id] } : r));
+    else setActionMsg('Could not save notes.');
     setSavingId(null);
+  }
+
+  async function runAction(id: string, action: 'verify' | 'resend') {
+    setBusyId(id);
+    setActionMsg(null);
+    try {
+      const res = await authedFetch('POST', { id, action });
+      const data = await res.json().catch(() => ({}));
+      setActionMsg(data.message || data.error || (res.ok ? 'Done.' : 'Action failed.'));
+      if (action === 'verify') await load();
+    } catch {
+      setActionMsg('Action failed.');
+    }
+    setBusyId(null);
   }
 
   async function handleEmailBlast() {
@@ -137,9 +186,9 @@ export default function SummitAdminClient() {
   }
 
   function exportCSV() {
-    const cols = ['full_name','email','whatsapp','location','organisation','current_role','status','payment_status','amount_paid','currency','paid_at','ticket_type','other_messages','consent','notes','created_at'];
+    const cols = ['full_name','email','whatsapp','attendance_type','location','organisation','current_role','payment_state','amount_paid','paystack_fee','currency','paid_at','payment_reference','ticket_type','other_messages','consent','notes','created_at'];
     const rows = filtered.map((r) =>
-      cols.map((c) => JSON.stringify((r as any)[c] ?? '')).join(',')
+      cols.map((c) => JSON.stringify(c === 'paystack_fee' ? (r.payment_state === 'paid' ? Math.round(feeOf(r)) : '') : ((r as any)[c] ?? ''))).join(',')
     );
     const csv = [cols.join(','), ...rows].join('\n');
     const a = document.createElement('a');
@@ -157,16 +206,16 @@ export default function SummitAdminClient() {
 
     autoTable(doc, {
       startY: 26,
-      head: [['Name', 'Email', 'WhatsApp', 'Location', 'Company', 'Role', 'Status', 'Payment', 'Amount', 'Paid At']],
+      head: [['Name', 'Email', 'Phone', 'Type', 'Location', 'Company', 'Role', 'Payment', 'Amount', 'Paid At']],
       body: filtered.map((r) => [
         r.full_name,
         r.email,
         r.whatsapp,
+        r.attendance_type === 'virtual' ? 'Virtual' : 'Physical',
         r.location,
         r.organisation,
         r.current_role,
-        r.status,
-        r.payment_status,
+        STATE_META[r.payment_state].label,
         formatAmount(r.amount_paid, r.currency),
         r.paid_at ? new Date(r.paid_at).toLocaleDateString() : '',
       ]),
@@ -181,13 +230,15 @@ export default function SummitAdminClient() {
     const data = filtered.map((r) => ({
       'Full Name': r.full_name,
       'Email': r.email,
-      'WhatsApp': r.whatsapp,
+      'Phone': r.whatsapp,
+      'Attendance': r.attendance_type === 'virtual' ? 'Virtual' : 'Physical',
       'Location': r.location,
       'Company': r.organisation,
       'Role': r.current_role,
-      'Status': r.status,
-      'Payment Status': r.payment_status,
+      'Payment': STATE_META[r.payment_state].label,
       'Amount Paid': r.amount_paid ?? '',
+      'Paystack Fee': r.payment_state === 'paid' ? Math.round(feeOf(r)) : '',
+      'Net': r.payment_state === 'paid' ? Math.round(Number(r.amount_paid ?? 0) - feeOf(r)) : '',
       'Currency': r.currency,
       'Paid At': r.paid_at ?? '',
       'Consent': r.consent ? 'Yes' : 'No',
@@ -202,12 +253,20 @@ export default function SummitAdminClient() {
     XLSX.writeFile(workbook, `summit-registrations-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
-  const stats = useMemo(() => ({
-    total: regs.length,
-    pending: regs.filter((r) => r.status === 'pending').length,
-    confirmed: regs.filter((r) => r.status === 'confirmed').length,
-    paid: regs.filter((r) => r.payment_status === 'paid').length,
-  }), [regs]);
+  const stats = useMemo(() => {
+    const paid = regs.filter((r) => r.payment_state === 'paid');
+    const gross = paid.reduce((t, r) => t + Number(r.amount_paid ?? 0), 0);
+    const fees = paid.reduce((t, r) => t + feeOf(r), 0);
+    return {
+      total: regs.length,
+      paid: paid.length,
+      unpaid: regs.length - paid.length,
+      abandoned: regs.filter((r) => r.payment_state === 'abandoned').length,
+      onsite: paid.filter((r) => (r.attendance_type ?? 'onsite') !== 'virtual').length,
+      virtual: paid.filter((r) => r.attendance_type === 'virtual').length,
+      gross, fees, net: gross - fees,
+    };
+  }, [regs]);
 
   return (
     <div style={{ padding: '32px', fontFamily: B.fontUI }}>
@@ -220,14 +279,18 @@ export default function SummitAdminClient() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '28px' }}>
         {[
-          { label: 'Total', value: stats.total },
-          { label: 'Pending', value: stats.pending },
-          { label: 'Confirmed', value: stats.confirmed },
+          { label: 'Registered', value: stats.total },
           { label: 'Paid', value: stats.paid },
+          { label: 'Not paid', value: stats.unpaid },
+          { label: 'Abandoned', value: stats.abandoned },
+          { label: 'Physical / Virtual', value: `${stats.onsite} / ${stats.virtual}` },
+          { label: 'Gross revenue', value: naira(stats.gross) },
+          { label: 'Paystack fees', value: naira(stats.fees) },
+          { label: 'Net revenue', value: naira(stats.net) },
         ].map((s) => (
           <div key={s.label} style={{ background: B.card, border: `1px solid ${B.border}`, borderRadius: '10px', padding: '16px 20px' }}>
             <p style={{ margin: '0 0 4px', fontFamily: B.fontMono, fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: B.muted }}>{s.label}</p>
-            <p style={{ margin: 0, fontSize: '28px', fontWeight: 700, color: B.text }}>{s.value}</p>
+            <p style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: B.text }}>{s.value}</p>
           </div>
         ))}
       </div>
@@ -244,8 +307,17 @@ export default function SummitAdminClient() {
           onChange={(e) => setFilterStatus(e.target.value)}
           style={{ padding: '8px 14px', background: B.card, border: `1px solid ${B.border}`, borderRadius: '8px', color: B.text, fontSize: '13px', fontFamily: B.fontUI, cursor: 'pointer', outline: 'none' }}
         >
-          <option value="all">All statuses</option>
-          {STATUSES.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+          <option value="all">All payment states</option>
+          {(Object.keys(STATE_META) as PaymentState[]).map((k) => <option key={k} value={k}>{STATE_META[k].label}</option>)}
+        </select>
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          style={{ padding: '8px 14px', background: B.card, border: `1px solid ${B.border}`, borderRadius: '8px', color: B.text, fontSize: '13px', fontFamily: B.fontUI, cursor: 'pointer', outline: 'none' }}
+        >
+          <option value="all">Physical + Virtual</option>
+          <option value="onsite">Physical</option>
+          <option value="virtual">Virtual</option>
         </select>
         <span style={{ fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>
           {filtered.length} of {regs.length}
@@ -272,6 +344,10 @@ export default function SummitAdminClient() {
         </div>
       </div>
 
+      {actionMsg && (
+        <p style={{ margin: '0 0 14px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(200,169,110,0.12)', color: B.gold, fontFamily: B.fontMono, fontSize: '12px' }}>{actionMsg}</p>
+      )}
+
       {error ? (
         <p style={{ color: '#EF4444', fontFamily: B.fontMono, fontSize: '13px' }}>{error}</p>
       ) : loading ? (
@@ -283,14 +359,14 @@ export default function SummitAdminClient() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: `1px solid ${B.border}` }}>
-                {['Name', 'Email', 'WhatsApp', 'Location', 'Company', 'Role', 'Status', 'Payment', 'Amount', 'Paid At', 'Registered', ''].map((h) => (
+                {['Name', 'Email', 'Phone', 'Type', 'Location', 'Company', 'Payment', 'Amount', 'Fee', 'Paid At', 'Registered', ''].map((h) => (
                   <th key={h} style={{ padding: '12px 14px', textAlign: 'left', fontFamily: B.fontMono, fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', color: B.muted, fontWeight: 500, whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((r) => {
-                const sc = STATUS_COLORS[r.status] || STATUS_COLORS.pending;
+                const sc = STATE_META[r.payment_state] || STATE_META.not_started;
                 const isExpanded = expandedId === r.id;
                 return (
                   <>
@@ -306,22 +382,22 @@ export default function SummitAdminClient() {
                         </span>
                       </td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{r.email}</td>
-                      <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{r.whatsapp}</td>
+                      <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', whiteSpace: 'nowrap' }}>
+                        {r.whatsapp
+                          ? <a href={`tel:${r.whatsapp}`} style={{ color: B.gold, textDecoration: 'none' }}>{r.whatsapp}</a>
+                          : <span style={{ color: '#EF4444' }}>none</span>}
+                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted, whiteSpace: 'nowrap' }}>{r.attendance_type === 'virtual' ? 'Virtual' : 'Physical'}</td>
                       <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted }}>{r.location}</td>
                       <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted, maxWidth: '160px' }}>{r.organisation || '—'}</td>
-                      <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted }}>{r.current_role || '—'}</td>
                       <td style={{ padding: '12px 14px' }}>
-                        <select
-                          value={r.status}
-                          onChange={(e) => updateField(r.id, { status: e.target.value as any })}
-                          style={{ padding: '4px 8px', borderRadius: '6px', border: 'none', background: sc.bg, color: sc.color, fontSize: '11px', fontWeight: 600, cursor: 'pointer', fontFamily: B.fontUI }}
-                        >
-                          {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </select>
+                        <span style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '6px', background: sc.bg, color: sc.color, fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>{sc.label}</span>
                       </td>
-                      <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{r.payment_status}</td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>
-                        {formatAmount(r.amount_paid, r.currency)}
+                        {r.payment_state === 'paid' ? formatAmount(r.amount_paid, r.currency) : '—'}
+                      </td>
+                      <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.dim }}>
+                        {r.payment_state === 'paid' ? naira(feeOf(r)) : '—'}
                       </td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '10px', color: B.dim, whiteSpace: 'nowrap' }}>
                         {r.paid_at ? new Date(r.paid_at).toLocaleDateString() : '—'}
@@ -341,7 +417,7 @@ export default function SummitAdminClient() {
 
                     {isExpanded && (
                       <tr key={`${r.id}-detail`} style={{ borderBottom: `1px solid ${B.border}`, background: 'rgba(200,169,110,0.03)' }}>
-                        <td colSpan={12} style={{ padding: '20px 24px' }}>
+                        <td colSpan={13} style={{ padding: '20px 24px' }}>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
                             <div>
                               <p style={{ fontFamily: B.fontMono, fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: B.gold, margin: '0 0 10px' }}>Contact</p>
@@ -367,8 +443,24 @@ export default function SummitAdminClient() {
 
                             <div>
                               <p style={{ fontFamily: B.fontMono, fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: B.gold, margin: '0 0 10px' }}>Registration</p>
-                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Status: </span>{r.status}</p>
-                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Payment: </span>{r.payment_status}</p>
+                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Payment: </span>{sc.label}{r.attempt_count ? ` (${r.attempt_count} attempt${r.attempt_count === 1 ? '' : 's'})` : ''}</p>
+                              {r.payment_state === 'paid' && (
+                                <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Ticket email: </span>{r.confirmation_email_sent_at ? `sent ${new Date(r.confirmation_email_sent_at).toLocaleString()}` : r.confirmation_email_error ? 'FAILED, use Resend' : 'not recorded, use Resend if unsure'}</p>
+                              )}
+                              <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+                                {r.payment_state !== 'paid' && (
+                                  <button onClick={() => runAction(r.id, 'verify')} disabled={busyId === r.id}
+                                    style={{ padding: '5px 12px', borderRadius: '6px', border: `1px solid ${B.gold}`, background: 'transparent', color: B.gold, fontSize: '11px', cursor: 'pointer', fontFamily: B.fontUI }}>
+                                    {busyId === r.id ? 'Checking…' : 'Verify with Paystack'}
+                                  </button>
+                                )}
+                                {r.payment_state === 'paid' && (
+                                  <button onClick={() => runAction(r.id, 'resend')} disabled={busyId === r.id}
+                                    style={{ padding: '5px 12px', borderRadius: '6px', border: `1px solid ${B.gold}`, background: 'transparent', color: B.gold, fontSize: '11px', cursor: 'pointer', fontFamily: B.fontUI }}>
+                                    {busyId === r.id ? 'Sending…' : 'Resend ticket email'}
+                                  </button>
+                                )}
+                              </div>
                               <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Amount: </span>{formatAmount(r.amount_paid, r.currency)}</p>
                               <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Consent: </span>{r.consent ? 'Yes' : 'No'}</p>
                               <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Ref: </span>{r.payment_reference || '—'}</p>
@@ -413,7 +505,7 @@ export default function SummitAdminClient() {
       <div style={{ background: B.card, border: `1px solid ${B.border}`, borderRadius: '12px', padding: '24px' }}>
         <p style={{ fontFamily: B.fontMono, fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: B.gold, margin: '0 0 4px' }}>Email Registrants</p>
         <p style={{ fontSize: '12px', color: B.muted, margin: '0 0 16px' }}>
-          Send a message to all registrants with a given status. Use <code style={{ fontFamily: B.fontMono, background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4 }}>{'{name}'}</code> to personalise.
+          Send a message to everyone who has paid, or everyone who registered but has not paid yet. Use <code style={{ fontFamily: B.fontMono, background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4 }}>{'{name}'}</code> to personalise.
         </p>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
@@ -423,9 +515,9 @@ export default function SummitAdminClient() {
             onChange={(e) => setEmailTargetStatus(e.target.value)}
             style={{ padding: '7px 12px', background: B.bg, border: `1px solid ${B.border}`, borderRadius: '7px', color: B.text, fontSize: '12px', fontFamily: B.fontUI, cursor: 'pointer', outline: 'none' }}
           >
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s.charAt(0).toUpperCase() + s.slice(1)} ({regs.filter((r) => r.status === s).length})
+            {AUDIENCES.map((a) => (
+              <option key={a.value} value={a.value}>
+                {a.label} ({regs.filter((r) => (a.value === 'confirmed') === (r.payment_state === 'paid')).length})
               </option>
             ))}
           </select>
@@ -451,7 +543,7 @@ export default function SummitAdminClient() {
             disabled={emailSending || !emailSubject.trim() || !emailMessage.trim()}
             style={{ padding: '9px 20px', background: B.gold, border: 'none', borderRadius: '8px', color: '#0F0F0E', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: B.fontUI, opacity: emailSending ? 0.7 : 1 }}
           >
-            {emailSending ? 'Sending…' : `Send to ${regs.filter((r) => r.status === emailTargetStatus).length} registrant${regs.filter((r) => r.status === emailTargetStatus).length !== 1 ? 's' : ''}`}
+            {emailSending ? 'Sending…' : `Send to ${regs.filter((r) => (emailTargetStatus === 'confirmed') === (r.payment_state === 'paid')).length} registrant${regs.filter((r) => (emailTargetStatus === 'confirmed') === (r.payment_state === 'paid')).length !== 1 ? 's' : ''}`}
           </button>
           {emailResult && (
             <span style={{ fontFamily: B.fontMono, fontSize: '11px', color: emailResult.startsWith('Sent') ? '#10B981' : '#EF4444' }}>

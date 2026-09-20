@@ -88,7 +88,8 @@ export async function DELETE(req: NextRequest) {
   const { error } = await supabaseAdmin
     .from('summit_registrations')
     .delete()
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .neq('payment_status', 'paid'); // a paid ticket can never be self-deleted
 
   if (error) {
     console.error('[summit/register-user] delete error:', error.message);

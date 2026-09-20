@@ -4,6 +4,15 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendRegistrationReceivedEmail } from '@/lib/summitEmails';
 import { summitRegisterLimiter, getClientIp } from '@/lib/rate-limit';
 
+/** "Complete your registration" email. Never blocks or fails the registration. */
+async function sendCompleteRegistrationEmail(email: string, fullName: string) {
+  try {
+    await sendRegistrationReceivedEmail(email, fullName);
+  } catch (err) {
+    console.error('[summit/register] complete-registration email failed:', err);
+  }
+}
+
 export async function POST(req: NextRequest) {
   // Rate limit: 5 submissions per IP per 10 minutes (in-memory — see
   // lib/rate-limit.ts; resets on restart and is per serverless instance)
@@ -56,14 +65,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Already registered and confirmed' }, { status: 409 });
   }
 
+  const email = data.email.trim().toLowerCase();
+  const fullName = data.full_name.trim();
+
   if (existing) {
-    // Retrying with a different ticket type must change the price we charge.
-    // Only touch unpaid rows, and only the ticket type (the price driver).
+    // Retrying (or an in-app placeholder row): refresh every detail we collect,
+    // including the phone number, and the ticket type (the price driver).
+    // Only unpaid rows are touched.
     await supabaseAdmin
       .from('summit_registrations')
-      .update({ attendance_type: attendanceType, updated_at: new Date().toISOString() })
+      .update({
+        full_name: fullName,
+        whatsapp: data.whatsapp.trim(),
+        location: data.location.trim(),
+        organisation: data.organisation.trim(),
+        current_role: data.current_role.trim(),
+        other_messages: data.other_messages?.trim() || null,
+        consent: true,
+        attendance_type: attendanceType,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', existing.id)
       .neq('payment_status', 'paid');
+    await sendCompleteRegistrationEmail(email, fullName);
     return NextResponse.json({ registrationId: existing.id });
   }
 
@@ -91,11 +115,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Registration failed.' }, { status: 500 });
   }
 
-  try {
-    await sendRegistrationReceivedEmail(data.email.trim().toLowerCase(), data.full_name.trim());
-  } catch (err: any) {
-    console.error('Failed to send registration received email', err);
-  }
+  await sendCompleteRegistrationEmail(email, fullName);
 
   return NextResponse.json({ registrationId: created.id });
 }
