@@ -1,5 +1,8 @@
 // app/api/admin/summit-registrations/route.ts
-//   GET   list all Summit registrations with a derived payment state
+//   GET   list Summit registrations with a derived payment state.
+//         No params            -> everything (used by the registrations page)
+//         ?paged=1&q=&type=&state=&page=&pageSize=  -> server-side search/filter/pagination
+//                                plus global stats. pageSize=all returns every match (exports).
 //   POST  { action: 'verify', id }  ask Paystack about this person's payments and settle
 //         { action: 'resend', id }  resend the confirmation email + ticket (paid only)
 //   PATCH { id, ticket_type?, notes? }  admin-editable fields only
@@ -72,7 +75,56 @@ export async function GET(req: NextRequest) {
       return { ...r, payment_state, attempt_count: a?.count ?? 0 };
     });
 
-    return NextResponse.json({ registrations });
+    const sp = req.nextUrl.searchParams;
+    if (sp.get('paged') !== '1') return NextResponse.json({ registrations });
+
+    // ── Global stats (never affected by search / filters) ───────────────────
+    const estFee = (a: number) => (a ? Math.min(a * 0.015 + (a >= 2500 ? 100 : 0), 2000) : 0);
+    const paidRows = registrations.filter(r => r.payment_state === 'paid');
+    const gross = paidRows.reduce((t, r) => t + (Number(r.amount_paid) || 0), 0);
+    const fees = paidRows.reduce((t, r) => t + (r.paystack_fee != null ? Number(r.paystack_fee) : estFee(Number(r.amount_paid) || 0)), 0);
+    const count = (st: string) => registrations.filter(r => r.payment_state === st).length;
+    const stats = {
+      total: registrations.length,
+      paid: paidRows.length,
+      unpaid: registrations.length - paidRows.length,
+      abandoned: count('abandoned'),
+      in_progress: count('in_progress'),
+      not_started: count('not_started'),
+      physicalPaid: paidRows.filter(r => r.attendance_type !== 'virtual').length,
+      virtualPaid: paidRows.filter(r => r.attendance_type === 'virtual').length,
+      gross, fees, net: gross - fees,
+      feesEstimated: paidRows.some(r => r.paystack_fee == null),
+      unverified: paidRows.filter(r => !r.payment_provider_tx_id).length,
+    };
+
+    // ── Filter ──────────────────────────────────────────────────────────────
+    const q = (sp.get('q') ?? '').trim().toLowerCase().slice(0, 80);
+    const type = sp.get('type') ?? 'all';
+    const state = sp.get('state') ?? 'all';
+
+    const filtered = registrations.filter(r => {
+      if (type === 'onsite' && r.attendance_type === 'virtual') return false;
+      if (type === 'virtual' && r.attendance_type !== 'virtual') return false;
+      if (state === 'paid' && r.payment_state !== 'paid') return false;
+      if (state === 'unpaid' && r.payment_state === 'paid') return false;
+      if (['abandoned', 'not_started', 'in_progress'].includes(state) && r.payment_state !== state) return false;
+      if (!q) return true;
+      return [r.full_name, r.email, r.whatsapp, r.organisation, r.location, r.payment_reference]
+        .some(v => String(v ?? '').toLowerCase().includes(q));
+    });
+
+    const sizeParam = sp.get('pageSize');
+    const pageSize = sizeParam === 'all' ? filtered.length || 1 : Math.min(Math.max(Number(sizeParam) || 25, 1), 200);
+    const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    const page = Math.min(Math.max(Number(sp.get('page')) || 1, 1), pages);
+
+    return NextResponse.json({
+      registrations: filtered.slice((page - 1) * pageSize, page * pageSize),
+      total: filtered.length,
+      page, pages, pageSize,
+      stats,
+    });
   } catch (err) {
     console.error('[admin/summit-registrations] GET error:', err);
     return NextResponse.json({ error: 'Failed to fetch registrations' }, { status: 500 });

@@ -6,15 +6,23 @@
 //
 // Single source of truth: summit_registrations. A ticket counts as PAID only if
 // payment_status = 'paid'. Each paid row shows whether Paystack recorded a
-// transaction id for it, so a row that is not backed by a real payment is obvious.
+// transaction id, so a row not backed by a real payment is obvious.
+//
+// Search, filters and pagination run on the server (AJAX, debounced). The PDF
+// report exports everything matching the current search and filters.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshCw, RotateCw, X, Trash2, Copy, ShieldCheck, Mail, Phone, MessageCircle } from 'lucide-react';
+import {
+  RefreshCw, RotateCw, X, Trash2, Copy, ShieldCheck, Mail, Phone, MessageCircle,
+  FileDown, ChevronLeft, ChevronRight,
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { usePageSearch } from '@/components/shell/PageSearch';
 import { confirmAction } from '@/components/Modal';
 
 type PayState = 'paid' | 'in_progress' | 'abandoned' | 'not_started';
+type StateFilter = 'all' | 'paid' | 'unpaid' | 'abandoned' | 'not_started' | 'in_progress';
+type TypeFilter = 'all' | 'onsite' | 'virtual';
 
 interface Reg {
   id: string;
@@ -38,14 +46,32 @@ interface Reg {
   source: string | null;
 }
 
+interface Stats {
+  total: number; paid: number; unpaid: number; abandoned: number; in_progress: number; not_started: number;
+  physicalPaid: number; virtualPaid: number; gross: number; fees: number; net: number;
+  feesEstimated: boolean; unverified: number;
+}
+const EMPTY_STATS: Stats = {
+  total: 0, paid: 0, unpaid: 0, abandoned: 0, in_progress: 0, not_started: 0,
+  physicalPaid: 0, virtualPaid: 0, gross: 0, fees: 0, net: 0, feesEstimated: false, unverified: 0,
+};
+const PAGE_SIZE = 25;
+
 const STATE: Record<PayState, { label: string; bg: string; fg: string }> = {
-  paid:        { label: 'Paid',                 bg: 'rgba(34,160,90,.15)',  fg: '#177245' },
-  in_progress: { label: 'Paying now',           bg: 'rgba(60,120,220,.15)', fg: '#2453A6' },
-  abandoned:   { label: 'Left at payment',      bg: 'rgba(220,60,60,.13)',  fg: '#A32626' },
+  paid:        { label: 'Confirmed',            bg: 'rgba(34,160,90,.15)',   fg: '#177245' },
+  in_progress: { label: 'Paying now',           bg: 'rgba(60,120,220,.15)',  fg: '#2453A6' },
+  abandoned:   { label: 'Left at payment',      bg: 'rgba(220,60,60,.13)',   fg: '#A32626' },
   not_started: { label: 'Registered, not paid', bg: 'rgba(200,169,110,.22)', fg: '#8A6A1F' },
 };
 
-type Tab = 'paid' | 'unpaid' | 'all';
+const STATE_FILTERS: { key: StateFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'paid', label: 'Confirmed' },
+  { key: 'unpaid', label: 'Pending' },
+  { key: 'abandoned', label: 'Left at payment' },
+  { key: 'not_started', label: 'Not started' },
+  { key: 'in_progress', label: 'Paying now' },
+];
 
 const naira = (n: number) => `₦${Math.round(n).toLocaleString('en-NG')}`;
 const num = (v: number | string | null | undefined) => Number(v ?? 0) || 0;
@@ -59,13 +85,21 @@ const waLink = (p: string) => `https://wa.me/${p.replace(/[^\d]/g, '')}`;
 export default function SummitPaymentsPage() {
   const supabase = useMemo(() => createClient(), []);
   const query = usePageSearch('Search name, email, phone…');
+
   const [regs, setRegs] = useState<Reg[]>([]);
-  const [tab, setTab] = useState<Tab>('paid');
-  const [type, setType] = useState<'all' | 'onsite' | 'virtual'>('all');
+  const [stats, setStats] = useState<Stats>(EMPTY_STATS);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [stateFilter, setStateFilter] = useState<StateFilter>('all');
+  const [type, setType] = useState<TypeFilter>('all');
+  const [debounced, setDebounced] = useState('');
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const [open, setOpen] = useState<Reg | null>(null);
   const [busy, setBusy] = useState(false);
@@ -80,43 +114,131 @@ export default function SummitPaymentsPage() {
     });
   }, [supabase]);
 
+  // Debounce the search box: the server is queried once typing pauses (AJAX search).
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query.trim()), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  // Any search / filter change returns to page 1.
+  useEffect(() => { setPage(1); }, [debounced, stateFilter, type]);
+
+  const qs = useCallback((pageNum: number, size: string | number) =>
+    new URLSearchParams({ paged: '1', q: debounced, type, state: stateFilter, page: String(pageNum), pageSize: String(size) }).toString(),
+  [debounced, type, stateFilter]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await authed('/api/admin/summit-registrations');
+      const res = await authed(`/api/admin/summit-registrations?${qs(page, PAGE_SIZE)}`);
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || 'Could not load Summit registrations');
       const list: Reg[] = body.registrations ?? [];
       setRegs(list);
-      setOpen(prev => (prev ? list.find(r => r.id === prev.id) ?? null : null));
+      setStats(body.stats ?? EMPTY_STATS);
+      setTotal(body.total ?? list.length);
+      setPages(body.pages ?? 1);
+      setOpen(prev => (prev ? list.find(r => r.id === prev.id) ?? prev : null));
       setError(null);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoading(false);
     }
-  }, [authed]);
+  }, [authed, qs, page]);
 
   useEffect(() => { load(); }, [load]);
 
-  const paid = useMemo(() => regs.filter(r => r.payment_state === 'paid'), [regs]);
-  const unpaid = useMemo(() => regs.filter(r => r.payment_state !== 'paid'), [regs]);
+  // ── PDF report: everything matching the current search + filters ───────────
+  const downloadPdf = async () => {
+    setExporting(true); setNote(null);
+    try {
+      const res = await authed(`/api/admin/summit-registrations?${qs(1, 'all')}`);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Could not prepare the report');
+      const list: Reg[] = body.registrations ?? [];
+      const st: Stats = body.stats ?? stats;
 
-  const stats = useMemo(() => {
-    const gross = paid.reduce((t, r) => t + num(r.amount_paid), 0);
-    const fees = paid.reduce((t, r) => t + feeOf(r), 0);
-    const physical = paid.filter(r => r.attendance_type !== 'virtual').length;
-    const virtual = paid.length - physical;
-    const unverified = paid.filter(r => !r.payment_provider_tx_id).length;
-    return { gross, fees, net: gross - fees, physical, virtual, unverified };
-  }, [paid]);
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      const W = doc.internal.pageSize.getWidth();
+      const stamp = new Date();
 
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return (tab === 'paid' ? paid : tab === 'unpaid' ? unpaid : regs)
-      .filter(r => type === 'all' || (r.attendance_type ?? 'onsite') === type)
-      .filter(r => !q || r.full_name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q) || (r.whatsapp ?? '').includes(q));
-  }, [tab, paid, unpaid, regs, type, query]);
+      // Header band
+      doc.setFillColor(15, 15, 14); doc.rect(0, 0, W, 64, 'F');
+      doc.setFillColor(200, 169, 110); doc.rect(0, 64, W, 3, 'F');
+      doc.setTextColor(200, 169, 110); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+      doc.text('ASCENTOR  ·  THE ELEVATION SUMMIT  ·  19 NOVEMBER 2026', 36, 26);
+      doc.setTextColor(255, 255, 255); doc.setFontSize(18);
+      doc.text('Summit Payments Report', 36, 48);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(200, 200, 200);
+      doc.text(`Generated ${stamp.toLocaleString('en-GB')}`, W - 36, 48, { align: 'right' });
+
+      // Filters applied
+      const stateLabel: Record<StateFilter, string> = {
+        all: 'All statuses', paid: 'Confirmed (paid)', unpaid: 'Pending (not paid)',
+        abandoned: 'Left at payment', not_started: 'Registered, not paid', in_progress: 'Paying now',
+      };
+      const typeLabel: Record<TypeFilter, string> = { all: 'Physical + Virtual', onsite: 'Physical only', virtual: 'Virtual only' };
+      doc.setTextColor(90, 90, 90); doc.setFontSize(9);
+      doc.text(
+        `Filter: ${stateLabel[stateFilter]}  ·  ${typeLabel[type]}${debounced ? `  ·  Search: "${debounced}"` : ''}  ·  ${list.length} record${list.length === 1 ? '' : 's'}`,
+        36, 88,
+      );
+
+      // Summary cards (overall figures, not affected by the filter)
+      const cards: [string, string][] = [
+        ['Confirmed tickets', `${st.paid}  (${st.physicalPaid} physical / ${st.virtualPaid} virtual)`],
+        ['Gross revenue', naira(st.gross)],
+        [st.feesEstimated ? 'Paystack fees (est.)' : 'Paystack fees', naira(st.fees)],
+        ['Net revenue', naira(st.net)],
+        ['Not paid yet', String(st.unpaid)],
+      ];
+      const cw = (W - 72 - 4 * 10) / 5;
+      cards.forEach(([k, v], i) => {
+        const x = 36 + i * (cw + 10);
+        doc.setDrawColor(225, 222, 214); doc.setFillColor(250, 249, 246); doc.roundedRect(x, 98, cw, 46, 4, 4, 'FD');
+        doc.setTextColor(120, 120, 120); doc.setFontSize(7.5); doc.text(k.toUpperCase(), x + 8, 113);
+        doc.setTextColor(15, 15, 14); doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5); doc.text(v, x + 8, 133);
+        doc.setFont('helvetica', 'normal');
+      });
+
+      autoTable(doc, {
+        startY: 158,
+        head: [['#', 'Name', 'Email', 'Phone', 'Ticket', 'Status', 'Amount', 'Fee', 'Net', 'Paid on', 'Reference']],
+        body: list.map((r, i) => {
+          const amt = num(r.amount_paid);
+          const isPaid = r.payment_state === 'paid';
+          return [
+            String(i + 1), r.full_name, r.email, r.whatsapp || '-',
+            r.attendance_type === 'virtual' ? 'Virtual' : 'Physical',
+            STATE[r.payment_state].label,
+            isPaid ? naira(amt) : '-',
+            isPaid ? naira(feeOf(r)) : '-',
+            isPaid ? naira(amt - feeOf(r)) : '-',
+            r.paid_at ? new Date(r.paid_at).toLocaleDateString('en-GB') : '-',
+            r.payment_reference ? r.payment_reference.slice(-14) : '-',
+          ];
+        }),
+        styles: { fontSize: 7.5, cellPadding: 4, textColor: [30, 30, 30] },
+        headStyles: { fillColor: [15, 15, 14], textColor: [200, 169, 110], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [250, 249, 246] },
+        columnStyles: { 0: { cellWidth: 22 }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' } },
+        didDrawPage: () => {
+          const H = doc.internal.pageSize.getHeight();
+          doc.setFontSize(7.5); doc.setTextColor(140, 140, 140);
+          doc.text('Ascentor · The Elevation Summit · Confidential', 36, H - 16);
+          doc.text(`Page ${doc.getNumberOfPages()}`, W - 36, H - 16, { align: 'right' });
+        },
+      });
+
+      doc.save(`elevation-summit-payments-${stamp.toISOString().slice(0, 10)}.pdf`);
+      setNote(`PDF downloaded with ${list.length} record${list.length === 1 ? '' : 's'}.`);
+    } catch (e) {
+      setNote((e as Error).message);
+    }
+    setExporting(false);
+  };
 
   const reconcile = async () => {
     setRunning(true); setNote(null);
@@ -140,31 +262,33 @@ export default function SummitPaymentsPage() {
     if (res.ok && action === 'verify') await load();
   };
 
-  const remove = async () => {
-    if (!open) return;
-    const isPaid = open.payment_state === 'paid';
+  const remove = async (target: Reg) => {
+    const isPaid = target.payment_state === 'paid';
     const yes = await confirmAction(
       isPaid
-        ? `Delete the PAID registration of ${open.full_name} (${naira(num(open.amount_paid))})? This permanently removes it and its revenue. Only do this for test data.`
-        : `Delete the registration of ${open.full_name}? Only do this for test data.`,
+        ? `Delete the PAID registration of ${target.full_name} (${naira(num(target.amount_paid))})? This permanently removes it and its revenue. Only do this for test data.`
+        : `Delete the registration of ${target.full_name}? Only do this for test data.`,
       { confirmLabel: 'Delete permanently', danger: true },
     );
     if (!yes) return;
     setBusy(true);
     const res = await fetch('/api/admin/payments', {
       method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind: 'summit_registration', id: open.id }),
+      body: JSON.stringify({ kind: 'summit_registration', id: target.id }),
     });
     const b = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) { setPanelMsg(b.error || 'Delete failed'); return; }
-    setOpen(null); setNote(`${open.full_name} deleted. Totals updated.`);
+    setOpen(null); setNote(`${target.full_name} deleted. Totals updated.`);
     await load();
   };
 
   const cell: React.CSSProperties = { padding: '10px 12px', verticalAlign: 'middle' };
   const lab: React.CSSProperties = { fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ledger-ink-soft)', margin: '0 0 3px' };
   const val: React.CSSProperties = { fontSize: 13.5, color: 'var(--ledger-ink)', margin: 0, wordBreak: 'break-word' };
+  const countFor = (k: StateFilter) =>
+    k === 'all' ? stats.total : k === 'paid' ? stats.paid : k === 'unpaid' ? stats.unpaid
+      : k === 'abandoned' ? stats.abandoned : k === 'not_started' ? stats.not_started : stats.in_progress;
 
   const Card = ({ title, value, sub, accent }: { title: string; value: string; sub?: string; accent?: string }) => (
     <div className="rounded-xl ledger-panel" style={{ padding: '12px 14px', borderTop: `3px solid ${accent ?? 'var(--ledger-line)'}` }}>
@@ -182,7 +306,11 @@ export default function SummitPaymentsPage() {
           <h1 className="ledger-h1" style={{ fontSize: 26, margin: '2px 0 0' }}>Summit Payments</h1>
           <p className="ledger-mono" style={{ fontSize: 12, margin: '4px 0 0' }}>Tickets only. Subscription payments are on a separate page.</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button type="button" className="ledger-btn ledger-btn-ghost" onClick={downloadPdf} disabled={exporting}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Download a PDF of the records matching the current search and filters">
+            <FileDown size={14} /> {exporting ? 'Preparing…' : 'Download PDF'}
+          </button>
           <button type="button" className="ledger-btn ledger-btn-ghost" onClick={load} disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
           </button>
@@ -194,29 +322,35 @@ export default function SummitPaymentsPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 14 }}>
-        <Card title="Paid tickets" value={String(paid.length)} sub={`${stats.physical} physical · ${stats.virtual} virtual`} accent="#177245" />
+        <Card title="Confirmed tickets" value={String(stats.paid)} sub={`${stats.physicalPaid} physical · ${stats.virtualPaid} virtual`} accent="#177245" />
         <Card title="Gross revenue" value={naira(stats.gross)} sub="what customers paid" accent="#C8A96E" />
-        <Card title="Paystack fees" value={naira(stats.fees)} sub={regs.some(r => r.paystack_fee != null) ? 'real + estimated' : 'estimated'} accent="#A32626" />
+        <Card title="Paystack fees" value={naira(stats.fees)} sub={stats.feesEstimated ? 'estimated' : 'from Paystack'} accent="#A32626" />
         <Card title="Net revenue" value={naira(stats.net)} sub="after Paystack fees" accent="#177245" />
-        <Card title="Not paid yet" value={String(unpaid.length)} sub={`${unpaid.filter(r => r.payment_state === 'abandoned').length} left at payment`} accent="#8A6A1F" />
+        <Card title="Pending" value={String(stats.unpaid)} sub={`${stats.abandoned} left at payment`} accent="#8A6A1F" />
       </div>
 
       {stats.unverified > 0 && (
         <div className="rounded-lg p-3 mb-3 text-xs" style={{ background: 'var(--ledger-bad-bg)', color: 'var(--ledger-bad)' }}>
-          {stats.unverified} paid ticket{stats.unverified === 1 ? ' has' : 's have'} no Paystack transaction id. That means it was not confirmed by a real payment. Open it to check.
+          {stats.unverified} confirmed ticket{stats.unverified === 1 ? ' has' : 's have'} no Paystack transaction id, so {stats.unverified === 1 ? 'it was' : 'they were'} not confirmed by a real payment. Open {stats.unverified === 1 ? 'it' : 'them'} to check.
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
-        {([['paid', `Paid (${paid.length})`], ['unpaid', `Not paid (${unpaid.length})`], ['all', `Everyone (${regs.length})`]] as const).map(([k, l]) => (
-          <button key={k} type="button" aria-pressed={tab === k} onClick={() => setTab(k)}
-            className={`ledger-btn ${tab === k ? 'ledger-btn-primary' : 'ledger-btn-ghost'}`}>{l}</button>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+        {STATE_FILTERS.map(f => (
+          <button key={f.key} type="button" aria-pressed={stateFilter === f.key} onClick={() => setStateFilter(f.key)}
+            className={`ledger-btn ${stateFilter === f.key ? 'ledger-btn-primary' : 'ledger-btn-ghost'}`}>
+            {f.label} ({countFor(f.key)})
+          </button>
         ))}
-        <span style={{ width: 8 }} />
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
         {([['all', 'Physical + Virtual'], ['onsite', 'Physical'], ['virtual', 'Virtual']] as const).map(([k, l]) => (
           <button key={k} type="button" aria-pressed={type === k} onClick={() => setType(k)}
             className={`ledger-btn ${type === k ? 'ledger-btn-primary' : 'ledger-btn-ghost'}`}>{l}</button>
         ))}
+        <span className="ledger-mono" style={{ fontSize: 12, marginLeft: 6 }}>
+          {loading ? 'Searching…' : `${total} record${total === 1 ? '' : 's'}${debounced ? ` matching "${debounced}"` : ''}`}
+        </span>
       </div>
 
       {note && <p className="ledger-mono" style={{ fontSize: 12, marginBottom: 10 }}>{note}</p>}
@@ -227,17 +361,17 @@ export default function SummitPaymentsPage() {
           <thead>
             <tr style={{ textAlign: 'left', color: 'var(--ledger-ink-soft)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               <th style={{ ...cell, fontWeight: 600, borderBottom: '1px solid var(--ledger-line)' }}>Person</th>
-              <th style={{ ...cell, fontWeight: 600, borderBottom: '1px solid var(--ledger-line)', width: 110 }}>Ticket</th>
+              <th style={{ ...cell, fontWeight: 600, borderBottom: '1px solid var(--ledger-line)', width: 100 }}>Ticket</th>
               <th style={{ ...cell, fontWeight: 600, borderBottom: '1px solid var(--ledger-line)', width: 150 }}>Status</th>
-              <th style={{ ...cell, fontWeight: 600, borderBottom: '1px solid var(--ledger-line)', width: 110 }}>{tab === 'paid' ? 'Paid' : 'Registered'}</th>
+              <th style={{ ...cell, fontWeight: 600, borderBottom: '1px solid var(--ledger-line)', width: 110 }}>Date</th>
             </tr>
           </thead>
           <tbody>
             {loading && regs.length === 0 ? (
               <tr><td colSpan={4} className="ledger-mono" style={{ padding: 28, textAlign: 'center' }}>Loading…</td></tr>
-            ) : rows.length === 0 ? (
-              <tr><td colSpan={4} className="ledger-mono" style={{ padding: 28, textAlign: 'center' }}>Nobody here.</td></tr>
-            ) : rows.map(r => {
+            ) : regs.length === 0 ? (
+              <tr><td colSpan={4} className="ledger-mono" style={{ padding: 28, textAlign: 'center' }}>Nobody matches.</td></tr>
+            ) : regs.map(r => {
               const st = STATE[r.payment_state];
               return (
                 <tr key={r.id} onClick={() => { setOpen(r); setPanelMsg(null); }} className="hover:bg-black/5"
@@ -256,13 +390,23 @@ export default function SummitPaymentsPage() {
                       <div style={{ color: 'var(--ledger-bad)', fontSize: 10.5, marginTop: 3 }}>no Paystack id</div>
                     )}
                   </td>
-                  <td style={{ ...cell, color: 'var(--ledger-ink-soft)', whiteSpace: 'nowrap' }}>{when(tab === 'paid' ? r.paid_at : r.created_at)}</td>
+                  <td style={{ ...cell, color: 'var(--ledger-ink-soft)', whiteSpace: 'nowrap' }}>{when(r.payment_state === 'paid' ? r.paid_at : r.created_at)}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      {pages > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 12 }}>
+          <button type="button" className="ledger-btn ledger-btn-ghost" disabled={page <= 1 || loading} onClick={() => setPage(p => Math.max(1, p - 1))}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><ChevronLeft size={14} /> Prev</button>
+          <span className="ledger-mono" style={{ fontSize: 12 }}>Page {page} of {pages}</span>
+          <button type="button" className="ledger-btn ledger-btn-ghost" disabled={page >= pages || loading} onClick={() => setPage(p => Math.min(pages, p + 1))}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>Next <ChevronRight size={14} /></button>
+        </div>
+      )}
 
       {open && <div onClick={() => setOpen(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 60 }} aria-hidden />}
       <aside role="dialog" aria-label="Registration details" aria-hidden={!open}
@@ -341,16 +485,16 @@ export default function SummitPaymentsPage() {
                 <div style={{ display: 'grid', gap: 8, marginTop: 6 }}>
                   {isPaid ? (
                     <button type="button" disabled={busy} onClick={() => act('resend')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
-                      <Mail size={14} /> {busy ? 'Sending…' : 'Send confirmation email + ticket'}
+                      <Mail size={14} /> {busy ? 'Sending…' : 'Resend confirmation email + ticket'}
                     </button>
                   ) : (
                     <button type="button" disabled={busy} onClick={() => act('verify')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
                       <ShieldCheck size={14} /> {busy ? 'Checking…' : 'Check Paystack for this person'}
                     </button>
                   )}
-                  <button type="button" disabled={busy} onClick={remove} className="ledger-btn ledger-btn-ghost"
+                  <button type="button" disabled={busy} onClick={() => remove(open)} className="ledger-btn ledger-btn-ghost"
                     style={{ color: 'var(--ledger-bad)', display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
-                    <Trash2 size={14} /> Delete (test data)
+                    <Trash2 size={14} /> Delete record
                   </button>
                 </div>
               </div>
