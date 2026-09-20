@@ -6,9 +6,10 @@
 // Compact 4-column layout: it never needs a horizontal scrollbar.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshCw, RotateCw, X, Trash2, Copy, ShieldCheck, Mail } from 'lucide-react';
+import { RefreshCw, RotateCw, Trash2, Copy, ShieldCheck, Mail } from 'lucide-react';
 import { usePageSearch } from '@/components/shell/PageSearch';
 import { confirmAction } from '@/components/Modal';
+import OffCanvas from '@/components/admin/OffCanvas';
 
 interface Attempt {
   reference: string;
@@ -394,29 +395,45 @@ export default function AdminPaymentsPage() {
         </table>
       </div>
 
-      {/* ── Off-canvas ─────────────────────────────────────────────────── */}
-      {panelOpen && (
-        <div onClick={closePanel} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 60 }} aria-hidden />
-      )}
-      <aside
-        role="dialog" aria-label="Payment details" aria-hidden={!panelOpen}
-        style={{
-          position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(420px, 100vw)', zIndex: 61,
-          background: 'var(--ledger-panel, #fff)', borderLeft: '1px solid var(--ledger-line)',
-          boxShadow: '-12px 0 40px rgba(0,0,0,0.18)', overflowY: 'auto',
-          transform: panelOpen ? 'translateX(0)' : 'translateX(100%)', transition: 'transform .25s ease',
-          padding: 20,
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-          <h2 className="ledger-h1" style={{ fontSize: 18, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* ── Off-canvas (portal: see components/admin/OffCanvas.tsx) ───── */}
+      <OffCanvas
+        open={panelOpen}
+        onClose={closePanel}
+        title={
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             {openLedger ? 'Paid item' : 'Payment details'}
             {openLedger && <KindBadge kind={openLedger.source} />}
             {att && <KindBadge kind={att.kind} />}
-          </h2>
-          <button type="button" onClick={closePanel} aria-label="Close" className="ledger-btn ledger-btn-ghost" style={{ padding: 6 }}><X size={16} /></button>
-        </div>
-
+          </span>
+        }
+        footer={
+          openLedger ? (
+            <button type="button" disabled={busy} onClick={() => deleteLedgerItem(openLedger)} className="ledger-btn ledger-btn-ghost"
+              style={{ color: 'var(--ledger-bad)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Trash2 size={14} /> Delete (test data)
+            </button>
+          ) : att ? (
+            <>
+              {!isPaid && (
+                <button type="button" disabled={busy} onClick={() => runAction('verify')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <ShieldCheck size={14} /> {busy ? 'Checking…' : 'Verify with Paystack'}
+                </button>
+              )}
+              {att.kind === 'summit' && (att.status === 'success' || reg?.payment_status === 'paid') && (
+                <button type="button" disabled={busy} onClick={() => runAction('resend')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <Mail size={14} /> {busy ? 'Sending…' : 'Send confirmation email + ticket'}
+                </button>
+              )}
+              {UNPAID.includes(att.status) && (
+                <button type="button" disabled={busy} onClick={() => deleteAttempt(att.reference)} className="ledger-btn ledger-btn-ghost"
+                  style={{ color: 'var(--ledger-bad)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <Trash2 size={14} /> Delete (test payment)
+                </button>
+              )}
+            </>
+          ) : null
+        }
+      >
         {panelMsg && (
           <p className="ledger-mono" style={{ fontSize: 12, padding: '9px 12px', borderRadius: 8, background: 'var(--ledger-gold-bg)', margin: '0 0 16px' }}>{panelMsg}</p>
         )}
@@ -433,10 +450,6 @@ export default function AdminPaymentsPage() {
               <p style={label}>Confirmed at Paystack</p>
               <p style={val}>{openLedger.verified_at_paystack ? 'Yes, a Paystack transaction id is recorded.' : 'No transaction id on record. This may be a test or manual entry.'}</p>
             </div>
-            <button type="button" disabled={busy} onClick={() => deleteLedgerItem(openLedger)} className="ledger-btn ledger-btn-ghost"
-              style={{ color: 'var(--ledger-bad)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <Trash2 size={14} /> Delete (test data)
-            </button>
           </div>
         )}
 
@@ -496,29 +509,9 @@ export default function AdminPaymentsPage() {
               </p>
             </div>
 
-            <div style={{ display: 'grid', gap: 8, marginTop: 6 }}>
-              {!isPaid && (
-                <button type="button" disabled={busy} onClick={() => runAction('verify')} className="ledger-btn ledger-btn-primary"
-                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  <ShieldCheck size={14} /> {busy ? 'Checking…' : 'Verify with Paystack'}
-                </button>
-              )}
-              {att.kind === 'summit' && (att.status === 'success' || reg?.payment_status === 'paid') && (
-                <button type="button" disabled={busy} onClick={() => runAction('resend')} className="ledger-btn ledger-btn-primary"
-                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  <Mail size={14} /> {busy ? 'Sending…' : 'Send confirmation email + ticket'}
-                </button>
-              )}
-              {UNPAID.includes(att.status) && (
-                <button type="button" disabled={busy} onClick={() => deleteAttempt(att.reference)} className="ledger-btn ledger-btn-ghost"
-                  style={{ color: 'var(--ledger-bad)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  <Trash2 size={14} /> Delete (test payment)
-                </button>
-              )}
-            </div>
           </div>
         ))}
-      </aside>
+      </OffCanvas>
     </div>
   );
 }

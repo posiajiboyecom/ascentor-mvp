@@ -9,6 +9,20 @@
      app   -> app tokens  (--app-*)
    ───────────────────────────────────────────────────────────────────────────── */
 
+/* ── Layer order (z-index) for the whole admin/app shell ──────────────────────
+     40   sticky header (.sh-header)
+     55   mobile drawer scrim
+     60   sidebar
+     70   Sage floating orb
+     80   avatar menu
+     100  off-canvas backdrop  ┐ components/admin/OffCanvas.tsx (portalled to <body>
+     101  off-canvas panel     ┘ so page transforms cannot trap it)
+     120  search palette (Ctrl/Cmd+K)
+     9999 confirmation dialogs / modals (components/Modal.tsx)
+   Rule: anything `position: fixed` that must cover the screen is portalled to
+   <body>. Never render one inside a page wrapper: `.animate-fade-up` leaves a
+   `transform` on it, which turns `fixed` into "fixed relative to the wrapper". */
+
 .sh-root[data-variant='admin'] {
   --sh-bg:         var(--ledger-bg-deep);
   --sh-bg-2:       var(--ledger-bg);

@@ -13,12 +13,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  RefreshCw, RotateCw, X, Trash2, Copy, ShieldCheck, Mail, Phone, MessageCircle,
+  RefreshCw, RotateCw, Trash2, Copy, ShieldCheck, Mail, Phone, MessageCircle,
   FileDown, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { usePageSearch } from '@/components/shell/PageSearch';
 import { confirmAction } from '@/components/Modal';
+import OffCanvas from '@/components/admin/OffCanvas';
 
 type PayState = 'paid' | 'in_progress' | 'abandoned' | 'not_started';
 type StateFilter = 'all' | 'paid' | 'unpaid' | 'abandoned' | 'not_started' | 'in_progress';
@@ -408,100 +409,93 @@ export default function SummitPaymentsPage() {
         </div>
       )}
 
-      {open && <div onClick={() => setOpen(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 60 }} aria-hidden />}
-      <aside role="dialog" aria-label="Registration details" aria-hidden={!open}
-        style={{
-          position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(420px, 100vw)', zIndex: 61,
-          background: 'var(--ledger-panel, #fff)', borderLeft: '1px solid var(--ledger-line)', boxShadow: '-12px 0 40px rgba(0,0,0,0.18)',
-          overflowY: 'auto', transform: open ? 'translateX(0)' : 'translateX(100%)', transition: 'transform .25s ease', padding: 20,
-        }}>
+      <OffCanvas
+        open={!!open}
+        onClose={() => setOpen(null)}
+        title={open?.full_name ?? ''}
+        subtitle={open ? `${open.attendance_type === 'virtual' ? 'Virtual' : 'Physical'} ticket · registered ${when(open.created_at)}` : undefined}
+        footer={open ? (
+          <>
+            {open.payment_state === 'paid' ? (
+              <button type="button" disabled={busy} onClick={() => act('resend')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+                <Mail size={14} /> {busy ? 'Sending…' : 'Resend confirmation email + ticket'}
+              </button>
+            ) : (
+              <button type="button" disabled={busy} onClick={() => act('verify')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+                <ShieldCheck size={14} /> {busy ? 'Checking…' : 'Check Paystack for this person'}
+              </button>
+            )}
+            <button type="button" disabled={busy} onClick={() => remove(open)} className="ledger-btn ledger-btn-ghost"
+              style={{ color: 'var(--ledger-bad)', display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+              <Trash2 size={14} /> Delete record
+            </button>
+          </>
+        ) : null}
+      >
         {open && (() => {
           const st = STATE[open.payment_state];
           const isPaid = open.payment_state === 'paid';
           return (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h2 className="ledger-h1" style={{ fontSize: 18, margin: 0 }}>{open.full_name}</h2>
-                <button type="button" onClick={() => setOpen(null)} aria-label="Close" className="ledger-btn ledger-btn-ghost" style={{ padding: 6 }}><X size={16} /></button>
+            <div style={{ display: 'grid', gap: 14 }}>
+              {panelMsg && <p className="ledger-mono" style={{ fontSize: 12, padding: '9px 12px', borderRadius: 8, background: 'var(--ledger-gold-bg)', margin: 0 }}>{panelMsg}</p>}
+
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <span style={{ background: st.bg, color: st.fg, padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600 }}>{st.label}</span>
+                {isPaid && <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--ledger-ink)' }}>{naira(num(open.amount_paid))}</span>}
               </div>
-              {panelMsg && <p className="ledger-mono" style={{ fontSize: 12, padding: '9px 12px', borderRadius: 8, background: 'var(--ledger-gold-bg)', margin: '0 0 14px' }}>{panelMsg}</p>}
 
-              <div style={{ display: 'grid', gap: 14 }}>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <span style={{ background: st.bg, color: st.fg, padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600 }}>{st.label}</span>
-                  {isPaid && <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--ledger-ink)' }}>{naira(num(open.amount_paid))}</span>}
-                </div>
+              <div><p style={lab}>Email</p><p style={val}>{open.email}</p></div>
+              <div>
+                <p style={lab}>Phone</p>
+                {open.whatsapp ? (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <p style={val}>{open.whatsapp}</p>
+                    <a href={`tel:${open.whatsapp}`} className="ledger-btn ledger-btn-ghost" style={{ display: 'inline-flex', gap: 5, alignItems: 'center', padding: '4px 9px' }}><Phone size={13} /> Call</a>
+                    <a href={waLink(open.whatsapp)} target="_blank" rel="noopener noreferrer" className="ledger-btn ledger-btn-ghost" style={{ display: 'inline-flex', gap: 5, alignItems: 'center', padding: '4px 9px' }}><MessageCircle size={13} /> WhatsApp</a>
+                  </div>
+                ) : <p style={{ ...val, color: 'var(--ledger-bad)' }}>not captured</p>}
+              </div>
+              <div><p style={lab}>Company / role</p><p style={val}>{[open.organisation, open.current_role].filter(Boolean).join(' · ') || '-'}</p></div>
+              <div><p style={lab}>Location</p><p style={val}>{open.location || '-'}</p></div>
+              <div><p style={lab}>Registered via</p><p style={val}>{open.source ?? 'web'}</p></div>
 
-                <div><p style={lab}>Email</p><p style={val}>{open.email}</p></div>
-                <div>
-                  <p style={lab}>Phone</p>
-                  {open.whatsapp ? (
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <p style={val}>{open.whatsapp}</p>
-                      <a href={`tel:${open.whatsapp}`} className="ledger-btn ledger-btn-ghost" style={{ display: 'inline-flex', gap: 5, alignItems: 'center', padding: '4px 9px' }}><Phone size={13} /> Call</a>
-                      <a href={waLink(open.whatsapp)} target="_blank" rel="noopener noreferrer" className="ledger-btn ledger-btn-ghost" style={{ display: 'inline-flex', gap: 5, alignItems: 'center', padding: '4px 9px' }}><MessageCircle size={13} /> WhatsApp</a>
-                    </div>
-                  ) : <p style={{ ...val, color: 'var(--ledger-bad)' }}>not captured</p>}
-                </div>
-                <div><p style={lab}>Ticket</p><p style={val}>{open.attendance_type === 'virtual' ? 'Virtual' : 'Physical (Onsite, Lagos)'}</p></div>
-                <div><p style={lab}>Company / role</p><p style={val}>{[open.organisation, open.current_role].filter(Boolean).join(' · ') || '-'}</p></div>
-                <div><p style={lab}>Location</p><p style={val}>{open.location || '-'}</p></div>
-                <div><p style={lab}>Registered</p><p style={val}>{when(open.created_at)} · via {open.source ?? 'web'}</p></div>
-
-                {isPaid ? (
-                  <>
-                    <div><p style={lab}>Paid</p><p style={val}>{when(open.paid_at)}</p></div>
-                    <div><p style={lab}>Paystack fee</p><p style={val}>{naira(feeOf(open))}{open.paystack_fee == null ? ' (estimated)' : ''} · net {naira(num(open.amount_paid) - feeOf(open))}</p></div>
-                    <div>
-                      <p style={lab}>Paystack transaction</p>
-                      <p style={{ ...val, color: open.payment_provider_tx_id ? undefined : 'var(--ledger-bad)' }}>
-                        {open.payment_provider_tx_id ? `#${open.payment_provider_tx_id}` : 'None recorded. Not confirmed by a real payment.'}
-                      </p>
-                    </div>
-                    <div>
-                      <p style={lab}>Confirmation email + ticket</p>
-                      <p style={val}>
-                        {open.confirmation_email_sent_at ? `Sent ${when(open.confirmation_email_sent_at)}`
-                          : open.confirmation_email_error ? `FAILED: ${open.confirmation_email_error}`
-                          : 'No delivery record. Send it again if the customer did not get it.'}
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <div><p style={lab}>Payment attempts</p><p style={val}>{open.attempt_count === 0 ? 'Never reached the payment step.' : `${open.attempt_count} started, none completed.`}</p></div>
-                )}
-
-                {open.payment_reference && (
+              {isPaid ? (
+                <>
+                  <div><p style={lab}>Paid</p><p style={val}>{when(open.paid_at)}</p></div>
+                  <div><p style={lab}>Paystack fee</p><p style={val}>{naira(feeOf(open))}{open.paystack_fee == null ? ' (estimated)' : ''} · net {naira(num(open.amount_paid) - feeOf(open))}</p></div>
                   <div>
-                    <p style={lab}>Reference</p>
-                    <p style={{ ...val, fontFamily: 'var(--ledger-font-mono, monospace)', fontSize: 12 }}>
-                      {open.payment_reference}{' '}
-                      <button type="button" aria-label="Copy reference" onClick={() => navigator.clipboard?.writeText(open.payment_reference!)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ledger-ink-soft)', verticalAlign: 'middle' }}><Copy size={13} /></button>
+                    <p style={lab}>Paystack transaction</p>
+                    <p style={{ ...val, color: open.payment_provider_tx_id ? undefined : 'var(--ledger-bad)' }}>
+                      {open.payment_provider_tx_id ? `#${open.payment_provider_tx_id}` : 'None recorded. Not confirmed by a real payment.'}
                     </p>
                   </div>
-                )}
+                  <div>
+                    <p style={lab}>Confirmation email + ticket</p>
+                    <p style={val}>
+                      {open.confirmation_email_sent_at ? `Sent ${when(open.confirmation_email_sent_at)}`
+                        : open.confirmation_email_error ? `FAILED: ${open.confirmation_email_error}`
+                        : 'No delivery record. Resend it if the customer did not get it.'}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div><p style={lab}>Payment attempts</p><p style={val}>{open.attempt_count === 0 ? 'Never reached the payment step.' : `${open.attempt_count} started, none completed.`}</p></div>
+              )}
 
-                <div style={{ display: 'grid', gap: 8, marginTop: 6 }}>
-                  {isPaid ? (
-                    <button type="button" disabled={busy} onClick={() => act('resend')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
-                      <Mail size={14} /> {busy ? 'Sending…' : 'Resend confirmation email + ticket'}
-                    </button>
-                  ) : (
-                    <button type="button" disabled={busy} onClick={() => act('verify')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
-                      <ShieldCheck size={14} /> {busy ? 'Checking…' : 'Check Paystack for this person'}
-                    </button>
-                  )}
-                  <button type="button" disabled={busy} onClick={() => remove(open)} className="ledger-btn ledger-btn-ghost"
-                    style={{ color: 'var(--ledger-bad)', display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
-                    <Trash2 size={14} /> Delete record
-                  </button>
+              {open.payment_reference && (
+                <div>
+                  <p style={lab}>Reference</p>
+                  <p style={{ ...val, fontFamily: 'var(--ledger-font-mono, monospace)', fontSize: 12 }}>
+                    {open.payment_reference}{' '}
+                    <button type="button" aria-label="Copy reference" onClick={() => navigator.clipboard?.writeText(open.payment_reference!)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ledger-ink-soft)', verticalAlign: 'middle' }}><Copy size={13} /></button>
+                  </p>
                 </div>
-              </div>
-            </>
+              )}
+            </div>
           );
         })()}
-      </aside>
+      </OffCanvas>
     </div>
   );
 }
