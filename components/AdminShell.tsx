@@ -48,7 +48,8 @@ const NAV_GROUPS: Group[] = [
   {
     label: 'Revenue',
     items: [
-      { href: '/admin/payments',    label: 'Payments',      icon: <CreditCard />, permission: 'payments.view' },
+      { href: '/admin/summit-payments', label: 'Summit Payments', icon: <Ticket />,     permission: 'payments.view' },
+      { href: '/admin/payments',    label: 'Subscription Payments', icon: <CreditCard />, permission: 'payments.view' },
       { href: '/admin/promo-codes', label: 'Promo Codes',   icon: <Tag /> },
       { href: '/admin/products',    label: 'Products',      icon: <Package /> },
       { href: '/admin/billboards',  label: 'Rail Billboards', icon: <Megaphone /> },

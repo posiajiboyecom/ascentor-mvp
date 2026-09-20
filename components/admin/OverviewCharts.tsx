@@ -17,7 +17,7 @@ interface Analytics {
   kpis: {
     totalUsers: number; newUsers7d: number; newUsers30d: number;
     sessions7d: number; sessions30d: number; activeSubs: number;
-    mrr: number | null; revenue30d: number | null; revenueSummit30d?: number | null; revenueSubscription30d?: number | null; completionRate: number | null;
+    mrr: number | null; revenue30d: number | null; revenueSummit30d?: number | null; revenueSubscription30d?: number | null; summitPaidCount?: number | null; completionRate: number | null;
   };
   series: { date: string; signups: number; sessions: number; subscriptions: number; summit: number }[];
   plans: { plan: string; count: number }[];
@@ -186,15 +186,18 @@ export default function OverviewCharts() {
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         <Kpi label="Total users" value={kpis.totalUsers.toLocaleString()} sub={`+${kpis.newUsers7d} this week`}
              color={C.info} spark={series} sparkKey="signups" />
         <Kpi label="Active subscribers" value={kpis.activeSubs.toLocaleString()} sub="paid + trialing" color={C.gold} />
         {canRevenue && (
           <>
             <Kpi label="MRR (est.)" value={nairaCompact(kpis.mrr ?? 0)} sub="excludes promo / manual" color={C.good} />
-            <Kpi label="Revenue, 30 days" value={nairaCompact(kpis.revenue30d ?? 0)} sub={`Summit ${nairaCompact(kpis.revenueSummit30d ?? 0)} · Plans ${nairaCompact(kpis.revenueSubscription30d ?? 0)}`}
+            <Kpi label="Subscription revenue, 30d" value={nairaCompact(kpis.revenueSubscription30d ?? 0)} sub="plans only (no Summit)"
                  color={C.good} spark={series} sparkKey="revenue" />
+            <a href="/admin/summit-payments" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Kpi label="Summit tickets, 30d" value={naira(kpis.revenueSummit30d ?? 0)} sub={`${kpis.summitPaidCount ?? 0} paid · click to manage`} color={C.gold} />
+            </a>
             <Kpi label="Checkout completion" value={kpis.completionRate == null ? '-' : `${kpis.completionRate}%`}
                  sub={funnel ? `${funnel.abandoned} abandoned` : undefined}
                  color={kpis.completionRate != null && kpis.completionRate < 60 ? C.gold : C.good} />

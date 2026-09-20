@@ -81,7 +81,7 @@ export default function AdminPaymentsPage() {
   const [rows, setRows] = useState<Attempt[]>([]);
   const [ledger, setLedger] = useState<LedgerItem[]>([]);
   const [status, setStatus] = useState<StatusFilter>('all');
-  const [kindFilter, setKindFilter] = useState<KindFilter>('all');
+  const [kindFilter, setKindFilter] = useState<KindFilter>('subscription');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
@@ -258,7 +258,10 @@ export default function AdminPaymentsPage() {
     <div className="animate-fade-up">
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
-          <h1 className="ledger-h1" style={{ fontSize: 26, margin: 0 }}>Payments</h1>
+          <h1 className="ledger-h1" style={{ fontSize: 26, margin: 0 }}>Subscription Payments</h1>
+          <p className="ledger-mono" style={{ fontSize: 12, margin: '4px 0 0' }}>
+            Elevation Summit tickets are managed on <a href="/admin/summit-payments" style={{ color: '#8A6A1F', textDecoration: 'underline' }}>Summit Payments</a>.
+          </p>
           <p className="ledger-mono" style={{ fontSize: 12, margin: '4px 0 0' }}>
             {view === 'ledger'
               ? `${filteredLedger.length} paid items · ${naira(ledgerTotal)} counted as revenue`

@@ -119,6 +119,7 @@ export async function GET() {
       revenue30d:     canRevenue ? Math.round(sum('subscriptions') + sum('summit')) : null,
       revenueSummit30d:       canRevenue ? Math.round(sum('summit')) : null,
       revenueSubscription30d: canRevenue ? Math.round(sum('subscriptions')) : null,
+      summitPaidCount:        canRevenue ? (summitPaid.data ?? []).length : null,
       completionRate: canRevenue && settled ? Math.round((funnel.completed / settled) * 100) : null,
     },
     series: days.map(d => ({
