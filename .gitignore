@@ -33,3 +33,6 @@ Thumbs.db
 supabase/.temp/
 *.tsbuildinfo
 .vercel
+
+# Prisma generated client
+/generated/prisma

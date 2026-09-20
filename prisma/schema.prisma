@@ -1,0 +1,19 @@
+// Prisma schema for the Supabase Postgres database.
+//
+// The real tables are created and owned by the SQL files in database/migrations.
+// This schema is filled in by INTROSPECTION, never hand-migrated:
+//
+//   npm run db:pull       read the live database into this file
+//   npm run db:generate   generate the typed client into generated/prisma
+//
+// Do NOT run `prisma migrate` or `prisma db push` against production; they would
+// try to reshape a database that Supabase and the SQL migrations manage.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
