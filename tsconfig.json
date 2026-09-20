@@ -41,6 +41,7 @@
     "supabase",
     "generated",
     "prisma.config.ts",
-    "scripts/db.ts"
+    "scripts/db.ts",
+    "scripts/backfill-paystack-fees.ts"
   ]
 }
