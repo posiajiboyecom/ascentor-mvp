@@ -55,6 +55,21 @@ const STATUS_STYLE: Record<Attempt['status'], { bg: string; fg: string; label: s
   duplicate: { bg: 'var(--ledger-bad-bg)', fg: 'var(--ledger-bad)', label: 'Duplicate' },
 };
 
+// Two completely different money streams. Never mix them visually.
+const KIND = {
+  summit:       { label: 'Summit ticket', short: 'SUMMIT', bg: 'rgba(200,169,110,.18)', fg: '#8A6A1F', bar: '#C8A96E' },
+  subscription: { label: 'Subscription',  short: 'PLAN',   bg: 'rgba(60,120,220,.14)',  fg: '#2453A6', bar: '#3C78DC' },
+} as const;
+type KindKey = keyof typeof KIND;
+type KindFilter = 'all' | KindKey;
+
+function KindBadge({ kind }: { kind: KindKey }) {
+  const k = KIND[kind] ?? KIND.subscription;
+  return (
+    <span style={{ background: k.bg, color: k.fg, padding: '2px 7px', borderRadius: 6, fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{k.short}</span>
+  );
+}
+
 const nairaKobo = (kobo: number | null) => `₦${Math.round((kobo ?? 0) / 100).toLocaleString('en-NG')}`;
 const naira = (n: number) => `₦${Math.round(n).toLocaleString('en-NG')}`;
 const when = (iso: string | null | undefined) =>
@@ -66,6 +81,7 @@ export default function AdminPaymentsPage() {
   const [rows, setRows] = useState<Attempt[]>([]);
   const [ledger, setLedger] = useState<LedgerItem[]>([]);
   const [status, setStatus] = useState<StatusFilter>('all');
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
@@ -82,19 +98,23 @@ export default function AdminPaymentsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const url = view === 'ledger' ? '/api/admin/payments?ledger=1' : `/api/admin/payments?list=1&status=${status}`;
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(res.status === 403 ? 'You do not have access to payments' : 'Could not load payments');
-      const body = await res.json();
-      if (view === 'ledger') setLedger(body.items ?? []);
-      else setRows(body.attempts ?? []);
+      // The ledger always loads: it feeds the Summit / Subscription totals above the table.
+      const listUrl = `/api/admin/payments?list=1&status=${status}&kind=${kindFilter}`;
+      const [ledgerRes, listRes] = await Promise.all([
+        fetch('/api/admin/payments?ledger=1', { cache: 'no-store' }),
+        view === 'checkouts' ? fetch(listUrl, { cache: 'no-store' }) : Promise.resolve(null),
+      ]);
+      const bad = [ledgerRes, listRes].find(r => r && !r.ok);
+      if (bad) throw new Error(bad.status === 403 ? 'You do not have access to payments' : 'Could not load payments');
+      setLedger((await ledgerRes.json()).items ?? []);
+      if (listRes) setRows((await listRes.json()).attempts ?? []);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoading(false);
     }
-  }, [status, view]);
+  }, [status, view, kindFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -206,8 +226,9 @@ export default function AdminPaymentsPage() {
 
   const filteredLedger = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return ledger;
-    return ledger.filter(i => (i.email ?? '').toLowerCase().includes(q) || (i.name ?? '').toLowerCase().includes(q) || (i.reference ?? '').toLowerCase().includes(q));
+    const base = kindFilter === 'all' ? ledger : ledger.filter(i => i.source === kindFilter);
+    if (!q) return base;
+    return base.filter(i => (i.email ?? '').toLowerCase().includes(q) || (i.name ?? '').toLowerCase().includes(q) || (i.reference ?? '').toLowerCase().includes(q));
   }, [ledger, query]);
 
   const totals = useMemo(() => {
@@ -220,6 +241,8 @@ export default function AdminPaymentsPage() {
   }, [filtered]);
 
   const ledgerTotal = filteredLedger.reduce((t, i) => t + i.amount, 0);
+  const ledgerSummit = ledger.filter(i => i.source === 'summit').reduce((t, i) => t + i.amount, 0);
+  const ledgerSub = ledger.filter(i => i.source === 'subscription').reduce((t, i) => t + i.amount, 0);
   const unpaidListed = filtered.filter(r => UNPAID.includes(r.status)).length;
 
   const panelOpen = !!openRef || !!openLedger;
@@ -260,6 +283,30 @@ export default function AdminPaymentsPage() {
           <button key={k} type="button" role="tab" aria-selected={view === k} onClick={() => setView(k)}
             className={`ledger-btn ${view === k ? 'ledger-btn-primary' : 'ledger-btn-ghost'}`}>{l}</button>
         ))}
+      </div>
+
+      {/* Summit tickets and subscriptions are separate revenue streams */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
+        {(['summit', 'subscription'] as KindKey[]).map(k => {
+          const active = kindFilter === k;
+          return (
+            <button key={k} type="button" aria-pressed={active}
+              onClick={() => setKindFilter(active ? 'all' : k)}
+              className="rounded-xl ledger-panel"
+              style={{ textAlign: 'left', padding: '12px 14px', cursor: 'pointer', borderLeft: `4px solid ${KIND[k].bar}`, outline: active ? `2px solid ${KIND[k].bar}` : 'none', background: 'var(--ledger-panel, #fff)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <KindBadge kind={k} />
+                <span style={{ fontSize: 12, color: 'var(--ledger-ink-soft)' }}>{k === 'summit' ? 'Elevation Summit tickets' : 'Plan subscriptions'}</span>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--ledger-ink)', marginTop: 6 }}>
+                {naira(k === 'summit' ? ledgerSummit : ledgerSub)}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ledger-ink-soft)' }}>
+                paid · {ledger.filter(i => i.source === k).length} item{ledger.filter(i => i.source === k).length === 1 ? '' : 's'}{active ? ' · filtered' : ' · click to filter'}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {view === 'checkouts' && (
@@ -312,12 +359,12 @@ export default function AdminPaymentsPage() {
               ) : filteredLedger.map(i => (
                 <tr key={`${i.source}-${i.id}`} onClick={() => { setOpenLedger(i); setOpenRef(null); setPanelMsg(null); }}
                   style={{ borderTop: '1px solid var(--ledger-line)', cursor: 'pointer' }} className="hover:bg-black/5">
-                  <td style={{ ...cell, overflow: 'hidden' }}>
+                  <td style={{ ...cell, overflow: 'hidden', borderLeft: `4px solid ${KIND[i.source].bar}` }}>
                     <div style={{ color: 'var(--ledger-ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.name ?? i.email ?? '-'}</div>
                     <div style={{ color: 'var(--ledger-ink-soft)', fontSize: 11.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.name ? i.email : i.detail}</div>
                   </td>
                   <td style={{ ...cell, fontWeight: 600, color: 'var(--ledger-ink)', whiteSpace: 'nowrap' }}>{naira(i.amount)}</td>
-                  <td style={{ ...cell, color: 'var(--ledger-ink-soft)', textTransform: 'capitalize' }}>{i.source}</td>
+                  <td style={cell}><KindBadge kind={i.source} /></td>
                   <td style={{ ...cell, color: 'var(--ledger-ink-soft)', whiteSpace: 'nowrap' }}>{when(i.paid_at)}</td>
                 </tr>
               ))
@@ -328,9 +375,9 @@ export default function AdminPaymentsPage() {
               return (
                 <tr key={r.reference} onClick={() => { setOpenRef(r.reference); setOpenLedger(null); }}
                   style={{ borderTop: '1px solid var(--ledger-line)', cursor: 'pointer' }} className="hover:bg-black/5">
-                  <td style={{ ...cell, overflow: 'hidden' }}>
+                  <td style={{ ...cell, overflow: 'hidden', borderLeft: `4px solid ${KIND[r.kind]?.bar ?? '#999'}` }}>
                     <div style={{ color: 'var(--ledger-ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.email ?? '-'}</div>
-                    <div style={{ color: 'var(--ledger-ink-soft)', fontSize: 11.5, textTransform: 'capitalize' }}>{r.kind}</div>
+                    <div style={{ marginTop: 3 }}><KindBadge kind={r.kind} /></div>
                   </td>
                   <td style={{ ...cell, fontWeight: 600, color: 'var(--ledger-ink)', whiteSpace: 'nowrap' }}>{nairaKobo(r.amount_kobo)}</td>
                   <td style={cell}>
@@ -359,7 +406,11 @@ export default function AdminPaymentsPage() {
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-          <h2 className="ledger-h1" style={{ fontSize: 18, margin: 0 }}>{openLedger ? 'Paid item' : 'Payment details'}</h2>
+          <h2 className="ledger-h1" style={{ fontSize: 18, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            {openLedger ? 'Paid item' : 'Payment details'}
+            {openLedger && <KindBadge kind={openLedger.source} />}
+            {att && <KindBadge kind={att.kind} />}
+          </h2>
           <button type="button" onClick={closePanel} aria-label="Close" className="ledger-btn ledger-btn-ghost" style={{ padding: 6 }}><X size={16} /></button>
         </div>
 

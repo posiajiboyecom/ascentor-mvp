@@ -17,7 +17,7 @@ interface Analytics {
   kpis: {
     totalUsers: number; newUsers7d: number; newUsers30d: number;
     sessions7d: number; sessions30d: number; activeSubs: number;
-    mrr: number | null; revenue30d: number | null; completionRate: number | null;
+    mrr: number | null; revenue30d: number | null; revenueSummit30d?: number | null; revenueSubscription30d?: number | null; completionRate: number | null;
   };
   series: { date: string; signups: number; sessions: number; subscriptions: number; summit: number }[];
   plans: { plan: string; count: number }[];
@@ -193,7 +193,7 @@ export default function OverviewCharts() {
         {canRevenue && (
           <>
             <Kpi label="MRR (est.)" value={nairaCompact(kpis.mrr ?? 0)} sub="excludes promo / manual" color={C.good} />
-            <Kpi label="Revenue, 30 days" value={nairaCompact(kpis.revenue30d ?? 0)} sub="subscriptions + summit"
+            <Kpi label="Revenue, 30 days" value={nairaCompact(kpis.revenue30d ?? 0)} sub={`Summit ${nairaCompact(kpis.revenueSummit30d ?? 0)} · Plans ${nairaCompact(kpis.revenueSubscription30d ?? 0)}`}
                  color={C.good} spark={series} sparkKey="revenue" />
             <Kpi label="Checkout completion" value={kpis.completionRate == null ? '-' : `${kpis.completionRate}%`}
                  sub={funnel ? `${funnel.abandoned} abandoned` : undefined}

@@ -100,8 +100,8 @@ export async function GET(req: NextRequest) {
         .select('id, full_name, email, attendance_type, amount_paid, paid_at, payment_reference, payment_provider_tx_id')
         .eq('payment_status', 'paid').order('paid_at', { ascending: false }).limit(500),
       supabaseAdmin.from('payments')
-        .select('id, user_id, reference, amount, plan_id, paid_at')
-        .eq('status', 'success').order('paid_at', { ascending: false }).limit(500),
+        .select('*')
+        .eq('status', 'success').limit(500),
     ]);
 
     const userIds = Array.from(new Set((subs.data ?? []).map((p: any) => p.user_id).filter(Boolean)));
@@ -121,7 +121,8 @@ export async function GET(req: NextRequest) {
       ...(subs.data ?? []).map((p: any) => ({
         source: 'subscription' as const, id: p.id, name: null, email: emails[p.user_id] ?? null,
         detail: `${p.plan_id ?? 'plan'} subscription`,
-        amount: Number(p.amount ?? 0), paid_at: p.paid_at,
+        amount: Number(p.amount ?? p.amount_paid ?? p.amount_naira ?? (p.amount_kobo != null ? p.amount_kobo / 100 : 0)) || 0,
+        paid_at: p.paid_at ?? p.created_at,
         reference: p.reference, verified_at_paystack: true,
       })),
     ].sort((a, b) => String(b.paid_at ?? '').localeCompare(String(a.paid_at ?? '')));
@@ -132,6 +133,7 @@ export async function GET(req: NextRequest) {
   // ── Attempts list ─────────────────────────────────────────────────────────
   if (sp.get('list') === '1') {
     const status = sp.get('status') ?? 'all';
+    const kind = sp.get('kind') ?? 'all';
     const term = (sp.get('q') ?? '').replace(/[%*,()"':]/g, ' ').trim().slice(0, 60);
 
     let query = supabaseAdmin
@@ -140,6 +142,7 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(300);
     if (status !== 'all') query = query.eq('status', status);
+    if (kind === 'summit' || kind === 'subscription') query = query.eq('kind', kind);
     if (term) query = query.or(`email.ilike.%${term}%,reference.ilike.%${term}%`);
 
     const { data, error } = await query;
@@ -293,11 +296,11 @@ export async function DELETE(req: NextRequest) {
     // A recorded subscription payment (test). Does not change anyone's access.
     if (body?.kind === 'payment' && typeof body.id === 'string') {
       const { data: pay } = await supabaseAdmin
-        .from('payments').select('id, reference, amount, user_id').eq('id', body.id).maybeSingle();
+        .from('payments').select('*').eq('id', body.id).maybeSingle();
       if (!pay) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       const { error } = await supabaseAdmin.from('payments').delete().eq('id', body.id);
       if (error) throw error;
-      await audit(userId, 'payment_record_deleted', body.id, { reference: pay.reference, amount: pay.amount, user_id: pay.user_id });
+      await audit(userId, 'payment_record_deleted', body.id, { reference: pay.reference, amount: pay.amount ?? pay.amount_paid ?? null, user_id: pay.user_id });
       return NextResponse.json({ ok: true, deleted: 1 });
     }
 

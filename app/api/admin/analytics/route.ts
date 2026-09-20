@@ -46,7 +46,7 @@ export async function GET() {
       .select('subscription_plan, billing_cycle, payment_method, subscription_end')
       .in('subscription_status', ['active', 'trialing']).limit(20000),
     canRevenue
-      ? supabaseAdmin.from('payments').select('amount, paid_at').eq('status', 'success').gte('paid_at', since).limit(10000)
+      ? supabaseAdmin.from('payments').select('*').eq('status', 'success').limit(10000)
       : Promise.resolve({ data: [] as any[] }),
     canRevenue
       ? supabaseAdmin.from('summit_registrations').select('amount_paid, paid_at').eq('payment_status', 'paid').gte('paid_at', since).limit(10000)
@@ -64,7 +64,13 @@ export async function GET() {
   }
   for (const r of signups.data ?? [])  { const s = series[dayKey(r.created_at)]; if (s) s.signups++; }
   for (const r of sessions.data ?? []) { const s = series[dayKey(r.created_at)]; if (s) s.sessions++; }
-  for (const r of subPayments.data ?? []) { const s = series[dayKey(r.paid_at)]; if (s) s.subscriptions += Number(r.amount ?? 0); }
+  // The live payments table's amount column has varied; accept any known name.
+  const payAmount = (r: any) => Number(r.amount ?? r.amount_paid ?? r.amount_naira ?? (r.amount_kobo != null ? r.amount_kobo / 100 : 0)) || 0;
+  for (const r of subPayments.data ?? []) {
+    const when = r.paid_at ?? r.created_at;
+    if (!when || new Date(when).toISOString() < since) continue;
+    const s = series[dayKey(when)]; if (s) s.subscriptions += payAmount(r);
+  }
   for (const r of summitPaid.data ?? [])  { const s = series[dayKey(r.paid_at)]; if (s) s.summit += Number(r.amount_paid ?? 0); }
 
   // ── Subscribers, plan mix, MRR ────────────────────────────────────────────
@@ -111,6 +117,8 @@ export async function GET() {
       activeSubs,
       mrr:            canRevenue ? Math.round(mrr) : null,
       revenue30d:     canRevenue ? Math.round(sum('subscriptions') + sum('summit')) : null,
+      revenueSummit30d:       canRevenue ? Math.round(sum('summit')) : null,
+      revenueSubscription30d: canRevenue ? Math.round(sum('subscriptions')) : null,
       completionRate: canRevenue && settled ? Math.round((funnel.completed / settled) * 100) : null,
     },
     series: days.map(d => ({
