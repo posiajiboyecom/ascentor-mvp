@@ -5,6 +5,8 @@
 //                                plus global stats. pageSize=all returns every match (exports).
 //   POST  { action: 'verify', id }  ask Paystack about this person's payments and settle
 //         { action: 'resend', id }  resend the confirmation email + ticket (paid only)
+//         { action: 'remind', id }  email a payment reminder (unpaid only)
+//         { action: 'remind_all' }  remind everyone unpaid (skips anyone reminded in 24h)
 //   PATCH { id, ticket_type?, notes? }  admin-editable fields only
 // All behind admin auth, all writes through the service role.
 
@@ -16,7 +18,9 @@ import {
   getSummitPricesNaira,
   settleReference,
 } from '@/lib/paymentSettlement';
-import { deliverPaidEmails } from '@/lib/summitEmails';
+import { deliverPaidEmails, sendPaymentReminderEmail } from '@/lib/summitEmails';
+import { adoptSummitPayments } from '@/lib/paymentReconciliation';
+import { fetchPaystackTransaction } from '@/lib/paymentSettlement';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -138,7 +142,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null);
     const id: unknown = body?.id;
     const action: unknown = body?.action;
-    if (typeof id !== 'string' || (action !== 'verify' && action !== 'resend')) {
+
+    if (action === 'remind_all') return await remindAll();
+
+    if (typeof id !== 'string' || (action !== 'verify' && action !== 'resend' && action !== 'remind')) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
@@ -156,9 +163,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, message: `Ticket sent to ${reg.email}` });
     }
 
+    if (action === 'remind') {
+      if (reg.payment_status === 'paid') {
+        return NextResponse.json({ error: 'This person has already paid. Use Resend ticket instead.' }, { status: 409 });
+      }
+      const prices = getSummitPricesNaira();
+      if (!prices) return NextResponse.json({ error: 'Ticket prices are not configured' }, { status: 500 });
+      try {
+        await sendPaymentReminderEmail(
+          reg.email, reg.full_name, reg.attendance_type,
+          reg.attendance_type === 'virtual' ? prices.virtual : prices.onsite,
+        );
+      } catch (err) {
+        console.error('[admin/summit-registrations] reminder failed:', err);
+        return NextResponse.json({ error: 'Reminder email failed to send. Check SMTP settings.' }, { status: 502 });
+      }
+      await markReminded([reg.id]);
+      return NextResponse.json({ ok: true, message: `Payment reminder sent to ${reg.email}` });
+    }
+
     // verify: settle every attempt for this registration against Paystack
     if (reg.payment_status === 'paid') {
       return NextResponse.json({ ok: true, state: 'paid', message: 'Already paid.' });
+    }
+
+    // An admin can paste the Paystack reference of a payment we never recorded.
+    const pasted = typeof body?.reference === 'string' ? body.reference.trim() : '';
+    if (pasted) {
+      const outcome = await adoptPastedReference(reg, pasted);
+      if (outcome) return NextResponse.json(outcome.body, { status: outcome.status });
     }
 
     const { data: attempts } = await supabaseAdmin
@@ -191,14 +224,22 @@ export async function POST(req: NextRequest) {
       if (r.state === 'settled') { settled = true; break; }
     }
 
+    // Nothing settled by reference: look for a successful Paystack payment under
+    // this person's email (or a summit-<id>-… reference we lost) and adopt it.
+    if (!settled) {
+      try {
+        if ((await adoptSummitPayments({ registrationId: id })) > 0) settled = true;
+      } catch (err) {
+        console.error('[admin/summit-registrations] adopt failed:', err);
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       state: settled ? 'paid' : lastState,
       message: settled
         ? 'Payment found at Paystack. Registration confirmed and ticket emailed.'
-        : refs.size === 0
-          ? 'No payment attempt exists for this person: they never reached the payment step.'
-          : `Paystack shows no completed payment (${lastState}).`,
+        : `Paystack shows no completed payment for ${reg.email} (${lastState}). If they paid under a different email, paste the Paystack reference and check again.`,
     });
   } catch (err) {
     console.error('[admin/summit-registrations] POST error:', err);
@@ -224,4 +265,95 @@ export async function PATCH(req: NextRequest) {
     console.error('[admin/summit-registrations] PATCH error:', err);
     return NextResponse.json({ error: 'Save failed' }, { status: 500 });
   }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Best-effort: silently ignored if reminder_sent_at / reminder_count are not migrated. */
+async function markReminded(ids: string[]) {
+  if (!ids.length) return;
+  try {
+    const now = new Date().toISOString();
+    for (const id of ids) {
+      const { data } = await supabaseAdmin.from('summit_registrations').select('reminder_count').eq('id', id).maybeSingle();
+      await supabaseAdmin.from('summit_registrations')
+        .update({ reminder_sent_at: now, reminder_count: (Number(data?.reminder_count) || 0) + 1 })
+        .eq('id', id);
+    }
+  } catch { /* tracking is optional */ }
+}
+
+/** Reminds everyone who has not paid, skipping anyone reminded in the last 24 hours. */
+async function remindAll() {
+  const prices = getSummitPricesNaira();
+  if (!prices) return NextResponse.json({ error: 'Ticket prices are not configured' }, { status: 500 });
+
+  const { data, error } = await supabaseAdmin
+    .from('summit_registrations')
+    .select('*')
+    .neq('payment_status', 'paid')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (error) return NextResponse.json({ error: 'Could not load registrations' }, { status: 500 });
+
+  const cutoff = Date.now() - 24 * 3600_000;
+  const targets = (data ?? []).filter(r => r.email && !(r.reminder_sent_at && new Date(r.reminder_sent_at).getTime() > cutoff));
+  const skipped = (data ?? []).length - targets.length;
+
+  const CAP = 40; // keeps a run inside the function time limit
+  const batch = targets.slice(0, CAP);
+  const sentIds: string[] = [];
+  let failed = 0;
+  for (const r of batch) {
+    try {
+      await sendPaymentReminderEmail(r.email, r.full_name, r.attendance_type, r.attendance_type === 'virtual' ? prices.virtual : prices.onsite);
+      sentIds.push(r.id);
+    } catch (err) {
+      failed++;
+      console.error('[admin/summit-registrations] reminder failed for', r.email, (err as Error).message);
+    }
+  }
+  await markReminded(sentIds);
+
+  const left = targets.length - batch.length;
+  return NextResponse.json({
+    ok: true, sent: sentIds.length, failed, skipped,
+    message: `Reminders sent to ${sentIds.length} ${sentIds.length === 1 ? 'person' : 'people'}` +
+      (skipped ? `, ${skipped} skipped (reminded in the last 24 hours)` : '') +
+      (failed ? `, ${failed} failed` : '') +
+      (left > 0 ? `. ${left} more remain, run it again.` : '.'),
+  });
+}
+
+/**
+ * Admin pasted a Paystack reference. Verify it with Paystack, require a successful
+ * payment that covers the ticket and is not already used, then settle it.
+ * Returns a response to send back, or null to carry on with the normal check.
+ */
+async function adoptPastedReference(reg: any, reference: string): Promise<{ status: number; body: Record<string, unknown> } | null> {
+  const prices = getSummitPricesNaira();
+  if (!prices) return { status: 500, body: { error: 'Ticket prices are not configured' } };
+
+  const { data: existing } = await supabaseAdmin.from('payment_attempts').select('registration_id').eq('reference', reference).maybeSingle();
+  if (existing && existing.registration_id !== reg.id) {
+    return { status: 409, body: { error: 'That reference belongs to a different registration.' } };
+  }
+
+  const lookup = await fetchPaystackTransaction(reference);
+  if (!lookup.found) return { status: 404, body: { error: 'Paystack has no transaction with that reference.' } };
+  if (lookup.tx.status !== 'success') return { status: 409, body: { error: `That payment is "${lookup.tx.status}" at Paystack, not successful.` } };
+
+  const expectedKobo = Math.round((reg.attendance_type === 'virtual' ? prices.virtual : prices.onsite) * 100);
+  if (lookup.tx.amount < expectedKobo) {
+    return { status: 409, body: { error: `That payment (₦${lookup.tx.amount / 100}) is less than this ticket (₦${expectedKobo / 100}).` } };
+  }
+
+  if (!existing) {
+    await createAttempt({ reference, kind: 'summit', amountKobo: expectedKobo, email: reg.email, registrationId: reg.id });
+  }
+  const r = await settleReference(reference);
+  if (r.state === 'settled') {
+    return { status: 200, body: { ok: true, state: 'paid', message: 'Payment confirmed at Paystack. Registration confirmed and ticket emailed.' } };
+  }
+  return { status: 409, body: { error: `Could not confirm that payment (${r.state === 'rejected' ? r.reason : r.state}).` } };
 }

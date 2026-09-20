@@ -62,6 +62,34 @@ export async function sendRegistrationReceivedEmail(to: string, fullName: string
   });
 }
 
+// ── Registrant: payment reminder (sent by an admin) ─────────────────────────
+
+export async function sendPaymentReminderEmail(to: string, fullName: string, attendanceType: string | null, amountNaira: number) {
+  const isVirtual = attendanceType === 'virtual';
+  await sendSummitMail({
+    to,
+    subject: 'Your Elevation Summit spot is waiting: complete your payment',
+    html: brandedEmailLayout({
+      preheader: 'Your registration is saved but not confirmed yet.',
+      eyebrow: 'Elevation Summit · 19 November 2026',
+      heading: 'Your spot is not confirmed yet.',
+      recipient: to,
+      content:
+        p(`Hi ${esc(fullName)},`) +
+        p(`You registered for the Elevation Summit (${isVirtual ? 'virtual' : 'physical'} attendance), but we have not received your payment, so your place is <strong>not confirmed</strong>.`) +
+        summaryBox(
+          summaryRow('Attendance', isVirtual ? 'Virtual' : 'Physical, Lagos') +
+          summaryRow('Date', '19 November 2026') +
+          summaryRow('Ticket', naira(amountNaira)) +
+          summaryRow('Status', '<span style="color:#C8A96E;">Awaiting payment</span>')
+        ) +
+        p('It takes about a minute. Your details are already saved, so you only need to complete payment. Your ticket is emailed to you the moment it goes through.') +
+        goldButton('Complete your payment →', `${SUMMIT_URL}#register`) +
+        p('<span style="color:#9CA3AF;font-size:13px;">If you have already paid, please reply to this email with your Paystack receipt and we will confirm you right away.</span>'),
+    }),
+  });
+}
+
 // ── Registrant: payment confirmed + ticket PDF ──────────────────────────────
 
 export async function sendPaymentConfirmedEmail(ticketData: TicketData) {

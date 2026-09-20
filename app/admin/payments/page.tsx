@@ -256,7 +256,7 @@ export default function AdminPaymentsPage() {
   const val: React.CSSProperties = { fontSize: 13.5, color: 'var(--ledger-ink)', margin: 0, wordBreak: 'break-word' };
 
   return (
-    <div className="animate-fade-up">
+    <div className="animate-fade-up" data-fullwidth>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <h1 className="ledger-h1" style={{ fontSize: 26, margin: 0 }}>Subscription Payments</h1>

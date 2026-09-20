@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   RefreshCw, RotateCw, Trash2, Copy, ShieldCheck, Mail, Phone, MessageCircle,
-  FileDown, ChevronLeft, ChevronRight,
+  FileDown, ChevronLeft, ChevronRight, BellRing,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { usePageSearch } from '@/components/shell/PageSearch';
@@ -43,6 +43,8 @@ interface Reg {
   payment_provider_tx_id: string | null;
   confirmation_email_sent_at?: string | null;
   confirmation_email_error?: string | null;
+  reminder_sent_at?: string | null;
+  reminder_count?: number | null;
   created_at: string;
   source: string | null;
 }
@@ -92,7 +94,7 @@ export default function SummitPaymentsPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
-  const [stateFilter, setStateFilter] = useState<StateFilter>('all');
+  const [stateFilter, setStateFilter] = useState<StateFilter>('paid'); // land on confirmed payments only
   const [type, setType] = useState<TypeFilter>('all');
   const [debounced, setDebounced] = useState('');
 
@@ -105,6 +107,8 @@ export default function SummitPaymentsPage() {
   const [open, setOpen] = useState<Reg | null>(null);
   const [busy, setBusy] = useState(false);
   const [panelMsg, setPanelMsg] = useState<string | null>(null);
+  const [refInput, setRefInput] = useState('');
+  const [reminding, setReminding] = useState(false);
 
   const authed = useCallback(async (input: string, init: RequestInit = {}) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -253,14 +257,41 @@ export default function SummitPaymentsPage() {
     setRunning(false);
   };
 
-  const act = async (action: 'verify' | 'resend') => {
+  const act = async (action: 'verify' | 'resend' | 'remind', extra: Record<string, unknown> = {}) => {
     if (!open) return;
     setBusy(true); setPanelMsg(null);
-    const res = await authed('/api/admin/summit-registrations', { method: 'POST', body: JSON.stringify({ id: open.id, action }) });
+    const res = await authed('/api/admin/summit-registrations', { method: 'POST', body: JSON.stringify({ id: open.id, action, ...extra }) });
     const b = await res.json().catch(() => ({}));
     setPanelMsg(b.message || b.error || (res.ok ? 'Done.' : 'Action failed.'));
     setBusy(false);
-    if (res.ok && action === 'verify') await load();
+    if (res.ok) await load();
+  };
+
+  const remind = async () => {
+    if (!open) return;
+    const last = open.reminder_sent_at ? new Date(open.reminder_sent_at).getTime() : 0;
+    if (last && Date.now() - last < 6 * 3600_000) {
+      const yes = await confirmAction(
+        `${open.full_name} was already reminded ${when(open.reminder_sent_at)}. Send another reminder anyway?`,
+        { confirmLabel: 'Send anyway' },
+      );
+      if (!yes) return;
+    }
+    await act('remind');
+  };
+
+  const remindAll = async () => {
+    const yes = await confirmAction(
+      `Send a payment reminder email to all ${stats.unpaid} people who have not paid? Anyone reminded in the last 24 hours is skipped.`,
+      { confirmLabel: 'Send reminders' },
+    );
+    if (!yes) return;
+    setReminding(true); setNote(null);
+    const res = await authed('/api/admin/summit-registrations', { method: 'POST', body: JSON.stringify({ action: 'remind_all' }) });
+    const b = await res.json().catch(() => ({}));
+    setNote(b.message || b.error || (res.ok ? 'Done.' : 'Reminders failed.'));
+    setReminding(false);
+    await load();
   };
 
   const remove = async (target: Reg) => {
@@ -300,7 +331,7 @@ export default function SummitPaymentsPage() {
   );
 
   return (
-    <div className="animate-fade-up">
+    <div className="animate-fade-up" data-fullwidth>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <p className="ledger-mono" style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0, color: '#8A6A1F' }}>The Elevation Summit · 19 Nov 2026</p>
@@ -308,6 +339,12 @@ export default function SummitPaymentsPage() {
           <p className="ledger-mono" style={{ fontSize: 12, margin: '4px 0 0' }}>Tickets only. Subscription payments are on a separate page.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {stats.unpaid > 0 && (
+            <button type="button" className="ledger-btn ledger-btn-ghost" onClick={remindAll} disabled={reminding}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Email a payment reminder to everyone who has not paid">
+              <BellRing size={14} /> {reminding ? 'Sending…' : `Remind all pending (${stats.unpaid})`}
+            </button>
+          )}
           <button type="button" className="ledger-btn ledger-btn-ghost" onClick={downloadPdf} disabled={exporting}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Download a PDF of the records matching the current search and filters">
             <FileDown size={14} /> {exporting ? 'Preparing…' : 'Download PDF'}
@@ -375,7 +412,7 @@ export default function SummitPaymentsPage() {
             ) : regs.map(r => {
               const st = STATE[r.payment_state];
               return (
-                <tr key={r.id} onClick={() => { setOpen(r); setPanelMsg(null); }} className="hover:bg-black/5"
+                <tr key={r.id} onClick={() => { setOpen(r); setPanelMsg(null); setRefInput(''); }} className="hover:bg-black/5"
                   style={{ borderTop: '1px solid var(--ledger-line)', cursor: 'pointer' }}>
                   <td style={{ ...cell, overflow: 'hidden' }}>
                     <div style={{ color: 'var(--ledger-ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.full_name}</div>
@@ -421,9 +458,14 @@ export default function SummitPaymentsPage() {
                 <Mail size={14} /> {busy ? 'Sending…' : 'Resend confirmation email + ticket'}
               </button>
             ) : (
-              <button type="button" disabled={busy} onClick={() => act('verify')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
-                <ShieldCheck size={14} /> {busy ? 'Checking…' : 'Check Paystack for this person'}
-              </button>
+              <>
+                <button type="button" disabled={busy} onClick={remind} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+                  <BellRing size={14} /> {busy ? 'Sending…' : 'Send payment reminder email'}
+                </button>
+                <button type="button" disabled={busy} onClick={() => act('verify', refInput.trim() ? { reference: refInput.trim() } : {})} className="ledger-btn ledger-btn-ghost" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+                  <ShieldCheck size={14} /> {busy ? 'Checking…' : 'Check Paystack for this person'}
+                </button>
+              </>
             )}
             <button type="button" disabled={busy} onClick={() => remove(open)} className="ledger-btn ledger-btn-ghost"
               style={{ color: 'var(--ledger-bad)', display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
@@ -479,7 +521,32 @@ export default function SummitPaymentsPage() {
                   </div>
                 </>
               ) : (
-                <div><p style={lab}>Payment attempts</p><p style={val}>{open.attempt_count === 0 ? 'Never reached the payment step.' : `${open.attempt_count} started, none completed.`}</p></div>
+                <>
+                  <div><p style={lab}>Payment attempts</p><p style={val}>{open.attempt_count === 0 ? 'Never reached the payment step.' : `${open.attempt_count} started, none completed.`}</p></div>
+                  <div>
+                    <p style={lab}>Last reminder</p>
+                    <p style={val}>{open.reminder_sent_at ? `${when(open.reminder_sent_at)} (${open.reminder_count ?? 1} sent)` : 'Never reminded'}</p>
+                  </div>
+                  {open.whatsapp && (
+                    <a
+                      href={`${waLink(open.whatsapp)}?text=${encodeURIComponent(`Hi ${open.full_name.split(' ')[0]}, this is Ascentor. Your Elevation Summit registration (${open.attendance_type === 'virtual' ? 'virtual' : 'physical'}) is saved but not confirmed yet. You can complete your payment here: https://ascentorbi.com/elevation-summit#register`)}`}
+                      target="_blank" rel="noopener noreferrer" className="ledger-btn ledger-btn-ghost"
+                      style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <MessageCircle size={14} /> Remind on WhatsApp
+                    </a>
+                  )}
+                  <div>
+                    <p style={lab}>Already paid? Paste the Paystack reference (optional)</p>
+                    <input
+                      value={refInput} onChange={e => setRefInput(e.target.value)} placeholder="Reference from the Paystack dashboard"
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--ledger-line-strong)', background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', fontSize: 13, fontFamily: 'var(--ledger-font-mono, monospace)' }}
+                    />
+                    <p style={{ fontSize: 11.5, color: 'var(--ledger-ink-soft)', margin: '5px 0 0' }}>
+                      Use this when the person paid with a different email. Paystack is asked to confirm it before anything changes.
+                    </p>
+                  </div>
+                </>
               )}
 
               {open.payment_reference && (

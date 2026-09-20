@@ -42,6 +42,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   test-data deletion; Summit and subscription revenue are separated everywhere.
 - **Prisma tooling** (introspection and ad-hoc SQL only): `npm run db:pull`,
   `db:generate`, `scripts/db.ts`, `scripts/backfill-paystack-fees.ts`.
+- **Payment reminders:** admins can email a payment reminder to one unpaid
+  registrant, open a prefilled WhatsApp reminder, or **Remind all pending**
+  (skips anyone reminded in the last 24 hours; capped at 40 per run). Reminder
+  history is tracked (`reminder_sent_at`, `reminder_count`, migration
+  `20260920c_summit_reminders.sql`).
+- **Paystack matching by email:** "Check Paystack" and the daily sweep now also
+  match a successful Paystack payment to an unpaid registration by the payer's
+  email and amount, so a payment made under a reference we never recorded is
+  confirmed instead of staying "pending". An admin can also paste a Paystack
+  reference; it is verified with Paystack before anything changes.
+- Summit Payments opens on **Confirmed** payments by default and uses the full
+  width of the page (`data-fullwidth` opt-out of the shell's 1360px column).
 - New Elevation Summit hero flyer.
 - Migrations `20260920_summit_ops.sql`, `20260920b_payments_columns.sql` and the
   review-first `database/scripts/clean_test_data.sql`.

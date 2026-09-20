@@ -361,6 +361,9 @@
 .sh-main[data-pad='true'] > .sh-main-inner {
   max-width: 1360px; margin: 0 auto; padding: clamp(14px, 3vw, 28px);
 }
+/* A page opts in to the full width of the content area by rendering an element
+   with data-fullwidth as the first child of its wrapper. */
+.sh-main[data-pad='true'] > .sh-main-inner:has([data-fullwidth]) { max-width: none; }
 
 /* ── Command palette ─────────────────────────────────────────────────────── */
 

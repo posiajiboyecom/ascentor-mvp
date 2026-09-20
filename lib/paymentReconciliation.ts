@@ -121,7 +121,7 @@ export async function reconcilePayments(): Promise<ReconcileSummary> {
 
   // ── 0. Adopt Summit payments made before payment_attempts existed ─────────
   try {
-    summary.adopted = await adoptLegacySummitPayments();
+    summary.adopted = await adoptSummitPayments();
   } catch (err) {
     summary.errors++;
     console.error('[reconcile] legacy adoption failed:', (err as Error).message);
@@ -272,17 +272,30 @@ const SUMMIT_REF_RE = /^summit-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 const PAYSTACK_PAGES = 3; // 300 most recent successful transactions per run
 
 /**
- * Before 19 Sep, Summit checkouts were not recorded in payment_attempts, so a
- * customer who paid but whose browser callback never landed can never be
- * settled by the webhook/cron ("unknown reference"). This scans Paystack's
- * recent successful transactions, finds summit-<registrationId>-<ts>
- * references we have no attempt for, records them and settles them.
+ * Finds Summit payments that succeeded at Paystack but that we never settled,
+ * records them and settles them (which confirms the ticket and emails it).
+ * A successful transaction is matched to a registration when
+ *   (a) its reference is summit-<registrationId>-<timestamp> (pre-hardening
+ *       checkouts and any checkout whose attempt row was lost), or
+ *   (b) its Paystack customer email equals an UNPAID registration's email and
+ *       the amount covers that ticket (someone who paid under a reference we
+ *       never recorded).
+ * Amount, currency and exactly-once fulfilment are still enforced by
+ * settleReference. Pass registrationId to restrict this to one person.
  */
-async function adoptLegacySummitPayments(): Promise<number> {
+export async function adoptSummitPayments(opts: { registrationId?: string } = {}): Promise<number> {
   const secret = process.env.PAYSTACK_SECRET_KEY;
   if (!secret) return 0;
   const prices = getSummitPricesNaira();
   if (!prices) return 0;
+
+  let unpaidQuery = supabaseAdmin
+    .from('summit_registrations')
+    .select('id, email, attendance_type, payment_status, payment_provider_tx_id')
+    .neq('payment_status', 'paid');
+  if (opts.registrationId) unpaidQuery = unpaidQuery.eq('id', opts.registrationId);
+  const { data: unpaid } = await unpaidQuery.limit(2000);
+  const byEmail = new Map<string, any>((unpaid ?? []).map((r: any) => [String(r.email).toLowerCase(), r]));
 
   let adopted = 0;
   for (let page = 1; page <= PAYSTACK_PAGES; page++) {
@@ -292,47 +305,54 @@ async function adoptLegacySummitPayments(): Promise<number> {
     );
     const body = await res.json().catch(() => null);
     if (!res.ok || !body?.status) throw new Error(`Paystack list failed (${res.status})`);
-    const txs: any[] = body.data ?? [];
+    const txs: any[] = (body.data ?? []).filter((t: any) => typeof t.reference === 'string');
     if (txs.length === 0) break;
 
-    const candidates = txs.filter(t => typeof t.reference === 'string' && SUMMIT_REF_RE.test(t.reference));
-    if (candidates.length) {
-      const { data: known } = await supabaseAdmin
-        .from('payment_attempts')
-        .select('reference')
-        .in('reference', candidates.map(t => t.reference));
-      const knownSet = new Set((known ?? []).map((k: { reference: string }) => k.reference));
+    const { data: known } = await supabaseAdmin
+      .from('payment_attempts')
+      .select('reference')
+      .in('reference', txs.map(t => t.reference));
+    const knownSet = new Set((known ?? []).map((k: { reference: string }) => k.reference));
 
-      for (const tx of candidates) {
-        if (knownSet.has(tx.reference)) continue;
-        try {
-          const registrationId = tx.reference.match(SUMMIT_REF_RE)![1];
-          const { data: reg } = await supabaseAdmin
+    for (const tx of txs) {
+      if (knownSet.has(tx.reference)) continue;
+      try {
+        const m = tx.reference.match(SUMMIT_REF_RE);
+        let reg: any = null;
+        if (m) {
+          const { data } = await supabaseAdmin
             .from('summit_registrations')
             .select('id, email, attendance_type, payment_status, payment_provider_tx_id')
-            .eq('id', registrationId)
-            .maybeSingle();
-          if (!reg) continue;
-
-          const expectedKobo = Math.round((reg.attendance_type === 'virtual' ? prices.virtual : prices.onsite) * 100);
-          await createAttempt({
-            reference: tx.reference, kind: 'summit', amountKobo: expectedKobo,
-            email: reg.email, registrationId: reg.id,
-          });
-
-          // Already recorded as paid by the old flow with this very transaction: just link it.
-          if (reg.payment_status === 'paid' && reg.payment_provider_tx_id === String(tx.id)) {
-            await supabaseAdmin.from('payment_attempts')
-              .update({ status: 'success', provider_status: 'success', provider_tx_id: String(tx.id), paid_at: tx.paid_at ?? null })
-              .eq('reference', tx.reference);
-            continue;
-          }
-
-          const result = await settleReference(tx.reference);
-          if (result.state === 'settled' && !result.alreadySettled) adopted++;
-        } catch (err) {
-          console.error(`[reconcile] adopt ${tx.reference}:`, (err as Error).message);
+            .eq('id', m[1]).maybeSingle();
+          reg = data;
+        } else {
+          const email = String(tx.customer?.email ?? '').toLowerCase();
+          reg = email ? byEmail.get(email) : null;
         }
+        if (!reg) continue;
+        if (opts.registrationId && reg.id !== opts.registrationId) continue;
+
+        const expectedKobo = Math.round((reg.attendance_type === 'virtual' ? prices.virtual : prices.onsite) * 100);
+        // A payment matched only by email must cover the ticket.
+        if (!m && tx.amount < expectedKobo) continue;
+
+        await createAttempt({
+          reference: tx.reference, kind: 'summit', amountKobo: expectedKobo,
+          email: reg.email, registrationId: reg.id,
+        });
+
+        // Already recorded as paid by the old flow with this very transaction: just link it.
+        if (reg.payment_status === 'paid' && reg.payment_provider_tx_id === String(tx.id)) {
+          await supabaseAdmin.from('payment_attempts')
+            .update({ status: 'success', provider_status: 'success', provider_tx_id: String(tx.id), paid_at: tx.paid_at ?? null })
+            .eq('reference', tx.reference);
+          continue;
+        }
+
+        const result = await settleReference(tx.reference);
+        if (result.state === 'settled' && !result.alreadySettled) adopted++;
+      } catch (err) {
+        console.error(`[reconcile] adopt ${tx.reference}:`, (err as Error).message);
       }
     }
     if (txs.length < 100) break;
