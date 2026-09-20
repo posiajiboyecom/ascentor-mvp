@@ -316,8 +316,19 @@ Circle (8-12 members)
   (revenue, subscriber mix, signups vs sessions, checkout funnel). Data comes
   from `GET /api/admin/analytics`, computed server-side. Revenue figures require
   `payments.view`. MRR excludes promo and admin-granted plans.
-- **Payments** (`/admin/payments`): every checkout attempt with status filters
-  (paid, pending, abandoned, failed, duplicate), search and **Reconcile now**.
+- **Summit Payments** (`/admin/summit-payments`): Elevation Summit tickets only.
+  Summary cards (confirmed tickets, gross, Paystack fees, net), server-side
+  (AJAX) search, filters by status (confirmed, pending, left at payment, not
+  started, paying now) and Physical/Virtual, pagination, an off-canvas per record
+  (call/WhatsApp, Paystack transaction id, email status, **resend confirmation +
+  ticket**, **check Paystack**, delete) and a branded **PDF report** of the
+  current search and filters. A paid ticket with no Paystack transaction id is
+  flagged.
+- **Subscription Payments** (`/admin/payments`): plan checkouts with status
+  filters, an off-canvas per attempt, a **Revenue ledger** tab listing every
+  paid item behind the revenue figure, deletion of unpaid test attempts, and
+  **Reconcile now**. Summit and subscription revenue are always shown as
+  separate streams (dashboard cards and colour-coded badges).
 - **Checkout switch:** toggles paid access vs free mode
   (`platform_settings.checkout_enabled`).
 - Layout, search and navigation are described in
@@ -357,7 +368,9 @@ Circle (8-12 members)
 | `/api/search` | GET | Member global search (courses, sessions) |
 | `/api/admin/search` | GET | Admin global search (permission aware) |
 | `/api/admin/analytics` | GET | Overview KPIs and chart series |
-| `/api/admin/payments` | GET / POST | Payment health and attempt list / run reconciliation |
+| `/api/summit/pay/abandon` | POST | Browser reports a closed payment window; alerts the admin (verifies with Paystack first, once per attempt) |
+| `/api/admin/summit-registrations` | GET / POST / PATCH | Summit registrations with derived payment state, server-side search/filter/pagination and stats (`?paged=1`); `verify` and `resend` actions; notes and ticket type |
+| `/api/admin/payments` | GET / POST / DELETE | Payment health, attempt list, detail and revenue ledger; reconcile, verify, resend; delete test data (admin only, audit-logged; paid attempts are protected) |
 | `/api/cron/reconcile-payments` | GET | Daily reconciliation (requires `CRON_SECRET`) |
 
 ---

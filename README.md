@@ -45,7 +45,9 @@ Environment Variables** for production. Never commit real values.
 | `PAYSTACK_SECRET_KEY`, `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | Yes | Payments |
 | `SUMMIT_TICKET_PRICE_ONSITE_NGN`, `SUMMIT_TICKET_PRICE_VIRTUAL_NGN` | Yes | Summit ticket prices in naira (numbers only) |
 | `CRON_SECRET` | Yes (prod) | Authorises the daily payment-reconciliation cron. Any long random string. Without it the cron refuses to run |
-| `ADMIN_EMAIL` | Recommended | Receives admin alerts (abandoned checkouts, payment problems). Defaults to `joinascentor@gmail.com` |
+| `ADMIN_EMAIL` | Recommended | Receives general admin alerts (payment problems, abandoned-checkout digest). Defaults to `joinascentor@gmail.com` |
+| `SUMMIT_ADMIN_EMAIL` | Optional | Receives the Summit alerts (paid registration, abandoned payment). Defaults to `joinascentor@gmail.com` |
+| `DATABASE_URL` | Local only | Postgres connection for Prisma tooling (`npm run db:*`). Supabase **session pooler** or direct string. Never set on Vercel, never committed |
 | `SUMMIT_GMAIL_USER`, `SUMMIT_GMAIL_APP_PASSWORD`, `SUMMIT_MAIL_FROM` | Yes | Summit and fallback SMTP mail |
 | `NEXT_PUBLIC_URL` | Recommended | Public base URL used in payment redirects and emails |
 | `OTP_HMAC_SECRET` | Optional | Key for password-reset code hashing. Falls back to the service-role key |
@@ -61,6 +63,20 @@ applied manually in the Supabase SQL editor (or `supabase db push`) and are safe
 to re-run. **Apply them in filename order.** The latest,
 `20260919_payment_security.sql`, must be applied before deploying the code that
 depends on it (it adds the `payment_attempts` columns and locks down `profiles`).
+The Summit operations migrations are `20260920_summit_ops.sql` (Paystack fee and
+email-delivery tracking on `summit_registrations`) and
+`20260920b_payments_columns.sql` (adds the `payments` columns the app writes).
+
+**Database tooling (Prisma).** Prisma is used for introspection and ad-hoc SQL
+only; the SQL migrations remain the source of truth, so never run
+`prisma migrate` or `db push`. Put `DATABASE_URL` in `.env.local`, then:
+
+```bash
+npm run db:pull       # introspect the live database into prisma/schema.prisma
+npm run db:generate   # generate the client into generated/prisma (gitignored)
+npx tsx scripts/db.ts "select count(*) from summit_registrations"   # read-only; add --write to change data
+npx tsx scripts/backfill-paystack-fees.ts [--write]   # store Paystack's real fee on paid tickets (needs the LIVE key)
+```
 
 > The base schema (profiles, payments, coaching tables, ...) predates the
 > migrations folder and is not fully captured here. Export the live schema with
@@ -160,7 +176,23 @@ funnel through [`lib/paymentSettlement.ts`](lib/paymentSettlement.ts):
 (`/api/cron/reconcile-payments`, see `vercel.json`) re-checks pending attempts,
 recovers payments whose webhook was lost, marks stale ones abandoned, emails
 admins one digest, and sends the customer a recovery link. Admins can also run
-it on demand from **Admin → Payments → Reconcile now**.
+it on demand from **Admin → Summit Payments → Check Paystack now**. The same
+sweep adopts older Paystack payments that have no attempt row, retries failed
+confirmation emails and stores Paystack's real fee on paid tickets.
+
+**Summit payments are separate from subscriptions.** Elevation Summit tickets
+are managed only at **Admin → Summit Payments** (`/admin/summit-payments`);
+plan subscriptions live at **Subscription Payments** (`/admin/payments`). The
+Summit page has server-side search, status and Physical/Virtual filters, an
+off-canvas per record (call/WhatsApp, Paystack transaction, resend ticket,
+delete) and a branded **PDF report** of the current view.
+
+**Summit emails.** Registrants get a "Complete your registration" email on
+submit and a confirmation with the PDF ticket after payment. The admin
+(`SUMMIT_ADMIN_EMAIL`) gets an email when a payment is paid (name, email, phone,
+virtual/physical) and when someone leaves before paying (sent immediately from
+the browser via `/api/summit/pay/abandon`, with the daily sweep as backup).
+Delivery is tracked; failures are retried or can be resent from the admin.
 
 > **Vercel Hobby limits:** cron jobs may run at most once a day (at roughly the
 > scheduled hour) and functions are capped at 60 s. The job is a batch sweep,

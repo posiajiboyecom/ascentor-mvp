@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Summit payments, ticketing and registration)
+- **Legacy payments were unrecoverable:** Summit payments made before
+  `payment_attempts` existed were rejected as "unknown reference" forever. The
+  reconciliation sweep now scans recent Paystack transactions and adopts them.
+- **Silent email failures:** the confirmation email and admin alert were sent in
+  one `try/catch`, so one failure lost both with no record. They are now
+  independent, tracked (`confirmation_email_sent_at`, `confirmation_email_error`),
+  retried by the sweep and resendable from the admin. Summit mail now fails
+  loudly instead of skipping when SMTP is missing.
+- **Phone numbers lost:** returning registrants and in-app placeholder rows never
+  had their phone, company or role updated. They are now saved on every submit.
+- **Paid tickets could be self-deleted** through the in-app unregister route;
+  now blocked. Email blasts treat "confirmed" as paid only.
+- **Revenue accuracy:** the dashboard's 31K figure included 20K of developer test
+  payments (removed). The `payments` table lacked the `amount` column the app
+  writes, so subscription revenue silently read 0; added by migration, and the
+  queries now tolerate the real schema.
+- Payment health no longer reports checkouts pending for over an hour as "in
+  progress".
+
+### Added (Summit payments, ticketing and registration)
+- **Admin → Summit Payments** (`/admin/summit-payments`): Summit-only payments
+  management with server-side search, status and Physical/Virtual filters,
+  pagination, an off-canvas per record, resend ticket, check Paystack, delete,
+  and a branded PDF report.
+- **Emails:** registrants get "Complete your registration" on submit and a
+  confirmation with the PDF ticket on payment. The admin gets a paid-registration
+  email (name, email, phone, virtual/physical) and an immediate email when
+  someone leaves before paying (`/api/summit/pay/abandon`).
+- **Paystack fees:** real fees are stored per ticket (`paystack_fee`) and shown
+  as gross, fees and net; older tickets are filled in by **Check Paystack now**.
+- **Subscription Payments** page: off-canvas details, Revenue ledger and
+  test-data deletion; Summit and subscription revenue are separated everywhere.
+- **Prisma tooling** (introspection and ad-hoc SQL only): `npm run db:pull`,
+  `db:generate`, `scripts/db.ts`, `scripts/backfill-paystack-fees.ts`.
+- New Elevation Summit hero flyer.
+- Migrations `20260920_summit_ops.sql`, `20260920b_payments_columns.sql` and the
+  review-first `database/scripts/clean_test_data.sql`.
+
 ### Security
 - **Profiles:** a database trigger now blocks clients from editing billing and
   privilege columns (`subscription_*`, `billing_cycle`, `payment_method`,

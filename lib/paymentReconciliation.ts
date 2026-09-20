@@ -21,6 +21,7 @@
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import {
+  fetchPaystackTransaction,
   settleReference,
   notifyAdmins,
   createAttempt,
@@ -45,6 +46,7 @@ export interface ReconcileSummary {
   recoveryEmailsSent: number;
   adopted:            number; // paid at Paystack with no attempt row (pre-hardening) - now settled
   emailsRetried:      number; // paid registrations whose confirmation email had failed
+  feesBackfilled:     number; // paid tickets that now have Paystack's real fee stored
   errors:             number;
 }
 
@@ -114,7 +116,7 @@ async function sendRecoveryEmail(a: PaymentAttempt): Promise<boolean> {
 export async function reconcilePayments(): Promise<ReconcileSummary> {
   const summary: ReconcileSummary = {
     checked: 0, recovered: 0, failed: 0, abandoned: 0,
-    adminNotified: 0, recoveryEmailsSent: 0, adopted: 0, emailsRetried: 0, errors: 0,
+    adminNotified: 0, recoveryEmailsSent: 0, adopted: 0, emailsRetried: 0, feesBackfilled: 0, errors: 0,
   };
 
   // ── 0. Adopt Summit payments made before payment_attempts existed ─────────
@@ -254,6 +256,13 @@ export async function reconcilePayments(): Promise<ReconcileSummary> {
     console.error('[reconcile] email retry failed:', (err as Error).message);
   }
 
+  // ── 5. Store Paystack's real fee for paid tickets that have none ──────────
+  try {
+    summary.feesBackfilled = await backfillPaystackFees();
+  } catch (err) {
+    console.error('[reconcile] fee backfill failed:', (err as Error).message);
+  }
+
   return summary;
 }
 
@@ -348,6 +357,35 @@ async function retryFailedConfirmationEmails(): Promise<number> {
   for (const reg of data ?? []) {
     const out = await deliverPaidEmails(reg, Number(reg.amount_paid ?? 0), reg.currency ?? 'NGN', reg.payment_reference ?? '', { customer: true });
     if (out.customer) n++;
+  }
+  return n;
+}
+
+// ── Fee backfill ─────────────────────────────────────────────────────────────
+
+/** Tickets paid before fee capture existed have no paystack_fee. Ask Paystack (with the live key on the server) and store the real fee. */
+async function backfillPaystackFees(): Promise<number> {
+  const { data, error } = await supabaseAdmin
+    .from('summit_registrations')
+    .select('id, amount_paid, payment_reference')
+    .eq('payment_status', 'paid')
+    .is('paystack_fee', null)
+    .not('payment_reference', 'is', null)
+    .limit(50);
+  if (error) return 0; // paystack_fee column not migrated yet
+
+  let n = 0;
+  for (const reg of data ?? []) {
+    try {
+      const lookup = await fetchPaystackTransaction(reg.payment_reference as string);
+      if (!lookup.found || lookup.tx.status !== 'success' || lookup.tx.fees == null) continue;
+      // Only trust a transaction for exactly the amount we recorded.
+      if (Number(reg.amount_paid) !== lookup.tx.amount / 100) continue;
+      await supabaseAdmin.from('summit_registrations').update({ paystack_fee: lookup.tx.fees / 100 }).eq('id', reg.id);
+      n++;
+    } catch (err) {
+      console.error('[reconcile] fee backfill', reg.payment_reference, (err as Error).message);
+    }
   }
   return n;
 }

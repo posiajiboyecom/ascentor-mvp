@@ -246,7 +246,7 @@ export default function SummitPaymentsPage() {
       const res = await fetch('/api/admin/payments', { method: 'POST' });
       const b = await res.json();
       if (!res.ok) throw new Error(b.error || 'Reconciliation failed');
-      setNote(`Checked ${b.checked}. ${b.recovered} recovered, ${b.adopted ?? 0} older Paystack payments adopted, ${b.emailsRetried ?? 0} emails retried.`);
+      setNote(`Checked ${b.checked}. ${b.recovered} recovered, ${b.adopted ?? 0} older Paystack payments adopted, ${b.emailsRetried ?? 0} emails retried, ${b.feesBackfilled ?? 0} Paystack fees filled in.`);
       await load();
     } catch (e) { setNote((e as Error).message); }
     setRunning(false);
