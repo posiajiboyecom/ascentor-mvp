@@ -19,7 +19,7 @@ import {
   settleReference,
 } from '@/lib/paymentSettlement';
 import { deliverPaidEmails, sendPaymentReminderEmail } from '@/lib/summitEmails';
-import { adoptSummitPayments } from '@/lib/paymentReconciliation';
+import { adoptSummitPayments, findCandidateTransactions } from '@/lib/paymentReconciliation';
 import { fetchPaystackTransaction } from '@/lib/paymentSettlement';
 
 export const dynamic = 'force-dynamic';
@@ -234,12 +234,28 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (settled) {
+      return NextResponse.json({ ok: true, state: 'paid', message: 'Payment found at Paystack. Registration confirmed and ticket emailed.' });
+    }
+
+    // Nothing matched automatically. Offer nearby unlinked Paystack transactions
+    // so the admin can confirm the right one without leaving this page.
+    let candidates: Awaited<ReturnType<typeof findCandidateTransactions>> = [];
+    try {
+      const prices = getSummitPricesNaira();
+      const minKobo = Math.round((reg.attendance_type === 'virtual' ? (prices?.virtual ?? 0) : (prices?.onsite ?? 0)) * 100);
+      if (minKobo > 0) candidates = await findCandidateTransactions(minKobo);
+    } catch (err) {
+      console.error('[admin/summit-registrations] candidate lookup failed:', err);
+    }
+
     return NextResponse.json({
       ok: true,
-      state: settled ? 'paid' : lastState,
-      message: settled
-        ? 'Payment found at Paystack. Registration confirmed and ticket emailed.'
-        : `Paystack shows no completed payment for ${reg.email} (${lastState}). If they paid under a different email, paste the Paystack reference and check again.`,
+      state: lastState,
+      candidates,
+      message: candidates.length
+        ? `Paystack shows no completed payment for ${reg.email} (${lastState}). ${candidates.length} other recent payment${candidates.length === 1 ? '' : 's'} of at least this amount ${candidates.length === 1 ? 'was' : 'were'} found unlinked to anyone below — pick theirs if you recognise it.`
+        : `Paystack shows no completed payment for ${reg.email} (${lastState}), and no other unlinked payment of this amount was found in the last ${'~300 transactions'}. Paste their Paystack reference above if you have it.`,
     });
   } catch (err) {
     console.error('[admin/summit-registrations] POST error:', err);

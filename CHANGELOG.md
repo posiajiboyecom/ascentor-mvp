@@ -47,11 +47,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (skips anyone reminded in the last 24 hours; capped at 40 per run). Reminder
   history is tracked (`reminder_sent_at`, `reminder_count`, migration
   `20260920c_summit_reminders.sql`).
+- **Critical bug: Paystack reference matching never worked.** The regex used to
+  recognise our own `summit-<id>-<timestamp>` references lost its backslash in
+  an earlier edit (`-d+$` instead of `-\d+$`), so it could never match a real
+  reference. Every payment that needed the reference-based adoption path (a
+  lost webhook, a browser that closed before confirming) silently failed to be
+  picked up by "Check Paystack" and the daily sweep. Fixed.
 - **Paystack matching by email:** "Check Paystack" and the daily sweep now also
   match a successful Paystack payment to an unpaid registration by the payer's
   email and amount, so a payment made under a reference we never recorded is
   confirmed instead of staying "pending". An admin can also paste a Paystack
   reference; it is verified with Paystack before anything changes.
+- **Unmatched-payment picker:** when neither reference nor email matching finds
+  the payment, "Check Paystack" now lists recent successful Paystack
+  transactions of at least the ticket price that aren't linked to anyone, so
+  the admin can confirm the right one in one click without leaving the page.
 - Summit Payments opens on **Confirmed** payments by default and uses the full
   width of the page (`data-fullwidth` opt-out of the shell's 1360px column).
 - New Elevation Summit hero flyer.

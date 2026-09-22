@@ -25,6 +25,14 @@ type PayState = 'paid' | 'in_progress' | 'abandoned' | 'not_started';
 type StateFilter = 'all' | 'paid' | 'unpaid' | 'abandoned' | 'not_started' | 'in_progress';
 type TypeFilter = 'all' | 'onsite' | 'virtual';
 
+interface Candidate {
+  reference: string;
+  amountKobo: number;
+  currency: string;
+  email: string | null;
+  paidAt: string | null;
+}
+
 interface Reg {
   id: string;
   full_name: string;
@@ -109,6 +117,7 @@ export default function SummitPaymentsPage() {
   const [panelMsg, setPanelMsg] = useState<string | null>(null);
   const [refInput, setRefInput] = useState('');
   const [reminding, setReminding] = useState(false);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
 
   const authed = useCallback(async (input: string, init: RequestInit = {}) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -259,12 +268,13 @@ export default function SummitPaymentsPage() {
 
   const act = async (action: 'verify' | 'resend' | 'remind', extra: Record<string, unknown> = {}) => {
     if (!open) return;
-    setBusy(true); setPanelMsg(null);
+    setBusy(true); setPanelMsg(null); setCandidates([]);
     const res = await authed('/api/admin/summit-registrations', { method: 'POST', body: JSON.stringify({ id: open.id, action, ...extra }) });
     const b = await res.json().catch(() => ({}));
     setPanelMsg(b.message || b.error || (res.ok ? 'Done.' : 'Action failed.'));
+    setCandidates(b.candidates ?? []);
     setBusy(false);
-    if (res.ok) await load();
+    if (res.ok && b.state === 'paid') await load();
   };
 
   const remind = async () => {
@@ -412,7 +422,7 @@ export default function SummitPaymentsPage() {
             ) : regs.map(r => {
               const st = STATE[r.payment_state];
               return (
-                <tr key={r.id} onClick={() => { setOpen(r); setPanelMsg(null); setRefInput(''); }} className="hover:bg-black/5"
+                <tr key={r.id} onClick={() => { setOpen(r); setPanelMsg(null); setRefInput(''); setCandidates([]); }} className="hover:bg-black/5"
                   style={{ borderTop: '1px solid var(--ledger-line)', cursor: 'pointer' }}>
                   <td style={{ ...cell, overflow: 'hidden' }}>
                     <div style={{ color: 'var(--ledger-ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.full_name}</div>
@@ -546,6 +556,28 @@ export default function SummitPaymentsPage() {
                       Use this when the person paid with a different email. Paystack is asked to confirm it before anything changes.
                     </p>
                   </div>
+
+                  {candidates.length > 0 && (
+                    <div>
+                      <p style={lab}>Unmatched Paystack payments of at least this amount</p>
+                      <p style={{ fontSize: 11.5, color: 'var(--ledger-ink-soft)', margin: '0 0 8px' }}>
+                        None of these are linked to anyone yet. If one is this person&apos;s payment, confirm it.
+                      </p>
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        {candidates.map(c => (
+                          <button key={c.reference} type="button" disabled={busy} onClick={() => act('verify', { reference: c.reference })}
+                            className="ledger-btn ledger-btn-ghost"
+                            style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '8px 10px' }}>
+                            <span>
+                              <strong>{naira(c.amountKobo / 100)}</strong>{c.email ? ' · ' + c.email : ''}
+                              <br /><span style={{ fontSize: 11, color: 'var(--ledger-ink-soft)' }}>{when(c.paidAt)}</span>
+                            </span>
+                            <span style={{ fontSize: 12, color: 'var(--ledger-gold-deep, var(--ledger-gold))', flexShrink: 0 }}>Confirm this →</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 

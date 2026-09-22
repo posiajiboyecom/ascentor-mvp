@@ -268,7 +268,7 @@ export async function reconcilePayments(): Promise<ReconcileSummary> {
 
 // ── Legacy adoption ──────────────────────────────────────────────────────────
 
-const SUMMIT_REF_RE = /^summit-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-d+$/i;
+const SUMMIT_REF_RE = /^summit-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-\d+$/i;
 const PAYSTACK_PAGES = 3; // 300 most recent successful transactions per run
 
 /**
@@ -358,6 +358,58 @@ export async function adoptSummitPayments(opts: { registrationId?: string } = {}
     if (txs.length < 100) break;
   }
   return adopted;
+}
+
+// ── Candidate transactions (self-serve match when auto-adoption finds nothing) ─
+
+export interface PaystackCandidate {
+  reference: string;
+  amountKobo: number;
+  currency: string;
+  email: string | null;
+  paidAt: string | null;
+}
+
+/**
+ * Lists recent successful Paystack transactions that are NOT linked to any
+ * payment_attempts row and cover at least `minAmountKobo`, newest first. Used
+ * so an admin can see and confirm the exact transaction for a registration when
+ * automatic reference/email matching finds nothing (e.g. the customer paid
+ * under a different email, or via a Paystack payment link/page rather than the
+ * site's own checkout). Never settles anything by itself.
+ */
+export async function findCandidateTransactions(minAmountKobo: number, limit = 6): Promise<PaystackCandidate[]> {
+  const secret = process.env.PAYSTACK_SECRET_KEY;
+  if (!secret) return [];
+
+  const out: PaystackCandidate[] = [];
+  for (let page = 1; page <= PAYSTACK_PAGES && out.length < limit; page++) {
+    const res = await fetch(
+      `https://api.paystack.co/transaction?status=success&perPage=100&page=${page}`,
+      { headers: { Authorization: `Bearer ${secret}` }, cache: 'no-store' },
+    );
+    const body = await res.json().catch(() => null);
+    if (!res.ok || !body?.status) throw new Error(`Paystack list failed (${res.status})`);
+    const txs: any[] = (body.data ?? []).filter((t: any) => typeof t.reference === 'string' && t.amount >= minAmountKobo);
+    if (txs.length === 0) { if ((body.data ?? []).length < 100) break; else continue; }
+
+    const { data: known } = await supabaseAdmin
+      .from('payment_attempts')
+      .select('reference')
+      .in('reference', txs.map(t => t.reference));
+    const knownSet = new Set((known ?? []).map((k: { reference: string }) => k.reference));
+
+    for (const tx of txs) {
+      if (knownSet.has(tx.reference)) continue;
+      out.push({
+        reference: tx.reference, amountKobo: tx.amount, currency: tx.currency ?? 'NGN',
+        email: tx.customer?.email ?? null, paidAt: tx.paid_at ?? null,
+      });
+      if (out.length >= limit) break;
+    }
+    if ((body.data ?? []).length < 100) break;
+  }
+  return out;
 }
 
 // ── Email retry ──────────────────────────────────────────────────────────────
