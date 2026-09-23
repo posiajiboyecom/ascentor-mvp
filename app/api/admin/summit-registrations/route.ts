@@ -267,7 +267,7 @@ export async function POST(req: NextRequest) {
     if (refs.size > 0 && !anyRefChecked && candidates.length === 0 && lastError) {
       return NextResponse.json({
         ok: false,
-        error: `Could not reach Paystack to check this: ${lastError}. This usually means the Paystack key on the server is missing, wrong, or Paystack is unreachable right now — it is not something wrong with this registration.`,
+        error: `Could not reach Paystack to check this: ${lastError}. This usually means the Paystack key on the server is missing, wrong, or Paystack is unreachable right now. It is not something wrong with this registration.`,
       }, { status: 502 });
     }
 
@@ -276,7 +276,7 @@ export async function POST(req: NextRequest) {
       state: lastState,
       candidates,
       message: candidates.length
-        ? `Paystack shows no completed payment for ${reg.email} (${lastState}). ${candidates.length} other recent payment${candidates.length === 1 ? '' : 's'} of at least this amount ${candidates.length === 1 ? 'was' : 'were'} found unlinked to anyone below — pick theirs if you recognise it.`
+        ? `Paystack shows no completed payment for ${reg.email} (${lastState}). ${candidates.length} other recent payment${candidates.length === 1 ? '' : 's'} of at least this amount ${candidates.length === 1 ? 'was' : 'were'} found unlinked to anyone below. Pick theirs if you recognise it.`
         : `Paystack shows no completed payment for ${reg.email} (${lastState}), and no other unlinked payment of this amount was found in the last ${'~300 transactions'}. Paste their Paystack reference above if you have it.${lastError ? ` (One check failed with: ${lastError})` : ''}`,
     });
   } catch (err) {

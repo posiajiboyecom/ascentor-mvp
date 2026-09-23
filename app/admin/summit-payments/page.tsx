@@ -463,7 +463,7 @@ export default function SummitPaymentsPage() {
         subtitle={open ? `${open.attendance_type === 'virtual' ? 'Virtual' : 'Physical'} ticket · registered ${when(open.created_at)}` : undefined}
         footer={open ? (
           <>
-            {/* Shown right next to the buttons that produce it — it's in the
+            {/* Shown right next to the buttons that produce it: it's in the
                 sticky footer, not the scrollable body, so the admin never has
                 to scroll up to see what a click just did. */}
             {panelMsg && <p className="ledger-mono" style={{ fontSize: 12, padding: '9px 12px', borderRadius: 8, background: 'var(--ledger-gold-bg)', margin: '0 0 4px' }}>{panelMsg}</p>}

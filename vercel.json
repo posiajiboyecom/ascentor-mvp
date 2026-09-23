@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/reconcile-payments",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/summit-event-day",
+      "schedule": "0 6 * * *"
     }
   ]
 }

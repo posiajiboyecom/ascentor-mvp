@@ -1,15 +1,23 @@
 // app/api/admin/summit-stream
 //   GET   settings + counts (confirmed virtual attendees, how many already sent)
-//   POST  { action: 'save', enabled, videoId }        save stream settings
-//         { action: 'send_all' }                       email the watch-page link
-//                                                        to every confirmed virtual attendee
-//         { action: 'send_one', id }                    (re)send to one registration
+//   POST  { action: 'save', enabled, videoId }   save stream settings
+//         { action: 'send_all' }                  email the watch-page link to
+//                                                  every confirmed virtual attendee
+//         { action: 'send_one', id }               (re)send to one registration
+//         { action: 'send_custom', email, fullName? }  send the same email to any
+//                                                       address (their own inbox, a
+//                                                       guest, a test) - never touches
+//                                                       registration data or tracking
+//         { action: 'send_event_day', force? }     run the morning-of reminder now
+//                                                   (force bypasses the "is it actually
+//                                                   the Summit day" check, for testing)
 // Admin only. All writes through the service role.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendStreamAccessEmail } from '@/lib/summitEmails';
+import { sendEventDayEmails } from '@/lib/summitEventDay';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -27,8 +35,9 @@ async function requireAdmin(req: NextRequest): Promise<boolean> {
 }
 
 const forbidden = () => NextResponse.json({ error: 'Forbidden: admin only' }, { status: 403 });
+const isValidEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
 
-// A YouTube URL/ID pasted by the admin, in whatever form they copied it -
+// A YouTube URL/ID pasted by the admin, in whatever form they copied it,
 // normalised down to the bare 11-character video id, or null if unparseable.
 function parseYouTubeId(input: string): string | null {
   const s = input.trim();
@@ -126,6 +135,41 @@ export async function POST(req: NextRequest) {
         ? `Sent to ${sent}, failed for ${failed} (${failedNames.join(', ')}). Check SMTP settings and try again for those.`
         : `Sent to ${sent} ${sent === 1 ? 'person' : 'people'}.`,
     }, { status: sent > 0 ? 200 : 502 });
+  }
+
+  // Send the exact same watch-page email to any address: the admin's own
+  // inbox for a preview, a guest, or a manual re-send that does not belong to
+  // a registration. Deliberately does not touch summit_registrations at all.
+  if (body?.action === 'send_custom') {
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const fullName = typeof body.fullName === 'string' && body.fullName.trim() ? body.fullName.trim() : 'there';
+    if (!isValidEmail(email)) return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
+    try {
+      await sendStreamAccessEmail(email, fullName);
+      return NextResponse.json({ ok: true, message: `Sent to ${email}.` });
+    } catch (err) {
+      console.error('[admin/summit-stream] send_custom failed:', err);
+      return NextResponse.json({ error: 'Email failed to send. Check SMTP settings.' }, { status: 502 });
+    }
+  }
+
+  // Manually run the morning-of-event reminder (virtual -> link, physical ->
+  // no link). force bypasses the "is it actually the Summit day" check, so it
+  // can be tested any day; the daily cron never passes force.
+  if (body?.action === 'send_event_day') {
+    try {
+      const summary = await sendEventDayEmails({ force: body.force === true });
+      if (!summary.ran) {
+        return NextResponse.json({ ok: true, ...summary, message: "Today is not the Summit day, so nothing was sent. Use the force option to test it early." });
+      }
+      return NextResponse.json({
+        ok: true, ...summary,
+        message: `Sent to ${summary.sentVirtual} virtual and ${summary.sentPhysical} physical attendee${summary.sentVirtual + summary.sentPhysical === 1 ? '' : 's'}${summary.failed ? `, ${summary.failed} failed` : ''}.`,
+      });
+    } catch (err) {
+      console.error('[admin/summit-stream] send_event_day failed:', err);
+      return NextResponse.json({ error: 'Event-day send failed' }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ error: 'Invalid request' }, { status: 400 });

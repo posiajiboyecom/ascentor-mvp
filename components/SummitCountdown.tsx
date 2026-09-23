@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { CalendarDays, Clock, MapPin } from 'lucide-react';
-
-// WAT (UTC+1). NOTE: 09:00 start time is an assumption, still unconfirmed.
-const EVENT_DATE = new Date('2026-11-19T09:00:00+01:00');
+import { SUMMIT_START_INSTANT } from '@/lib/elevationSummit';
 
 function getTimeRemaining() {
-  const total = EVENT_DATE.getTime() - Date.now();
+  const total = SUMMIT_START_INSTANT.getTime() - Date.now();
   const days = Math.max(0, Math.floor(total / (1000 * 60 * 60 * 24)));
   const hours = Math.max(0, Math.floor((total / (1000 * 60 * 60)) % 24));
   const minutes = Math.max(0, Math.floor((total / (1000 * 60)) % 60));
@@ -16,7 +14,7 @@ function getTimeRemaining() {
 }
 
 export default function SummitCountdown() {
-  // null until mounted — computing the time during SSR vs. at hydration
+  // null until mounted: computing the time during SSR vs. at hydration
   // produces different values and triggers a hydration mismatch (React #418).
   const [time, setTime] = useState<ReturnType<typeof getTimeRemaining> | null>(null);
 

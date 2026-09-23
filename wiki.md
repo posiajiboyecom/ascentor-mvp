@@ -329,11 +329,15 @@ Circle (8-12 members)
   paid item behind the revenue figure, deletion of unpaid test attempts, and
   **Reconcile now**. Summit and subscription revenue are always shown as
   separate streams (dashboard cards and colour-coded badges).
-- **Summit Livestream** (`/admin/summit-stream`): a live/off toggle and an
-  optional specific YouTube video id (blank = auto-embed whatever is live on
-  youtube.com/@AscentorGlobal) for the public gate at `/elevation-summit/watch`;
-  a table of confirmed virtual attendees with send/resend of the watch-page
-  link (individually or all at once), and when each was last sent.
+- **Summit Livestream** (`/admin/summit-stream`): a live/off toggle (matters
+  only on the day itself; before the confirmed start instant the public page
+  always shows a countdown regardless) and an optional specific YouTube video
+  id (blank = auto-embed whatever is live and Public on
+  youtube.com/@AscentorGlobal - a Private stream can never be embedded; use
+  Unlisted) for the public gate at `/elevation-summit/watch`; a table of
+  confirmed virtual attendees with send/resend of the watch-page link
+  (individually or all at once); sending the same email to any inbox; and a
+  manual test trigger for the morning-of-event reminder.
 - **Checkout switch:** toggles paid access vs free mode
   (`platform_settings.checkout_enabled`).
 - Layout, search and navigation are described in
@@ -379,6 +383,7 @@ Circle (8-12 members)
 | `/api/admin/summit-stream` | GET / POST | Livestream settings (enabled, video id) and confirmed-virtual-attendee list; `send_all` / `send_one` email the watch-page link |
 | `/api/admin/payments` | GET / POST / DELETE | Payment health, attempt list, detail and revenue ledger; reconcile, verify, resend; delete test data (admin only, audit-logged; paid attempts are protected) |
 | `/api/cron/reconcile-payments` | GET | Daily reconciliation (requires `CRON_SECRET`) |
+| `/api/cron/summit-event-day` | GET | Morning-of-event reminder to every confirmed registrant; no-ops on any other day (requires `CRON_SECRET`) |
 
 ---
 
@@ -452,11 +457,13 @@ Push to feature → Vercel Preview → Automated Tests → PR Check
 
 ### Scheduled jobs
 
-`vercel.json` defines one cron: `/api/cron/reconcile-payments`, daily at 07:00
-UTC. Vercel Hobby allows at most two crons, each at most once per day, fired
-within the scheduled hour, with a 60 s function limit; the job is designed as a
-batch sweep for that. It authenticates with `Authorization: Bearer $CRON_SECRET`
-and refuses to run if `CRON_SECRET` is not set. Trigger.dev runs the content and
+`vercel.json` defines two crons (the Hobby maximum): `/api/cron/reconcile-payments`
+daily at 07:00 UTC, and `/api/cron/summit-event-day` daily at 06:00 UTC (the
+latter no-ops unless today is actually the Summit day in WAT). Vercel Hobby
+allows at most two crons, each at most once per day, fired within the
+scheduled hour, with a 60 s function limit; both jobs are designed as batch
+sweeps for that. They authenticate with `Authorization: Bearer $CRON_SECRET`
+and refuse to run if `CRON_SECRET` is not set. Trigger.dev runs the content and
 email tasks.
 
 ### Release checklist (database or payment changes)

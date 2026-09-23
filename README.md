@@ -189,20 +189,37 @@ delete) and a branded **PDF report** of the current view.
 
 **Summit livestream.** `/elevation-summit/watch` is a public, email-gated page:
 a visitor enters the email they registered with, and if it belongs to a PAID
-registration they get the embedded YouTube stream (any other result — not
-found, not yet paid — shows a clear explanation, never the video). A
-convenience cookie skips re-typing the email on a refresh; the server always
-re-checks that exact email against the database, so the cookie is not a
-security boundary. Admins control it from **Admin → Summit Livestream**
-(`/admin/summit-stream`): a live/off toggle, an optional specific YouTube video
-id (leave blank to auto-embed whatever is currently live on
-youtube.com/@AscentorGlobal), and a button to email the watch-page link to
-every confirmed **virtual** attendee (physical attendees are never included).
-Settings live in `platform_settings` (`summit_stream_enabled`,
-`summit_stream_video_id`) — see migration `20260923b_summit_stream.sql`.
-Turning the toggle on before the channel is actually live shows YouTube's own
-"video unavailable" message, so flip it on right as the stream starts, not
-hours ahead.
+registration they get access (any other result: not found, not yet paid,
+shows a clear explanation, never the video). Even a confirmed attendee sees
+only a countdown until `SUMMIT_START_INSTANT` (`lib/elevationSummit.ts`,
+Thursday 19 November 2026, 10:00am WAT); the video id and channel id are never
+sent to the browser before that instant, so they cannot be discovered by
+inspecting the page or the API ahead of time. The page also disables text
+selection, copying and the right-click menu, though a plain YouTube embed
+cannot be made fully un-shareable: YouTube's own player keeps its menu
+regardless. A convenience cookie skips re-typing the email on a refresh; the
+server always re-checks that exact email against the database, so the cookie
+is not a security boundary.
+
+Admins control it from **Admin → Summit Livestream** (`/admin/summit-stream`):
+a live/off toggle for the exact go-live moment on the day, an optional
+specific YouTube video id (leave blank to auto-embed whatever is currently
+live and Public on youtube.com/@AscentorGlobal), sending the link to any inbox
+(a guest, or your own for a preview), and a manual test trigger for the
+morning-of reminder. **A Private YouTube video can never be embedded for
+anyone but the channel owner.** Set the live stream's visibility to
+**Unlisted** (not Private) and paste its link into the admin page; the
+automatic channel embed only works for a stream set fully Public. Settings
+live in `platform_settings` (`summit_stream_enabled`, `summit_stream_video_id`)
+- see migrations `20260923b_summit_stream.sql` and `20260923c_summit_event_day.sql`.
+
+**Morning-of-event reminder.** `/api/cron/summit-event-day` (added to
+`vercel.json`, daily at 06:00 UTC / 07:00 WAT) emails every confirmed
+registrant on the day of the Summit: virtual attendees get the watch-page
+link, physical attendees get a reminder with no link at all. It no-ops on any
+other day; the admin page can force a test run early. Tracked via
+`summit_registrations.event_day_email_sent_at`, so it is safe to fire more
+than once.
 
 **Summit emails.** Registrants get a "Complete your registration" email on
 submit and a confirmation with the PDF ticket after payment. The admin

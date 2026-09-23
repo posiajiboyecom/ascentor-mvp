@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (Summit livestream, hardening)
+- The watch page no longer reveals the video/channel id (or even whether the
+  stream is switched on) until the exact confirmed start instant
+  (`SUMMIT_START_INSTANT`, Thursday 19 Nov 2026, 10:00am WAT). Before that, a
+  confirmed attendee sees only a countdown; the admin's on/off toggle now only
+  matters for choosing the precise minute the embed appears on the day itself.
+- The watch page disables text selection, copying and the right-click menu.
+  This is a practical deterrent, not DRM: a plain YouTube embed cannot be made
+  fully un-shareable, since YouTube's own player retains its own menu
+  regardless of what the host page does.
+- The email form uses react-hook-form + zod (matching the rest of the site's
+  forms) instead of native HTML `required`, with field-level error messages.
+- Corrected the Summit start time site-wide to 10:00am WAT (was drifting
+  between an unconfirmed 09:00 assumption and midnight UTC in different
+  places); `lib/elevationSummit.ts` is now the single source for it,
+  used by `SummitCountdown`, the watch page and its emails.
+- All new copy uses the full date ("Thursday, 19th November 2026 at 10:00am
+  WAT"), never an abbreviated "19 November".
+- Admin guidance now explains that a **Private** YouTube stream can never be
+  embedded for anyone but the owner; it must be **Unlisted**, with its link
+  pasted into the admin page, for the automatic channel embed only works for a
+  fully Public stream.
+- Admin can now email the stream-access message to any inbox (their own, for a
+  preview, or a guest), and can trigger the morning-of-event reminder manually
+  for testing.
+
+### Added (Summit event-day reminder)
+- `/api/cron/summit-event-day` (daily, no-ops on any day but the Summit's,
+  see `lib/summitEventDay.ts`): emails every confirmed registrant the morning
+  of the event. Virtual attendees get the watch-page link; physical attendees
+  get a reminder with no link at all. Tracked via
+  `summit_registrations.event_day_email_sent_at` so it is safe to run more
+  than once. Migration `20260923c_summit_event_day.sql`.
+
 ### Added (Summit livestream)
 - **Public watch page** (`/elevation-summit/watch`): enter the email you
   registered with; a PAID registration gets the embedded YouTube stream, any

@@ -2,6 +2,7 @@ import { summitMailer, getMailer } from './nodemailer';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from './emailTemplate';
 import { generateSummitTicket, type TicketData } from './summitTicket';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { SUMMIT_DATE_LABEL, SUMMIT_DATETIME_LABEL } from '@/lib/elevationSummit';
 
 const SUMMIT_URL = 'https://ascentorbi.com/elevation-summit';
 const SUMMIT_WATCH_URL = `${SUMMIT_URL}/watch`;
@@ -145,16 +146,57 @@ export async function sendStreamAccessEmail(to: string, fullName: string) {
     to,
     subject: 'Your Elevation Summit livestream link',
     html: brandedEmailLayout({
-      preheader: 'Everything you need to join the livestream on 19 November.',
-      eyebrow: 'Elevation Summit · 19 November 2026',
+      preheader: `Everything you need to join the livestream on ${SUMMIT_DATE_LABEL}.`,
+      eyebrow: `Elevation Summit · ${SUMMIT_DATE_LABEL}`,
       heading: "You're all set to watch.",
       recipient: to,
       content:
         p(`Hi ${esc(fullName)},`) +
-        p('Your virtual place at the Elevation Summit is confirmed. Use the button below on the day of the event to watch the livestream.') +
+        p(`Your virtual place at the Elevation Summit is confirmed. Save this link now, and use it on ${esc(SUMMIT_DATETIME_LABEL)} to watch the livestream.`) +
+        goldButton('Open the livestream page →', SUMMIT_WATCH_URL) +
+        p(`You'll be asked for the email address you registered with (<strong>${esc(to)}</strong>). That's how we confirm your ticket, no password needed.`) +
+        p(`<span style="color:#9CA3AF;font-size:13px;">The page will show a countdown until the programme starts, then open the stream automatically. On the morning of the event we'll also send you a reminder with this same link.</span>`),
+    }),
+  });
+}
+
+// ── Registrant: event-day reminder, sent by the morning-of cron ─────────────
+// Virtual attendees get the watch-page link. Physical attendees get NO link
+// at all: they are attending in person, not remotely.
+
+export async function sendEventDayVirtualEmail(to: string, fullName: string) {
+  await sendSummitMail({
+    to,
+    subject: "Today's the day: The Elevation Summit livestream",
+    html: brandedEmailLayout({
+      preheader: `The livestream opens today, ${SUMMIT_DATETIME_LABEL}.`,
+      eyebrow: `Elevation Summit · Today`,
+      heading: 'Today is the day.',
+      recipient: to,
+      content:
+        p(`Hi ${esc(fullName)},`) +
+        p(`The Elevation Summit begins today, <strong>${esc(SUMMIT_DATETIME_LABEL)}</strong>. Use the link below to join the livestream.`) +
         goldButton('Open the livestream →', SUMMIT_WATCH_URL) +
-        p(`You'll be asked for the email address you registered with (<strong>${esc(to)}</strong>) — that's how we confirm your ticket, no password needed.`) +
-        p('<span style="color:#9CA3AF;font-size:13px;">Bookmark this link. The stream goes live shortly before the programme starts on 19 November 2026.</span>'),
+        p("You will be asked for the email address you registered with. Keep this email handy in case you need the link again.") +
+        p('<span style="color:#9CA3AF;font-size:13px;">We look forward to having you with us today.</span>'),
+    }),
+  });
+}
+
+export async function sendEventDayPhysicalEmail(to: string, fullName: string) {
+  await sendSummitMail({
+    to,
+    subject: "Today's the day: The Elevation Summit",
+    html: brandedEmailLayout({
+      preheader: `See you today, ${SUMMIT_DATETIME_LABEL}.`,
+      eyebrow: `Elevation Summit · Today`,
+      heading: 'Today is the day.',
+      recipient: to,
+      content:
+        p(`Hi ${esc(fullName)},`) +
+        p(`The Elevation Summit begins today, <strong>${esc(SUMMIT_DATETIME_LABEL)}</strong>. We look forward to seeing you at the venue.`) +
+        p('Please bring a valid form of identification and arrive with enough time to check in before the programme starts.') +
+        p('<span style="color:#9CA3AF;font-size:13px;">See you soon.</span>'),
     }),
   });
 }
