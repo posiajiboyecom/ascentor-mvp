@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Summit livestream)
+- **Public watch page** (`/elevation-summit/watch`): enter the email you
+  registered with; a PAID registration gets the embedded YouTube stream, any
+  other result gives a clear explanation (not found / not yet paid) instead of
+  the video. A convenience cookie skips retyping the email on a refresh; the
+  server always re-validates that exact email, so the cookie grants nothing by
+  itself.
+- **Admin → Summit Livestream** (`/admin/summit-stream`): live/off toggle,
+  optional specific YouTube video id (blank auto-embeds whatever is currently
+  live on youtube.com/@AscentorGlobal, resolved channel id `UCK2ixTgohGdFcfGTDoxYCWQ`),
+  and sending the watch-page link by email to confirmed **virtual** attendees
+  only (individually or all at once), with per-person send history.
+- Settings stored in `platform_settings`; migration `20260923b_summit_stream.sql`
+  adds `summit_registrations.stream_access_sent_at` and seeds the settings rows.
+
 ### Fixed (Summit payments, ticketing and registration)
 - **Legacy payments were unrecoverable:** Summit payments made before
   `payment_attempts` existed were rejected as "unknown reference" forever. The

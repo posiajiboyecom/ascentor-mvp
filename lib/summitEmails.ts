@@ -4,6 +4,7 @@ import { generateSummitTicket, type TicketData } from './summitTicket';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const SUMMIT_URL = 'https://ascentorbi.com/elevation-summit';
+const SUMMIT_WATCH_URL = `${SUMMIT_URL}/watch`;
 
 /** Where every Summit admin alert goes. Deliberately NOT ADMIN_EMAIL, which may point elsewhere. */
 export const SUMMIT_ADMIN_EMAIL = process.env.SUMMIT_ADMIN_EMAIL || 'joinascentor@gmail.com';
@@ -134,6 +135,27 @@ export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
         contentType: 'application/pdf',
       }],
     } : {}),
+  });
+}
+
+// ── Registrant: virtual livestream access (sent by an admin) ────────────────
+
+export async function sendStreamAccessEmail(to: string, fullName: string) {
+  await sendSummitMail({
+    to,
+    subject: 'Your Elevation Summit livestream link',
+    html: brandedEmailLayout({
+      preheader: 'Everything you need to join the livestream on 19 November.',
+      eyebrow: 'Elevation Summit · 19 November 2026',
+      heading: "You're all set to watch.",
+      recipient: to,
+      content:
+        p(`Hi ${esc(fullName)},`) +
+        p('Your virtual place at the Elevation Summit is confirmed. Use the button below on the day of the event to watch the livestream.') +
+        goldButton('Open the livestream →', SUMMIT_WATCH_URL) +
+        p(`You'll be asked for the email address you registered with (<strong>${esc(to)}</strong>) — that's how we confirm your ticket, no password needed.`) +
+        p('<span style="color:#9CA3AF;font-size:13px;">Bookmark this link. The stream goes live shortly before the programme starts on 19 November 2026.</span>'),
+    }),
   });
 }
 

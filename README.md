@@ -187,6 +187,23 @@ Summit page has server-side search, status and Physical/Virtual filters, an
 off-canvas per record (call/WhatsApp, Paystack transaction, resend ticket,
 delete) and a branded **PDF report** of the current view.
 
+**Summit livestream.** `/elevation-summit/watch` is a public, email-gated page:
+a visitor enters the email they registered with, and if it belongs to a PAID
+registration they get the embedded YouTube stream (any other result — not
+found, not yet paid — shows a clear explanation, never the video). A
+convenience cookie skips re-typing the email on a refresh; the server always
+re-checks that exact email against the database, so the cookie is not a
+security boundary. Admins control it from **Admin → Summit Livestream**
+(`/admin/summit-stream`): a live/off toggle, an optional specific YouTube video
+id (leave blank to auto-embed whatever is currently live on
+youtube.com/@AscentorGlobal), and a button to email the watch-page link to
+every confirmed **virtual** attendee (physical attendees are never included).
+Settings live in `platform_settings` (`summit_stream_enabled`,
+`summit_stream_video_id`) — see migration `20260923b_summit_stream.sql`.
+Turning the toggle on before the channel is actually live shows YouTube's own
+"video unavailable" message, so flip it on right as the stream starts, not
+hours ahead.
+
 **Summit emails.** Registrants get a "Complete your registration" email on
 submit and a confirmation with the PDF ticket after payment. The admin
 (`SUMMIT_ADMIN_EMAIL`) gets an email when a payment is paid (name, email, phone,

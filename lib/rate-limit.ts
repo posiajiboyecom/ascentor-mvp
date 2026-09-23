@@ -95,6 +95,12 @@ export const summitRegisterLimiter = new RateLimiter({
   windowMs: 10 * 60 * 1000,
 });
 
+/** Summit stream email-gate: 15 checks per 10 minutes per IP (a typo shouldn't lock anyone out) */
+export const summitStreamLimiter = new RateLimiter({
+  limit:    15,
+  windowMs: 10 * 60 * 1000,
+});
+
 /**
  * Extract the real client IP from request headers.
  * Prefers x-vercel-forwarded-for (Vercel's tamper-proof header, set by the

@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import {
   BarChart3, Briefcase, CalendarDays, ClipboardList, CreditCard, Database,
   GraduationCap, HeartHandshake, Inbox, LayoutDashboard, LayoutTemplate,
-  Mail, Megaphone, MessageCircle, MessagesSquare, Package, PenLine, Radar,
+  Mail, Megaphone, MessageCircle, MessagesSquare, Package, PenLine, Radar, Radio,
   ScrollText, ShieldCheck, Tag, Ticket, Users, Workflow, ArrowLeftRight, UserRound,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -85,6 +85,7 @@ const NAV_GROUPS: Group[] = [
       { href: '/admin/events',           label: 'Public Events',    icon: <CalendarDays /> },
       { href: '/admin/community-events', label: 'Community Events', icon: <MessagesSquare /> },
       { href: '/admin/summit',           label: 'Summit',           icon: <Ticket /> },
+      { href: '/admin/summit-stream',    label: 'Summit Livestream', icon: <Radio /> },
     ],
   },
   {

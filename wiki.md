@@ -329,6 +329,11 @@ Circle (8-12 members)
   paid item behind the revenue figure, deletion of unpaid test attempts, and
   **Reconcile now**. Summit and subscription revenue are always shown as
   separate streams (dashboard cards and colour-coded badges).
+- **Summit Livestream** (`/admin/summit-stream`): a live/off toggle and an
+  optional specific YouTube video id (blank = auto-embed whatever is live on
+  youtube.com/@AscentorGlobal) for the public gate at `/elevation-summit/watch`;
+  a table of confirmed virtual attendees with send/resend of the watch-page
+  link (individually or all at once), and when each was last sent.
 - **Checkout switch:** toggles paid access vs free mode
   (`platform_settings.checkout_enabled`).
 - Layout, search and navigation are described in
@@ -370,6 +375,8 @@ Circle (8-12 members)
 | `/api/admin/analytics` | GET | Overview KPIs and chart series |
 | `/api/summit/pay/abandon` | POST | Browser reports a closed payment window; alerts the admin (verifies with Paystack first, once per attempt) |
 | `/api/admin/summit-registrations` | GET / POST / PATCH | Summit registrations with derived payment state, server-side search/filter/pagination and stats (`?paged=1`); `verify` and `resend` actions; notes and ticket type |
+| `/api/summit/stream/verify` | GET / POST | Public livestream email gate: returns not_found / not_paid / paid (+ stream settings) for an email; sets a convenience cookie so a refresh doesn't require retyping |
+| `/api/admin/summit-stream` | GET / POST | Livestream settings (enabled, video id) and confirmed-virtual-attendee list; `send_all` / `send_one` email the watch-page link |
 | `/api/admin/payments` | GET / POST / DELETE | Payment health, attempt list, detail and revenue ledger; reconcile, verify, resend; delete test data (admin only, audit-logged; paid attempts are protected) |
 | `/api/cron/reconcile-payments` | GET | Daily reconciliation (requires `CRON_SECRET`) |
 
