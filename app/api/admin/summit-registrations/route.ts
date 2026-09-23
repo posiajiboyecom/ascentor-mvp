@@ -218,10 +218,20 @@ export async function POST(req: NextRequest) {
 
     let settled = false;
     let lastState = 'no_attempts';
+    let lastError: string | null = null;
+    let anyRefChecked = false; // true once at least one reference got a real (non-throwing) answer from Paystack
+    // A single bad reference (Paystack timeout, transient error) must never abort
+    // checking the rest, and must never surface as an opaque "Action failed".
     for (const ref of refs) {
-      const r = await settleReference(ref);
-      lastState = r.state === 'rejected' ? `rejected: ${r.reason}` : r.state;
-      if (r.state === 'settled') { settled = true; break; }
+      try {
+        const r = await settleReference(ref);
+        anyRefChecked = true;
+        lastState = r.state === 'rejected' ? `rejected: ${r.reason}` : r.state;
+        if (r.state === 'settled') { settled = true; break; }
+      } catch (err) {
+        lastError = (err as Error).message;
+        console.error(`[admin/summit-registrations] settleReference(${ref}) failed:`, err);
+      }
     }
 
     // Nothing settled by reference: look for a successful Paystack payment under
@@ -230,6 +240,7 @@ export async function POST(req: NextRequest) {
       try {
         if ((await adoptSummitPayments({ registrationId: id })) > 0) settled = true;
       } catch (err) {
+        lastError = (err as Error).message;
         console.error('[admin/summit-registrations] adopt failed:', err);
       }
     }
@@ -246,7 +257,18 @@ export async function POST(req: NextRequest) {
       const minKobo = Math.round((reg.attendance_type === 'virtual' ? (prices?.virtual ?? 0) : (prices?.onsite ?? 0)) * 100);
       if (minKobo > 0) candidates = await findCandidateTransactions(minKobo);
     } catch (err) {
+      lastError = (err as Error).message;
       console.error('[admin/summit-registrations] candidate lookup failed:', err);
+    }
+
+    // There WERE references to check, but every single one of them threw before
+    // Paystack could give a real answer (and the candidate lookup found nothing
+    // either): say that plainly instead of the misleading "no completed payment".
+    if (refs.size > 0 && !anyRefChecked && candidates.length === 0 && lastError) {
+      return NextResponse.json({
+        ok: false,
+        error: `Could not reach Paystack to check this: ${lastError}. This usually means the Paystack key on the server is missing, wrong, or Paystack is unreachable right now — it is not something wrong with this registration.`,
+      }, { status: 502 });
     }
 
     return NextResponse.json({
@@ -255,7 +277,7 @@ export async function POST(req: NextRequest) {
       candidates,
       message: candidates.length
         ? `Paystack shows no completed payment for ${reg.email} (${lastState}). ${candidates.length} other recent payment${candidates.length === 1 ? '' : 's'} of at least this amount ${candidates.length === 1 ? 'was' : 'were'} found unlinked to anyone below — pick theirs if you recognise it.`
-        : `Paystack shows no completed payment for ${reg.email} (${lastState}), and no other unlinked payment of this amount was found in the last ${'~300 transactions'}. Paste their Paystack reference above if you have it.`,
+        : `Paystack shows no completed payment for ${reg.email} (${lastState}), and no other unlinked payment of this amount was found in the last ${'~300 transactions'}. Paste their Paystack reference above if you have it.${lastError ? ` (One check failed with: ${lastError})` : ''}`,
     });
   } catch (err) {
     console.error('[admin/summit-registrations] POST error:', err);
