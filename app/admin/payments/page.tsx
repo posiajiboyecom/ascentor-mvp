@@ -406,38 +406,40 @@ export default function AdminPaymentsPage() {
             {att && <KindBadge kind={att.kind} />}
           </span>
         }
-        footer={
-          openLedger ? (
-            <button type="button" disabled={busy} onClick={() => deleteLedgerItem(openLedger)} className="ledger-btn ledger-btn-ghost"
-              style={{ color: 'var(--ledger-bad)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <Trash2 size={14} /> Delete (test data)
-            </button>
-          ) : att ? (
-            <>
-              {!isPaid && (
-                <button type="button" disabled={busy} onClick={() => runAction('verify')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  <ShieldCheck size={14} /> {busy ? 'Checking…' : 'Verify with Paystack'}
-                </button>
-              )}
-              {att.kind === 'summit' && (att.status === 'success' || reg?.payment_status === 'paid') && (
-                <button type="button" disabled={busy} onClick={() => runAction('resend')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  <Mail size={14} /> {busy ? 'Sending…' : 'Send confirmation email + ticket'}
-                </button>
-              )}
-              {UNPAID.includes(att.status) && (
-                <button type="button" disabled={busy} onClick={() => deleteAttempt(att.reference)} className="ledger-btn ledger-btn-ghost"
-                  style={{ color: 'var(--ledger-bad)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  <Trash2 size={14} /> Delete (test payment)
-                </button>
-              )}
-            </>
-          ) : null
-        }
-      >
-        {panelMsg && (
-          <p className="ledger-mono" style={{ fontSize: 12, padding: '9px 12px', borderRadius: 8, background: 'var(--ledger-gold-bg)', margin: '0 0 16px' }}>{panelMsg}</p>
+        footer={!panelMsg && !openLedger && !att ? null : (
+          <>
+            {/* Shown right next to the buttons that produce it — it's in the
+                sticky footer, not the scrollable body, so the admin never has
+                to scroll up to see what a click just did. */}
+            {panelMsg && <p className="ledger-mono" style={{ fontSize: 12, padding: '9px 12px', borderRadius: 8, background: 'var(--ledger-gold-bg)', margin: '0 0 4px' }}>{panelMsg}</p>}
+            {openLedger ? (
+              <button type="button" disabled={busy} onClick={() => deleteLedgerItem(openLedger)} className="ledger-btn ledger-btn-ghost"
+                style={{ color: 'var(--ledger-bad)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Trash2 size={14} /> Delete (test data)
+              </button>
+            ) : att ? (
+              <>
+                {!isPaid && (
+                  <button type="button" disabled={busy} onClick={() => runAction('verify')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <ShieldCheck size={14} /> {busy ? 'Checking…' : 'Verify with Paystack'}
+                  </button>
+                )}
+                {att.kind === 'summit' && (att.status === 'success' || reg?.payment_status === 'paid') && (
+                  <button type="button" disabled={busy} onClick={() => runAction('resend')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <Mail size={14} /> {busy ? 'Sending…' : 'Send confirmation email + ticket'}
+                  </button>
+                )}
+                {UNPAID.includes(att.status) && (
+                  <button type="button" disabled={busy} onClick={() => deleteAttempt(att.reference)} className="ledger-btn ledger-btn-ghost"
+                    style={{ color: 'var(--ledger-bad)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <Trash2 size={14} /> Delete (test payment)
+                  </button>
+                )}
+              </>
+            ) : null}
+          </>
         )}
-
+      >
         {/* Revenue-ledger item */}
         {openLedger && (
           <div style={{ display: 'grid', gap: 14 }}>

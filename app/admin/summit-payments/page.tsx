@@ -463,6 +463,10 @@ export default function SummitPaymentsPage() {
         subtitle={open ? `${open.attendance_type === 'virtual' ? 'Virtual' : 'Physical'} ticket · registered ${when(open.created_at)}` : undefined}
         footer={open ? (
           <>
+            {/* Shown right next to the buttons that produce it — it's in the
+                sticky footer, not the scrollable body, so the admin never has
+                to scroll up to see what a click just did. */}
+            {panelMsg && <p className="ledger-mono" style={{ fontSize: 12, padding: '9px 12px', borderRadius: 8, background: 'var(--ledger-gold-bg)', margin: '0 0 4px' }}>{panelMsg}</p>}
             {open.payment_state === 'paid' ? (
               <button type="button" disabled={busy} onClick={() => act('resend')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
                 <Mail size={14} /> {busy ? 'Sending…' : 'Resend confirmation email + ticket'}
@@ -489,8 +493,6 @@ export default function SummitPaymentsPage() {
           const isPaid = open.payment_state === 'paid';
           return (
             <div style={{ display: 'grid', gap: 14 }}>
-              {panelMsg && <p className="ledger-mono" style={{ fontSize: 12, padding: '9px 12px', borderRadius: 8, background: 'var(--ledger-gold-bg)', margin: 0 }}>{panelMsg}</p>}
-
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <span style={{ background: st.bg, color: st.fg, padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600 }}>{st.label}</span>
                 {isPaid && <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--ledger-ink)' }}>{naira(num(open.amount_paid))}</span>}
