@@ -62,18 +62,20 @@ export async function GET(req: NextRequest) {
     .in('key', ['summit_stream_enabled', 'summit_stream_video_id']);
   const get = (k: string) => settings?.find(s => s.key === k)?.value ?? '';
 
-  const { data: virtual } = await supabaseAdmin
+  // Every paid attendee, onsite included, so the admin sees the full paid
+  // list here. Only virtual ones are ever sent the stream link.
+  const { data: paid } = await supabaseAdmin
     .from('summit_registrations')
-    .select('id, full_name, email, stream_access_sent_at')
+    .select('id, full_name, email, attendance_type, stream_access_sent_at')
     .eq('payment_status', 'paid')
-    .eq('attendance_type', 'virtual')
     .order('full_name', { ascending: true });
+  const virtual = (paid ?? []).filter(r => r.attendance_type === 'virtual');
 
   return NextResponse.json({
     enabled: get('summit_stream_enabled') === 'true',
     videoId: get('summit_stream_video_id') || '',
-    attendees: virtual ?? [],
-    sentCount: (virtual ?? []).filter(r => r.stream_access_sent_at).length,
+    attendees: paid ?? [],
+    sentCount: virtual.filter(r => r.stream_access_sent_at).length,
   });
 }
 

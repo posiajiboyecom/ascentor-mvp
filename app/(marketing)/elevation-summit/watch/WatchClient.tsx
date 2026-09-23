@@ -231,13 +231,13 @@ export default function WatchClient() {
 
       {result.state === 'paid' && !result.eventStarted && (
         <div style={{ ...CARD, ...noCopy }}>
-          <p style={{ textAlign: 'center', fontSize: '1.0625rem', fontWeight: 600, color: '#0F0F0E', marginBottom: '0.75rem' }}>
+          <p style={{ textAlign: 'center', fontSize: '1.0625rem', fontWeight: 600, color: '#0F0F0E', marginBottom: '1.5rem' }}>
             You are confirmed, {result.fullName.split(' ')[0]}.
           </p>
-          <p style={{ textAlign: 'center', color: '#6B7280', fontSize: '0.9375rem', lineHeight: 1.7, marginBottom: '2rem' }}>
+          <Countdown startsAt={result.startsAt} />
+          <p style={{ textAlign: 'center', color: '#6B7280', fontSize: '0.9375rem', lineHeight: 1.7, marginTop: '1.5rem', marginBottom: 0 }}>
             The livestream opens on <strong>{SUMMIT_DATETIME_LABEL}</strong>. This page checks itself automatically, so there is nothing else for you to do until then. Feel free to close it and come back on the day.
           </p>
-          <Countdown startsAt={result.startsAt} />
           <button type="button" onClick={useDifferentEmail} style={{ display: 'block', margin: '2rem auto 0', background: 'none', border: 'none', color: '#9CA3AF', fontSize: '0.8125rem', cursor: 'pointer', textDecoration: 'underline' }}>
             Not you? Use a different email
           </button>

@@ -23,6 +23,7 @@ interface Attendee {
   id: string;
   full_name: string;
   email: string;
+  attendance_type: string | null;
   stream_access_sent_at: string | null;
 }
 
@@ -152,7 +153,9 @@ export default function SummitStreamPage() {
   };
 
   const dirty = videoIdInput.trim() !== (savedVideoId || '');
-  const sentCount = attendees.filter(a => a.stream_access_sent_at).length;
+  const virtual = attendees.filter(a => a.attendance_type === 'virtual');
+  const onsiteCount = attendees.length - virtual.length;
+  const sentCount = virtual.filter(a => a.stream_access_sent_at).length;
 
   return (
     <div className="animate-fade-up">
@@ -245,16 +248,16 @@ export default function SummitStreamPage() {
           <Mail size={18} color="var(--ledger-ink-soft)" />
           <h2 className="ledger-h1" style={{ fontSize: 16, margin: 0 }}>Send access links</h2>
           <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--ledger-ink-soft)' }}>
-            {attendees.length} confirmed virtual &middot; {sentCount} already sent
+            {attendees.length} paid &middot; {virtual.length} virtual &middot; {onsiteCount} onsite &middot; {sentCount} links sent
           </span>
         </div>
         <p style={{ fontSize: 13, color: 'var(--ledger-ink-soft)', margin: '0 0 14px', lineHeight: 1.6 }}>
-          Emails the watch-page link to every confirmed <strong>virtual</strong> attendee. Physical attendees are never included. Safe to send more than once.
+          Every paid attendee is listed below. The watch-page link only goes to <strong>virtual</strong> attendees; onsite attendees are shown for reference and are never sent it. Safe to send more than once.
         </p>
 
-        <button type="button" disabled={sendingAll || attendees.length === 0} onClick={sendAll} className="ledger-btn ledger-btn-primary"
+        <button type="button" disabled={sendingAll || virtual.length === 0} onClick={sendAll} className="ledger-btn ledger-btn-primary"
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
-          <Send size={14} /> {sendingAll ? 'Sending...' : `Send to all confirmed virtual attendees (${attendees.length})`}
+          <Send size={14} /> {sendingAll ? 'Sending...' : `Send to all confirmed virtual attendees (${virtual.length})`}
         </button>
 
         <div className="rounded-lg" style={{ border: '1px solid var(--ledger-line)', overflow: 'hidden' }}>
@@ -270,20 +273,31 @@ export default function SummitStreamPage() {
               {loading ? (
                 <tr><td colSpan={3} className="ledger-mono" style={{ padding: 24, textAlign: 'center' }}>Loading...</td></tr>
               ) : attendees.length === 0 ? (
-                <tr><td colSpan={3} className="ledger-mono" style={{ padding: 24, textAlign: 'center' }}>No confirmed virtual attendees yet.</td></tr>
+                <tr><td colSpan={3} className="ledger-mono" style={{ padding: 24, textAlign: 'center' }}>No paid attendees yet.</td></tr>
               ) : attendees.map(a => (
                 <tr key={a.id} style={{ borderTop: '1px solid var(--ledger-line)' }}>
                   <td style={{ padding: '10px 12px' }}>
-                    <div style={{ color: 'var(--ledger-ink)', fontWeight: 500 }}>{a.full_name}</div>
+                    <div style={{ color: 'var(--ledger-ink)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      {a.full_name}
+                      <span style={{
+                        fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
+                        background: a.attendance_type === 'virtual' ? 'rgba(34,160,90,.15)' : 'rgba(200,169,110,.22)',
+                        color: a.attendance_type === 'virtual' ? '#177245' : '#8A6A1F',
+                      }}>
+                        {a.attendance_type === 'virtual' ? 'Virtual' : 'Onsite'}
+                      </span>
+                    </div>
                     <div style={{ color: 'var(--ledger-ink-soft)', fontSize: 11.5 }}>{a.email}</div>
                   </td>
                   <td style={{ padding: '10px 12px', color: 'var(--ledger-ink-soft)' }}>
-                    {when(a.stream_access_sent_at) ?? <span style={{ color: 'var(--ledger-gold-deep, var(--ledger-gold))' }}>not sent yet</span>}
+                    {a.attendance_type !== 'virtual'
+                      ? <span>n/a (attending in person)</span>
+                      : when(a.stream_access_sent_at) ?? <span style={{ color: 'var(--ledger-gold-deep, var(--ledger-gold))' }}>not sent yet</span>}
                   </td>
                   <td style={{ padding: '10px 12px' }}>
-                    <button type="button" disabled={sendingId === a.id} onClick={() => sendOne(a.id)} className="ledger-btn ledger-btn-ghost" style={{ fontSize: 11.5, padding: '5px 10px' }}>
+                    {a.attendance_type === 'virtual' && <button type="button" disabled={sendingId === a.id} onClick={() => sendOne(a.id)} className="ledger-btn ledger-btn-ghost" style={{ fontSize: 11.5, padding: '5px 10px' }}>
                       {sendingId === a.id ? 'Sending...' : a.stream_access_sent_at ? 'Resend' : 'Send'}
-                    </button>
+                    </button>}
                   </td>
                 </tr>
               ))}
