@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { sendRegistrationReceivedEmail } from '@/lib/summitEmails';
+import { deliverPaidEmails } from '@/lib/summitEmails';
 
+// Registration is free: one-click for a signed-in app user, confirmed and
+// ticketed immediately, same as the public form.
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const {
@@ -18,6 +20,7 @@ export async function POST(req: NextRequest) {
 
   const fullName = profile?.full_name?.trim() || user.email?.split('@')[0] || 'Ascentor User';
   const email = profile?.email || user.email || '';
+  const nowIso = new Date().toISOString();
 
   const { data: existing } = await supabaseAdmin
     .from('summit_registrations')
@@ -46,10 +49,14 @@ export async function POST(req: NextRequest) {
       other_messages: null,
       consent: true,
       source: 'app',
-      status: 'pending',
-      payment_status: 'pending',
+      status: 'confirmed',
+      payment_status: 'paid',
+      amount_paid: 0,
+      currency: 'NGN',
+      paid_at: nowIso,
+      confirmed_at: nowIso,
     })
-    .select('id')
+    .select('*')
     .single();
 
   if (error || !created) {
@@ -69,11 +76,7 @@ export async function POST(req: NextRequest) {
     read: false,
   });
 
-  try {
-    if (email) await sendRegistrationReceivedEmail(email, fullName);
-  } catch (err: any) {
-    console.warn('[summit/register-user] email non-fatal:', err.message);
-  }
+  await deliverPaidEmails(created, 0, 'NGN', '');
 
   return NextResponse.json({ ok: true, registrationId: created.id });
 }
@@ -85,11 +88,12 @@ export async function DELETE(req: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  // Registration is free, so there is no payment to protect against
+  // self-deletion anymore: a signed-in user can always remove their own row.
   const { error } = await supabaseAdmin
     .from('summit_registrations')
     .delete()
-    .eq('user_id', user.id)
-    .neq('payment_status', 'paid'); // a paid ticket can never be self-deleted
+    .eq('user_id', user.id);
 
   if (error) {
     console.error('[summit/register-user] delete error:', error.message);

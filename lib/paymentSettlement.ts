@@ -3,10 +3,13 @@
 // SINGLE SOURCE OF TRUTH for turning a Paystack transaction into a fulfilled
 // order. Used by every path that can learn a payment succeeded:
 //
-//   • /api/summit/pay/verify   (browser callback after the popup)
+//   • /api/donate/verify        (browser callback after the popup)
 //   • /api/pay/callback        (Paystack redirect for subscriptions)
 //   • /api/pay/webhook         (charge.success)
 //   • lib/paymentReconciliation (scheduled sweep)
+//   • Summit ticket checkout has been retired (registration is free); this
+//     settlement path is kept for admin reconciliation of the historical
+//     paid registrations from before that change.
 //
 // Guarantees:
 //   1. A transaction only fulfils an order if its reference exists in

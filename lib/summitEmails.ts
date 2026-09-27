@@ -122,7 +122,7 @@ export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
         summaryBox(
           summaryRow('Attendance', isVirtual ? 'Virtual' : 'Onsite, Lagos') +
           summaryRow('Date', '19 November 2026') +
-          summaryRow('Amount', naira(ticketData.amountPaid)) +
+          summaryRow('Amount', ticketData.amountPaid > 0 ? naira(ticketData.amountPaid) : 'Free') +
           summaryRow('Status', '<span style="color:#C8A96E;">Confirmed</span>')
         ) +
         attendanceBlock +
@@ -214,24 +214,25 @@ export interface AdminPaidInfo {
 }
 
 export async function sendAdminPaymentNotification(i: AdminPaidInfo) {
+  const isFree = !(i.amountPaid > 0);
   await sendSummitMail({
     to: SUMMIT_ADMIN_EMAIL,
-    subject: `Paid registration: ${i.fullName} (${i.attendanceType === 'virtual' ? 'Virtual' : 'Physical'})`,
+    subject: `New registration: ${i.fullName} (${i.attendanceType === 'virtual' ? 'Virtual' : 'Physical'})`,
     html: brandedEmailLayout({
-      preheader: `${i.fullName} has paid and is confirmed.`,
+      preheader: `${i.fullName} is confirmed.`,
       eyebrow: 'Admin Notification',
-      heading: 'New paid registration.',
+      heading: 'New confirmed registration.',
       recipient: SUMMIT_ADMIN_EMAIL,
       content:
-        p('A registration has been paid and confirmed for the Elevation Summit.') +
+        p('A new registration has been confirmed for the Elevation Summit.') +
         summaryBox(
           summaryRow('Name', esc(i.fullName)) +
           summaryRow('Email', esc(i.email)) +
           summaryRow('Phone', esc(i.phone) || '<span style="color:#EF4444;">not captured</span>') +
           summaryRow('Attendance', typeLabel(i.attendanceType)) +
           summaryRow('Company', esc(i.organisation || '') || '-') +
-          summaryRow('Amount', naira(i.amountPaid)) +
-          summaryRow('Reference', esc(i.reference))
+          summaryRow('Amount', isFree ? 'Free' : naira(i.amountPaid)) +
+          (i.reference ? summaryRow('Reference', esc(i.reference)) : '')
         ) +
         goldButton('Open registrations', 'https://ascentorbi.com/admin/summit-payments'),
     }),

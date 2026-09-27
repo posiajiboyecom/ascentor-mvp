@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { summitFormSchema, SummitFormValues } from './summitFormSchema';
@@ -57,9 +57,7 @@ const ERROR = {
 };
 
 
-type SummitPrices = { onsite: number; virtual: number };
-
-export default function ElevationSummitClient({ cms, prices }: { cms: PublishedPage | null; prices: SummitPrices }) {
+export default function ElevationSummitClient({ cms }: { cms: PublishedPage | null }) {
   // CMS section keys
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
   const heroEyebrow   = hero?.eyebrow    || 'Inaugural Gathering · 19 November, 2026';
@@ -150,53 +148,17 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
 
   const [activeTab, setActiveTab] = useState<'onsite' | 'virtual'>('onsite');
   const [venueSlide, setVenueSlide] = useState(0);
-  // Non-null while the post-payment success overlay is showing
-  const [paymentSuccess, setPaymentSuccess] = useState<'onsite' | 'virtual' | null>(null);
-  // Non-null while the pre-payment confirmation overlay is showing
-  const [pendingPayment, setPendingPayment] = useState<{
-    registrationId: string;
-    config: any;
-    attendanceType: 'onsite' | 'virtual';
-    amountNaira: number;
-  } | null>(null);
-  // Guards against a second Paystack launch while one is already being set up
-  const paymentStarting = useRef(false);
-  // Reference/registration of a payment that has been opened but not confirmed.
-  // Used to tell the server immediately if the visitor walks away, so the team
-  // hears about it now rather than in the daily sweep.
-  const openPayment = useRef<{ reference: string; registrationId: string } | null>(null);
-
-  const reportAbandoned = (reference: string, registrationId: string) => {
-    try {
-      fetch('/api/summit/pay/abandon', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reference, registrationId }),
-        keepalive: true,
-      }).catch(() => undefined);
-    } catch { /* best-effort */ }
-  };
-
-  useEffect(() => {
-    const onLeave = () => {
-      const op = openPayment.current;
-      if (!op) return;
-      try {
-        navigator.sendBeacon(
-          '/api/summit/pay/abandon',
-          new Blob([JSON.stringify(op)], { type: 'application/json' }),
-        );
-      } catch { /* best-effort */ }
-    };
-    window.addEventListener('pagehide', onLeave);
-    return () => window.removeEventListener('pagehide', onLeave);
-  }, []);
+  // Non-null while the post-registration success overlay is showing
+  const [registrationSuccess, setRegistrationSuccess] = useState<'onsite' | 'virtual' | null>(null);
 
   // keep react-hook-form's attendance_type value in sync with the tab
   useEffect(() => {
     setValue('attendance_type', activeTab);
   }, [activeTab, setValue]);
 
+  // Registration is free: submitting the form is the whole flow. No
+  // checkout, no confirmation step, the registrant is confirmed and
+  // ticketed the moment this succeeds.
   const onSubmit = async (data: SummitFormValues) => {
     try {
       const res = await fetch('/api/summit/register', {
@@ -217,111 +179,14 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
         throw new Error('Registration failed');
       }
 
-      const { registrationId } = await res.json() as { registrationId: string };
-
-      const payRes = await fetch('/api/summit/pay/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ registrationId }),
-      });
-      const config = await payRes.json();
-
-      if (!payRes.ok) {
-        await alert(
-          "We couldn't process your registration. Please check your details and try again. If this keeps happening, reach out to us for help.",
-          'Something Went Wrong'
-        );
-        return;
-      }
-
-      // Branded confirm overlay — the shared Modal can't render bold
-      // multi-line content and uses dark app tokens that clash here.
-      setPendingPayment({
-        registrationId,
-        config,
-        attendanceType: activeTab,
-        amountNaira: config.amount / 100,
-      });
+      reset();
+      // Branded success overlay auto-redirects — no click required.
+      setRegistrationSuccess(activeTab);
+      window.setTimeout(() => router.push('/elevation-summit/confirmed'), 3200);
     } catch (err) {
       await alert(
         "We couldn't process your registration. Please check your details and try again. If this keeps happening, reach out to us for help.",
         'Something Went Wrong'
-      );
-    }
-  };
-
-  const startPayment = async (registrationId: string, config: any) => {
-    if (paymentStarting.current) return;
-    paymentStarting.current = true;
-    try {
-      if (typeof (window as any).PaystackPop === 'undefined') {
-        paymentStarting.current = false;
-        await alert('The checkout script is still loading. Please refresh the page and try again.', 'Checkout unavailable');
-        return;
-      }
-
-      openPayment.current = { reference: config.reference, registrationId };
-      const handler = (window as any).PaystackPop.setup({
-        key: config.public_key,
-        email: config.email,
-        amount: config.amount,
-        currency: config.currency,
-        ref: config.reference,
-        metadata: {
-          registration_id: registrationId,
-          full_name: config.full_name,
-        },
-        callback: (response: { reference: string }) => {
-          openPayment.current = null;
-          verifyAndFinish(response.reference, registrationId);
-        },
-        onClose: () => {
-          paymentStarting.current = false;
-          if (openPayment.current) {
-            reportAbandoned(openPayment.current.reference, openPayment.current.registrationId);
-            openPayment.current = null;
-          }
-          alert(
-            'You closed the checkout window before finishing. Your registration details are saved, so you can come back and secure your spot at any time.',
-            'Checkout Not Completed'
-          );
-        },
-      });
-
-      handler.openIframe();
-    } catch (err) {
-      paymentStarting.current = false;
-      await alert(
-        "We couldn't process your registration. Please check your details and try again. If this keeps happening, reach out to us for help.",
-        'Something Went Wrong'
-      );
-    }
-  };
-
-  const verifyAndFinish = async (reference: string, registrationId: string) => {
-    try {
-      const res = await fetch('/api/summit/pay/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reference, registrationId }),
-      });
-
-      if (res.ok) {
-        reset();
-        // Branded success overlay auto-redirects — no click required.
-        setPaymentSuccess(activeTab);
-        window.setTimeout(() => router.push('/elevation-summit/confirmed'), 3200);
-      } else {
-        const data = await res.json().catch(() => ({} as any));
-        await alert(
-          "If you were charged, your money is safe. Contact us with the email address you registered with and we'll confirm your registration manually within 24 hours.",
-          "We Couldn't Verify Your Registration"
-        );
-      }
-    } catch (err) {
-      await alert(
-        "If you were charged, your money is safe. Contact us with the email address you registered with and we'll confirm your registration manually within 24 hours.",
-        "We Couldn't Verify Your Registration"
       );
     }
   };
@@ -333,15 +198,6 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
     return () => clearInterval(interval);
   }, [VENUE_IMAGES.length]);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !document.getElementById('paystack-script')) {
-      const s = document.createElement('script');
-      s.id = 'paystack-script';
-      s.src = 'https://js.paystack.co/v1/inline.js';
-      s.async = true;
-      document.head.appendChild(s);
-    }
-  }, []);
 
   return (
     <>
@@ -986,88 +842,10 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
         </div>
       </section>
 
-      {/* Pre-payment confirmation — shows what they're buying in bold,
-          then hands off to Paystack. */}
-      {pendingPayment && (
-        <div
-          role="alertdialog"
-          aria-label="Confirm your registration"
-          style={{
-            position: 'fixed', inset: 0, zIndex: 10000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(15, 15, 14, 0.55)', backdropFilter: 'blur(6px)',
-            padding: '1.5rem', animation: 'summitOverlayIn 0.25s ease-out',
-          }}
-        >
-          <div style={{
-            background: '#FFFFFF', borderRadius: '1.25rem',
-            padding: '2.75rem 2.5rem 2.5rem', maxWidth: '440px', width: '100%',
-            textAlign: 'center', boxShadow: '0 24px 80px rgba(0,0,0,0.35)',
-            animation: 'summitCardIn 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
-          }}>
-            <h2 style={{
-              fontFamily: 'var(--font-display)', color: '#0F0F0E',
-              fontSize: '1.625rem', fontWeight: 700, margin: '0 0 1.75rem',
-            }}>
-              Confirm Your Registration
-            </h2>
-
-            <p style={{ color: '#374151', lineHeight: 1.8, fontSize: '1rem', margin: '0 0 1.25rem' }}>
-              You're registering for{' '}
-              <strong style={{ color: '#0F0F0E' }}>
-                {pendingPayment.attendanceType === 'virtual' ? 'Virtual' : 'Onsite'} attendance
-              </strong>{' '}
-              at the Elevation Summit.
-            </p>
-
-            <p style={{ fontSize: '1.125rem', margin: '0 0 1.25rem' }}>
-              <strong style={{ color: '#0F0F0E' }}>
-                Ticket Amount: ₦{pendingPayment.amountNaira.toLocaleString()}
-              </strong>
-            </p>
-
-            <p style={{ color: '#6B7280', lineHeight: 1.8, fontSize: '0.9375rem', margin: '0 0 2rem' }}>
-              Click Confirm to proceed to secure checkout. You'll be redirected
-              to <strong style={{ color: '#0F0F0E' }}>Paystack</strong>, our secure
-              third-party checkout partner.
-              {pendingPayment.attendanceType === 'virtual' && ' Your join link will be emailed once your ticket is confirmed.'}
-            </p>
-
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => {
-                  const p = pendingPayment;
-                  setPendingPayment(null);
-                  startPayment(p.registrationId, p.config);
-                }}
-                className="btn-gold"
-                style={{ fontSize: '0.9375rem', padding: '0.75rem 1.75rem', border: 'none', cursor: 'pointer' }}
-              >
-                Confirm →
-              </button>
-              <button
-                onClick={() => {
-                  reportAbandoned(pendingPayment.config.reference, pendingPayment.registrationId);
-                  setPendingPayment(null);
-                }}
-                style={{
-                  fontSize: '0.9375rem', padding: '0.75rem 1.75rem',
-                  background: 'transparent', border: '1.5px solid #E8E6E1',
-                  borderRadius: '0.625rem', color: '#6B7280', fontWeight: 600,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                Go Back
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Payment success overlay — light-themed to match this page (the
+      {/* Registration success overlay — light-themed to match this page (the
           shared Modal uses dark app tokens). Auto-redirects after ~3s;
           the button is a manual escape hatch if navigation stalls. */}
-      {paymentSuccess && (
+      {registrationSuccess && (
         <div
           role="alertdialog"
           aria-label="Registration confirmed"
@@ -1099,7 +877,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
               You're Confirmed
             </h2>
             <p style={{ color: '#6B7280', lineHeight: 1.7, fontSize: '1rem', margin: '0 0 2rem' }}>
-              Your {paymentSuccess} spot at the
+              Your {registrationSuccess} spot at the
               Elevation Summit is secured. A confirmation email is on its way.
             </p>
             {/* Progress bar doubles as the redirect countdown */}

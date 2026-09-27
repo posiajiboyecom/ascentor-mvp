@@ -12,7 +12,7 @@ const leftColumnFaqs = [
   {
     question: 'Can I attend virtually',
     answer:
-      'Yes. A virtual ticket gives you access to the live sessions from wherever you are. The join link is emailed once your payment is confirmed.',
+      'Yes. A virtual ticket gives you access to the live sessions from wherever you are. The join link is emailed once your registration is confirmed.',
   },
   {
     question: 'What is the difference between onsite and virtual tickets',
@@ -21,8 +21,13 @@ const leftColumnFaqs = [
   },
   {
     question: 'How much do tickets cost',
-    answer:
-      'Onsite attendance is 5,000 naira. Virtual attendance is 3,000 naira.',
+    answer: (
+      <>
+        Registration is completely free, for both onsite and virtual attendance. If you would like to
+        support the Summit and our wider work, you can make a donation at any time on our{' '}
+        <a href="/donate" style={{ color: '#C8A96E', textDecoration: 'underline' }}>donate page</a>.
+      </>
+    ),
   },
   {
     question: 'Do I need to bring anything if attending onsite',
@@ -38,11 +43,13 @@ const rightColumnFaqs = [
       'Sessions will not be recorded. Highlights and key moments will be shared on our social media channels after the event.',
   },
   {
-    question: 'What is the refund and cancellation policy',
+    question: 'What is the cancellation policy',
     answer: (
       <>
-        Our refund and cancellation policy is being finalized and will be published here before the event. If you need help with a specific situation, reach out through our{' '}
-        <a href="/contact" style={{ color: '#C8A96E', textDecoration: 'underline' }}>contact page</a>.
+        Registration is free, so there is nothing to refund. If your plans change, just let us know
+        through our{' '}
+        <a href="/contact" style={{ color: '#C8A96E', textDecoration: 'underline' }}>contact page</a>{' '}
+        so we can free up your spot for someone else.
       </>
     ),
   },
@@ -53,7 +60,7 @@ const rightColumnFaqs = [
   {
     question: 'Can I switch from a virtual ticket to an onsite ticket',
     answer:
-      'No. Tickets cannot be switched after purchase, so please choose the attendance type that works for you before completing registration.',
+      'No. Tickets cannot be switched after registration, so please choose the attendance type that works for you before you register.',
   },
   {
     question: 'How do I contact the organizers',
