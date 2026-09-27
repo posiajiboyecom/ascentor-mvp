@@ -619,9 +619,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
                     transition: 'color 0.15s, border-color 0.15s',
                   }}
                 >
-                  {t === 'onsite'
-                    ? `Onsite, Lagos · ₦${prices.onsite.toLocaleString()}`
-                    : `Virtual · ₦${prices.virtual.toLocaleString()}`}
+                  {t === 'onsite' ? 'Onsite, Lagos' : 'Virtual'}
                 </button>
               ))}
             </div>

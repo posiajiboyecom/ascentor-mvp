@@ -76,9 +76,9 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const [heroSlide, setHeroSlide] = useState(0);
 
   const heroImages = [
-    '/images/PXL_20250125_115412210.jpg',
-    '/images/IMG_5602.jpg',
-    '/images/IMG_5665.jpg',
+    '/images/gallery-26.jpg',
+    '/images/gallery-06.jpg',
+    '/images/gallery-17.jpg',
   ];
 
   useEffect(() => {
