@@ -21,8 +21,10 @@ import type { ShellNavGroup } from '@/components/shell/types';
 // global search (Ctrl/Cmd+K) and avatar menu.
 //
 // Information architecture is organised around running the business
-// (people, money, content, community, engagement, events, intelligence)
-// rather than around the member app.
+// (people, Elevation Summit, money, content, community, engagement, events,
+// intelligence) rather than around the member app. Every Elevation Summit
+// admin page (registrations, donations, livestream) lives in its own group
+// instead of being scattered across Revenue/Events.
 //
 // Permission filtering: items with `permission` are hidden unless
 // userHasPermission() allows it. Role gating (admin/moderator) is enforced
@@ -46,9 +48,19 @@ const NAV_GROUPS: Group[] = [
     ],
   },
   {
+    // Every admin page for The Elevation Summit, together, so it is never
+    // scattered across Revenue/Events/wherever again. Registration is free;
+    // Donations is the one paid flow left.
+    label: 'Elevation Summit',
+    items: [
+      { href: '/admin/elevation-summit/registrations', label: 'Registrations', icon: <Ticket />, permission: 'payments.view' },
+      { href: '/admin/summit-donations', label: 'Donations',        icon: <HeartHandshake />, permission: 'payments.view' },
+      { href: '/admin/summit-stream',    label: 'Livestream',       icon: <Radio /> },
+    ],
+  },
+  {
     label: 'Revenue',
     items: [
-      { href: '/admin/summit-donations', label: 'Donations',     icon: <HeartHandshake />, permission: 'payments.view' },
       { href: '/admin/payments',    label: 'Subscription Payments', icon: <CreditCard />, permission: 'payments.view' },
       { href: '/admin/promo-codes', label: 'Promo Codes',   icon: <Tag /> },
       { href: '/admin/products',    label: 'Products',      icon: <Package /> },
@@ -82,8 +94,6 @@ const NAV_GROUPS: Group[] = [
   {
     label: 'Events',
     items: [
-      { href: '/admin/elevation-summit/registrations', label: 'Summit Registrations', icon: <Ticket />, permission: 'payments.view' },
-      { href: '/admin/summit-stream',    label: 'Summit Livestream', icon: <Radio /> },
       { href: '/admin/events',           label: 'Public Events',    icon: <CalendarDays /> },
       { href: '/admin/community-events', label: 'Community Events', icon: <MessagesSquare /> },
     ],
