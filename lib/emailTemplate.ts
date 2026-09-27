@@ -7,7 +7,11 @@
 // ---------------------------------------------------------------------------
 
 const SITE_URL = 'https://ascentorbi.com';
-const LOGO_URL = `${SITE_URL}/images/ascentor-logo-email.png`;
+// Gold mark + dark wordmark on transparent background - same logo shown on
+// ascentorbi.com/elevation-summit. This email shell has a white header, so it
+// needs the dark-text variant (do not point this at ascentor-logo-email.png,
+// which is white text meant for lib/summitTicket.ts's black PDF header).
+const LOGO_URL = `${SITE_URL}/images/ascentor-logo-email-light.png`;
 
 const SOCIALS = [
   { label: 'WhatsApp', url: 'https://wa.me/+2348168692012', icon: `${SITE_URL}/images/email/icon-whatsapp.png` },
