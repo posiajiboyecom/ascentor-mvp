@@ -8,6 +8,7 @@
 // - Filter by channel, search content, date range
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Pin, Mic, Megaphone } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
@@ -126,7 +127,7 @@ export default function AdminCommunityPage() {
     if (!(await confirmAction(`Send this broadcast to everyone in #${channel}?`, { title: 'Send broadcast?', confirmLabel: 'Send broadcast' }))) return;
     setSending(true);
     const { error } = await supabase.from('community_messages').insert({
-      user_id: adminId, channel, content: `📣 ${broadcast.trim()}`, likes: [],
+      user_id: adminId, channel, content: broadcast.trim(), likes: [],
     });
     if (error) { showToast('Failed: ' + error.message); }
     else { showToast('Broadcast sent'); setBroadcast(''); loadMessages(); }
@@ -258,9 +259,9 @@ export default function AdminCommunityPage() {
                       <span style={{ fontFamily:"Metropolis,'Inter',sans-serif", fontSize:10, color:'var(--admin-text-faint)', marginLeft:'auto' }}>{fmtDate(msg.created_at)}</span>
                     </div>
                     {msg.deleted && <span style={{ ...mono, color:'#EF4444', fontSize:9, marginBottom:3, display:'block' }}>DELETED</span>}
-                    {msg.pinned  && <span style={{ ...mono, color:G, fontSize:9, marginBottom:3, display:'block' }}>📌 PINNED</span>}
-                    <p style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, color:'var(--admin-text-muted)', margin:0, lineHeight:1.6, wordBreak:'break-word' }}>
-                      {isVoice(msg.content) ? '🎙 Voice message' : msg.content}
+                    {msg.pinned  && <span style={{ ...mono, color:G, fontSize:9, marginBottom:3, display:'flex', alignItems:'center', gap:3 }}><Pin size={9} /> PINNED</span>}
+                    <p style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, color:'var(--admin-text-muted)', margin:0, lineHeight:1.6, wordBreak:'break-word', display: isVoice(msg.content) ? 'flex' : 'block', alignItems:'center', gap:5 }}>
+                      {isVoice(msg.content) ? <><Mic size={12} /> Voice message</> : msg.content}
                     </p>
                     {msg.likes.length > 0 && (
                       <div style={{ ...mono, fontSize:10, marginTop:4, color:'var(--admin-text-faint)' }}>
@@ -268,12 +269,12 @@ export default function AdminCommunityPage() {
                       </div>
                     )}
                   </div>
-                  {/* Actions — visible on hover */}
+                  {/* Actions, visible on hover */}
                   <div className="msg-actions" style={{ opacity:0, transition:'opacity 0.15s', display:'flex', gap:4, flexShrink:0 }}>
                     <button onClick={() => pinMsg(msg.id, !!msg.pinned)}
                       title={msg.pinned ? 'Unpin' : 'Pin'}
-                      style={{ padding:'4px 8px', borderRadius:6, border:'1px solid var(--admin-bg-input)', background:'transparent', color:msg.pinned ? G : 'var(--admin-text-faint)', cursor:'pointer', fontSize:12 }}>
-                      📌
+                      style={{ padding:'4px 8px', borderRadius:6, border:'1px solid var(--admin-bg-input)', background:'transparent', color:msg.pinned ? G : 'var(--admin-text-faint)', cursor:'pointer', display:'flex' }}>
+                      <Pin size={12} />
                     </button>
                     {msg.deleted ? (
                       <button onClick={() => restoreMsg(msg.id)}
@@ -294,7 +295,7 @@ export default function AdminCommunityPage() {
 
             {/* Broadcast bar */}
             <div style={{ padding:'12px 16px', borderTop:'1px solid var(--admin-bg-input)', display:'flex', gap:8 }}>
-              <div style={{ ...mono, fontSize:9, color:G, alignSelf:'center', whiteSpace:'nowrap', flexShrink:0 }}>📣 BROADCAST</div>
+              <div style={{ ...mono, fontSize:9, color:G, alignSelf:'center', whiteSpace:'nowrap', flexShrink:0, display:'flex', alignItems:'center', gap:4 }}><Megaphone size={11} /> BROADCAST</div>
               <input
                 type="text"
                 placeholder={`Send a system message to #${currentCh?.name || channel}…`}

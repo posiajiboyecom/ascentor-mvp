@@ -1,6 +1,6 @@
 'use client';
 
-// app/admin/marketing-pages/page.tsx — THE LEDGER
+// app/admin/marketing-pages/page.tsx, THE LEDGER
 // List of all CMS-managed marketing pages with section/draft counts.
 // Click through to /admin/marketing-pages/[slug] to edit.
 
@@ -51,7 +51,7 @@ export default function MarketingPagesListPage() {
         <span className="ledger-eyebrow">Content · Marketing CMS</span>
         <h1 className="ledger-h1" style={{ fontSize: 28, marginTop: 6 }}>Marketing Pages</h1>
         <p className="ledger-mono" style={{ marginTop: 6 }}>
-          Manage the landing page and 6 marketing pages — draft content, then publish when ready.
+          Manage the landing page and 6 marketing pages, draft content, then publish when ready.
         </p>
       </div>
 

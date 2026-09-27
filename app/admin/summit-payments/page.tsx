@@ -14,12 +14,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   RefreshCw, RotateCw, Trash2, Copy, ShieldCheck, Mail, Phone, MessageCircle,
-  FileDown, ChevronLeft, ChevronRight, BellRing,
+  FileDown, ChevronLeft, ChevronRight, BellRing, TicketCheck,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { usePageSearch } from '@/components/shell/PageSearch';
 import { confirmAction } from '@/components/Modal';
 import OffCanvas from '@/components/admin/OffCanvas';
+import Select from '@/components/admin/Select';
 
 type PayState = 'paid' | 'in_progress' | 'abandoned' | 'not_started';
 type StateFilter = 'all' | 'paid' | 'unpaid' | 'abandoned' | 'not_started' | 'in_progress';
@@ -266,7 +267,7 @@ export default function SummitPaymentsPage() {
     setRunning(false);
   };
 
-  const act = async (action: 'verify' | 'resend' | 'remind', extra: Record<string, unknown> = {}) => {
+  const act = async (action: 'verify' | 'resend' | 'remind' | 'comp', extra: Record<string, unknown> = {}) => {
     if (!open) return;
     setBusy(true); setPanelMsg(null); setCandidates([]);
     const res = await authed('/api/admin/summit-registrations', { method: 'POST', body: JSON.stringify({ id: open.id, action, ...extra }) });
@@ -274,7 +275,17 @@ export default function SummitPaymentsPage() {
     setPanelMsg(b.message || b.error || (res.ok ? 'Done.' : 'Action failed.'));
     setCandidates(b.candidates ?? []);
     setBusy(false);
-    if (res.ok && b.state === 'paid') await load();
+    if (res.ok && (b.state === 'paid' || action === 'comp')) await load();
+  };
+
+  const compTicket = async () => {
+    if (!open) return;
+    const yes = await confirmAction(
+      `Issue a complimentary ticket to ${open.full_name} without taking payment? A ticket will be emailed to ${open.email} right away, and this cannot be undone from here.`,
+      { title: 'Issue Complimentary Ticket', confirmLabel: 'Send ticket' },
+    );
+    if (!yes) return;
+    await act('comp');
   };
 
   const remind = async () => {
@@ -383,20 +394,24 @@ export default function SummitPaymentsPage() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
-        {STATE_FILTERS.map(f => (
-          <button key={f.key} type="button" aria-pressed={stateFilter === f.key} onClick={() => setStateFilter(f.key)}
-            className={`ledger-btn ${stateFilter === f.key ? 'ledger-btn-primary' : 'ledger-btn-ghost'}`}>
-            {f.label} ({countFor(f.key)})
-          </button>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
-        {([['all', 'Physical + Virtual'], ['onsite', 'Physical'], ['virtual', 'Virtual']] as const).map(([k, l]) => (
-          <button key={k} type="button" aria-pressed={type === k} onClick={() => setType(k)}
-            className={`ledger-btn ${type === k ? 'ledger-btn-primary' : 'ledger-btn-ghost'}`}>{l}</button>
-        ))}
-        <span className="ledger-mono" style={{ fontSize: 12, marginLeft: 6 }}>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
+        <Select
+          ariaLabel="Filter by status"
+          value={stateFilter}
+          onValueChange={(v) => setStateFilter(v as StateFilter)}
+          options={STATE_FILTERS.map(f => ({ value: f.key, label: `${f.label} (${countFor(f.key)})` }))}
+        />
+        <Select
+          ariaLabel="Filter by attendance type"
+          value={type}
+          onValueChange={(v) => setType(v as TypeFilter)}
+          options={[
+            { value: 'all', label: 'Physical + Virtual' },
+            { value: 'onsite', label: 'Physical only' },
+            { value: 'virtual', label: 'Virtual only' },
+          ]}
+        />
+        <span className="ledger-mono" style={{ fontSize: 12 }}>
           {loading ? 'Searching…' : `${total} record${total === 1 ? '' : 's'}${debounced ? ` matching "${debounced}"` : ''}`}
         </span>
       </div>
@@ -468,7 +483,10 @@ export default function SummitPaymentsPage() {
                 to scroll up to see what a click just did. */}
             {panelMsg && <p className="ledger-mono" style={{ fontSize: 12, padding: '9px 12px', borderRadius: 8, background: 'var(--ledger-gold-bg)', margin: '0 0 4px' }}>{panelMsg}</p>}
             {open.payment_state === 'paid' ? (
-              <button type="button" disabled={busy} onClick={() => act('resend')} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+              <button type="button" disabled={busy} onClick={async () => {
+                const yes = await confirmAction(`Resend the confirmation email and ticket to ${open.email}?`, { title: 'Resend Ticket', confirmLabel: 'Resend' });
+                if (yes) await act('resend');
+              }} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
                 <Mail size={14} /> {busy ? 'Sending…' : 'Resend confirmation email + ticket'}
               </button>
             ) : (
@@ -478,6 +496,9 @@ export default function SummitPaymentsPage() {
                 </button>
                 <button type="button" disabled={busy} onClick={() => act('verify', refInput.trim() ? { reference: refInput.trim() } : {})} className="ledger-btn ledger-btn-ghost" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
                   <ShieldCheck size={14} /> {busy ? 'Checking…' : 'Check Paystack for this person'}
+                </button>
+                <button type="button" disabled={busy} onClick={compTicket} className="ledger-btn ledger-btn-ghost" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+                  <TicketCheck size={14} /> {busy ? 'Sending…' : 'Confirm + send ticket (no payment)'}
                 </button>
               </>
             )}
@@ -567,7 +588,13 @@ export default function SummitPaymentsPage() {
                       </p>
                       <div style={{ display: 'grid', gap: 6 }}>
                         {candidates.map(c => (
-                          <button key={c.reference} type="button" disabled={busy} onClick={() => act('verify', { reference: c.reference })}
+                          <button key={c.reference} type="button" disabled={busy} onClick={async () => {
+                            const yes = await confirmAction(
+                              `Confirm this ${naira(c.amountKobo / 100)} payment${c.email ? ` (${c.email})` : ''} as ${open.full_name}'s ticket?`,
+                              { title: 'Confirm Payment Match', confirmLabel: 'Confirm match' },
+                            );
+                            if (yes) await act('verify', { reference: c.reference });
+                          }}
                             className="ledger-btn ledger-btn-ghost"
                             style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '8px 10px' }}>
                             <span>

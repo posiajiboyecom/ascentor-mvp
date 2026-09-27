@@ -13,7 +13,7 @@
 // correctly in BOTH light and dark admin modes.
 //
 // Saving publishes immediately (draft_data = published_data,
-// status 'published') — the about page reads published data only.
+// status 'published'), the about page reads published data only.
 // ─────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useRef } from 'react';
@@ -121,7 +121,7 @@ export default function AdminAboutPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Upload failed');
       setForm((f) => ({ ...f, photo_url: json.url }));
-      setStatus('Photo uploaded — remember to Save & Publish.');
+      setStatus('Photo uploaded, remember to Save & Publish.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
@@ -283,7 +283,7 @@ export default function AdminAboutPage() {
         ))}
       </div>
       <p style={{ fontSize: 11, color: 'var(--ledger-ink-faint)', marginTop: 6 }}>
-        Which part of the photo stays visible when it's cropped to 4:5 — for portraits, Top usually keeps the face framed.
+        Which part of the photo stays visible when it's cropped to 4:5, for portraits, Top usually keeps the face framed.
       </p>
 
       {/* Name */}
@@ -296,7 +296,7 @@ export default function AdminAboutPage() {
       <textarea
         id="f-bio"
         style={{ ...input, minHeight: 200, lineHeight: 1.6, resize: 'vertical' }}
-        placeholder={'Write your bio here.\n\nLeave a blank line between paragraphs — each becomes its own paragraph on the page.'}
+        placeholder={'Write your bio here.\n\nLeave a blank line between paragraphs, each becomes its own paragraph on the page.'}
         value={form.bio}
         onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
       />

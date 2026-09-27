@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
-// Admin-only route guard — moderators are redirected to /admin
+// Admin-only route guard, moderators are redirected to /admin
 export default async function AdminOnlyLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

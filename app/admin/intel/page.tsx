@@ -1,78 +1,82 @@
 'use client';
 // app/admin/intelligence/page.tsx
-// Central Intelligence — on-demand AI analysis of all platform data
+// Central Intelligence: on-demand AI analysis of all platform data
 // Claude analyzes: coach sessions, community chats, signups, logins,
 // subscriptions, content performance, survey responses, referrals
 // NO auto-analysis. Admin clicks Analyze. Results stream in.
 
 import { useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import {
+  Landmark, Brain, MessageCircle, Wallet, User, BarChart3, ClipboardList, PenLine, Zap, X,
+  type LucideIcon,
+} from 'lucide-react';
 
 const G = '#E8A020';
 const mono: React.CSSProperties = { fontFamily:"Metropolis,'Inter',sans-serif", fontSize:10, letterSpacing:'0.09em', textTransform:'uppercase' as const, color:'var(--admin-text-faint)' };
 const card: React.CSSProperties = { background:'var(--admin-bg-deep)', border:'1px solid var(--admin-bg-input)', borderRadius:12 };
 const inp: React.CSSProperties  = { padding:'9px 13px', borderRadius:8, border:'1px solid var(--admin-bg-input)', background:'var(--admin-bg-card)', color:'var(--admin-text)', fontSize:13, fontFamily:"'Metropolis',sans-serif", outline:'none' };
 
-const REPORT_TYPES = [
+const REPORT_TYPES: { id: string; label: string; icon: LucideIcon; description: string; dataFns: string[] }[] = [
   {
     id: 'platform_overview',
     label: 'Platform Overview',
-    icon: '🏛',
+    icon: Landmark,
     description: 'Signups, logins, DAU/MAU, retention, plan distribution',
     dataFns: ['getSignupStats', 'getLoginStats', 'getPlanStats'],
   },
   {
     id: 'coaching_deep_dive',
     label: 'Coaching Analysis',
-    icon: '🧠',
+    icon: Brain,
     description: 'Session types, avg depth, themes, drop-off points, user progress',
     dataFns: ['getCoachingStats'],
   },
   {
     id: 'community_health',
     label: 'Community Health',
-    icon: '💬',
+    icon: MessageCircle,
     description: 'Message volume, top channels, engagement patterns, reaction sentiment',
     dataFns: ['getCommunityStats'],
   },
   {
     id: 'revenue_intelligence',
     label: 'Revenue Intelligence',
-    icon: '💰',
+    icon: Wallet,
     description: 'MRR, plan upgrades/downgrades, churn signals, LTV patterns',
     dataFns: ['getRevenueStats'],
   },
   {
     id: 'user_behaviour',
     label: 'User Behaviour',
-    icon: '👤',
+    icon: User,
     description: 'Top engaged users, role distribution, industry breakdown, referral ROI',
     dataFns: ['getUserBehaviourStats'],
   },
   {
     id: 'content_performance',
     label: 'Content Performance',
-    icon: '📊',
+    icon: BarChart3,
     description: 'Blog reads, video plays, newsletter opens, content-to-coach conversion',
     dataFns: ['getContentStats'],
   },
   {
     id: 'survey_insights',
     label: 'Survey Insights',
-    icon: '📋',
+    icon: ClipboardList,
     description: 'Survey completion rates, NPS trends, open-ended theme extraction',
     dataFns: ['getSurveyStats'],
   },
   {
     id: 'custom',
     label: 'Custom Question',
-    icon: '✏️',
+    icon: PenLine,
     description: 'Ask Claude anything about your platform data',
     dataFns: [],
   },
 ];
 
-// ── Data fetchers — pull raw platform data from Supabase ─────────────────────
+// ── Data fetchers: pull raw platform data from Supabase ─────────────────────
 async function fetchPlatformData(supabase: any, reportId: string, dateRange: { from: string; to: string }) {
   const from = dateRange.from;
   const to = dateRange.to;
@@ -258,7 +262,7 @@ export default function AdminIntelligencePage() {
       // 1. Fetch raw data
       const rawData = await fetchPlatformData(supabase, reportType, { from: dateFrom, to: dateTo });
       const summary = summariseData(rawData, reportType);
-      setFetchStatus('Data ready — Claude is analyzing…');
+      setFetchStatus('Data ready, Claude is analyzing...');
 
       // 2. Build prompt
       const question = reportType === 'custom' && customQ
@@ -399,7 +403,7 @@ Analyze this data and provide strategic insights.`;
               onClick={() => setReportType(r.id)}
               style={{ padding:'12px 14px', borderRadius:10, border:'1px solid var(--admin-bg-input)', background:'var(--admin-bg-card)', cursor:'pointer', textAlign:'left', transition:'all 0.15s' }}
             >
-              <div style={{ fontSize:20, marginBottom:6 }}>{r.icon}</div>
+              <div style={{ marginBottom:6, color:G }}><r.icon size={20} /></div>
               <div style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, fontWeight:600, color:'var(--admin-text)', marginBottom:3, lineHeight:1.3 }}>{r.label}</div>
               <div style={{ fontFamily:"'Metropolis',sans-serif", fontSize:11, color:'var(--admin-text-faint)', lineHeight:1.4 }}>{r.description}</div>
             </button>
@@ -447,7 +451,7 @@ Analyze this data and provide strategic insights.`;
               </>
             ) : (
               <>
-                <span style={{ fontSize:16 }}>⚡</span>
+                <Zap size={16} />
                 Run Analysis
               </>
             )}
@@ -463,7 +467,7 @@ Analyze this data and provide strategic insights.`;
       {/* ── RESULTS ──────────────────────────────────────────────────────── */}
       {results.length === 0 && (
         <div style={{ ...card, padding:48, textAlign:'center' }}>
-          <div style={{ fontSize:40, marginBottom:12 }}>⚡</div>
+          <div style={{ marginBottom:12, display:'flex', justifyContent:'center', color:G }}><Zap size={40} /></div>
           <div style={{ fontFamily:"'Metropolis',serif", fontSize:22, fontWeight:600, color:'var(--admin-text-heading)', marginBottom:8 }}>No analyses yet</div>
           <div style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, color:'var(--admin-text-faint)', lineHeight:1.6, maxWidth:380, margin:'0 auto' }}>
             Select a report type above and click Run Analysis. Claude will fetch your platform data and generate strategic insights.
@@ -477,8 +481,12 @@ Analyze this data and provide strategic insights.`;
           <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:20 }}>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
-                <span style={{ fontFamily:"'Metropolis',serif", fontSize:22, fontWeight:700, color:'var(--admin-text-heading)' }}>
-                  {REPORT_TYPES.find(r => r.id === result.reportType)?.icon} {result.label}
+                <span style={{ fontFamily:"'Metropolis',serif", fontSize:22, fontWeight:700, color:'var(--admin-text-heading)', display:'inline-flex', alignItems:'center', gap:8 }}>
+                  {(() => {
+                    const Icon = REPORT_TYPES.find(r => r.id === result.reportType)?.icon;
+                    return Icon ? <Icon size={20} /> : null;
+                  })()}
+                  {result.label}
                 </span>
                 {result.streaming && (
                   <span style={{ fontFamily:"Metropolis,'Inter',sans-serif", fontSize:9, color:G, letterSpacing:'0.1em', textTransform:'uppercase', background:'rgba(232,160,32,0.1)', padding:'2px 8px', borderRadius:4, border:'1px solid rgba(232,160,32,0.2)' }}>
@@ -492,9 +500,9 @@ Analyze this data and provide strategic insights.`;
             </div>
             <button
               onClick={() => clearResult(result.id)}
-              style={{ background:'none', border:'1px solid var(--admin-bg-input)', borderRadius:6, color:'var(--admin-text-faint)', cursor:'pointer', padding:'4px 10px', fontSize:12, fontFamily:"Metropolis,'Inter',sans-serif" }}
+              style={{ background:'none', border:'1px solid var(--admin-bg-input)', borderRadius:6, color:'var(--admin-text-faint)', cursor:'pointer', padding:'4px 10px', fontSize:12, fontFamily:"Metropolis,'Inter',sans-serif", display:'inline-flex', alignItems:'center', gap:4 }}
             >
-              ✕ Clear
+              <X size={12} /> Clear
             </button>
           </div>
 

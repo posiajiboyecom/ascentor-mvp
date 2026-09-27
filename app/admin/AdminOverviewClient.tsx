@@ -1,7 +1,7 @@
 'use client';
 
 // ═══════════════════════════════════════════════════════════
-// Admin Overview Client — THE LEDGER
+// Admin Overview Client, THE LEDGER
 // Drop in: app/admin/AdminOverviewClient.tsx
 //
 // Restyled to The Ledger design system (styles/admin-ledger.css).
@@ -9,7 +9,7 @@
 // with --ledger-* equivalents. The old multi-color stat accents
 // (--blue, --purple, --teal, --success) are consolidated into
 // Ledger's deliberately narrow status palette (good/info/warn/bad
-// + gold) rather than carried forward — Ledger's whole point is
+// + gold) rather than carried forward, Ledger's whole point is
 // one coherent palette instead of per-card rainbow colors.
 //   blue    -> ledger-info
 //   purple  -> ledger-gold (no purple equivalent in Ledger; gold
@@ -18,7 +18,7 @@
 //   teal    -> ledger-info (Community card)
 //   success -> ledger-good
 //
-// Logic is UNCHANGED from the previous version — same loadAll,
+// Logic is UNCHANGED from the previous version, same loadAll,
 // same Supabase queries, same stats shape. This is a styling-only
 // pass; do not treat this as a place to re-verify schema, that
 // was already done when this file was first built.
@@ -30,7 +30,7 @@ import SageLoader from '@/components/SageLoader';
 import PaymentHealth from '@/components/admin/PaymentHealth';
 import OverviewCharts from '@/components/admin/OverviewCharts';
 
-// Safe-ish SVG icon renderer — strips <script> tags and inline event
+// Safe-ish SVG icon renderer, strips <script> tags and inline event
 // handlers before injecting. For admin-controlled content only.
 function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
   const safe = sanitiseIcon(html);
@@ -174,7 +174,7 @@ export default function AdminOverviewClient() {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Robust max — avoids Math.max(...arr) call-stack issues
+  // Robust max, avoids Math.max(...arr) call-stack issues
   const maxSessions = maxOf(dailyActivity.map(d => d.sessions)) || 1;
   const maxUsers    = maxOf(dailyActivity.map(d => d.users))    || 1;
 
@@ -395,10 +395,10 @@ function CheckoutToggle() {
       .upsert({ key: 'checkout_enabled', value: String(next), updated_at: new Date().toISOString() });
     setSaving(false);
     if (error) {
-      setToast({ msg: 'Failed to save — check Supabase RLS policy', ok: false });
+      setToast({ msg: 'Failed to save, check Supabase RLS policy', ok: false });
     } else {
       setEnabled(next);
-      setToast({ msg: next ? 'Checkout ON — paid access enforced' : 'Free Mode ON — all users get full access', ok: true });
+      setToast({ msg: next ? 'Checkout ON, paid access enforced' : 'Free Mode ON, all users get full access', ok: true });
     }
     setTimeout(() => setToast(null), 4000);
   }
@@ -410,7 +410,7 @@ function CheckoutToggle() {
     <div className="rounded-xl p-5 ledger-panel" style={{ marginTop: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
 
-        {/* Left — label + description */}
+        {/* Left, label + description */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <span className="ledger-h2" style={{ fontSize: 14 }}>
@@ -428,11 +428,11 @@ function CheckoutToggle() {
               ? 'Loading…'
               : isOn
                 ? 'Checkout is live. Users are required to subscribe to access paid features.'
-                : 'Free Mode is active. All users have full access — checkout is hidden.'}
+                : 'Free Mode is active. All users have full access, checkout is hidden.'}
           </p>
         </div>
 
-        {/* Right — toggle switch */}
+        {/* Right, toggle switch */}
         <button
           onClick={toggle}
           disabled={loading || saving}

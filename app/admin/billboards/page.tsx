@@ -46,6 +46,7 @@ export const dynamic = 'force-dynamic';
 // ─────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react';
+import { Megaphone } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import SageLoader from '@/components/SageLoader';
@@ -223,7 +224,7 @@ export default function AdminBillboardsPage() {
             Rail Billboards
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Three ad/promo slots in the desktop left rail — premium in-app billboard space.
+            Three ad/promo slots in the desktop left rail, premium in-app billboard space.
           </p>
           <p className="text-xs mt-1" style={{ color: 'var(--text-dim)' }}>
             {billboards.filter(b => b.is_active).length} active · {billboards.length} total
@@ -425,7 +426,7 @@ export default function AdminBillboardsPage() {
                   }} />
                 </div>
                 <span className="text-sm" style={{ color: 'var(--text)' }}>
-                  {form.is_active ? 'Active — showing in rail' : 'Inactive — hidden from rail'}
+                  {form.is_active ? 'Active, showing in rail' : 'Inactive, hidden from rail'}
                 </span>
               </label>
 
@@ -533,10 +534,10 @@ export default function AdminBillboardsPage() {
 
         {billboards.length === 0 && !dbMissing && (
           <div className="text-center py-16 rounded-2xl" style={{ border: '1px dashed var(--border)' }}>
-            <p className="text-3xl mb-3">📢</p>
+            <p className="mb-3" style={{ display: 'flex', justifyContent: 'center' }}><Megaphone size={30} /></p>
             <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>No billboards yet</p>
             <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-              Create your first billboard — it will appear in the desktop rail for all members.
+              Create your first billboard. It will appear in the desktop rail for all members.
             </p>
           </div>
         )}

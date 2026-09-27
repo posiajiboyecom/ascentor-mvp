@@ -36,6 +36,8 @@
     "@plausible-analytics/tracker": "^0.4.4",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "@radix-ui/react-dialog": "^1.1.23",
+    "@radix-ui/react-select": "^2.3.7",
     "@remotion/bundler": "^4.0.448",
     "@remotion/lambda": "^4.0.448",
     "@remotion/media-utils": "^4.0.448",

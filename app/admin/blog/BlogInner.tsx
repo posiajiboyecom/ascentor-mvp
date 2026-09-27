@@ -1,21 +1,21 @@
 'use client';
 
-// app/admin/blog/BlogInner.tsx — THE LEDGER
+// app/admin/blog/BlogInner.tsx, THE LEDGER
 // Restyled to The Ledger (styles/admin-ledger.css). Same conversion
 // as the other three pages this pass: var(--bg-card)/var(--text)/
 // var(--accent) -> var(--ledger-*) equivalents, raw status hex ->
-// Ledger status tokens. Logic UNCHANGED — same loadPosts, handleSave,
+// Ledger status tokens. Logic UNCHANGED, same loadPosts, handleSave,
 // togglePublish, handleDelete.
 //
 // FUNCTIONAL FIX (not just styling): the post list below the form
-// never rendered cover_image at all — no <img> tag existed in that
+// never rendered cover_image at all, no <img> tag existed in that
 // section, only title/slug/category/author text. The form's OWN
 // preview (further up, while editing) DID work, which is why this
 // looked like an inconsistent "sometimes images don't show" bug
 // rather than what it actually was: the list view was simply never
 // built to display a thumbnail. Confirmed cover_image data is real
 // and used correctly on the live post page (app/blog/[slug]/page.tsx)
-// — only the admin list and the public blog INDEX (app/blog/page.tsx,
+//, only the admin list and the public blog INDEX (app/blog/page.tsx,
 // a separate file, out of scope for this pass) are missing it.
 // Added a 56x56 thumbnail (or a placeholder icon when no cover_image
 // is set) to each row below.
@@ -245,7 +245,7 @@ export default function AdminBlogPageInner() {
               />
             </div>
 
-            {/* Cover image — upload first; URL paste as fallback */}
+            {/* Cover image, upload first; URL paste as fallback */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', gap: 8 }}>
                 <label style={{
@@ -269,7 +269,7 @@ export default function AdminBlogPageInner() {
                       if (!res.ok) throw new Error(data.error || 'Upload failed');
                       setForm(prev => ({ ...prev, cover_image: data.url }));
                     } catch (err) {
-                      alert(err instanceof Error ? err.message : 'Upload failed — try again.');
+                      alert(err instanceof Error ? err.message : 'Upload failed, try again.');
                     } finally {
                       setCoverUploading(false);
                       e.target.value = '';
@@ -336,7 +336,7 @@ export default function AdminBlogPageInner() {
             className="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 ledger-panel"
             style={{ opacity: p.is_published ? 1 : 0.65 }}
           >
-            {/* Thumbnail — FIX: this row never rendered cover_image before.
+            {/* Thumbnail, FIX: this row never rendered cover_image before.
                 Falls back to a placeholder icon when no image is set, so
                 the list stays visually scannable either way. */}
             {p.cover_image ? (
@@ -377,7 +377,7 @@ export default function AdminBlogPageInner() {
               </p>
             </div>
 
-            {/* Actions — wrap to full-width row on mobile */}
+            {/* Actions, wrap to full-width row on mobile */}
             <div className="blog-post-actions">
               <button
                 onClick={() => togglePublish(p.id, p.is_published)}

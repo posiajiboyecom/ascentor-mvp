@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // ============================================================
-// Admin Report Generation — /admin/reports
+// Admin Report Generation, /admin/reports
 // Brand-consistent with Ascentor Brand Book v1.0
 // ============================================================
 
@@ -405,7 +405,7 @@ export default function AdminReportsPage() {
                       <tr key={i}>
                         {data.columns.map((c: string) => {
                           const raw = row[c];
-                          const val = raw === null || raw === undefined ? '—'
+                          const val = raw === null || raw === undefined ? '-'
                             : typeof raw === 'object' ? JSON.stringify(raw).slice(0, 40)
                             : String(raw).slice(0, 50);
 
@@ -415,9 +415,9 @@ export default function AdminReportsPage() {
                             return (
                               <td key={c}>
                                 <span className="rp-badge" style={{
-                                  background: val === '—' ? 'transparent'
+                                  background: val === '-' ? 'transparent'
                                     : isActive ? 'rgba(20,184,166,0.1)' : 'var(--admin-border-strong)',
-                                  color: val === '—' ? 'var(--admin-text-faint)'
+                                  color: val === '-' ? 'var(--admin-text-faint)'
                                     : isActive ? '#14B8A6' : 'var(--admin-text-muted)',
                                 }}>
                                   {val}

@@ -186,10 +186,10 @@ is_free: form.plan_tier === 'free',
                 onChange={(e) => setForm({ ...form, meeting_url: e.target.value })}
                 placeholder="Meeting/webinar join link" />
             </div>
-            {/* Access tier — admin controls who can join this event */}
+            {/* Access tier, admin controls who can join this event */}
             <div className="mt-3">
               <label className="text-[11px] font-bold mb-1 block" style={{ color: 'var(--text-dim)' }}>
-                ACCESS — Who can register for this event?
+                ACCESS, Who can register for this event?
               </label>
               <select
                 className="px-3.5 py-2.5 text-sm rounded-xl w-full"
@@ -197,8 +197,8 @@ is_free: form.plan_tier === 'free',
                 value={form.plan_tier}
 onChange={(e) => setForm({ ...form, plan_tier: e.target.value })}
               >
-                <option value="free">Free — all users (including free plan)</option>
-                <option value="paid">Paid only — any active subscription</option>
+                <option value="free">Free, all users (including free plan)</option>
+                <option value="paid">Paid only, any active subscription</option>
                 <option value="explorer">Explorer plan and above</option>
                 <option value="builder">Builder plan and above</option>
                 <option value="climber">Climber plan only</option>

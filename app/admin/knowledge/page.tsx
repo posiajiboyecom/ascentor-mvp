@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { Link2, FileText, PenLine, Zap, Youtube, type LucideIcon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 const brand = {
@@ -150,7 +151,7 @@ function SharedFields({ mentors, mentorSlug, setMentorSlug, namespace, setNamesp
       </div>
       <div>
         <FieldLabel>Source Title *</FieldLabel>
-        <Input value={sourceTitle} onChange={setSourceTitle} placeholder="e.g. The 7 Habits — Chapter 2" disabled={disabled} />
+        <Input value={sourceTitle} onChange={setSourceTitle} placeholder="e.g. The 7 Habits, Chapter 2" disabled={disabled} />
       </div>
       <div>
         <FieldLabel>Tags (comma-separated, optional)</FieldLabel>
@@ -192,7 +193,7 @@ function YoutubeTab({ mentors }: { mentors: MentorProfile[] }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Unknown error');
-      setStatus('success'); setMessage(`✓ ${data.message}`);
+      setStatus('success'); setMessage(`${data.message}`);
       setVideoUrl(''); setSourceTitle(''); setTags('');
     } catch (err: any) {
       setStatus('error'); setMessage(err.message || 'Ingestion failed');
@@ -245,7 +246,7 @@ function UrlTab({ mentors }: { mentors: MentorProfile[] }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Unknown error');
-      setStatus('success'); setMessage(`✓ ${data.message}`);
+      setStatus('success'); setMessage(`${data.message}`);
       setUrl(''); setSourceTitle(''); setTags('');
     } catch (err: any) {
       setStatus('error'); setMessage(err.message || 'Ingestion failed');
@@ -301,7 +302,7 @@ function PdfTab({ mentors }: { mentors: MentorProfile[] }) {
       const res = await fetch('/api/admin/knowledge/ingest-pdf', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Unknown error');
-      setStatus('success'); setMessage(`✓ ${data.message}`);
+      setStatus('success'); setMessage(`${data.message}`);
       setFile(null); setSourceTitle(''); setTags('');
       if (fileRef.current) fileRef.current.value = '';
     } catch (err: any) {
@@ -317,12 +318,12 @@ function PdfTab({ mentors }: { mentors: MentorProfile[] }) {
           {file ? (
             <>
               <p style={{ fontFamily: brand.fontUI, fontSize: '13px', fontWeight: 600, color: brand.gold, margin: 0 }}>{file.name}</p>
-              <p style={{ fontFamily: brand.fontMono, fontSize: '10px', color: brand.dark400, margin: '4px 0 0', letterSpacing: '0.04em' }}>{(file.size / 1024 / 1024).toFixed(2)} MB — click to change</p>
+              <p style={{ fontFamily: brand.fontMono, fontSize: '10px', color: brand.dark400, margin: '4px 0 0', letterSpacing: '0.04em' }}>{(file.size / 1024 / 1024).toFixed(2)} MB, click to change</p>
             </>
           ) : (
             <>
               <p style={{ fontFamily: brand.fontUI, fontSize: '13px', color: brand.dark400, margin: 0 }}>Click to select a PDF</p>
-              <p style={{ fontFamily: brand.fontMono, fontSize: '10px', color: brand.dark500, margin: '4px 0 0', letterSpacing: '0.04em' }}>Max 20MB — text-based PDFs only</p>
+              <p style={{ fontFamily: brand.fontMono, fontSize: '10px', color: brand.dark500, margin: '4px 0 0', letterSpacing: '0.04em' }}>Max 20MB, text-based PDFs only</p>
             </>
           )}
         </div>
@@ -366,7 +367,7 @@ function TextTab({ mentors }: { mentors: MentorProfile[] }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Unknown error');
-      setStatus('success'); setMessage(`✓ ${data.message}`);
+      setStatus('success'); setMessage(`${data.message}`);
       setText(''); setSourceTitle(''); setTags('');
     } catch (err: any) {
       setStatus('error'); setMessage(err.message || 'Ingestion failed');
@@ -481,7 +482,7 @@ function BatchTab({ mentors }: { mentors: MentorProfile[] }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Unknown error');
       setURLStatus('success');
-      setURLMessage(`✓ ${data.message}`);
+      setURLMessage(`${data.message}`);
       setURLRows([emptyURLRow()]);
     } catch (err: any) {
       setURLStatus('error'); setURLMessage(err.message || 'Batch failed');
@@ -539,7 +540,7 @@ function BatchTab({ mentors }: { mentors: MentorProfile[] }) {
       const warnPart = uploadData.failed > 0
         ? ` (${uploadData.failed} file${uploadData.failed !== 1 ? 's' : ''} failed to upload)`
         : '';
-      setPDFMessage(`✓ ${ingestData.message}${warnPart} — PDFs are being processed in the background.`);
+      setPDFMessage(`${ingestData.message}${warnPart}, PDFs are being processed in the background.`);
       setPDFRows([]);
     } catch (err: any) {
       setPDFStatus('error');
@@ -610,11 +611,11 @@ function BatchTab({ mentors }: { mentors: MentorProfile[] }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Mode toggle */}
       <div style={{ display: 'flex', gap: '4px', padding: '4px', borderRadius: '9px', background: brand.dark700 }}>
-        <button style={modeTabStyle(mode === 'urls')} onClick={() => setMode('urls')}>
-          🔗 Bulk URLs / YouTube
+        <button style={{ ...modeTabStyle(mode === 'urls'), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} onClick={() => setMode('urls')}>
+          <Link2 size={13} /> Bulk URLs / YouTube
         </button>
-        <button style={modeTabStyle(mode === 'pdfs')} onClick={() => setMode('pdfs')}>
-          📄 Bulk PDFs
+        <button style={{ ...modeTabStyle(mode === 'pdfs'), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} onClick={() => setMode('pdfs')}>
+          <FileText size={13} /> Bulk PDFs
         </button>
       </div>
 
@@ -623,7 +624,7 @@ function BatchTab({ mentors }: { mentors: MentorProfile[] }) {
         <form onSubmit={handleURLSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <p style={{ fontFamily: brand.fontUI, fontSize: '12px', color: brand.dark400, margin: 0, lineHeight: 1.5 }}>
             Paste any mix of YouTube URLs and article URLs. Each row is one source.
-            Processed in the background — page is free once you hit Queue.
+            Processed in the background, page is free once you hit Queue.
           </p>
 
           {urlRows.map((row, i) => (
@@ -666,7 +667,7 @@ function BatchTab({ mentors }: { mentors: MentorProfile[] }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
                 <div>
                   <FieldLabel>Source Title *</FieldLabel>
-                  <Input value={row.sourceTitle} onChange={v => updateURLRow(i, 'sourceTitle', v)} placeholder="e.g. The Power of Now — Summary" disabled={urlStatus === 'loading'} />
+                  <Input value={row.sourceTitle} onChange={v => updateURLRow(i, 'sourceTitle', v)} placeholder="e.g. The Power of Now, Summary" disabled={urlStatus === 'loading'} />
                 </div>
                 <div>
                   <FieldLabel>Tags (optional)</FieldLabel>
@@ -751,7 +752,7 @@ function BatchTab({ mentors }: { mentors: MentorProfile[] }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
                 <div>
                   <FieldLabel>Source Title *</FieldLabel>
-                  <Input value={row.sourceTitle} onChange={v => updatePDFRow(i, 'sourceTitle', v)} placeholder="e.g. Atomic Habits — Ch 3" disabled={pdfStatus === 'loading'} />
+                  <Input value={row.sourceTitle} onChange={v => updatePDFRow(i, 'sourceTitle', v)} placeholder="e.g. Atomic Habits, Ch 3" disabled={pdfStatus === 'loading'} />
                 </div>
                 <div>
                   <FieldLabel>Tags (optional)</FieldLabel>
@@ -796,7 +797,7 @@ export default function AdminKnowledgePage() {
     setLoadError(null);
 
     try {
-      // Create client inside the async function — avoids SSR/hydration issues
+      // Create client inside the async function, avoids SSR/hydration issues
       const supabase = createClient();
 
       const mentorRes = await supabase
@@ -810,9 +811,9 @@ export default function AdminKnowledgePage() {
       const mentorList = (mentorRes.data || []) as MentorProfile[];
       setMentors(mentorList);
 
-      // Fetch chunk counts per mentor — only if mentor_profiles loaded
+      // Fetch chunk counts per mentor, only if mentor_profiles loaded
       // Count chunks per mentor via RPC (avoids O(N) full table scan).
-      // Requires the DB function below — falls back gracefully if not yet created.
+      // Requires the DB function below, falls back gracefully if not yet created.
       //
       // CREATE OR REPLACE FUNCTION count_knowledge_chunks_by_mentor()
       // RETURNS TABLE(mentor_slug text, chunk_count bigint)
@@ -830,7 +831,7 @@ export default function AdminKnowledgePage() {
         setTotalChunks(total);
         setStats(rows.map(r => ({ mentor_slug: r.mentor_slug, count: Number(r.chunk_count) })));
       } else {
-        // RPC not yet created — fall back to a capped row fetch (max 5000)
+        // RPC not yet created, fall back to a capped row fetch (max 5000)
         // mentor_slug lives inside the metadata jsonb column, not as a top-level column
         const chunkRes = await supabase
           .from('knowledge_chunks')
@@ -855,12 +856,12 @@ export default function AdminKnowledgePage() {
     }
   }
 
-  const tabs: { id: IngestTab; label: string; icon: string }[] = [
-    { id: 'youtube', label: 'YouTube',      icon: '▶'  },
-    { id: 'url',     label: 'URL / Article', icon: '🔗' },
-    { id: 'pdf',     label: 'PDF Upload',   icon: '📄' },
-    { id: 'text',    label: 'Manual Text',  icon: '✏️' },
-    { id: 'batch',   label: 'Batch Import', icon: '⚡' },
+  const tabs: { id: IngestTab; label: string; icon: LucideIcon }[] = [
+    { id: 'youtube', label: 'YouTube',       icon: Youtube  },
+    { id: 'url',     label: 'URL / Article', icon: Link2 },
+    { id: 'pdf',     label: 'PDF Upload',    icon: FileText },
+    { id: 'text',    label: 'Manual Text',   icon: PenLine },
+    { id: 'batch',   label: 'Batch Import',  icon: Zap },
   ];
 
   return (
@@ -910,9 +911,9 @@ export default function AdminKnowledgePage() {
             <div style={{ display: 'flex', gap: '2px', padding: '4px', borderRadius: '12px', background: brand.dark700, marginBottom: '20px', overflowX: 'auto' as const, WebkitOverflowScrolling: 'touch' as any }}>
               {tabs.map(t => (
                 <button key={t.id} onClick={() => setTab(t.id)}
-                  style={{ flexShrink: 0, padding: '8px 10px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: brand.fontUI, fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' as const, background: tab === t.id ? brand.card : 'transparent', color: tab === t.id ? brand.gold : brand.dark400 }}
+                  style={{ flexShrink: 0, padding: '8px 10px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: brand.fontUI, fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' as const, background: tab === t.id ? brand.card : 'transparent', color: tab === t.id ? brand.gold : brand.dark400, display: 'inline-flex', alignItems: 'center', gap: 5 }}
                 >
-                  {t.icon} {t.label}
+                  <t.icon size={12} /> {t.label}
                 </button>
               ))}
             </div>
@@ -927,10 +928,10 @@ export default function AdminKnowledgePage() {
                   {tab === 'batch'   && 'Batch Import'}
                 </SectionLabel>
                 <p style={{ fontFamily: brand.fontUI, fontSize: '12px', color: brand.dark400, margin: '6px 0 0', lineHeight: 1.5 }}>
-                  {tab === 'youtube' && 'Paste a YouTube URL. Transcript is fetched automatically — no API key needed.'}
+                  {tab === 'youtube' && 'Paste a YouTube URL. Transcript is fetched automatically, no API key needed.'}
                   {tab === 'url'     && 'Paste an article or transcript URL. Text is extracted and embedded.'}
                   {tab === 'pdf'     && 'Upload a PDF book chapter or sermon. Text-based PDFs only (not scanned).'}
-                  {tab === 'text'    && 'Paste any text directly — sermon excerpts, quotes, typed notes.'}
+                  {tab === 'text'    && 'Paste any text directly, sermon excerpts, quotes, typed notes.'}
                   {tab === 'batch'   && 'Add up to 50 URLs or 30 PDFs at once. All processed in the background.'}
                 </p>
               </div>
@@ -988,13 +989,13 @@ export default function AdminKnowledgePage() {
             <div style={{ borderRadius: '12px', background: brand.goldMuted, border: `1px solid ${brand.goldBorder}`, padding: '16px 18px' }}>
               <SectionLabel>Ingestion tips</SectionLabel>
               <ul style={{ fontFamily: brand.fontUI, fontSize: '12px', color: brand.dark200, lineHeight: 1.7, margin: '10px 0 0', paddingLeft: '16px' }}>
-                <li>Use <strong>Batch Import ⚡</strong> to add 50 URLs or 30 PDFs at once</li>
+                <li>Use <strong>Batch Import</strong> to add 50 URLs or 30 PDFs at once</li>
                 <li>YouTube works best for long-form talks and sermons</li>
                 <li>URL ingestion skips paywalled or JS-heavy pages</li>
                 <li>PDFs must have embedded text (not scanned images)</li>
                 <li>Each source is chunked into ~400-word segments</li>
                 <li>Re-ingesting the same source safely overwrites previous chunks</li>
-                <li>Batch imports run in the background — no need to wait on the page</li>
+                <li>Batch imports run in the background, no need to wait on the page</li>
               </ul>
             </div>
           </div>

@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Check, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useModal } from '@/components/Modal';
 
 // ============================================================
-// ADMIN NEWSLETTER — /admin/newsletter
+// ADMIN NEWSLETTER, /admin/newsletter
 // Compose, send, manage subscribers and history
 // Ascentor brand: Dark var(--admin-bg) · Gold #E8A020 · Metropolis · DM Mono · Metropolis
 // ============================================================
@@ -633,7 +634,7 @@ export default function AdminNewsletterPage() {
                 border: `1px solid ${result.success ? 'rgba(20,184,166,0.2)' : 'rgba(239,68,68,0.2)'}`,
               }}>
                 <p style={{ ...monoLabel, color: result.success ? '#14B8A6' : '#EF4444', fontSize: '11px' }}>
-                  {result.success ? `Queued successfully — Run ID: ${result.runId}` : `Error: ${result.error}`}
+                  {result.success ? `Queued successfully, Run ID: ${result.runId}` : `Error: ${result.error}`}
                 </p>
               </div>
             )}
@@ -661,7 +662,7 @@ export default function AdminNewsletterPage() {
                   fontSize: '10px', letterSpacing: '0.12em',
                   textTransform: 'uppercase' as const, color: '#E8A020', flex: 1, textAlign: 'center',
                 }}>
-                  Email Preview — How subscribers will see it
+                  Email Preview, How subscribers will see it
                 </span>
               </div>
               {/* White bg wrapper so dark email renders against neutral bg */}
@@ -686,7 +687,7 @@ export default function AdminNewsletterPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {newsletterQueue.length === 0 ? (
             <div style={{ padding: '48px', textAlign: 'center' }}>
-              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '11px', color: 'var(--admin-text-faint)', letterSpacing: '0.08em' }}>No newsletters queued — approve an Email Newsletter from the Content Pipeline</p>
+              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '11px', color: 'var(--admin-text-faint)', letterSpacing: '0.08em' }}>No newsletters queued, approve an Email Newsletter from the Content Pipeline</p>
             </div>
           ) : newsletterQueue.map((item) => (
             <div key={item.id} style={{ background: 'var(--admin-bg-deep)', border: '1px solid var(--admin-bg-input)', borderRadius: '14px', padding: '20px 22px' }}>
@@ -783,13 +784,13 @@ export default function AdminNewsletterPage() {
             {/* Sync result */}
             {mlSyncResult && mlSyncResult.failed === -1 && (
               <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', marginBottom: 10 }}>
-                <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#EF4444' }}>✗ Sync failed — check that MAILERLITE_API_KEY is set in Vercel environment variables</p>
+                <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#EF4444', display: 'flex', alignItems: 'center', gap: 4 }}><X size={11} /> Sync failed, check that MAILERLITE_API_KEY is set in Vercel environment variables</p>
               </div>
             )}
             {mlSyncResult && mlSyncResult.failed !== -1 && (
               <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(20,184,166,0.06)', border: '1px solid rgba(20,184,166,0.2)', marginBottom: 10 }}>
-                <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: '#14B8A6', marginBottom: 4 }}>
-                  ✓ Synced {mlSyncResult.synced} of {mlSyncResult.total} contacts
+                <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: '#14B8A6', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Check size={12} /> Synced {mlSyncResult.synced} of {mlSyncResult.total} contacts
                   {mlSyncResult.failed > 0 ? ` · ${mlSyncResult.failed} failed` : ' · No errors'}
                 </p>
                 {mlSyncResult.groups && (
@@ -820,7 +821,7 @@ export default function AdminNewsletterPage() {
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {mlDiag.groups.length === 0
-                    ? <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#EF4444' }}>No groups found — run sync to auto-create them</span>
+                    ? <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#EF4444' }}>No groups found, run sync to auto-create them</span>
                     : mlDiag.groups.map(g => (
                       <span key={g.id} style={{
                         fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9,
@@ -857,7 +858,7 @@ export default function AdminNewsletterPage() {
                     {subscribers.map((sub) => (
                       <tr key={sub.id} className="asc-sub-row" style={{ borderBottom: '1px solid var(--admin-bg-input)', opacity: sub.is_active ? 1 : 0.5 }}>
                         <td style={{ padding: '12px 16px', fontFamily: "'Metropolis', sans-serif", color: 'var(--admin-text)', fontSize: '13px' }}>{sub.email}</td>
-                        <td style={{ padding: '12px 16px', fontFamily: "'Metropolis', sans-serif", color: 'var(--admin-text-muted)', fontSize: '12px' }}>{sub.first_name || '—'}</td>
+                        <td style={{ padding: '12px 16px', fontFamily: "'Metropolis', sans-serif", color: 'var(--admin-text-muted)', fontSize: '12px' }}>{sub.first_name || '-'}</td>
                         <td style={{ padding: '12px 16px' }}>
                           <span style={{ ...monoLabel, background: 'rgba(232,160,32,0.08)', color: '#E8A020', padding: '2px 8px', borderRadius: '100px', fontSize: '9px' }}>
                             {sub.source || 'website'}

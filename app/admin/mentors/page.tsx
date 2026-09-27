@@ -116,7 +116,7 @@ export default function AdminMentorsPage() {
   async function handleAddNote(app: Application) {
     const note = await prompt('Add or update internal notes for this applicant:', {
       title: 'Internal Notes',
-      placeholder: 'e.g. Spoke with by phone on March 5 — very impressive...',
+      placeholder: 'e.g. Spoke with by phone on March 5, very impressive...',
     });
     if (note !== null) await saveNotes(app.id, note);
   }
@@ -179,7 +179,7 @@ export default function AdminMentorsPage() {
 
   return (
     <>
-      {/* Font imports — brand book spec */}
+      {/* Font imports, brand book spec */}
       <style>{`
         
       `}</style>
@@ -190,7 +190,7 @@ export default function AdminMentorsPage() {
         <div style={{ marginBottom: '6px' }}>
           <div className="ascentor-header-row" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '4px' }}>
             <div>
-              {/* Metropolis display headline — brand spec */}
+              {/* Metropolis display headline, brand spec */}
               <h1 style={{
                 fontFamily: brand.fontDisplay,
                 fontWeight: 700,
@@ -201,7 +201,7 @@ export default function AdminMentorsPage() {
               }}>
                 Founding Mentors
               </h1>
-              {/* DM Mono metadata line — brand spec */}
+              {/* DM Mono metadata line, brand spec */}
               <p style={{
                 fontFamily: brand.fontMono,
                 fontSize: '11px',
@@ -232,11 +232,11 @@ export default function AdminMentorsPage() {
             </span>
           </div>
 
-          {/* Gold rule — brand visual motif */}
+          {/* Gold rule, brand visual motif */}
           <div style={{ height: '1px', background: `linear-gradient(90deg, ${brand.gold} 0%, transparent 60%)`, marginTop: '16px', marginBottom: '24px' }} />
         </div>
 
-        {/* ── STATS ROW — Stage colors from brand book ── */}
+        {/* ── STATS ROW, Stage colors from brand book ── */}
         <div className="ascentor-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '28px' }}>
           {(['pending', 'approved', 'active', 'rejected'] as const).map(s => {
             const cfg = STATUS_CONFIG[s];
@@ -301,7 +301,7 @@ export default function AdminMentorsPage() {
                 onBlur={e => (e.target.style.borderColor = brand.border)}
               />
 
-              {/* Tab bar — Metropolis font, brand active state */}
+              {/* Tab bar, Metropolis font, brand active state */}
               <div style={{
                 display: 'flex',
                 gap: '2px',
@@ -500,7 +500,7 @@ export default function AdminMentorsPage() {
             )}
           </div>
 
-          {/* ── RIGHT PANEL — DETAIL (desktop only) ── */}
+          {/* ── RIGHT PANEL, DETAIL (desktop only) ── */}
           {selected && (
             <div className="ascentor-detail-panel" style={{
               width: '420px',
@@ -514,7 +514,7 @@ export default function AdminMentorsPage() {
               height: 'fit-content',
             }}>
 
-              {/* Panel header — Metropolis display name */}
+              {/* Panel header, Metropolis display name */}
               <div style={{
                 padding: '20px 22px',
                 borderBottom: `1px solid ${brand.border}`,
@@ -618,7 +618,7 @@ export default function AdminMentorsPage() {
                   </div>
                 </div>
 
-                {/* Profile info — DM Mono labels + Metropolis values */}
+                {/* Profile info, DM Mono labels + Metropolis values */}
                 <div style={{ padding: '18px 22px', borderBottom: `1px solid ${brand.border}` }}>
                   <MonoTag color={brand.dark500}>Profile</MonoTag>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
@@ -627,7 +627,7 @@ export default function AdminMentorsPage() {
                       ['Industry', selected.industry],
                       ['Experience', selected.years_experience],
                       ['Country', selected.country],
-                      ['Phone', selected.phone || '—'],
+                      ['Phone', selected.phone || '-'],
                       ['Availability', `${selected.availability_hours} hrs/month`],
                       ['Mentored Before', selected.has_mentored_before],
                       ['Age Groups', selected.age_groups],
@@ -694,7 +694,7 @@ export default function AdminMentorsPage() {
                   </div>
                 </div>
 
-                {/* Written responses — Metropolis section labels */}
+                {/* Written responses, Metropolis section labels */}
                 {[
                   { label: 'Career Summary', value: selected.career_summary },
                   { label: 'Why They Want to Mentor', value: selected.why_mentor },
@@ -716,7 +716,7 @@ export default function AdminMentorsPage() {
                   </div>
                 ))}
 
-                {/* Internal notes — gold accent treatment */}
+                {/* Internal notes, gold accent treatment */}
                 {selected.notes && (
                   <div style={{
                     padding: '18px 22px',
@@ -849,7 +849,7 @@ export default function AdminMentorsPage() {
                       ['Industry', selected.industry],
                       ['Experience', selected.years_experience],
                       ['Country', selected.country],
-                      ['Phone', selected.phone || '—'],
+                      ['Phone', selected.phone || '-'],
                       ['Availability', `${selected.availability_hours} hrs/month`],
                       ['Mentored Before', selected.has_mentored_before],
                       ['Age Groups', selected.age_groups],

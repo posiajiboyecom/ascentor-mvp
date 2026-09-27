@@ -13,7 +13,7 @@ import '@/styles/admin-ledger.css';
 //
 // CORRECTION (see git history / chat log): an earlier pass wired
 // The Ledger design system into a file named app/admin/admin-layout.tsx,
-// which looks like a layout but isn't one — Next.js only recognizes
+// which looks like a layout but isn't one, Next.js only recognizes
 // a file literally named layout.tsx as a route segment's layout.
 // That file was never invoked, so none of the CSS/theme wiring was
 // actually live. It has been deleted. This file is the real one.
@@ -30,9 +30,9 @@ import '@/styles/admin-ledger.css';
 // Clean in the happy path, safe in the unmigrated path.
 // ═══════════════════════════════════════════════════════════
 
-// THE LEDGER — typography is Metropolis, loaded locally via @font-face
+// THE LEDGER, typography is Metropolis, loaded locally via @font-face
 // in globals.css (public/fonts/metropolis/). The previous Google Fonts
-// link (Cormorant Garamond / Syne / DM Mono) was removed — none of those
+// link (Cormorant Garamond / Syne / DM Mono) was removed, none of those
 // families are referenced by the Ledger tokens anymore.
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

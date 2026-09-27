@@ -42,7 +42,7 @@ const B = {
   error:       '#EF4444',
 };
 
-// ── Action colour map — only uses brand-palette colours ──────────
+// ── Action colour map, only uses brand-palette colours ──────────
 const ACTION_COLOR: Record<string, string> = {
   user_signup:              B.explorer,
   user_login:               B.climber,
@@ -343,7 +343,7 @@ export default function AdminAuditLogsPage() {
             <div className="asc-table-wrap">
               <table className="asc-table">
 
-                {/* Table head — DM Mono labels, brand spec */}
+                {/* Table head, DM Mono labels, brand spec */}
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${B.border}` }}>
                     {['Time', 'User', 'Action', 'Type', 'Entity ID', 'Details', 'IP'].map((h, i) => (
@@ -376,7 +376,7 @@ export default function AdminAuditLogsPage() {
                         background:   'transparent',
                       }}
                     >
-                      {/* Time — DM Mono */}
+                      {/* Time, DM Mono */}
                       <td style={{ padding: '13px 16px', whiteSpace: 'nowrap' as const }}>
                         <span style={{
                           fontFamily:    B.fontMono,
@@ -389,7 +389,7 @@ export default function AdminAuditLogsPage() {
                         </span>
                       </td>
 
-                      {/* User — Metropolis for name, Mono for ID fallback */}
+                      {/* User, Metropolis for name, Mono for ID fallback */}
                       <td style={{ padding: '13px 16px', minWidth: '140px' }}>
                         {log.profiles?.full_name ? (
                           <div>
@@ -416,12 +416,12 @@ export default function AdminAuditLogsPage() {
                         )}
                       </td>
 
-                      {/* Action — brand pill */}
+                      {/* Action, brand pill */}
                       <td style={{ padding: '13px 16px' }}>
                         <ActionPill action={log.action} />
                       </td>
 
-                      {/* Entity type — Mono tag */}
+                      {/* Entity type, Mono tag */}
                       <td style={{ padding: '13px 16px' }}>
                         <span style={{
                           fontFamily:    B.fontMono,
@@ -440,7 +440,7 @@ export default function AdminAuditLogsPage() {
                         </span>
                       </td>
 
-                      {/* Entity ID — DM Mono */}
+                      {/* Entity ID, DM Mono */}
                       <td style={{ padding: '13px 16px' }}>
                         <span style={{
                           fontFamily:    B.fontMono,
@@ -449,11 +449,11 @@ export default function AdminAuditLogsPage() {
                           color:         B.dark500,
                           letterSpacing: '0.03em',
                         }}>
-                          {log.entity_id ? log.entity_id.slice(0, 12) + '…' : '—'}
+                          {log.entity_id ? log.entity_id.slice(0, 12) + '…' : '-'}
                         </span>
                       </td>
 
-                      {/* Details — truncated, Metropolis body */}
+                      {/* Details, truncated, Metropolis body */}
                       <td style={{
                         padding:      '13px 16px',
                         maxWidth:     '200px',
@@ -468,11 +468,11 @@ export default function AdminAuditLogsPage() {
                         }}>
                           {log.details && Object.keys(log.details).length > 0
                             ? JSON.stringify(log.details).slice(0, 55) + '…'
-                            : '—'}
+                            : '-'}
                         </span>
                       </td>
 
-                      {/* IP — DM Mono */}
+                      {/* IP, DM Mono */}
                       <td style={{ padding: '13px 16px' }}>
                         <span style={{
                           fontFamily:    B.fontMono,
@@ -481,7 +481,7 @@ export default function AdminAuditLogsPage() {
                           color:         B.dark500,
                           letterSpacing: '0.03em',
                         }}>
-                          {log.ip_address ?? '—'}
+                          {log.ip_address ?? '-'}
                         </span>
                       </td>
                     </tr>

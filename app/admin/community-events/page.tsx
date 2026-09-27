@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 //   meeting_url, registration_url, max_attendees, current_attendees.
 
 import { useState, useEffect } from 'react';
+import { Calendar, Clock, Users, CheckCircle2, Lock, ClipboardList, Link2 } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import SageLoader from '@/components/SageLoader';
@@ -28,7 +29,7 @@ const STATUS_STYLE: Record<Status, { bg: string; color: string }> = {
 };
 
 const TIER_OPTIONS = [
-  { value: 'free',     label: 'Free — all members' },
+  { value: 'free',     label: 'Free, all members' },
   { value: 'explorer', label: 'Explorer and above' },
   { value: 'builder',  label: 'Builder and above' },
   { value: 'climber',  label: 'Climber only' },
@@ -191,7 +192,7 @@ export default function AdminCommunityEventsPage() {
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
             Manage expert sessions shown at <span style={{ color: 'var(--accent)' }}>/experts</span>.
-            These are in-app only — separate from public events.
+            These are in-app only, separate from public events.
           </p>
           <p className="text-xs mt-1" style={{ color: 'var(--text-dim)' }}>
             {upcoming.length} upcoming · {past.length} past
@@ -265,7 +266,7 @@ export default function AdminCommunityEventsPage() {
               <Field label="Dimension (The 6 pillars)">
                 <select className={inputCls} style={{ ...inputStyle, cursor: 'pointer' }}
                   value={form.dimension} onChange={(e) => set('dimension', e.target.value)}>
-                  <option value="">— None —</option>
+                  <option value="">- None -</option>
                   {DIMENSIONS.map((d) => <option key={d} value={d}>{d}</option>)}
                 </select>
               </Field>
@@ -294,7 +295,7 @@ export default function AdminCommunityEventsPage() {
             </div>
 
             {/* Access tier */}
-            <Field label="Access — Who can register?">
+            <Field label="Access, Who can register?">
               <select className={inputCls} style={{ ...inputStyle, cursor: 'pointer' }}
                 value={form.plan_tier} onChange={(e) => set('plan_tier', e.target.value)}>
                 {TIER_OPTIONS.map((t) => (
@@ -352,7 +353,7 @@ export default function AdminCommunityEventsPage() {
                 weekday: 'short', month: 'short', day: 'numeric',
                 hour: 'numeric', minute: '2-digit',
               })
-            : '—';
+            : '-';
 
           return (
             <div key={s.id} className="rounded-2xl p-4 md:p-5"
@@ -386,17 +387,17 @@ export default function AdminCommunityEventsPage() {
               {/* Meta */}
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] mb-3"
                 style={{ color: 'var(--text-dim)' }}>
-                <span>📅 {date}</span>
-                <span>⏱ {s.duration_minutes ?? 60} min</span>
-                <span>👥 {s.max_attendees ?? '—'} max</span>
+                <span className="inline-flex items-center gap-1"><Calendar size={11} /> {date}</span>
+                <span className="inline-flex items-center gap-1"><Clock size={11} /> {s.duration_minutes ?? 60} min</span>
+                <span className="inline-flex items-center gap-1"><Users size={11} /> {s.max_attendees ?? '-'} max</span>
                 {s.current_attendees != null && (
-                  <span>✅ {s.current_attendees} registered</span>
+                  <span className="inline-flex items-center gap-1"><CheckCircle2 size={11} /> {s.current_attendees} registered</span>
                 )}
                 {s.plan_tier && s.plan_tier !== 'free' && (
-                  <span style={{ color: 'var(--accent)' }}>🔒 {s.plan_tier}+</span>
+                  <span className="inline-flex items-center gap-1" style={{ color: 'var(--accent)' }}><Lock size={11} /> {s.plan_tier}+</span>
                 )}
-                {s.registration_url && <span>📋 Reg link</span>}
-                {s.meeting_url && <span>🔗 Join link</span>}
+                {s.registration_url && <span className="inline-flex items-center gap-1"><ClipboardList size={11} /> Reg link</span>}
+                {s.meeting_url && <span className="inline-flex items-center gap-1"><Link2 size={11} /> Join link</span>}
               </div>
 
               {/* Actions */}
@@ -438,7 +439,7 @@ export default function AdminCommunityEventsPage() {
             </p>
             <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
               {tab === 'upcoming'
-                ? 'Create a session — it will appear at /experts for members.'
+                ? 'Create a session, it will appear at /experts for members.'
                 : 'Completed and cancelled sessions will appear here.'}
             </p>
           </div>

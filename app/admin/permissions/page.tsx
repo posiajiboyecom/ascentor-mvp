@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { ShieldCheck, Shield, Crown, Check } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -18,7 +19,7 @@ const G = {
   red: '#EF4444',  redPale:  'rgba(239,68,68,0.08)',  redBord:  'rgba(239,68,68,0.2)',
 };
 
-type Staff = { id: string; full_name: string|null; email: string; role: UserRole; permissions: Permission[]|null; };
+type Staff = { id: string; full_name: string|null; email: string; role: UserRole; permissions: Permission[]|null; banned?: boolean; };
 
 const ADMIN_ONLY: Permission[] = [
   'users.edit_role','users.delete','users.export',
@@ -110,6 +111,23 @@ export default function PermissionsPage() {
     if(sel?.id===m.id)setSel(null);
   }
 
+  async function setBanned(m:Staff,banned:boolean){
+    const msg = banned
+      ? `Ban ${m.full_name||m.email}? They will lose access to the platform immediately.`
+      : `Unban ${m.full_name||m.email}?`;
+    if(!(await confirmAction(msg,{title:banned?'Ban User':'Unban User',danger:banned}))) return;
+    const { data:{session} } = await sb.auth.getSession();
+    const res = await fetch('/api/admin/users', {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json', Authorization:`Bearer ${session?.access_token||''}`},
+      body: JSON.stringify({ targetUserId: m.id, action: banned?'ban':'unban' }),
+    });
+    const d = await res.json();
+    if(!res.ok || d.success===false){alert(d.error||'Action failed');return;}
+    setFound({...m,banned});
+    setStaff(p=>p.map(s=>s.id===m.id?{...s,banned}:s));
+  }
+
   function toggle(p:Permission){if(ADMIN_ONLY.includes(p))return;setDraft(d=>d.includes(p)?d.filter(x=>x!==p):[...d,p]);setSaved(false);}
 
   function allOn(group:string){
@@ -159,14 +177,24 @@ export default function PermissionsPage() {
           {found&&found!=='none'&&(
             <div style={{marginTop:12,padding:'14px 16px',borderRadius:10,background:'var(--admin-bg)',border:`1px solid ${G.goldBord}`,display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>
               <div>
-                <p style={{fontFamily:G.font,fontWeight:600,fontSize:14,color:'var(--admin-text)',margin:0}}>{(found as Staff).full_name||'—'}</p>
-                <p style={{fontFamily:G.mono,fontSize:11,color:'var(--admin-text-faint)',margin:'3px 0 0'}}>{(found as Staff).email} · currently: {(found as Staff).role}</p>
+                <p style={{fontFamily:G.font,fontWeight:600,fontSize:14,color:'var(--admin-text)',margin:0}}>{(found as Staff).full_name||'-'}</p>
+                <p style={{fontFamily:G.mono,fontSize:11,color:'var(--admin-text-faint)',margin:'3px 0 0'}}>
+                  {(found as Staff).email} · currently: {(found as Staff).role}
+                  {(found as Staff).banned && <span style={{color:G.red}}> · banned</span>}
+                </p>
               </div>
-              {(found as Staff).role==='member'?(
-                <button onClick={()=>grant(found as Staff)} style={{padding:'8px 18px',borderRadius:8,border:'none',background:G.gold,color:'#0C0B08',fontFamily:G.font,fontSize:13,fontWeight:700,cursor:'pointer'}}>Grant Admin Access →</button>
-              ):(
-                <span style={{fontFamily:G.mono,fontSize:11,color:G.teal}}>Already in team — select from list</span>
-              )}
+              <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+                {(found as Staff).role==='member'?(
+                  <button onClick={()=>grant(found as Staff)} style={{padding:'8px 18px',borderRadius:8,border:'none',background:G.gold,color:'#0C0B08',fontFamily:G.font,fontSize:13,fontWeight:700,cursor:'pointer'}}>Grant Admin Access →</button>
+                ):(
+                  <span style={{fontFamily:G.mono,fontSize:11,color:G.teal}}>Already in team, select from list</span>
+                )}
+                {(found as Staff).banned ? (
+                  <button onClick={()=>setBanned(found as Staff,false)} style={{padding:'8px 16px',borderRadius:8,border:`1px solid ${G.tealBord}`,background:'transparent',color:G.teal,fontFamily:G.font,fontSize:12,fontWeight:600,cursor:'pointer'}}>Unban</button>
+                ):(
+                  <button onClick={()=>setBanned(found as Staff,true)} style={{padding:'8px 16px',borderRadius:8,border:`1px solid ${G.redBord}`,background:'transparent',color:G.red,fontFamily:G.font,fontSize:12,fontWeight:600,cursor:'pointer'}}>Ban user</button>
+                )}
+              </div>
             </div>
           )}
           {found==='none'&&<p style={{fontFamily:G.mono,fontSize:11,color:G.red,marginTop:10}}>No user found. They need to sign up on Ascentor first.</p>}
@@ -184,9 +212,9 @@ export default function PermissionsPage() {
             :staff.map(m=>(
               <div key={m.id} className={`pm-row${sel?.id===m.id?' sel':''}`} style={{borderLeft:`3px solid ${m.role==='admin'?G.gold:G.teal}`}} onClick={()=>pick(m)}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <p style={{fontFamily:G.font,fontWeight:600,fontSize:13,color:'var(--admin-text)',margin:0}}>{m.full_name||'—'}</p>
-                  <span style={{fontFamily:G.mono,fontSize:9,padding:'2px 7px',borderRadius:100,background:m.role==='admin'?G.goldPale:G.tealPale,color:m.role==='admin'?G.gold:G.teal,border:`1px solid ${m.role==='admin'?G.goldBord:G.tealBord}`}}>
-                    {m.role==='admin'?'⬡ Admin':'◈ Mod'}
+                  <p style={{fontFamily:G.font,fontWeight:600,fontSize:13,color:'var(--admin-text)',margin:0}}>{m.full_name||'-'}</p>
+                  <span style={{fontFamily:G.mono,fontSize:9,padding:'2px 7px',borderRadius:100,background:m.role==='admin'?G.goldPale:G.tealPale,color:m.role==='admin'?G.gold:G.teal,border:`1px solid ${m.role==='admin'?G.goldBord:G.tealBord}`,display:'inline-flex',alignItems:'center',gap:3}}>
+                    {m.role==='admin'?<ShieldCheck size={10} />:<Shield size={10} />} {m.role==='admin'?'Admin':'Mod'}
                   </span>
                 </div>
                 <p style={{fontFamily:G.mono,fontSize:10,color:'var(--admin-text-faint)',margin:'3px 0 0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{m.email}</p>
@@ -207,12 +235,12 @@ export default function PermissionsPage() {
                   <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                     {sel.role!=='admin'&&<button onClick={()=>revoke(sel)} style={{fontFamily:G.font,fontSize:11,fontWeight:600,padding:'7px 14px',borderRadius:8,cursor:'pointer',background:G.redPale,color:G.red,border:`1px solid ${G.redBord}`}}>Remove from team</button>}
                     <button onClick={()=>{setDraft([...(ROLE_PERMISSIONS[sel.role]||[])]);setSaved(false);}} style={{fontFamily:G.font,fontSize:11,fontWeight:600,padding:'7px 14px',borderRadius:8,cursor:'pointer',background:'transparent',color:'var(--admin-text-muted)',border:'1px solid var(--admin-bg-input)'}}>Reset defaults</button>
-                    <button onClick={save} disabled={saving} style={{fontFamily:G.font,fontSize:11,fontWeight:700,padding:'7px 18px',borderRadius:8,cursor:saving?'not-allowed':'pointer',background:saved?G.tealPale:G.goldPale,color:saved?G.teal:G.gold,border:`1px solid ${saved?G.tealBord:G.goldBord}`,opacity:saving?.6:1}}>
-                      {saving?'Saving…':saved?'✓ Saved':'Save Changes'}
+                    <button onClick={save} disabled={saving} style={{fontFamily:G.font,fontSize:11,fontWeight:700,padding:'7px 18px',borderRadius:8,cursor:saving?'not-allowed':'pointer',background:saved?G.tealPale:G.goldPale,color:saved?G.teal:G.gold,border:`1px solid ${saved?G.tealBord:G.goldBord}`,opacity:saving?.6:1,display:'inline-flex',alignItems:'center',gap:5}}>
+                      {saving?'Saving…':saved?(<><Check size={12} /> Saved</>):'Save Changes'}
                     </button>
                   </div>
                 </div>
-                {sel.role==='admin'&&<div style={{marginTop:14,padding:'10px 14px',borderRadius:8,background:G.goldPale,border:`1px solid ${G.goldBord}`}}><p style={{fontFamily:G.mono,fontSize:10,color:G.gold,margin:0}}>⬡ ROOT ADMIN — Always has full access. Permissions cannot be restricted.</p></div>}
+                {sel.role==='admin'&&<div style={{marginTop:14,padding:'10px 14px',borderRadius:8,background:G.goldPale,border:`1px solid ${G.goldBord}`,display:'flex',alignItems:'center',gap:6}}><Crown size={13} color={G.gold} /><p style={{fontFamily:G.mono,fontSize:10,color:G.gold,margin:0}}>ROOT ADMIN. Always has full access. Permissions cannot be restricted.</p></div>}
               </div>
 
               <div style={{overflowY:'auto',maxHeight:'calc(100vh - 340px)',padding:'4px 0'}}>

@@ -2,7 +2,7 @@
 
 // app/admin/inbox/page.tsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Admin inbox — shows all contact_messages rows.
+// Admin inbox, shows all contact_messages rows.
 // Features: filter by status, expand to read full message, update status,
 // one-click mailto reply. Styled in The Ledger admin design system.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -214,7 +214,7 @@ export default function AdminInboxPage() {
                 overflow: 'hidden',
                 transition: 'border-color 0.15s',
               }}>
-                {/* Row header — always visible */}
+                {/* Row header, always visible */}
                 <div
                   onClick={() => handleExpand(msg.id)}
                   style={{

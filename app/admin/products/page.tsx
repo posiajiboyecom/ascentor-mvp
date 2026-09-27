@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { X, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 // ─────────────────────────────────────────────────────────────────
-// /admin/products — Manage the public products page
+// /admin/products: manage the public products page
 // Create, edit, publish, reorder and delete products.
 // Images upload to Supabase Storage bucket: 'product-images'
 // ─────────────────────────────────────────────────────────────────
@@ -298,7 +299,7 @@ export default function AdminProductsPage() {
               <p style={{ fontFamily: brand.fontDisplay, fontWeight: 700, fontSize: '18px', color: brand.dark50, margin: 0 }}>
                 {isNew ? 'New Product' : `Editing: ${editing?.name}`}
               </p>
-              <button onClick={closeForm} style={{ background: 'transparent', border: `1px solid ${brand.border}`, borderRadius: '6px', color: brand.dark400, cursor: 'pointer', padding: '4px 10px', fontFamily: brand.fontUI, fontSize: '14px' }}>✕</button>
+              <button onClick={closeForm} aria-label="Close" style={{ background: 'transparent', border: `1px solid ${brand.border}`, borderRadius: '6px', color: brand.dark400, cursor: 'pointer', padding: '4px 10px', display: 'flex' }}><X size={14} /></button>
             </div>
 
             {/* Form body */}
@@ -514,7 +515,7 @@ export default function AdminProductsPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
                         <p style={{ fontFamily: brand.fontUI, fontWeight: 700, fontSize: '14px', color: brand.dark50, margin: 0 }}>{p.name}</p>
                         <span style={{ fontFamily: brand.fontMono, fontSize: '9px', color: brand.dark500, background: brand.dark700, padding: '2px 7px', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{p.category}</span>
-                        {p.is_featured && <span style={{ fontFamily: brand.fontMono, fontSize: '9px', color: brand.gold }}>★ Featured</span>}
+                        {p.is_featured && <span style={{ fontFamily: brand.fontMono, fontSize: '9px', color: brand.gold, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Star size={9} fill={brand.gold} /> Featured</span>}
                       </div>
                       <p style={{ fontFamily: brand.fontUI, fontSize: '12px', color: brand.dark400, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '400px' }}>{p.tagline}</p>
                     </div>
@@ -529,7 +530,7 @@ export default function AdminProductsPage() {
                       <button
                         onClick={() => togglePublished(p)}
                         className={`toggle-btn ${p.published ? 'toggle-on' : 'toggle-off'}`}
-                        title={p.published ? 'Published — click to unpublish' : 'Draft — click to publish'}
+                        title={p.published ? 'Published, click to unpublish' : 'Draft, click to publish'}
                       />
 
                       {/* Order */}

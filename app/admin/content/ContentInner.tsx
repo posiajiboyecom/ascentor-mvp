@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import {
+  PenLine, Mail, Zap, RotateCcw, LayoutGrid, ClipboardList, Calendar, User,
+  Check, X, Copy, Image as ImageIcon, Play,
+} from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
@@ -29,13 +33,13 @@ interface CalItem {
   assigned_to:    string | null;
 }
 
-const TYPE_META: Record<string, { icon: string; color: string; bg: string }> = {
-  'Blog Post':        { icon: '✍', color: '#E8A020', bg: 'rgba(232,160,32,0.10)' },
+const TYPE_META: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
+  'Blog Post':        { icon: <PenLine size={12} />, color: '#E8A020', bg: 'rgba(232,160,32,0.10)' },
   'LinkedIn Post':    { icon: 'in', color: '#0A66C2', bg: 'rgba(10,102,194,0.10)' },
   'Twitter Thread':   { icon: '𝕏',  color: '#aaa',   bg: 'rgba(180,180,180,0.10)' },
-  'Email Newsletter': { icon: '✉',  color: '#14B8A6', bg: 'rgba(20,184,166,0.10)' },
+  'Email Newsletter': { icon: <Mail size={12} />, color: '#14B8A6', bg: 'rgba(20,184,166,0.10)' },
   'Twitter Single':   { icon: '𝕏',  color: '#1D9BF0', bg: 'rgba(29,155,240,0.10)' },
-  'Personal Brand':   { icon: '⚡', color: '#E8A020', bg: 'rgba(232,160,32,0.10)'  },
+  'Personal Brand':   { icon: <Zap size={12} />, color: '#E8A020', bg: 'rgba(232,160,32,0.10)'  },
 };
 
 const PILLAR_COLOR: Record<string, string> = {
@@ -167,7 +171,7 @@ export default function AdminContentPage() {
     const { error } = await supabase.from('content_calendar').update({ status, ...extra }).eq('id', id);
     if (error) {
       showToast('Error: ' + error.message, false);
-      // No revert here — minor operations, not worth complexity
+      // No revert here, minor operations, not worth complexity
     }
   }
 
@@ -207,8 +211,8 @@ export default function AdminContentPage() {
         .maybeSingle();
 
       if (existing) {
-        // Already exists — just navigate to blog admin, don't duplicate
-        showToast('✓ Approved — blog draft already exists. View in /admin/blog');
+        // Already exists, just navigate to blog admin, don't duplicate
+        showToast('Approved, blog draft already exists. View in /admin/blog');
       } else {
         const { error } = await supabase.from('blog_posts').insert({
           title:             baseTitle,
@@ -224,7 +228,7 @@ export default function AdminContentPage() {
           published_at:      null,
         });
         if (error) {
-          // Slug collision fallback — append short unique id
+          // Slug collision fallback, append short unique id
           if (error.code === '23505') {
             const uniqueSlug = baseSlug + '-' + selectedItem.id.slice(0, 6);
             await supabase.from('blog_posts').insert({
@@ -240,16 +244,16 @@ export default function AdminContentPage() {
               is_published:      false,
               published_at:      null,
             });
-            showToast('✓ Approved → Blog draft created. Publish from /admin/blog');
+            showToast('Approved → Blog draft created. Publish from /admin/blog');
           } else {
             showToast('Approved but blog draft failed: ' + error.message, false);
           }
         } else {
-          showToast('✓ Approved → Blog draft created. Publish from /admin/blog');
+          showToast('Approved → Blog draft created. Publish from /admin/blog');
         }
       }
     } else if (selectedItem.type === 'Email Newsletter') {
-      // Queue newsletter — goes to /admin/newsletter for final send
+      // Queue newsletter, goes to /admin/newsletter for final send
       const d = (selectedItem.content_data || {}) as any;
       const { error } = await supabase.from('newsletter_queue').insert({
         subject:              d.subject || selectedItem.title,
@@ -263,13 +267,13 @@ export default function AdminContentPage() {
       if (error) {
         showToast('Approved but newsletter queue failed: ' + error.message, false);
       } else {
-        showToast('✓ Approved → Newsletter queued. Send from /admin/newsletter');
+        showToast('Approved → Newsletter queued. Send from /admin/newsletter');
       }
     } else {
-      showToast('✓ Approved — moved to Approved queue');
+      showToast('Approved, moved to Approved queue');
     }
 
-    // Switch filter immediately — patchItem already updated both items[] and selectedItem
+    // Switch filter immediately, patchItem already updated both items[] and selectedItem
     // so the panel stays open and shows the new approved state with send buttons
     setStatusFilter('approved');
     setSaving(false);
@@ -282,7 +286,7 @@ export default function AdminContentPage() {
       scheduled_date: date,
       approved_at: selectedItem.approved_at ?? new Date().toISOString(),
     });
-    showToast('✓ Scheduled for ' + fmtDate(date));
+    showToast('Scheduled for ' + fmtDate(date));
     setPendingFilter('scheduled');
     setSelectedItem(null);
     setSaving(false);
@@ -306,7 +310,7 @@ export default function AdminContentPage() {
     });
     if (error) { showToast('Blog error: ' + error.message, false); setSaving(false); return; }
     await setStatus(item.id, 'published', { published_at: new Date().toISOString() });
-    showToast('✓ Sent to Blog Drafts → publish from /admin/blog');
+    showToast('Sent to Blog Drafts → publish from /admin/blog');
     setPendingFilter('published');
     setSelectedItem(null);
     setSaving(false);
@@ -352,7 +356,7 @@ export default function AdminContentPage() {
         if (!bufRes.ok) {
           showToast('Queued locally but Buffer error: ' + (bufData.error || 'unknown'), false);
         } else {
-          showToast('✓ Sent to Buffer for ' + platform);
+          showToast('Sent to Buffer for ' + platform);
         }
       } catch (bufErr: any) {
         showToast('Queued locally but Buffer unreachable: ' + bufErr.message, false);
@@ -390,7 +394,7 @@ export default function AdminContentPage() {
       // Revert
       patchItem(contentId, { assigned_to: null });
     } else {
-      showToast(assigneeId ? '✓ Task assigned' : '✓ Assignment removed');
+      showToast(assigneeId ? 'Task assigned' : 'Assignment removed');
     }
   }
 
@@ -402,7 +406,7 @@ export default function AdminContentPage() {
       if (runPillar)        payload.pillar = runPillar;
       const res = await fetch('/api/admin/agents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId: '1', payload }) });
       const data = await res.json();
-      if (data.success) { showToast('Researcher running — ID: ' + (data.runId || '').slice(0, 8) + '…'); setRunModal(false); setRunTopic(''); setRunPillar(''); setRunAudience('young_professional'); }
+      if (data.success) { showToast('Researcher running, ID: ' + (data.runId || '').slice(0, 8) + '…'); setRunModal(false); setRunTopic(''); setRunPillar(''); setRunAudience('young_professional'); }
       else showToast('Error: ' + data.error, false);
     } catch (e: any) { showToast('Error: ' + e.message, false); }
     setRunning(false);
@@ -425,7 +429,7 @@ export default function AdminContentPage() {
   const filtered = items.filter(it => {
     // Always show the currently selected item so panel never loses its content
     if (selectedItem && it.id === selectedItem.id) return true;
-    // My Tasks tab — show only items assigned to current user
+    // My Tasks tab, show only items assigned to current user
     if (tab === 'assigned') return it.assigned_to === currentUserId;
     if (typeFilter === 'Personal Brand') {
       if (!it.content_data?.isPersonalBrand) return false;
@@ -444,8 +448,8 @@ export default function AdminContentPage() {
             <p className="cp-subtitle">Review · Approve · Schedule · Publish</p>
           </div>
           <div className="cp-topbtns">
-            <button className="cp-runbtn" onClick={() => setRunModal(true)}>▶ Run Researcher</button>
-            <button className="cp-refbtn" onClick={loadAll}>↻ Refresh</button>
+            <button className="cp-runbtn" onClick={() => setRunModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Play size={12} /> Run Researcher</button>
+            <button className="cp-refbtn" onClick={loadAll} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><RotateCcw size={12} /> Refresh</button>
           </div>
         </div>
 
@@ -467,13 +471,13 @@ export default function AdminContentPage() {
 
         <div className="cp-tabs">
           {(['content', 'briefs', 'queue', 'personal', 'carousel', 'assigned'] as Tab[]).map(t => (
-            <button key={t} onClick={() => setTab(t)} className={"cp-tab " + (tab === t ? 'on' : 'off')}>
+            <button key={t} onClick={() => setTab(t)} className={"cp-tab " + (tab === t ? 'on' : 'off')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
               {t === 'content'  ? ('Content' + (counts.draft > 0 ? ' (' + counts.draft + ')' : ''))
                : t === 'briefs'   ? 'Research'
                : t === 'queue'    ? 'Social Queue'
-               : t === 'personal' ? '⚡ Personal Brand'
-               : t === 'carousel' ? '🎠 Carousel'
-               : '📋 My Tasks' + (assignedToMe > 0 ? ' (' + assignedToMe + ')' : '')}
+               : t === 'personal' ? <><Zap size={12} /> Personal Brand</>
+               : t === 'carousel' ? <><LayoutGrid size={12} /> Carousel</>
+               : <><ClipboardList size={12} /> My Tasks{assignedToMe > 0 ? ` (${assignedToMe})` : ''}</>}
             </button>
           ))}
         </div>
@@ -521,7 +525,7 @@ export default function AdminContentPage() {
                         <div className="cp-item-row1">
                           <span className="cp-type-pill" style={{ background: meta.bg, color: meta.color }}>{meta.icon} {item.type}</span>
                           <span className="cp-dot" style={{ background: pc }} title={item.pillar} />
-                          {item.scheduled_date && <span className="cp-muted" style={{ color: '#3B82F6' }}>📅 {fmtDate(item.scheduled_date)}</span>}
+                          {item.scheduled_date && <span className="cp-muted" style={{ color: '#3B82F6', display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={11} /> {fmtDate(item.scheduled_date)}</span>}
                         </div>
                         <div className="cp-item-title">{item.title}</div>
                         <div className="cp-item-meta">
@@ -532,8 +536,8 @@ export default function AdminContentPage() {
                           {item.assigned_to && (() => {
                             const m = teamMembers.find(t => t.id === item.assigned_to);
                             return m ? (
-                              <span className="cp-muted" style={{ color: '#8B5CF6', marginLeft: 'auto' }}>
-                                👤 {m.full_name || m.email}
+                              <span className="cp-muted" style={{ color: '#8B5CF6', marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <User size={11} /> {m.full_name || m.email}
                               </span>
                             ) : null;
                           })()}
@@ -573,7 +577,7 @@ export default function AdminContentPage() {
         {!loading && tab === 'briefs' && (
           <div>
             {briefs.length === 0
-              ? <div className="cp-empty"><p className="cp-empty-text">No research briefs yet — run the Researcher agent</p></div>
+              ? <div className="cp-empty"><p className="cp-empty-text">No research briefs yet, run the Researcher agent</p></div>
               : briefs.map(b => <BriefCard key={b.id} brief={b} />)}
           </div>
         )}
@@ -594,7 +598,7 @@ export default function AdminContentPage() {
               setTimeout(() => setPbCopied(null), 2000);
             }}
             onSaveToQueue={async (post: any) => {
-              // Default to 24 hours from now — user can reschedule in the Social Queue panel
+              // Default to 24 hours from now, user can reschedule in the Social Queue panel
               const defaultSchedule = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
               const { error } = await supabase.from('social_queue').insert({
                 platform: post.platform === 'linkedin' ? 'LinkedIn' : 'Twitter/X',
@@ -603,7 +607,7 @@ export default function AdminContentPage() {
                 status: 'queued',
                 scheduled_for: defaultSchedule,
               });
-              if (!error) showToast('Saved to Social Queue — scheduled for tomorrow');
+              if (!error) showToast('Saved to Social Queue, scheduled for tomorrow');
               else showToast('Error: ' + error.message, false);
             }}
           />
@@ -617,25 +621,25 @@ export default function AdminContentPage() {
       {pbModal && (
         <div className="cp-backdrop" onClick={(e: any) => e.target === e.currentTarget && setPbModal(false)}>
           <div className="cp-modal" style={{ maxWidth: 520 }}>
-            <div className="cp-modal-title">⚡ Generate Personal Brand Post</div>
+            <div className="cp-modal-title" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Zap size={14} /> Generate Personal Brand Post</div>
             <p className="cp-modal-sub">Cybersecurity authority · Job-seeking signal · Your voice, your expertise</p>
 
             <div className="cp-field">
               <label className="cp-label">Content Pillar</label>
               <select className="cp-select" value={pbPillar} onChange={e => setPbPillar(e.target.value)}>
-                <option value="authority">Authority — share expertise, educate, build credibility</option>
-                <option value="career">Career Signal — visibility to recruiters, job intent</option>
-                <option value="insight">Hot Take / Industry Insight — cybersecurity trends, opinions</option>
-                <option value="story">Story — personal experience, lessons from the field</option>
-                <option value="tool">Tool / Resource — share what actually works</option>
-                <option value="myth">Myth-busting — correct misconceptions in cybersecurity</option>
+                <option value="authority">Authority, share expertise, educate, build credibility</option>
+                <option value="career">Career Signal, visibility to recruiters, job intent</option>
+                <option value="insight">Hot Take / Industry Insight, cybersecurity trends, opinions</option>
+                <option value="story">Story, personal experience, lessons from the field</option>
+                <option value="tool">Tool / Resource, share what actually works</option>
+                <option value="myth">Myth-busting, correct misconceptions in cybersecurity</option>
               </select>
             </div>
 
             <div className="cp-field">
               <label className="cp-label">Platform</label>
               <select className="cp-select" value={pbPlatform} onChange={e => setPbPlatform(e.target.value)}>
-                <option value="both">Both — LinkedIn long-form + Twitter/X thread</option>
+                <option value="both">Both, LinkedIn long-form + Twitter/X thread</option>
                 <option value="linkedin">LinkedIn only</option>
                 <option value="twitter">Twitter/X only</option>
               </select>
@@ -650,10 +654,10 @@ export default function AdminContentPage() {
             <div className="cp-field">
               <label className="cp-label">Primary goal for this post</label>
               <select className="cp-select" value={pbIntent} onChange={e => setPbIntent(e.target.value)}>
-                <option value="authority">Build authority — attract followers + make recruiters notice</option>
-                <option value="apply">Support a job application — show depth before they see my CV</option>
-                <option value="inbound">Get inbound — make hiring managers reach out to me</option>
-                <option value="network">Build network — connect with peers and senior practitioners</option>
+                <option value="authority">Build authority, attract followers + make recruiters notice</option>
+                <option value="apply">Support a job application, show depth before they see my CV</option>
+                <option value="inbound">Get inbound, make hiring managers reach out to me</option>
+                <option value="network">Build network, connect with peers and senior practitioners</option>
               </select>
             </div>
 
@@ -674,8 +678,8 @@ export default function AdminContentPage() {
                 } catch(e: any) { showToast('Error: ' + e.message, false); }
                 setPbLoading(false);
                 setPbTopic('');
-              }}>
-                {pbLoading ? 'Generating…' : '⚡ Generate Posts'}
+              }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {pbLoading ? 'Generating…' : <><Zap size={13} /> Generate Posts</>}
               </button>
             </div>
           </div>
@@ -795,8 +799,8 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
 
           {isDraft && (
             <>
-              <button className="cp-btn-approve" onClick={onApprove} disabled={saving}>
-                {saving ? 'Approving…' : '✓ Approve Content'}
+              <button className="cp-btn-approve" onClick={onApprove} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {saving ? 'Approving…' : <><Check size={13} /> Approve Content</>}
               </button>
               <p className="cp-kbd"><kbd>⌘</kbd><kbd>↵</kbd> to approve</p>
             </>
@@ -804,8 +808,8 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
 
           {isApprov && !isBlog && item.type !== 'Email Newsletter' && (
             <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(232,160,32,0.08)', border: '1px solid rgba(232,160,32,0.2)' }}>
-              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', letterSpacing: '0.06em', margin: 0 }}>
-                ✓ Approved · Now: attach image (optional) → click send button → goes to Social Queue
+              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', letterSpacing: '0.06em', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Check size={11} /> Approved. Now: attach image (optional) → click send button → goes to Social Queue
               </p>
             </div>
           )}
@@ -814,13 +818,13 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
             <>
               <div className="cp-schedule-row">
                 <input type="date" className="cp-date-input" value={schedDate} min={new Date().toISOString().split('T')[0]} onChange={e => setSchedDate(e.target.value)} />
-                <button className="cp-btn-sched" disabled={!schedDate || saving} onClick={() => onSchedule(schedDate)}>
-                  {saving ? '…' : isSchd ? '↻ Reschedule' : '📅 Schedule'}
+                <button className="cp-btn-sched" disabled={!schedDate || saving} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} onClick={() => onSchedule(schedDate)}>
+                  {saving ? '…' : isSchd ? <><RotateCcw size={11} /> Reschedule</> : <><Calendar size={11} /> Schedule</>}
                 </button>
               </div>
               {isSchd && item.scheduled_date && (
-                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#3B82F6', letterSpacing: '0.06em' }}>
-                  📅 Scheduled for {fmtDate(item.scheduled_date)}
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#3B82F6', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Calendar size={11} /> Scheduled for {fmtDate(item.scheduled_date)}
                 </div>
               )}
               <div className="cp-divider" />
@@ -830,9 +834,9 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
           {!isDraft && !isDone && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {isBlog ? (
-                <a href="/admin/blog" className="cp-btn-pub cp-btn-green" style={{ textDecoration: 'none', textAlign: 'center' }}>✍ View in Blog Admin</a>
+                <a href="/admin/blog" className="cp-btn-pub cp-btn-green" style={{ textDecoration: 'none', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><PenLine size={13} /> View in Blog Admin</a>
               ) : item.type === 'Email Newsletter' ? (
-                <a href="/admin/newsletter" className="cp-btn-pub cp-btn-green" style={{ textDecoration: 'none', textAlign: 'center' }}>✉ View in Newsletter Admin</a>
+                <a href="/admin/newsletter" className="cp-btn-pub cp-btn-green" style={{ textDecoration: 'none', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Mail size={13} /> View in Newsletter Admin</a>
               ) : (
                 <>
                   {/* Image upload for social posts */}
@@ -841,7 +845,7 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
                     {uploadedImg ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <img src={uploadedImg} alt="Attached" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(232,160,32,0.3)' }} />
-                        <button onClick={() => setUploadedImg('')} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10 }}>✕ Remove</button>
+                        <button onClick={() => setUploadedImg('')} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, display: 'inline-flex', alignItems: 'center', gap: 3 }}><X size={11} /> Remove</button>
                       </div>
                     ) : (
                       <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, border: '1px solid var(--admin-bg-input)', cursor: 'pointer', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)' }}>
@@ -880,14 +884,14 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
                   )}
                 </>
               )}
-              <button className="cp-btn-pub cp-btn-outline" onClick={() => onCopy(getCopyText())} style={{ padding: '10px 14px' }}>⎘ Copy</button>
+              <button className="cp-btn-pub cp-btn-outline" onClick={() => onCopy(getCopyText())} style={{ padding: '10px 14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Copy size={12} /> Copy</button>
             </div>
           )}
 
           {isDone && (
             <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#10B981', letterSpacing: '0.08em' }}>
-                ✓ Published {item.published_at ? fmtDate(item.published_at) : ''}
+              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#10B981', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Check size={11} /> Published {item.published_at ? fmtDate(item.published_at) : ''}
               </p>
             </div>
           )}
@@ -904,7 +908,7 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
             onChange={e => onAssign(e.target.value || null)}
             style={{ fontSize: 12 }}
           >
-            <option value="">— Unassigned —</option>
+            <option value="">- Unassigned -</option>
             {teamMembers.map(m => (
               <option key={m.id} value={m.id}>
                 {m.full_name || m.email}
@@ -914,8 +918,8 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
           {item.assigned_to && (() => {
             const assignee = teamMembers.find(t => t.id === item.assigned_to);
             return assignee ? (
-              <p className="cp-kbd" style={{ color: '#8B5CF6' }}>
-                👤 Assigned · {assignee.full_name || assignee.email}
+              <p className="cp-kbd" style={{ color: '#8B5CF6', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <User size={11} /> Assigned · {assignee.full_name || assignee.email}
               </p>
             ) : null;
           })()}
@@ -952,7 +956,7 @@ function ContentPreview({ item, d }: { item: CalItem; d: any }) {
     return (
       <>
         <p className="cp-section-lbl">Opener</p>
-        <div className="cp-sub-box"><p className="cp-sub-text">{d.opener || '—'}</p></div>
+        <div className="cp-sub-box"><p className="cp-sub-text">{d.opener || '-'}</p></div>
         {tweets.map((t, i) => <div key={i} className="cp-sub-box" style={{ marginBottom: 6 }}><div className="cp-sub-lbl">Tweet {i + 2}</div><p className="cp-sub-text">{t}</p></div>)}
         {d.cta && <><p className="cp-section-lbl">CTA Tweet</p><div className="cp-sub-box"><p className="cp-sub-text">{d.cta}</p></div></>}
       </>
@@ -960,7 +964,7 @@ function ContentPreview({ item, d }: { item: CalItem; d: any }) {
   }
   if (item.type === 'Email Newsletter') return (
     <>
-      <p className="cp-section-lbl">Subject</p><div className="cp-sub-box"><p className="cp-sub-text">{d.subject || '—'}</p></div>
+      <p className="cp-section-lbl">Subject</p><div className="cp-sub-box"><p className="cp-sub-text">{d.subject || '-'}</p></div>
       {d.preview_text && <><p className="cp-section-lbl">Preview Text</p><div className="cp-sub-box"><p className="cp-sub-text">{d.preview_text}</p></div></>}
       <p className="cp-section-lbl">Body</p>
       <div className="cp-content-box">{d.body || 'No content'}</div>
@@ -1289,7 +1293,7 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
     });
     const data = await res.json();
     if (data.success) {
-      showToast('✓ Sent to Buffer — post scheduled');
+      showToast('Sent to Buffer, post scheduled');
       onRefresh();
     } else {
       showToast('Buffer error: ' + (data.error || 'Unknown error'), false);
@@ -1335,7 +1339,7 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
       {queue.length === 0 ? (
         <div className="cp-empty">
           <p className="cp-empty-text">Queue is empty</p>
-          <p className="cp-muted" style={{ marginTop: 8 }}>Approve posts from the Content tab — they appear here by platform</p>
+          <p className="cp-muted" style={{ marginTop: 8 }}>Approve posts from the Content tab, they appear here by platform</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -1390,7 +1394,7 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
                                   import('@/lib/supabase/client').then(({ createClient }) =>
                                     createClient().from('social_queue').update({ image_url: null }).eq('id', post.id)
                                   );
-                                }} style={{ position: 'absolute' as const, top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#EF4444', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                                }} style={{ position: 'absolute' as const, top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#EF4444', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={10} /></button>
                               )}
                             </div>
                           ) : (
@@ -1425,13 +1429,13 @@ function SocialQueuePanel({ queue, showToast, onRefresh }: {
                               </span>
                             )}
                             {post.scheduled_for && (
-                              <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 8, color: '#3B82F6', letterSpacing: '0.06em' }}>
-                                📅 {new Date(post.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                              <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 8, color: '#3B82F6', letterSpacing: '0.06em', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                <Calendar size={9} /> {new Date(post.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                               </span>
                             )}
                             {isSent ? (
-                              <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 8, padding: '2px 8px', borderRadius: 4, background: 'rgba(16,185,129,0.1)', color: '#10B981', letterSpacing: '0.06em' }}>
-                                ✓ Sent to Buffer
+                              <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 8, padding: '2px 8px', borderRadius: 4, background: 'rgba(16,185,129,0.1)', color: '#10B981', letterSpacing: '0.06em', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                <Check size={9} /> Sent to Buffer
                               </span>
                             ) : (
                               <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 8, padding: '2px 8px', borderRadius: 4, background: 'rgba(232,160,32,0.08)', color: '#E8A020', letterSpacing: '0.06em' }}>
@@ -1531,9 +1535,9 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
       if (!contentType.includes('application/json')) {
         const text = await res.text();
         const hint = res.status === 404
-          ? 'API route not found — redeploy to Vercel'
+          ? 'API route not found, redeploy to Vercel'
           : res.status === 500
-          ? 'Server error — check Vercel logs'
+          ? 'Server error, check Vercel logs'
           : `HTTP ${res.status}`;
         setImgError(prev => ({ ...prev, [idx]: hint }));
         setImgLoading(prev => ({ ...prev, [idx]: false }));
@@ -1568,40 +1572,41 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
           padding: '9px 18px', borderRadius: 10, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
           background: loading ? 'rgba(232,160,32,0.3)' : '#E8A020', color: '#0C0B08',
           fontFamily: 'var(--admin-font-ui)', fontSize: 13, fontWeight: 700,
+          display: 'inline-flex', alignItems: 'center', gap: 6,
         }}>
-          {loading ? 'Generating…' : '⚡ Generate Posts'}
+          {loading ? 'Generating…' : <><Zap size={13} /> Generate Posts</>}
         </button>
       </div>
 
       {/* Strategy strip */}
       <div style={{ padding: '14px 18px', borderRadius: 10, marginBottom: 20, background: 'var(--admin-bg-card)', border: '1px solid var(--admin-border)', borderLeft: '3px solid #E8A020' }}>
         <div style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: '#E8A020', letterSpacing: '0.08em', marginBottom: 8 }}>
-          IMAGE SETTINGS — applies to all generated images
+          IMAGE SETTINGS, applies to all generated images
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
           <div>
             <label style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: 'var(--admin-text-muted)', display: 'block', marginBottom: 4 }}>VISUAL STYLE</label>
             <select className="cp-select" value={imgStyle} onChange={e => setImgStyle(e.target.value)}>
-              <option value="dark_gold">Dark + Gold — near-black with gold accent (dark theme)</option>
-              <option value="light_warm">Light Warm — parchment &amp; cream with gold (light theme)</option>
-              <option value="dark_contrast">Dark Contrast — black + bold gold geometry</option>
-              <option value="light_editorial">Light Editorial — cream tones, magazine style</option>
-              <option value="gradient_brand">Brand Gradient — parchment to near-black</option>
-              <option value="terminal">Terminal — dark with gold glow, cyber feel</option>
-              <option value="abstract_gold">Abstract Gold — network nodes, black + cream + gold</option>
+              <option value="dark_gold">Dark + Gold, near-black with gold accent (dark theme)</option>
+              <option value="light_warm">Light Warm, parchment &amp; cream with gold (light theme)</option>
+              <option value="dark_contrast">Dark Contrast, black + bold gold geometry</option>
+              <option value="light_editorial">Light Editorial, cream tones, magazine style</option>
+              <option value="gradient_brand">Brand Gradient, parchment to near-black</option>
+              <option value="terminal">Terminal, dark with gold glow, cyber feel</option>
+              <option value="abstract_gold">Abstract Gold, network nodes, black + cream + gold</option>
             </select>
           </div>
           <div>
             <label style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: 'var(--admin-text-muted)', display: 'block', marginBottom: 4 }}>IMAGE DIMENSIONS</label>
             <select className="cp-select" value={imgPlatform} onChange={e => setImgPlatform(e.target.value)}>
-              <option value="linkedin">LinkedIn — 896×512 (optimised for speed)</option>
-              <option value="twitter">Twitter/X — 896×512 (optimised for speed)</option>
-              <option value="square">Square — 768×768 (optimised for speed)</option>
+              <option value="linkedin">LinkedIn, 896×512 (optimised for speed)</option>
+              <option value="twitter">Twitter/X, 896×512 (optimised for speed)</option>
+              <option value="square">Square, 768×768 (optimised for speed)</option>
             </select>
           </div>
         </div>
         <div>
-          <label style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: 'var(--admin-text-muted)', display: 'block', marginBottom: 4 }}>CUSTOM PROMPT (optional — overrides auto-generation)</label>
+          <label style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: 'var(--admin-text-muted)', display: 'block', marginBottom: 4 }}>CUSTOM PROMPT (optional, overrides auto-generation)</label>
           <input className="cp-input" placeholder="e.g. Close-up of a glowing server rack in a dark data centre, cinematic…" value={imgPrompt} onChange={e => setImgPrompt(e.target.value)} />
         </div>
       </div>
@@ -1609,7 +1614,7 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
       {/* Empty state */}
       {posts.length === 0 && !loading && (
         <div style={{ textAlign: 'center', padding: '60px 0' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>⚡</div>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', color: '#E8A020' }}><Zap size={32} /></div>
           <div style={{ fontFamily: 'var(--admin-font-display)', fontSize: 22, color: 'var(--admin-text-muted)', marginBottom: 8 }}>No posts yet</div>
           <div style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 11, color: 'var(--admin-text-faint)', letterSpacing: '0.04em' }}>Click "Generate Posts" to create LinkedIn and Twitter content</div>
         </div>
@@ -1641,8 +1646,8 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
                   {post.pillar && <span style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: 'var(--admin-text-muted)' }}>{PILLAR_LABELS[post.pillar] || post.pillar}</span>}
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => onCopy(post.content, id)} style={{ padding: '5px 12px', borderRadius: 7, cursor: 'pointer', background: copied === id ? 'rgba(16,185,129,0.12)' : 'transparent', border: `1px solid ${copied === id ? '#10B981' : 'var(--admin-border)'}`, color: copied === id ? '#10B981' : 'var(--admin-text-muted)', fontFamily: 'var(--admin-font-mono)', fontSize: 10 }}>
-                    {copied === id ? '✓ Copied' : 'Copy'}
+                  <button onClick={() => onCopy(post.content, id)} style={{ padding: '5px 12px', borderRadius: 7, cursor: 'pointer', background: copied === id ? 'rgba(16,185,129,0.12)' : 'transparent', border: `1px solid ${copied === id ? '#10B981' : 'var(--admin-border)'}`, color: copied === id ? '#10B981' : 'var(--admin-text-muted)', fontFamily: 'var(--admin-font-mono)', fontSize: 10, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    {copied === id ? <><Check size={10} /> Copied</> : 'Copy'}
                   </button>
                   <button onClick={() => onSaveToQueue(post)} style={{ padding: '5px 12px', borderRadius: 7, cursor: 'pointer', background: 'transparent', border: '1px solid var(--admin-border)', color: '#E8A020', fontFamily: 'var(--admin-font-mono)', fontSize: 10 }}>
                     → Queue
@@ -1667,9 +1672,9 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
                     <button
                       onClick={() => generateImage(idx, post.content, post.platform)}
                       disabled={isImgLoading}
-                      style={{ padding: '7px 14px', borderRadius: 8, cursor: isImgLoading ? 'not-allowed' : 'pointer', background: 'transparent', border: '1px solid var(--admin-border)', color: isImgLoading ? 'var(--admin-text-faint)' : 'var(--admin-text-muted)', fontFamily: 'var(--admin-font-mono)', fontSize: 10 }}
+                      style={{ padding: '7px 14px', borderRadius: 8, cursor: isImgLoading ? 'not-allowed' : 'pointer', background: 'transparent', border: '1px solid var(--admin-border)', color: isImgLoading ? 'var(--admin-text-faint)' : 'var(--admin-text-muted)', fontFamily: 'var(--admin-font-mono)', fontSize: 10, display: 'inline-flex', alignItems: 'center', gap: 5 }}
                     >
-                      {isImgLoading ? '🎨 Generating image…' : '🎨 Generate Image'}
+                      <ImageIcon size={11} /> {isImgLoading ? 'Generating image…' : 'Generate Image'}
                     </button>
                     {imgErr && <span style={{ fontFamily: 'var(--admin-font-mono)', fontSize: 10, color: '#EF4444' }}>{imgErr}</span>}
                   </div>
@@ -1714,7 +1719,7 @@ function PersonalBrandPanel({ posts, loading, copied, onGenerate, onCopy, onSave
 
 
 // ─────────────────────────────────────────────────────────────
-// CarouselTab — Agent 13 UI (added by carousel-agent setup)
+// CarouselTab, Agent 13 UI (added by carousel-agent setup)
 // ─────────────────────────────────────────────────────────────
 function CarouselTab({ showToast }: { showToast: (msg: string, ok?: boolean) => void }) {
   const [pillar,    setPillar]    = useState('career');
@@ -1727,7 +1732,7 @@ function CarouselTab({ showToast }: { showToast: (msg: string, ok?: boolean) => 
 
   const pillars   = ['career', 'leadership', 'ai', 'coaching', 'community'];
   const platforms = ['LinkedIn', 'Instagram', 'TikTok'];
-  const PRICE_PER_IMAGE = 0.011; // gpt-image-1 low quality 1024x1024 — update if quality/size changes
+  const PRICE_PER_IMAGE = 0.011; // gpt-image-1 low quality 1024x1024, update if quality/size changes
   const cost = (postCount * 6 * PRICE_PER_IMAGE + 0.02).toFixed(3);
 
   async function run() {
@@ -1738,7 +1743,7 @@ function CarouselTab({ showToast }: { showToast: (msg: string, ok?: boolean) => 
       if (hooksArr.length > 0) payload.hooks = hooksArr;
       const res  = await fetch('/api/admin/agents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId: '13', payload }) });
       const data = await res.json();
-      if (data.success) { showToast(`Carousel agent started — run ${(data.runId||'').slice(0,8)}\u2026 Posts in Content Calendar as drafts in ~3 min.`); setDone(true); }
+      if (data.success) { showToast(`Carousel agent started, run ${(data.runId||'').slice(0,8)}\u2026 Posts in Content Calendar as drafts in ~3 min.`); setDone(true); }
       else showToast('Error: ' + data.error, false);
     } catch (e: any) { showToast('Error: ' + e.message, false); }
     setRunning(false);
@@ -1773,8 +1778,8 @@ function CarouselTab({ showToast }: { showToast: (msg: string, ok?: boolean) => 
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Hooks from hook bank <span style={{ color: '#9E9B94', fontWeight: 400, textTransform: 'none', fontSize: 10 }}>— optional, one per line</span></label>
-        <textarea value={hooks} onChange={e => setHooks(e.target.value)} rows={3} placeholder={"My manager said I wasn't ready for a promotion. My Ascentor mentor asked me one question that changed everything.\nI almost quit my job. My mentor showed me I wasn't stuck — I was just invisible to the right people."} style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2DDD4', borderRadius: 8, background: '#F5F3EE', fontSize: 12, fontFamily: "Metropolis, 'Inter', sans-serif", color: '#0C0B08', resize: 'vertical', lineHeight: 1.65 }} />
+        <label style={{ display: 'block', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#A0720A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Hooks from hook bank <span style={{ color: '#9E9B94', fontWeight: 400, textTransform: 'none', fontSize: 10 }}>(optional, one per line)</span></label>
+        <textarea value={hooks} onChange={e => setHooks(e.target.value)} rows={3} placeholder={"My manager said I wasn't ready for a promotion. My Ascentor mentor asked me one question that changed everything.\nI almost quit my job. My mentor showed me I wasn't stuck, I was just invisible to the right people."} style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2DDD4', borderRadius: 8, background: '#F5F3EE', fontSize: 12, fontFamily: "Metropolis, 'Inter', sans-serif", color: '#0C0B08', resize: 'vertical', lineHeight: 1.65 }} />
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F5F3EE', border: '1px solid #E2DDD4', borderRadius: 8, padding: '10px 16px', marginBottom: 16 }}>

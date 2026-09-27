@@ -313,14 +313,14 @@ export async function POST(req: NextRequest) {
 
     const target = email.trim().toLowerCase();
 
-    // Search auth.users — covers users whose profiles.email is null
+    // Search auth.users: covers users whose profiles.email is null
     const { data: authList } = await supabase.auth.admin.listUsers({ perPage: 1000 });
     const authUser = authList?.users?.find(u => u.email?.toLowerCase() === target);
     if (!authUser) return NextResponse.json({ user: null });
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, full_name, email, role, permissions')
+      .select('id, full_name, email, role, permissions, banned')
       .eq('id', authUser.id)
       .maybeSingle();
 

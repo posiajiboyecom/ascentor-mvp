@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { Check, Star } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
 // ============================================================
-// ADMIN PROMO CODES — /admin/promo-codes
+// ADMIN PROMO CODES, /admin/promo-codes
 // Create, manage, enable/disable promotional codes
 // Ascentor brand: Dark var(--admin-bg) · Gold #E8A020 · Metropolis · DM Mono · Metropolis
 // ============================================================
@@ -92,9 +93,9 @@ export default function AdminPromoCodesPage() {
       if (data.success) {
         if (mode === 'event') {
           setBulkResult({ count: data.count, prefix: data.prefix });
-          setMessage(`✓ ${data.count} event codes generated with prefix "${data.prefix}"`);
+          setMessage(`${data.count} event codes generated with prefix "${data.prefix}"`);
         } else {
-          setMessage('✓ Promo code created.');
+          setMessage('Promo code created.');
           setShowCreate(false);
           setNewCode(''); setNewDiscount('50'); setNewLabel(''); setNewMaxUses(''); setNewExpiry('');
         }
@@ -118,7 +119,7 @@ export default function AdminPromoCodesPage() {
 
   const toggleAutoApply = async (id: string, current: boolean) => {
     const { data: { session } } = await supabase.auth.getSession();
-    // Only one code can be auto_apply at a time — clear others first
+    // Only one code can be auto_apply at a time, clear others first
     if (!current) {
       // Turning ON: disable auto_apply on all others first
       for (const c of codes) {
@@ -137,7 +138,7 @@ export default function AdminPromoCodesPage() {
       body: JSON.stringify({ id, auto_apply: !current }),
     });
     fetchCodes();
-    setMessage(!current ? '✓ Offer will now appear on checkout for all visitors' : 'Auto-apply removed');
+    setMessage(!current ? 'Offer will now appear on checkout for all visitors' : 'Auto-apply removed');
   };
 
   const deleteCode = async (id: string) => {
@@ -326,13 +327,13 @@ export default function AdminPromoCodesPage() {
             </div>
             {mode === 'single' && (
               <div>
-                <label style={{ ...fieldLabel }}>Max Uses — blank for unlimited</label>
+                <label style={{ ...fieldLabel }}>Max Uses, blank for unlimited</label>
                 <input type="number" value={newMaxUses} onChange={(e) => setNewMaxUses(e.target.value)}
                   placeholder="100" className="asc-input" style={{ ...inputBase }} />
               </div>
             )}
             <div>
-              <label style={{ ...fieldLabel }}>Expires — date &amp; time (optional)</label>
+              <label style={{ ...fieldLabel }}>Expires, date &amp; time (optional)</label>
               <input type="datetime-local" value={newExpiry} onChange={(e) => setNewExpiry(e.target.value)}
                 className="asc-input" style={{ ...inputBase, colorScheme: 'dark' }} />
               <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)', marginTop: 5 }}>
@@ -356,8 +357,8 @@ export default function AdminPromoCodesPage() {
 
           {bulkResult && (
             <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 8, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: '#10B981' }}>
-                ✓ {bulkResult.count} codes generated with prefix "{bulkResult.prefix}" — all active and ready to share
+              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: '#10B981', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Check size={12} /> {bulkResult.count} codes generated with prefix "{bulkResult.prefix}", all active and ready to share
               </p>
             </div>
           )}
@@ -471,7 +472,7 @@ export default function AdminPromoCodesPage() {
                             </span>
                           </div>
                         );
-                      })() : <span style={{ ...monoLabel, fontSize: '10px' }}>—</span>}
+                      })() : <span style={{ ...monoLabel, fontSize: '10px' }}>-</span>}
                     </td>
 
                     {/* Status */}
@@ -494,9 +495,9 @@ export default function AdminPromoCodesPage() {
                             fontWeight: 600, letterSpacing: '0.06em',
                             background: 'rgba(232,160,32,0.1)', color: '#E8A020',
                             border: '1px solid rgba(232,160,32,0.25)',
-                            display: 'inline-block', width: 'fit-content',
+                            display: 'inline-flex', alignItems: 'center', gap: 3, width: 'fit-content',
                           }}>
-                            ★ ON CHECKOUT
+                            <Star size={9} fill="#E8A020" /> ON CHECKOUT
                           </span>
                         )}
                       </div>
@@ -505,7 +506,7 @@ export default function AdminPromoCodesPage() {
                     {/* Actions */}
                     <td style={{ padding: '13px 16px' }}>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {/* Auto-apply toggle — shows offer banner on checkout */}
+                        {/* Auto-apply toggle, shows offer banner on checkout */}
                         <button
                           onClick={() => toggleAutoApply(c.id, c.auto_apply)}
                           title={c.auto_apply ? 'Remove from checkout banner' : 'Show as offer on checkout page'}
@@ -516,9 +517,10 @@ export default function AdminPromoCodesPage() {
                             background: c.auto_apply ? 'rgba(232,160,32,0.1)' : 'transparent',
                             color: c.auto_apply ? '#E8A020' : 'var(--admin-text-faint)',
                             transition: 'all 0.15s',
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
                           }}
                         >
-                          {c.auto_apply ? '★ On Checkout' : '☆ Set as Offer'}
+                          <Star size={10} fill={c.auto_apply ? '#E8A020' : 'none'} /> {c.auto_apply ? 'On Checkout' : 'Set as Offer'}
                         </button>
                         <button
                           onClick={() => toggleCode(c.id, c.active)}

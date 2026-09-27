@@ -4,7 +4,7 @@
 // ============================================================
 // Self-contained UI for exporting community_messages and/or
 // coaching_sessions via GET /api/admin/export. Drop into any
-// admin page — used in app/admin/coaching/page.tsx, which
+// admin page, used in app/admin/coaching/page.tsx, which
 // already has both a "coaching" and "community" tab in one
 // place.
 //
@@ -56,7 +56,7 @@ export default function ExportPanel() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) {
-        setError('Your session has expired — refresh the page and try again.');
+        setError('Your session has expired, refresh the page and try again.');
         setBusy(false);
         return;
       }
@@ -65,7 +65,7 @@ export default function ExportPanel() {
       if (from) params.set('from', from);
       if (to) params.set('to', to);
 
-      // fetch + blob, NOT a direct <a href> navigation — this lets
+      // fetch + blob, NOT a direct <a href> navigation, this lets
       // us send the Authorization header properly rather than
       // relying on the route's query-param auth fallback, and
       // gives us a place to surface fetch-level errors (401, 500)
@@ -97,7 +97,7 @@ export default function ExportPanel() {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('[export panel]', err);
-      setError('Export failed — check your connection and try again.');
+      setError('Export failed, check your connection and try again.');
     } finally {
       setBusy(false);
     }
@@ -188,7 +188,7 @@ export default function ExportPanel() {
       </button>
 
       <p className="ledger-mono" style={{ marginTop: 10, fontSize: 10, opacity: 0.7 }}>
-        Leave dates blank to export all-time. Large exports (20,000+ messages or 10,000+ sessions) are capped — narrow the date range if you hit the limit.
+        Leave dates blank to export all-time. Large exports (20,000+ messages or 10,000+ sessions) are capped, narrow the date range if you hit the limit.
       </p>
     </div>
   );

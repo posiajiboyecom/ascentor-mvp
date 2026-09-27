@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { Check, X, Star, Loader2, Play } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import SageLoader from '@/components/SageLoader';
 
 // ============================================================
-// MASTER ADMIN — /admin/master
+// MASTER ADMIN, /admin/master
 // Full Ascentor Marketing System Dashboard
 // Sections: KPIs · MailerLite · Content Calendar · Lead Magnets
 //           Social Queue · AI Agents
@@ -309,13 +310,13 @@ export default function MasterAdminPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setAgentMsg({ id: agentId, text: `✓ ${data.message} · Run ID: ${data.runId?.substring(0, 12)}...`, ok: true });
+        setAgentMsg({ id: agentId, text: `${data.message} · Run ID: ${data.runId?.substring(0, 12)}...`, ok: true });
         setTimeout(() => load('agents'), 3000);
       } else {
-        setAgentMsg({ id: agentId, text: `✗ ${data.error}`, ok: false });
+        setAgentMsg({ id: agentId, text: data.error, ok: false });
       }
     } catch (e: any) {
-      setAgentMsg({ id: agentId, text: `✗ ${e.message}`, ok: false });
+      setAgentMsg({ id: agentId, text: e.message, ok: false });
     }
     setTriggering(null);
   }
@@ -488,7 +489,7 @@ export default function MasterAdminPage() {
       {isLoading && <SageLoader message="Loading…" />}
 
       {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* TAB 1 — KPI DASHBOARD                                            */}
+      {/* TAB 1, KPI DASHBOARD                                            */}
       {/* ══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'kpi' && !isLoading && kpi && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -496,7 +497,7 @@ export default function MasterAdminPage() {
           {/* North Star */}
           <div style={{ ...card, padding: '24px', background: 'linear-gradient(135deg, var(--admin-bg-deep) 60%, rgba(232,160,32,0.05))', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #E8A020 40%, #E8A020 60%, transparent)' }} />
-            <p style={mono('★ North Star Metric', true)}>★ North Star Metric</p>
+            <p style={{ ...mono('North Star Metric', true), display: 'flex', alignItems: 'center', gap: 5 }}><Star size={11} fill="#E8A020" /> North Star Metric</p>
             <p style={{ fontFamily: "'Metropolis', serif", fontSize: 72, fontWeight: 700, color: '#E8A020', margin: '8px 0 4px', lineHeight: 1 }}>{kpi.wacu}</p>
             <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 16, fontWeight: 600, color: 'var(--admin-text-heading)', margin: 0 }}>Weekly Active Coached Users (WACU)</p>
             <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)', marginTop: 6, letterSpacing: '0.08em' }}>Users with ≥1 coaching session this week · drives retention, word-of-mouth, conversion</p>
@@ -566,7 +567,7 @@ export default function MasterAdminPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* TAB 2 — MAILERLITE                                               */}
+      {/* TAB 2, MAILERLITE                                               */}
       {/* ══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'email' && !isLoading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -631,7 +632,7 @@ export default function MasterAdminPage() {
                       </div>
                       <StatusBadge status={c.status === 'sent' ? 'published' : 'scheduled'} />
                       <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)' }}>
-                        {c.sent_at ? new Date(c.sent_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
+                        {c.sent_at ? new Date(c.sent_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '-'}
                       </span>
                     </div>
                   ))}
@@ -649,16 +650,16 @@ export default function MasterAdminPage() {
                 { day: 0,  tag: 'WELCOME',     subject: 'Your access to Ascentor is ready',                   goal: 'Deliver, orient, build trust immediately' },
                 { day: 1,  tag: 'STORY',       subject: 'The problem no one talks about in your career',       goal: 'Name the pain: talent without access to guidance' },
                 { day: 3,  tag: 'VALUE',       subject: 'What a mentor actually changes (it is not what you think)', goal: 'Reframe mentorship from networking to decision quality' },
-                { day: 5,  tag: 'PRODUCT',     subject: 'Meet Sage — a coach who never sleeps',               goal: 'Demo Sage. Show the 2am before-a-big-meeting moment' },
+                { day: 5,  tag: 'PRODUCT',     subject: 'Meet Sage, a coach who never sleeps',               goal: 'Demo Sage. Show the 2am before-a-big-meeting moment' },
                 { day: 7,  tag: 'PROOF',       subject: '[Name] got promoted. Here is exactly what changed',  goal: 'Transformation story. Specific, real, relatable' },
                 { day: 10, tag: 'EDUCATION',   subject: 'The 3 decisions that determine every career outcome', goal: 'Pure value. No pitch. Build authority.' },
                 { day: 12, tag: 'OBJECTION',   subject: 'Can AI really coach me? (honest answer)',            goal: 'Handle the biggest objection head-on' },
                 { day: 14, tag: 'COMMUNITY',   subject: 'The people in your cohort are already moving',       goal: 'FOMO on peer community. You are missing it.' },
                 { day: 18, tag: 'VALUE',       subject: 'One question that changes how you show up at work',  goal: 'Practical, shareable insight. Re-engagement hook.' },
                 { day: 21, tag: 'CASE STUDY',  subject: 'From "not ready yet" to Director in 11 months',      goal: 'Detailed transformation. Obstacle → Ascentor → result' },
-                { day: 24, tag: '★ CTA',       subject: 'Founding Member offer — 50% off, this week only',    goal: 'First hard CTA. Urgency + exclusivity + discount' },
-                { day: 26, tag: 'FAQ',         subject: 'Your questions about Ascentor — answered',           goal: 'Remove every remaining friction point to purchase' },
-                { day: 28, tag: '⏱ URGENCY',  subject: 'Offer closes in 48 hours',                           goal: 'Final CTA. Countdown. Simple and direct.' },
+                { day: 24, tag: 'CTA',         subject: 'Founding Member offer, 50% off, this week only',    goal: 'First hard CTA. Urgency + exclusivity + discount' },
+                { day: 26, tag: 'FAQ',         subject: 'Your questions about Ascentor, answered',           goal: 'Remove every remaining friction point to purchase' },
+                { day: 28, tag: 'URGENCY',     subject: 'Offer closes in 48 hours',                           goal: 'Final CTA. Countdown. Simple and direct.' },
                 { day: 30, tag: 'BREAKUP',     subject: 'Is this still relevant to you?',                     goal: 'Re-permission email. Either they convert or self-select out.' },
               ].map((email, i) => (
                 <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 14px', background: 'var(--admin-bg-card)', borderRadius: 8, border: '1px solid var(--admin-bg-input)' }}>
@@ -679,7 +680,7 @@ export default function MasterAdminPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* TAB 3 — CONTENT CALENDAR                                         */}
+      {/* TAB 3, CONTENT CALENDAR                                         */}
       {/* ══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'content' && !isLoading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -703,7 +704,7 @@ export default function MasterAdminPage() {
           {/* 4-1-1 rule reminder */}
           <div style={{ padding: '12px 16px', background: 'rgba(232,160,32,0.04)', border: '1px solid rgba(232,160,32,0.15)', borderRadius: 10 }}>
             <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', letterSpacing: '0.1em', margin: '0 0 4px' }}>LINKEDIN 4-1-1 RULE / WEEK</p>
-            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>4 value posts · 1 social proof post · 1 soft CTA post — never hard sell</p>
+            <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>4 value posts · 1 social proof post · 1 soft CTA post, never hard sell</p>
           </div>
 
           {/* Filters */}
@@ -761,7 +762,7 @@ export default function MasterAdminPage() {
           {/* Content list */}
           {filteredContent.length === 0 ? (
             <div style={{ ...card, padding: 40, textAlign: 'center' }}>
-              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', letterSpacing: '0.1em' }}>NO CONTENT YET — ADD YOUR FIRST ITEM ABOVE</p>
+              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', letterSpacing: '0.1em' }}>NO CONTENT YET, ADD YOUR FIRST ITEM ABOVE</p>
             </div>
           ) : (
             <div style={{ ...card, overflow: 'hidden' }}>
@@ -785,7 +786,7 @@ export default function MasterAdminPage() {
                     return tweets.join('\n\n');
                   }
                   if (item.type === 'Email Newsletter') return cd.body || cd.subject || null;
-                  // Instagram — all 3 types store their main text in caption
+                  // Instagram, all 3 types store their main text in caption
                   if (
                     item.type === 'Instagram Carousel' ||
                     item.type === 'Instagram Reel' ||
@@ -810,7 +811,7 @@ export default function MasterAdminPage() {
                       <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-muted)' }}>{item.platform}</span>
                       <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: pillar?.color || 'var(--admin-text-faint)' }}>{pillar?.label.split(' ')[0]}</span>
                       <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)' }}>
-                        {item.scheduled_for ? new Date(item.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
+                        {item.scheduled_for ? new Date(item.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '-'}
                       </span>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <select value={item.status} onChange={e => updateContentStatus(item.id, e.target.value as any)}
@@ -933,15 +934,15 @@ export default function MasterAdminPage() {
 
           {/* Weekly workflow reminder */}
           <div style={{ ...card, padding: 20 }}>
-            <p style={mono('Monday Content Flywheel — One Input → 12 Outputs', true, false)}>Monday Content Flywheel</p>
+            <p style={mono('Monday Content Flywheel, One Input → 12 Outputs', true, false)}>Monday Content Flywheel</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
               {[
-                { time: '6:00', step: 'Research Agent', desc: 'Perplexity AI — 5 trending leadership topics' },
-                { time: '8:00', step: 'Content Writer Agent', desc: 'Claude API — 1 blog post, 5 LinkedIn posts, 3 Twitter threads, 1 newsletter' },
+                { time: '6:00', step: 'Research Agent', desc: 'Perplexity AI, 5 trending leadership topics' },
+                { time: '8:00', step: 'Content Writer Agent', desc: 'Claude API, 1 blog post, 5 LinkedIn posts, 3 Twitter threads, 1 newsletter' },
                 { time: '10:00', step: 'Founder Review', desc: '5-min approval window before scheduler fires' },
-                { time: '10:30', step: 'Social Scheduler Agent', desc: 'Buffer API — entire week of posts queued automatically' },
-                { time: 'Async', step: 'Canva Graphics', desc: '5x quote cards from article — schedule across week' },
-                { time: 'Friday', step: 'Newsletter Send', desc: '"The leaders" — 400–600 words, written by Claude in 20 mins' },
+                { time: '10:30', step: 'Social Scheduler Agent', desc: 'Buffer API, entire week of posts queued automatically' },
+                { time: 'Async', step: 'Canva Graphics', desc: '5x quote cards from article, schedule across week' },
+                { time: 'Friday', step: 'Newsletter Send', desc: '"The leaders", 400–600 words, written by Claude in 20 mins' },
               ].map((s, i) => (
                 <div key={i} style={{ display: 'flex', gap: 12, padding: '10px 14px', background: 'var(--admin-bg-card)', borderRadius: 8, alignItems: 'flex-start' }}>
                   <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', width: 44, flexShrink: 0, paddingTop: 1 }}>{s.time}</span>
@@ -957,7 +958,7 @@ export default function MasterAdminPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* TAB 4 — LEAD MAGNETS                                             */}
+      {/* TAB 4, LEAD MAGNETS                                             */}
       {/* ══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'leads' && !isLoading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -970,7 +971,7 @@ export default function MasterAdminPage() {
             <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>Each magnet feeds a dedicated MailerLite automation sequence · A subscriber is 40× more likely to convert than a social follower</p>
           </div>
 
-          {/* Lead magnets — Ascentor global platform */}
+          {/* Lead magnets, Ascentor global platform */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
               {
@@ -978,10 +979,10 @@ export default function MasterAdminPage() {
                 name: 'The 90-Day Leadership Playbook',
                 type: 'PDF Guide',
                 status: 'BUILD NOW',
-                priority: '★ #1 PRIORITY',
+                priority: '#1 PRIORITY',
                 persona: 'Builder · Climber',
                 problem: "I want to grow but I don't know what to focus on",
-                desc: '12-page PDF: the exact framework Sage uses — how to set a 90-day leadership goal, make it specific, track it, and make your progress visible to the people who decide your future.',
+                desc: '12-page PDF: the exact framework Sage uses, how to set a 90-day leadership goal, make it specific, track it, and make your progress visible to the people who decide your future.',
                 mlGroup: 'MAILERLITE_GROUP_LEAD_PLAYBOOK',
                 url: '/free/leadership-playbook',
                 cta: 'Get the free playbook',
@@ -992,7 +993,7 @@ export default function MasterAdminPage() {
                 name: "Why Talented People Don't Get Promoted",
                 type: 'PDF Guide',
                 status: 'BUILD NOW',
-                priority: '★ #2 PRIORITY',
+                priority: '#2 PRIORITY',
                 persona: 'Builder',
                 problem: 'I work hard and deliver results but keep getting passed over',
                 desc: '8-page PDF: the 3 real reasons promotions go to less talented people, and the 5 specific moves that change the outcome. The core Ascentor thesis in a document.',
@@ -1020,7 +1021,7 @@ export default function MasterAdminPage() {
                 name: 'The 10-Minute Career Clarity Audit',
                 type: 'Interactive Quiz',
                 status: 'PHASE 2',
-                priority: '#4 — BUILD AFTER FIRST 3',
+                priority: '#4, BUILD AFTER FIRST 3',
                 persona: 'All stages',
                 problem: "I feel stuck but I can't pinpoint exactly why",
                 desc: '10 questions that identify exactly where you are stuck and why. Output: personalised action plan + routed into the right Ascentor plan (Explorer / Builder / Climber). This is the segmentation engine.',
@@ -1126,7 +1127,7 @@ export default function MasterAdminPage() {
                 { trigger: 'Free user refers 3 paid users',  reward: '3 months free + Community Champion badge' },
                 { trigger: 'Paid user refers 2 paid users',  reward: '1 month free + early access to new features' },
                 { trigger: 'Corporate referral (5+ seats)',  reward: '$50 cash via Paystack + enterprise relationship' },
-                { trigger: 'Newsletter — refer 3 readers',   reward: 'Merch or premium coaching session (Beehiiv built-in)' },
+                { trigger: 'Newsletter, refer 3 readers',   reward: 'Merch or premium coaching session (Beehiiv built-in)' },
               ].map((tier, i) => (
                 <div key={i} style={{ display: 'flex', gap: 16, padding: '10px 14px', background: 'var(--admin-bg-card)', borderRadius: 8, border: '1px solid var(--admin-bg-input)' }}>
                   <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', width: 260, flexShrink: 0 }}>{tier.trigger}</span>
@@ -1139,7 +1140,7 @@ export default function MasterAdminPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* TAB 5 — SOCIAL QUEUE                                             */}
+      {/* TAB 5, SOCIAL QUEUE                                             */}
       {/* ══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'social' && !isLoading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -1203,7 +1204,7 @@ export default function MasterAdminPage() {
           {/* Queue list */}
           {social.length === 0 ? (
             <div style={{ ...card, padding: 40, textAlign: 'center' }}>
-              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', letterSpacing: '0.1em' }}>QUEUE IS EMPTY — ADD POSTS OR CONNECT BUFFER API</p>
+              <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, color: 'var(--admin-text-faint)', letterSpacing: '0.1em' }}>QUEUE IS EMPTY, ADD POSTS OR CONNECT BUFFER API</p>
             </div>
           ) : (
             <div style={{ ...card, overflow: 'hidden' }}>
@@ -1219,7 +1220,7 @@ export default function MasterAdminPage() {
                       </div>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                         <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)' }}>
-                          {post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
+                          {post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-'}
                         </span>
                         <button onClick={() => deleteSocial(post.id)} style={{ background: 'none', border: 'none', color: 'var(--admin-text-faint)', cursor: 'pointer', fontSize: 16 }}>×</button>
                       </div>
@@ -1255,7 +1256,7 @@ export default function MasterAdminPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* TAB 6 — AI AGENTS                                                */}
+      {/* TAB 6, AI AGENTS                                                */}
       {/* ══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'agents' && !isLoading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -1270,7 +1271,7 @@ export default function MasterAdminPage() {
           />
 
           <div style={{ padding: '12px 16px', background: 'rgba(232,160,32,0.04)', border: '1px solid rgba(232,160,32,0.15)', borderRadius: 10 }}>
-            <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', margin: '0 0 4px', letterSpacing: '0.1em' }}>LIVE AGENTS — CONNECTED TO TRIGGER.DEV</p>
+            <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', margin: '0 0 4px', letterSpacing: '0.1em' }}>LIVE AGENTS, CONNECTED TO TRIGGER.DEV</p>
             <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 12, color: 'var(--admin-text-muted)', margin: 0 }}>
               Trigger agents manually · view last run status · monitor cron schedules · all runs logged to audit trail
             </p>
@@ -1346,7 +1347,7 @@ export default function MasterAdminPage() {
                           <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11, margin: '3px 0 0',
                             color: agent.lastStatus === 'COMPLETED' ? '#10B981' : agent.lastStatus === 'FAILED' ? '#EF4444' : 'var(--admin-text-faint)',
                           }}>
-                            {agent.lastStatus || '—'}
+                            {agent.lastStatus || '-'}
                           </p>
                         </div>
                         <div>
@@ -1411,9 +1412,10 @@ export default function MasterAdminPage() {
                               fontFamily: "'Metropolis', sans-serif", fontWeight: 700, fontSize: 12,
                               cursor: isTriggeringThis ? 'not-allowed' : 'pointer',
                               transition: 'all 0.15s',
+                              display: 'inline-flex', alignItems: 'center', gap: 6,
                             }}
                           >
-                            {isTriggeringThis ? '⏳ Triggering...' : '▶ Run Now'}
+                            {isTriggeringThis ? <><Loader2 size={12} className="animate-spin" /> Triggering...</> : <><Play size={11} /> Run Now</>}
                           </button>
                         ) : (
                           <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-faint)', padding: '8px 14px', border: '1px solid var(--admin-bg-input)', borderRadius: 8 }}>
@@ -1442,8 +1444,9 @@ export default function MasterAdminPage() {
                           fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 11,
                           color: myMsg.ok ? '#10B981' : '#EF4444',
                           letterSpacing: '0.04em',
+                          display: 'flex', alignItems: 'center', gap: 6,
                         }}>
-                          {myMsg.text}
+                          {myMsg.ok ? <Check size={13} /> : <X size={13} />} {myMsg.text}
                         </div>
                       )}
                     </div>

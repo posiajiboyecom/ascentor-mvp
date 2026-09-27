@@ -78,7 +78,7 @@ export default function SummitAdminClient() {
   const [emailResult, setEmailResult] = useState<string | null>(null);
 
   function formatAmount(amount: number | null, currency: string | null) {
-    if (!amount) return '—';
+    if (!amount) return '-';
     const symbol = currency === 'NGN' ? '₦' : `${currency || ''} `;
     return `${symbol}${Number(amount).toLocaleString()}`;
   }
@@ -398,20 +398,20 @@ export default function SummitAdminClient() {
                       </td>
                       <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted, whiteSpace: 'nowrap' }}>{r.attendance_type === 'virtual' ? 'Virtual' : 'Physical'}</td>
                       <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted }}>{r.location}</td>
-                      <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted, maxWidth: '160px' }}>{r.organisation || '—'}</td>
+                      <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted, maxWidth: '160px' }}>{r.organisation || '-'}</td>
                       <td style={{ padding: '12px 14px' }}>
                         <span style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '6px', background: isComp(r) ? '#EDE9FE' : sc.bg, color: isComp(r) ? '#5B21B6' : sc.color, fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>
                           {isComp(r) ? 'Complimentary' : sc.label}
                         </span>
                       </td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>
-                        {r.payment_state === 'paid' ? formatAmount(r.amount_paid, r.currency) : '—'}
+                        {r.payment_state === 'paid' ? formatAmount(r.amount_paid, r.currency) : '-'}
                       </td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.dim }}>
-                        {r.payment_state === 'paid' && !isComp(r) ? naira(feeOf(r)) : '—'}
+                        {r.payment_state === 'paid' && !isComp(r) ? naira(feeOf(r)) : '-'}
                       </td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '10px', color: B.dim, whiteSpace: 'nowrap' }}>
-                        {r.paid_at ? new Date(r.paid_at).toLocaleDateString() : '—'}
+                        {r.paid_at ? new Date(r.paid_at).toLocaleDateString() : '-'}
                       </td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '10px', color: B.dim, whiteSpace: 'nowrap' }}>
                         {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -439,15 +439,15 @@ export default function SummitAdminClient() {
 
                             <div>
                               <p style={{ fontFamily: B.fontMono, fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: B.gold, margin: '0 0 10px' }}>Professional</p>
-                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Role: </span>{r.current_role || '—'}</p>
-                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Company: </span>{r.organisation || '—'}</p>
-                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Ticket: </span>{r.ticket_type || '—'}</p>
+                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Role: </span>{r.current_role || '-'}</p>
+                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Company: </span>{r.organisation || '-'}</p>
+                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Ticket: </span>{r.ticket_type || '-'}</p>
                               <select
                                 value={r.ticket_type || ''}
                                 onChange={(e) => updateField(r.id, { ticket_type: e.target.value || null })}
                                 style={{ marginTop: '8px', padding: '4px 8px', borderRadius: '6px', border: `1px solid ${B.border}`, background: B.bg, color: B.muted, fontSize: '11px', cursor: 'pointer', fontFamily: B.fontUI }}
                               >
-                                <option value="">— type —</option>
+                                <option value="">- type -</option>
                                 {TICKET_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                               </select>
                             </div>
@@ -480,7 +480,7 @@ export default function SummitAdminClient() {
                               </div>
                               <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Amount: </span>{isComp(r) ? 'Complimentary' : formatAmount(r.amount_paid, r.currency)}</p>
                               <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Consent: </span>{r.consent ? 'Yes' : 'No'}</p>
-                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Ref: </span>{r.payment_reference || '—'}</p>
+                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Ref: </span>{r.payment_reference || '-'}</p>
                             </div>
 
                             <div>

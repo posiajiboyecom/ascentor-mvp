@@ -5,6 +5,7 @@ import { confirmAction } from '@/components/Modal';
 import ExportPanel from '@/components/admin/ExportPanel';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 // ── SVG icons for coaching page ───────────────────────────────────
@@ -44,7 +45,7 @@ interface UserGroup {
 //                        flagged, deleted, created_at, likes (text[]),
 //                        reply_to_id, pinned, reply_count
 // There is no cohorts / cohort_posts involvement in current community
-// — that model was replaced. A previous version of this tab still
+//, that model was replaced. A previous version of this tab still
 // called the cohorts data shape via a since-removed /api/admin/community
 // route, which 404'd silently and is why this tab showed no data.
 interface Channel {
@@ -77,14 +78,14 @@ export default function AdminCoachingPage() {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
 
-  // Bulk-select for delete — keyed by session/message id. Cleared on
+  // Bulk-select for delete, keyed by session/message id. Cleared on
   // tab switch since the two tabs delete against different tables
   // (coaching_sessions hard-delete vs community_messages soft-delete).
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   // H-06: useRef guard prevents double-click from firing two concurrent DELETEs
-  // regardless of React render timing — more reliable than the disabled prop alone.
+  // regardless of React render timing, more reliable than the disabled prop alone.
   const deletingRef = useRef(false);
 
   // Community
@@ -155,7 +156,7 @@ export default function AdminCoachingPage() {
       activeUsers: uniqueActive.size,
     });
 
-    // Load channels directly (RLS allows reading community_channels —
+    // Load channels directly (RLS allows reading community_channels,
     // same pattern as app/(app)/community/page.tsx). Message counts
     // come from a single grouped query against community_messages
     // rather than one request per channel, to avoid an N+1 fetch
@@ -174,7 +175,7 @@ export default function AdminCoachingPage() {
       // won't be once message volume grows substantially. The proper
       // fix is a Postgres view or RPC that returns grouped counts
       // (SELECT channel, count(*) FROM community_messages WHERE
-      // deleted = false GROUP BY channel) — flagging here rather than
+      // deleted = false GROUP BY channel), flagging here rather than
       // building it now since it's not yet a real bottleneck.
       const { data: countRows } = await supabase
         .from('community_messages')
@@ -237,7 +238,7 @@ export default function AdminCoachingPage() {
         return;
       }
 
-      // Remove deleted sessions from local state — both the flat
+      // Remove deleted sessions from local state, both the flat
       // per-user session arrays and the userGroups summary counts.
       const idsToRemove = selectedSessionIds;
       setUserGroups(prev =>
@@ -250,7 +251,7 @@ export default function AdminCoachingPage() {
       setSelectedSessionIds(new Set());
     } catch (err) {
       console.error('[deleteSelectedSessions]', err);
-      alert('Delete failed — check your connection and try again.');
+      alert('Delete failed, check your connection and try again.');
     } finally {
       deletingRef.current = false;
       setDeleting(false);
@@ -288,7 +289,7 @@ export default function AdminCoachingPage() {
       setSelectedMessageIds(new Set());
     } catch (err) {
       console.error('[deleteSelectedMessages]', err);
-      alert('Delete failed — check your connection and try again.');
+      alert('Delete failed, check your connection and try again.');
     } finally {
       deletingRef.current = false;
       setDeleting(false);
@@ -360,7 +361,7 @@ export default function AdminCoachingPage() {
         ))}
       </div>
 
-      {/* Export — community messages + AI coaching sessions, CSV/JSON/PDF */}
+      {/* Export, community messages + AI coaching sessions, CSV/JSON/PDF */}
       <div className="mb-6">
         <ExportPanel />
       </div>
@@ -519,8 +520,8 @@ export default function AdminCoachingPage() {
 
                               {s.token_usage && (
                                 <div className="flex gap-3 text-[9px] mt-1" style={{ color: 'var(--text-dim)' }}>
-                                  <span>Cost: ${s.token_usage.cost?.toFixed(4) || '—'}</span>
-                                  {s.token_usage.rag_used && <span style={{ color: 'var(--teal)' }}>RAG ✓</span>}
+                                  <span>Cost: ${s.token_usage.cost?.toFixed(4) || '-'}</span>
+                                  {s.token_usage.rag_used && <span style={{ color: 'var(--teal)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>RAG <Check size={11} /></span>}
                                 </div>
                               )}
                             </div>

@@ -385,7 +385,12 @@ function ShellInner({
           <div className="sh-scope-row" data-active={scoped}>{scopedInput}</div>
         </header>
 
-        <main className="sh-main" ref={mainRef} data-pad={padded}>
+        <main
+          className="sh-main"
+          ref={mainRef}
+          data-pad={padded}
+          {...(variant === 'admin' ? { 'data-ledger': '', 'data-ledger-theme': 'light' } : {})}
+        >
           {padded ? <div className="sh-main-inner">{children}</div> : children}
         </main>
       </div>

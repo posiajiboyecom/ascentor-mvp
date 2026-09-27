@@ -1,6 +1,6 @@
 'use client';
 
-// app/admin/marketing-pages/[slug]/page.tsx — THE LEDGER
+// app/admin/marketing-pages/[slug]/page.tsx, THE LEDGER
 // Single-page editor: lists all sections for one marketing page,
 // expandable to edit draft content, with per-section Publish/
 // Unpublish. Repeating sections (FAQ, personas, etc.) get an
@@ -9,7 +9,7 @@
 // SECTION TYPE -> EDITOR MAPPING:
 //   'prose'      -> single textarea, draft_data = { content: string }
 //   'structured' -> one input per key already present in draft_data
-//                   (or published_data if draft is empty) — keys are
+//                   (or published_data if draft is empty), keys are
 //                   NOT hardcoded here, so this same editor works for
 //                   a hero section with {headline, subhead, cta_label,
 //                   cta_href} or any other structured shape a future
@@ -19,7 +19,7 @@
 //                   key-value field editor as 'structured', since
 //                   repeating items have the same "open-ended JSON
 //                   object" shape problem (FAQ = {q,a}, personas =
-//                   {stage,emoji,color,...} — confirmed different
+//                   {stage,emoji,color,...}, confirmed different
 //                   shapes during schema design).
 
 import { useState, useEffect, useCallback } from 'react';
@@ -56,7 +56,7 @@ interface ItemRow {
   status: 'draft' | 'published';
 }
 
-// ── Key-value field editor — shared by 'structured' sections and ──
+// ── Key-value field editor, shared by 'structured' sections and ──
 // ── repeating items, since both are open-ended JSON objects.     ──
 function FieldEditor({
   data,
@@ -86,7 +86,7 @@ function FieldEditor({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {entries.length === 0 && (
-        <p className="ledger-mono" style={{ fontSize: 11.5, opacity: 0.7 }}>No fields yet — add one below.</p>
+        <p className="ledger-mono" style={{ fontSize: 11.5, opacity: 0.7 }}>No fields yet, add one below.</p>
       )}
       {entries.map(([key, value]) => (
         <div key={key} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
@@ -242,7 +242,7 @@ export default function MarketingPageEditor() {
   async function addItem(section: SectionRow) {
     try {
       await callAction({ action: 'create_item', sectionId: section.id, draftData: {} });
-      showToast('Item added — draft');
+      showToast('Item added, draft');
       load();
     } catch (err: any) {
       showToast(err.message, false);

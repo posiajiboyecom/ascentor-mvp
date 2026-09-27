@@ -41,7 +41,7 @@ const NAV_GROUPS: Group[] = [
     label: 'People',
     items: [
       { href: '/admin/users',       label: 'Users',       icon: <Users />,          permission: 'users.view' },
-      { href: '/admin/permissions', label: 'Permissions', icon: <ShieldCheck />,    permission: 'users.edit_role' },
+      { href: '/admin/permissions', label: 'Access Control', icon: <ShieldCheck />, permission: 'users.edit_role' },
       { href: '/admin/mentors',     label: 'Mentors',     icon: <HeartHandshake /> },
     ],
   },

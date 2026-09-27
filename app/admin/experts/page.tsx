@@ -30,7 +30,7 @@ const B = {
   goldMuted:   'rgba(232,160,32,0.09)',
   goldBorder:  'rgba(232,160,32,0.25)',
   border:      'var(--admin-border)',
-  // Stage colours (brand book pg 4) — repurposed as semantic status colours
+  // Stage colours (brand book pg 4), repurposed as semantic status colours
   explorer:    '#14B8A6',   // scheduled  → teal (forward-looking, calm)
   climber:     '#8B5CF6',   // live       → purple (active, elevated)
   success:     '#10B981',   // completed  → green
@@ -187,7 +187,7 @@ const FIELD_CSS = `
 `;
 
 // ────────────────────────────────────────────────────────────────
-// MAIN EXPORT — Suspense wrapper
+// MAIN EXPORT, Suspense wrapper
 // ────────────────────────────────────────────────────────────────
 export default function AdminExpertsPage() {
   return (
@@ -209,7 +209,7 @@ function BrandLoader() {
 }
 
 // ────────────────────────────────────────────────────────────────
-// INNER COMPONENT — All logic lives here
+// INNER COMPONENT, All logic lives here
 // ────────────────────────────────────────────────────────────────
 function AdminExpertsPageInner() {
   const supabase     = createClient();
@@ -785,7 +785,7 @@ function AdminExpertsPageInner() {
                     <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}>
                       {regs.map((r: any, i: number) => {
                         const profile = r.profiles || {};
-                        const name  = profile.full_name || '—';
+                        const name  = profile.full_name || '-';
                         const email = profile.email     || r.user_id?.slice(0, 8) + '…';
                         const date  = new Date(r.registered_at).toLocaleDateString('en-US', {
                           month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -804,7 +804,7 @@ function AdminExpertsPageInner() {
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               textTransform: 'uppercase',
                             }}>
-                              {name !== '—'
+                              {name !== '-'
                                 ? name.split(' ').filter(Boolean).map((p: string) => p[0]).join('').slice(0, 2)
                                 : '?'}
                             </span>

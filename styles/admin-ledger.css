@@ -292,6 +292,15 @@
   outline-offset: 2px;
 }
 
+/* ── Select (Radix) ──────────────────────────────────────── */
+[data-ledger] .ledger-select-item[data-highlighted] {
+  background: var(--ledger-gold-bg);
+  color: var(--ledger-ink);
+}
+[data-ledger] .ledger-select-item[data-state="checked"] {
+  font-weight: 600;
+}
+
 /* ── Reduced motion ──────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   [data-ledger] * {

@@ -11,7 +11,7 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Auth — only admin/moderator can assign
+    // 1. Auth, only admin/moderator can assign
     const authHeader = req.headers.get('authorization');
     const anonClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         });
 
       if (notifError) {
-        // Don't fail the whole request — assignment succeeded, notification is best-effort
+        // Don't fail the whole request, assignment succeeded, notification is best-effort
         console.error('Notification insert failed:', notifError.message);
       }
     }

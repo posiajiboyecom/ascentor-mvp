@@ -1,7 +1,7 @@
 'use client';
 
 // ============================================================
-// ADMIN PARTNERS — /admin/partners
+// ADMIN PARTNERS: /admin/partners
 //
 // Full partner management for Ascentor root admin:
 //   - Tab filter: All | Pending | Active | Suspended | Rejected
@@ -13,6 +13,7 @@
 // ============================================================
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { Check, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 
@@ -267,7 +268,7 @@ function RevenueModal({
         borderRadius: 14, padding: 28, width: '100%', maxWidth: 380,
       }}>
         <h3 style={{ fontFamily: "'Metropolis', serif", fontSize: 20, color: 'var(--admin-text-heading)', marginBottom: 16 }}>
-          Edit Revenue Share — {partner.name}
+          Edit Revenue Share: {partner.name}
         </h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <input
@@ -398,7 +399,7 @@ function AdminPartnersPageInner() {
 
     if (res.ok) {
       const msgs: Record<string, string> = {
-        approve:              'Partner approved — email sent ✓',
+        approve:              'Partner approved, email sent',
         suspend:              'Partner suspended',
         reject:               'Application rejected',
         reinstate:            'Partner reinstated',
@@ -534,7 +535,7 @@ function AdminPartnersPageInner() {
                     {p.subdomain}.ascentorbi.com
                   </p>
                   <p style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 2 }}>
-                    {p.profiles?.full_name || '—'} · {p.profiles?.email}
+                    {p.profiles?.full_name || '-'} · {p.profiles?.email}
                   </p>
                   <p style={{ fontSize: 10, color: 'var(--admin-text-faint)', marginTop: 1 }}>
                     Applied {relDate(p.created_at)}
@@ -556,7 +557,7 @@ function AdminPartnersPageInner() {
 
                 {/* Revenue */}
                 <p style={{ fontSize: 12, fontWeight: 600, color: p.total_revenue_ngn > 0 ? '#10B981' : 'var(--admin-text-faint)' }}>
-                  {p.total_revenue_ngn > 0 ? fmt(p.total_revenue_ngn) : '—'}
+                  {p.total_revenue_ngn > 0 ? fmt(p.total_revenue_ngn) : '-'}
                 </p>
 
                 {/* Revenue share */}
@@ -625,7 +626,7 @@ function AdminPartnersPageInner() {
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           animation: 'fadeInUp 0.2s ease',
         }}>
-          <span style={{ fontSize: 14 }}>{toast.type === 'success' ? '✓' : '✗'}</span>
+          <span style={{ display: 'flex' }}>{toast.type === 'success' ? <Check size={14} /> : <X size={14} />}</span>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--admin-text)' }}>{toast.text}</span>
         </div>
       )}

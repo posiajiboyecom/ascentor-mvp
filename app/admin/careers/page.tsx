@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { Mail, Phone } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
 // ============================================================
-// ADMIN CAREERS — /admin/careers
+// ADMIN CAREERS, /admin/careers
 // Manage job listings + review applications
 // ============================================================
 
@@ -66,7 +67,7 @@ const CARD_STYLE: React.CSSProperties = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-// SUB-COMPONENTS — defined OUTSIDE the page component so React never remounts
+// SUB-COMPONENTS, defined OUTSIDE the page component so React never remounts
 // them on state changes (which would kill input focus on every keystroke).
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -118,7 +119,7 @@ function CvDownloadBtn({ cvUrl, cvFilename, supabase }: {
           opacity: loading ? 0.6 : 1,
         }}
       >
-        {loading ? 'Generating link…' : `⇩ Download CV${cvFilename ? ` — ${cvFilename}` : ''}`}
+        {loading ? 'Generating link…' : `⇩ Download CV${cvFilename ? `, ${cvFilename}` : ''}`}
       </button>
       {error && (
         <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: '#EF4444' }}>
@@ -335,7 +336,7 @@ function JobForm({ form, setForm, onSave, onCancel, saving, msg }: {
           }} />
         </div>
         <span style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 13, color: 'var(--admin-text)' }}>
-          {form.is_active ? 'Published — visible on /careers' : 'Draft — hidden from public'}
+          {form.is_active ? 'Published, visible on /careers' : 'Draft, hidden from public'}
         </span>
       </div>
 
@@ -635,7 +636,7 @@ export default function AdminCareersPage() {
             )
           )}
 
-          {/* Create / Edit form — JobForm is a stable external component */}
+          {/* Create / Edit form, JobForm is a stable external component */}
           {(tab === 'create' || tab === 'edit') && (
             <div style={{ ...CARD_STYLE, padding: 28 }}>
               <h2 style={{ fontFamily: "'Metropolis', serif", fontSize: 22, fontWeight: 700, color: 'var(--admin-text-heading)', margin: '0 0 24px' }}>
@@ -730,8 +731,8 @@ export default function AdminCareersPage() {
 
                         {/* Links row */}
                         <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--admin-bg-input)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-                          <a href={`mailto:${app.email}`} style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', textDecoration: 'none' }}>✉ {app.email}</a>
-                          {app.phone && <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)' }}>☎ {app.phone}</span>}
+                          <a href={`mailto:${app.email}`} style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#E8A020', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3 }}><Mail size={10} /> {app.email}</a>
+                          {app.phone && <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: 'var(--admin-text-muted)', display: 'inline-flex', alignItems: 'center', gap: 3 }}><Phone size={10} /> {app.phone}</span>}
                           {app.linkedin_url && <a href={app.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#14B8A6', textDecoration: 'none' }}>↗ LinkedIn</a>}
                           {app.portfolio_url && <a href={app.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#8B5CF6', textDecoration: 'none' }}>↗ Portfolio</a>}
                           {app.cv_url && (

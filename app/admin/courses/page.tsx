@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
@@ -12,9 +13,9 @@ function SvgIcon({ html, className, style }: { html: string; className?: string;
 }
 
 // ============================================================
-// THE LEDGER — token bridge
+// THE LEDGER, token bridge
 // Every color/font reference in this file flows through this B
-// object — nothing below this point hardcodes a color directly
+// object, nothing below this point hardcodes a color directly
 // (confirmed: zero raw hex outside this block before this pass).
 // That made this file the cleanest of the four to convert: swap
 // the definitions here, the other ~750 lines update for free.
@@ -23,10 +24,10 @@ function SvgIcon({ html, className, style }: { html: string; className?: string;
 // equivalent (Ledger's palette is deliberately narrow: gold +
 // good/bad/warn/info, not a color per subscription tier). Mapped
 // to ledger-info and ledger-gold respectively rather than inventing
-// new tokens — same consolidation already applied in
+// new tokens, same consolidation already applied in
 // AdminOverviewClient.tsx and app/admin/users/page.tsx.
 //   explorer -> ledger-info   (was teal #14B8A6)
-//   climber  -> ledger-gold   (was purple #8B5CF6 — builder tier
+//   climber  -> ledger-gold   (was purple #8B5CF6, builder tier
 //               already uses gold/B.gold elsewhere in this file,
 //               so climber reusing gold keeps tier badges from
 //               clashing; differentiated by label text, not color)
@@ -146,11 +147,11 @@ function ActionBtn({
 }
 
 // ── CSS ──────────────────────────────────────────────────────────
-// Font @import removed — Metropolis / Metropolis / DM Mono are now
+// Font @import removed, Metropolis / Metropolis / DM Mono are now
 // loaded once in app/admin/layout.tsx for every /admin page, so this
 // page no longer needs its own <link>/@import. Re-importing per-page
 // was harmless but redundant (browser dedupes identical font
-// requests anyway) — removed for clarity, not because it was broken.
+// requests anyway), removed for clarity, not because it was broken.
 const CSS = `
   *, *::before, *::after { box-sizing: border-box; }
 
@@ -600,12 +601,12 @@ function AdminCoursesInner() {
                 className="asc-field"
                 value={form.description}
                 onChange={e => setForm({ ...form, description: e.target.value })}
-                placeholder="What will members learn? Keep it direct — not motivational."
+                placeholder="What will members learn? Keep it direct, not motivational."
                 rows={3}
               />
             </div>
 
-            {/* Category / Difficulty / Duration — 3-col grid */}
+            {/* Category / Difficulty / Duration, 3-col grid */}
             <div
               style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}
               className="asc-form-grid-3"
@@ -697,7 +698,7 @@ function AdminCoursesInner() {
               </div>
             </div>
 
-            {/* Plan tier — controls who can access this course */}
+            {/* Plan tier, controls who can access this course */}
             <div>
               <FieldLabel>Plan Access</FieldLabel>
               <select
@@ -706,14 +707,14 @@ function AdminCoursesInner() {
                 onChange={e => setForm({ ...form, plan_tier: e.target.value })}
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: B.dark700, color: B.dark200, border: `1px solid ${B.border}`, fontFamily: B.fontUI, fontSize: '13px', outline: 'none' }}
               >
-                <option value="free">Free — all users can access</option>
+                <option value="free">Free, all users can access</option>
                 <option value="explorer">Explorer and above</option>
                 <option value="builder">Builder and above</option>
                 <option value="climber">Climber only</option>
               </select>
             </div>
 
-            {/* Published toggle — custom branded, not raw <input type="checkbox"> */}
+            {/* Published toggle, custom branded, not raw <input type="checkbox"> */}
             <div>
               <FieldLabel>Visibility</FieldLabel>
               <div
@@ -729,7 +730,7 @@ function AdminCoursesInner() {
                   fontWeight: 500,
                   color:      form.is_published ? B.dark200 : B.dark400,
                 }}>
-                  {form.is_published ? 'Published — visible to members' : 'Draft — hidden from members'}
+                  {form.is_published ? 'Published, visible to members' : 'Draft, hidden from members'}
                 </span>
               </div>
             </div>
@@ -776,8 +777,8 @@ function AdminCoursesInner() {
       ) : (
         <>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <p style={{ fontFamily: B.fontMono, fontSize: 10, color: B.dark500, letterSpacing: '0.06em', margin: 0 }}>
-            DRAG ROWS TO REORDER · {reordering ? '⏳ Saving order…' : 'Auto-saved'}
+          <p style={{ fontFamily: B.fontMono, fontSize: 10, color: B.dark500, letterSpacing: '0.06em', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+            DRAG ROWS TO REORDER · {reordering ? <><Loader2 size={11} className="animate-spin" /> Saving order...</> : 'Auto-saved'}
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -866,7 +867,7 @@ function AdminCoursesInner() {
                     }}>
                       {c.title}
                     </h4>
-                    {/* Draft badge — brand styled */}
+                    {/* Draft badge, brand styled */}
                     {!c.is_published && (
                       <span style={{
                         fontFamily:    B.fontMono,
@@ -890,7 +891,7 @@ function AdminCoursesInner() {
                       // explorer=teal / climber=purple hex independently of
                       // the B object above, so remapping B.explorer/B.climber
                       // alone (done earlier in this pass) would have left
-                      // teal/purple badge backgrounds under gold/info text —
+                      // teal/purple badge backgrounds under gold/info text,
                       // visually broken. Fixed to derive consistently:
                       // explorer matches B.explorer (ledger-info, was teal),
                       // climber reuses the gold treatment since Ledger has
@@ -918,7 +919,7 @@ function AdminCoursesInner() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     <MonoLabel color={B.dark500}>{c.category}</MonoLabel>
                     <span style={{ color: B.dark600, fontFamily: B.fontMono, fontSize: '10px' }}>·</span>
-                    {/* Difficulty pill — stage colour */}
+                    {/* Difficulty pill, stage colour */}
                     <span style={{
                       fontFamily:    B.fontMono,
                       fontSize:      '10px',

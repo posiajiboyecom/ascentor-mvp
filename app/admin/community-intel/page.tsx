@@ -2,10 +2,11 @@
 
 // app/admin/community-intel/page.tsx
 // Two tabs:
-//   1. Message Monitor — live moderation of community_messages
-//   2. Community Intelligence — AI cohort recommendations
+//   1. Message Monitor, live moderation of community_messages
+//   2. Community Intelligence, AI cohort recommendations
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { MessageCircle, Hash, Sparkles, X, Folder, Flag, Check, RotateCcw, Plus } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
@@ -52,11 +53,11 @@ export default function CommunityIntelPage(){
       </div>
       <div style={{display:'flex',gap:4,marginBottom:24,background:'var(--admin-bg-deep)',borderRadius:10,padding:4,border:'1px solid var(--admin-bg-input)',width:'fit-content'}}>
         {([
-          {key:'monitor',  label:'💬 Messages'},
-          {key:'channels', label:'# Channels'},
-          {key:'intel',    label:'✦ Intelligence'},
+          {key:'monitor',  label:'Messages',     icon:MessageCircle},
+          {key:'channels', label:'Channels',      icon:Hash},
+          {key:'intel',    label:'Intelligence',  icon:Sparkles},
         ] as const).map(t=>(
-          <button key={t.key} onClick={()=>setTab(t.key)} style={{padding:'8px 18px',borderRadius:7,border:'none',background:tab===t.key?B.gold:'transparent',color:tab===t.key?'#0C0B08':'var(--admin-text-muted)',fontFamily:B.fontUI,fontWeight:600,fontSize:12,cursor:'pointer',transition:'background 0.15s'}}>{t.label}</button>
+          <button key={t.key} onClick={()=>setTab(t.key)} style={{padding:'8px 18px',borderRadius:7,border:'none',background:tab===t.key?B.gold:'transparent',color:tab===t.key?'#0C0B08':'var(--admin-text-muted)',fontFamily:B.fontUI,fontWeight:600,fontSize:12,cursor:'pointer',transition:'background 0.15s',display:'inline-flex',alignItems:'center',gap:6}}><t.icon size={13}/>{t.label}</button>
         ))}
       </div>
       {tab==='monitor' ? <MessageMonitor supabase={supabase}/> : tab==='channels' ? <ChannelsManager supabase={supabase}/> : <IntelPanel supabase={supabase}/>}
@@ -67,7 +68,6 @@ export default function CommunityIntelPage(){
 // ════════════════════════════════════════════════════════════
 // CHANNELS MANAGER TAB
 // ════════════════════════════════════════════════════════════
-const EMOJIS=['💬','👋','💼','🤝','🧠','📄','🎯','🚀','💡','🔥','🌍','📢','🎓','💪','🏆','❓'];
 interface ChannelRow{slug:string;name:string;emoji:string;description:string;sort_order:number;}
 function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
   const[categories,setCategories]=useState<any[]>([]);
@@ -164,11 +164,11 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
           <p style={{fontFamily:B.fontMono,fontSize:10,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--admin-text-faint)',marginTop:4,marginBottom:0}}>{categories.length} categories · {channels.length} channels · live</p>
         </div>
         <div style={{display:'flex',gap:8}}>
-          <button onClick={()=>{setShowCatForm(f=>!f);setShowChForm(false);}} style={{padding:'9px 16px',borderRadius:8,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontUI,fontWeight:600,fontSize:12,cursor:'pointer'}}>
-            {showCatForm?'✕ Cancel':'+ Category'}
+          <button onClick={()=>{setShowCatForm(f=>!f);setShowChForm(false);}} style={{padding:'9px 16px',borderRadius:8,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontUI,fontWeight:600,fontSize:12,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:5}}>
+            {showCatForm?<><X size={12}/> Cancel</>:'+ Category'}
           </button>
-          <button onClick={()=>{setShowChForm(f=>!f);setShowCatForm(false);}} style={{padding:'9px 16px',borderRadius:8,border:'none',background:showChForm?'var(--admin-bg-input)':B.gold,color:showChForm?'var(--admin-text-muted)':'#0C0B08',fontFamily:B.fontUI,fontWeight:700,fontSize:12,cursor:'pointer'}}>
-            {showChForm?'✕ Cancel':'+ Channel'}
+          <button onClick={()=>{setShowChForm(f=>!f);setShowCatForm(false);}} style={{padding:'9px 16px',borderRadius:8,border:'none',background:showChForm?'var(--admin-bg-input)':B.gold,color:showChForm?'var(--admin-text-muted)':'#0C0B08',fontFamily:B.fontUI,fontWeight:700,fontSize:12,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:5}}>
+            {showChForm?<><X size={12}/> Cancel</>:'+ Channel'}
           </button>
         </div>
       </div>
@@ -200,16 +200,16 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
           <div style={{marginBottom:12}}>
             <span style={MONO_LABEL}>Channel type</span>
             <select value={chForm.channel_type} onChange={e=>setChForm(f=>({...f,channel_type:e.target.value}))} style={SEL_S}>
-              <option value="chat">Chat — realtime messaging (most channels)</option>
-              <option value="forum">Forum — long-form posts with topic tags (like General)</option>
-              <option value="circle">Circle — WhatsApp-style accountability group</option>
-              <option value="announce">Announce — admin-only broadcast, members react but can't reply</option>
+              <option value="chat">Chat, realtime messaging (most channels)</option>
+              <option value="forum">Forum, long-form posts with topic tags (like General)</option>
+              <option value="circle">Circle, WhatsApp-style accountability group</option>
+              <option value="announce">Announce, admin-only broadcast, members react but can't reply</option>
             </select>
           </div>
           <div style={{marginBottom:16}}>
             <span style={MONO_LABEL}>Category</span>
             <select value={chForm.category_id} onChange={e=>setChForm(f=>({...f,category_id:e.target.value}))} style={SEL_S}>
-              <option value="">— No category —</option>
+              <option value="">- No category -</option>
               {categories.map(cat=><option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
           </div>
@@ -228,13 +228,13 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
               <div key={cat.id} style={{...CARD,overflow:'hidden'}}>
                 {/* Category header */}
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--admin-bg-input)',display:'flex',alignItems:'center',gap:10,background:'var(--admin-bg-card)'}}>
-                  <span style={{fontFamily:B.fontMono,fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase' as const,color:'var(--admin-text-faint)',flex:1}}>📁 {cat.name}</span>
+                  <span style={{fontFamily:B.fontMono,fontSize:9,letterSpacing:'0.14em',textTransform:'uppercase' as const,color:'var(--admin-text-faint)',flex:1,display:'inline-flex',alignItems:'center',gap:5}}><Folder size={11}/> {cat.name}</span>
                   <span style={{fontFamily:B.fontMono,fontSize:10,color:'var(--admin-text-faint)'}}>{catChannels.length} channels</span>
                   <button onClick={()=>deleteCategory(cat.id,cat.name)} disabled={deleting[cat.id]} style={{padding:'3px 10px',borderRadius:5,border:'1px solid rgba(239,68,68,0.25)',background:'transparent',color:B.red,fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>{deleting[cat.id]?'…':'Delete'}</button>
                 </div>
                 {/* Channels in category */}
                 <div>
-                  {catChannels.length===0&&<div style={{padding:'12px 16px',fontFamily:B.fontUI,fontSize:13,color:'var(--admin-text-muted)'}}>No channels yet — create one and assign this category.</div>}
+                  {catChannels.length===0&&<div style={{padding:'12px 16px',fontFamily:B.fontUI,fontSize:13,color:'var(--admin-text-muted)'}}>No channels yet, create one and assign this category.</div>}
                   {catChannels.map((ch:any,idx:number)=>(
                     <div key={ch.slug} style={{padding:'10px 16px',borderBottom:'1px solid var(--admin-bg-input)'}}>
                       {editing===ch.slug?(
@@ -243,7 +243,7 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
                             <div><span style={MONO_LABEL}>Name</span><input value={editForm.name||''} onChange={e=>setEditForm((f:any)=>({...f,name:e.target.value}))} style={INPUT_S}/></div>
                             <div><span style={MONO_LABEL}>Category</span>
                               <select value={editForm.category_id||''} onChange={e=>setEditForm((f:any)=>({...f,category_id:e.target.value}))} style={SEL_S}>
-                                <option value="">— No category —</option>
+                                <option value="">- No category -</option>
                                 {categories.map((c:any)=><option key={c.id} value={c.id}>{c.name}</option>)}
                               </select>
                             </div>
@@ -252,10 +252,10 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
                           <div style={{marginBottom:8}}>
                             <span style={MONO_LABEL}>Channel type</span>
                             <select value={editForm.channel_type||'chat'} onChange={e=>setEditForm((f:any)=>({...f,channel_type:e.target.value}))} style={SEL_S}>
-                              <option value="chat">Chat — realtime messaging</option>
-                              <option value="forum">Forum — long-form posts with topic tags</option>
-                              <option value="circle">Circle — accountability group</option>
-                              <option value="announce">Announce — admin-only broadcast</option>
+                              <option value="chat">Chat, realtime messaging</option>
+                              <option value="forum">Forum, long-form posts with topic tags</option>
+                              <option value="circle">Circle, accountability group</option>
+                              <option value="announce">Announce, admin-only broadcast</option>
                             </select>
                           </div>
                           <div style={{display:'flex',gap:8}}>
@@ -392,8 +392,8 @@ function MessageMonitor({supabase}:{supabase:ReturnType<typeof createClient>}){
         <select value={channel} onChange={e=>setChannel(e.target.value)} style={{padding:'8px 12px',borderRadius:8,border:'1px solid var(--admin-bg-input)',background:'var(--admin-bg-card)',color:'var(--admin-text)',fontFamily:B.fontMono,fontSize:11,cursor:'pointer'}}>
           {CHANNELS.map(c=><option key={c.slug} value={c.slug}>{c.emoji} {c.name}</option>)}
         </select>
-        <button onClick={()=>setFlaggedOnly(f=>!f)} style={{padding:'8px 14px',borderRadius:8,border:`1px solid ${flaggedOnly?B.red:'var(--admin-bg-input)'}`,background:flaggedOnly?'rgba(239,68,68,0.08)':'transparent',color:flaggedOnly?B.red:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:11,cursor:'pointer',fontWeight:500}}>🚩 Flagged {flaggedOnly?'✓':''}</button>
-        <button onClick={load} style={{padding:'8px 14px',borderRadius:8,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:11,cursor:'pointer'}}>↺ Refresh</button>
+        <button onClick={()=>setFlaggedOnly(f=>!f)} style={{padding:'8px 14px',borderRadius:8,border:`1px solid ${flaggedOnly?B.red:'var(--admin-bg-input)'}`,background:flaggedOnly?'rgba(239,68,68,0.08)':'transparent',color:flaggedOnly?B.red:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:11,cursor:'pointer',fontWeight:500,display:'inline-flex',alignItems:'center',gap:5}}><Flag size={11}/> Flagged {flaggedOnly?<Check size={11}/>:''}</button>
+        <button onClick={load} style={{padding:'8px 14px',borderRadius:8,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:11,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:5}}><RotateCcw size={11}/> Refresh</button>
         <span style={{fontFamily:B.fontMono,fontSize:10,color:'var(--admin-text-faint)',marginLeft:'auto'}}>{messages.length} shown · Live</span>
       </div>
       {toast&&<div style={{padding:'9px 14px',borderRadius:8,marginBottom:14,background:toast.ok?'rgba(34,197,94,0.08)':'rgba(239,68,68,0.08)',border:`1px solid ${toast.ok?'rgba(34,197,94,0.2)':'rgba(239,68,68,0.2)'}`,color:toast.ok?B.green:B.red,fontFamily:B.fontMono,fontSize:11}}>{toast.msg}</div>}
@@ -411,13 +411,13 @@ function MessageMonitor({supabase}:{supabase:ReturnType<typeof createClient>}){
                   <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,flexWrap:'wrap'}}>
                     <span style={{fontFamily:B.fontUI,fontSize:12,fontWeight:600,color:'var(--admin-text)'}}>{msg.author_name}</span>
                     <Tag text={`#${msg.channel}`} color={B.teal}/>
-                    {msg.flagged&&<Tag text="🚩 Flagged" color={B.red}/>}
+                    {msg.flagged&&<Tag text="Flagged" color={B.red}/>}
                     <span style={{fontFamily:B.fontMono,fontSize:10,color:'var(--admin-text-faint)',marginLeft:'auto'}}>{fmtTime(msg.created_at)}</span>
                   </div>
                   <p style={{fontFamily:B.fontUI,fontSize:13,color:'var(--admin-text)',margin:0,lineHeight:1.6,wordBreak:'break-word',whiteSpace:'pre-wrap'}}>{msg.content}</p>
                 </div>
                 <div style={{display:'flex',gap:6,flexShrink:0}}>
-                  <button onClick={()=>act(msg.id,msg.flagged?'unflag':'flag')} disabled={acting[msg.id]} style={{padding:'5px 10px',borderRadius:6,fontSize:11,border:`1px solid ${msg.flagged?'rgba(239,68,68,0.3)':'var(--admin-bg-input)'}`,background:'transparent',color:msg.flagged?B.red:'var(--admin-text-muted)',fontFamily:B.fontMono,cursor:'pointer'}}>{msg.flagged?'Unflag':'🚩 Flag'}</button>
+                  <button onClick={()=>act(msg.id,msg.flagged?'unflag':'flag')} disabled={acting[msg.id]} style={{padding:'5px 10px',borderRadius:6,fontSize:11,border:`1px solid ${msg.flagged?'rgba(239,68,68,0.3)':'var(--admin-bg-input)'}`,background:'transparent',color:msg.flagged?B.red:'var(--admin-text-muted)',fontFamily:B.fontMono,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:4}}>{msg.flagged?'Unflag':<><Flag size={11}/> Flag</>}</button>
                   <button onClick={()=>act(msg.id,'delete')} disabled={acting[msg.id]} style={{padding:'5px 10px',borderRadius:6,fontSize:11,border:'1px solid rgba(239,68,68,0.25)',background:'transparent',color:B.red,fontFamily:B.fontMono,cursor:'pointer'}}>{acting[msg.id]?'…':'Delete'}</button>
                 </div>
               </div>
@@ -464,7 +464,7 @@ ${JSON.stringify(userSummaries,null,2)}
 
 Respond ONLY with valid JSON, no markdown:
 {"total_users_analysed":<number>,"summary":"<overview>","recommendations":[{"id":"<slug>","name":"<name max 5 words>","description":"<1-2 sentences>","category":"<Technology|Finance|Leadership|Entrepreneurship|Consulting|Career Growth|Executive|Diversity|Other>","icon":"users","rationale":"<1 sentence>","estimated_members":<number>,"user_ids":[],"tags":["<tag>"],"editing":false}]}`;
-      // C-01: call server-side route — never call Anthropic directly from the browser
+      // C-01: call server-side route, never call Anthropic directly from the browser
       // H-03: user profile data (biggest_challenge, goal_role) stays server-side;
       //       we send only aggregated summaries, not raw PII, to the API route
       const res = await fetch('/api/admin/intel-analyse', {
@@ -508,7 +508,7 @@ Respond ONLY with valid JSON, no markdown:
           <p style={{fontFamily:B.fontMono,fontSize:10,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--admin-text-faint)',marginTop:4,marginBottom:0}}>AI analysis of user profiles → cohort recommendations</p>
         </div>
         <button onClick={runAnalysis} disabled={analysing||loading||profiles.length<2} style={{padding:'10px 22px',borderRadius:9,border:'none',background:analysing?'var(--admin-bg-input)':B.gold,color:analysing?'var(--admin-text-muted)':'#0C0B08',fontFamily:B.fontUI,fontWeight:700,fontSize:13,cursor:(analysing||loading||profiles.length<2)?'not-allowed':'pointer',display:'flex',alignItems:'center',gap:8}}>
-          {analysing?<><Spinner size={14}/>Analysing…</>:'✦ Run AI Analysis'}
+          {analysing?<><Spinner size={14}/>Analysing…</>:<><Sparkles size={14}/> Run AI Analysis</>}
         </button>
       </div>
       {globalMsg&&<div style={{padding:'10px 16px',borderRadius:8,marginBottom:16,background:globalMsg.startsWith('Error')?'rgba(239,68,68,0.08)':'rgba(34,197,94,0.08)',border:`1px solid ${globalMsg.startsWith('Error')?'rgba(239,68,68,0.2)':'rgba(34,197,94,0.2)'}`,color:globalMsg.startsWith('Error')?B.red:B.green,fontFamily:B.fontMono,fontSize:11}}>{globalMsg}</div>}
@@ -516,7 +516,7 @@ Respond ONLY with valid JSON, no markdown:
       {loading?(<div style={{padding:'60px 0',display:'flex',justifyContent:'center'}}><Spinner/></div>):(
         <>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))',gap:12,marginBottom:24}}>
-            {[{label:'Total Users',value:profiles.length,color:B.gold},{label:'With Goals Set',value:goals.length,color:B.teal},{label:'Industries',value:Object.keys(industryBreakdown).length,color:B.purple},{label:'Top Industry',value:topIndustries[0]?.[0]||'—',color:B.green,small:true}].map(stat=>(
+            {[{label:'Total Users',value:profiles.length,color:B.gold},{label:'With Goals Set',value:goals.length,color:B.teal},{label:'Industries',value:Object.keys(industryBreakdown).length,color:B.purple},{label:'Top Industry',value:topIndustries[0]?.[0]||'-',color:B.green,small:true}].map(stat=>(
               <div key={stat.label} style={{...CARD,padding:'16px 18px'}}>
                 <p style={{...MONO_LABEL,marginBottom:8}}>{stat.label}</p>
                 <p style={{fontFamily:stat.small?B.fontUI:B.fontDisplay,fontSize:stat.small?14:28,fontWeight:700,color:stat.color,margin:0}}>{stat.value}</p>
@@ -545,15 +545,15 @@ Respond ONLY with valid JSON, no markdown:
                         <div style={{display:'flex',gap:12,flex:1}}>
                           <div style={{width:28,height:28,borderRadius:8,flexShrink:0,background:`${color}14`,border:`1px solid ${color}28`,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:B.fontMono,fontSize:11,color,fontWeight:500}}>{String(idx+1).padStart(2,'0')}</div>
                           <div><p style={{fontFamily:B.fontDisplay,fontSize:20,fontWeight:700,color:'var(--admin-text-heading)',margin:'0 0 4px'}}>{rec.name}</p>
-                          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}><Tag text={rec.category} color={color}/><Tag text={`~${rec.estimated_members} members`} color="var(--admin-text-faint)"/>{isCreated&&<Tag text="✓ Created" color={B.green}/>}</div></div>
+                          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}><Tag text={rec.category} color={color}/><Tag text={`~${rec.estimated_members} members`} color="var(--admin-text-faint)"/>{isCreated&&<Tag text="Created" color={B.green}/>}</div></div>
                         </div>
                         <button onClick={()=>createCommunity(rec)} disabled={isCreated||isCreating} style={{padding:'5px 14px',borderRadius:6,fontSize:11,border:`1px solid ${isCreated?'rgba(34,197,94,0.3)':`${color}40`}`,background:'transparent',color:isCreated?B.green:color,fontFamily:B.fontUI,fontWeight:700,cursor:(isCreated||isCreating)?'not-allowed':'pointer',display:'flex',alignItems:'center',gap:6}}>
-                          {isCreating?<><Spinner size={11}/>Creating…</>:isCreated?'✓ Created':'+ Create Community'}
+                          {isCreating?<><Spinner size={11}/>Creating…</>:isCreated?<><Check size={12}/> Created</>:<><Plus size={12}/> Create Community</>}
                         </button>
                       </div>
                       <div style={{padding:'16px 20px'}}>
                         <p style={{fontFamily:B.fontUI,fontSize:13,color:'var(--admin-text)',lineHeight:1.75,margin:'0 0 12px'}}>{rec.description}</p>
-                        <div style={{padding:'10px 14px',borderRadius:8,background:`${color}08`,border:`1px solid ${color}18`,display:'flex',gap:10}}><span style={{color,fontSize:12,flexShrink:0}}>✦</span><p style={{fontFamily:B.fontMono,fontSize:10,color:'var(--admin-text-muted)',margin:0,lineHeight:1.7}}><strong style={{color,letterSpacing:'0.1em',textTransform:'uppercase',fontSize:9}}>AI Rationale: </strong>{rec.rationale}</p></div>
+                        <div style={{padding:'10px 14px',borderRadius:8,background:`${color}08`,border:`1px solid ${color}18`,display:'flex',gap:10}}><span style={{color,flexShrink:0,display:'flex',paddingTop:2}}><Sparkles size={12}/></span><p style={{fontFamily:B.fontMono,fontSize:10,color:'var(--admin-text-muted)',margin:0,lineHeight:1.7}}><strong style={{color,letterSpacing:'0.1em',textTransform:'uppercase',fontSize:9}}>AI Rationale: </strong>{rec.rationale}</p></div>
                       </div>
                     </div>
                   );
@@ -561,7 +561,7 @@ Respond ONLY with valid JSON, no markdown:
               </div>
             </div>
           )}
-          {!result&&!analysing&&profiles.length>=2&&(<div style={{...CARD,padding:'56px 24px',textAlign:'center'}}><p style={{fontFamily:B.fontDisplay,fontSize:22,fontWeight:700,color:'var(--admin-text-heading)',margin:'0 0 8px'}}>Ready to analyse {profiles.length} users</p><button onClick={runAnalysis} style={{padding:'11px 28px',borderRadius:9,border:'none',background:B.gold,color:'#0C0B08',fontFamily:B.fontUI,fontWeight:700,fontSize:14,cursor:'pointer'}}>✦ Run AI Analysis</button></div>)}
+          {!result&&!analysing&&profiles.length>=2&&(<div style={{...CARD,padding:'56px 24px',textAlign:'center'}}><p style={{fontFamily:B.fontDisplay,fontSize:22,fontWeight:700,color:'var(--admin-text-heading)',margin:'0 0 8px'}}>Ready to analyse {profiles.length} users</p><button onClick={runAnalysis} style={{padding:'11px 28px',borderRadius:9,border:'none',background:B.gold,color:'#0C0B08',fontFamily:B.fontUI,fontWeight:700,fontSize:14,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:8}}><Sparkles size={14}/> Run AI Analysis</button></div>)}
           {profiles.length<2&&(<div style={{...CARD,padding:'48px 24px',textAlign:'center'}}><p style={{fontFamily:B.fontDisplay,fontSize:20,color:'var(--admin-text-heading)',margin:'0 0 8px'}}>Not enough data yet</p><p style={{fontFamily:B.fontUI,fontSize:13,color:'var(--admin-text-muted)',margin:0}}>Need at least 2 users who completed onboarding. You have {profiles.length}.</p></div>)}
         </>
       )}

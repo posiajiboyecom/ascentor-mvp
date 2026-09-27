@@ -79,7 +79,7 @@ export default function AdminEventsPage() {
   const [emailMessage, setEmailMessage] = useState('');
   const [emailStatus, setEmailStatus] = useState('confirmed');
   const [emailSending, setEmailSending] = useState(false);
-  const [emailResult, setEmailResult] = useState<string | null>(null);
+  const [emailResult, setEmailResult] = useState<{ text: string; ok: boolean } | null>(null);
 
   useEffect(() => { loadEvents(); }, []);
 
@@ -111,11 +111,11 @@ export default function AdminEventsPage() {
     if (editing.id) {
       const { error } = await supabase.from('public_events').update(payload).eq('id', editing.id);
       if (error) { setSaveMsg('Error: ' + error.message); }
-      else { setSaveMsg('Saved ✓'); await loadEvents(); setEditing(null); }
+      else { setSaveMsg('Saved'); await loadEvents(); setEditing(null); }
     } else {
       const { error } = await supabase.from('public_events').insert(payload);
       if (error) { setSaveMsg('Error: ' + error.message); }
-      else { setSaveMsg('Created ✓'); await loadEvents(); setEditing(null); }
+      else { setSaveMsg('Created'); await loadEvents(); setEditing(null); }
     }
     setSaving(false);
   }
@@ -159,10 +159,10 @@ export default function AdminEventsPage() {
       });
       const d = await res.json();
       if (res.ok) {
-        setEmailResult(`✓ Sent to ${d.sent} registrant${d.sent !== 1 ? 's' : ''}${d.failed > 0 ? ` (${d.failed} failed)` : ''}`);
+        setEmailResult({ text: `Sent to ${d.sent} registrant${d.sent !== 1 ? 's' : ''}${d.failed > 0 ? ` (${d.failed} failed)` : ''}`, ok: true });
         setEmailSubject(''); setEmailMessage('');
-      } else { setEmailResult(`✗ ${d.error || 'Failed'}`); }
-    } catch (e: any) { setEmailResult(`✗ ${e.message}`); }
+      } else { setEmailResult({ text: d.error || 'Failed', ok: false }); }
+    } catch (e: any) { setEmailResult({ text: e.message, ok: false }); }
     finally { setEmailSending(false); }
   }
 
@@ -382,8 +382,8 @@ export default function AdminEventsPage() {
                               <tr key={r.id} style={{ borderBottom: `1px solid ${B.border}` }}>
                                 <td style={{ padding: '10px 12px', color: B.text, fontSize: '13px' }}>{r.full_name}</td>
                                 <td style={{ padding: '10px 12px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{r.email}</td>
-                                <td style={{ padding: '10px 12px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{r.whatsapp || '—'}</td>
-                                <td style={{ padding: '10px 12px', fontSize: '12px', color: B.muted }}>{r.country || '—'}</td>
+                                <td style={{ padding: '10px 12px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{r.whatsapp || '-'}</td>
+                                <td style={{ padding: '10px 12px', fontSize: '12px', color: B.muted }}>{r.country || '-'}</td>
                                 <td style={{ padding: '10px 12px' }}>
                                   <select value={r.status} onChange={e => updateRegField(r.id, { status: e.target.value })}
                                     style={{ padding: '3px 8px', borderRadius: '5px', border: 'none', background: 'rgba(200,169,110,0.15)', color: B.gold, fontSize: '11px', cursor: 'pointer', fontFamily: B.fontUI }}>
@@ -393,7 +393,7 @@ export default function AdminEventsPage() {
                                 <td style={{ padding: '10px 12px' }}>
                                   <select value={r.ticket_type || ''} onChange={e => updateRegField(r.id, { ticket_type: e.target.value || null })}
                                     style={{ padding: '3px 8px', borderRadius: '5px', border: `1px solid ${B.border}`, background: B.bg, color: B.muted, fontSize: '11px', cursor: 'pointer', fontFamily: B.fontUI }}>
-                                    <option value="">— type —</option>
+                                    <option value="">- type -</option>
                                     {['general','vip','speaker','partner','press'].map(t => <option key={t} value={t}>{t}</option>)}
                                   </select>
                                 </td>
@@ -465,7 +465,7 @@ export default function AdminEventsPage() {
                         style={{ padding: '8px 18px', background: B.gold, border: 'none', borderRadius: '7px', color: '#0F0F0E', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: B.fontUI, opacity: emailSending ? 0.7 : 1 }}>
                         {emailSending ? 'Sending…' : `Send to ${regs.filter(r => r.status === emailStatus).length} registrant${regs.filter(r => r.status === emailStatus).length !== 1 ? 's' : ''}`}
                       </button>
-                      {emailResult && <span style={{ fontFamily: B.fontMono, fontSize: '11px', color: emailResult.startsWith('✓') ? B.success : B.error }}>{emailResult}</span>}
+                      {emailResult && <span style={{ fontFamily: B.fontMono, fontSize: '11px', color: emailResult.ok ? B.success : B.error }}>{emailResult.text}</span>}
                     </div>
                   </div>
                 </div>

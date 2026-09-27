@@ -214,7 +214,7 @@ function AnalysisPanel({ surveyId }: { surveyId: string }) {
               {ins.key_insights.map((insight, i) => (
                 <div key={i} style={{ display: 'flex', gap: '10px', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
                   <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--gold)', flexShrink: 0, marginTop: '5px' }} />
-                  <span><strong style={{ color: 'var(--text)' }}>{insight.headline}</strong> — {insight.detail}</span>
+                  <span><strong style={{ color: 'var(--text)' }}>{insight.headline}</strong>, {insight.detail}</span>
                 </div>
               ))}
             </div>
@@ -404,7 +404,7 @@ export default function AdminSurveysInner() {
       showToast('New survey created');
     } else {
       const err = await res.json().catch(() => ({}));
-      showToast(err.error ?? 'Failed to create survey — check admin permissions');
+      showToast(err.error ?? 'Failed to create survey, check admin permissions');
     }
   }
 

@@ -181,12 +181,12 @@ export default function SummitDonationsClient() {
                   <tr key={d.id} style={{ borderBottom: `1px solid ${B.border}` }}>
                     <td style={{ padding: '12px 14px', color: B.text, fontSize: '13px', whiteSpace: 'nowrap' }}>{d.full_name}</td>
                     <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{d.email}</td>
-                    <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', whiteSpace: 'nowrap' }}>{d.phone || '—'}</td>
+                    <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', whiteSpace: 'nowrap' }}>{d.phone || '-'}</td>
                     <td style={{ padding: '12px 14px' }}>
                       <span style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '6px', background: sc.bg, color: sc.color, fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>{sc.label}</span>
                     </td>
-                    <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{d.amount ? naira(Number(d.amount)) : '—'}</td>
-                    <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted, maxWidth: '220px' }}>{d.message || '—'}</td>
+                    <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>{d.amount ? naira(Number(d.amount)) : '-'}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted, maxWidth: '220px' }}>{d.message || '-'}</td>
                     <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '10px', color: B.dim, whiteSpace: 'nowrap' }}>
                       {new Date(d.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>
