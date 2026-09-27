@@ -197,8 +197,8 @@ export default function WatchClient() {
           )}
           {result.state === 'not_paid' && (
             <p style={{ background: '#FFFBEB', color: '#92400E', padding: '0.875rem 1rem', borderRadius: '0.625rem', fontSize: '0.9375rem', marginBottom: '1.5rem' }}>
-              Hi {result.fullName.split(' ')[0]}, we found your registration, but your payment is not confirmed yet, so your spot is not secured. Please{' '}
-              <a href="/elevation-summit#register" style={{ color: '#92400E', textDecoration: 'underline' }}>complete your payment</a>{' '}
+              Hi {result.fullName.split(' ')[0]}, we found your registration, but your ticket is not confirmed yet, so your spot is not secured. Please{' '}
+              <a href="/elevation-summit#register" style={{ color: '#92400E', textDecoration: 'underline' }}>secure your ticket</a>{' '}
               to unlock the livestream, or contact us if you believe this is a mistake.
             </p>
           )}

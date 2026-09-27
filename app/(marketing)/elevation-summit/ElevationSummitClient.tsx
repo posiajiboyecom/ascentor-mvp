@@ -256,7 +256,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
     try {
       if (typeof (window as any).PaystackPop === 'undefined') {
         paymentStarting.current = false;
-        await alert('The payment script is still loading. Please refresh the page and try again.', 'Payment unavailable');
+        await alert('The checkout script is still loading. Please refresh the page and try again.', 'Checkout unavailable');
         return;
       }
 
@@ -282,8 +282,8 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
             openPayment.current = null;
           }
           alert(
-            'You closed the payment window before finishing your purchase. Your registration details are saved, so you can come back and complete payment at any time to secure your spot.',
-            'Payment Not Completed'
+            'You closed the checkout window before finishing. Your registration details are saved, so you can come back and secure your spot at any time.',
+            'Checkout Not Completed'
           );
         },
       });
@@ -315,13 +315,13 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
         const data = await res.json().catch(() => ({} as any));
         await alert(
           "If you were charged, your money is safe. Contact us with the email address you registered with and we'll confirm your registration manually within 24 hours.",
-          "We Couldn't Verify Your Payment"
+          "We Couldn't Verify Your Registration"
         );
       }
     } catch (err) {
       await alert(
         "If you were charged, your money is safe. Contact us with the email address you registered with and we'll confirm your registration manually within 24 hours.",
-        "We Couldn't Verify Your Payment"
+        "We Couldn't Verify Your Registration"
       );
     }
   };
@@ -632,7 +632,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
             <p style={{ gridColumn: '1 / -1', fontSize: '0.8125rem', color: '#9CA3AF', margin: 0 }}>
               {activeTab === 'onsite'
                 ? 'Attending in person, Aderemi Makanjuola Lecture Theatre, Lagos.'
-                : 'Joining virtually. Your join link arrives by email once payment is confirmed.'}
+                : 'Joining virtually. Your join link arrives by email once your ticket is confirmed.'}
             </p>
 
             <div>
@@ -1027,10 +1027,10 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
             </p>
 
             <p style={{ color: '#6B7280', lineHeight: 1.8, fontSize: '0.9375rem', margin: '0 0 2rem' }}>
-              Click Confirm to proceed to secure payment. You'll be redirected
+              Click Confirm to proceed to secure checkout. You'll be redirected
               to <strong style={{ color: '#0F0F0E' }}>Paystack</strong>, our secure
-              third-party payment provider.
-              {pendingPayment.attendanceType === 'virtual' && ' Your join link will be emailed once payment is confirmed.'}
+              third-party checkout partner.
+              {pendingPayment.attendanceType === 'virtual' && ' Your join link will be emailed once your ticket is confirmed.'}
             </p>
 
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -1070,7 +1070,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
       {paymentSuccess && (
         <div
           role="alertdialog"
-          aria-label="Payment confirmed"
+          aria-label="Registration confirmed"
           style={{
             position: 'fixed', inset: 0, zIndex: 10000,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1099,7 +1099,7 @@ export default function ElevationSummitClient({ cms, prices }: { cms: PublishedP
               You're Confirmed
             </h2>
             <p style={{ color: '#6B7280', lineHeight: 1.7, fontSize: '1rem', margin: '0 0 2rem' }}>
-              Your payment was successful and your {paymentSuccess} spot at the
+              Your {paymentSuccess} spot at the
               Elevation Summit is secured. A confirmation email is on its way.
             </p>
             {/* Progress bar doubles as the redirect countdown */}

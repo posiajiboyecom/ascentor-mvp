@@ -10,7 +10,7 @@ export default function SummitConfirmedPage() {
           You are confirmed
         </h1>
         <p style={{ color: '#6B7280', fontSize: '1.0625rem', lineHeight: 1.8, marginBottom: '2rem' }}>
-          Your payment has been received and your place at the Elevation Summit, 19 November 2026, Lagos,
+          Your place at the Elevation Summit, 19 November 2026, Lagos,
           is confirmed. A confirmation email is on its way to your inbox.
         </p>
         <p style={{ color: '#6B7280', fontSize: '1rem', lineHeight: 1.7, marginBottom: '2.5rem' }}>
