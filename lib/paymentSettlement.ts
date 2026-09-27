@@ -453,7 +453,7 @@ export async function settleReference(reference: string): Promise<SettleResult> 
     await notifyAdmins({
       title:   'Payment rejected - needs review',
       message: `Reference ${reference} succeeded at Paystack but failed validation: ${reject}. No access was granted.`,
-      link:    attempt.kind === 'donation' ? '/admin/summit-donations' : '/admin/summit',
+      link:    attempt.kind === 'donation' ? '/admin/summit-donations' : '/admin/summit-payments',
       type:    'payment_alert',
     });
     return { state: 'rejected', reason: reject, attempt };
@@ -486,7 +486,7 @@ export async function settleReference(reference: string): Promise<SettleResult> 
         message: attempt.kind === 'donation'
           ? `${attempt.email ?? 'A donor'} was charged twice for the same donation (ref ${reference}). Please refund one payment in Paystack.`
           : `${attempt.email ?? 'A customer'} paid twice for the same Summit registration (ref ${reference}). Please refund one payment in Paystack.`,
-        link:    attempt.kind === 'donation' ? '/admin/summit-donations' : '/admin/summit',
+        link:    attempt.kind === 'donation' ? '/admin/summit-donations' : '/admin/summit-payments',
         type:    'payment_alert',
       });
     }

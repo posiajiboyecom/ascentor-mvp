@@ -233,7 +233,7 @@ export async function sendAdminPaymentNotification(i: AdminPaidInfo) {
           summaryRow('Amount', naira(i.amountPaid)) +
           summaryRow('Reference', esc(i.reference))
         ) +
-        goldButton('Open registrations', 'https://ascentorbi.com/admin/summit'),
+        goldButton('Open registrations', 'https://ascentorbi.com/admin/summit-payments'),
     }),
   });
 }
@@ -268,7 +268,7 @@ export async function sendAdminAbandonedNotification(i: AdminAbandonedInfo) {
           summaryRow('Ticket price', naira(i.amount)) +
           summaryRow('Reference', esc(i.reference))
         ) +
-        goldButton('Open registrations', 'https://ascentorbi.com/admin/summit'),
+        goldButton('Open registrations', 'https://ascentorbi.com/admin/summit-payments'),
     }),
   });
 }

@@ -1,8 +1,11 @@
 'use client';
 
 // /admin/summit-payments
-// The ONE place to manage Elevation Summit money. Summit tickets only:
-// subscriptions live on /admin/payments and are never mixed in here.
+// THE single page for Elevation Summit registrations: every registrant,
+// onsite or virtual, paid or not, plus the money side of it. Ascentor
+// subscriptions are a completely different product and live on
+// /admin/payments, never mixed in here. (/admin/summit used to be a second,
+// older registrations page; it now just redirects here.)
 //
 // Single source of truth: summit_registrations. A ticket counts as PAID only if
 // payment_status = 'paid'. Each paid row shows whether Paystack recorded a
@@ -119,6 +122,13 @@ export default function SummitPaymentsPage() {
   const [refInput, setRefInput] = useState('');
   const [reminding, setReminding] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+
+  // Bulk email (subject + message to everyone confirmed, or everyone pending)
+  const [emailTargetStatus, setEmailTargetStatus] = useState<'confirmed' | 'pending'>('confirmed');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailResult, setEmailResult] = useState<{ text: string; ok: boolean } | null>(null);
 
   const authed = useCallback(async (input: string, init: RequestInit = {}) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -315,6 +325,35 @@ export default function SummitPaymentsPage() {
     await load();
   };
 
+  const handleEmailBlast = async () => {
+    if (!emailSubject.trim() || !emailMessage.trim()) return;
+    const audienceCount = emailTargetStatus === 'confirmed' ? stats.paid : stats.unpaid;
+    const yes = await confirmAction(
+      `Send this email to all ${audienceCount} ${emailTargetStatus === 'confirmed' ? 'confirmed' : 'not yet confirmed'} registrant${audienceCount === 1 ? '' : 's'}?`,
+      { title: 'Send Email Blast', confirmLabel: 'Send' },
+    );
+    if (!yes) return;
+    setEmailSending(true); setEmailResult(null);
+    try {
+      const res = await fetch('/api/summit/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: emailTargetStatus, subject: emailSubject, message: emailMessage }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEmailResult({ text: `Sent to ${data.sent} registrant${data.sent !== 1 ? 's' : ''}${data.failed > 0 ? ` (${data.failed} failed)` : ''}`, ok: true });
+        setEmailSubject('');
+        setEmailMessage('');
+      } else {
+        setEmailResult({ text: data.error || 'Send failed', ok: false });
+      }
+    } catch (e: any) {
+      setEmailResult({ text: e.message, ok: false });
+    }
+    setEmailSending(false);
+  };
+
   const remove = async (target: Reg) => {
     const isPaid = target.payment_state === 'paid';
     const yes = await confirmAction(
@@ -356,8 +395,8 @@ export default function SummitPaymentsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <p className="ledger-mono" style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0, color: '#8A6A1F' }}>The Elevation Summit · 19 Nov 2026</p>
-          <h1 className="ledger-h1" style={{ fontSize: 26, margin: '2px 0 0' }}>Summit Payments</h1>
-          <p className="ledger-mono" style={{ fontSize: 12, margin: '4px 0 0' }}>Tickets only. Subscription payments are on a separate page.</p>
+          <h1 className="ledger-h1" style={{ fontSize: 26, margin: '2px 0 0' }}>Summit Registrations</h1>
+          <p className="ledger-mono" style={{ fontSize: 12, margin: '4px 0 0' }}>Every Elevation Summit registration, onsite and virtual. Ascentor subscriptions are on a separate page.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {stats.unpaid > 0 && (
@@ -470,6 +509,59 @@ export default function SummitPaymentsPage() {
             style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>Next <ChevronRight size={14} /></button>
         </div>
       )}
+
+      {/* Email every registrant with a given status, the one bulk-messaging tool
+          for Summit registrants (separate from the per-person reminder/resend
+          actions in the row detail panel). */}
+      <div className="rounded-xl ledger-panel" style={{ padding: 20, marginTop: 24 }}>
+        <h2 className="ledger-h2" style={{ fontSize: 15, marginBottom: 4 }}>Email Registrants</h2>
+        <p className="ledger-mono" style={{ fontSize: 11.5, marginBottom: 14 }}>
+          Send a message to everyone confirmed, or everyone not yet confirmed. Use {'{name}'} to personalise.
+        </p>
+
+        <div style={{ display: 'flex', gap: 10, marginBottom: 12, alignItems: 'center' }}>
+          <label className="ledger-mono" style={{ fontSize: 11.5 }}>Send to:</label>
+          <Select
+            ariaLabel="Email audience"
+            value={emailTargetStatus}
+            onValueChange={(v) => setEmailTargetStatus(v as 'confirmed' | 'pending')}
+            options={[
+              { value: 'confirmed', label: `Confirmed (${stats.paid})` },
+              { value: 'pending', label: `Not yet confirmed (${stats.unpaid})` },
+            ]}
+          />
+        </div>
+
+        <input
+          placeholder="Subject line"
+          value={emailSubject}
+          onChange={(e) => setEmailSubject(e.target.value)}
+          style={{ display: 'block', width: '100%', marginBottom: 10, padding: '9px 12px', borderRadius: 8, border: '1px solid var(--ledger-line-strong)', background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', fontSize: 13, fontFamily: 'var(--ledger-font-ui)', outline: 'none', boxSizing: 'border-box' }}
+        />
+        <textarea
+          placeholder={'Hi {name},\n\nThis is a message from the Ascentor team about The Elevation Summit...'}
+          value={emailMessage}
+          onChange={(e) => setEmailMessage(e.target.value)}
+          rows={5}
+          style={{ display: 'block', width: '100%', marginBottom: 12, padding: '9px 12px', borderRadius: 8, border: '1px solid var(--ledger-line-strong)', background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', fontSize: 13, fontFamily: 'var(--ledger-font-ui)', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+        />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="ledger-btn ledger-btn-primary"
+            onClick={handleEmailBlast}
+            disabled={emailSending || !emailSubject.trim() || !emailMessage.trim()}
+          >
+            {emailSending ? 'Sending…' : `Send to ${emailTargetStatus === 'confirmed' ? stats.paid : stats.unpaid} registrant${(emailTargetStatus === 'confirmed' ? stats.paid : stats.unpaid) !== 1 ? 's' : ''}`}
+          </button>
+          {emailResult && (
+            <span className="ledger-mono" style={{ fontSize: 11.5, color: emailResult.ok ? 'var(--ledger-good)' : 'var(--ledger-bad)' }}>
+              {emailResult.text}
+            </span>
+          )}
+        </div>
+      </div>
 
       <OffCanvas
         open={!!open}

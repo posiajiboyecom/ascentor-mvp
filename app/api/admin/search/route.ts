@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
     href: `/admin/payments?q=${encodeURIComponent(a.reference)}`,
   })));
   push('Summit registrations', (summit.data ?? []).map((r: any) => ({
-    title: r.full_name, subtitle: `${r.email} · ${r.payment_status}`, href: `/admin/summit?q=${encodeURIComponent(r.email)}`,
+    title: r.full_name, subtitle: `${r.email} · ${r.payment_status}`, href: `/admin/summit-payments?q=${encodeURIComponent(r.email)}`,
   })));
   push('Courses', (courses.data ?? []).map((c: any) => ({
     title: c.title, subtitle: c.category ?? undefined, href: '/admin/courses',

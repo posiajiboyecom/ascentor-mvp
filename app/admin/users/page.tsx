@@ -1,5 +1,11 @@
 'use client';
 // app/admin/users/page.tsx, THE LEDGER
+// Ascentor platform users only, i.e. people with a profiles row (member/
+// moderator/admin, subscription plan free/explorer/builder/climber). This
+// is NOT Elevation Summit registrants; Ascentor and the Summit are separate
+// products with separate data. Summit registrations live entirely on
+// /admin/summit-payments and never appear here.
+//
 // View-only: search, filter, and inspect user details. Role, permissions
 // and ban/unban are managed exclusively from /admin/permissions (Access
 // Control), never from a casual dropdown on this page. Only "change plan"
@@ -158,7 +164,7 @@ export default function AdminUsersPage() {
           <h1 className="ledger-h1" style={{ fontSize:28, marginBottom:6 }}>
             User Management
           </h1>
-          <p style={{ ...mono }}>{total.toLocaleString()} total users. View only, role and access changes happen in Access Control.</p>
+          <p style={{ ...mono }}>{total.toLocaleString()} Ascentor platform users. View only, role and access changes happen in Access Control. Elevation Summit registrants are on a separate page.</p>
         </div>
       </div>
 
