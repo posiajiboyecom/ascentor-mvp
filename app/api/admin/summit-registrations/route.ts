@@ -18,7 +18,7 @@ import {
   getSummitPricesNaira,
   settleReference,
 } from '@/lib/paymentSettlement';
-import { deliverPaidEmails, sendPaymentReminderEmail } from '@/lib/summitEmails';
+import { deliverPaidEmails, deliverCompTicket, sendPaymentReminderEmail } from '@/lib/summitEmails';
 import { adoptSummitPayments, findCandidateTransactions } from '@/lib/paymentReconciliation';
 import { fetchPaystackTransaction } from '@/lib/paymentSettlement';
 
@@ -145,12 +145,49 @@ export async function POST(req: NextRequest) {
 
     if (action === 'remind_all') return await remindAll();
 
-    if (typeof id !== 'string' || (action !== 'verify' && action !== 'resend' && action !== 'remind')) {
+    if (typeof id !== 'string' || (action !== 'verify' && action !== 'resend' && action !== 'remind' && action !== 'comp')) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
     const { data: reg } = await supabaseAdmin.from('summit_registrations').select('*').eq('id', id).maybeSingle();
     if (!reg) return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
+
+    // Admin issues a ticket without going through Paystack (comp seat). Reuses
+    // the exact same "paid" state everywhere else in the app (livestream gate,
+    // reminders, notify blast) depends on, so nothing else needs to change --
+    // amount_paid stays 0, which the UI shows as "Complimentary" rather than
+    // an amount, and which never inflates gross/net revenue.
+    if (action === 'comp') {
+      if (reg.payment_status === 'paid') {
+        return NextResponse.json({ error: 'Already paid or already issued a ticket.' }, { status: 409 });
+      }
+      const nowIso = new Date().toISOString();
+      const { data: updated, error } = await supabaseAdmin
+        .from('summit_registrations')
+        .update({
+          payment_status: 'paid',
+          status: 'confirmed',
+          amount_paid: 0,
+          currency: reg.currency || 'NGN',
+          paid_at: nowIso,
+          confirmed_at: nowIso,
+          ticket_type: reg.ticket_type || 'complimentary',
+          updated_at: nowIso,
+        })
+        .eq('id', id)
+        .neq('payment_status', 'paid')
+        .select('*')
+        .maybeSingle();
+      if (error || !updated) {
+        console.error('[admin/summit-registrations] comp error:', error?.message);
+        return NextResponse.json({ error: 'Could not issue ticket.' }, { status: 500 });
+      }
+      const sent = await deliverCompTicket(updated);
+      if (!sent) {
+        return NextResponse.json({ error: 'Ticket issued, but the email failed to send. Check SMTP settings and use Resend.' }, { status: 502 });
+      }
+      return NextResponse.json({ ok: true, message: `Complimentary ticket sent to ${updated.email}` });
+    }
 
     if (action === 'resend') {
       if (reg.payment_status !== 'paid') {

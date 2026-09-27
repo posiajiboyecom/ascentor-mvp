@@ -256,7 +256,7 @@ export async function generateSummitTicket(data: TicketData): Promise<Buffer> {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function formatAmount(amount: number, currency: string): string {
-  if (!amount) return 'N/A';
+  if (!amount) return 'Complimentary';
   const symbol = (currency ?? '').toUpperCase() === 'NGN' ? 'NGN ' : `${currency} `;
   return `${symbol}${amount.toLocaleString('en-NG')}`;
 }

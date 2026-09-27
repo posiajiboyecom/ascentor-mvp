@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { SummitRegistration } from '@/database/database';
+import { useModal } from '@/components/Modal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -51,9 +52,13 @@ function estimateFee(amount: number): number {
 }
 const feeOf = (r: Reg) => (r.paystack_fee != null ? Number(r.paystack_fee) : estimateFee(Number(r.amount_paid ?? 0)));
 const naira = (n: number) => `₦${Math.round(n).toLocaleString('en-NG')}`;
+// A "paid" registration with no amount on file is a complimentary ticket the
+// admin issued directly (see the "Send ticket" action), not a real payment.
+const isComp = (r: Reg) => r.payment_state === 'paid' && !Number(r.amount_paid);
 
 export default function SummitAdminClient() {
   const supabase = createClient();
+  const { confirm } = useModal();
   const [regs, setRegs] = useState<Reg[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,14 +152,18 @@ export default function SummitAdminClient() {
     setSavingId(null);
   }
 
-  async function runAction(id: string, action: 'verify' | 'resend') {
+  async function runAction(id: string, action: 'verify' | 'resend' | 'comp') {
+    if (action === 'comp') {
+      const ok = await confirm('Send a free ticket to this person without taking payment?', 'Issue Complimentary Ticket');
+      if (!ok) return;
+    }
     setBusyId(id);
     setActionMsg(null);
     try {
       const res = await authedFetch('POST', { id, action });
       const data = await res.json().catch(() => ({}));
       setActionMsg(data.message || data.error || (res.ok ? 'Done.' : 'Action failed.'));
-      if (action === 'verify') await load();
+      if (action === 'verify' || action === 'comp') await load();
     } catch {
       setActionMsg('Action failed.');
     }
@@ -391,13 +400,15 @@ export default function SummitAdminClient() {
                       <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted }}>{r.location}</td>
                       <td style={{ padding: '12px 14px', fontSize: '12px', color: B.muted, maxWidth: '160px' }}>{r.organisation || '—'}</td>
                       <td style={{ padding: '12px 14px' }}>
-                        <span style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '6px', background: sc.bg, color: sc.color, fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>{sc.label}</span>
+                        <span style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '6px', background: isComp(r) ? '#EDE9FE' : sc.bg, color: isComp(r) ? '#5B21B6' : sc.color, fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          {isComp(r) ? 'Complimentary' : sc.label}
+                        </span>
                       </td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.muted }}>
                         {r.payment_state === 'paid' ? formatAmount(r.amount_paid, r.currency) : '—'}
                       </td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '11px', color: B.dim }}>
-                        {r.payment_state === 'paid' ? naira(feeOf(r)) : '—'}
+                        {r.payment_state === 'paid' && !isComp(r) ? naira(feeOf(r)) : '—'}
                       </td>
                       <td style={{ padding: '12px 14px', fontFamily: B.fontMono, fontSize: '10px', color: B.dim, whiteSpace: 'nowrap' }}>
                         {r.paid_at ? new Date(r.paid_at).toLocaleDateString() : '—'}
@@ -443,16 +454,22 @@ export default function SummitAdminClient() {
 
                             <div>
                               <p style={{ fontFamily: B.fontMono, fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: B.gold, margin: '0 0 10px' }}>Registration</p>
-                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Payment: </span>{sc.label}{r.attempt_count ? ` (${r.attempt_count} attempt${r.attempt_count === 1 ? '' : 's'})` : ''}</p>
+                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Payment: </span>{isComp(r) ? 'Complimentary (no payment taken)' : sc.label}{r.attempt_count ? ` (${r.attempt_count} attempt${r.attempt_count === 1 ? '' : 's'})` : ''}</p>
                               {r.payment_state === 'paid' && (
                                 <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Ticket email: </span>{r.confirmation_email_sent_at ? `sent ${new Date(r.confirmation_email_sent_at).toLocaleString()}` : r.confirmation_email_error ? 'FAILED, use Resend' : 'not recorded, use Resend if unsure'}</p>
                               )}
                               <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
                                 {r.payment_state !== 'paid' && (
-                                  <button onClick={() => runAction(r.id, 'verify')} disabled={busyId === r.id}
-                                    style={{ padding: '5px 12px', borderRadius: '6px', border: `1px solid ${B.gold}`, background: 'transparent', color: B.gold, fontSize: '11px', cursor: 'pointer', fontFamily: B.fontUI }}>
-                                    {busyId === r.id ? 'Checking…' : 'Verify with Paystack'}
-                                  </button>
+                                  <>
+                                    <button onClick={() => runAction(r.id, 'verify')} disabled={busyId === r.id}
+                                      style={{ padding: '5px 12px', borderRadius: '6px', border: `1px solid ${B.gold}`, background: 'transparent', color: B.gold, fontSize: '11px', cursor: 'pointer', fontFamily: B.fontUI }}>
+                                      {busyId === r.id ? 'Checking…' : 'Verify with Paystack'}
+                                    </button>
+                                    <button onClick={() => runAction(r.id, 'comp')} disabled={busyId === r.id}
+                                      style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #8B5CF6', background: 'transparent', color: '#8B5CF6', fontSize: '11px', cursor: 'pointer', fontFamily: B.fontUI }}>
+                                      {busyId === r.id ? 'Sending…' : 'Send ticket (no payment)'}
+                                    </button>
+                                  </>
                                 )}
                                 {r.payment_state === 'paid' && (
                                   <button onClick={() => runAction(r.id, 'resend')} disabled={busyId === r.id}
@@ -461,7 +478,7 @@ export default function SummitAdminClient() {
                                   </button>
                                 )}
                               </div>
-                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Amount: </span>{formatAmount(r.amount_paid, r.currency)}</p>
+                              <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Amount: </span>{isComp(r) ? 'Complimentary' : formatAmount(r.amount_paid, r.currency)}</p>
                               <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Consent: </span>{r.consent ? 'Yes' : 'No'}</p>
                               <p style={{ margin: '0 0 5px', fontSize: '12px', color: B.muted }}><span style={{ color: B.dim, fontFamily: B.fontMono, fontSize: '10px' }}>Ref: </span>{r.payment_reference || '—'}</p>
                             </div>

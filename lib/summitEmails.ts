@@ -338,3 +338,192 @@ export async function deliverPaidEmails(
   }
   return out;
 }
+
+// ── Complimentary ticket (admin-issued, no payment taken) ──────────────────
+// Used by the "Send ticket" admin action for a registrant the team wants to
+// let in without going through Paystack. Same PDF ticket as a paid
+// confirmation, different copy (never claims a payment was received).
+
+export async function sendComplimentaryTicketEmail(ticketData: TicketData) {
+  const { email, fullName, attendanceType } = ticketData;
+  const isVirtual = attendanceType === 'virtual';
+
+  let pdfBuffer: Buffer | null = null;
+  try {
+    pdfBuffer = await generateSummitTicket(ticketData);
+  } catch (err) {
+    console.error('[summitTicket] PDF generation failed:', err);
+  }
+
+  await sendSummitMail({
+    to: email,
+    subject: 'Your Elevation Summit ticket is confirmed',
+    html: brandedEmailLayout({
+      preheader: 'Your ticket is attached.',
+      eyebrow: 'Elevation Summit · 19 November 2026',
+      heading: "You're confirmed.",
+      recipient: email,
+      content:
+        p(`Hi ${esc(fullName)},`) +
+        p(`Your <strong>${isVirtual ? 'virtual' : 'onsite'} place</strong> at the Elevation Summit is confirmed. ${pdfBuffer ? 'Your admission ticket is attached to this email as a PDF.' : 'Your admission ticket will follow shortly.'}`) +
+        summaryBox(
+          summaryRow('Attendance', isVirtual ? 'Virtual' : 'Onsite, Lagos') +
+          summaryRow('Date', '19 November 2026') +
+          summaryRow('Status', '<span style="color:#C8A96E;">Confirmed, Complimentary</span>')
+        ) +
+        (isVirtual
+          ? p('Your Zoom link for the virtual session will be shared with you separately closer to the event date. Keep an eye on your inbox.')
+          : p('Venue details will follow closer to the event date.')) +
+        p('Please keep your ticket safe and present it on the day of the event. We look forward to seeing you there.') +
+        goldButton('View Event Details →', SUMMIT_URL),
+    }),
+    ...(pdfBuffer ? {
+      attachments: [{
+        filename: 'Elevation-Summit-2026-Ticket.pdf',
+        content: pdfBuffer,
+        contentType: 'application/pdf',
+      }],
+    } : {}),
+  });
+}
+
+/** Sends a complimentary ticket to a registration that has not paid, and tracks delivery. Never throws. */
+export async function deliverCompTicket(reg: Record<string, any>): Promise<boolean> {
+  try {
+    await sendComplimentaryTicketEmail({
+      email:          reg.email,
+      fullName:       reg.full_name,
+      whatsapp:       reg.whatsapp ?? '',
+      organisation:   reg.organisation ?? '',
+      attendanceType: reg.attendance_type === 'virtual' ? 'virtual' : 'onsite',
+      amountPaid:     0,
+      currency:       reg.currency || 'NGN',
+      registrationId: String(reg.id),
+    });
+    await markRegistration(reg.id, { confirmation_email_sent_at: new Date().toISOString(), confirmation_email_error: null });
+    return true;
+  } catch (err) {
+    console.error('[summitEmails] complimentary ticket failed:', err);
+    await markRegistration(reg.id, { confirmation_email_error: String((err as Error).message).slice(0, 300) });
+    return false;
+  }
+}
+
+// ── Donations (/donate page) ────────────────────────────────────────────────
+// Captured through the same payment_attempts + settleReference flow as Summit
+// tickets and subscriptions (kind = 'donation'), settled exactly once.
+
+export interface DonationReceiptInfo {
+  full_name: string;
+  email:     string;
+  amount:    number;
+  currency:  string;
+  reference: string;
+}
+
+export async function sendDonationReceiptEmail(d: DonationReceiptInfo) {
+  await sendSummitMail({
+    to: d.email,
+    subject: 'Thank you for your donation to Ascentor',
+    html: brandedEmailLayout({
+      preheader: 'Your donation has been received. Thank you for standing with us.',
+      eyebrow: 'Ascentor · The Elevation Summit',
+      heading: 'Thank you for your generosity.',
+      recipient: d.email,
+      content:
+        p(`Hi ${esc(d.full_name)},`) +
+        p('We have received your donation in support of Ascentor and The Elevation Summit. Every contribution helps us build the room and the community for the next generation of purposeful leaders.') +
+        summaryBox(
+          summaryRow('Amount', naira(d.amount)) +
+          summaryRow('Reference', esc(d.reference)) +
+          summaryRow('Status', '<span style="color:#C8A96E;">Received</span>')
+        ) +
+        p('This email serves as your receipt. Thank you for standing with us.') +
+        goldButton('Visit The Elevation Summit →', SUMMIT_URL),
+    }),
+  });
+}
+
+export interface AdminDonationInfo {
+  fullName: string;
+  email:    string;
+  phone:    string;
+  amount:   number;
+  reference: string;
+  message?: string | null;
+}
+
+export async function sendAdminDonationNotification(i: AdminDonationInfo) {
+  await sendSummitMail({
+    to: SUMMIT_ADMIN_EMAIL,
+    subject: `New donation received: ${naira(i.amount)} from ${i.fullName}`,
+    html: brandedEmailLayout({
+      preheader: `${i.fullName} donated ${naira(i.amount)}.`,
+      eyebrow: 'Admin Notification',
+      heading: 'New donation received.',
+      recipient: SUMMIT_ADMIN_EMAIL,
+      content:
+        p('A new donation has been received through the donate page.') +
+        summaryBox(
+          summaryRow('Name', esc(i.fullName)) +
+          summaryRow('Email', esc(i.email)) +
+          summaryRow('Phone', esc(i.phone) || '<span style="color:#EF4444;">not captured</span>') +
+          summaryRow('Amount', naira(i.amount)) +
+          summaryRow('Reference', esc(i.reference)) +
+          (i.message ? summaryRow('Message', esc(i.message)) : '')
+        ) +
+        goldButton('Open donations', 'https://ascentorbi.com/admin/summit-donations'),
+    }),
+  });
+}
+
+/** Best-effort: silently ignored if the tracking columns have not been migrated yet. */
+async function markDonation(id: string, patch: Record<string, unknown>) {
+  try {
+    await supabaseAdmin.from('summit_donations').update(patch).eq('id', id);
+  } catch { /* tracking is optional */ }
+}
+
+/**
+ * Sends the donor receipt and the admin alert INDEPENDENTLY so one failing
+ * never blocks the other, and records what was delivered. Never throws.
+ */
+export async function deliverDonationEmails(
+  donation: Record<string, any>,
+): Promise<{ donor: boolean | null; admin: boolean | null }> {
+  const out: { donor: boolean | null; admin: boolean | null } = { donor: null, admin: null };
+
+  try {
+    await sendDonationReceiptEmail({
+      full_name: donation.full_name,
+      email:     donation.email,
+      amount:    Number(donation.amount) || 0,
+      currency:  donation.currency || 'NGN',
+      reference: donation.payment_reference || '',
+    });
+    out.donor = true;
+    await markDonation(donation.id, { receipt_email_sent_at: new Date().toISOString(), receipt_email_error: null });
+  } catch (err) {
+    out.donor = false;
+    console.error('[summitEmails] donation receipt failed:', err);
+    await markDonation(donation.id, { receipt_email_error: String((err as Error).message).slice(0, 300) });
+  }
+
+  try {
+    await sendAdminDonationNotification({
+      fullName: donation.full_name,
+      email:    donation.email,
+      phone:    donation.phone,
+      amount:   Number(donation.amount) || 0,
+      reference: donation.payment_reference || '',
+      message:  donation.message,
+    });
+    out.admin = true;
+    await markDonation(donation.id, { admin_notified_at: new Date().toISOString() });
+  } catch (err) {
+    out.admin = false;
+    console.error('[summitEmails] admin donation notification failed:', err);
+  }
+
+  return out;
+}

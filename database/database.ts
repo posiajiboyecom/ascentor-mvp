@@ -450,6 +450,26 @@ export interface SummitRegistration {
   updated_at:       string;
 }
 
+export interface SummitDonation {
+  id:                     string;
+  full_name:              string;
+  email:                  string;
+  phone:                  string;
+  amount:                 number | null;
+  currency:               string;
+  payment_reference:      string | null;
+  payment_provider_tx_id: string | null;
+  paystack_fee:           number | null;
+  status:                 'pending' | 'paid' | 'failed' | 'abandoned';
+  message:                string | null;
+  paid_at:                string | null;
+  receipt_email_sent_at:  string | null;
+  receipt_email_error:    string | null;
+  admin_notified_at:      string | null;
+  created_at:             string;
+  updated_at:             string;
+}
+
 export interface JobListing {
   id:           string;
   title:        string;
@@ -724,6 +744,7 @@ type TableMap = {
   products:                 Product;
   product_purchases:        ProductPurchase;
   summit_registrations:     SummitRegistration;
+  summit_donations:         SummitDonation;
   job_listings:             JobListing;
   mentor_applications:      MentorApplication;
   lead_magnets:             LeadMagnet;

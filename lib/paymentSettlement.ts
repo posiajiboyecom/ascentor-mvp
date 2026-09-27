@@ -25,11 +25,11 @@
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { PLAN_PRICING_MAP } from '@/lib/pricing';
-import { deliverPaidEmails } from '@/lib/summitEmails';
+import { deliverPaidEmails, deliverDonationEmails } from '@/lib/summitEmails';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type AttemptKind = 'subscription' | 'summit';
+export type AttemptKind = 'subscription' | 'summit' | 'donation';
 export type AttemptStatus = 'pending' | 'success' | 'failed' | 'abandoned' | 'duplicate';
 
 export interface PaymentAttempt {
@@ -41,6 +41,7 @@ export interface PaymentAttempt {
   plan_id:         string | null;
   billing:         string | null;
   registration_id: string | null;
+  donation_id:     string | null;
   email:           string | null;
   amount_kobo:     number | null;
   currency:        string | null;
@@ -128,7 +129,7 @@ export async function fetchPaystackTransaction(reference: string): Promise<Payst
 // ── Attempts ─────────────────────────────────────────────────────────────────
 
 const ATTEMPT_COLUMNS =
-  'id, reference, kind, status, user_id, plan_id, billing, registration_id, email, amount_kobo, currency, created_at, recovery_sent_at, admin_notified_at';
+  'id, reference, kind, status, user_id, plan_id, billing, registration_id, donation_id, email, amount_kobo, currency, created_at, recovery_sent_at, admin_notified_at';
 
 export async function getAttemptByReference(reference: string): Promise<PaymentAttempt | null> {
   const { data, error } = await supabaseAdmin
@@ -149,6 +150,7 @@ export async function createAttempt(input: {
   planId?:         string | null;
   billing?:        string | null;
   registrationId?: string | null;
+  donationId?:     string | null;
 }): Promise<void> {
   const { error } = await supabaseAdmin.from('payment_attempts').insert({
     reference:       input.reference,
@@ -158,6 +160,7 @@ export async function createAttempt(input: {
     plan_id:         input.planId ?? null,
     billing:         input.billing ?? null,
     registration_id: input.registrationId ?? null,
+    donation_id:     input.donationId ?? null,
     email:           input.email,
     amount_kobo:     input.amountKobo,
     currency:        'NGN',
@@ -279,6 +282,43 @@ async function fulfilSummit(attempt: PaymentAttempt, tx: PaystackTransaction): P
   // Claim winner only. Customer + admin emails are independent and tracked;
   // failures never undo a paid ticket and are retried by reconciliation / admin Resend.
   await deliverPaidEmails(registration, tx.amount / 100, tx.currency ?? 'NGN', attempt.reference);
+  return 'fulfilled';
+}
+
+async function fulfilDonation(attempt: PaymentAttempt, tx: PaystackTransaction): Promise<FulfilOutcome> {
+  if (!attempt.donation_id) throw new Error('Donation attempt has no donation_id');
+
+  const nowIso = new Date().toISOString();
+  const { data: rows, error } = await supabaseAdmin
+    .from('summit_donations')
+    .update({
+      status:                 'paid',
+      payment_reference:      attempt.reference,
+      payment_provider_tx_id: String(tx.id),
+      amount:                 tx.amount / 100,
+      currency:               tx.currency,
+      paid_at:                nowIso,
+      updated_at:             nowIso,
+    })
+    .eq('id', attempt.donation_id)
+    .neq('status', 'paid')
+    .select('*');
+  if (error) throw new Error(`summit_donations update failed: ${error.message}`);
+
+  const donation = rows?.[0];
+  if (!donation) {
+    // Already paid (customer paid twice) or the row no longer exists.
+    return 'duplicate';
+  }
+
+  if (tx.fees != null) {
+    try {
+      await supabaseAdmin.from('summit_donations')
+        .update({ paystack_fee: tx.fees / 100 }).eq('id', donation.id);
+    } catch { /* column not migrated yet */ }
+  }
+
+  await deliverDonationEmails(donation);
   return 'fulfilled';
 }
 
@@ -413,7 +453,7 @@ export async function settleReference(reference: string): Promise<SettleResult> 
     await notifyAdmins({
       title:   'Payment rejected - needs review',
       message: `Reference ${reference} succeeded at Paystack but failed validation: ${reject}. No access was granted.`,
-      link:    '/admin/summit',
+      link:    attempt.kind === 'donation' ? '/admin/summit-donations' : '/admin/summit',
       type:    'payment_alert',
     });
     return { state: 'rejected', reason: reject, attempt };
@@ -435,14 +475,18 @@ export async function settleReference(reference: string): Promise<SettleResult> 
   try {
     const outcome = attempt.kind === 'summit'
       ? await fulfilSummit(attempt, tx)
+      : attempt.kind === 'donation'
+      ? await fulfilDonation(attempt, tx)
       : await fulfilSubscription(attempt, tx);
 
     if (outcome === 'duplicate') {
-      await setAttemptStatus(reference, ['success'], { status: 'duplicate', failure_reason: 'registration already paid' });
+      await setAttemptStatus(reference, ['success'], { status: 'duplicate', failure_reason: `${attempt.kind} already paid` });
       await notifyAdmins({
         title:   'Duplicate payment - refund needed',
-        message: `${attempt.email ?? 'A customer'} paid twice for the same Summit registration (ref ${reference}). Please refund one payment in Paystack.`,
-        link:    '/admin/summit',
+        message: attempt.kind === 'donation'
+          ? `${attempt.email ?? 'A donor'} was charged twice for the same donation (ref ${reference}). Please refund one payment in Paystack.`
+          : `${attempt.email ?? 'A customer'} paid twice for the same Summit registration (ref ${reference}). Please refund one payment in Paystack.`,
+        link:    attempt.kind === 'donation' ? '/admin/summit-donations' : '/admin/summit',
         type:    'payment_alert',
       });
     }
