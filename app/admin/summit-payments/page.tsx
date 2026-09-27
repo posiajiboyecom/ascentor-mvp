@@ -73,19 +73,19 @@ const EMPTY_STATS: Stats = {
 const PAGE_SIZE = 25;
 
 const STATE: Record<PayState, { label: string; bg: string; fg: string }> = {
-  paid:        { label: 'Confirmed',            bg: 'rgba(34,160,90,.15)',   fg: '#177245' },
-  in_progress: { label: 'Paying now',           bg: 'rgba(60,120,220,.15)',  fg: '#2453A6' },
-  abandoned:   { label: 'Left at payment',      bg: 'rgba(220,60,60,.13)',   fg: '#A32626' },
-  not_started: { label: 'Registered, not paid', bg: 'rgba(200,169,110,.22)', fg: '#8A6A1F' },
+  paid:        { label: 'Confirmed',        bg: 'rgba(34,160,90,.15)',   fg: '#177245' },
+  in_progress: { label: 'Checking out',     bg: 'rgba(60,120,220,.15)',  fg: '#2453A6' },
+  abandoned:   { label: 'Checkout abandoned', bg: 'rgba(220,60,60,.13)', fg: '#A32626' },
+  not_started: { label: 'Registered',       bg: 'rgba(200,169,110,.22)', fg: '#8A6A1F' },
 };
 
 const STATE_FILTERS: { key: StateFilter; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'paid', label: 'Confirmed' },
-  { key: 'unpaid', label: 'Pending' },
-  { key: 'abandoned', label: 'Left at payment' },
-  { key: 'not_started', label: 'Not started' },
-  { key: 'in_progress', label: 'Paying now' },
+  { key: 'unpaid', label: 'Not yet confirmed' },
+  { key: 'abandoned', label: 'Checkout abandoned' },
+  { key: 'not_started', label: 'Just registered' },
+  { key: 'in_progress', label: 'Checking out' },
 ];
 
 const naira = (n: number) => `₦${Math.round(n).toLocaleString('en-NG')}`;
@@ -106,7 +106,7 @@ export default function SummitPaymentsPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
-  const [stateFilter, setStateFilter] = useState<StateFilter>('paid'); // land on confirmed payments only
+  const [stateFilter, setStateFilter] = useState<StateFilter>('all'); // show every registration, confirmed or not, by default
   const [type, setType] = useState<TypeFilter>('all');
   const [debounced, setDebounced] = useState('');
 
@@ -195,14 +195,14 @@ export default function SummitPaymentsPage() {
       doc.setTextColor(200, 169, 110); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
       doc.text('ASCENTOR  ·  THE ELEVATION SUMMIT  ·  19 NOVEMBER 2026', 36, 26);
       doc.setTextColor(255, 255, 255); doc.setFontSize(18);
-      doc.text('Summit Payments Report', 36, 48);
+      doc.text('Summit Registrations Report', 36, 48);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(200, 200, 200);
       doc.text(`Generated ${stamp.toLocaleString('en-GB')}`, W - 36, 48, { align: 'right' });
 
       // Filters applied
       const stateLabel: Record<StateFilter, string> = {
-        all: 'All statuses', paid: 'Confirmed (paid)', unpaid: 'Pending (not paid)',
-        abandoned: 'Left at payment', not_started: 'Registered, not paid', in_progress: 'Paying now',
+        all: 'All statuses', paid: 'Confirmed', unpaid: 'Not yet confirmed',
+        abandoned: 'Checkout abandoned', not_started: 'Just registered', in_progress: 'Checking out',
       };
       const typeLabel: Record<TypeFilter, string> = { all: 'Physical + Virtual', onsite: 'Physical only', virtual: 'Virtual only' };
       doc.setTextColor(90, 90, 90); doc.setFontSize(9);
@@ -215,9 +215,9 @@ export default function SummitPaymentsPage() {
       const cards: [string, string][] = [
         ['Confirmed tickets', `${st.paid}  (${st.physicalPaid} physical / ${st.virtualPaid} virtual)`],
         ['Gross revenue', naira(st.gross)],
-        [st.feesEstimated ? 'Paystack fees (est.)' : 'Paystack fees', naira(st.fees)],
+        [st.feesEstimated ? 'Processing fees (est.)' : 'Processing fees', naira(st.fees)],
         ['Net revenue', naira(st.net)],
-        ['Not paid yet', String(st.unpaid)],
+        ['Not yet confirmed', String(st.unpaid)],
       ];
       const cw = (W - 72 - 4 * 10) / 5;
       cards.forEach(([k, v], i) => {
@@ -230,7 +230,7 @@ export default function SummitPaymentsPage() {
 
       autoTable(doc, {
         startY: 158,
-        head: [['#', 'Name', 'Email', 'Phone', 'Ticket', 'Status', 'Amount', 'Fee', 'Net', 'Paid on', 'Reference']],
+        head: [['#', 'Name', 'Email', 'Phone', 'Ticket', 'Status', 'Amount', 'Fee', 'Net', 'Confirmed on', 'Reference']],
         body: list.map((r, i) => {
           const amt = num(r.amount_paid);
           const isPaid = r.payment_state === 'paid';
@@ -257,7 +257,7 @@ export default function SummitPaymentsPage() {
         },
       });
 
-      doc.save(`elevation-summit-payments-${stamp.toISOString().slice(0, 10)}.pdf`);
+      doc.save(`elevation-summit-registrations-${stamp.toISOString().slice(0, 10)}.pdf`);
       setNote(`PDF downloaded with ${list.length} record${list.length === 1 ? '' : 's'}.`);
     } catch (e) {
       setNote((e as Error).message);
@@ -291,7 +291,7 @@ export default function SummitPaymentsPage() {
   const compTicket = async () => {
     if (!open) return;
     const yes = await confirmAction(
-      `Issue a complimentary ticket to ${open.full_name} without taking payment? A ticket will be emailed to ${open.email} right away, and this cannot be undone from here.`,
+      `Issue a complimentary ticket to ${open.full_name} without requiring checkout? A ticket will be emailed to ${open.email} right away, and this cannot be undone from here.`,
       { title: 'Issue Complimentary Ticket', confirmLabel: 'Send ticket' },
     );
     if (!yes) return;
@@ -313,7 +313,7 @@ export default function SummitPaymentsPage() {
 
   const remindAll = async () => {
     const yes = await confirmAction(
-      `Send a payment reminder email to all ${stats.unpaid} people who have not paid? Anyone reminded in the last 24 hours is skipped.`,
+      `Send a reminder email to all ${stats.unpaid} people who are not yet confirmed? Anyone reminded in the last 24 hours is skipped.`,
       { confirmLabel: 'Send reminders' },
     );
     if (!yes) return;
@@ -358,7 +358,7 @@ export default function SummitPaymentsPage() {
     const isPaid = target.payment_state === 'paid';
     const yes = await confirmAction(
       isPaid
-        ? `Delete the PAID registration of ${target.full_name} (${naira(num(target.amount_paid))})? This permanently removes it and its revenue. Only do this for test data.`
+        ? `Delete the CONFIRMED registration of ${target.full_name} (${naira(num(target.amount_paid))})? This permanently removes it and its revenue. Only do this for test data.`
         : `Delete the registration of ${target.full_name}? Only do this for test data.`,
       { confirmLabel: 'Delete permanently', danger: true },
     );
@@ -401,8 +401,8 @@ export default function SummitPaymentsPage() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {stats.unpaid > 0 && (
             <button type="button" className="ledger-btn ledger-btn-ghost" onClick={remindAll} disabled={reminding}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Email a payment reminder to everyone who has not paid">
-              <BellRing size={14} /> {reminding ? 'Sending…' : `Remind all pending (${stats.unpaid})`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Email everyone who is not yet confirmed">
+              <BellRing size={14} /> {reminding ? 'Sending…' : `Remind all not yet confirmed (${stats.unpaid})`}
             </button>
           )}
           <button type="button" className="ledger-btn ledger-btn-ghost" onClick={downloadPdf} disabled={exporting}
@@ -413,7 +413,7 @@ export default function SummitPaymentsPage() {
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
           </button>
           <button type="button" className="ledger-btn ledger-btn-primary" onClick={reconcile} disabled={running} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-            title="Ask Paystack about every unfinished Summit payment and confirm any that were actually paid">
+            title="Ask Paystack to reconcile every unconfirmed Summit registration">
             <RotateCw size={14} className={running ? 'animate-spin' : ''} /> {running ? 'Checking Paystack…' : 'Check Paystack now'}
           </button>
         </div>
@@ -422,14 +422,14 @@ export default function SummitPaymentsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 14 }}>
         <Card title="Confirmed tickets" value={String(stats.paid)} sub={`${stats.physicalPaid} physical · ${stats.virtualPaid} virtual`} accent="#177245" />
         <Card title="Gross revenue" value={naira(stats.gross)} sub="what customers paid" accent="#C8A96E" />
-        <Card title="Paystack fees" value={naira(stats.fees)} sub={stats.feesEstimated ? 'estimated' : 'from Paystack'} accent="#A32626" />
-        <Card title="Net revenue" value={naira(stats.net)} sub="after Paystack fees" accent="#177245" />
-        <Card title="Pending" value={String(stats.unpaid)} sub={`${stats.abandoned} left at payment`} accent="#8A6A1F" />
+        <Card title="Processing fees" value={naira(stats.fees)} sub={stats.feesEstimated ? 'estimated' : 'from Paystack'} accent="#A32626" />
+        <Card title="Net revenue" value={naira(stats.net)} sub="after processing fees" accent="#177245" />
+        <Card title="Not yet confirmed" value={String(stats.unpaid)} sub={`${stats.abandoned} checkout abandoned`} accent="#8A6A1F" />
       </div>
 
       {stats.unverified > 0 && (
         <div className="rounded-lg p-3 mb-3 text-xs" style={{ background: 'var(--ledger-bad-bg)', color: 'var(--ledger-bad)' }}>
-          {stats.unverified} confirmed ticket{stats.unverified === 1 ? ' has' : 's have'} no Paystack transaction id, so {stats.unverified === 1 ? 'it was' : 'they were'} not confirmed by a real payment. Open {stats.unverified === 1 ? 'it' : 'them'} to check.
+          {stats.unverified} confirmed ticket{stats.unverified === 1 ? ' has' : 's have'} no Paystack transaction id, so {stats.unverified === 1 ? 'it was' : 'they were'} not confirmed by a real Paystack transaction. Open {stats.unverified === 1 ? 'it' : 'them'} to check.
         </div>
       )}
 
@@ -584,13 +584,13 @@ export default function SummitPaymentsPage() {
             ) : (
               <>
                 <button type="button" disabled={busy} onClick={remind} className="ledger-btn ledger-btn-primary" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
-                  <BellRing size={14} /> {busy ? 'Sending…' : 'Send payment reminder email'}
+                  <BellRing size={14} /> {busy ? 'Sending…' : 'Send reminder email'}
                 </button>
                 <button type="button" disabled={busy} onClick={() => act('verify', refInput.trim() ? { reference: refInput.trim() } : {})} className="ledger-btn ledger-btn-ghost" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
                   <ShieldCheck size={14} /> {busy ? 'Checking…' : 'Check Paystack for this person'}
                 </button>
                 <button type="button" disabled={busy} onClick={compTicket} className="ledger-btn ledger-btn-ghost" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
-                  <TicketCheck size={14} /> {busy ? 'Sending…' : 'Confirm + send ticket (no payment)'}
+                  <TicketCheck size={14} /> {busy ? 'Sending…' : 'Confirm + send ticket (no checkout)'}
                 </button>
               </>
             )}
@@ -628,12 +628,12 @@ export default function SummitPaymentsPage() {
 
               {isPaid ? (
                 <>
-                  <div><p style={lab}>Paid</p><p style={val}>{when(open.paid_at)}</p></div>
-                  <div><p style={lab}>Paystack fee</p><p style={val}>{naira(feeOf(open))}{open.paystack_fee == null ? ' (estimated)' : ''} · net {naira(num(open.amount_paid) - feeOf(open))}</p></div>
+                  <div><p style={lab}>Confirmed</p><p style={val}>{when(open.paid_at)}</p></div>
+                  <div><p style={lab}>Processing fee</p><p style={val}>{naira(feeOf(open))}{open.paystack_fee == null ? ' (estimated)' : ''} · net {naira(num(open.amount_paid) - feeOf(open))}</p></div>
                   <div>
                     <p style={lab}>Paystack transaction</p>
                     <p style={{ ...val, color: open.payment_provider_tx_id ? undefined : 'var(--ledger-bad)' }}>
-                      {open.payment_provider_tx_id ? `#${open.payment_provider_tx_id}` : 'None recorded. Not confirmed by a real payment.'}
+                      {open.payment_provider_tx_id ? `#${open.payment_provider_tx_id}` : 'None recorded. Not confirmed by a real Paystack transaction.'}
                     </p>
                   </div>
                   <div>
@@ -647,7 +647,7 @@ export default function SummitPaymentsPage() {
                 </>
               ) : (
                 <>
-                  <div><p style={lab}>Payment attempts</p><p style={val}>{open.attempt_count === 0 ? 'Never reached the payment step.' : `${open.attempt_count} started, none completed.`}</p></div>
+                  <div><p style={lab}>Checkout attempts</p><p style={val}>{open.attempt_count === 0 ? 'Never reached checkout.' : `${open.attempt_count} started, none completed.`}</p></div>
                   <div>
                     <p style={lab}>Last reminder</p>
                     <p style={val}>{open.reminder_sent_at ? `${when(open.reminder_sent_at)} (${open.reminder_count ?? 1} sent)` : 'Never reminded'}</p>
@@ -662,28 +662,28 @@ export default function SummitPaymentsPage() {
                     </a>
                   )}
                   <div>
-                    <p style={lab}>Already paid? Paste the Paystack reference (optional)</p>
+                    <p style={lab}>Already checked out? Paste the Paystack reference (optional)</p>
                     <input
                       value={refInput} onChange={e => setRefInput(e.target.value)} placeholder="Reference from the Paystack dashboard"
                       style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--ledger-line-strong)', background: 'var(--ledger-bg-input)', color: 'var(--ledger-ink)', fontSize: 13, fontFamily: 'var(--ledger-font-mono, monospace)' }}
                     />
                     <p style={{ fontSize: 11.5, color: 'var(--ledger-ink-soft)', margin: '5px 0 0' }}>
-                      Use this when the person paid with a different email. Paystack is asked to confirm it before anything changes.
+                      Use this when the person checked out with a different email. Paystack is asked to confirm it before anything changes.
                     </p>
                   </div>
 
                   {candidates.length > 0 && (
                     <div>
-                      <p style={lab}>Unmatched Paystack payments of at least this amount</p>
+                      <p style={lab}>Unmatched Paystack transactions of at least this amount</p>
                       <p style={{ fontSize: 11.5, color: 'var(--ledger-ink-soft)', margin: '0 0 8px' }}>
-                        None of these are linked to anyone yet. If one is this person&apos;s payment, confirm it.
+                        None of these are linked to anyone yet. If one is this person&apos;s, confirm it.
                       </p>
                       <div style={{ display: 'grid', gap: 6 }}>
                         {candidates.map(c => (
                           <button key={c.reference} type="button" disabled={busy} onClick={async () => {
                             const yes = await confirmAction(
-                              `Confirm this ${naira(c.amountKobo / 100)} payment${c.email ? ` (${c.email})` : ''} as ${open.full_name}'s ticket?`,
-                              { title: 'Confirm Payment Match', confirmLabel: 'Confirm match' },
+                              `Confirm this ${naira(c.amountKobo / 100)} transaction${c.email ? ` (${c.email})` : ''} as ${open.full_name}'s ticket?`,
+                              { title: 'Confirm Match', confirmLabel: 'Confirm match' },
                             );
                             if (yes) await act('verify', { reference: c.reference });
                           }}
