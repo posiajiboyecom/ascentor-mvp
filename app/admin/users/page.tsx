@@ -4,7 +4,7 @@
 // moderator/admin, subscription plan free/explorer/builder/climber). This
 // is NOT Elevation Summit registrants; Ascentor and the Summit are separate
 // products with separate data. Summit registrations live entirely on
-// /admin/summit-payments and never appear here.
+// /admin/elevation-summit/registrations and never appear here.
 //
 // View-only: search, filter, and inspect user details. Role, permissions
 // and ban/unban are managed exclusively from /admin/permissions (Access

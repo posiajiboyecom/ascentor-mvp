@@ -175,22 +175,24 @@ funnel through [`lib/paymentSettlement.ts`](lib/paymentSettlement.ts):
 **Abandoned checkouts.** Paystack sends no "abandoned" event, so a daily cron
 (`/api/cron/reconcile-payments`, see `vercel.json`) re-checks pending attempts,
 recovers payments whose webhook was lost, marks stale ones abandoned, emails
-admins one digest, and sends the customer a recovery link. Admins can also run
-it on demand from **Admin → Summit Payments → Check Paystack now**. The same
-sweep adopts older Paystack payments that have no attempt row, retries failed
-confirmation emails and stores Paystack's real fee on paid tickets.
+admins one digest, and sends the customer a recovery link. The same sweep
+adopts older Paystack payments that have no attempt row, retries failed
+confirmation emails and stores Paystack's real fee on paid transactions. This
+only applies to subscriptions and donations now (see below).
 
-**Summit payments are separate from subscriptions.** Elevation Summit tickets
-are managed only at **Admin → Summit Payments** (`/admin/summit-payments`);
-plan subscriptions live at **Subscription Payments** (`/admin/payments`). The
-Summit page has server-side search, status and Physical/Virtual filters, an
-off-canvas per record (call/WhatsApp, Paystack transaction, resend ticket,
-delete) and a branded **PDF report** of the current view.
+**Elevation Summit registration is free and has nothing to do with Paystack.**
+Donations are the one remaining paid flow (`/donate`, managed at **Admin →
+Donations**, `/admin/summit-donations`). Registrations themselves are managed
+at **Admin → Summit Registrations** (`/admin/elevation-summit/registrations`):
+server-side search, status (confirmed / not confirmed) and Physical/Virtual
+filters, an off-canvas per record (call/WhatsApp, resend ticket, confirm +
+send ticket, delete) and a branded **PDF report** of the current view. Plan
+subscriptions live at **Subscription Payments** (`/admin/payments`).
 
 **Summit livestream.** `/elevation-summit/watch` is a public, email-gated page:
-a visitor enters the email they registered with, and if it belongs to a PAID
-registration they get access (any other result: not found, not yet paid,
-shows a clear explanation, never the video). Even a confirmed attendee sees
+a visitor enters the email they registered with, and if it belongs to a
+CONFIRMED registration they get access (any other result: not found, not yet
+confirmed, shows a clear explanation, never the video). Even a confirmed attendee sees
 only a countdown until `SUMMIT_START_INSTANT` (`lib/elevationSummit.ts`,
 Thursday 19 November 2026, 10:00am WAT); the video id and channel id are never
 sent to the browser before that instant, so they cannot be discovered by

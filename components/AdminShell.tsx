@@ -48,7 +48,6 @@ const NAV_GROUPS: Group[] = [
   {
     label: 'Revenue',
     items: [
-      { href: '/admin/summit-payments', label: 'Summit Registrations', icon: <Ticket />, permission: 'payments.view' },
       { href: '/admin/summit-donations', label: 'Donations',     icon: <HeartHandshake />, permission: 'payments.view' },
       { href: '/admin/payments',    label: 'Subscription Payments', icon: <CreditCard />, permission: 'payments.view' },
       { href: '/admin/promo-codes', label: 'Promo Codes',   icon: <Tag /> },
@@ -83,9 +82,10 @@ const NAV_GROUPS: Group[] = [
   {
     label: 'Events',
     items: [
+      { href: '/admin/elevation-summit/registrations', label: 'Summit Registrations', icon: <Ticket />, permission: 'payments.view' },
+      { href: '/admin/summit-stream',    label: 'Summit Livestream', icon: <Radio /> },
       { href: '/admin/events',           label: 'Public Events',    icon: <CalendarDays /> },
       { href: '/admin/community-events', label: 'Community Events', icon: <MessagesSquare /> },
-      { href: '/admin/summit-stream',    label: 'Summit Livestream', icon: <Radio /> },
     ],
   },
   {

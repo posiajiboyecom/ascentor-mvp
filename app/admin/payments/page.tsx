@@ -261,7 +261,7 @@ export default function AdminPaymentsPage() {
         <div>
           <h1 className="ledger-h1" style={{ fontSize: 26, margin: 0 }}>Subscription Payments</h1>
           <p className="ledger-mono" style={{ fontSize: 12, margin: '4px 0 0' }}>
-            Elevation Summit tickets are managed on <a href="/admin/summit-payments" style={{ color: '#8A6A1F', textDecoration: 'underline' }}>Summit Payments</a>.
+            Elevation Summit registrations are managed on <a href="/admin/elevation-summit/registrations" style={{ color: '#8A6A1F', textDecoration: 'underline' }}>Summit Registrations</a>.
           </p>
           <p className="ledger-mono" style={{ fontSize: 12, margin: '4px 0 0' }}>
             {view === 'ledger'

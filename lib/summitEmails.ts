@@ -215,7 +215,7 @@ export async function sendAdminPaymentNotification(i: AdminPaidInfo) {
           summaryRow('Amount', isFree ? 'Free' : naira(i.amountPaid)) +
           (i.reference ? summaryRow('Reference', esc(i.reference)) : '')
         ) +
-        goldButton('Open registrations', 'https://ascentorbi.com/admin/summit-payments'),
+        goldButton('Open registrations', 'https://ascentorbi.com/admin/elevation-summit/registrations'),
     }),
   });
 }

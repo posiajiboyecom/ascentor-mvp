@@ -316,14 +316,14 @@ Circle (8-12 members)
   (revenue, subscriber mix, signups vs sessions, checkout funnel). Data comes
   from `GET /api/admin/analytics`, computed server-side. Revenue figures require
   `payments.view`. MRR excludes promo and admin-granted plans.
-- **Summit Payments** (`/admin/summit-payments`): Elevation Summit tickets only.
-  Summary cards (confirmed tickets, gross, Paystack fees, net), server-side
-  (AJAX) search, filters by status (confirmed, pending, left at payment, not
-  started, paying now) and Physical/Virtual, pagination, an off-canvas per record
-  (call/WhatsApp, Paystack transaction id, email status, **resend confirmation +
-  ticket**, **check Paystack**, delete) and a branded **PDF report** of the
-  current search and filters. A paid ticket with no Paystack transaction id is
-  flagged.
+- **Summit Registrations** (`/admin/elevation-summit/registrations`): Elevation
+  Summit registrations only. Registration is free and has nothing to do with
+  Paystack (donations, the one remaining paid flow, are tracked separately at
+  **Donations**). Summary cards (total, confirmed, not yet confirmed),
+  server-side (AJAX) search, filters by status (confirmed, not confirmed) and
+  Physical/Virtual, pagination, an off-canvas per record (call/WhatsApp, email
+  status, **resend confirmation + ticket**, **confirm + send ticket**, delete)
+  and a branded **PDF report** of the current search and filters.
 - **Subscription Payments** (`/admin/payments`): plan checkouts with status
   filters, an off-canvas per attempt, a **Revenue ledger** tab listing every
   paid item behind the revenue figure, deletion of unpaid test attempts, and

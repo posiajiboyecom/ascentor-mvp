@@ -195,7 +195,7 @@ export default function OverviewCharts() {
             <Kpi label="MRR (est.)" value={nairaCompact(kpis.mrr ?? 0)} sub="excludes promo / manual" color={C.good} />
             <Kpi label="Subscription revenue, 30d" value={nairaCompact(kpis.revenueSubscription30d ?? 0)} sub="plans only (no Summit)"
                  color={C.good} spark={series} sparkKey="revenue" />
-            <a href="/admin/summit-payments" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <a href="/admin/elevation-summit/registrations" style={{ textDecoration: 'none', color: 'inherit' }}>
               <Kpi label="Summit tickets, 30d" value={naira(kpis.revenueSummit30d ?? 0)} sub={`${kpis.summitPaidCount ?? 0} paid · click to manage`} color={C.gold} />
             </a>
             <Kpi label="Checkout completion" value={kpis.completionRate == null ? '-' : `${kpis.completionRate}%`}
