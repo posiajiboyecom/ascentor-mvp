@@ -202,21 +202,16 @@ export async function POST(req: NextRequest) {
 
     if (action === 'remind') {
       if (reg.payment_status === 'paid') {
-        return NextResponse.json({ error: 'This person has already paid. Use Resend ticket instead.' }, { status: 409 });
+        return NextResponse.json({ error: 'This person is already confirmed. Use Resend ticket instead.' }, { status: 409 });
       }
-      const prices = getSummitPricesNaira();
-      if (!prices) return NextResponse.json({ error: 'Ticket prices are not configured' }, { status: 500 });
       try {
-        await sendPaymentReminderEmail(
-          reg.email, reg.full_name, reg.attendance_type,
-          reg.attendance_type === 'virtual' ? prices.virtual : prices.onsite,
-        );
+        await sendPaymentReminderEmail(reg.email, reg.full_name, reg.attendance_type);
       } catch (err) {
         console.error('[admin/summit-registrations] reminder failed:', err);
         return NextResponse.json({ error: 'Reminder email failed to send. Check SMTP settings.' }, { status: 502 });
       }
       await markReminded([reg.id]);
-      return NextResponse.json({ ok: true, message: `Payment reminder sent to ${reg.email}` });
+      return NextResponse.json({ ok: true, message: `Reminder sent to ${reg.email}` });
     }
 
     // verify: settle every attempt for this registration against Paystack
@@ -358,11 +353,8 @@ async function markReminded(ids: string[]) {
   } catch { /* tracking is optional */ }
 }
 
-/** Reminds everyone who has not paid, skipping anyone reminded in the last 24 hours. */
+/** Reminds everyone not yet confirmed, skipping anyone reminded in the last 24 hours. */
 async function remindAll() {
-  const prices = getSummitPricesNaira();
-  if (!prices) return NextResponse.json({ error: 'Ticket prices are not configured' }, { status: 500 });
-
   const { data, error } = await supabaseAdmin
     .from('summit_registrations')
     .select('*')
@@ -381,7 +373,7 @@ async function remindAll() {
   let failed = 0;
   for (const r of batch) {
     try {
-      await sendPaymentReminderEmail(r.email, r.full_name, r.attendance_type, r.attendance_type === 'virtual' ? prices.virtual : prices.onsite);
+      await sendPaymentReminderEmail(r.email, r.full_name, r.attendance_type);
       sentIds.push(r.id);
     } catch (err) {
       failed++;

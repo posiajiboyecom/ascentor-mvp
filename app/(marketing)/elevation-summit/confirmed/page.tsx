@@ -1,4 +1,5 @@
 import '@/styles/marketing.css';
+import { HeartHandshake } from 'lucide-react';
 
 export default function SummitConfirmedPage() {
   return (
@@ -16,9 +17,25 @@ export default function SummitConfirmedPage() {
         <p style={{ color: '#6B7280', fontSize: '1rem', lineHeight: 1.7, marginBottom: '2.5rem' }}>
           We look forward to seeing you there.
         </p>
-        <a href="/elevation-summit" className="btn-gold" style={{ display: 'inline-flex' }}>
-          Return to the Summit page
-        </a>
+        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
+          <a href="/elevation-summit" className="btn-gold" style={{ display: 'inline-flex' }}>
+            Return to the Summit page
+          </a>
+          <a
+            href="/donate"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+              padding: '0.875rem 1.5rem', borderRadius: '0.625rem',
+              border: '1.5px solid #E8E6E1', color: '#0F0F0E', fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            <HeartHandshake size={16} /> Support with a Donation
+          </a>
+        </div>
+        <p style={{ color: '#9CA3AF', fontSize: '0.875rem' }}>
+          Registration is free. Donations help fund the Summit and Ascentor&apos;s wider work.
+        </p>
       </div>
     </main>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { summitFormSchema, SummitFormValues } from './summitFormSchema';
@@ -13,7 +13,7 @@ import PhoneInput from 'react-phone-number-input';
 import flags from 'react-phone-number-input/flags';
 import { useModal } from '@/components/Modal';
 import { useRouter } from 'next/navigation';
-import { Compass, Hammer, Crown, Sparkles, Network, Monitor, CalendarDays, MapPin, Clock, TicketCheck, Check, ArrowRight } from 'lucide-react';
+import { Compass, Hammer, Crown, Sparkles, Network, Monitor, CalendarDays, MapPin, Clock, TicketCheck, Check, ArrowRight, HeartHandshake } from 'lucide-react';
 import SummitCountdown from '@/components/SummitCountdown';
 import SummitSpeakers from '@/components/SummitSpeakers';
 import SummitFAQ from '@/components/SummitFAQ';
@@ -74,7 +74,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
   const regSection = cms?.sections.register?.data as Record<string, string> | undefined;
   const regEyebrow  = regSection?.eyebrow  || 'Event Registration';
   const regHeadline = regSection?.headline || 'Secure your place.';
-  const regSubhead  = regSection?.subhead  || 'Registration is open for the inaugural Elevation Summit, 19 November, 2026, Lagos - attend physically or join virtually. Complete the form below - every detail helps us prepare the right experience for you.';
+  const regSubhead  = regSection?.subhead  || 'Registration is free and open for the inaugural Elevation Summit, 19 November, 2026, Lagos - attend physically or join virtually. Complete the form below - every detail helps us prepare the right experience for you.';
 
   const { alert } = useModal();
   const router = useRouter();
@@ -150,6 +150,10 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
   const [venueSlide, setVenueSlide] = useState(0);
   // Non-null while the post-registration success overlay is showing
   const [registrationSuccess, setRegistrationSuccess] = useState<'onsite' | 'virtual' | null>(null);
+  // The pending auto-redirect out of the success overlay, cleared if the
+  // visitor clicks a button in it before it fires (Continue or Donate),
+  // so it can never fire a second, unwanted navigation afterwards.
+  const successRedirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // keep react-hook-form's attendance_type value in sync with the tab
   useEffect(() => {
@@ -182,7 +186,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       reset();
       // Branded success overlay auto-redirects — no click required.
       setRegistrationSuccess(activeTab);
-      window.setTimeout(() => router.push('/elevation-summit/confirmed'), 3200);
+      successRedirectTimer.current = setTimeout(() => router.push('/elevation-summit/confirmed'), 3200);
     } catch (err) {
       await alert(
         "We couldn't process your registration. Please check your details and try again. If this keeps happening, reach out to us for help.",
@@ -229,7 +233,21 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <a href="#register" className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>{heroCtaLabel}</a>
               <a href="#what-it-is" className="btn-secondary" style={{ fontSize: '1rem', padding: '0.875rem 2rem', borderColor: '#0F0F0E', color: '#0F0F0E' }}>{heroCta2Label}</a>
+              <a
+                href="/donate"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                  fontSize: '1rem', padding: '0.875rem 2rem', borderRadius: '0.625rem',
+                  border: '1.5px solid #C8A96E', color: '#8A6A1F', fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                <HeartHandshake size={18} /> Donate
+              </a>
             </div>
+            <p style={{ color: '#6B7280', fontSize: '0.875rem', marginTop: '1rem' }}>
+              Registration is free. Donations help fund the Summit and Ascentor&apos;s wider work.
+            </p>
           </div>
         </div>
 
@@ -446,7 +464,27 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         <div style={{ maxWidth: '680px', margin: '0 auto' }}>
           <p className="mkt-eyebrow" style={{ marginBottom: '1rem', textAlign: 'center' }}>{regEyebrow}</p>
           <h2 className="mkt-section-headline" style={{ color: '#0F0F0E', marginBottom: '1rem', textAlign: 'center', fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)' }}>{regHeadline}</h2>
-          <p style={{ color: '#6B7280', lineHeight: 1.75, marginBottom: '2.5rem', textAlign: 'center', fontSize: '1rem' }}>{regSubhead}</p>
+          <p style={{ color: '#6B7280', lineHeight: 1.75, marginBottom: '1.5rem', textAlign: 'center', fontSize: '1rem' }}>{regSubhead}</p>
+
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
+            flexWrap: 'wrap', textAlign: 'center', padding: '1rem 1.25rem', marginBottom: '2.5rem',
+            background: '#FBF7ED', border: '1px solid #E8D9B5', borderRadius: '0.75rem',
+          }}>
+            <span style={{ color: '#5C4A1F', fontSize: '0.9375rem' }}>
+              Registering costs nothing. If the Summit has been valuable to you, consider supporting it.
+            </span>
+            <a
+              href="/donate"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                color: '#8A6A1F', fontWeight: 700, fontSize: '0.9375rem', textDecoration: 'underline',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <HeartHandshake size={15} /> Donate now
+            </a>
+          </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="summit-form">
 
@@ -890,13 +928,36 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
                 animation: 'summitBarFill 3s linear forwards',
               }} />
             </div>
-            <button
-              onClick={() => router.push('/elevation-summit/confirmed')}
-              className="btn-gold"
-              style={{ fontSize: '0.9375rem', padding: '0.75rem 2rem', border: 'none', cursor: 'pointer' }}
-            >
-              Continue →
-            </button>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => {
+                  if (successRedirectTimer.current) clearTimeout(successRedirectTimer.current);
+                  router.push('/elevation-summit/confirmed');
+                }}
+                className="btn-gold"
+                style={{ fontSize: '0.9375rem', padding: '0.75rem 1.75rem', border: 'none', cursor: 'pointer' }}
+              >
+                Continue →
+              </button>
+              <button
+                onClick={() => {
+                  if (successRedirectTimer.current) clearTimeout(successRedirectTimer.current);
+                  router.push('/donate');
+                }}
+                style={{
+                  fontSize: '0.9375rem', padding: '0.75rem 1.75rem',
+                  background: 'transparent', border: '1.5px solid #E8E6E1',
+                  borderRadius: '0.625rem', color: '#0F0F0E', fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                }}
+              >
+                <HeartHandshake size={16} /> Support with a Donation
+              </button>
+            </div>
+            <p style={{ color: '#9CA3AF', fontSize: '0.8125rem', marginTop: '1.25rem', marginBottom: 0 }}>
+              Registration is free. If you would like to support the Summit, donations are always welcome.
+            </p>
           </div>
 
           <style>{`

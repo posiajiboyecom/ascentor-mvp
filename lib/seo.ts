@@ -19,7 +19,7 @@ export const TWITTER_HANDLE = '@ascentorhq';
 export const SUMMIT = {
   name: 'The Elevation Summit 2026',
   description:
-    'One gathering. One decision. The rest of your life. The inaugural Elevation Summit — a movement for purposeful living, leadership, and legacy. Lagos, December 2026, with global virtual access.',
+    'One gathering. One decision. The rest of your life. The inaugural Elevation Summit is a movement for purposeful living, leadership, and legacy. Lagos, December 2026, with global virtual access. Registration is free.',
   startDate: '2026-11-19T10:00:00+01:00', // Date Confirmed
   endDate: '2026-11-19T15:00:00+01:00',   // Date Confirmed
   venue: {
@@ -90,7 +90,7 @@ export function getOrganizationSchema() {
     url: SITE_URL,
     logo: `${SITE_URL}/icon/icon-512.png`,
     description:
-      'Ascentor (formerly AscentorBI) is a purposeful living and leadership development platform — AI coaching with Sage, community in The Circle, expert sessions, courses, and The Elevation Summit, its annual gathering in Lagos.',
+      'Ascentor (formerly AscentorBI) is a purposeful living and leadership development platform: AI coaching with Sage, community in The Circle, expert sessions, courses, and The Elevation Summit, its annual gathering in Lagos.',
     founder: {
       '@type': 'Person',
       name: 'Ajiboye Ayomiposi Samuel',

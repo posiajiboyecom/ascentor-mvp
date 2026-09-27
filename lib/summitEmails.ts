@@ -6,6 +6,7 @@ import { SUMMIT_DATE_LABEL, SUMMIT_DATETIME_LABEL } from '@/lib/elevationSummit'
 
 const SUMMIT_URL = 'https://ascentorbi.com/elevation-summit';
 const SUMMIT_WATCH_URL = `${SUMMIT_URL}/watch`;
+const DONATE_URL = 'https://ascentorbi.com/donate';
 
 /** Where every Summit admin alert goes. Deliberately NOT ADMIN_EMAIL, which may point elsewhere. */
 export const SUMMIT_ADMIN_EMAIL = process.env.SUMMIT_ADMIN_EMAIL || 'joinascentor@gmail.com';
@@ -43,30 +44,11 @@ async function sendSummitMail(opts: MailOpts): Promise<void> {
 const naira = (n: number) => `₦${Number(n).toLocaleString('en-NG')}`;
 const typeLabel = (t: string | null | undefined) => (t === 'virtual' ? 'Virtual' : 'Physical (Onsite, Lagos)');
 
-// ── Registrant: "complete your registration" ────────────────────────────────
+// ── Registrant: reminder to complete a saved, unconfirmed registration
+// (legacy: only reaches people who registered before registration became
+// free; resubmitting the form confirms them immediately, at no cost) ───────
 
-export async function sendRegistrationReceivedEmail(to: string, fullName: string) {
-  await sendSummitMail({
-    to,
-    subject: 'Secure your Elevation Summit registration',
-    html: brandedEmailLayout({
-      preheader: 'One step left. Secure your place.',
-      eyebrow: 'Elevation Summit · 19 November 2026',
-      heading: 'Secure your registration.',
-      recipient: to,
-      content:
-        p(`Hi ${esc(fullName)},`) +
-        p('Thank you for registering for the Elevation Summit, 19 November 2026, Lagos.') +
-        p('<strong>Your spot is not yet confirmed.</strong> Secure your place to lock it in. Your ticket will be emailed to you as soon as your registration is confirmed.') +
-        goldButton('Secure Your Registration →', `${SUMMIT_URL}#register`) +
-        p('<span style="color:#9CA3AF;font-size:13px;">If you have already secured your spot, you can ignore this email. Your confirmation and ticket will arrive shortly.</span>'),
-    }),
-  });
-}
-
-// ── Registrant: reminder to secure a saved spot (sent by an admin) ──────────
-
-export async function sendPaymentReminderEmail(to: string, fullName: string, attendanceType: string | null, amountNaira: number) {
+export async function sendPaymentReminderEmail(to: string, fullName: string, attendanceType: string | null) {
   const isVirtual = attendanceType === 'virtual';
   await sendSummitMail({
     to,
@@ -82,12 +64,10 @@ export async function sendPaymentReminderEmail(to: string, fullName: string, att
         summaryBox(
           summaryRow('Attendance', isVirtual ? 'Virtual' : 'Physical, Lagos') +
           summaryRow('Date', '19 November 2026') +
-          summaryRow('Ticket', naira(amountNaira)) +
           summaryRow('Status', '<span style="color:#C8A96E;">Awaiting confirmation</span>')
         ) +
-        p('It takes about a minute. Your details are already saved, so you only need to secure your ticket. It is emailed to you the moment it is confirmed.') +
-        goldButton('Secure Your Ticket →', `${SUMMIT_URL}#register`) +
-        p('<span style="color:#9CA3AF;font-size:13px;">If you have already completed checkout, please reply to this email with your receipt and we will confirm you right away.</span>'),
+        p('Registration is free. It takes about a minute, your details are already saved, so you only need to confirm your spot. Your ticket is emailed to you the moment it is confirmed.') +
+        goldButton('Confirm Your Spot →', `${SUMMIT_URL}#register`),
     }),
   });
 }
@@ -127,7 +107,8 @@ export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
         ) +
         attendanceBlock +
         p('Please keep your ticket safe and present it on the day of the event. We look forward to seeing you there.') +
-        goldButton('View Event Details →', SUMMIT_URL),
+        goldButton('View Event Details →', SUMMIT_URL) +
+        p(`Registration is free. If the Summit has been valuable to you, you can <a href="${DONATE_URL}" style="color:#C8A96E;font-weight:600;text-decoration:underline;">support it with a donation</a>.`),
     }),
     ...(pdfBuffer ? {
       attachments: [{
@@ -239,41 +220,6 @@ export async function sendAdminPaymentNotification(i: AdminPaidInfo) {
   });
 }
 
-// ── Admin: registered but did not finish payment ────────────────────────────
-
-export interface AdminAbandonedInfo {
-  fullName: string;
-  email: string;
-  phone: string;
-  attendanceType: string | null;
-  amount: number;
-  reference: string;
-}
-
-export async function sendAdminAbandonedNotification(i: AdminAbandonedInfo) {
-  await sendSummitMail({
-    to: SUMMIT_ADMIN_EMAIL,
-    subject: `Payment not completed: ${i.fullName} (${i.attendanceType === 'virtual' ? 'Virtual' : 'Physical'})`,
-    html: brandedEmailLayout({
-      preheader: `${i.fullName} registered but did not finish paying.`,
-      eyebrow: 'Admin Notification',
-      heading: 'Registration not completed.',
-      recipient: SUMMIT_ADMIN_EMAIL,
-      content:
-        p('This person registered for the Elevation Summit but left before finishing payment. They have been sent a "complete your registration" email. You may want to call or text them.') +
-        summaryBox(
-          summaryRow('Name', esc(i.fullName)) +
-          summaryRow('Email', esc(i.email)) +
-          summaryRow('Phone', esc(i.phone) || '<span style="color:#EF4444;">not captured</span>') +
-          summaryRow('Attendance', typeLabel(i.attendanceType)) +
-          summaryRow('Ticket price', naira(i.amount)) +
-          summaryRow('Reference', esc(i.reference))
-        ) +
-        goldButton('Open registrations', 'https://ascentorbi.com/admin/summit-payments'),
-    }),
-  });
-}
-
 // ── Paid emails with delivery tracking (used by settlement, retry & resend) ─
 
 /** Best-effort: silently ignored if the tracking columns have not been migrated yet. */
@@ -376,7 +322,8 @@ export async function sendComplimentaryTicketEmail(ticketData: TicketData) {
           ? p('Your Zoom link for the virtual session will be shared with you separately closer to the event date. Keep an eye on your inbox.')
           : p('Venue details will follow closer to the event date.')) +
         p('Please keep your ticket safe and present it on the day of the event. We look forward to seeing you there.') +
-        goldButton('View Event Details →', SUMMIT_URL),
+        goldButton('View Event Details →', SUMMIT_URL) +
+        p(`Registration is free. If the Summit has been valuable to you, you can <a href="${DONATE_URL}" style="color:#C8A96E;font-weight:600;text-decoration:underline;">support it with a donation</a>.`),
     }),
     ...(pdfBuffer ? {
       attachments: [{
