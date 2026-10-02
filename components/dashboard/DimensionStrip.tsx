@@ -35,9 +35,9 @@ export function DimensionStrip({ today }: { today?: string }) {
               >
                 <span
                   className={`
-                    text-[11px] lg:text-xs font-medium tracking-[0.12em] uppercase
+                    text-xs font-medium tracking-[0.12em] uppercase
                     transition-colors duration-150 ease-out
-                    ${isToday ? 'text-[var(--app-accent)]' : 'text-[var(--text-dim)] group-hover:text-[var(--text-muted)]'}
+                    ${isToday ? 'text-[var(--app-accent-ink)]' : 'text-[var(--text-dim)] group-hover:text-[var(--text-muted)]'}
                   `}
                 >
                   {dim}

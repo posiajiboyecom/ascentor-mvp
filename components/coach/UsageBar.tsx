@@ -19,7 +19,7 @@ export function UsageBar({ used, limit }: UsageBarProps) {
   return (
     <div className="px-3 lg:px-0 py-[7px] lg:py-0 lg:flex lg:items-center lg:justify-end">
       <div className="lg:hidden">
-        <div className="h-[3px] rounded-full bg-white/[0.08] overflow-hidden">
+        <div className="h-[3px] rounded-full bg-[var(--app-accent-soft)] overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-300"
             style={{

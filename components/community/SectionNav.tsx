@@ -56,10 +56,10 @@ export function SectionNav({
   const myCircle = myCircleSlug ? channels.find((c) => c.slug === myCircleSlug) : null;
 
   return (
-    <div className={`flex flex-col bg-[#0C0B08] text-[#FAFAF8] ${mobile ? 'min-h-0' : 'h-full'}`}>
-      <div className="px-4 py-4 border-b-[0.5px] border-white/[0.06]">
+    <div className={`flex flex-col bg-[var(--bg-card)] text-[var(--text)] ${mobile ? 'min-h-0' : 'h-full'}`}>
+      <div className="px-4 py-4 border-b border-[var(--border)]">
         <h1 className="text-lg font-semibold">The Circle</h1>
-        <p className="text-xs text-[#6B7280] mt-0.5">{channels.length} channels</p>
+        <p className="text-xs text-[var(--text-dim)] mt-0.5">{channels.length} channels</p>
       </div>
 
       {/* Primary destinations */}
@@ -84,13 +84,13 @@ export function SectionNav({
       </div>
 
       <div className="px-3 py-2">
-        <div className="flex items-center gap-2 rounded-lg bg-white/[0.04] border-[0.5px] border-white/[0.08] px-3 py-1.5">
-          <span className="text-[#4B5563] text-sm">⌕</span>
+        <div className="flex items-center gap-2 rounded-lg bg-[var(--app-bg-input)] border border-[var(--border)] px-3 py-1.5">
+          <span className="text-[var(--text-dim)] text-sm">⌕</span>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search channels..."
-            className="flex-1 bg-transparent text-sm text-[#FAFAF8] placeholder:text-[#4B5563] outline-none"
+            className="flex-1 bg-transparent text-sm text-[var(--text)] placeholder:text-[var(--text-dim)] outline-none"
           />
         </div>
       </div>
@@ -100,7 +100,7 @@ export function SectionNav({
           <div>
             <div className="flex items-center gap-1.5 px-4 py-1.5">
               <span className="text-[#C8A96E] text-xs">📌</span>
-              <span className="text-[9px] font-medium uppercase tracking-[0.1em] text-[#C8A96E]">Pinned</span>
+              <span className="text-[9px] font-medium uppercase tracking-[0.1em] text-[var(--app-accent-ink)]">Pinned</span>
             </div>
             {pinnedChannels.map((ch) => (
               <ChannelRow
@@ -126,10 +126,10 @@ export function SectionNav({
                 onClick={() => setCollapsed((c) => ({ ...c, [cat.id]: !c[cat.id] }))}
                 className="flex items-center justify-between w-full px-4 py-1.5 text-left"
               >
-                <span className="text-[9px] font-medium uppercase tracking-[0.1em] text-[#4B5563]">{cat.name}</span>
+                <span className="text-[9px] font-medium uppercase tracking-[0.1em] text-[var(--text-dim)]">{cat.name}</span>
                 <span className="flex items-center gap-1.5">
-                  <span className="text-[9px] text-[#4B5563]">{list.length}</span>
-                  <span className={`text-[#4B5563] text-[10px] transition-transform ${isCollapsed ? '' : 'rotate-180'}`}>▾</span>
+                  <span className="text-[9px] text-[var(--text-dim)]">{list.length}</span>
+                  <span className={`text-[var(--text-dim)] text-[10px] transition-transform ${isCollapsed ? '' : 'rotate-180'}`}>▾</span>
                 </span>
               </button>
               {!isCollapsed &&
@@ -166,10 +166,10 @@ function PrimaryItem({
       type="button"
       onClick={onClick}
       className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left text-sm font-medium transition-colors ${
-        active ? 'bg-[#C8A96E]/[0.11] text-[#FAFAF8]' : 'text-[#9CA3AF] hover:bg-white/[0.03] hover:text-[#FAFAF8]'
+        active ? 'bg-[var(--app-accent-soft)] text-[var(--text)]' : 'text-[var(--text-muted)] hover:bg-[var(--app-bg-hover)] hover:text-[var(--text)]'
       }`}
     >
-      <span className={`w-4 text-center ${active ? 'text-[#C8A96E]' : 'text-[#6B7280]'}`}>{icon}</span>
+      <span className={`w-4 text-center ${active ? 'text-[var(--app-accent-ink)]' : 'text-[var(--text-dim)]'}`}>{icon}</span>
       {label}
     </button>
   );
@@ -191,17 +191,17 @@ function ChannelRow({
       type="button"
       onClick={onClick}
       className={`flex items-center gap-2.5 w-full px-4 py-2 text-left transition-colors ${
-        active ? 'bg-white/[0.06]' : 'hover:bg-white/[0.03]'
+        active ? 'bg-[var(--app-accent-soft)]' : 'hover:bg-[var(--app-bg-hover)]'
       }`}
     >
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#C8A96E]/[0.08] text-sm">
         {channel.emoji ?? (channel.channel_type === 'announce' ? '📢' : '#')}
       </span>
       <span className="min-w-0 flex-1">
-        <span className={`block text-sm truncate ${active ? 'text-[#FAFAF8] font-medium' : 'text-[#9CA3AF]'}`}>
+        <span className={`block text-sm truncate ${active ? 'text-[var(--text)] font-medium' : 'text-[var(--text-muted)]'}`}>
           {channel.name}
         </span>
-        {channel.description && <span className="block text-xs text-[#4B5563] truncate">{channel.description}</span>}
+        {channel.description && <span className="block text-xs text-[var(--text-dim)] truncate">{channel.description}</span>}
       </span>
       {unread > 0 && (
         <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#C8A96E] px-1 text-[10px] font-medium text-[#0F0F0E]">

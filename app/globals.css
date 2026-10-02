@@ -221,6 +221,10 @@
   --app-accent:       #C8A96E;
   --app-accent-glow:  rgba(200,169,110,0.10);
   --app-card-shadow:  0 2px 12px rgba(0,0,0,0.06);
+  --app-accent-ink:   #8A6A2B; /* gold readable as text on white (AA) */
+  --app-accent-soft:  rgba(200,169,110,0.14);
+  --app-success-ink:  #15803D;
+  --font-editorial:   'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
 
   --bg:              #FAFAF8;
   --bg-card:         #FFFFFF;
@@ -324,11 +328,8 @@ a:focus-visible,
   --color-background-secondary: var(--app-bg-card);
   --color-text-primary:         var(--app-text);
   --color-text-secondary:       var(--app-text-dim);
-  --color-border-secondary:     rgba(250, 250, 248, 0.15);
-  --color-border-tertiary:      var(--app-border);
-}
-[data-app-theme="light"] .circle-surface {
   --color-border-secondary:     rgba(0, 0, 0, 0.12);
+  --color-border-tertiary:      var(--app-border);
 }
 
 .btn-primary {

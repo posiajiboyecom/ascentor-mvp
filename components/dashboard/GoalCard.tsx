@@ -1,130 +1,223 @@
-// components/dashboard/GoalCard.tsx
-//
-// FIX: Milestone checkboxes are now interactive.
-// Previously they were visual-only <span> elements — tapping them did nothing,
-// breaking the affordance they implied. Now they are real <button> elements
-// that track completion in local state (optimistic) and persist to Supabase
-// via the /api/goals/milestone route. The component is converted to 'use client'
-// to support the interactive state; it was already receiving data from the
-// Server Component parent so this has no data-fetching impact.
-//
-// Also fixed: stale --color-* token references replaced with canonical tokens.
-
 'use client';
 
-import { useState } from 'react';
-import { Clock, Check } from 'lucide-react';
+// components/dashboard/GoalCard.tsx
+// The member's 90-day goal. Create / edit inline; milestones persist via a
+// server action and drive the progress figure (so it can never go stale).
+
+import { useState, useTransition } from 'react';
+import { Check, Pencil, Target, Plus } from 'lucide-react';
 import type { UserGoal } from '@/database/database';
+import { saveGoalAction, toggleMilestoneAction } from '@/app/(app)/dashboard/actions';
+import { Card } from '@/components/ui';
 
 interface GoalCardProps {
   goal: UserGoal | null;
   progressPct: number;
+  goalDay: number | null;
 }
 
-export function GoalCard({ goal, progressPct }: GoalCardProps) {
-  const rawMilestones = goal
-    ? [
-        { key: 'milestone_1', text: goal.milestone_1 },
-        { key: 'milestone_2', text: goal.milestone_2 },
-        { key: 'milestone_3', text: goal.milestone_3 },
-      ].filter((m): m is { key: string; text: string } => Boolean(m.text))
+type MilestoneKey = 'milestone_1' | 'milestone_2' | 'milestone_3';
+
+const KEYS: MilestoneKey[] = ['milestone_1', 'milestone_2', 'milestone_3'];
+
+export function GoalCard({ goal, progressPct, goalDay }: GoalCardProps) {
+  const [editing, setEditing] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState('');
+
+  const [checked, setChecked] = useState<Record<MilestoneKey, boolean>>(() => ({
+    milestone_1: Boolean(goal?.milestone_1_completed),
+    milestone_2: Boolean(goal?.milestone_2_completed),
+    milestone_3: Boolean(goal?.milestone_3_completed),
+  }));
+
+  const [draftGoal, setDraftGoal] = useState(goal?.goal_text ?? '');
+  const [draftMs, setDraftMs] = useState<string[]>(
+    KEYS.map((k) => (goal?.[k] as string | null) ?? '')
+  );
+
+  const milestones = goal
+    ? KEYS.map((k) => ({ key: k, text: goal[k] as string | null })).filter(
+        (m): m is { key: MilestoneKey; text: string } => Boolean(m.text)
+      )
     : [];
 
-  // Local optimistic state — seed from any existing completion fields if present
-  const [checked, setChecked] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {};
-    rawMilestones.forEach(({ key }) => {
-      // @ts-expect-error — completion fields may not be in the DB type yet
-      init[key] = Boolean(goal?.[`${key}_completed`]);
-    });
-    return init;
-  });
+  // Local progress mirrors the server derivation so the bar moves instantly.
+  const pct = milestones.length
+    ? Math.round((milestones.filter((m) => checked[m.key]).length / milestones.length) * 100)
+    : progressPct;
 
-  async function toggleMilestone(key: string) {
+  function toggle(key: MilestoneKey) {
+    if (!goal) return;
     const next = !checked[key];
-    // Optimistic update
-    setChecked((prev) => ({ ...prev, [key]: next }));
+    setChecked((p) => ({ ...p, [key]: next }));
+    setError('');
+    startTransition(async () => {
+      try {
+        await toggleMilestoneAction(goal.id, key, next);
+      } catch {
+        setChecked((p) => ({ ...p, [key]: !next }));
+        setError('Couldn’t save that milestone. Please try again.');
+      }
+    });
+  }
 
-    // Persist — fire and forget; if it fails the next full-page load corrects it
-    try {
-      await fetch('/api/goals/milestone', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goalId: goal?.id, field: key, completed: next }),
-      });
-    } catch {
-      // Revert optimistic update on network failure
-      setChecked((prev) => ({ ...prev, [key]: !next }));
-    }
+  function save() {
+    setError('');
+    startTransition(async () => {
+      try {
+        await saveGoalAction({
+          goalId: goal?.id ?? null,
+          goalText: draftGoal,
+          milestones: draftMs,
+        });
+        setEditing(false);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Couldn’t save your goal.');
+      }
+    });
   }
 
   return (
-    <div
-      className="
-        rounded-xl lg:rounded-2xl border border-[#C8A96E]/20
-        bg-[#C8A96E]/[0.04]
-        p-[13px] lg:p-7
-      "
-    >
-      <div className="flex items-center justify-between mb-[5px] lg:mb-3">
-        <div className="flex items-center gap-1.5 lg:gap-2 text-[9px] lg:text-sm font-medium uppercase tracking-[0.08em] text-[#C8A96E]">
-          <Clock className="hidden lg:block w-4 h-4" aria-hidden="true" />
-          90-Day Goal
-        </div>
-        <span className="rounded-full bg-[var(--bg)] px-2.5 py-0.5 text-[11px] lg:text-sm text-[var(--text-muted)]">
-          {progressPct}%
-        </span>
+    <Card className="border-[var(--app-border-gold)] shadow-[var(--app-card-shadow)]">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--app-accent-ink)]">
+          <Target className="w-4 h-4" aria-hidden="true" />
+          90-day goal
+          {goalDay !== null && (
+            <span className="font-normal normal-case tracking-normal text-[var(--text-dim)]">
+              · day {Math.min(goalDay, 90)} of 90
+            </span>
+          )}
+        </p>
+        {goal && !editing && (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            aria-label="Edit goal"
+            className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-[var(--text-muted)] hover:bg-[var(--app-bg-hover)]"
+          >
+            <Pencil className="w-3.5 h-3.5" aria-hidden="true" /> Edit
+          </button>
+        )}
       </div>
 
-      {goal ? (
+      {editing || !goal ? (
+        <div className="space-y-3">
+          {!goal && !editing ? (
+            <>
+              <p className="text-base text-[var(--text-muted)]">
+                A goal you can see is a goal you keep. Name what you’re building in the next 90 days.
+              </p>
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--app-accent)] px-4 py-2.5 text-sm font-semibold text-[#0F0F0E] hover:opacity-90"
+              >
+                <Plus className="w-4 h-4" aria-hidden="true" /> Set my 90-day goal
+              </button>
+            </>
+          ) : (
+            <>
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-[var(--text)]">My goal</span>
+                <textarea
+                  value={draftGoal}
+                  onChange={(e) => setDraftGoal(e.target.value)}
+                  rows={2}
+                  maxLength={300}
+                  placeholder="By day 90, I will…"
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--app-bg-input)] px-3 py-2.5 text-base text-[var(--text)]"
+                />
+              </label>
+              <div>
+                <span className="mb-1 block text-sm font-medium text-[var(--text)]">
+                  Up to 3 milestones <span className="font-normal text-[var(--text-dim)]">(optional)</span>
+                </span>
+                <div className="space-y-2">
+                  {draftMs.map((m, i) => (
+                    <input
+                      key={i}
+                      value={m}
+                      maxLength={160}
+                      onChange={(e) =>
+                        setDraftMs((prev) => prev.map((v, j) => (j === i ? e.target.value : v)))
+                      }
+                      placeholder={`Milestone ${i + 1}`}
+                      aria-label={`Milestone ${i + 1}`}
+                      className="w-full rounded-xl border border-[var(--border)] bg-[var(--app-bg-input)] px-3 py-2.5 text-base text-[var(--text)]"
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={save}
+                  disabled={pending || !draftGoal.trim()}
+                  className="rounded-xl bg-[var(--app-accent)] px-4 py-2.5 text-sm font-semibold text-[#0F0F0E] disabled:opacity-50"
+                >
+                  {pending ? 'Saving…' : 'Save goal'}
+                </button>
+                {goal && (
+                  <button
+                    type="button"
+                    onClick={() => setEditing(false)}
+                    className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm text-[var(--text-muted)] hover:bg-[var(--app-bg-hover)]"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
         <>
-          <p className="text-xs lg:text-lg text-[var(--text)] leading-relaxed mb-2 lg:mb-4">
+          <p className="font-[family-name:var(--font-editorial)] text-xl leading-snug text-[var(--text)]">
             {goal.goal_text}
           </p>
 
-          <div className="h-1 lg:h-1.5 rounded-full bg-[var(--bg)] overflow-hidden mb-1 lg:mb-2">
+          <div className="mt-4 flex items-center gap-3">
             <div
-              className="h-full rounded-full bg-[#C8A96E] transition-all duration-500"
-              style={{ width: `${Math.min(100, Math.max(0, progressPct))}%` }}
-            />
+              className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--app-accent-soft)]"
+              role="progressbar"
+              aria-valuenow={pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Goal progress"
+            >
+              <div
+                className="h-full rounded-full bg-[var(--app-accent)] transition-[width] duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-sm font-semibold tabular-nums text-[var(--text)]">{pct}%</span>
           </div>
-          <p className="text-[10px] lg:text-sm text-[var(--text-muted)] lg:hidden">
-            {progressPct}% complete
-          </p>
 
-          {rawMilestones.length > 0 && (
-            <ul className="mt-3 lg:mt-5 space-y-2 lg:space-y-3">
-              {rawMilestones.map(({ key, text }) => {
+          {milestones.length > 0 && (
+            <ul className="mt-4 space-y-1">
+              {milestones.map(({ key, text }) => {
                 const done = checked[key];
                 return (
                   <li key={key}>
                     <button
                       type="button"
-                      onClick={() => toggleMilestone(key)}
-                      className="flex items-center gap-2 lg:gap-3 w-full text-left group"
+                      onClick={() => toggle(key)}
                       aria-pressed={done}
-                      aria-label={`${done ? 'Uncheck' : 'Check'} milestone: ${text}`}
+                      className="flex w-full items-center gap-3 rounded-lg px-1 py-2 text-left hover:bg-[var(--app-bg-hover)]"
                     >
                       <span
-                        className="
-                          h-4 w-4 shrink-0 rounded flex items-center justify-center
-                          border-[1.5px] transition-colors
-                        "
-                        style={{
-                          borderColor:     done ? '#C8A96E' : 'var(--border)',
-                          backgroundColor: done ? '#C8A96E' : 'transparent',
-                        }}
                         aria-hidden="true"
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-[1.5px] transition-colors ${
+                          done
+                            ? 'border-[var(--app-accent)] bg-[var(--app-accent)]'
+                            : 'border-[var(--text-dim)] bg-transparent'
+                        }`}
                       >
-                        {done && <Check className="w-2.5 h-2.5 text-[#0F0F0E]" strokeWidth={3} />}
+                        {done && <Check className="w-3.5 h-3.5 text-[#0F0F0E]" strokeWidth={3} />}
                       </span>
-                      <span
-                        className="text-xs lg:text-base transition-colors"
-                        style={{
-                          color:          done ? 'var(--text-muted)' : 'var(--text)',
-                          textDecoration: done ? 'line-through' : 'none',
-                        }}
-                      >
+                      <span className={`text-base ${done ? 'text-[var(--text-dim)] line-through' : 'text-[var(--text)]'}`}>
                         {text}
                       </span>
                     </button>
@@ -134,11 +227,13 @@ export function GoalCard({ goal, progressPct }: GoalCardProps) {
             </ul>
           )}
         </>
-      ) : (
-        <p className="text-xs lg:text-base text-[var(--text-muted)]">
-          Set a 90-day goal to start tracking progress.
+      )}
+
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-[var(--error)]">
+          {error}
         </p>
       )}
-    </div>
+    </Card>
   );
 }

@@ -1,12 +1,14 @@
 // components/dashboard/UpcomingSessionCard.tsx
 import Link from 'next/link';
+import { CalendarDays } from 'lucide-react';
 import type { ExpertSession } from '@/database/database';
+import { Card } from '@/components/ui';
 
 interface UpcomingSessionCardProps {
   session: (ExpertSession & { isRegistered: boolean }) | null;
 }
 
-function formatSessionTime(dateStr: string): string {
+export function formatSessionTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
 
@@ -19,9 +21,7 @@ function formatSessionTime(dateStr: string): string {
   });
   const dateKey = watFormatter.format(date);
   const todayKey = watFormatter.format(now);
-  const tomorrowKey = watFormatter.format(
-    new Date(now.getTime() + 24 * 60 * 60 * 1000)
-  );
+  const tomorrowKey = watFormatter.format(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
   const time = date.toLocaleTimeString('en-US', {
     timeZone: 'Africa/Lagos',
@@ -34,6 +34,7 @@ function formatSessionTime(dateStr: string): string {
 
   const day = date.toLocaleDateString('en-US', {
     timeZone: 'Africa/Lagos',
+    weekday: 'short',
     month: 'short',
     day: 'numeric',
   });
@@ -41,35 +42,41 @@ function formatSessionTime(dateStr: string): string {
 }
 
 export function UpcomingSessionCard({ session }: UpcomingSessionCardProps) {
-  if (!session) return null;
+  if (!session) {
+    return (
+      <Card>
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--app-accent-ink)]">
+          <CalendarDays className="w-4 h-4" aria-hidden="true" /> Upcoming session
+        </p>
+        <p className="mt-2 text-base text-[var(--text-muted)]">
+          No expert session is scheduled yet. New ones are announced here first.
+        </p>
+        <Link href="/experts" className="mt-3 inline-block text-sm font-medium text-[var(--app-accent-ink)] hover:underline">
+          Browse experts →
+        </Link>
+      </Card>
+    );
+  }
 
   return (
-    <div
-      className="
-        rounded-xl lg:rounded-2xl border border-white/[0.07]
-        bg-[#0F0F0E]
-        p-[13px] lg:p-7
-      "
-    >
-      <p className="text-[9px] lg:text-xs font-medium uppercase tracking-[0.08em] text-[#4B5563] mb-1.5 lg:mb-3">
-        Upcoming session
+    <Card>
+      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--app-accent-ink)]">
+        <CalendarDays className="w-4 h-4" aria-hidden="true" /> Upcoming session
       </p>
-      <p className="text-sm lg:text-xl font-medium text-[#FAFAF8] mb-0.5 lg:mb-2">
-        {session.title}
-      </p>
-      <p className="text-[11px] lg:text-base text-[#6B7280] mb-2.5 lg:mb-5">
+      <p className="mt-2 text-lg font-semibold text-[var(--text)] leading-snug">{session.title}</p>
+      <p className="mt-1 text-base text-[var(--text-muted)]">
         with {session.expert_name} · {formatSessionTime(session.session_date)}
       </p>
       <Link
-        href={`/sessions#${session.id}`}
-        className="
-          inline-block rounded-full bg-[#C8A96E] text-[#0F0F0E]
-          px-3 py-[5px] lg:px-6 lg:py-2.5
-          text-[10px] lg:text-sm font-medium
-        "
+        href={`/experts#${session.id}`}
+        className={`mt-4 inline-block rounded-full px-5 py-2.5 text-sm font-semibold ${
+          session.isRegistered
+            ? 'border border-[var(--border)] text-[var(--text)] hover:bg-[var(--app-bg-hover)]'
+            : 'bg-[var(--app-accent)] text-[#0F0F0E] hover:opacity-90'
+        }`}
       >
         {session.isRegistered ? 'View session →' : 'Register →'}
       </Link>
-    </div>
+    </Card>
   );
 }

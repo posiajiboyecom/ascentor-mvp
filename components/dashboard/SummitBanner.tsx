@@ -1,17 +1,13 @@
 'use client';
 
 // components/dashboard/SummitBanner.tsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Dashboard banner for The Elevation Summit.
-// When the user is NOT registered → shows "Register →" button that registers
-// them in one click (POST /api/summit/register-user) and fires a real-time
-// in-app notification via the existing NotificationProvider.
-// When registered → shows "You're registered ✓" with a link to the full page.
-// ─────────────────────────────────────────────────────────────────────────────
+// The Elevation Summit card. Registration is free (one click, no payment);
+// donating is an optional second action. On the day itself it points at the
+// live stream.
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Heart } from 'lucide-react';
 
 interface SummitBannerProps {
   daysAway: number;
@@ -19,32 +15,24 @@ interface SummitBannerProps {
 }
 
 export function SummitBanner({ daysAway, registered: initialRegistered }: SummitBannerProps) {
-  const [registered, setRegistered]   = useState(initialRegistered);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState('');
+  const [registered, setRegistered] = useState(initialRegistered);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  async function handleRegister(e: React.MouseEvent) {
-    e.preventDefault();
+  async function handleRegister() {
     if (registered || loading) return;
     setLoading(true);
     setError('');
-
     try {
       const res = await fetch('/api/summit/register-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
-
-      if (res.ok) {
+      if (res.ok || res.status === 409) {
         setRegistered(true);
       } else {
         const data = await res.json().catch(() => ({}));
-        // 409 = already registered server-side — treat as success
-        if (res.status === 409) {
-          setRegistered(true);
-        } else {
-          setError(data.error || 'Something went wrong.');
-        }
+        setError(data.error || 'Something went wrong.');
       }
     } catch {
       setError('Network error. Please try again.');
@@ -53,67 +41,67 @@ export function SummitBanner({ daysAway, registered: initialRegistered }: Summit
     }
   }
 
+  const live = daysAway === 0;
+
   return (
-    <div className="rounded-xl lg:rounded-2xl border border-[#C8A96E]/20 bg-[#0F0F0E] px-[13px] py-[11px] lg:px-7 lg:py-6">
-      <div className="flex items-center justify-between gap-2">
+    <section
+      aria-label="The Elevation Summit"
+      className="rounded-2xl border border-[var(--app-border-gold)] bg-[var(--app-accent-soft)] p-5 lg:p-6"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[8px] lg:text-[11px] font-medium uppercase tracking-[0.1em] text-[#C8A96E] mb-0.5 lg:mb-1.5">
-            The Elevation Summit
+          <p className="asc-eyebrow">The Elevation Summit</p>
+          <p className="mt-1 font-[family-name:var(--font-editorial)] text-xl lg:text-2xl text-[var(--text)]">
+            19 November 2026 · Lagos
           </p>
-          <p className="text-xs lg:text-2xl font-medium text-[#FAFAF8] lg:font-serif truncate lg:overflow-visible">
-            19 November 2026 · Lagos, Nigeria
-          </p>
-          <p className="hidden lg:block text-sm text-[#6B7280] mt-1">
-            {daysAway} days away
+          <p className="mt-0.5 text-sm text-[var(--text-muted)]">
+            {live ? 'It’s happening today.' : `${daysAway} day${daysAway === 1 ? '' : 's'} to go`}
           </p>
         </div>
 
-        {registered ? (
-          // ── Registered state ──────────────────────────────────────────────
-          <Link
-            href="/elevation-summit"
-            className="
-              shrink-0 flex items-center gap-1.5 whitespace-nowrap rounded-lg lg:rounded-full
-              border border-[#C8A96E]/30 text-[#C8A96E]
-              px-2.5 py-[5px] lg:px-5 lg:py-2.5
-              text-[10px] lg:text-sm font-medium
-              transition-colors hover:bg-[#C8A96E]/10
-            "
-          >
-            <Check className="w-3 h-3 lg:w-3.5 lg:h-3.5" strokeWidth={2.5} />
-            <span>Registered</span>
-          </Link>
-        ) : (
-          // ── Register button ───────────────────────────────────────────────
-          <button
-            type="button"
-            onClick={handleRegister}
-            disabled={loading}
-            className="
-              shrink-0 whitespace-nowrap rounded-lg lg:rounded-full
-              bg-[#C8A96E] text-[#0F0F0E]
-              px-2.5 py-[5px] lg:px-6 lg:py-3
-              text-[10px] lg:text-sm font-medium
-              transition-opacity disabled:opacity-60
-              flex items-center gap-1.5
-            "
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-3 h-3 lg:w-3.5 lg:h-3.5 animate-spin" />
-                <span className="hidden lg:inline">Registering…</span>
-                <span className="lg:hidden">…</span>
-              </>
-            ) : (
-              'Register →'
-            )}
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {live ? (
+            <Link
+              href="/elevation-summit/watch"
+              className="rounded-full bg-[var(--app-accent)] px-5 py-2.5 text-sm font-semibold text-[#0F0F0E] hover:opacity-90"
+            >
+              Watch live →
+            </Link>
+          ) : registered ? (
+            <Link
+              href="/elevation-summit"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--app-border-gold)] bg-[var(--bg-card)] px-4 py-2.5 text-sm font-medium text-[var(--app-success-ink)]"
+            >
+              <Check className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
+              You’re registered
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={handleRegister}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--app-accent)] px-5 py-2.5 text-sm font-semibold text-[#0F0F0E] hover:opacity-90 disabled:opacity-60"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
+              {loading ? 'Registering…' : 'Register free →'}
+            </button>
+          )}
+          {!live && (
+            <Link
+              href="/donate"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-card)] px-4 py-2.5 text-sm text-[var(--text-muted)] hover:bg-[var(--app-bg-hover)]"
+            >
+              <Heart className="w-4 h-4" aria-hidden="true" /> Donate
+            </Link>
+          )}
+        </div>
       </div>
 
       {error && (
-        <p className="mt-2 text-[10px] lg:text-xs text-red-400">{error}</p>
+        <p role="alert" className="mt-3 text-sm text-[var(--error)]">
+          {error}
+        </p>
       )}
-    </div>
+    </section>
   );
 }

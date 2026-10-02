@@ -346,14 +346,14 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
       )}
 
       {channel.channel_type === 'announce' && (
-        <div className="flex items-center gap-1.5 px-4 lg:px-6 py-2 bg-[#0F0F0E] text-[10px] lg:text-xs text-[#6B7280] shrink-0">
+        <div className="flex items-center gap-1.5 px-4 lg:px-6 py-2 bg-[var(--app-bg-input)] text-xs text-[var(--text-muted)] shrink-0">
           <span className="text-[#C8A96E]">🔒</span>
           Admin-only. React freely — replies not available here.
         </div>
       )}
 
       {channel.channel_type === 'circle' && (
-        <div className="flex items-center gap-1.5 px-4 lg:px-6 py-2 bg-[#0F6E56]/[0.08] text-[10px] lg:text-xs text-[#0F6E56] shrink-0">
+        <div className="flex items-center gap-1.5 px-4 lg:px-6 py-2 bg-[#0F6E56]/[0.08] text-xs text-[#0F6E56] shrink-0">
           <span>👥</span>
           Accountability circle — weekly check-ins, kept between members.
         </div>

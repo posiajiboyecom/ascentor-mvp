@@ -149,15 +149,15 @@ export function CoachChat({
     <div className="flex h-full">
       <div className="flex-1 min-w-0 flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center gap-2.5 lg:gap-4 px-3 py-2 lg:px-10 lg:py-6 bg-[#0F0F0E] lg:bg-transparent">
-          <span className="flex h-9 w-9 lg:h-12 lg:w-12 shrink-0 items-center justify-center rounded-full bg-[#C8A96E]/[0.12] border-[0.5px] border-[#C8A96E]/30 font-serif text-base lg:text-xl text-[#C8A96E]">
+        <div className="flex items-center gap-2.5 lg:gap-4 px-3 py-2 lg:px-10 lg:py-6 bg-transparent">
+          <span className="flex h-9 w-9 lg:h-12 lg:w-12 shrink-0 items-center justify-center rounded-full bg-[#C8A96E]/[0.12] border-[0.5px] border-[#C8A96E]/30 font-serif text-base lg:text-xl text-[var(--app-accent-ink)]">
             S
           </span>
           <div className="min-w-0">
-            <p className="text-[13px] lg:text-2xl font-medium text-[#FAFAF8] lg:text-[var(--text)] lg:font-serif">
+            <p className="text-[13px] lg:text-2xl font-medium text-[var(--text)] lg:font-serif">
               Sage
             </p>
-            <p className="text-[10px] lg:text-base text-[#6B7280] lg:text-[var(--text-muted)]">
+            <p className="text-[10px] lg:text-base text-[var(--text-muted)]">
               Your AI leadership coach
             </p>
           </div>
@@ -298,7 +298,7 @@ export function CoachChat({
             disabled={sending || !draft.trim()}
             className="
               flex h-[30px] w-[30px] lg:h-12 lg:w-12 shrink-0 items-center justify-center
-              rounded-full bg-[#0F0F0E] disabled:opacity-40 disabled:cursor-not-allowed
+              rounded-full bg-[var(--app-accent)] disabled:opacity-40 disabled:cursor-not-allowed
             "
           >
             <Send className="w-[13px] h-[13px] lg:w-5 lg:h-5 text-[#FAFAF8]" />

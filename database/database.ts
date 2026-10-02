@@ -153,6 +153,10 @@ export interface UserGoal {
   milestone_1: string | null;
   milestone_2: string | null;
   milestone_3: string | null;
+  /** Added by the milestone migration; absent until it has been run. */
+  milestone_1_completed?: boolean | null;
+  milestone_2_completed?: boolean | null;
+  milestone_3_completed?: boolean | null;
   progress:    number;
   created_at:  string;
   updated_at:  string | null;

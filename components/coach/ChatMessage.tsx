@@ -15,7 +15,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         <div
           className="
             max-w-[80%] rounded-[12px_2px_12px_12px]
-            bg-[#0F0F0E] text-[#FAFAF8]
+            bg-[var(--app-accent-soft)] text-[var(--text)]
             px-[11px] py-2 lg:px-5 lg:py-3
             text-xs lg:text-base leading-relaxed
           "

@@ -69,7 +69,7 @@ export function MessageBubble({
         {voiceUrl ? (
           <div
             className={`flex items-center gap-2 rounded-2xl px-3 py-2 w-full ${
-              isOwn ? 'bg-[#0F0F0E] text-[#FAFAF8]' : 'bg-[var(--color-background-secondary)]'
+              isOwn ? 'bg-[var(--app-accent-soft)] text-[var(--text)]' : 'bg-[var(--color-background-secondary)]'
             }`}
           >
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
@@ -97,7 +97,7 @@ export function MessageBubble({
           <div
             className={`rounded-2xl px-3.5 py-2 text-sm leading-relaxed break-words overflow-hidden ${
               isOwn
-                ? 'bg-[#0F0F0E] text-[#FAFAF8] rounded-tr-sm'
+                ? 'bg-[var(--app-accent-soft)] text-[var(--text)] rounded-tr-sm'
                 : 'bg-[var(--color-background-secondary)] text-[var(--color-text-primary)] rounded-tl-sm'
             }`}
           >
