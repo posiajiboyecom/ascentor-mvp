@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { addOrUpdateSubscriber, triggerAutomation, ML_GROUPS, ML_AUTOMATIONS } from "@/lib/mailerlite";
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as publicSchemas from '@/lib/validation/schemas/public';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,12 +11,9 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { email, firstName, source } = body;
-
-    if (!email) {
-      return NextResponse.json({ error: "Email required" }, { status: 400 });
-    }
+    const parsed = await parseJson(req, publicSchemas.newsletterSubscribe);
+    if (!parsed.ok) return parsed.response;
+    const { email, firstName, source } = parsed.data;
 
     const resolvedSource = source || 'website';
 

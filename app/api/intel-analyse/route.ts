@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 // ============================================================
 // GET  /api/intel-analyse  - fetch latest cached snapshot
@@ -45,8 +47,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { prompt, raw_data } = await req.json();
-    if (!prompt) return NextResponse.json({ error: 'Missing prompt' }, { status: 400 });
+    const parsed = await parseJson(req, memberSchemas.intelAnalyse);
+    if (!parsed.ok) return parsed.response;
+    const { prompt, raw_data } = parsed.data;
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 });

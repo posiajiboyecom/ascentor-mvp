@@ -15,6 +15,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as commerceSchemas from '@/lib/validation/schemas/commerce';
 
 const VALID_PLANS = ['explorer', 'builder', 'climber'] as const
 type ValidPlan = typeof VALID_PLANS[number]
@@ -36,16 +38,10 @@ export async function POST(req: NextRequest) {
     const userId = user.id
 
     // ── 2. Parse body ─────────────────────────────────────────
-    const { planId, promoCode } = await req.json()
-
-    if (!planId || !VALID_PLANS.includes(planId as ValidPlan)) {
-      return NextResponse.json({ error: 'Invalid plan.' }, { status: 400 })
-    }
-    if (!promoCode || typeof promoCode !== 'string') {
-      return NextResponse.json({ error: 'Promo code is required.' }, { status: 400 })
-    }
-
-    const code = promoCode.trim().toUpperCase()
+    const parsed = await parseJson(req, commerceSchemas.payActivateFree)
+    if (!parsed.ok) return parsed.response
+    const { planId } = parsed.data
+    const code = parsed.data.promoCode
     const now  = new Date()
 
     // ── 3. Validate + claim promo (atomic RPC) ────────────────

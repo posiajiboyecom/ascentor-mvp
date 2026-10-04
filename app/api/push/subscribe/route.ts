@@ -2,13 +2,14 @@
 // Saves a user's push subscription to the DB.
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 export async function POST(req: NextRequest) {
   try {
-    const { subscription } = await req.json();
-    if (!subscription?.endpoint) {
-      return NextResponse.json({ error: 'Invalid subscription' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, memberSchemas.pushSubscribe);
+    if (!parsed.ok) return parsed.response;
+    const { subscription } = parsed.data;
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

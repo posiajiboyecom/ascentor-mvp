@@ -129,7 +129,7 @@ export function PlanSection({ profile, userId }: PlanSectionProps) {
       const res = await fetch('/api/subscription/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, reason: 'User initiated from account page' }),
+        body: JSON.stringify({ reason: 'User initiated from account page' }),
       });
       const data = await res.json();
 

@@ -12,6 +12,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as commerceSchemas from '@/lib/validation/schemas/commerce';
 
 // ── GET: Fetch active auto-apply promo ───────────────────────────────────────
 export async function GET() {
@@ -45,12 +47,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'You must be logged in.' }, { status: 401 })
     }
 
-    const { code } = await req.json()
-    if (!code || typeof code !== 'string') {
-      return NextResponse.json({ error: 'Promo code is required.' }, { status: 400 })
-    }
-
-    const upperCode = code.trim().toUpperCase()
+    const parsed = await parseJson(req, commerceSchemas.payPromo)
+    if (!parsed.ok) return parsed.response
+    const upperCode = parsed.data.code
     const now       = new Date()
 
     // Look up in DB

@@ -3,6 +3,8 @@ import { isValidPhoneNumber } from 'libphonenumber-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { deliverPaidEmails } from '@/lib/summitEmails';
 import { summitRegisterLimiter, getClientIp } from '@/lib/rate-limit';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as publicSchemas from '@/lib/validation/schemas/public';
 
 // Registration is free. There is no payment step: submitting this form is
 // the whole flow, so every registration is confirmed immediately and the
@@ -20,33 +22,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let data;
-  try {
-    data = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
-  }
-
-  if (!data.full_name || typeof data.full_name !== 'string' || !data.full_name.trim()) {
-    return NextResponse.json({ error: 'Full name is required.' }, { status: 400 });
-  }
-  if (!data.email || typeof data.email !== 'string' || !data.email.includes('@')) {
-    return NextResponse.json({ error: 'A valid email address is required.' }, { status: 400 });
-  }
-  if (!data.whatsapp || typeof data.whatsapp !== 'string' || !isValidPhoneNumber(data.whatsapp.trim())) {
+  const parsed = await parseJson(req, publicSchemas.summitRegister);
+  if (!parsed.ok) return parsed.response;
+  const data = parsed.data;
+  if (!isValidPhoneNumber(data.whatsapp.trim())) {
     return NextResponse.json({ error: 'A valid WhatsApp number is required.' }, { status: 400 });
-  }
-  if (!data.location || typeof data.location !== 'string' || !data.location.trim()) {
-    return NextResponse.json({ error: 'Location is required.' }, { status: 400 });
-  }
-  if (!data.organisation || typeof data.organisation !== 'string' || !data.organisation.trim()) {
-    return NextResponse.json({ error: 'Current company is required.' }, { status: 400 });
-  }
-  if (!data.current_role || typeof data.current_role !== 'string' || !data.current_role.trim()) {
-    return NextResponse.json({ error: 'Current role is required.' }, { status: 400 });
-  }
-  if (data.consent !== true) {
-    return NextResponse.json({ error: 'You must accept the privacy policy to register.' }, { status: 400 });
   }
 
   const attendanceType = data.attendance_type === 'virtual' ? 'virtual' : 'onsite';

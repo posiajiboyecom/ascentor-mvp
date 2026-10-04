@@ -1,6 +1,8 @@
 // app/api/survey/[slug]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as publicSchemas from '@/lib/validation/schemas/public';
 
 // GET /api/survey/[slug] - fetch published survey
 export async function GET(
@@ -32,12 +34,9 @@ export async function POST(
   const { slug } = await params;
   const supabase = await createClient();
 
-  const body = await req.json();
-  const { answers, metadata } = body;
-
-  if (!answers || typeof answers !== 'object') {
-    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
-  }
+  const parsed = await parseJson(req, publicSchemas.surveySubmit);
+  if (!parsed.ok) return parsed.response;
+  const { answers, metadata } = parsed.data;
 
   // Get survey id
   const { data: survey, error: surveyErr } = await supabase

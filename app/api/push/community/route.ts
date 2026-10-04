@@ -10,6 +10,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { notify, NotifyTemplates } from '@/lib/notify';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,11 +22,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { targetUserId, title, body, url } = await req.json();
-
-    if (!targetUserId || !title || !body) {
-      return NextResponse.json({ error: 'targetUserId, title and body required' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, memberSchemas.pushCommunity);
+    if (!parsed.ok) return parsed.response;
+    const { targetUserId, title, body, url } = parsed.data;
 
     // Don't push to yourself (belt-and-suspenders - client already checks)
     if (targetUserId === user.id) {

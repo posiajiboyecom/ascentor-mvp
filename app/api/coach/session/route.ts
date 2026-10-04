@@ -19,6 +19,8 @@ import { SESSION_TYPE_MAP, getAvailableSessionTypes } from '@/lib/session-types'
 import { effectivePlan } from '@/lib/planTier';
 import { PLAN_LIMITS, checkUsage } from '@/lib/session-limits';
 import { retrieveContext } from '@/lib/rag';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 import type {
   CoachMessage,
   CoachAssistantMessage,
@@ -49,29 +51,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // ── Parse + validate body ────────────────────────────────
-  let body: SendCoachMessageRequest;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-  }
-
-  const { sessionId, sessionTypeId, message } = body;
-
-  if (!sessionTypeId || typeof message !== 'string' || !message.trim()) {
-    return NextResponse.json(
-      { error: 'sessionTypeId and message are required' },
-      { status: 400 }
-    );
-  }
-
-  if (message.length > 4000) {
-    return NextResponse.json(
-      { error: 'Message is too long (max 4000 characters)' },
-      { status: 400 }
-    );
-  }
+  // ── Parse + validate body (strict) ───────────────────────
+  const parsed = await parseJson(req, memberSchemas.coachSession);
+  if (!parsed.ok) return parsed.response;
+  const { sessionId, sessionTypeId, message } = parsed.data;
 
   const sessionType = SESSION_TYPE_MAP[sessionTypeId];
   if (!sessionType) {

@@ -20,6 +20,8 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -31,19 +33,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let slug: string | null = null;
-  try {
-    const body = (await req.json()) as { slug?: unknown };
-    if (typeof body.slug === 'string' && body.slug.trim()) {
-      slug = body.slug.trim();
-    }
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  if (!slug) {
-    return NextResponse.json({ error: 'slug is required' }, { status: 400 });
-  }
+  const parsed = await parseJson(req, memberSchemas.channelSlug);
+  if (!parsed.ok) return parsed.response;
+  const slug = parsed.data.slug;
 
   const { error } = await supabase
     .from('channel_read_positions')

@@ -5,6 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendPushToUser } from '@/lib/push';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 // Guard: only callable from within the app (service key) or same origin
 export async function POST(req: NextRequest) {
@@ -15,10 +17,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { userId, title, body, url, tag, icon } = await req.json();
-    if (!userId || !title || !body) {
-      return NextResponse.json({ error: 'userId, title and body required' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, memberSchemas.pushSend);
+    if (!parsed.ok) return parsed.response;
+    const { userId, title, body, url, tag, icon } = parsed.data;
 
     const supabase = await createClient();
     await sendPushToUser(supabase, userId, { title, body, url, tag, icon });

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { tasks } from "@trigger.dev/sdk/v3";
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,10 +11,9 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { sessionId } = await req.json();
-    if (!sessionId) {
-      return NextResponse.json({ error: "sessionId required" }, { status: 400 });
-    }
+    const parsed = await parseJson(req, memberSchemas.coachingSummary);
+    if (!parsed.ok) return parsed.response;
+    const { sessionId } = parsed.data;
     const handle = await tasks.trigger("process-coaching-summary", {
       sessionId,
       userId: user.id,

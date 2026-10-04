@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { tasks } from "@trigger.dev/sdk/v3";
 import sanitizeHtml from "sanitize-html";
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as publicSchemas from '@/lib/validation/schemas/public';
 
 // H-05: Allowlist of tags and attributes safe for email newsletters.
 // Blocks <script>, event handlers, javascript: hrefs, and arbitrary attributes.
@@ -38,10 +40,9 @@ export async function POST(req: NextRequest) {
     if (profile?.role !== "admin") {
       return NextResponse.json({ error: "Admin only" }, { status: 403 });
     }
-    const { subject, content } = await req.json();
-    if (!subject || !content) {
-      return NextResponse.json({ error: "Subject and content required" }, { status: 400 });
-    }
+    const parsed = await parseJson(req, publicSchemas.newsletterSend);
+    if (!parsed.ok) return parsed.response;
+    const { subject, content } = parsed.data;
 
     // H-05: Sanitise newsletter HTML server-side before sending to subscribers.
     // Prevents a compromised admin account (or malicious clipboard paste) from

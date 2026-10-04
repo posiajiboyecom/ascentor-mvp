@@ -4,7 +4,9 @@ import { sendPasswordResetOTP } from '@/lib/email';
 import { getClientIp } from '@/lib/rate-limit';
 import { LIMITS, rateLimit } from '@/lib/auth/rate-limit-shared';
 import { verifyTurnstile } from '@/lib/auth/turnstile';
-import { generateOtp, hashOtp, isPlausibleEmail, OTP_TTL_MS, OTP_MAX_PER_HOUR } from '@/lib/otp';
+import { generateOtp, hashOtp, OTP_TTL_MS, OTP_MAX_PER_HOUR } from '@/lib/otp';
+import { parseJson } from '@/lib/validation/http';
+import * as authSchemas from '@/lib/validation/schemas/auth';
 
 // The response is identical whether or not the account exists, so this endpoint
 // cannot be used to discover which emails are registered.
@@ -25,14 +27,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json().catch(() => null);
-    if (!isPlausibleEmail(body?.email)) {
-      return NextResponse.json({ error: 'A valid email is required' }, { status: 400 });
-    }
-    if (!(await verifyTurnstile(body?.captchaToken, ip))) {
+    const parsed = await parseJson(req, authSchemas.forgotPassword);
+    if (!parsed.ok) return parsed.response;
+    if (!(await verifyTurnstile(parsed.data.captchaToken, ip))) {
       return NextResponse.json({ error: 'Please complete the security check and try again.', captcha: true }, { status: 400 });
     }
-    const email = (body.email as string).toLowerCase().trim();
+    const email = parsed.data.email;
 
     // Per-email cap, stored in the database so it holds across serverless
     // instances (the in-memory limiter above is best-effort only).

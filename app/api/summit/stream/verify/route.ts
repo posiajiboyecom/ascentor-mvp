@@ -25,6 +25,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { summitStreamLimiter, getClientIp } from '@/lib/rate-limit';
 import { SUMMIT_START_INSTANT, hasSummitStarted } from '@/lib/elevationSummit';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as publicSchemas from '@/lib/validation/schemas/public';
 
 // AscentorBI - resolved once from https://www.youtube.com/@AscentorGlobal.
 // Used so the page can auto-embed whatever is currently live on the channel
@@ -89,15 +91,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { email?: unknown };
-  try { body = await req.json(); } catch {
-    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
-  }
-
-  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
-  if (!email || !email.includes('@') || email.length > 254) {
-    return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
-  }
+  const parsed = await parseJson(req, publicSchemas.summitStreamVerify);
+  if (!parsed.ok) return parsed.response;
+  const email = parsed.data.email;
 
   try {
     const result = await lookupEmail(email);

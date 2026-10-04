@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { settleReference } from '@/lib/paymentSettlement';
 import { paymentLimiter, getClientIp } from '@/lib/rate-limit';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as commerceSchemas from '@/lib/validation/schemas/commerce';
 
 // Called by the browser right after the Paystack popup reports success. It
 // does NOT trust the browser: the reference must belong to a payment_attempts
@@ -17,13 +19,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json().catch(() => null);
-    const reference  = body?.reference;
-    const donationId = body?.donationId;
-
-    if (typeof reference !== 'string' || typeof donationId !== 'string') {
-      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, commerceSchemas.donateVerify);
+    if (!parsed.ok) return parsed.response;
+    const { reference, donationId } = parsed.data;
 
     const result = await settleReference(reference);
 

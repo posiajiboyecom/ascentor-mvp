@@ -15,19 +15,18 @@ import { getClientIp } from '@/lib/rate-limit';
 import { LIMITS, rateLimitAll } from '@/lib/auth/rate-limit-shared';
 import { verifyTurnstile } from '@/lib/auth/turnstile';
 import { assessLogin } from '@/lib/auth/login-security';
-import { isPlausibleEmail } from '@/lib/otp';
+import { parseJson } from '@/lib/validation/http';
+import * as authSchemas from '@/lib/validation/schemas/auth';
 
 const STAFF_ROLES = ['admin', 'moderator'];
 const GENERIC_FAIL = 'Incorrect email or password.';
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
-  const { email, password, captchaToken, mode } = (body ?? {}) as Record<string, unknown>;
-
-  if (!isPlausibleEmail(email) || typeof password !== 'string' || !password || password.length > 256) {
-    return NextResponse.json({ error: GENERIC_FAIL }, { status: 400 });
-  }
-  const normalizedEmail = email.toLowerCase().trim();
+  const parsed = await parseJson(req, authSchemas.login);
+  // Never reveal which field was wrong on a sign-in attempt.
+  if (!parsed.ok) return NextResponse.json({ error: GENERIC_FAIL }, { status: 400 });
+  const { email, password, captchaToken, mode } = parsed.data;
+  const normalizedEmail = email;
   const ip = getClientIp(req);
 
   const limit = await rateLimitAll([

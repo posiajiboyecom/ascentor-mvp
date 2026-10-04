@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as commerceSchemas from '@/lib/validation/schemas/commerce';
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 
 export async function POST(req: NextRequest) {
   try {
-    const { reference, productId } = await req.json();
-
-    if (!reference || !productId) {
-      return NextResponse.json({ success: false, error: 'Missing reference or product' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, commerceSchemas.productVerify);
+    if (!parsed.ok) return NextResponse.json({ success: false, error: 'Missing or invalid reference or product' }, { status: 400 });
+    const { reference, productId } = parsed.data;
 
     if (!PAYSTACK_SECRET) {
       return NextResponse.json({ success: false, error: 'Payment system misconfigured' }, { status: 500 });

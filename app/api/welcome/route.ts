@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { tasks } from "@trigger.dev/sdk/v3";
 import { addOrUpdateSubscriber, triggerAutomation, ML_GROUPS, ML_AUTOMATIONS } from "@/lib/mailerlite";
+import { parseJson } from '@/lib/validation/http';
+import * as authSchemas from '@/lib/validation/schemas/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,11 +26,11 @@ export async function POST(req: NextRequest) {
       sessionUser = { id: user.id, email: user.email };
     }
 
-    const body = await req.json().catch(() => ({}));
-    const rawName = typeof body?.name === 'string' ? body.name.trim().slice(0, 80) : '';
-    const name = rawName.replace(/[<>]/g, '');
-    const email = sessionUser ? sessionUser.email : body?.email;
-    const userId = sessionUser ? sessionUser.id : body?.userId;
+    const parsed = await parseJson(req, authSchemas.welcome);
+    if (!parsed.ok) return parsed.response;
+    const name = (parsed.data.name ?? '').replace(/[<>]/g, '');
+    const email = sessionUser ? sessionUser.email : parsed.data.email;
+    const userId = sessionUser ? sessionUser.id : parsed.data.userId;
     if (!email || !userId) {
       return NextResponse.json({ error: "Missing email or userId" }, { status: 400 });
     }

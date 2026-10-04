@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/nodemailer';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from '@/lib/emailTemplate';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as publicSchemas from '@/lib/validation/schemas/public';
 
 // ── Lazy clients (never executed at build/module-eval time) ─
 function getSupabase() {
@@ -68,7 +70,9 @@ function buildConfirmationEmailHtml({
 // ── POST /api/waitlist ─────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const parsed = await parseJson(request, publicSchemas.waitlist);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??

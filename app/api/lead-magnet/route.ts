@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { addOrUpdateSubscriber } from '@/lib/mailerlite';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as publicSchemas from '@/lib/validation/schemas/public';
 
 // ═══════════════════════════════════════════════════════════
 // POST /api/lead-magnet
@@ -67,12 +69,9 @@ const MAGNETS: Record<string, {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { magnetId, email, firstName, source } = body;
-
-    if (!magnetId || !email) {
-      return NextResponse.json({ error: 'magnetId and email are required' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, publicSchemas.leadMagnet);
+    if (!parsed.ok) return parsed.response;
+    const { magnetId, email, firstName, source } = parsed.data;
 
     const magnet = MAGNETS[magnetId];
     if (!magnet) {

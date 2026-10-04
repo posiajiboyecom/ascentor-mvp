@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { addOrUpdateSubscriber, ML_GROUPS } from '@/lib/mailerlite';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as publicSchemas from '@/lib/validation/schemas/public';
 
 // ─────────────────────────────────────────────────────────────
 // POST /api/checkout-pending
@@ -22,8 +24,10 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, name, userId } = await req.json();
-    if (!email) return NextResponse.json({ ok: true }); // silent, non-blocking
+    const parsed = await parseJson(req, publicSchemas.checkoutPending);
+    if (!parsed.ok) return NextResponse.json({ ok: true }); // silent, non-blocking
+    const { email, name, userId } = parsed.data;
+    if (!email) return NextResponse.json({ ok: true });
 
     const emailClean = email.trim().toLowerCase();
     const firstName = (name || emailClean.split('@')[0]).split(' ')[0];

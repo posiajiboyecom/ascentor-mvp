@@ -45,6 +45,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { mondayOf } from '@/lib/week';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 const VALID_DIMENSIONS = new Set([
   'Mind', 'Vocation', 'Character', 'Relationships', 'Community', 'Legacy',
@@ -63,28 +65,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // ── Parse body ──────────────────────────────────────────────────────────
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  const { content, dimensionTag } = body as { content: unknown; dimensionTag: unknown };
-
-  if (typeof content !== 'string' || !content.trim()) {
-    return NextResponse.json({ error: 'Write a reflection before checking in.' }, { status: 400 });
-  }
-  const text = content.trim().slice(0, 2000);
-
-  let dimension: string | null = null;
-  if (dimensionTag != null) {
-    if (typeof dimensionTag !== 'string' || !VALID_DIMENSIONS.has(dimensionTag)) {
-      return NextResponse.json({ error: 'Invalid dimension.' }, { status: 400 });
-    }
-    dimension = dimensionTag;
-  }
+  // ── Parse body (strict) ─────────────────────────────────────────────────
+  const parsed = await parseJson(req, memberSchemas.communityCheckin);
+  if (!parsed.ok) return parsed.response;
+  const text = parsed.data.content;
+  const dimension: string | null = parsed.data.dimensionTag ?? null;
 
   // ── Resolve ALL of the user's circles ────────────────────────────────────
   // Fan-out: the check-in lands in every circle they belong to so "X of Y

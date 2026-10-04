@@ -28,6 +28,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
 import { createAttempt, subscriptionAmountKobo } from '@/lib/paymentSettlement'
 import { paymentLimiter, getClientIp } from '@/lib/rate-limit'
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as commerceSchemas from '@/lib/validation/schemas/commerce';
 
 // Plan prices live in lib/pricing.ts (single source of truth) and are read via
 // subscriptionAmountKobo(); the same value is stored on the payment attempt and
@@ -59,15 +61,9 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 2. Validate body ─────────────────────────────────────────────────────
-    const body = await req.json().catch(() => ({}))
-    const { planId, billing } = body as { planId: string; billing: string }
-
-    if (!VALID_PLANS.includes(planId as any)) {
-      return NextResponse.json({ error: 'Invalid plan selected.' }, { status: 400 })
-    }
-    if (!VALID_BILLING.includes(billing as any)) {
-      return NextResponse.json({ error: 'Invalid billing cycle.' }, { status: 400 })
-    }
+    const parsed = await parseJson(req, commerceSchemas.payStart)
+    if (!parsed.ok) return parsed.response
+    const { planId, billing } = parsed.data
 
     // ── 3. Resolve plan amount ────────────────────────────────────────────────
     // Plan codes (PLN_xxx) are no longer passed to Paystack - they lock channels.

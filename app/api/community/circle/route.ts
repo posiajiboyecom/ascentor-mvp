@@ -18,6 +18,8 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 async function requireUser() {
   const supabase = await createClient();
@@ -28,12 +30,8 @@ async function requireUser() {
 }
 
 async function readSlug(req: Request): Promise<string | null> {
-  try {
-    const body = (await req.json()) as { slug?: unknown };
-    return typeof body.slug === 'string' && body.slug.trim() ? body.slug.trim() : null;
-  } catch {
-    return null;
-  }
+  const parsed = await parseJson(req, memberSchemas.channelSlug);
+  return parsed.ok ? parsed.data.slug : null;
 }
 
 export async function POST(req: Request) {

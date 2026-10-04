@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { notify, NotifyTemplates } from '@/lib/notify';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 export async function POST(req: NextRequest) {
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -18,17 +20,10 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // ── Body ──────────────────────────────────────────────────────────────────
-  let body: { sessionId?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-  }
-  const { sessionId } = body;
-  if (!sessionId || typeof sessionId !== 'string') {
-    return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
-  }
+  // ── Body (strict) ─────────────────────────────────────────────────────────
+  const parsed = await parseJson(req, memberSchemas.expertSessionRef);
+  if (!parsed.ok) return parsed.response;
+  const { sessionId } = parsed.data;
 
   // ── Fetch session details ─────────────────────────────────────────────────
   const { data: session, error: sessionErr } = await supabaseAdmin
@@ -94,15 +89,10 @@ export async function DELETE(req: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // ── Body ──────────────────────────────────────────────────────────────────
-  let body: { sessionId?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-  }
-  const { sessionId } = body;
-  if (!sessionId) return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
+  // ── Body (strict) ─────────────────────────────────────────────────────────
+  const parsed = await parseJson(req, memberSchemas.expertSessionRef);
+  if (!parsed.ok) return parsed.response;
+  const { sessionId } = parsed.data;
 
   const { error } = await supabaseAdmin
     .from('session_registrations')

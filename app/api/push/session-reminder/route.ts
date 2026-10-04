@@ -3,6 +3,8 @@
 // attendees. Body: { sessionId }. Shares lib/reminders.ts with the cron job.
 import { NextRequest, NextResponse } from 'next/server';
 import { sendSessionReminder } from '@/lib/reminders';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 export async function POST(req: NextRequest) {
   const secret = req.headers.get('x-internal-secret');
@@ -11,8 +13,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { sessionId } = await req.json().catch(() => ({}));
-  if (!sessionId) return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
+  const parsed = await parseJson(req, memberSchemas.sessionReminder);
+  if (!parsed.ok) return parsed.response;
+  const { sessionId } = parsed.data;
 
   const notified = await sendSessionReminder(sessionId);
   if (notified === null) return NextResponse.json({ error: 'Session not found' }, { status: 404 });

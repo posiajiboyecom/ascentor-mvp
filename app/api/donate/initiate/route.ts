@@ -3,6 +3,8 @@ import { isValidPhoneNumber } from 'libphonenumber-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { createAttempt } from '@/lib/paymentSettlement';
 import { paymentLimiter, getClientIp } from '@/lib/rate-limit';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as commerceSchemas from '@/lib/validation/schemas/commerce';
 
 // Minimum/maximum a donor can send through the online form. Below the
 // minimum, Paystack fees would eat most of the donation; above the maximum,
@@ -26,30 +28,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let data;
-  try {
-    data = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
-  }
+  const parsed = await parseJson(req, commerceSchemas.donateInitiate);
+  if (!parsed.ok) return parsed.response;
+  const fullName = parsed.data.full_name;
+  const email = parsed.data.email;
+  const phone = parsed.data.phone;
+  const message = parsed.data.message ? parsed.data.message.slice(0, 500) : null;
+  const amountNaira = parsed.data.amount;
 
-  const fullName = typeof data?.full_name === 'string' ? data.full_name.trim() : '';
-  const email    = typeof data?.email === 'string' ? data.email.trim().toLowerCase() : '';
-  const phone    = typeof data?.phone === 'string' ? data.phone.trim() : '';
-  const message  = typeof data?.message === 'string' ? data.message.trim().slice(0, 500) : null;
-  const amountNaira = Number(data?.amount);
-
-  if (!fullName || fullName.length < 2) {
-    return NextResponse.json({ error: 'Full name is required.' }, { status: 400 });
-  }
-  if (!email || !email.includes('@')) {
-    return NextResponse.json({ error: 'A valid email address is required.' }, { status: 400 });
-  }
-  if (!phone || !isValidPhoneNumber(phone)) {
+  if (!isValidPhoneNumber(phone)) {
     return NextResponse.json({ error: 'A valid phone number is required.' }, { status: 400 });
-  }
-  if (!Number.isFinite(amountNaira) || amountNaira <= 0) {
-    return NextResponse.json({ error: 'Enter a donation amount.' }, { status: 400 });
   }
 
   const amountKobo = Math.round(amountNaira * 100);

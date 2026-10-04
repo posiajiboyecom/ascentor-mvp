@@ -6,6 +6,8 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from '@/lib/emailTemplate';
 import { sendEmail } from '@/lib/nodemailer';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as publicSchemas from '@/lib/validation/schemas/public';
 
 function confirmationHtml(opts: {
   firstName: string;
@@ -32,17 +34,10 @@ function confirmationHtml(opts: {
 }
 
 export async function POST(req: Request) {
-  let body: Record<string, unknown>;
-  try { body = await req.json(); }
-  catch { return NextResponse.json({ error: 'Invalid request.' }, { status: 400 }); }
-
+  const parsed = await parseJson(req, publicSchemas.eventRegister);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
   const { eventId, full_name, email } = body;
-  if (!eventId || typeof eventId !== 'string')
-    return NextResponse.json({ error: 'eventId is required.' }, { status: 400 });
-  if (!full_name || typeof full_name !== 'string' || !full_name.trim())
-    return NextResponse.json({ error: 'Full name is required.' }, { status: 400 });
-  if (!email || typeof email !== 'string' || !email.includes('@'))
-    return NextResponse.json({ error: 'A valid email is required.' }, { status: 400 });
 
   // Fetch event
   const { data: event } = await supabaseAdmin

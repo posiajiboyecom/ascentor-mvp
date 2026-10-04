@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getAttemptByReference, settleReference } from '@/lib/paymentSettlement';
 import { paymentLimiter, getClientIp } from '@/lib/rate-limit';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as commerceSchemas from '@/lib/validation/schemas/commerce';
 
 // Called by the browser the moment the payment window / confirm overlay is
 // closed or the tab is left. Never trusts the browser: the reference must be
@@ -12,12 +14,9 @@ export async function POST(req: NextRequest) {
   if (!limit.allowed) return NextResponse.json({ ok: true });
 
   try {
-    const body = await req.json().catch(() => null);
-    const reference  = body?.reference;
-    const donationId = body?.donationId;
-    if (typeof reference !== 'string' || typeof donationId !== 'string') {
-      return NextResponse.json({ ok: true });
-    }
+    const parsed = await parseJson(req, commerceSchemas.donateAbandon);
+    if (!parsed.ok) return NextResponse.json({ ok: true }); // best-effort beacon: never error
+    const { reference, donationId } = parsed.data;
 
     const attempt = await getAttemptByReference(reference);
     if (!attempt || attempt.kind !== 'donation' || attempt.donation_id !== donationId) {

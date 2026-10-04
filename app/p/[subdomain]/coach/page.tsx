@@ -40,6 +40,7 @@ export default function CoachPage() {
   // the `done` event updated the wrong message slot, leaving raw JSON visible.
   // Using a ref guarantees we always point at the correct message.
   const streamingIndexRef = useRef<number>(-1);
+  const sessionIdRef      = useRef<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const selectorRef    = useRef<HTMLDivElement>(null);
@@ -158,19 +159,9 @@ export default function CoachPage() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          userInput:           userMsg,
-          sessionType,
-          messageCount:        userMessageCount,
-          // Pass current session messages as context so Claude remembers the conversation
-          conversationHistory: messages
-            .filter(m => !m.streaming)
-            .map(m => ({
-              role:    m.role,
-              content: m.role === 'user'
-                ? m.content ?? ''
-                : [m.reflection, m.question, m.action].filter(Boolean).join(' | '),
-            }))
-            .slice(-20), // last 20 messages (10 turns) to stay within context limits
+          sessionId:     sessionIdRef.current,
+          sessionTypeId: sessionType,
+          message:       userMsg,
         }),
       });
 
@@ -202,60 +193,32 @@ export default function CoachPage() {
         return;
       }
 
-      if (!res.ok || !res.body) throw new Error('Stream unavailable');
+      if (!res.ok) throw new Error('Coach request failed');
 
+      const data = (await res.json()) as {
+        sessionId: string;
+        message: { reflection: string; question: string; action: string | null };
+      };
+      sessionIdRef.current = data.sessionId;
       analytics.coachingSessionStarted(sessionType);
 
-      const reader  = res.body.getReader();
-      const decoder = new TextDecoder();
-      let   buffer  = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-
-            if (event.type === 'delta') {
-              // During streaming we only show typing dots - we intentionally
-              // do NOT append raw tokens to the UI because the API returns
-              // raw JSON fragments which would show as garbled text.
-              // The streaming flag keeps the dots visible until `done` fires.
-              // (No state update needed here - dots are already showing.)
-
-            } else if (event.type === 'done') {
-              // ── Replace the streaming placeholder with the final structured
-              //    message. This is the ONLY place content becomes visible,
-              //    guaranteeing users never see raw JSON tokens.
-              setMessages(m => m.map((msg, i) =>
-                i === streamingIndexRef.current
-                  ? {
-                      role:       'assistant',
-                      streaming:  false,
-                      reflection: event.reflection ?? null,
-                      question:   event.question   ?? null,
-                      action:     event.action     ?? null,
-                    }
-                  : msg
-              ));
-              if (usageInfo) {
-                const newUsed = usageInfo.used + 1;
-                setUsageInfo({ ...usageInfo, used: newUsed });
-                if (newUsed >= usageInfo.limit && usageInfo.limit !== -1) {
-                  setLimitReached(true);
-                }
-              }
-            } else if (event.type === 'error') {
-              throw new Error(event.message);
+      // Replace the typing placeholder with the final structured message.
+      setMessages(m => m.map((msg, i) =>
+        i === streamingIndexRef.current
+          ? {
+              role:       'assistant',
+              streaming:  false,
+              reflection: data.message.reflection ?? null,
+              question:   data.message.question   ?? null,
+              action:     data.message.action     ?? null,
             }
-          } catch { /* skip malformed SSE lines */ }
+          : msg
+      ));
+      if (usageInfo) {
+        const newUsed = usageInfo.used + 1;
+        setUsageInfo({ ...usageInfo, used: newUsed });
+        if (newUsed >= usageInfo.limit && usageInfo.limit !== -1) {
+          setLimitReached(true);
         }
       }
 

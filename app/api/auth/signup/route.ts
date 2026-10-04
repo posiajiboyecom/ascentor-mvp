@@ -10,16 +10,13 @@ import { getClientIp } from '@/lib/rate-limit';
 import { LIMITS, rateLimit } from '@/lib/auth/rate-limit-shared';
 import { verifyTurnstile } from '@/lib/auth/turnstile';
 import { validatePassword } from '@/lib/auth/password-policy';
-import { safeNext } from '@/lib/auth/safe-next';
-import { isPlausibleEmail } from '@/lib/otp';
+import { parseJson } from '@/lib/validation/http';
+import * as authSchemas from '@/lib/validation/schemas/auth';
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
-  const { email, password, captchaToken, next } = (body ?? {}) as Record<string, unknown>;
-
-  if (!isPlausibleEmail(email)) {
-    return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
-  }
+  const parsed = await parseJson(req, authSchemas.signup);
+  if (!parsed.ok) return parsed.response;
+  const { email, password, captchaToken, next } = parsed.data;
 
   const ip = getClientIp(req);
   const limit = await rateLimit(ip, LIMITS.signupIp);
@@ -40,12 +37,12 @@ export async function POST(req: NextRequest) {
   }
 
   const origin = new URL(req.url).origin;
-  const dest = safeNext(typeof next === 'string' ? next : null, '/onboarding');
+  const dest = next; // already reduced to a same-site path by the schema
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
-    email: email.toLowerCase().trim(),
-    password: password as string,
+    email,
+    password,
     options: { emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(dest)}` },
   });
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { tasks } from "@trigger.dev/sdk/v3";
 import { addOrUpdateSubscriber, triggerAutomation, ML_GROUPS, ML_AUTOMATIONS } from "@/lib/mailerlite";
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,10 +23,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const { email, name, userId } = await req.json();
-    if (!email || !userId) {
-      return NextResponse.json({ error: "Missing email or userId" }, { status: 400 });
-    }
+    const parsed = await parseJson(req, memberSchemas.userWelcome);
+    if (!parsed.ok) return parsed.response;
+    const { email, name, userId } = parsed.data;
 
     // 1. Add to MailerLite as an app user + trigger nurture sequence
     try {

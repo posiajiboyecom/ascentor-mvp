@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 export async function POST(request: Request) {
   try {
@@ -10,13 +12,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { referralCode } = await request.json();
-
-    if (!referralCode || typeof referralCode !== 'string') {
-      return NextResponse.json({ error: 'Referral code required' }, { status: 400 });
-    }
-
-    const code = referralCode.trim().toUpperCase();
+    const parsed = await parseJson(request, memberSchemas.referralRedeem);
+    if (!parsed.ok) return parsed.response;
+    const code = parsed.data.referralCode;
 
     // 1. Find referrer by code
     const { data: referrer, error: lookupError } = await supabase

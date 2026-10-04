@@ -28,6 +28,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { brandedEmailLayout, esc, p, goldButton, outlineButton, summaryRow, summaryBox, messageBlock } from '@/lib/emailTemplate';
 import { sendEmail as sendMail } from '@/lib/nodemailer';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as publicSchemas from '@/lib/validation/schemas/public';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -93,25 +95,9 @@ function ackEmailHtml(firstName: string, subjectLabel: string, recipient: string
 // ── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  let body: { name?: string; email?: string; subject?: string; message?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-  }
-
-  const { name = '', email = '', subject = '', message = '' } = body;
-
-  // Validate
-  if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
-    return NextResponse.json({ error: 'All fields are required.' }, { status: 400 });
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
-  }
-  if (message.trim().length > 4000) {
-    return NextResponse.json({ error: 'Message is too long (max 4000 characters).' }, { status: 400 });
-  }
+  const parsed = await parseJson(req, publicSchemas.contact);
+  if (!parsed.ok) return parsed.response;
+  const { name, email, subject, message } = parsed.data;
 
   // Save to DB
   const { error: dbError } = await supabaseAdmin

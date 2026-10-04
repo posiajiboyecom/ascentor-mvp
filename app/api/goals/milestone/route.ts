@@ -29,6 +29,8 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 // Only these three field names are accepted - anything else is rejected.
 const VALID_FIELDS = new Set([
@@ -55,34 +57,10 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // ── Parse body ────────────────────────────────────────────────────────
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  const { goalId, field, completed } = body as {
-    goalId:    unknown;
-    field:     unknown;
-    completed: unknown;
-  };
-
-  if (typeof goalId !== 'string' || !goalId.trim()) {
-    return NextResponse.json({ error: 'goalId is required' }, { status: 400 });
-  }
-
-  if (typeof field !== 'string' || !VALID_FIELDS.has(field as MilestoneField)) {
-    return NextResponse.json(
-      { error: 'field must be one of: milestone_1, milestone_2, milestone_3' },
-      { status: 400 }
-    );
-  }
-
-  if (typeof completed !== 'boolean') {
-    return NextResponse.json({ error: 'completed must be a boolean' }, { status: 400 });
-  }
+  // ── Parse body (strict) ───────────────────────────────────────────────
+  const parsed = await parseJson(req, memberSchemas.goalMilestone);
+  if (!parsed.ok) return parsed.response;
+  const { goalId, field, completed } = parsed.data;
 
   // ── Ownership check ───────────────────────────────────────────────────
   // Fetch just enough to verify the goal belongs to this user.

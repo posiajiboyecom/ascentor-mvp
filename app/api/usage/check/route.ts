@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkUsage } from '@/lib/session-limits';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 async function handleCheck(feature: string | null) {
   if (!feature) {
@@ -32,8 +34,9 @@ async function handleCheck(feature: string | null) {
 
 export async function GET(req: NextRequest) {
   try {
-    const feature = req.nextUrl.searchParams.get('feature');
-    return await handleCheck(feature);
+    const parsed = parseQuery(req, memberSchemas.usageFeature);
+    if (!parsed.ok) return parsed.response;
+    return await handleCheck(parsed.data.feature);
   } catch (err: any) {
     console.error('Usage check (GET) error:', err);
     return NextResponse.json({ error: 'Failed to check usage' }, { status: 500 });
@@ -42,8 +45,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    return await handleCheck(body?.feature ?? null);
+    const parsed = await parseJson(req, memberSchemas.usageFeature);
+    if (!parsed.ok) return parsed.response;
+    return await handleCheck(parsed.data.feature);
   } catch (err: any) {
     console.error('Usage check (POST) error:', err);
     return NextResponse.json({ error: 'Failed to check usage' }, { status: 500 });

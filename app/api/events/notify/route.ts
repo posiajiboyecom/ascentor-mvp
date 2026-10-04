@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { brandedEmailLayout, esc, goldButton } from '@/lib/emailTemplate';
 import { sendEmail, getMailer } from '@/lib/nodemailer';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as publicSchemas from '@/lib/validation/schemas/public';
 
 function buildHtml(opts: { firstName: string; eventTitle: string; message: string; recipient: string }) {
   const body = esc(opts.message).replace(/\n/g, '<br>');
@@ -30,12 +32,9 @@ export async function POST(req: Request) {
   if (!profile || !['admin','moderator'].includes(profile.role))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  let body: any;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
-
-  const { eventId, status, subject, message } = body;
-  if (!eventId || !status || !subject?.trim() || !message?.trim())
-    return NextResponse.json({ error: 'eventId, status, subject and message are required' }, { status: 400 });
+  const parsed = await parseJson(req, publicSchemas.eventNotify);
+  if (!parsed.ok) return parsed.response;
+  const { eventId, status, subject, message } = parsed.data;
 
   if (!getMailer()) return NextResponse.json({ error: 'SMTP credentials not configured' }, { status: 500 });
 

@@ -33,6 +33,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { brandedEmailLayout, esc, p, goldButton, outlineButton, summaryRow, summaryBox, messageBlock } from '@/lib/emailTemplate'
 import { sendEmail as sendMail } from '@/lib/nodemailer'
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as publicSchemas from '@/lib/validation/schemas/public';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -94,17 +96,10 @@ async function sendEmail(to: string, subject: string, html: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const name    = (body.name    || '').trim()
-    const email   = (body.email   || '').trim().toLowerCase()
-    const org     = (body.org     || '').trim()
-    const message = (body.message || '').trim()
-
-    // ── Validate ──────────────────────────────────────────────────────────────
-    if (!name)  return NextResponse.json({ error: 'Name is required' }, { status: 400 })
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      return NextResponse.json({ error: 'A valid email address is required' }, { status: 400 })
-    if (!org)   return NextResponse.json({ error: 'Organisation name is required' }, { status: 400 })
+    const parsed = await parseJson(req, publicSchemas.partnerEnquiry);
+    if (!parsed.ok) return parsed.response;
+    const { name, email, org } = parsed.data;
+    const message = parsed.data.message ?? '';
 
     // ── Save lead ─────────────────────────────────────────────────────────────
     const { data: enquiry, error: dbErr } = await supabase

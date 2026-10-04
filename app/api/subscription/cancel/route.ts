@@ -9,6 +9,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as memberSchemas from '@/lib/validation/schemas/member';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,8 +33,9 @@ export async function POST(req: NextRequest) {
     const userId = user.id;
 
     // Only read reason from body - userId is ignored
-    const body = await req.json().catch(() => ({}));
-    const reason: string | undefined = body.reason;
+    const parsed = await parseJson(req, memberSchemas.subscriptionCancel);
+    if (!parsed.ok) return parsed.response;
+    const reason: string | undefined = parsed.data.reason ?? undefined;
 
     const { data: profile } = await supabase
       .from('profiles')

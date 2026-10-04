@@ -3,7 +3,9 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getClientIp } from '@/lib/rate-limit';
 import { LIMITS, rateLimit } from '@/lib/auth/rate-limit-shared';
 import { validatePassword } from '@/lib/auth/password-policy';
-import { otpMatches, isPlausibleEmail, OTP_MAX_ATTEMPTS } from '@/lib/otp';
+import { otpMatches, OTP_MAX_ATTEMPTS } from '@/lib/otp';
+import { parseJson } from '@/lib/validation/http';
+import * as authSchemas from '@/lib/validation/schemas/auth';
 import { revokeAllSessions } from '@/lib/auth/revoke-sessions';
 import { sendPasswordChangedEmail } from '@/lib/email';
 
@@ -20,20 +22,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json().catch(() => null);
-    const { email, otp_code, new_password } = body ?? {};
-
-    if (!isPlausibleEmail(email) || typeof otp_code !== 'string' || typeof new_password !== 'string') {
-      return NextResponse.json({ error: 'Email, OTP code, and new password are required' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, authSchemas.resetPassword);
+    if (!parsed.ok) return parsed.response;
+    const { email, otp_code, new_password } = parsed.data;
     const policy = await validatePassword(new_password);
     if (!policy.ok) {
       return NextResponse.json({ error: policy.error }, { status: 400 });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const code = otp_code.trim();
-    if (!/^\d{6}$/.test(code)) return invalid();
+    const normalizedEmail = email;
+    const code = otp_code;
 
     // Newest live code for this email.
     const { data: otp } = await supabaseAdmin
