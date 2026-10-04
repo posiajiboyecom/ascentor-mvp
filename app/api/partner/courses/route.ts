@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { canAddCourse, getTierConfig, hasFeature } from '@/lib/partnerTier';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as partnerSchemas from '@/lib/validation/schemas/partner';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -136,11 +138,9 @@ export async function POST(req: NextRequest) {
       }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { title, description, youtube_id, category, difficulty, duration, thumbnail_url } = body;
-
-    if (!title?.trim()) return NextResponse.json({ error: 'Title is required' }, { status: 400 });
-    if (!youtube_id?.trim()) return NextResponse.json({ error: 'YouTube video ID or URL is required' }, { status: 400 });
+    const parsed = await parseJson(req, partnerSchemas.courseCreate);
+    if (!parsed.ok) return parsed.response;
+    const { title, description, youtube_id, category, difficulty, duration, thumbnail_url } = parsed.data;
 
     // Extract YouTube ID from URL if full URL provided
     const ytId = extractYoutubeId(youtube_id.trim());
@@ -191,10 +191,10 @@ export async function PATCH(req: NextRequest) {
     if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
     const { partner } = result;
 
-    const body = await req.json();
-    const { courseId, ...updates } = body;
-
-    if (!courseId) return NextResponse.json({ error: 'courseId required' }, { status: 400 });
+    const parsedUpdate = await parseJson(req, partnerSchemas.courseUpdate);
+    if (!parsedUpdate.ok) return parsedUpdate.response;
+    const { courseId, ...updatesTyped } = parsedUpdate.data;
+    const updates = updatesTyped as Record<string, unknown>;
 
     // Confirm course belongs to this partner
     const { data: existing } = await supabase
@@ -242,8 +242,9 @@ export async function DELETE(req: NextRequest) {
     if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
     const { partner } = result;
 
-    const { courseId } = await req.json();
-    if (!courseId) return NextResponse.json({ error: 'courseId required' }, { status: 400 });
+    const parsedDelete = await parseJson(req, partnerSchemas.courseDelete);
+    if (!parsedDelete.ok) return parsedDelete.response;
+    const { courseId } = parsedDelete.data;
 
     // Confirm ownership
     const { data: existing } = await supabase

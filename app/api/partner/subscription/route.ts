@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { getTierConfig, resolveTier, TIER_CONFIG, type PartnerTier } from '@/lib/partnerTier';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as partnerSchemas from '@/lib/validation/schemas/partner';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -133,13 +135,9 @@ export async function POST(req: NextRequest) {
 
     if (!partner) return NextResponse.json({ error: 'No partner account' }, { status: 404 });
 
-    const body = await req.json();
-    const { requested_tier, billing_cycle } = body;
-
-    const validTiers: PartnerTier[] = ['starter', 'growth', 'pro'];
-    if (!validTiers.includes(requested_tier)) {
-      return NextResponse.json({ error: 'Invalid tier' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, partnerSchemas.subscriptionChange);
+    if (!parsed.ok) return parsed.response;
+    const { requested_tier, billing_cycle } = parsed.data;
 
     const currentTier = resolveTier(partner.plan_tier);
     if (requested_tier === currentTier) {

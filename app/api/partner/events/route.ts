@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { canAddEvent, getTierConfig, hasFeature } from '@/lib/partnerTier';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as partnerSchemas from '@/lib/validation/schemas/partner';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -124,16 +126,13 @@ export async function POST(req: NextRequest) {
       }, { status: 403 });
     }
 
-    const body = await req.json();
+    const parsed = await parseJson(req, partnerSchemas.eventCreate);
+    if (!parsed.ok) return parsed.response;
     const {
       title, description, expert_name, expert_bio, expert_avatar,
       scheduled_at, duration_minutes, max_attendees,
       meeting_url, topic,
-    } = body;
-
-    if (!title?.trim())        return NextResponse.json({ error: 'Title is required' }, { status: 400 });
-    if (!expert_name?.trim())  return NextResponse.json({ error: 'Expert name is required' }, { status: 400 });
-    if (!scheduled_at)         return NextResponse.json({ error: 'Scheduled date is required' }, { status: 400 });
+    } = parsed.data;
 
     const scheduledDate = new Date(scheduled_at);
     if (isNaN(scheduledDate.getTime())) {
@@ -178,10 +177,10 @@ export async function PATCH(req: NextRequest) {
     if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
     const { partner } = result;
 
-    const body = await req.json();
-    const { eventId, ...updates } = body;
-
-    if (!eventId) return NextResponse.json({ error: 'eventId required' }, { status: 400 });
+    const parsedUpdate = await parseJson(req, partnerSchemas.eventUpdate);
+    if (!parsedUpdate.ok) return parsedUpdate.response;
+    const { eventId, ...updatesTyped } = parsedUpdate.data;
+    const updates = updatesTyped as Record<string, unknown>;
 
     // Confirm event belongs to this partner
     const { data: existing } = await supabase
@@ -240,10 +239,9 @@ export async function DELETE(req: NextRequest) {
     if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
     const { partner } = result;
 
-    const { searchParams } = new URL(req.url);
-    const eventId = searchParams.get('eventId');
-
-    if (!eventId) return NextResponse.json({ error: 'eventId required' }, { status: 400 });
+    const parsedQuery = parseQuery(req, partnerSchemas.eventDeleteQuery);
+    if (!parsedQuery.ok) return parsedQuery.response;
+    const { eventId } = parsedQuery.data;
 
     const { data: existing } = await supabase
       .from('partner_events')

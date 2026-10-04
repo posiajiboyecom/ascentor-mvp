@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { clearPartnerCache } from '@/lib/getPartnerContext';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as partnerSchemas from '@/lib/validation/schemas/partner';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,8 +24,9 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { partnerId, subdomain, custom_domain, plan_overrides, ai_persona_prompt } = body;
+    const parsed = await parseJson(req, partnerSchemas.settingsPatch);
+    if (!parsed.ok) return parsed.response;
+    const { partnerId, subdomain, custom_domain, plan_overrides, ai_persona_prompt } = parsed.data;
 
     // Look up partner by owner
     const { data: partner } = await supabase

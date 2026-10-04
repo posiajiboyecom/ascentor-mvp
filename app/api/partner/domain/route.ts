@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { clearPartnerCache } from '@/lib/getPartnerContext';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as partnerSchemas from '@/lib/validation/schemas/partner';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,15 +41,9 @@ export async function POST(req: NextRequest) {
     const { data: { user }, error } = await authClient.auth.getUser();
     if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { partnerId, domain } = await req.json();
-    if (!partnerId || !domain) {
-      return NextResponse.json({ error: 'partnerId and domain required' }, { status: 400 });
-    }
-
-    // 2. Validate domain format
-    if (!/^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/.test(domain)) {
-      return NextResponse.json({ error: 'Invalid domain format' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, partnerSchemas.domainSave);
+    if (!parsed.ok) return parsed.response;
+    const { partnerId, domain } = parsed.data;
 
     // 3. Ownership check
     const { data: partner } = await supabase

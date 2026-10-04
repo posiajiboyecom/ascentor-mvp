@@ -17,6 +17,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { decryptSecret } from '@/lib/crypto';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as partnerSchemas from '@/lib/validation/schemas/partner';
 
 const supabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -73,17 +75,9 @@ export async function POST(req: NextRequest) {
     const userId = user.id;
 
     // ── 2. Parse body ─────────────────────────────────────────
-    const body = await req.json();
-    const { reference, plan, billing, partner_id } = body as {
-      reference:  string;
-      plan:       string;
-      billing:    string;
-      partner_id: string;
-    };
-
-    if (!reference)  return NextResponse.json({ error: 'Missing reference'  }, { status: 400 });
-    if (!partner_id) return NextResponse.json({ error: 'Missing partner_id' }, { status: 400 });
-    if (!plan)       return NextResponse.json({ error: 'Missing plan'       }, { status: 400 });
+    const parsed = await parseJson(req, partnerSchemas.paymentVerify);
+    if (!parsed.ok) return parsed.response;
+    const { reference, plan, billing, partner_id } = parsed.data;
 
     // ── 3. Load partner ───────────────────────────────────────
     const { data: partner, error: partnerErr } = await supabase

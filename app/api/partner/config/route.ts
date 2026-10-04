@@ -18,6 +18,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { clearPartnerCache } from '@/lib/getPartnerContext';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as partnerSchemas from '@/lib/validation/schemas/partner';
 
 const supabaseService = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -69,7 +71,9 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Account suspended' }, { status: 403 });
   }
 
-  const body = await req.json();
+  const parsed = await parseJson(req, partnerSchemas.configPatch);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
 
   // Only top-level scalar fields are allowed here.
   // Brand styling → /api/partner/brand

@@ -29,6 +29,8 @@ import { createClient } from '@supabase/supabase-js';
 import { createInviteToken } from '@/lib/inviteToken';
 import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
 import { sendEmail } from '@/lib/nodemailer';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as partnerSchemas from '@/lib/validation/schemas/partner';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -191,13 +193,14 @@ export async function POST(req: NextRequest) {
     if (!partner) return NextResponse.json({ error: 'No partner account' }, { status: 404 });
     if (partner.status !== 'active') return NextResponse.json({ error: 'Partner account not active' }, { status: 403 });
 
-    const body = await req.json();
-    const role = body.role || 'member';
+    const parsed = await parseJson(req, partnerSchemas.membersInvite);
+    if (!parsed.ok) return parsed.response;
+    const role = parsed.data.role || 'member';
 
-    const rawEmails: string[] = body.emails
-      ? body.emails
-      : body.email
-        ? [body.email]
+    const rawEmails: string[] = parsed.data.emails
+      ? parsed.data.emails
+      : parsed.data.email
+        ? [parsed.data.email]
         : [];
 
     if (rawEmails.length === 0) {
@@ -326,10 +329,9 @@ export async function PATCH(req: NextRequest) {
     const partner = await getPartnerForUser(user.id);
     if (!partner) return NextResponse.json({ error: 'No partner account' }, { status: 404 });
 
-    const { memberId, action } = await req.json();
-    if (!memberId || !action) {
-      return NextResponse.json({ error: 'memberId and action required' }, { status: 400 });
-    }
+    const parsedAction = await parseJson(req, partnerSchemas.memberAction);
+    if (!parsedAction.ok) return parsedAction.response;
+    const { memberId, action } = parsedAction.data;
 
     const { data: member } = await supabase
       .from('partner_members')

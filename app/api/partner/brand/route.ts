@@ -19,6 +19,8 @@ import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { clearPartnerCache } from '@/lib/getPartnerContext';
 import { PartnerBrand } from '@/types/partner';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as partnerSchemas from '@/lib/validation/schemas/partner';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -57,8 +59,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { partnerId, brand } = await req.json();
-    if (!partnerId) return NextResponse.json({ error: 'Missing partnerId' }, { status: 400 });
+    const parsed = await parseJson(req, partnerSchemas.brandSave);
+    if (!parsed.ok) return parsed.response;
+    const { partnerId, brand } = parsed.data;
 
     const { data: partner } = await supabase
       .from('partners')

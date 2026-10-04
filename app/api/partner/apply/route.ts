@@ -10,6 +10,8 @@ import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from '@/lib/emailTemplate';
 import { sendEmail } from '@/lib/nodemailer';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as partnerSchemas from '@/lib/validation/schemas/partner';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,11 +30,9 @@ export async function POST(req: NextRequest) {
     const { data: { user }, error } = await authClient.auth.getUser();
     if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { platform_name, subdomain, coaching_niche, bio, agreed_to_terms } = await req.json();
-
-    if (!platform_name?.trim())  return NextResponse.json({ error: 'Platform name required' }, { status: 400 });
-    if (!subdomain?.trim())      return NextResponse.json({ error: 'Subdomain required' }, { status: 400 });
-    if (!agreed_to_terms)        return NextResponse.json({ error: 'You must agree to partner terms' }, { status: 400 });
+    const parsed = await parseJson(req, partnerSchemas.apply);
+    if (!parsed.ok) return parsed.response;
+    const { platform_name, subdomain, coaching_niche, bio } = parsed.data;
 
     // Validate subdomain format
     const cleanSubdomain = subdomain.toLowerCase().replace(/[^a-z0-9-]/g, '');
