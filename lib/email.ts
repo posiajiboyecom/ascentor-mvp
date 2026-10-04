@@ -27,3 +27,24 @@ export async function sendPasswordResetOTP({ to, otpCode, firstName }: SendPassw
     html,
   });
 }
+
+type SendPasswordChangedParams = {
+  to: string;
+  firstName: string;
+};
+
+export async function sendPasswordChangedEmail({ to, firstName }: SendPasswordChangedParams) {
+  const html = brandedEmailLayout({
+    preheader: 'Your Ascentor password was just changed',
+    eyebrow: 'Account Security',
+    heading: 'Your password was changed.',
+    recipient: to,
+    content:
+      p(`Hi ${esc(firstName || 'there')},`) +
+      p('The password for your Ascentor account was just changed, and you were signed out of all devices.') +
+      p('<span style="color:#9CA3AF;font-size:13px;">If this was not you, reset your password immediately and contact support.</span>') +
+      p('The Ascentor Team'),
+  });
+
+  await sendEmail({ to, subject: 'Your Ascentor password was changed', html });
+}

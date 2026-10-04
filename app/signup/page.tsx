@@ -9,6 +9,7 @@ import Link from 'next/link';
 import PasswordInput from '@/components/PasswordInput';
 import { OAuthButton } from '@/lib/sso';
 import { createClient } from '@/lib/supabase/client';
+import CheckInbox from '@/components/auth/CheckInbox';
 
 const signupSchema = z.object({
   email: z
@@ -25,6 +26,11 @@ const signupSchema = z.object({
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
+function callbackNextFor(isFree: boolean, plan: string | null, billing: string, currency: string): string {
+  if (isFree || !plan) return '/onboarding';
+  return `/checkout?plan=${plan}&billing=${billing}&currency=${currency}`;
+}
+
 function SignUpForm() {
   const router = useRouter();
   const supabase = createClient();
@@ -32,6 +38,7 @@ function SignUpForm() {
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   const planParam = searchParams.get('plan');
   const billingParam = searchParams.get('billing') ?? 'monthly';
@@ -62,11 +69,7 @@ function SignUpForm() {
     setLoading(true);
     setError(null);
 
-    const callbackNext = isFree
-      ? '/onboarding'
-      : planParam
-        ? `/checkout?plan=${planParam}&billing=${billingParam}&currency=${currencyParam}`
-        : '/onboarding';
+    const callbackNext = callbackNextFor(isFree, planParam, billingParam, currencyParam);
 
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
@@ -78,19 +81,16 @@ function SignUpForm() {
 
     if (error) {
       setError(error.message);
+    } else if (!authData.session) {
+      // Email confirmation is required: there is no session yet. Show the
+      // "check your inbox" screen (with resend) instead of sending an
+      // unauthenticated visitor into /onboarding or /checkout.
+      setPendingEmail(data.email);
+    } else if (planParam && !isFree) {
+      // The welcome email is sent once, at the end of onboarding.
+      router.push(`/checkout?plan=${planParam}&billing=${billingParam}&currency=${currencyParam}`);
     } else {
-      const name = (authData.user?.user_metadata?.full_name || data.email.split('@')[0]) as string;
-      fetch('/api/welcome', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email, name, userId: authData.user?.id }),
-      }).catch(() => {});
-
-      if (planParam && !isFree) {
-        router.push(`/checkout?plan=${planParam}&billing=${billingParam}&currency=${currencyParam}`);
-      } else {
-        router.push('/onboarding');
-      }
+      router.push('/onboarding');
     }
     setLoading(false);
   }
@@ -211,6 +211,10 @@ function SignUpForm() {
         {/* Right: Form */}
         <div className="auth-form-panel">
           <div className="auth-form-inner">
+            {pendingEmail ? (
+              <CheckInbox email={pendingEmail} next={callbackNextFor(isFree, planParam, billingParam, currencyParam)} />
+            ) : (
+            <>
             {/* Mobile logo */}
             <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Link href="/" style={{ textDecoration: 'none' }}>
@@ -321,6 +325,8 @@ function SignUpForm() {
               </p>
             </div>
 
+            </>
+            )}
           </div>
         </div>
       </div>

@@ -127,6 +127,7 @@ export default function OnboardingPage() {
   const [commitment, setCommitment] = useState('');
   const [saving, setSaving]       = useState(false);
   const [celebrating, setCelebrating] = useState(false);
+  const [saveError, setSaveError]     = useState<string | null>(null);
   const [nameError, setNameError] = useState(false);
 
   const nameRef       = useRef<HTMLInputElement>(null);
@@ -155,63 +156,87 @@ export default function OnboardingPage() {
     setScreen(3);
   }
 
-  // Screen 3: save everything → dashboard
+  // Screen 3: save everything → dashboard.
+  // Idempotent: re-running (double click, retry after an error, revisiting the
+  // flow) never duplicates the goal/commitment or re-sends the welcome email,
+  // and a failed write stops here instead of silently continuing.
   async function handleComplete() {
     if (!commitment.trim() || saving) return;
     setSaving(true);
+    setSaveError(null);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push('/login'); return; }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push('/login'); return; }
 
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('referral_code')
-      .eq('id', user.id)
-      .single();
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('referral_code, onboarding_completed')
+        .eq('id', user.id)
+        .maybeSingle();
 
-    const referralCode = existing?.referral_code ||
-      'ASC-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+      // Short, unique referral code (checked against existing codes).
+      let referralCode: string | undefined = existing?.referral_code ?? undefined;
+      for (let i = 0; !referralCode && i < 6; i++) {
+        const candidate = 'ASC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const { data: taken } = await supabase
+          .from('profiles').select('id').eq('referral_code', candidate).maybeSingle();
+        if (!taken) referralCode = candidate;
+      }
 
-    // Save profile
-    await supabase.from('profiles').upsert({
-      id:                   user.id,
-      full_name:            fullName.trim(),
-      ascent_stage:         dimension,
-      what_building:        building.trim(),
-      referral_code:        referralCode,
-      onboarding_completed: true,
-      updated_at:           new Date().toISOString(),
-    });
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id:                   user.id,
+        full_name:            fullName.trim(),
+        ascent_stage:         dimension,
+        what_building:        building.trim(),
+        referral_code:        referralCode,
+        onboarding_completed: true,
+        updated_at:           new Date().toISOString(),
+      });
+      if (profileError) throw profileError;
 
-    // Seed first goal (powers GoalCard on dashboard)
-    await supabase.from('user_goals').insert({
-      user_id:   user.id,
-      goal_text: building.trim(),
-      progress:  0,
-    });
+      // Seed the first goal / commitment only if the member has none yet.
+      const [{ count: goalCount }, { count: commitmentCount }] = await Promise.all([
+        supabase.from('user_goals').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('user_commitments').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+      ]);
 
-    // Seed first commitment (powers CommitmentsCard on dashboard)
-    await supabase.from('user_commitments').insert({
-      user_id:         user.id,
-      commitment_text: commitment.trim(),
-      completed:       false,
-      due_date: new Date(
-        Date.now() + 7 * 24 * 60 * 60 * 1000
-      ).toISOString().split('T')[0], // end of this week
-    });
+      if (!goalCount) {
+        const { error } = await supabase.from('user_goals').insert({
+          user_id:   user.id,
+          goal_text: building.trim(),
+          progress:  0,
+        });
+        if (error) throw error;
+      }
 
-    // Non-blocking welcome email
-    fetch('/api/welcome', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id }),
-    }).catch(() => {});
+      if (!commitmentCount) {
+        const { error } = await supabase.from('user_commitments').insert({
+          user_id:         user.id,
+          commitment_text: commitment.trim(),
+          completed:       false,
+          due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        });
+        if (error) throw error;
+      }
 
-    // The set-piece: the one place a 2-second moment is worth it.
-    // Everything is already saved — the overlay plays, then we land
-    // on Today's Page.
-    setCelebrating(true);
-    setTimeout(() => router.push('/dashboard'), 2000);
+      // Welcome email: once, and only the first time onboarding completes.
+      if (!existing?.onboarding_completed && user.email) {
+        fetch('/api/welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email, name: fullName.trim(), userId: user.id }),
+        }).catch(() => {});
+      }
+
+      // The set-piece: everything is saved; the overlay plays, then Today's Page.
+      setCelebrating(true);
+      setTimeout(() => router.push('/dashboard'), 2000);
+    } catch (err) {
+      console.error('[onboarding] save failed:', err);
+      setSaveError('We couldn’t save that just now. Please check your connection and try again.');
+      setSaving(false);
+    }
   }
 
   return (
@@ -518,6 +543,9 @@ export default function OnboardingPage() {
                 {saving ? 'Setting things up…' : 'Begin my ascent →'}
               </button>
             </div>
+            {saveError && (
+              <p role="alert" style={{ color: '#DC2626', fontSize: 13, marginTop: 12, textAlign: 'center' }}>{saveError}</p>
+            )}
           </div>
         )}
 

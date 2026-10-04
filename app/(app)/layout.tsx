@@ -44,6 +44,25 @@ export default async function AppLayout({
     profile = basic.data;
   }
 
+  // Onboarding gate. Members who have not finished onboarding (and are not staff,
+  // paid, or already past the first step) are sent there; /onboarding sits outside
+  // this layout so there is no redirect loop. Wrapped so a missing optional column
+  // can never lock everyone out - on any query error we let the user through.
+  const isStaffRole = profile?.role === 'admin' || profile?.role === 'moderator';
+  if (!isStaffRole) {
+    const ob = await supabase
+      .from('profiles')
+      .select('onboarding_completed, ascent_stage, subscription_status')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (!ob.error && ob.data) {
+      const paid = ob.data.subscription_status === 'active' || ob.data.subscription_status === 'trialing';
+      if (ob.data.onboarding_completed !== true && !ob.data.ascent_stage && !paid) {
+        redirect('/onboarding');
+      }
+    }
+  }
+
   const userName = profile?.full_name?.trim() || user.email?.split('@')[0] || 'there';
 
   return (

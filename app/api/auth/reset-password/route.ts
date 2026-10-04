@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { strictLimiter, getClientIp } from '@/lib/rate-limit';
 import { otpMatches, isPlausibleEmail, OTP_MAX_ATTEMPTS } from '@/lib/otp';
+import { revokeAllSessions } from '@/lib/auth/revoke-sessions';
+import { sendPasswordChangedEmail } from '@/lib/email';
 
 const invalid = () =>
   NextResponse.json({ error: 'Invalid or expired reset code' }, { status: 400 });
@@ -73,7 +75,7 @@ export async function POST(req: NextRequest) {
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('id')
+      .select('id, full_name')
       .eq('email', normalizedEmail)
       .maybeSingle();
     if (!profile) return invalid();
@@ -84,6 +86,17 @@ export async function POST(req: NextRequest) {
     if (updateError) {
       console.error('[reset-password] update error:', updateError);
       return NextResponse.json({ error: 'Failed to update password' }, { status: 500 });
+    }
+
+    // A reset means the old credential may be compromised: sign the account out
+    // everywhere, then tell the owner. Both are best-effort - the password has
+    // already changed, so neither may fail the request.
+    const revoked = await revokeAllSessions(normalizedEmail, new_password);
+    if (!revoked) console.warn('[reset-password] could not revoke existing sessions for', profile.id);
+    try {
+      await sendPasswordChangedEmail({ to: normalizedEmail, firstName: profile.full_name || 'there' });
+    } catch (mailErr) {
+      console.error('[reset-password] notice email failed:', mailErr);
     }
 
     return NextResponse.json({ success: true, message: 'Password updated successfully' });

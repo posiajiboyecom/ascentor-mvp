@@ -5,10 +5,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PasswordInput from '@/components/PasswordInput';
 import { OAuthButton } from '@/lib/sso';
+import CheckInbox from '@/components/auth/CheckInbox';
+import { safeNext } from '@/lib/auth/safe-next';
 
 const loginSchema = z.object({
   email: z
@@ -23,18 +25,21 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchParams.get('reason') === 'session_expired') {
       setSessionExpired(true);
     }
+    const err = searchParams.get('error');
+    if (err === 'auth_failed') setError('We couldn’t complete that sign-in. The link may have expired. Please try again.');
+    if (err === 'session_missing') setError('Your session didn’t start. Please sign in again.');
   }, [searchParams]);
 
   useEffect(() => {
@@ -56,45 +61,9 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  async function routeAfterAuth(userId: string) {
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completed, subscription_status, full_name, current_role, goal_role, industry')
-        .eq('id', userId)
-        .single();
-
-      if (profile?.onboarding_completed === true) { router.push('/dashboard'); return; }
-
-      const hasPaid =
-        profile?.subscription_status === 'active' ||
-        profile?.subscription_status === 'trialing';
-
-      if (hasPaid) { router.push('/dashboard'); return; }
-
-      const completedStep1 = !!(profile?.full_name && profile?.current_role);
-      const completedStep2 = !!(profile?.full_name && profile?.current_role && profile?.goal_role && profile?.industry);
-
-      if (completedStep2) {
-        try {
-          const { data: setting } = await supabase
-            .from('platform_settings')
-            .select('value')
-            .eq('key', 'checkout_enabled')
-            .single();
-          const checkoutOn = setting ? setting.value === 'true' : true;
-          router.push(checkoutOn ? '/checkout' : '/dashboard');
-        } catch {
-          router.push('/dashboard');
-        }
-        return;
-      }
-      if (completedStep1) { router.push('/onboarding?step=2'); return; }
-      router.push('/onboarding');
-    } catch {
-      router.push('/dashboard');
-    }
-  }
+  // Where to go after sign-in. The proxy adds ?redirect=<path> when it bounces
+  // a signed-out visitor; safeNext() keeps it to same-site paths.
+  const destination = safeNext(searchParams.get('redirect') ?? searchParams.get('next'), '/dashboard');
 
   async function onSubmit(data: LoginFormData) {
     setLoading(true);
@@ -106,7 +75,11 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setError(error.message);
+      if (/not confirmed/i.test(error.message)) {
+        setUnconfirmedEmail(data.email);
+      } else {
+        setError(error.message);
+      }
       setLoading(false);
       return;
     }
@@ -125,8 +98,9 @@ export default function LoginPage() {
       }
     } catch { }
 
-    await routeAfterAuth(authData.session!.user.id);
-    setLoading(false);
+    // Full navigation so the new session cookie is sent. /auth/continue applies
+    // the same routing rules as the OAuth callback (onboarding, checkout, next).
+    window.location.assign(`/auth/continue?next=${encodeURIComponent(destination)}`);
   }
 
   return (
@@ -236,6 +210,11 @@ export default function LoginPage() {
         }
       `}</style>
 
+      {unconfirmedEmail ? (
+        <div className="auth-split" style={{ gridTemplateColumns: '1fr' }}>
+          <div className="auth-form-panel"><div className="auth-form-inner"><CheckInbox email={unconfirmedEmail} next={destination} /></div></div>
+        </div>
+      ) : (
       <div className="auth-split">
         {/* Left: Image */}
         <div className="auth-image">
@@ -366,6 +345,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+      )}
     </>
   );
 }

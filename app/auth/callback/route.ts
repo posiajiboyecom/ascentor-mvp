@@ -6,14 +6,8 @@
 // FIX: Respects ?next=/checkout?plan=X... so paid plan email
 //      confirmations land at checkout with plan pre-selected
 //
-// Main Ascentor flow routing priority:
-//   1. onboarding_completed=true             → next (usually /dashboard)
-//   2. hasPaid but not onboarded             → /dashboard
-//   3. next=/onboarding explicitly set       → /onboarding  (free plan)
-//   4. next=/checkout?plan=X explicitly set  → /checkout?plan=X (paid intent)
-//   5. hasStarted (name + dimension chosen) → /onboarding?step=2
-//   6. Fresh user → /onboarding
-//   7. Fresh user                            → /onboarding
+// Main Ascentor flow: routing lives in lib/auth/post-login.ts so OAuth,
+// email-confirmation links and password sign-in all land in the same place.
 //
 // PARTNER WHITELIST CHECK:
 // If the callback includes a `partner_subdomain` param, the user's
@@ -24,6 +18,8 @@
 import { createClient }        from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextResponse }        from 'next/server';
+import { safeNext }            from '@/lib/auth/safe-next';
+import { resolvePostLoginPath, syncMailerLite } from '@/lib/auth/post-login';
 
 const supabaseService = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,7 +29,10 @@ const supabaseService = createServiceClient(
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code             = searchParams.get('code');
-  const next             = searchParams.get('next') ?? '/dashboard';
+  const rawNext          = searchParams.get('next');
+  // Same-site paths only. Raw interpolation of an unchecked value allowed
+  // open redirects (e.g. next=@evil.com -> https://site@evil.com).
+  const next             = safeNext(rawNext, '/dashboard');
   const partnerSubdomain = searchParams.get('partner_subdomain');
 
   if (!code) {
@@ -59,82 +58,17 @@ export async function GET(request: Request) {
   }
 
   // ── MAIN ASCENTOR FLOW ────────────────────────────────────
+  // One shared router decides the destination for every sign-in method.
   const { data: profile } = await supabase
-    .from('profiles')
-    .select('onboarding_completed, subscription_status, subscription_plan, full_name, email, what_building, ascent_stage')
-    .eq('id', user.id)
-    .single();
+    .from("profiles")
+    .select("subscription_status, subscription_plan, full_name, email")
+    .eq("id", user.id)
+    .maybeSingle();
 
-  // ── MAILERLITE SYNC — fire for every user on every login ──
-  try {
-    const userEmail = user.email || profile?.email;
-    if (userEmail) {
-      const { addOrUpdateSubscriber, ML_GROUPS } = await import('@/lib/mailerlite');
-      const isPaid =
-        profile?.subscription_status === 'active' ||
-        profile?.subscription_status === 'trialing';
-      const firstName = (profile?.full_name || user.email?.split('@')[0] || '').split(' ')[0];
-      await addOrUpdateSubscriber({
-        email: userEmail,
-        firstName,
-        groups: [
-          ML_GROUPS.APP_USERS,
-          isPaid ? ML_GROUPS.PAID_USERS : ML_GROUPS.FREE_USERS,
-        ].filter(Boolean),
-        fields: {
-          source: 'app_login',
-          plan: profile?.subscription_plan || 'free',
-        },
-        resubscribe: false,
-      });
-    }
-  } catch (mlErr: any) {
-    console.error('[auth/callback] MailerLite sync error (non-fatal):', mlErr.message);
-  }
+  await syncMailerLite(user, profile);
 
-  // ── ROUTING PRIORITY ──────────────────────────────────────
-
-  // 1. Fully set up user (onboarding_completed includes free users who
-  //    completed onboarding — set by /api/onboarding/complete)
-  if (profile?.onboarding_completed === true) {
-    return NextResponse.redirect(`${origin}${next.startsWith('/checkout') || next === '/onboarding' ? '/dashboard' : next}`);
-  }
-
-  // 2. Paid but onboarding flag not set — send to dashboard
-  const hasPaid =
-    profile?.subscription_status === 'active' ||
-    profile?.subscription_status === 'trialing';
-
-  if (hasPaid && !profile?.onboarding_completed) {
-    return NextResponse.redirect(`${origin}/dashboard`);
-  }
-
-  // 3. Free plan explicit intent — next=/onboarding was set by signup page.
-  //    Route directly to onboarding, bypassing checkout entirely.
-  if (next === '/onboarding') {
-    return NextResponse.redirect(`${origin}/onboarding`);
-  }
-
-  // 4. Paid plan explicit intent — next=/checkout?plan=X was set by signup.
-  //    Route to checkout with plan pre-selected so user doesn't have to
-  //    re-pick the plan they already chose on the pricing page.
-  if (next.startsWith('/checkout')) {
-    return NextResponse.redirect(`${origin}${next}`);
-  }
-
-  // 5–6. Standard onboarding routing for users who came through
-  //      other paths (direct /signup, OAuth, etc.)
-  //      Uses ascent_stage (their chosen dimension) as the resume signal.
-
-  const hasStarted = !!(profile?.full_name && profile?.ascent_stage);
-
-  if (hasStarted) {
-    // Completed screen 1, not finished — resume at screen 2
-    return NextResponse.redirect(`${origin}/onboarding?step=2`);
-  }
-
-  // Fresh user — start onboarding from the beginning
-  return NextResponse.redirect(`${origin}/onboarding`);
+  const destination = await resolvePostLoginPath(supabase, user, next);
+  return NextResponse.redirect(`${origin}${destination}`);
 }
 
 // ── Partner callback handler ──────────────────────────────

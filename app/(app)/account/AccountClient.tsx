@@ -258,7 +258,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
     if (!(await confirmAction('Sign out of Ascentor on this device?', { title: 'Sign out?', confirmLabel: 'Sign out' }))) return;
     setSigningOut(true);
     await supabase.auth.signOut();
-    router.push('/login');
+    router.push('/');
   };
 
   const sections: { key: Section; label: string }[] = [
