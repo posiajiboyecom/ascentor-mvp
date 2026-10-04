@@ -1,0 +1,171 @@
+This is a big set of changes, so I'll start by mapping what exists. That means the logo and icon assets, everywhere dark mode is wired in, how confirmations are done today, and the modal component.
+
+Interacted with page
+
+Sage's greeting appears with a personalised message, a "Talk to Sage" button, and mute and close controls. Now the logout confirmation.
+
+Used 2 tools
+
+The sign-out confirmation works: it's a clean light dialog with Cancel and Sign out. Next I'll cancel it and test the red delete dialog.
+
+Used 3 tools
+
+The delete confirmation infers its own wording, shows a trash icon, and uses a red Delete button. Now the collapsed sidebar, to check the logo swaps to just the mark.
+
+Used 3 tools
+
+Collapsed state looks correct, with the logo mark, icon-only items, and avatar/logout stacked properly, and the dialog correctly returns false when Cancel is pressed. Next I'll check the admin variant.
+
+Used 3 tools
+
+The admin variant is still compiling (blank on first load). I'll wait and re-check.
+
+Used 3 tools (1 failed)
+
+The admin variant looks correct with the sidebar, logo, and ADMIN role tag intact. Since everything checks out, I'll remove the temporary preview and stop the dev server.
+
+Ran 2 commands
+
+Now the docs. I'll update the README, wiki and changelog for the light-only theme, the new sidebar, the confirmation system and Sage.
+
+Edited 3 files, ran a command
++60
+-7
+
+Docs are updated. Now the full verification: TypeScript, ESLint (errors), and a production build.
+
+Ran 2 commands
+
+The dark mode removal, black sidebar, confirmation dialogs and Sage floating assistant are all built. Nothing is committed or pushed, and I haven't run it against real data. The type check, ESLint (0 errors, 979 existing warnings) and the production build (143 pages) all pass, and I checked the new sidebar, dialogs and Sage in a browser with mock data.
+
+What changed
+
+Light mode only. Nothing dark-related is left in the app:
+
+I removed the dark toggles from the header, the account page's "Display" section, checkout and the old shells.
+I removed the dark CSS blocks, the theme scripts and both theme providers.
+Only the sidebar is black.
+
+Sidebar
+
+Logos: it shows the full logo when open (ascentor-color-for-dark-pages.svg) and just the logo mark when collapsed (ascentor-LM-gold.svg).
+Items: every item has an icon.
+Avatar and logout: the signed-in avatar at the bottom links to Settings (/account). The logout icon asks for confirmation before signing out. For admins the avatar also goes to /account, since there is no separate admin settings page.
+
+Confirmation dialogs
+
+New dialog: confirmAction() in components/Modal.tsx works anywhere. It reads the wording to pick the title and button label, and shows a red button for destructive actions. It focuses Cancel first, closes on Escape, and returns focus afterwards.
+Converted: all 27 browser confirm() popups now use it.
+Newly added: sign out (every shell), mark lesson complete, delete post, mark all notifications read, publish blog post, approve draft, send to Buffer, remove from queue, and admin broadcast.
+Left alone: actions that already had their own confirmation (type DELETE to delete your account, the cancel-subscription step, blog and product delete).
+Not confirmed: marking a single notification read, since it happens on every click and a dialog would be annoying. Bulk "mark all as read" does ask.
+
+Sage
+
+Orb: a floating gold orb in the member app.
+Greeting: once per login session it plays a soft chime, shows a typing indicator, and types a personalised greeting by time of day. It has a "Talk to Sage" button.
+Controls: the greeting can be muted (remembered), and it respects reduced-motion. It's hidden on /coach.
+Browser sound rules: browsers block audio until the user has interacted with the page. If the chime is blocked, it plays on your first click or keypress within 10 seconds instead. So the sound may not play the instant the page loads after a fresh login.
+Sign-out: signing out resets it, so the next login is greeted again.
+Things to know
+Sage is not an actual assistant panel. It's a greeting and a shortcut into the existing coach page. If you want in-place chat from the orb, that's a separate feature.
+Admin sign-out: the admin dashboard has the same black sidebar and confirmation. Sage is member-only, so admins won't see it.
+Old legacy pages are covered too: the older app/nav/* pages lost their dark toggle and now confirm on sign-out. I don't know if they're still in use.
+Marketing pages were not restyled. They had no theme toggle, and any dark sections on them are part of their own design.
+Docs: README, wiki and CHANGELOG are updated for all of the above.
+
+Do you want me to commit and push this?
+
+Edited 7 files
+Modal.tsx
++170
+-113
+SageFloat.tsx
++267
+-0
+ShellLayout.tsx
++72
+-34
+UserShell.tsx
++52
+-56
+README.md
++35
+-4
+Show 2 more
+
+yes, please push! Document it too and push it now. In elevtaion page, let "Lekan Omotosho" chnage to "Olamilekan Omotosho
+". ALSO,let the 6th speaker (Divine) be the 4th soeaker. 
+
+DISABLE THIS: "Stay in the loop
+
+Replies, upvotes & circle activity — straight to your phone" DISABLE IT COPLETELY.
+
+I'll find all three targets first: the speaker data, the "Stay in the loop" prompt, and where each is rendered.
+
+Ran 2 commands
+
+Found all three items: Divine is 6th in the speakers array, "Lekan" is a single string, and the "Stay in the loop" banner is the globally-mounted PushPermission component. I'll start with the speaker changes.
+
+Created speakers.js, ran a command
++38
+-0
+
+The speakers are done: Divine is 4th, and "Olamilekan Omotosho" replaces "Lekan Omotosho" (his bio already used the full name). Now I'll disable the "Stay in the loop" banner completely.
+
+Ran 2 commands, edited 2 files
++6
+-2
+
+The banner is gone from the layout, and nothing else in the app requests notification permission, so no visitor will be prompted. Now the changelog entries, then the final checks before pushing.
+
+Edited CHANGELOG.md, ran a command
++5
+-0
+
+Everything is green. Now I'll review exactly what's about to be committed and check that nothing unintended or secret is included.
+
+Ran
+a command
+
+One commit, since the layout change mixes the theme and banner edits. Committing and pushing.
+
+Pushed
+main
+
+Everything is committed and pushed to main as 28c214e, and Vercel will start deploying. TypeScript, ESLint (0 errors) and the production build (143 pages) all passed before the push.
+
+What went out
+
+Elevation Summit speakers (components/SummitSpeakers.tsx)
+
+"Lekan Omotosho" is now "Olamilekan Omotosho". His bio already used that name.
+Divine Mmachukwu Chukwuemeka moved from 6th to 4th. The new order is Posi Ajiboye, Samuel Peniel, Kemeshi Samuel, Divine, Olamilekan Omotosho, Akintomiwa Samuel O.
+
+"Stay in the loop" banner: disabled completely
+
+I removed it from the global layout, so no visitor is ever prompted.
+Nothing else in the app asks for notification permission, so there's no second prompt to worry about.
+I kept the component file, marked DISABLED at the top, in case you want it back later. Say so if you'd rather delete it.
+
+The rest of this batch, all documented in the README, wiki and CHANGELOG:
+
+Light-only theme.
+The black sidebar with the full logo and collapsed mark.
+The avatar to Settings and the logout confirmation.
+The confirmation dialogs.
+The Sage floating assistant.
+Before this goes live
+Check the speaker order on the live page, since I only confirmed it in the code.
+Sage's chime may not play right at login. Browsers often block audio until the user has clicked something on the site, so on some logins the greeting appears silently first. If sound is blocked, it plays on the first click or keypress in the next 10 seconds.
+Two earlier items are still open if you haven't done them: the CRON_SECRET environment variable in Vercel, and /login still being closed behind the gate.
+Edited 3 files
+layout.tsx
++0
+-2
+PushPermission.tsx
++6
+-0
+CHANGELOG.md
++5
+-0
