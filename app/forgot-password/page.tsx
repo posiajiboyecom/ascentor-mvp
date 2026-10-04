@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
 import Turnstile from '@/components/auth/Turnstile';
+import { Check, X } from 'lucide-react';
 
 const forgotPasswordSchema = z.object({
   email: z
@@ -349,7 +350,7 @@ export default function ForgotPasswordPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             {modal.type === 'success' && (
               <>
-                <div className="modal-icon success">✓</div>
+                <div className="modal-icon success"><Check size={13} aria-hidden="true" /></div>
                 <h2 className="modal-title">Check your inbox</h2>
                 <p className="modal-text">
                   If an account exists for <strong>{modal.email}</strong>, a 6-digit reset code has been sent. Please check your inbox and spam folder. If you signed up with Google or LinkedIn, sign in with that account instead.
@@ -375,7 +376,7 @@ export default function ForgotPasswordPage() {
 
             {modal.type === 'not_found' && (
               <>
-                <div className="modal-icon error">✕</div>
+                <div className="modal-icon error"><X size={13} aria-hidden="true" /></div>
                 <h2 className="modal-title">No account found</h2>
                 <p className="modal-text">
                   No account exists with that email address. Would you like to create one?
@@ -391,7 +392,7 @@ export default function ForgotPasswordPage() {
 
             {modal.type === 'error' && (
               <>
-                <div className="modal-icon error">✕</div>
+                <div className="modal-icon error"><X size={13} aria-hidden="true" /></div>
                 <h2 className="modal-title">Something went wrong</h2>
                 <p className="modal-text">{modal.message}</p>
                 <button className="modal-btn" onClick={closeModal}>

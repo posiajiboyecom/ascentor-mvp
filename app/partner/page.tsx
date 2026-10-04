@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { Check } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Overview' };
 
@@ -163,7 +164,7 @@ export default async function PartnerOverviewPage() {
                     flexShrink: 0,
                   }}
                 >
-                  {done ? '✓' : ''}
+                  {done ? <Check size={13} aria-hidden="true" /> : ''}
                 </span>
                 {label}
                 {!done && (

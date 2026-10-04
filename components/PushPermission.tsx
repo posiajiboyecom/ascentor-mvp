@@ -17,6 +17,7 @@
 // Exports usePush() hook for use in settings pages.
 
 import { useState, useEffect, useCallback } from 'react';
+import { X } from 'lucide-react';
 
 export type PushState = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported';
 
@@ -292,7 +293,7 @@ export default function PushPermission() {
               fontFamily:   'system-ui',
             }}
           >
-            ✕
+            <X size={13} aria-hidden="true" />
           </button>
         </div>
       </div>

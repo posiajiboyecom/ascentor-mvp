@@ -27,6 +27,7 @@ import { confirmAction } from '@/components/Modal';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface PageDetail {
   id: string;
@@ -382,7 +383,7 @@ export default function MarketingPageEditor() {
                   <span className={`ledger-tag ${section.status === 'published' ? 'ledger-tag-ok' : 'ledger-tag-new'}`}>
                     {section.status === 'published' ? 'Live' : 'Draft'}
                   </span>
-                  <span style={{ color: 'var(--ledger-ink-faint)', fontSize: 12 }}>{isOpen ? '▲' : '▼'}</span>
+                  <span style={{ color: 'var(--ledger-ink-faint)', fontSize: 12 }}>{isOpen ? <ChevronUp size={13} aria-hidden="true" /> : <ChevronDown size={13} aria-hidden="true" />}</span>
                 </div>
               </button>
 

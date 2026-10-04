@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { analytics } from '@/lib/analytics';
 import { SESSION_TYPES, getAvailableSessionTypes } from '@/lib/session-types';
+import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 
 // Session types loaded from lib/session-types (see below)
 
@@ -323,7 +324,7 @@ export default function CoachPage() {
               }}
             >
               <span>{activeSession.label}</span>
-              <span style={{ fontSize: 9, opacity: 0.7 }}>{selectorOpen ? '▲' : '▼'}</span>
+              <span style={{ fontSize: 9, opacity: 0.7 }}>{selectorOpen ? <ChevronUp size={13} aria-hidden="true" /> : <ChevronDown size={13} aria-hidden="true" />}</span>
             </button>
 
             {/* Dropdown - absolutely positioned below button, right-aligned */}
@@ -376,7 +377,7 @@ export default function CoachPage() {
                         </span>
                       )}
                       {active && available && (
-                        <span style={{ fontSize: 11, color: 'var(--accent)' }}>✓</span>
+                        <span style={{ fontSize: 11, color: 'var(--accent)' }}><Check size={13} aria-hidden="true" /></span>
                       )}
                     </button>
                   );

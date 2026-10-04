@@ -1,11 +1,13 @@
 'use client'
 
+import { WifiOff } from 'lucide-react';
+
 export default function OfflinePage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-6"
       style={{ background: '#0C0B08' }}>
       <div className="max-w-sm text-center">
-        <div className="text-5xl mb-5">📡</div>
+        <div className="mb-5 flex justify-center"><WifiOff size={44} color="#8B8A85" aria-hidden="true" /></div>
         <h1 className="text-2xl font-semibold mb-2"
           style={{ fontFamily: "'Metropolis', sans-serif", color: '#F1F0EB' }}>
           You're Offline

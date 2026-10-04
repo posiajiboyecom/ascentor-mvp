@@ -127,7 +127,7 @@ function newsletterLayout(opts: {
               <table cellpadding="0" cellspacing="0" role="presentation" align="center">
                 <tr>
                   <td style="width:80px;height:1px;background:${B.border};vertical-align:middle"></td>
-                  <td style="padding:0 10px;color:${B.gold};font-size:10px;vertical-align:middle">◆</td>
+                  <td style="padding:0 10px;color:${B.gold};font-size:10px;vertical-align:middle">&bull;</td>
                   <td style="width:80px;height:1px;background:${B.border};vertical-align:middle"></td>
                 </tr>
               </table>
@@ -333,7 +333,7 @@ function parseNewsletterBody(raw: string): string {
       if (!inList) { html += `<ul style="margin:12px 0;padding-left:0;list-style:none">`; inList = true; }
       const text = trimmed.replace(/^[-•] /, '');
       html += `<li style="display:flex;gap:10px;margin:6px 0;font-size:15px;color:#A09888;line-height:1.7">
-        <span style="color:${B.gold};flex-shrink:0;margin-top:4px">◆</span>
+        <span style="color:${B.gold};flex-shrink:0;margin-top:4px">&bull;</span>
         <span>${formatInline(text)}</span>
       </li>`;
       continue;
@@ -475,7 +475,7 @@ export function coachingSummaryEmail(
   const firstName = name?.split(' ')[0] || 'there';
   const takeawaysHtml = keyTakeaways.map(t => `
     <li style="display:flex;gap:10px;margin:8px 0;font-size:14px;color:#A09888;line-height:1.6;list-style:none">
-      <span style="color:${B.gold};flex-shrink:0">◆</span>
+      <span style="color:${B.gold};flex-shrink:0">&bull;</span>
       <span>${t}</span>
     </li>`).join('');
   const stepsHtml = nextSteps.map((s, i) => `
@@ -521,7 +521,7 @@ export function goalReminderEmail(
   const firstName = name?.split(' ')[0] || 'there';
   const goalsHtml = goals.map(g => `
     <li style="display:flex;gap:10px;margin:8px 0;font-size:14px;color:#A09888;line-height:1.6;list-style:none">
-      <span style="color:${B.gold};flex-shrink:0">◆</span>
+      <span style="color:${B.gold};flex-shrink:0">&bull;</span>
       <span>${g}</span>
     </li>`).join('');
 

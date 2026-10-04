@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import PublicShell from '@/components/layout/PublicShell';
+import { Palette, Coins, Bot, Users, Check, Sparkles } from 'lucide-react';
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--bg-input)', color: 'var(--text)',
@@ -67,7 +68,7 @@ export default function PartnerApplyPage() {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ maxWidth: 480, textAlign: 'center', padding: '0 24px' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>✦</div>
+          <div style={{ fontSize: 48, marginBottom: 16 }}><Sparkles size={14} aria-hidden="true" /></div>
           <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 32, color: 'var(--text)', marginBottom: 12 }}>
             Application Received
           </h1>
@@ -112,16 +113,16 @@ export default function PartnerApplyPage() {
         {/* Benefits */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 32 }}>
           {[
-            ['✦', 'Your brand', 'Logo, colours, domain'],
-            ['◈', '70% revenue', 'Of every member payment'],
-            ['⬡', 'AI coach', 'Sage, fully branded'],
-            ['⚙', 'Your members', 'Invite & manage'],
-          ].map(([icon, title, sub]) => (
+            { Icon: Palette, title: 'Your brand', sub: 'Logo, colours, domain' },
+            { Icon: Coins, title: '70% revenue', sub: 'Of every member payment' },
+            { Icon: Bot, title: 'AI coach', sub: 'Sage, fully branded' },
+            { Icon: Users, title: 'Your members', sub: 'Invite & manage' },
+          ].map(({ Icon, title, sub }) => (
             <div key={title} style={{
               padding: '12px 14px', borderRadius: 10,
               background: 'var(--bg-card)', border: '1px solid var(--border)',
             }}>
-              <p style={{ fontSize: 14, marginBottom: 2 }}>{icon}</p>
+              <p style={{ marginBottom: 4 }}><Icon size={16} aria-hidden="true" /></p>
               <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{title}</p>
               <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>{sub}</p>
             </div>
@@ -193,7 +194,7 @@ export default function PartnerApplyPage() {
                 cursor: 'pointer', flexShrink: 0, marginTop: 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-              {agreed && <span style={{ color: '#000', fontSize: 11, fontWeight: 900 }}>✓</span>}
+              {agreed && <span style={{ color: '#000', fontSize: 11, fontWeight: 900 }}><Check size={13} aria-hidden="true" /></span>}
             </button>
             <p style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.6 }}>
               I agree to the Ascentor Partner Terms. I understand I receive 70% of revenue,
@@ -202,7 +203,7 @@ export default function PartnerApplyPage() {
           </div>
 
           {error && (
-            <p style={{ fontSize: 12, color: 'var(--error)', fontWeight: 600 }}>✗ {error}</p>
+            <p style={{ fontSize: 12, color: 'var(--error)', fontWeight: 600 }}>{error}</p>
           )}
 
           <button

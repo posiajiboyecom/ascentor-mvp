@@ -122,7 +122,7 @@ async function handleChargeSuccess(data: any, partner: any) {
   await supabase.from('notifications').insert({
     user_id: userId,
     type:    'success',
-    title:   `Welcome to ${partner.name}! 🎉`,
+    title:   `Welcome to ${partner.name}! `,
     message: `Your ${plan} subscription is now active.`,
     link:    '/dashboard',
   });
@@ -135,7 +135,7 @@ async function handleChargeSuccess(data: any, partner: any) {
     link:    '/partner/revenue',
   });
 
-  console.log(`[PartnerWebhook] ✅ ${email} → ${plan} | partner: ${partner.name} | share: ₦${partnerShare}`);
+  console.log(`[PartnerWebhook] ${email} → ${plan} | partner: ${partner.name} | share: ₦${partnerShare}`);
 }
 
 // ── invoice.payment_failed ────────────────────────────────
@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
     const event = JSON.parse(rawBody);
     const { event: eventName, data } = event;
 
-    console.log(`[PartnerWebhook] 📥 ${eventName} for ${partner.name}`);
+    console.log(`[PartnerWebhook] ${eventName} for ${partner.name}`);
 
     switch (eventName) {
       case 'charge.success':

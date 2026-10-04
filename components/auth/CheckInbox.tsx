@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Mail } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface CheckInboxProps {
@@ -56,7 +57,7 @@ export default function CheckInbox({ email, next = '/onboarding' }: CheckInboxPr
         aria-hidden="true"
         style={{ width: 56, height: 56, borderRadius: '50%', background: '#F4F3EF', margin: '0 auto 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}
       >
-        ✉️
+        <Mail size={26} color="#8A6A2B" />
       </div>
       <h1 style={{ fontWeight: 800, fontSize: '1.75rem', margin: '0 0 0.5rem', color: '#0F0F0E', letterSpacing: '-0.02em' }}>
         Check your inbox

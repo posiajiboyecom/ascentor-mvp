@@ -334,8 +334,8 @@ export const contentWriterAgent = task({
             `- Thread 1: VALUE, practical insight grounded in ${audienceMeta.label} reality.\n` +
             `- Thread 2: STORY, a scenario any ${audienceMeta.label} immediately recognises, ending in a lesson.\n` +
             `- TWEET 1 (OPENER): Must feel like a direct call-out in the best possible way.\n` +
-            `  STRONG: "The most talented person in the room is often the last to get promoted. Here is the specific reason why 🧵"\n` +
-            `  WEAK: "Here are some career tips every professional needs to know 🧵"\n` +
+            `  STRONG: "The most talented person in the room is often the last to get promoted. Here is the specific reason why "\n` +
+            `  WEAK: "Here are some career tips every professional needs to know "\n` +
             `- Each tweet: ONE idea. Short sentences. No padding. Written like a mentor sending you a message.\n` +
             `- Tweet 4 or 5: The insight that makes them want to screenshot and share immediately.\n` +
             `- Final tweet: Natural, non-salesy Ascentor mention.\n` +

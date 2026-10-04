@@ -24,20 +24,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {
+  ListChecks, Palette, Bot, Users, BookOpen, CalendarDays, Tag, Coins, BarChart3, CreditCard, Settings, Menu, X,
+  type LucideIcon,
+} from 'lucide-react';
 
-function getNavItems(base: string) {
+function getNavItems(base: string): { href: string; label: string; icon: LucideIcon; desc: string }[] {
   return [
-    { href: `${base}/onboarding`,   label: 'Setup',        icon: '◎', desc: 'Onboarding checklist'  },
-    { href: `${base}/brand`,        label: 'Brand',        icon: '✦', desc: 'Logo, colours, fonts'  },
-    { href: `${base}/ai/persona`,   label: 'AI Persona',   icon: '◬', desc: 'Coach voice & style'   },
-    { href: `${base}/members`,      label: 'Members',      icon: '⬡', desc: 'Invite & manage'        },
-    { href: `${base}/courses`,      label: 'Courses',      icon: '▣', desc: 'Your course library'    },
-    { href: `${base}/events`,       label: 'Events',       icon: '◷', desc: 'Expert sessions'        },
-    { href: `${base}/pricing`,      label: 'Pricing',      icon: '◇', desc: 'Member plan prices'     },
-    { href: `${base}/revenue`,      label: 'Revenue',      icon: '◈', desc: 'Earnings & splits'      },
-    { href: `${base}/analytics`,    label: 'Analytics',    icon: '◫', desc: 'Engagement data'        },
-    { href: `${base}/subscription`, label: 'Subscription', icon: '◉', desc: 'Your Ascentor plan'     },
-    { href: `${base}/settings`,     label: 'Settings',     icon: '⚙', desc: 'Domain & config'        },
+    { href: `${base}/onboarding`,   label: 'Setup',        icon: ListChecks, desc: 'Onboarding checklist'  },
+    { href: `${base}/brand`,        label: 'Brand',        icon: Palette, desc: 'Logo, colours, fonts'  },
+    { href: `${base}/ai/persona`,   label: 'AI Persona',   icon: Bot, desc: 'Coach voice & style'   },
+    { href: `${base}/members`,      label: 'Members',      icon: Users, desc: 'Invite & manage'        },
+    { href: `${base}/courses`,      label: 'Courses',      icon: BookOpen, desc: 'Your course library'    },
+    { href: `${base}/events`,       label: 'Events',       icon: CalendarDays, desc: 'Expert sessions'        },
+    { href: `${base}/pricing`,      label: 'Pricing',      icon: Tag, desc: 'Member plan prices'     },
+    { href: `${base}/revenue`,      label: 'Revenue',      icon: Coins, desc: 'Earnings & splits'      },
+    { href: `${base}/analytics`,    label: 'Analytics',    icon: BarChart3, desc: 'Engagement data'        },
+    { href: `${base}/subscription`, label: 'Subscription', icon: CreditCard, desc: 'Your Ascentor plan'     },
+    { href: `${base}/settings`,     label: 'Settings',     icon: Settings, desc: 'Domain & config'        },
   ];
 }
 
@@ -75,7 +79,7 @@ function NavList({
               fontSize: 14, width: 20, textAlign: 'center',
               color: isActive ? 'var(--accent)' : 'var(--text-dim)',
             }}>
-              {item.icon}
+              <item.icon size={15} aria-hidden="true" />
             </span>
             <div>
               <p style={{
@@ -214,7 +218,7 @@ export default function PartnerAdminShell({
             fontSize: 18, lineHeight: 1,
           }}
         >
-          {mobileOpen ? '✕' : '☰'}
+          {mobileOpen ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
         </button>
       </div>
 

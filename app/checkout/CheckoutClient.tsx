@@ -23,6 +23,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { Lock, Undo2, CreditCard, Gift, Check } from 'lucide-react';
 import { PLAN_PRICING, MAX_YEARLY_SAVINGS } from '@/lib/pricing'
 
 type BillingCycle = 'monthly' | 'annual'
@@ -293,7 +294,7 @@ export default function CheckoutClient() {
                       <ul className="co-features">
                         {plan.features.map((f, i) => (
                           <li key={i} className="co-feature">
-                            <span className="co-feat-chk" style={{ background: `${plan.stageColor}12`, color: plan.stageColor }}>✓</span>
+                            <span className="co-feat-chk" style={{ background: `${plan.stageColor}12`, color: plan.stageColor }}><Check size={13} aria-hidden="true" /></span>
                             {f}
                           </li>
                         ))}
@@ -399,7 +400,7 @@ export default function CheckoutClient() {
                   {billing === 'annual' && (
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6, padding: '3px 10px', borderRadius: 20, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
                       <span style={{ color: '#10B981', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "Metropolis, 'Inter', sans-serif" }}>
-                        ✓ SAVE &#8358;{yearlySavings(plan).toLocaleString()}/YR
+                        SAVE &#8358;{yearlySavings(plan).toLocaleString()}/YR
                       </span>
                     </div>
                   )}
@@ -408,7 +409,7 @@ export default function CheckoutClient() {
                 <ul className="co-features">
                   {plan.features.map((f, i) => (
                     <li key={i} className="co-feature">
-                      <span className="co-feat-chk" style={{ background: `${plan.stageColor}12`, color: plan.stageColor }}>✓</span>
+                      <span className="co-feat-chk" style={{ background: `${plan.stageColor}12`, color: plan.stageColor }}><Check size={13} aria-hidden="true" /></span>
                       {f}
                     </li>
                   ))}
@@ -487,12 +488,15 @@ function TrustBar() {
     <div className="co-trust">
       <div className="co-trust-items">
         {[
-          { icon: '🔒', text: 'PAYSTACK SECURED' },
-          { icon: '↩', text: 'CANCEL ANYTIME' },
-          { icon: '💳', text: 'CARD · BANK · USSD' },
-          { icon: '🎁', text: '7-DAY FREE TRIAL' },
+          { Icon: Lock, text: 'PAYSTACK SECURED' },
+          { Icon: Undo2, text: 'CANCEL ANYTIME' },
+          { Icon: CreditCard, text: 'CARD · BANK · USSD' },
+          { Icon: Gift, text: '7-DAY FREE TRIAL' },
         ].map((t, i) => (
-          <div key={i} className="co-trust-item">{t.icon} {t.text}</div>
+          <div key={i} className="co-trust-item">
+            <t.Icon size={13} aria-hidden="true" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} />
+            {t.text}
+          </div>
         ))}
       </div>
       <p className="co-trust-note">

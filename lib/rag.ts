@@ -357,5 +357,5 @@ export async function addChunks(
     }
   }
 
-  console.log(`[rag] ✓ Upserted ${chunks.length} chunks → namespace "${namespace}"`);
+  console.log(`[rag] Upserted ${chunks.length} chunks → namespace "${namespace}"`);
 }

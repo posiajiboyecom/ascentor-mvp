@@ -134,10 +134,10 @@ const FAQS = [
 const COMPARE = [
   { label: 'Cost',           ascentor: 'From $5/month',         traditional: '$150–$500/session'  },
   { label: 'Availability',   ascentor: '24/7 AI + scheduled',   traditional: 'Office hours only'  },
-  { label: 'Global context',ascentor: '✓ Built-in',            traditional: '✗ Rarely'           },
-  { label: 'Peer community', ascentor: '✓ Matched circles',     traditional: '✗ Isolated'         },
-  { label: 'Progress tracking',ascentor:'✓ Automated reports',  traditional: '✗ Manual / none'    },
-  { label: 'Accountability', ascentor: '✓ AI + peer circle',    traditional: 'Varies by coach'    },
+  { label: 'Global context',ascentor: 'Built-in',            traditional: 'Rarely'           },
+  { label: 'Peer community', ascentor: 'Matched circles',     traditional: 'Isolated'         },
+  { label: 'Progress tracking',ascentor:'Automated reports',  traditional: 'Manual / none'    },
+  { label: 'Accountability', ascentor: 'AI + peer circle',    traditional: 'Varies by coach'    },
 ];
 
 /* ── Nav (identical to pricing page) ─────────────────────── */
@@ -175,6 +175,7 @@ function Nav() {
 
 /* ── Page ─────────────────────────────────────────────────── */
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
+import { Check, ChevronDown } from 'lucide-react';
 
 export default async function HowItWorksPage() {
   const cms = await getPublishedPage('how-it-works');
@@ -237,7 +238,7 @@ export default async function HowItWorksPage() {
               <div className="flex flex-col gap-2.5 flex-1">
                 {p.points.map(pt => (
                   <div key={pt} className="flex items-start gap-2.5">
-                    <span className="text-sm mt-0.5 flex-shrink-0" style={{ color: p.color }}>✓</span>
+                    <span className="text-sm mt-0.5 flex-shrink-0" style={{ color: p.color }}><Check size={13} aria-hidden="true" /></span>
                     <span className="text-sm" style={{ color: '#374151', lineHeight: 1.6 }}>{pt}</span>
                   </div>
                 ))}
@@ -357,7 +358,7 @@ export default async function HowItWorksPage() {
                 style={{ color: '#0C0B08' }}>
                 {f.q}
                 <span className="text-xs group-open:rotate-180 transition-transform"
-                  style={{ color: '#9CA3AF' }}>▼</span>
+                  style={{ color: '#9CA3AF' }}><ChevronDown size={13} aria-hidden="true" /></span>
               </summary>
               <div className="px-5 pb-4 text-sm" style={{ color: '#6B7280', lineHeight: 1.7 }}>
                 {f.a}

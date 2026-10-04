@@ -318,11 +318,11 @@ export const knowledgeBatchIngester = task({
           words:      wordCount,
         });
 
-        logger.info(`[BatchIngester] ✓ ${identifier}, ${chunks.length} chunks`);
+        logger.info(`[BatchIngester] ${identifier}, ${chunks.length} chunks`);
 
       } catch (err: any) {
         const message = err instanceof Error ? err.message : String(err);
-        logger.error(`[BatchIngester] ✗ ${identifier}, ${message}`);
+        logger.error(`[BatchIngester] ${identifier}, ${message}`);
         results.push({ index: i, identifier, success: false, error: message });
       }
 

@@ -99,7 +99,7 @@ export default function PartnerSettingsPage() {
         </div>
         {subdomainChanged && (
           <p style={{ fontSize: '11px', color: '#F59E0B', marginTop: '8px' }}>
-            ⚠ Changing your subdomain will break any existing links shared with your users.
+            Changing your subdomain will break any existing links shared with your users.
           </p>
         )}
       </div>
@@ -134,7 +134,7 @@ export default function PartnerSettingsPage() {
           opacity: saving ? 0.7 : 1,
         }}
       >
-        {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save settings'}
+        {saving ? 'Saving…' : saved ? 'Saved' : 'Save settings'}
       </button>
     </div>
   );

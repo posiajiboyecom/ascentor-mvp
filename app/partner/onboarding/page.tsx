@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { Check } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Onboarding' };
 
@@ -103,7 +104,7 @@ export default async function PartnerOnboardingPage() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: step.done ? '13px' : '12px', fontWeight: 600,
             }}>
-              {step.done ? '✓' : step.num}
+              {step.done ? <Check size={13} aria-hidden="true" /> : step.num}
             </div>
 
             <div style={{ flex: 1 }}>

@@ -11,7 +11,7 @@
 
 const SECRET = process.env.PAYSTACK_SECRET_KEY
 if (!SECRET) {
-  console.error('❌  Set PAYSTACK_SECRET_KEY env var before running this script.')
+  console.error(' Set PAYSTACK_SECRET_KEY env var before running this script.')
   process.exit(1)
 }
 
@@ -74,7 +74,7 @@ async function createPlan(plan: Plan): Promise<string> {
 }
 
 async function main() {
-  console.log('🔍  Fetching existing Paystack plans…')
+  console.log(' Fetching existing Paystack plans…')
   const existing = await fetchExistingPlans()
   const existingByName = new Map(existing.map(p => [p.name, p.plan_code]))
 
@@ -84,23 +84,23 @@ async function main() {
     if (plan.amount === 0) {
       // Free plan - no Paystack plan needed, just skip
       results[plan.key] = ''
-      console.log(`⏭   Skipping Free plan (no Paystack plan needed)`)
+      console.log(`  Skipping Free plan (no Paystack plan needed)`)
       continue
     }
 
     if (existingByName.has(plan.name)) {
       const code = existingByName.get(plan.name)!
       results[plan.key] = code
-      console.log(`✅  Already exists: ${plan.name} → ${code}`)
+      console.log(` Already exists: ${plan.name} → ${code}`)
     } else {
       const code = await createPlan(plan)
       results[plan.key] = code
-      console.log(`✨  Created: ${plan.name} → ${code}`)
+      console.log(` Created: ${plan.name} → ${code}`)
     }
   }
 
   console.log('\n──────────────────────────────────────────────────────────')
-  console.log('📋  Copy these plan codes into app/pricing/data.ts:')
+  console.log(' Copy these plan codes into app/pricing/data.ts:')
   console.log('──────────────────────────────────────────────────────────\n')
 
   // Print as a ready-to-paste TypeScript object
@@ -119,11 +119,11 @@ async function main() {
   console.log(`}`)
 
   console.log('\n──────────────────────────────────────────────────────────')
-  console.log('✅  Done. USD plans are handled by Lemonsqueezy (see data.ts).')
+  console.log(' Done. USD plans are handled by Lemonsqueezy (see data.ts).')
   console.log('──────────────────────────────────────────────────────────\n')
 }
 
 main().catch(err => {
-  console.error('❌ ', err.message)
+  console.error(err.message)
   process.exit(1)
 })

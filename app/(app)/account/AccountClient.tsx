@@ -7,6 +7,7 @@ import { useState, useRef } from 'react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { Check } from 'lucide-react';
 
 const industries = [
   'Technology', 'Finance & Banking', 'Consulting', 'Healthcare',
@@ -653,7 +654,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
                 <div className="flex flex-col gap-1.5 mb-2">
                   {meta.features.map((f) => (
                     <div key={f} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      <span style={{ color: 'var(--success)', fontWeight: 700 }}>✓</span>
+                      <span style={{ color: 'var(--success)', fontWeight: 700 }}><Check size={13} aria-hidden="true" /></span>
                       <span>{f}</span>
                     </div>
                   ))}

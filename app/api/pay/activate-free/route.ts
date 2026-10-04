@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
       await supabaseAdmin.from('notifications').insert({
         user_id: userId,
         type:    'payment',
-        title:   '🎉 Account Activated!',
+        title:   'Account Activated!',
         message: `Your ${displayName} plan is active with promo code ${code}. Enjoy 30 days of full access.`,
         link:    '/dashboard',
       })

@@ -4,10 +4,10 @@
 // app/p/[subdomain]/account/PartnerAccountClient.tsx
 //
 // Standalone account settings UI for partner platform members.
-// ✦ 100% inline styles - no Tailwind (partner layout is isolated)
-// ✦ Tabs: Profile · Security · Notifications · Account
-// ✦ Avatar upload, password change, notification prefs, data export
-// ✦ All partner CSS vars: --bg, --bg-card, --bg-input, --accent,
+// - 100% inline styles - no Tailwind (partner layout is isolated)
+// - Tabs: Profile · Security · Notifications · Account
+// - Avatar upload, password change, notification prefs, data export
+// - All partner CSS vars: --bg, --bg-card, --bg-input, --accent,
 //   --text, --text-dim, --border, --success, --error
 // ============================================================
 
@@ -419,7 +419,7 @@ export default function PartnerAccountClient({
               style={{ ...S.btn, opacity: saving || !form.full_name.trim() ? 0.45 : 1 }}>
               {saving ? 'Saving…' : 'Save Changes'}
             </button>
-            {saved && <span style={{ fontSize: 12, color: '#10B981', fontWeight: 600 }}>✓ Saved</span>}
+            {saved && <span style={{ fontSize: 12, color: '#10B981', fontWeight: 600 }}>Saved</span>}
             {saveError && <span style={{ fontSize: 12, color: '#EF4444' }}>{saveError}</span>}
           </div>
         </div>
@@ -531,7 +531,7 @@ export default function PartnerAccountClient({
               style={{ ...S.btn, opacity: notifBusy ? 0.45 : 1 }}>
               {notifBusy ? 'Saving…' : 'Save Preferences'}
             </button>
-            {notifSaved && <span style={{ fontSize: 12, color: '#10B981', fontWeight: 600 }}>✓ Saved</span>}
+            {notifSaved && <span style={{ fontSize: 12, color: '#10B981', fontWeight: 600 }}>Saved</span>}
           </div>
         </div>
       )}

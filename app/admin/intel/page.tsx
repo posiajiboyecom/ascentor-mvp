@@ -7,10 +7,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import {
-  Landmark, Brain, MessageCircle, Wallet, User, BarChart3, ClipboardList, PenLine, Zap, X,
-  type LucideIcon,
-} from 'lucide-react';
+import { Landmark, Brain, MessageCircle, Wallet, User, BarChart3, ClipboardList, PenLine, Zap, X, type LucideIcon, ChevronRight } from 'lucide-react';
 
 const G = '#E8A020';
 const mono: React.CSSProperties = { fontFamily:"Metropolis,'Inter',sans-serif", fontSize:10, letterSpacing:'0.09em', textTransform:'uppercase' as const, color:'var(--admin-text-faint)' };
@@ -347,7 +344,7 @@ Analyze this data and provide strategic insights.`;
       if (line.startsWith('### ')) return <h4 key={i} style={{ fontFamily:"'Metropolis',sans-serif", fontSize:14, fontWeight:700, color:G, margin:'14px 0 6px' }}>{line.slice(4)}</h4>;
       if (line.startsWith('- ') || line.startsWith('• ')) return (
         <div key={i} style={{ display:'flex', gap:8, margin:'4px 0', paddingLeft:4 }}>
-          <span style={{ color:G, flexShrink:0, marginTop:2 }}>▸</span>
+          <span style={{ color:G, flexShrink:0, marginTop:2 }}><ChevronRight size={13} aria-hidden="true" /></span>
           <span style={{ fontFamily:"'Metropolis',sans-serif", fontSize:13, color:'var(--admin-text-muted)', lineHeight:1.6 }}>
             {line.slice(2).replace(/\*\*(.*?)\*\*/g, '**$1**')}
           </span>

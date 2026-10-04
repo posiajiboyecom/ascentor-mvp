@@ -576,7 +576,7 @@ export default function AdminMentorsPage() {
                     )}
                     {selected.status !== 'active' && (
                       <ActionButton
-                        label="▶ Activate"
+                        label="Activate"
                         bg="rgba(139,92,246,0.08)"
                         color="#8B5CF6"
                         border="rgba(139,92,246,0.25)"
@@ -830,7 +830,7 @@ export default function AdminMentorsPage() {
                       <ActionButton label="Approve" bg="rgba(20,184,166,0.08)" color="#14B8A6" border="rgba(20,184,166,0.25)" onClick={() => updateStatus(selected.id, 'approved')} />
                     )}
                     {selected.status !== 'active' && (
-                      <ActionButton label="▶ Activate" bg="rgba(139,92,246,0.08)" color="#8B5CF6" border="rgba(139,92,246,0.25)" onClick={() => updateStatus(selected.id, 'active')} />
+                      <ActionButton label="Activate" bg="rgba(139,92,246,0.08)" color="#8B5CF6" border="rgba(139,92,246,0.25)" onClick={() => updateStatus(selected.id, 'active')} />
                     )}
                     {selected.status !== 'rejected' && (
                       <ActionButton label="Reject" bg="rgba(239,68,68,0.06)" color="#EF4444" border="rgba(239,68,68,0.18)" onClick={() => updateStatus(selected.id, 'rejected')} />

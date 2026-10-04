@@ -409,7 +409,7 @@ export default function PartnerBrandPage() {
           opacity: saving ? 0.7 : 1,
         }}
       >
-        {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save brand'}
+        {saving ? 'Saving…' : saved ? 'Saved' : 'Save brand'}
       </button>
     </div>
   );

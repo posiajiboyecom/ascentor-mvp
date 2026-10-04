@@ -6,7 +6,7 @@
 // "This Week" home's Commons feed render the same UI.
 
 import { useMemo, useState } from 'react';
-import { MessageCircle, Heart } from 'lucide-react';
+import { MessageCircle, Heart, Send } from 'lucide-react';
 import { Avatar } from './ui';
 import { MessageBubble } from './messages';
 import {
@@ -37,8 +37,8 @@ export function ForumPostCard({
         : null);
   const isLong = !voiceUrl && message.content.length > FORUM_TRUNCATE_LENGTH;
   const preview = isLong ? message.content.slice(0, FORUM_TRUNCATE_LENGTH).trimEnd() + '…' : message.content;
-  const heartCount = message.likes.filter((entry) => entry.endsWith(':❤️')).length;
-  const hasLiked = message.likes.some((entry) => entry.endsWith(':❤️'));
+  const heartCount = message.likes.filter((entry) => entry.endsWith(':love')).length;
+  const hasLiked = message.likes.some((entry) => entry.endsWith(':love'));
 
   return (
     <article className="flex gap-3 px-4 lg:px-6 py-4 border-b-[0.5px] border-[var(--color-border-tertiary)] hover:bg-[var(--color-background-secondary)]/40 transition-colors">
@@ -64,7 +64,7 @@ export function ForumPostCard({
                   borderColor:     dimMeta?.border ?? 'rgba(200,169,110,0.22)',
                 }}
               >
-                {dimMeta?.emoji ?? ''} {message.dimension_tag}
+                {dimMeta && <dimMeta.Icon size={12} aria-hidden="true" style={{ display: 'inline', verticalAlign: '-1px', marginRight: 4 }} />}{message.dimension_tag}
               </span>
             );
           })()}
@@ -93,7 +93,7 @@ export function ForumPostCard({
           </button>
           <button
             type="button"
-            onClick={() => onReact('❤️')}
+            onClick={() => onReact('love')}
             className={`flex items-center gap-1.5 rounded-full px-2 py-1.5 text-[13px] transition-colors ${
               hasLiked ? 'text-red-500' : 'text-[var(--color-text-secondary)] hover:bg-red-500/10 hover:text-red-500'
             }`}
@@ -333,7 +333,7 @@ export function ForumThread({
           onClick={onSendReply}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#C8A96E] text-[#0F0F0E] disabled:opacity-40"
         >
-          ➤
+          <Send size={16} aria-hidden="true" />
         </button>
       </div>
     </div>

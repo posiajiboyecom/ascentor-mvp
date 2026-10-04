@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import '@/styles/marketing.css';
+import { CalendarDays } from 'lucide-react';
 
 const COUNTRIES = [
   'Nigeria','Ghana','Kenya','South Africa','Ethiopia','Tanzania','Uganda','Rwanda',
@@ -137,7 +138,7 @@ export default function EventPageClient({ event }: { event: any }) {
 
           {submitted ? (
             <div style={{ background: '#0F0F0E', border: '1px solid #C8A96E', borderRadius: '1rem', padding: '2.5rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>◇</div>
+              <div style={{ marginBottom: '1rem' }}><CalendarDays size={32} aria-hidden="true" /></div>
               <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 700, color: '#C8A96E', marginBottom: '0.75rem' }}>
                 You&apos;re registered.
               </p>

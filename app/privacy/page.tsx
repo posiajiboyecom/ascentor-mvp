@@ -409,7 +409,7 @@ export default function PrivacyPage() {
         className="mobile-toc-toggle"
         onClick={() => setMenuOpen(!menuOpen)}
       >
-        {menuOpen ? "✕ Close" : "≡ Contents"}
+        {menuOpen ? "Close" : "Contents"}
       </button>
 
       <div className={`mobile-toc-drawer ${menuOpen ? "open" : ""}`}>

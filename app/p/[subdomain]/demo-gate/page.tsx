@@ -14,6 +14,8 @@
 // ║  }                                                                ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
+import { Lock } from 'lucide-react';
+
 export default function DemoGatePage() {
   return (
     <>
@@ -110,7 +112,7 @@ export default function DemoGatePage() {
         </div>
 
         <div className="dg-card">
-          <div className="dg-icon">🔐</div>
+          <div className="dg-icon"><Lock size={22} aria-hidden="true" /></div>
           <div className="dg-badge">Partner Access Required</div>
 
           <h1 className="dg-headline">

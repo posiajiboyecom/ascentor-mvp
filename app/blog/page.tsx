@@ -49,7 +49,6 @@ export default async function BlogPage() {
 
           {!hasPosts && (
             <div className="text-center py-20 rounded-2xl" style={{ background: '#FFF', border: '1px solid #E5E7EB' }}>
-              <p className="text-4xl mb-4">✍️</p>
               <h2 className="text-xl font-bold mb-2" style={{ color: '#1A1A2E' }}>Content coming soon</h2>
               <p className="text-sm mb-6" style={{ color: '#9CA3AF', maxWidth: 320, margin: '0 auto 24px' }}>
                 We're preparing leadership insights and career strategies for purposeful individuals worldwide.

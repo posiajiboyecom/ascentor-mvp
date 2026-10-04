@@ -114,7 +114,7 @@ async function handleSubscriptionCreate(data: any) {
     updated_at:          new Date().toISOString(),
   }).eq('id', profile.id);
 
-  console.log(`[pay/webhook] ✅ subscription.create → sub code saved for ${email}${billing ? ` (${billing})` : ''}`);
+  console.log(`[pay/webhook] subscription.create → sub code saved for ${email}${billing ? ` (${billing})` : ''}`);
 }
 
 async function handleSubscriptionDisable(data: any) {
@@ -145,7 +145,7 @@ async function handleSubscriptionDisable(data: any) {
     '/account'
   );
 
-  console.log(`[pay/webhook] ⚠️  subscription.disable → ${email} cancelled`);
+  console.log(`[pay/webhook]  subscription.disable → ${email} cancelled`);
 }
 
 async function handleRenewalSuccess(data: any) {
@@ -190,7 +190,7 @@ async function handleRenewalSuccess(data: any) {
     '/account'
   );
 
-  console.log(`[pay/webhook] 🔄 invoice.payment_success → ${email} renewed (${billing}) until ${newEnd}`);
+  console.log(`[pay/webhook] invoice.payment_success → ${email} renewed (${billing}) until ${newEnd}`);
 }
 
 async function handleRenewalFailed(data: any) {
@@ -213,7 +213,7 @@ async function handleRenewalFailed(data: any) {
     '/account'
   );
 
-  console.log(`[pay/webhook] ❌ invoice.payment_failed → ${email} marked past_due`);
+  console.log(`[pay/webhook] invoice.payment_failed → ${email} marked past_due`);
 }
 
 // ── Public handler ─────────────────────────────────────────────────────────────
@@ -229,7 +229,7 @@ export async function handleSubscriptionWebhookEvent(payload: any) {
       return NextResponse.json({ received: true, duplicate: true });
     }
 
-    console.log(`[pay/webhook] 📥 ${event}`);
+    console.log(`[pay/webhook] ${event}`);
 
     switch (event) {
       case 'charge.success':

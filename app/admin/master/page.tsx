@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Check, X, Star, Loader2, Play } from 'lucide-react';
+import { Check, X, Star, Loader2, Play, ChevronDown, ChevronUp } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import SageLoader from '@/components/SageLoader';
@@ -825,7 +825,7 @@ export default function MasterAdminPage() {
                             onClick={() => setExpandedContent(isExpanded ? null : item.id)}
                             style={{ background: 'none', border: '1px solid var(--admin-bg-input)', borderRadius: 4, color: isExpanded ? '#E8A020' : 'var(--admin-text-faint)', cursor: 'pointer', fontSize: 10, padding: '2px 6px', fontFamily: "Metropolis, 'Inter', sans-serif" }}
                           >
-                            {isExpanded ? '▲' : '▼'}
+                            {isExpanded ? <ChevronUp size={13} aria-hidden="true" /> : <ChevronDown size={13} aria-hidden="true" />}
                           </button>
                         )}
                         <button onClick={() => deleteContent(item.id)} style={{ background: 'none', border: 'none', color: 'var(--admin-text-faint)', cursor: 'pointer', fontSize: 14, padding: '0 2px' }}>×</button>
@@ -1322,7 +1322,7 @@ export default function MasterAdminPage() {
                     </div>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
                       <StatusBadge status={agent.status as any} />
-                      <span style={{ color: 'var(--admin-text-faint)', fontSize: 12 }}>{isExpanded ? '▲' : '▼'}</span>
+                      <span style={{ color: 'var(--admin-text-faint)', fontSize: 12 }}>{isExpanded ? <ChevronUp size={13} aria-hidden="true" /> : <ChevronDown size={13} aria-hidden="true" />}</span>
                     </div>
                   </div>
 

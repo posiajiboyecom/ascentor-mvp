@@ -20,6 +20,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Check } from 'lucide-react';
 
 // Matches your AccountClient planMeta exactly
 const PLAN_META: Record<string, {
@@ -176,7 +177,7 @@ export function PlanSection({ profile, userId }: PlanSectionProps) {
         {isPastDue && (
           <p className="text-xs mb-3 px-3 py-2 rounded-lg"
             style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', color: 'var(--error)' }}>
-            ⚠️ Payment failed. Please{' '}
+            Payment failed. Please{' '}
             <a href="/checkout" style={{ color: 'var(--error)', textDecoration: 'underline' }}>
               update your payment method
             </a>
@@ -188,7 +189,7 @@ export function PlanSection({ profile, userId }: PlanSectionProps) {
         <div className="flex flex-col gap-1.5 mb-2">
           {meta.features.map((f) => (
             <div key={f} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-              <span style={{ color: 'var(--success)', fontWeight: 700 }}>✓</span>
+              <span style={{ color: 'var(--success)', fontWeight: 700 }}><Check size={13} aria-hidden="true" /></span>
               <span>{f}</span>
             </div>
           ))}

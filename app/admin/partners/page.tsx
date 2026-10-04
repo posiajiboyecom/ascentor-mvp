@@ -13,7 +13,7 @@
 // ============================================================
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X, Coins } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 
@@ -501,7 +501,7 @@ function AdminPartnersPageInner() {
           <div style={{ padding: '48px 0', textAlign: 'center', color: 'var(--admin-text-muted)', fontSize: 13 }}>Loading...</div>
         ) : partners.length === 0 ? (
           <div style={{ padding: '52px 0', textAlign: 'center' }}>
-            <p style={{ fontSize: 24, color: '#E8A020', opacity: 0.3, marginBottom: 10 }}>◈</p>
+            <p style={{ color: '#E8A020', opacity: 0.3, marginBottom: 10 }}><Coins size={24} aria-hidden="true" /></p>
             <p style={{ fontSize: 13, color: 'var(--admin-text-muted)' }}>
               {tab === 'pending' ? 'No pending applications.' : 'No partners found.'}
             </p>

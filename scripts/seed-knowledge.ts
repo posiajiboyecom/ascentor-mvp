@@ -512,13 +512,13 @@ async function main() {
     try {
       await addChunks(namespace, chunks);
       totalChunks += chunks.length;
-      console.log(`  ✓ Done\n`);
+      console.log(`  Done\n`);
     } catch (err) {
-      console.error(`  ✗ Failed: ${err}\n`);
+      console.error(`  Failed: ${err}\n`);
     }
   }
 
-  console.log(`\n✓ Seeding complete. ${totalChunks} chunks uploaded across ${KNOWLEDGE.length} namespaces.`);
+  console.log(`\nSeeding complete. ${totalChunks} chunks uploaded across ${KNOWLEDGE.length} namespaces.`);
   console.log('\nNamespaces seeded:');
   KNOWLEDGE.forEach(({ namespace, chunks }) =>
     console.log(`  ${namespace}: ${chunks.length} chunks`)

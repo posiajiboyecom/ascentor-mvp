@@ -30,6 +30,7 @@ import { ForumBody, ForumThread } from '@/components/community/forum';
 import { getInitials, avatarColor, dayLabel } from '@/components/community/types';
 import type { Channel, Category, Message, WeekData } from '@/components/community/types';
 import type { PlanTier } from '@/lib/planTier';
+import { Megaphone, Pin, Lock, Users, Menu, ChevronLeft } from 'lucide-react';
 
 export type { ChannelType, Category, Channel, Message } from '@/components/community/types';
 
@@ -324,11 +325,11 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
       <div className="flex items-center gap-3 px-4 lg:px-6 py-3 lg:py-4 border-b-[0.5px] border-[var(--color-border-tertiary)] shrink-0">
         {onBack && (
           <button type="button" onClick={onBack} aria-label="Back" className="text-[#C8A96E] lg:hidden">
-            ‹
+            <ChevronLeft size={18} aria-hidden="true" />
           </button>
         )}
         <span className="text-[var(--color-text-secondary)]">
-          {channel.channel_type === 'announce' ? '📢' : '#'}
+          {channel.channel_type === 'announce' ? <Megaphone size={16} aria-hidden="true" /> : '#'}
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm lg:text-base font-medium text-[var(--color-text-primary)] truncate">{channel.name}</p>
@@ -340,21 +341,21 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
 
       {pinnedMessage && (
         <div className="flex items-center gap-2 px-4 lg:px-6 py-2 bg-[#C8A96E]/[0.08] border-b-[0.5px] border-[#C8A96E]/20 text-xs lg:text-sm shrink-0">
-          <span className="text-[#C8A96E] shrink-0">★</span>
+          <Pin size={14} className="text-[#A8894E] shrink-0" aria-hidden="true" />
           <p className="flex-1 min-w-0 truncate text-[#A8894E]">Pinned: &ldquo;{pinnedMessage.content}&rdquo;</p>
         </div>
       )}
 
       {channel.channel_type === 'announce' && (
         <div className="flex items-center gap-1.5 px-4 lg:px-6 py-2 bg-[var(--app-bg-input)] text-xs text-[var(--text-muted)] shrink-0">
-          <span className="text-[#C8A96E]">🔒</span>
+          <Lock size={13} className="text-[var(--app-accent-ink)]" aria-hidden="true" />
           Admin-only. React freely, replies not available here.
         </div>
       )}
 
       {channel.channel_type === 'circle' && (
         <div className="flex items-center gap-1.5 px-4 lg:px-6 py-2 bg-[#0F6E56]/[0.08] text-xs text-[#0F6E56] shrink-0">
-          <span>👥</span>
+          <Users size={13} aria-hidden="true" />
           Accountability circle, weekly check-ins, kept between members.
         </div>
       )}
@@ -638,7 +639,7 @@ export default function CommunityClient({
               onClick={() => setMobileNavOpen(true)}
               className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)]"
             >
-              ☰ Channels
+              <Menu size={14} aria-hidden="true" /> Channels
             </button>
           </div>
           <div className="flex-1 overflow-y-auto">

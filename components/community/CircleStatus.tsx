@@ -2,7 +2,7 @@
 
 // components/community/CircleStatus.tsx
 // "Your Circle this week" - member cards with real check-in status pulled from
-// weekData. A "Cheer" adds a 👏 reaction to that member's check-in message
+// weekData. A "Cheer" adds a cheer reaction to that member's check-in message
 // (real, reuses community_messages.likes). Empty state lets you join a circle.
 
 import { useState } from 'react';
@@ -39,7 +39,7 @@ export function CircleStatus({
       setCheered((c) => ({ ...c, [checkinId]: false }));
       return;
     }
-    const key = `${userId}:👏`;
+    const key = `${userId}:cheer`;
     if (data.likes?.includes(key)) return; // already cheered server-side
     const next = [...(data.likes ?? []), key];
     const { error: upErr } = await supabase
@@ -124,7 +124,7 @@ export function CircleStatus({
                     {isMe ? 'You' : m.name}
                   </p>
                   <p className={`text-[11px] mt-0.5 ${m.checkedIn ? 'text-green-500' : 'text-[var(--color-text-secondary)]'}`}>
-                    {m.checkedIn ? '✓ Checked in' : 'Not yet'}
+                    {m.checkedIn ? 'Checked in' : 'Not yet'}
                   </p>
 
                   {isMe && !myCheckedIn ? (
@@ -142,7 +142,7 @@ export function CircleStatus({
                       disabled={!!didCheer}
                       className="mt-3 w-full rounded-lg border-[0.5px] border-[var(--color-border-secondary)] py-1.5 text-[12px] font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-60"
                     >
-                      {didCheer ? '👏 Cheered' : 'Cheer 👏'}
+                      {didCheer ? 'Cheered' : 'Cheer'}
                     </button>
                   ) : (
                     <div className="mt-3 h-[30px]" aria-hidden="true" />

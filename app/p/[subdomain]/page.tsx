@@ -13,7 +13,7 @@
 //  - Was redirecting to `/p/${subdomain}/dashboard` (internal path → 404).
 //    Fixed: redirect to `/dashboard` - proxy handles the rewrite.
 //  - Was querying dead `tenants` table. Fixed: queries `partners` table.
-//  - Was using emoji (⬆) instead of SVG. Fixed: inline SVG icon.
+//  - Was using emoji () instead of SVG. Fixed: inline SVG icon.
 //  - Nav hrefs were `/p/${subdomain}/signup` (internal). Fixed: `/signup`.
 // ─────────────────────────────────────────────────────────────────────────────
 

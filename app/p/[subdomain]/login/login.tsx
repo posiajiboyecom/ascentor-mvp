@@ -25,6 +25,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PasswordInput from '@/components/PasswordInput';
+import { ShieldCheck } from 'lucide-react';
 
 function PartnerLoginForm() {
   const router       = useRouter();
@@ -107,7 +108,7 @@ function PartnerLoginForm() {
             background: 'rgba(232,160,32,0.06)',
             border: '1px solid rgba(232,160,32,0.18)',
           }}>
-            <span style={{ fontSize: 14, color: 'var(--accent)', flexShrink: 0 }}>◎</span>
+            <ShieldCheck size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} aria-hidden="true" />
             <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
               Access to this platform is by invite only.
             </p>

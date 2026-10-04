@@ -15,25 +15,26 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { MailQuestion, PauseCircle, Ban, UserX, type LucideIcon } from 'lucide-react';
 
-const REASONS: Record<string, { icon: string; title: string; desc: string }> = {
+const REASONS: Record<string, { Icon: LucideIcon; title: string; desc: string }> = {
   not_invited: {
-    icon:  '◎',
+    Icon:  MailQuestion,
     title: 'Invite required',
     desc:  'This platform is invite-only. Ask the coach to add your email to get access.',
   },
   suspended: {
-    icon:  '◈',
+    Icon:  PauseCircle,
     title: 'Access suspended',
     desc:  'Your access to this platform has been suspended. Contact the coach if you think this is a mistake.',
   },
   removed: {
-    icon:  '⊘',
+    Icon:  Ban,
     title: 'Access removed',
     desc:  'Your access to this platform has been removed.',
   },
   no_email: {
-    icon:  '◌',
+    Icon:  UserX,
     title: 'No email on account',
     desc:  'Your sign-in method didn\'t provide an email address. Please sign in with an email-based account.',
   },
@@ -74,7 +75,7 @@ function AccessDeniedContent() {
           marginBottom: 24,
           fontFamily: 'var(--font-heading)',
         }}>
-          {config.icon}
+          <config.Icon size={28} aria-hidden="true" />
         </div>
 
         {/* Title */}

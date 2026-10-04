@@ -185,7 +185,7 @@ export default function AIPersonaPage() {
 
         {saved && (
           <span style={{ fontSize: '13px', color: '#4ade80' }}>
-            ✓ Saved successfully
+            Saved successfully
           </span>
         )}
       </div>

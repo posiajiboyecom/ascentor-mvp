@@ -14,6 +14,7 @@ import { CircleStatus } from './CircleStatus';
 import { CommonsFeed } from './CommonsFeed';
 import { CheckinComposer } from './CheckinComposer';
 import type { Channel, Message, WeekData } from './types';
+import { Flame } from 'lucide-react';
 
 export function SummitHome({
   weekData,
@@ -77,7 +78,7 @@ export function SummitHome({
         />
         <div className="relative">
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#C8A96E] mb-3">
-            ◇ This week&apos;s ascent
+            This week&apos;s ascent
           </p>
           <h1
             className="text-[24px] lg:text-[30px] leading-[1.24] text-[var(--color-text-primary)] mb-4 max-w-[560px]"
@@ -89,7 +90,7 @@ export function SummitHome({
           <div className="flex flex-wrap items-center gap-4">
             {checkedIn ? (
               <span className="inline-flex items-center gap-2 rounded-xl border-[0.5px] border-green-500/40 bg-green-500/10 px-5 py-2.5 text-sm font-semibold text-green-400">
-                ✓ Checked in this week
+                Checked in this week
               </span>
             ) : (
               <button
@@ -106,7 +107,7 @@ export function SummitHome({
 
             {streak > 0 && (
               <span className="flex items-center gap-2 text-[13px] text-[var(--color-text-secondary)]">
-                🔥 <b className="text-[#C8A96E]" style={{ fontFamily: 'var(--font-display)' }}>{streak}-week</b> streak
+                <Flame size={14} aria-hidden="true" className="text-[var(--app-accent-ink)]" /> <b className="text-[#C8A96E]" style={{ fontFamily: 'var(--font-display)' }}>{streak}-week</b> streak
               </span>
             )}
             {weekData.communityCheckins > 0 && (

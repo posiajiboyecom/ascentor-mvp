@@ -165,9 +165,9 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       linkedin:
         "Nobody teaches you how careers actually work. Not your degree. Not your parents. Here is the playbook they should have given you on day one.",
       twitter:
-        "The thing standing between you and your first real opportunity is not your grades. It is this 🧵",
+        "The thing standing between you and your first real opportunity is not your grades. It is this ",
       instagram:
-        "Still figuring out what you want to do? You are not behind. You just need a better map 👇",
+        "Still figuring out what you want to do? You are not behind. You just need a better map ",
       email:
         "The career clarity nobody gave you, and the exact steps to find your direction",
     },
@@ -214,9 +214,9 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       linkedin:
         "You are working harder than the person who just got promoted. Here is the one thing that actually made the difference, and it was not competence.",
       twitter:
-        "The career trap that catches every talented professional in their 20s and 30s. And the way out nobody teaches you 🧵",
+        "The career trap that catches every talented professional in their 20s and 30s. And the way out nobody teaches you ",
       instagram:
-        "The thing no one tells you at your first job orientation that changes everything about your career 👇",
+        "The thing no one tells you at your first job orientation that changes everything about your career ",
       email:
         "The promotion you were passed over for? Here is the real reason, and it has nothing to do with your performance",
     },
@@ -260,9 +260,9 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       linkedin:
         "The most effective leaders consistently do one thing that no leadership course teaches. Here is what the data from our sessions actually shows.",
       twitter:
-        "Why the best talent keeps leaving, and what the leaders who retain them do differently 🧵",
+        "Why the best talent keeps leaving, and what the leaders who retain them do differently ",
       instagram:
-        "The leadership gap nobody at the senior level talks about openly (and exactly how to close it) 👇",
+        "The leadership gap nobody at the senior level talks about openly (and exactly how to close it) ",
       email:
         "What separates the leaders who make the jump to the next level from the ones who plateau",
     },
@@ -287,8 +287,8 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       'A professional, 25 years old, 3 years into their career. Outperforms peers. Passed over for promotion without explanation.',
     platformHooks: {
       linkedin: "You are working harder than the person who just got promoted. Here is the one thing that actually made the difference.",
-      twitter: "The career trap that catches every talented professional in their 20s. And the way out nobody teaches you 🧵",
-      instagram: "The thing no one tells you at your first job orientation that changes everything 👇",
+      twitter: "The career trap that catches every talented professional in their 20s. And the way out nobody teaches you ",
+      instagram: "The thing no one tells you at your first job orientation that changes everything ",
       email: "The promotion you were passed over for? Here is the real reason.",
     },
   },
@@ -308,8 +308,8 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       'A manager, 33 years old, managing a team of 6. Passed over for promotion once. Does not understand what senior leaders are evaluating.',
     platformHooks: {
       linkedin: "Eight years in. Manager title. Senior leadership still feels impossibly far. Here is what is actually blocking you.",
-      twitter: "The skills that got you to manager are NOT the skills that get you to director. Most find this out too late 🧵",
-      instagram: "They promoted someone younger than you. Before you spiral, read this 👇",
+      twitter: "The skills that got you to manager are NOT the skills that get you to director. Most find this out too late ",
+      instagram: "They promoted someone younger than you. Before you spiral, read this ",
       email: "The leadership quality organisations reward most at senior level (it is not what your last training covered)",
     },
   },
@@ -328,8 +328,8 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       'An executive, 45 years old, C-suite at a major firm, managing 100+ people, focused on retaining young talent.',
     platformHooks: {
       linkedin: "The most effective leaders consistently do one thing that no leadership course teaches. Here is what the data shows.",
-      twitter: "Why the best young talent keeps leaving, and what the leaders who retain them do differently 🧵",
-      instagram: "The leadership gap nobody talks about openly (and exactly how to close it) 👇",
+      twitter: "Why the best young talent keeps leaving, and what the leaders who retain them do differently ",
+      instagram: "The leadership gap nobody talks about openly (and exactly how to close it) ",
       email: "What separates top-tier executives from everyone else at the same level",
     },
   },
@@ -347,8 +347,8 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       'An ambitious professional, working in a major city, talented and driven but navigating without a real mentor.',
     platformHooks: {
       linkedin: "The career playbook every professional should have from day one. Nobody handed it to you. So here it is.",
-      twitter: "What the most successful professionals in the room have in common (it is not what you think) 🧵",
-      instagram: "The career truth that actually applies to your life, not the recycled version 👇",
+      twitter: "What the most successful professionals in the room have in common (it is not what you think) ",
+      instagram: "The career truth that actually applies to your life, not the recycled version ",
       email: "What working with thousands of professionals worldwide has taught us about what actually accelerates careers",
     },
   },

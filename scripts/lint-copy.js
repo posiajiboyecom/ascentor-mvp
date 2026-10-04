@@ -22,9 +22,13 @@ const EM_ESCAPES = ['\\' + 'u2014', '&mdash;', '&#8212;', '&#x2014;'];
 
 // Pictographs, flags, and variation selectors. Allowed: copyright/registered/trademark
 // signs and the arrow block (U+2190 to U+21FF), which are ordinary typography.
-const PICT = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{FE0F}\u{20E3}]/gu;
+// Decorative symbol blocks (technical, geometric shapes, misc symbols, dingbats) are banned
+// as UI glyphs too; box-drawing characters in code comments are not affected.
+const PICT = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{FE0F}\u{20E3}\u{2300}-\u{23FF}\u{25A0}-\u{25FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu;
 function isAllowed(ch) {
   const c = ch.codePointAt(0);
+  // keyboard modifier symbols (command, escape, return) are ordinary typography
+  if (c === 0x2318 || c === 0x238b || c === 0x23ce || c === 0x2325) return true;
   return c === 0xa9 || c === 0xae || c === 0x2122 || (c >= 0x2190 && c <= 0x21ff);
 }
 // Pictographs written as \uXXXX / \u{...} escapes inside string literals.

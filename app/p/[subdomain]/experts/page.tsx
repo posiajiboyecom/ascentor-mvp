@@ -138,7 +138,7 @@ export default function PartnerExpertsPage() {
                   <p className="text-[13px] mt-2" style={{ color: 'var(--text-muted)' }}>{session.expert_bio}</p>
                   <div className="flex justify-between items-center mt-3.5">
                     <div className="text-xs" style={{ color: 'var(--text-dim)' }}>
-                      📅 {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · 👥 {session.max_participants - spotsUsed} spots left
+                      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {session.max_participants - spotsUsed} spots left
                     </div>
                     <button
                       onClick={() => toggleRegister(session.id)}
@@ -149,7 +149,7 @@ export default function PartnerExpertsPage() {
                         border: isRegistered ? '1px solid var(--border)' : 'none',
                         cursor: 'pointer',
                       }}>
-                      {isRegistered ? '✓ Reserved' : 'Reserve Spot'}
+                      {isRegistered ? 'Reserved' : 'Reserve Spot'}
                     </button>
                   </div>
                   <div className="w-full h-0.5 rounded-full mt-2.5 overflow-hidden" style={{ background: 'var(--bg-input)' }}>

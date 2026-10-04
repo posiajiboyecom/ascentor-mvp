@@ -439,7 +439,7 @@ function ProductCard({ product: p }: { product: Product }) {
           </span>
           {p.is_featured && (
             <span style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: '9px', color: '#E8A020', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              ★ Featured
+              Featured
             </span>
           )}
         </div>

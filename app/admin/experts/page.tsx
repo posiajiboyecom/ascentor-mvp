@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 // ============================================================
 // ASCENTOR BRAND TOKENS · Brand Book v1.0 · 2026
@@ -766,7 +767,7 @@ function AdminExpertsPageInner() {
                         {regs.length}
                       </span>
                       {regs.length === 1 ? '1 registrant' : `${regs.length} registrants`}
-                      <span style={{ fontSize: '10px', opacity: 0.7 }}>{isOpen ? '▲' : '▼'}</span>
+                      <span style={{ fontSize: '10px', opacity: 0.7 }}>{isOpen ? <ChevronUp size={13} aria-hidden="true" /> : <ChevronDown size={13} aria-hidden="true" />}</span>
                     </button>
                   );
                 })()}

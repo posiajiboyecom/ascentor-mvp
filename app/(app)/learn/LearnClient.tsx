@@ -13,6 +13,7 @@ import { useState, useMemo } from 'react';
 import { Lock, Check } from 'lucide-react';
 import { canAccess, TIER_META, type PlanTier } from '@/lib/planTier';
 import { usePageSearch } from '@/components/shell/PageSearch';
+import { CategoryIcon } from '@/components/learn/CategoryIcon';
 
 // ── Types - match the real schema, not database.ts's stale fields ──
 
@@ -42,22 +43,6 @@ export interface LearnClientProps {
   userPlan: PlanTier;
 }
 
-// No `emoji` column exists on courses - derive one from `category`
-// instead of inventing a DB field. Extend this map as real category
-// values are confirmed; falls back to a generic book icon look.
-const CATEGORY_EMOJI: Record<string, string> = {
-  Mind: '🧠',
-  Vocation: '💼',
-  Character: '🏛️',
-  Relationships: '🤝',
-  Community: '🌍',
-  Legacy: '🏆',
-};
-
-function categoryEmoji(category: string | null): string {
-  if (!category) return '📘';
-  return CATEGORY_EMOJI[category] ?? '📘';
-}
 
 const DIFFICULTY_COLORS = {
   beginner: ['#14B8A6', '#E8E6E1', '#E8E6E1'],
@@ -119,7 +104,7 @@ function CourseCard({ course, userPlan, onLockedTap }: {
       <div className={locked ? 'pointer-events-none' : ''}>
         <div className="flex items-start justify-between mb-3.5">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#C8A96E]/10 border-[0.5px] border-[#C8A96E]/25 text-xl">
-            {categoryEmoji(course.category)}
+            <CategoryIcon category={course.category} size={14} />
           </span>
           {isComplete ? (
             <span className="text-sm font-extrabold text-green-600">
@@ -227,7 +212,7 @@ function CategoryRail({
       {categories.map((cat) => (
         <FilterItem
           key={cat}
-          label={`${categoryEmoji(cat)} ${cat}`}
+          label={cat}
           count={categoryCounts[cat]}
           active={activeCategory === cat}
           onClick={() => onCategoryChange(cat)}
@@ -279,10 +264,10 @@ function ContinueHero({ course }: { course: Course }) {
       className="flex items-center gap-4 lg:gap-6 rounded-2xl border-[0.5px] border-[#C8A96E]/25 bg-[#C8A96E]/10 p-4 lg:p-7 mb-6 lg:mb-8"
     >
       <span className="hidden lg:flex h-[90px] w-[140px] shrink-0 items-center justify-center rounded-xl bg-[#C8A96E]/20 border-[0.5px] border-[#C8A96E]/25 text-4xl">
-        {categoryEmoji(course.category)}
+        <CategoryIcon category={course.category} size={14} />
       </span>
       <span className="flex lg:hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#C8A96E]/20 border-[0.5px] border-[#C8A96E]/25 text-xl">
-        {categoryEmoji(course.category)}
+        <CategoryIcon category={course.category} size={14} />
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#A8894E] mb-1.5">
@@ -403,7 +388,7 @@ export function LearnClient({ courses, userPlan }: LearnClientProps) {
             <div key={category}>
               <div className="flex items-center justify-between mt-7 mb-3.5 first:mt-0">
                 <p className="text-sm font-bold text-[var(--text)]">
-                  {categoryEmoji(category)} {category}
+                  <CategoryIcon category={category} size={14} /> {category}
                 </p>
                 <p className="text-[11.5px] text-[var(--text-dim)]">
                   {doneInCategory}/{list.length} completed

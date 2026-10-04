@@ -39,7 +39,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error("\n❌ Missing environment variables.");
+  console.error("\nMissing environment variables.");
   console.error("   Make sure your .env.local file exists and contains:");
   console.error("   NEXT_PUBLIC_SUPABASE_URL=...");
   console.error("   SUPABASE_SERVICE_ROLE_KEY=...\n");
@@ -103,7 +103,7 @@ async function backfill() {
     process.exit(1);
   }
 
-  console.log(`\n✅ Done! ${toInsert.length} users added to newsletter_subscribers.`);
+  console.log(`\nDone! ${toInsert.length} users added to newsletter_subscribers.`);
   console.log(`   ${alreadySubscribed.size} were already subscribed, skipped.`);
 }
 

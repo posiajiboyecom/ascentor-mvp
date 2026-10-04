@@ -8,6 +8,7 @@
 
 import { useMemo, useState } from 'react';
 import type { Category, Channel } from './types';
+import { Pin, Megaphone, Search, CalendarDays, Sparkles, CircleDot, ChevronDown } from 'lucide-react';
 
 export function SectionNav({
   categories,
@@ -64,10 +65,10 @@ export function SectionNav({
 
       {/* Primary destinations */}
       <div className="px-2 pt-2 flex flex-col gap-0.5">
-        <PrimaryItem icon="◇" label="This Week" active={view === 'home'} onClick={onGoHome} />
+        <PrimaryItem icon={<CalendarDays size={16} aria-hidden="true" />} label="This Week" active={view === 'home'} onClick={onGoHome} />
         {commonsChannel && (
           <PrimaryItem
-            icon="✦"
+            icon={<Sparkles size={16} aria-hidden="true" />}
             label="The Commons"
             active={view === 'channel' && activeSlug === commonsChannel.slug}
             onClick={() => onSelectChannel(commonsChannel)}
@@ -75,7 +76,7 @@ export function SectionNav({
         )}
         {myCircle && (
           <PrimaryItem
-            icon="◎"
+            icon={<CircleDot size={16} aria-hidden="true" />}
             label="My Circle"
             active={view === 'channel' && activeSlug === myCircle.slug}
             onClick={() => onSelectChannel(myCircle)}
@@ -85,7 +86,7 @@ export function SectionNav({
 
       <div className="px-3 py-2">
         <div className="flex items-center gap-2 rounded-lg bg-[var(--app-bg-input)] border border-[var(--border)] px-3 py-1.5">
-          <span className="text-[var(--text-dim)] text-sm">⌕</span>
+          <span className="text-[var(--text-dim)] text-sm"><Search size={14} aria-hidden="true" /></span>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -99,7 +100,7 @@ export function SectionNav({
         {pinnedChannels.length > 0 && (
           <div>
             <div className="flex items-center gap-1.5 px-4 py-1.5">
-              <span className="text-[#C8A96E] text-xs">📌</span>
+              <Pin size={12} className="text-[var(--app-accent-ink)]" aria-hidden="true" />
               <span className="text-[9px] font-medium uppercase tracking-[0.1em] text-[var(--app-accent-ink)]">Pinned</span>
             </div>
             {pinnedChannels.map((ch) => (
@@ -129,7 +130,7 @@ export function SectionNav({
                 <span className="text-[9px] font-medium uppercase tracking-[0.1em] text-[var(--text-dim)]">{cat.name}</span>
                 <span className="flex items-center gap-1.5">
                   <span className="text-[9px] text-[var(--text-dim)]">{list.length}</span>
-                  <span className={`text-[var(--text-dim)] text-[10px] transition-transform ${isCollapsed ? '' : 'rotate-180'}`}>▾</span>
+                  <span className={`text-[var(--text-dim)] text-[10px] transition-transform ${isCollapsed ? '' : 'rotate-180'}`}><ChevronDown size={12} aria-hidden="true" /></span>
                 </span>
               </button>
               {!isCollapsed &&
@@ -156,7 +157,7 @@ function PrimaryItem({
   active,
   onClick,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -195,7 +196,7 @@ function ChannelRow({
       }`}
     >
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#C8A96E]/[0.08] text-sm">
-        {channel.emoji ?? (channel.channel_type === 'announce' ? '📢' : '#')}
+        {channel.channel_type === 'announce' ? <Megaphone size={14} aria-hidden="true" /> : '#'}
       </span>
       <span className="min-w-0 flex-1">
         <span className={`block text-sm truncate ${active ? 'text-[var(--text)] font-medium' : 'text-[var(--text-muted)]'}`}>

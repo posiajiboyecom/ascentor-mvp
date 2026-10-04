@@ -6,7 +6,7 @@
 //             (a plaintext column that does not exist in the schema).
 //             The actual encrypted column is 'paystack_secret_key_enc'.
 //             This caused has_paystack_key to always be false, so the
-//             settings page never showed the "✓ Paystack connected"
+//             settings page never showed the "Paystack connected"
 //             badge even for partners who had connected their key.
 //
 // PREVIOUS FIXES PRESERVED:

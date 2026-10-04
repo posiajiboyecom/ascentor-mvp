@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import PublicShell from '@/components/layout/PublicShell';
+import { Check, ChevronDown } from 'lucide-react';
 
 // ============================================================
 // CAREERS PAGE - /careers
@@ -502,7 +503,7 @@ export default function CareersPage() {
                   transition: 'transform 0.2s, border-color 0.2s',
                   transform: expanded === job.id ? 'rotate(180deg)' : 'rotate(0deg)',
                 }}>
-                  ▾
+                  <ChevronDown size={13} aria-hidden="true" />
                 </div>
               </div>
 
@@ -549,7 +550,7 @@ export default function CareersPage() {
                   {/* Apply section */}
                   {submitted === job.id ? (
                     <div className="cr-success-banner">
-                      <span style={{ fontSize: 22 }}>✓</span>
+                      <span style={{ fontSize: 22 }}><Check size={13} aria-hidden="true" /></span>
                       <div>
                         <p style={{ margin: '0 0 4px', fontFamily: "'Metropolis', serif", fontSize: 18, fontWeight: 700, color: '#FEF9EC' }}>
                           Application received.
@@ -646,7 +647,7 @@ export default function CareersPage() {
                         {cvFile && (
                           <button onClick={() => setCvFile(null)}
                             style={{ alignSelf: 'flex-start', marginTop: 4, background: 'none', border: 'none', fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#4A4438', cursor: 'pointer', padding: 0, letterSpacing: '0.06em' }}>
-                            ✕ Remove
+                            Remove
                           </button>
                         )}
                       </div>

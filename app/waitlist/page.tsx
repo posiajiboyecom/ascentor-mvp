@@ -32,24 +32,24 @@ const STAGES = [
   { value: 'climber'  as LifeStage, emoji: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>', label: 'Climber',  age: '32–50' },
 ];
 const SOURCES = [
-  { value: 'instagram' as ReferralSource, label: '📸 Instagram' },
-  { value: 'tiktok'    as ReferralSource, label: '🎵 TikTok'    },
-  { value: 'linkedin'  as ReferralSource, label: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg> LinkedIn'  },
-  { value: 'whatsapp'  as ReferralSource, label: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp'  },
-  { value: 'friend'    as ReferralSource, label: '👤 A Friend'  },
-  { value: 'other'     as ReferralSource, label: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> Other'     },
+  { value: 'instagram' as ReferralSource, label: 'Instagram' },
+  { value: 'tiktok'    as ReferralSource, label: 'TikTok'    },
+  { value: 'linkedin'  as ReferralSource, label: 'LinkedIn'  },
+  { value: 'whatsapp'  as ReferralSource, label: 'WhatsApp'  },
+  { value: 'friend'    as ReferralSource, label: 'A Friend'  },
+  { value: 'other'     as ReferralSource, label: 'Other'     },
 ];
 const COUNTRIES = [
-  { code: 'NG', label: '🇳🇬 Nigeria' }, { code: 'GH', label: '🇬🇭 Ghana' },
-  { code: 'KE', label: '🇰🇪 Kenya' }, { code: 'ZA', label: '🇿🇦 South Africa' },
-  { code: 'ET', label: '🇪🇹 Ethiopia' }, { code: 'TZ', label: '🇹🇿 Tanzania' },
-  { code: 'UG', label: '🇺🇬 Uganda' }, { code: 'SN', label: '🇸🇳 Senegal' },
-  { code: 'CI', label: "🇨🇮 Côte d'Ivoire" }, { code: 'CM', label: '🇨🇲 Cameroon' },
-  { code: 'RW', label: '🇷🇼 Rwanda' }, { code: 'ZM', label: '🇿🇲 Zambia' },
-  { code: 'DIASPORA-UK', label: '🇬🇧 UK (Diaspora)' },
-  { code: 'DIASPORA-US', label: '🇺🇸 US (Diaspora)' },
-  { code: 'DIASPORA-CA', label: '🇨🇦 Canada (Diaspora)' },
-  { code: 'OTHER', label: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> Other Africa' },
+  { code: 'NG', label: 'Nigeria' }, { code: 'GH', label: 'Ghana' },
+  { code: 'KE', label: 'Kenya' }, { code: 'ZA', label: 'South Africa' },
+  { code: 'ET', label: 'Ethiopia' }, { code: 'TZ', label: 'Tanzania' },
+  { code: 'UG', label: 'Uganda' }, { code: 'SN', label: 'Senegal' },
+  { code: 'CI', label: "Côte d'Ivoire" }, { code: 'CM', label: 'Cameroon' },
+  { code: 'RW', label: 'Rwanda' }, { code: 'ZM', label: 'Zambia' },
+  { code: 'DIASPORA-UK', label: 'UK (Diaspora)' },
+  { code: 'DIASPORA-US', label: 'US (Diaspora)' },
+  { code: 'DIASPORA-CA', label: 'Canada (Diaspora)' },
+  { code: 'OTHER', label: 'Other Africa' },
 ];
 const INDUSTRIES = [
   { value: 'fintech',    label: 'Fintech / Finance' },
@@ -283,7 +283,7 @@ export default function WaitlistPage() {
 
   /* ── Success state ── */
   if (success) {
-    const txt = encodeURIComponent("I just joined the Ascentor waitlist, Africa's mentorship platform. Early members get 3 months free. Join me 👇");
+    const txt = encodeURIComponent("I just joined the Ascentor waitlist, Africa's mentorship platform. Early members get 3 months free. Join me.");
     const url = encodeURIComponent(`${typeof window!=='undefined'?window.location.origin:'https://ascentorbi.com'}/waitlist?ref=${success.referral_code}`);
     const rawUrl = `${typeof window!=='undefined'?window.location.origin:'https://ascentorbi.com'}/waitlist?ref=${success.referral_code}`;
 
@@ -310,7 +310,7 @@ export default function WaitlistPage() {
               </div>
               <div className="copy-row">
                 <span className="copy-url">{rawUrl}</span>
-                <button className={`copy-btn${copied?' copied':''}`} onClick={copyLink}>{copied?'✓ Copied!':'Copy Link'}</button>
+                <button className={`copy-btn${copied?' copied':''}`} onClick={copyLink}>{copied?'Copied!':'Copy Link'}</button>
               </div>
             </div>
             <Link href="/" className="back">Back to homepage</Link>

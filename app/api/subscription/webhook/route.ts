@@ -38,7 +38,7 @@ const supabase = createClient(
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!;
 
 // ── Signature verification ────────────────────────────────
-// ⚠️  RETIRED - This handler is superseded by /api/pay/webhook.
+//  RETIRED - This handler is superseded by /api/pay/webhook.
 // This file must be deleted and removed from proxy.ts PUBLIC_API_ROUTES.
 // It remains temporarily to avoid a 404 if Paystack still points here,
 // but it now returns 410 Gone so Paystack stops retrying this endpoint.
@@ -210,7 +210,7 @@ async function handleChargeSuccess(data: any) {
     );
   }
 
-  console.log(`[Webhook] ✅ charge.success, ${email} → ${plan}`);
+  console.log(`[Webhook] charge.success, ${email} → ${plan}`);
 }
 
 /**
@@ -238,12 +238,12 @@ async function handlePaymentFailed(data: any) {
   await notify(
     profile.id,
     'warning',
-    '⚠️ Payment Failed',
+    'Payment Failed',
     'We couldn\'t renew your subscription. Please update your payment details to keep your access.',
     '/checkout'
   );
 
-  console.log(`[Webhook] ❌ invoice.payment_failed, ${email}`);
+  console.log(`[Webhook] invoice.payment_failed, ${email}`);
 }
 
 /**
@@ -285,7 +285,7 @@ async function handleSubscriptionDisable(data: any) {
     '/checkout'
   );
 
-  console.log(`[Webhook] ⚠️ subscription.disable, ${email}`);
+  console.log(`[Webhook] subscription.disable, ${email}`);
 }
 
 // ── Original handler (no longer exported - superseded by the 410 stub above) ──
@@ -296,14 +296,14 @@ async function _legacyHandler(req: NextRequest) {
     const signature = req.headers.get('x-paystack-signature') || '';
 
     if (!verifySignature(rawBody, signature)) {
-      console.error('[Webhook] ❌ Invalid signature');
+      console.error('[Webhook] Invalid signature');
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
     const event = JSON.parse(rawBody);
     const { event: eventName, data } = event;
 
-    console.log(`[Webhook] 📥 ${eventName}`);
+    console.log(`[Webhook] ${eventName}`);
 
     switch (eventName) {
       case 'charge.success':

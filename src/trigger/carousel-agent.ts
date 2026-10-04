@@ -551,7 +551,7 @@ export const carouselAgentTask = task({
       triggeredBy = "manual",
     } = payload;
 
-    logger.info(`[Carousel] ▶ pillar:${pillar} platform:${platform} posts:${postCount}`);
+    logger.info(`[Carousel] pillar:${pillar} platform:${platform} posts:${postCount}`);
 
     const approvedHooks = await getHooks(pillar, platform, postCount, hooks);
     const results: { calendarId: string; hook: string; slidesReady: number }[] = [];
@@ -574,7 +574,7 @@ export const carouselAgentTask = task({
       results.push({ calendarId: calId, hook, slidesReady: urls.filter(Boolean).length });
     }
 
-    logger.info(`[Carousel] ✓ ${results.length} posts saved. Cost: $${totalCost.toFixed(2)}`);
+    logger.info(`[Carousel] ${results.length} posts saved. Cost: $${totalCost.toFixed(2)}`);
 
     return {
       success:        true,

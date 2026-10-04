@@ -1,10 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  PenLine, Mail, Zap, RotateCcw, LayoutGrid, ClipboardList, Calendar, User,
-  Check, X, Copy, Image as ImageIcon, Play,
-} from 'lucide-react';
+import { PenLine, Mail, Zap, RotateCcw, LayoutGrid, ClipboardList, Calendar, User, Check, X, Copy, Image as ImageIcon, Play, ChevronDown, ChevronUp } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
@@ -713,7 +710,7 @@ export default function AdminContentPage() {
             </div>
             <div className="cp-modal-btns">
               <button className="cp-btn-cancel" onClick={() => setRunModal(false)}>Cancel</button>
-              <button className="cp-btn-run" onClick={triggerResearcher} disabled={running}>{running ? 'Triggering…' : '▶ Run Now'}</button>
+              <button className="cp-btn-run" onClick={triggerResearcher} disabled={running}>{running ? 'Triggering…' : 'Run Now'}</button>
             </div>
           </div>
         </div>
@@ -779,7 +776,7 @@ function DetailPanel({ item, saving, teamMembers, onAssign, onApprove, onSchedul
           <span className="cp-type-pill" style={{ background: meta.bg, color: meta.color }}>{meta.icon} {item.type}</span>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: pc, display: 'inline-block' }} />
           <span className="cp-muted">{item.pillar}{item.week ? ' · Wk ' + item.week : ''}</span>
-          <span className="cp-status-badge" style={{ background: sc + '18', color: sc, border: '1px solid ' + sc + '30', marginLeft: 'auto' }}>● {item.status}</span>
+          <span className="cp-status-badge" style={{ background: sc + '18', color: sc, border: '1px solid ' + sc + '30', marginLeft: 'auto' }}>{item.status}</span>
         </div>
         <div className="cp-d-title">{item.title}</div>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
@@ -1064,7 +1061,7 @@ function BriefCard({ brief }: { brief: any }) {
           </div>
           <div className="cp-brief-topic">{brief.topic}</div>
         </div>
-        <button onClick={() => setExpanded(!expanded)} style={{ background: 'none', border: 'none', color: 'var(--admin-text-faint)', cursor: 'pointer', padding: '4px 8px', fontSize: 11 }}>{expanded ? '▲' : '▼'}</button>
+        <button onClick={() => setExpanded(!expanded)} style={{ background: 'none', border: 'none', color: 'var(--admin-text-faint)', cursor: 'pointer', padding: '4px 8px', fontSize: 11 }}>{expanded ? <ChevronUp size={13} aria-hidden="true" /> : <ChevronDown size={13} aria-hidden="true" />}</button>
       </div>
       {d.angle && <p className="cp-brief-angle">{d.angle}</p>}
       {(d.seoKeywords ?? brief.trends_raw ?? []).slice(0, 5).map((k: string, i: number) => (

@@ -70,7 +70,7 @@ export default function MembersAdminPage() {
       body: JSON.stringify({ email: inviteEmail.trim() }),
     });
     const data = await res.json();
-    if (res.ok) { setInviteMsg(`✓ Invite sent to ${inviteEmail}`); setInvite(''); fetchMembers(1); }
+    if (res.ok) { setInviteMsg(`Invite sent to ${inviteEmail}`); setInvite(''); fetchMembers(1); }
     else { setInviteMsg(`Error: ${data.error || 'Failed to invite'}`); }
     setInviting(false);
   }
@@ -109,7 +109,7 @@ export default function MembersAdminPage() {
           onChange={e => setInvite(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleInvite()} />
         <button style={btn(true)} onClick={handleInvite} disabled={inviting}>{inviting ? 'Sending…' : 'Send Invite'}</button>
       </div>
-      {inviteMsg && <p style={{ fontSize: 12, marginBottom: 16, color: inviteMsg.startsWith('✓') ? 'var(--success)' : 'var(--error)' }}>{inviteMsg}</p>}
+      {inviteMsg && <p style={{ fontSize: 12, marginBottom: 16, color: !inviteMsg.startsWith('Error') ? 'var(--success)' : 'var(--error)' }}>{inviteMsg}</p>}
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <input style={{ ...inp, width: 220 }} placeholder="Search name or email…" value={search} onChange={e => setSearch(e.target.value)} />

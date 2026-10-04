@@ -6,7 +6,7 @@
 //   2. Community Intelligence, AI cohort recommendations
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { MessageCircle, Hash, Sparkles, X, Folder, Flag, Check, RotateCcw, Plus } from 'lucide-react';
+import { MessageCircle, Hash, Sparkles, X, Folder, Flag, Check, RotateCcw, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
@@ -19,10 +19,10 @@ const B = {
 const CARD:React.CSSProperties={background:'var(--admin-bg-deep)',border:'1px solid var(--admin-bg-input)',borderRadius:12};
 const MONO_LABEL:React.CSSProperties={fontFamily:B.fontMono,fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--admin-text-faint)',display:'block',marginBottom:5};
 const CHANNELS=[
-  {slug:'all',name:'All Channels',emoji:'📋'},{slug:'general',name:'General',emoji:'💬'},
-  {slug:'introductions',name:'Introductions',emoji:'👋'},{slug:'career-wins',name:'Career Wins',emoji:'💼'},
-  {slug:'accountability',name:'Accountability',emoji:'🤝'},{slug:'industry-talk',name:'Industry Talk',emoji:'🧠'},
-  {slug:'cv-review',name:'CV Review',emoji:'📄'},{slug:'opportunities',name:'Opportunities',emoji:'🎯'},
+  {slug:'all',name:'All Channels'},{slug:'general',name:'General'},
+  {slug:'introductions',name:'Introductions'},{slug:'career-wins',name:'Career Wins'},
+  {slug:'accountability',name:'Accountability'},{slug:'industry-talk',name:'Industry Talk'},
+  {slug:'cv-review',name:'CV Review'},{slug:'opportunities',name:'Opportunities'},
 ];
 const CATEGORY_COLOR:Record<string,string>={Technology:B.teal,Finance:B.gold,Leadership:B.purple,Entrepreneurship:B.gold,Consulting:B.purple,'Career Growth':B.teal,Executive:B.purple,Diversity:B.green,Other:B.gold};
 
@@ -68,7 +68,7 @@ export default function CommunityIntelPage(){
 // ════════════════════════════════════════════════════════════
 // CHANNELS MANAGER TAB
 // ════════════════════════════════════════════════════════════
-interface ChannelRow{slug:string;name:string;emoji:string;description:string;sort_order:number;}
+interface ChannelRow{slug:string;name:string;description:string;sort_order:number;}
 function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
   const[categories,setCategories]=useState<any[]>([]);
   const[channels,setChannels]=useState<any[]>([]);
@@ -269,8 +269,8 @@ function ChannelsManager({supabase}:{supabase:ReturnType<typeof createClient>}){
                           <span style={{fontFamily:B.fontMono,fontSize:9,letterSpacing:'0.06em',textTransform:'uppercase' as const,padding:'2px 7px',borderRadius:999,background:'var(--admin-bg-input)',color:'var(--admin-text-faint)',flexShrink:0}}>{ch.channel_type||'chat'}</span>
                           <span style={{fontFamily:B.fontUI,fontSize:12,color:'var(--admin-text-muted)',flex:1}}>{ch.description}</span>
                           <div style={{display:'flex',flexDirection:'column',gap:1}}>
-                            <button onClick={()=>moveCh(ch.slug,'up')} disabled={idx===0} style={{width:20,height:16,borderRadius:3,border:'1px solid var(--admin-bg-input)',background:'transparent',color:idx===0?'var(--admin-bg-input)':'var(--admin-text-muted)',fontSize:8,cursor:idx===0?'not-allowed':'pointer',lineHeight:1}}>▲</button>
-                            <button onClick={()=>moveCh(ch.slug,'down')} disabled={idx===catChannels.length-1} style={{width:20,height:16,borderRadius:3,border:'1px solid var(--admin-bg-input)',background:'transparent',color:idx===catChannels.length-1?'var(--admin-bg-input)':'var(--admin-text-muted)',fontSize:8,cursor:idx===catChannels.length-1?'not-allowed':'pointer',lineHeight:1}}>▼</button>
+                            <button onClick={()=>moveCh(ch.slug,'up')} disabled={idx===0} style={{width:20,height:16,borderRadius:3,border:'1px solid var(--admin-bg-input)',background:'transparent',color:idx===0?'var(--admin-bg-input)':'var(--admin-text-muted)',fontSize:8,cursor:idx===0?'not-allowed':'pointer',lineHeight:1}}><ChevronUp size={13} aria-hidden="true" /></button>
+                            <button onClick={()=>moveCh(ch.slug,'down')} disabled={idx===catChannels.length-1} style={{width:20,height:16,borderRadius:3,border:'1px solid var(--admin-bg-input)',background:'transparent',color:idx===catChannels.length-1?'var(--admin-bg-input)':'var(--admin-text-muted)',fontSize:8,cursor:idx===catChannels.length-1?'not-allowed':'pointer',lineHeight:1}}><ChevronDown size={13} aria-hidden="true" /></button>
                           </div>
                           <button onClick={()=>{setEditing(ch.slug);setEditForm({name:ch.name,description:ch.description,category_id:ch.category_id||'',slug:ch.slug,channel_type:ch.channel_type||'chat'});}} style={{padding:'4px 10px',borderRadius:5,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>Edit</button>
                           <button onClick={()=>deleteChannel(ch.slug)} disabled={deleting[ch.slug]} style={{padding:'4px 10px',borderRadius:5,border:'1px solid rgba(239,68,68,0.25)',background:'transparent',color:B.red,fontFamily:B.fontMono,fontSize:10,cursor:'pointer'}}>{deleting[ch.slug]?'…':'Delete'}</button>
@@ -390,7 +390,7 @@ function MessageMonitor({supabase}:{supabase:ReturnType<typeof createClient>}){
       </div>
       <div style={{display:'flex',gap:10,marginBottom:16,flexWrap:'wrap',alignItems:'center'}}>
         <select value={channel} onChange={e=>setChannel(e.target.value)} style={{padding:'8px 12px',borderRadius:8,border:'1px solid var(--admin-bg-input)',background:'var(--admin-bg-card)',color:'var(--admin-text)',fontFamily:B.fontMono,fontSize:11,cursor:'pointer'}}>
-          {CHANNELS.map(c=><option key={c.slug} value={c.slug}>{c.emoji} {c.name}</option>)}
+          {CHANNELS.map(c=><option key={c.slug} value={c.slug}>{c.name}</option>)}
         </select>
         <button onClick={()=>setFlaggedOnly(f=>!f)} style={{padding:'8px 14px',borderRadius:8,border:`1px solid ${flaggedOnly?B.red:'var(--admin-bg-input)'}`,background:flaggedOnly?'rgba(239,68,68,0.08)':'transparent',color:flaggedOnly?B.red:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:11,cursor:'pointer',fontWeight:500,display:'inline-flex',alignItems:'center',gap:5}}><Flag size={11}/> Flagged {flaggedOnly?<Check size={11}/>:''}</button>
         <button onClick={load} style={{padding:'8px 14px',borderRadius:8,border:'1px solid var(--admin-bg-input)',background:'transparent',color:'var(--admin-text-muted)',fontFamily:B.fontMono,fontSize:11,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:5}}><RotateCcw size={11}/> Refresh</button>
@@ -489,7 +489,7 @@ Respond ONLY with valid JSON, no markdown:
     const slug=rec.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     const maxOrder=10; // Will be appended after existing channels
     const{error:err}=await supabase.from('community_channels').insert({
-      slug, name:rec.name.trim(), emoji:'💬',
+      slug, name:rec.name.trim(),
       description:rec.description.trim(), sort_order:maxOrder,
     });
     if(err){setGlobalMsg(`Error: ${err.message}`);}

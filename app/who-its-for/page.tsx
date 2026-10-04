@@ -113,12 +113,12 @@ const PERSONAS = [
 ];
 
 const ACROSS_AFRICA = [
-  { flag: '🌍', country: 'Africa',        desc: 'A strong and growing community across the continent' },
-  { flag: '🇬🇭', country: 'Ghana',        desc: 'Growing fast in Accra\'s startup and finance scene' },
-  { flag: '🇰🇪', country: 'Kenya',        desc: 'Nairobi\'s tech ecosystem and beyond' },
-  { flag: '🇬🇧', country: 'United Kingdom', desc: 'London, Manchester, and the broader diaspora' },
-  { flag: '🌐', country: 'Diaspora',      desc: 'UK, US, Canada, professionals building global careers' },
-  { flag: '🌍', country: '15+ Countries', desc: 'And growing across the entire continent' },
+  { country: 'Africa',        desc: 'A strong and growing community across the continent' },
+  { country: 'Ghana',        desc: 'Growing fast in Accra\'s startup and finance scene' },
+  { country: 'Kenya',        desc: 'Nairobi\'s tech ecosystem and beyond' },
+  { country: 'United Kingdom', desc: 'London, Manchester, and the broader diaspora' },
+  { country: 'Diaspora',      desc: 'UK, US, Canada, professionals building global careers' },
+  { country: '15+ Countries', desc: 'And growing across the entire continent' },
 ];
 
 /* ── Nav (identical to pricing page) ───────────────────── */
@@ -156,6 +156,7 @@ function Nav() {
 
 /* ── Page ────────────────────────────────────────────────── */
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
+import { Check, Circle, X } from 'lucide-react';
 
 export default async function WhoItsForPage() {
   const cms = await getPublishedPage('who-its-for');
@@ -253,7 +254,7 @@ export default async function WhoItsForPage() {
                 <div className="flex flex-col gap-3">
                   {p.who.map(w => (
                     <div key={w} className="flex items-start gap-3">
-                      <span className="mt-1 text-xs flex-shrink-0" style={{ color: p.color }}>●</span>
+                      <span className="mt-1 text-xs flex-shrink-0" style={{ color: p.color }}><Circle size={8} fill="currentColor" aria-hidden="true" /></span>
                       <span className="text-sm" style={{ color: '#374151', lineHeight: 1.6 }}>{w}</span>
                     </div>
                   ))}
@@ -268,7 +269,7 @@ export default async function WhoItsForPage() {
                 <div className="flex flex-col gap-3">
                   {p.problems.map(prob => (
                     <div key={prob} className="flex items-start gap-3">
-                      <span className="mt-1 text-xs flex-shrink-0" style={{ color: '#EF4444' }}>✕</span>
+                      <span className="mt-1 text-xs flex-shrink-0" style={{ color: '#EF4444' }}><X size={13} aria-hidden="true" /></span>
                       <span className="text-sm" style={{ color: '#374151', lineHeight: 1.6 }}>{prob}</span>
                     </div>
                   ))}
@@ -283,7 +284,7 @@ export default async function WhoItsForPage() {
                 <div className="flex flex-col gap-3">
                   {p.outcomes.map(o => (
                     <div key={o} className="flex items-start gap-3">
-                      <span className="mt-0.5 text-sm flex-shrink-0" style={{ color: p.color }}>✓</span>
+                      <span className="mt-0.5 text-sm flex-shrink-0" style={{ color: p.color }}><Check size={13} aria-hidden="true" /></span>
                       <span className="text-sm font-medium" style={{ color: '#0C0B08', lineHeight: 1.6 }}>{o}</span>
                     </div>
                   ))}
@@ -339,8 +340,7 @@ export default async function WhoItsForPage() {
             {ACROSS_AFRICA.map(c => (
               <div key={c.country} className="rounded-2xl p-5 text-left"
                 style={{ background: '#FAFAF9', border: '1px solid #E5E5E4' }}>
-                <div className="text-2xl mb-2">{c.flag}</div>
-                <p className="text-sm font-semibold mb-1" style={{ color: '#0C0B08' }}>{c.country}</p>
+                                <p className="text-sm font-semibold mb-1" style={{ color: '#0C0B08' }}>{c.country}</p>
                 <p className="text-xs" style={{ color: '#6B7280', lineHeight: 1.6 }}>{c.desc}</p>
               </div>
             ))}

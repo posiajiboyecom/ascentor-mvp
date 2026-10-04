@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useParams } from 'next/navigation';
+import { Check } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────
 // ASCENTOR · Dashboard · SVG icons - no emojis
@@ -148,7 +149,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
                   style={{ color: i === 0 ? 'var(--success)' : 'var(--text-dim)' }}>
                   <span className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px]"
                     style={{ border: `1.5px solid ${i === 0 ? 'var(--success)' : 'var(--border)'}` }}>
-                    {i === 0 ? '✓' : ''}
+                    {i === 0 ? <Check size={13} aria-hidden="true" /> : ''}
                   </span>
                   {m}
                 </div>
@@ -207,7 +208,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
                   background: c.completed ? 'var(--success)' : 'transparent',
                   color: '#fff',
                 }}>
-                {c.completed && '✓'}
+                {c.completed && <Check size={13} aria-hidden="true" />}
               </button>
               <span className="flex-1 text-[13px]"
                 style={{

@@ -27,7 +27,7 @@ export interface PromoCode {
   label:    string;
 }
 
-// ⚠️  MIGRATE THESE TO DB THEN DELETE - see instructions above
+//  MIGRATE THESE TO DB THEN DELETE - see instructions above
 export const PROMO_CODES: Record<string, PromoCode> = {
   // Comment out each line once migrated to /admin/promo-codes:
   // 'FOUNDER50':  { discount: 0.50, label: 'Founders 50% Off'        }, // → add to DB with expires_at

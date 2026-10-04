@@ -7,8 +7,8 @@
 import { useMemo, useState } from 'react';
 import { Avatar } from './ui';
 import { fmtTime, fmtTimeTooltip, parseVoiceContent, type Message } from './types';
-import { EmojiPickerButton } from './EmojiPickerButton';
-import { QUICK_REACTIONS } from './emojiSet';
+import { REACTIONS, ReactionGlyph, reactionIdFromEntry } from './reactions';
+import { Reply, Pin, PinOff, Mic, Send, X } from 'lucide-react';
 import { useVoiceRecorder, formatRecordingTime } from '@/hooks/useVoiceRecorder';
 
 export function MessageBubble({
@@ -22,7 +22,7 @@ export function MessageBubble({
   message: Message;
   isOwn: boolean;
   isModerator: boolean;
-  onReact: (emoji: string) => void;
+  onReact: (reactionId: string) => void;
   onTogglePin: () => void;
   onReply?: () => void;
 }) {
@@ -39,8 +39,8 @@ export function MessageBubble({
   const reactionCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const entry of message.likes) {
-      const emoji = entry.split(':')[1];
-      if (emoji) counts[emoji] = (counts[emoji] ?? 0) + 1;
+      const id = reactionIdFromEntry(entry);
+      counts[id] = (counts[id] ?? 0) + 1;
     }
     return counts;
   }, [message.likes]);
@@ -107,14 +107,14 @@ export function MessageBubble({
 
         {Object.keys(reactionCounts).length > 0 && (
           <div className="flex gap-1 mt-1">
-            {Object.entries(reactionCounts).map(([emoji, count]) => (
+            {Object.entries(reactionCounts).map(([id, count]) => (
               <button
-                key={emoji}
+                key={id}
                 type="button"
-                onClick={() => onReact(emoji)}
-                className="rounded-full border-[0.5px] border-[var(--color-border-tertiary)] bg-[var(--color-background-secondary)] px-1.5 py-0.5 text-[11px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-secondary)]"
+                onClick={() => onReact(id)}
+                className="inline-flex items-center gap-1 rounded-full border-[0.5px] border-[var(--color-border-tertiary)] bg-[var(--color-background-secondary)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-border-secondary)]"
               >
-                {emoji} {count}
+                <ReactionGlyph id={id} size={12} /> {count}
               </button>
             ))}
           </div>
@@ -126,15 +126,16 @@ export function MessageBubble({
               isOwn ? 'right-0' : 'left-0'
             }`}
           >
-            {QUICK_REACTIONS.map((emoji) => (
+            {REACTIONS.map((r) => (
               <button
-                key={emoji}
+                key={r.id}
                 type="button"
-                aria-label={`React with ${emoji}`}
-                onClick={() => onReact(emoji)}
-                className="flex h-6 w-6 items-center justify-center rounded-full text-xs hover:bg-[var(--color-background-secondary)] hover:scale-110 transition-transform"
+                aria-label={`React: ${r.label}`}
+                title={r.label}
+                onClick={() => onReact(r.id)}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-background-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
               >
-                {emoji}
+                <r.Icon size={14} aria-hidden="true" />
               </button>
             ))}
             {onReply && (
@@ -144,7 +145,7 @@ export function MessageBubble({
                 onClick={onReply}
                 className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-background-secondary)] text-xs"
               >
-                ↩
+                <Reply size={14} aria-hidden="true" />
               </button>
             )}
             {isModerator && (
@@ -154,7 +155,7 @@ export function MessageBubble({
                 onClick={onTogglePin}
                 className="flex h-6 w-6 items-center justify-center rounded-full text-xs hover:bg-[var(--color-background-secondary)]"
               >
-                {message.pinned ? '📌' : '📍'}
+                {message.pinned ? <PinOff size={14} aria-hidden="true" /> : <Pin size={14} aria-hidden="true" />}
               </button>
             )}
           </div>
@@ -189,7 +190,7 @@ export function Composer({
             Replying to <span className="font-medium">{replyTo.profiles?.full_name}</span>: {replyTo.content}
           </p>
           <button type="button" onClick={onCancelReply} aria-label="Cancel reply" className="text-[var(--color-text-secondary)] shrink-0 ml-2">
-            ✕
+            <X size={13} aria-hidden="true" />
           </button>
         </div>
       )}
@@ -214,13 +215,11 @@ export function Composer({
             aria-label="Send voice message"
             className="flex h-9 w-9 items-center justify-center rounded-full bg-[#C8A96E] text-[#0F0F0E]"
           >
-            ➤
+            <Send size={16} aria-hidden="true" />
           </button>
         </div>
       ) : (
         <div className="flex items-center gap-2 px-3 py-2">
-          <EmojiPickerButton onSelect={(emoji) => onDraftChange(draft + emoji)} />
-
           <input
             value={draft}
             onChange={(e) => onDraftChange(e.target.value)}
@@ -235,7 +234,7 @@ export function Composer({
           />
 
           <button type="button" aria-label="Record voice message" onClick={() => voiceRecorder.start()} className="text-[var(--color-text-secondary)] shrink-0">
-            🎤
+            <Mic size={18} aria-hidden="true" />
           </button>
 
           <button
@@ -245,7 +244,7 @@ export function Composer({
             onClick={onSend}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#C8A96E] text-[#0F0F0E] disabled:opacity-40"
           >
-            ➤
+            <Send size={16} aria-hidden="true" />
           </button>
         </div>
       )}

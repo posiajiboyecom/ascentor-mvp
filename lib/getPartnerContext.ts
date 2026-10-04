@@ -178,7 +178,7 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
       },
       cssVars: buildCssVars(DEFAULT_BRAND),
     };
-    // ⚠️  Do NOT call cacheSet here - fallback must never be cached
+    //  Do NOT call cacheSet here - fallback must never be cached
     return ctx;
   }
 

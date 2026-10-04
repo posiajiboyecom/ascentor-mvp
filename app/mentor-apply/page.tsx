@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import PublicShell from '@/components/layout/PublicShell';
+import { Check, Sparkles } from 'lucide-react';
 
 const INDUSTRIES = [
   'Finance & Banking', 'Technology & Engineering', 'Consulting & Strategy',
@@ -138,7 +139,7 @@ export default function MentorApplyPage() {
             </Link>
         <div className="ma-success-wrap">
           <div className="ma-success-card">
-            <div className="ma-success-icon">✦</div>
+            <div className="ma-success-icon"><Sparkles size={14} aria-hidden="true" /></div>
             <h1 className="ma-success-title">Application Received</h1>
             <p className="ma-success-sub">
               Thank you, <strong>{form.full_name.split(' ')[0]}</strong>. We've received your application to join as a Founding Mentor. Our team reviews every application personally, you'll hear from us within 5–7 business days.
@@ -174,7 +175,7 @@ export default function MentorApplyPage() {
           </p>
           <div className="ma-hero-perks">
             {['Recognized as a Founding Mentor', 'Shape the platform with your feedback', 'Connect with purposeful individuals worldwide', 'Flexible, 2–4 hrs/month commitment'].map(p => (
-              <div key={p} className="ma-perk"><span className="ma-perk-check">✓</span>{p}</div>
+              <div key={p} className="ma-perk"><span className="ma-perk-check"><Check size={13} aria-hidden="true" /></span>{p}</div>
             ))}
           </div>
         </div>
@@ -187,7 +188,7 @@ export default function MentorApplyPage() {
         <div className="ma-progress-bar">
           {[1, 2, 3].map(n => (
             <div key={n} className={`ma-progress-step ${step >= n ? 'active' : ''} ${step > n ? 'done' : ''}`}>
-              <div className="ma-progress-dot">{step > n ? '✓' : n}</div>
+              <div className="ma-progress-dot">{step > n ? <Check size={13} aria-hidden="true" /> : n}</div>
               <span className="ma-progress-label">
                 {n === 1 ? 'Your Background' : n === 2 ? 'Your Story' : 'Commitment'}
               </span>

@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { POSTABLE_DIMENSIONS, DIMENSION_META, type Message } from './types';
+import { X } from 'lucide-react';
 
 export function CheckinComposer({
   prompt,
@@ -56,9 +57,9 @@ export function CheckinComposer({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b-[0.5px] border-[var(--color-border-tertiary)]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#C8A96E]">◇ This week&apos;s ascent</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#C8A96E]">This week&apos;s ascent</p>
           <button type="button" onClick={onClose} aria-label="Close" className="text-[var(--color-text-secondary)] text-lg leading-none">
-            ✕
+            <X size={13} aria-hidden="true" />
           </button>
         </div>
 
@@ -92,7 +93,7 @@ export function CheckinComposer({
                     borderColor: on ? meta.border : 'var(--color-border-tertiary)',
                   }}
                 >
-                  {meta.emoji} {dim}
+                  <meta.Icon size={13} aria-hidden="true" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />{dim}
                 </button>
               );
             })}

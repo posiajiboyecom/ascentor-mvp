@@ -264,7 +264,7 @@ export async function POST(req: NextRequest) {
       supabase.from('notifications').insert({
         user_id: userId,
         type:    'success',
-        title:   `Welcome to ${partner.name}! 🎉`,
+        title:   `Welcome to ${partner.name}! `,
         message: `Your ${plan} subscription is now active${trialDays > 0 ? ` with a ${trialDays}-day trial` : ''}.`,
         link:    `/p/${partner.subdomain}/dashboard`,
       }),

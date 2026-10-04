@@ -27,12 +27,12 @@ Ascentor is built on a modern, scalable stack optimized for real-time coaching, 
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Next.js 16    │────▶│   Supabase      │────▶│   PostgreSQL    │
+│   Next.js 16    │────│   Supabase      │────│   PostgreSQL    │
 │   (App Router)  │     │   (Auth + DB)   │     │   + RLS         │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
          │                       │                       │
          │                       │                       │
-         ▼                       ▼                       ▼
+         v                       v                       v
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │   Vercel Edge   │     │   Anthropic     │     │   Paystack/     │
 │   (CDN + SSR)   │     │   Claude API    │     │   Selar         │
@@ -178,13 +178,13 @@ Every feature, conversation, and resource is oriented toward developing all six 
 ```
 User Input → Supabase → Next.js API → Anthropic Claude
                                                     │
-                                                    ▼
+                                                    v
                                           Structured Response
                                                     │
-                                                    ▼
+                                                    v
                                           Supabase Storage
                                                     │
-                                                    ▼
+                                                    v
                                           User Session History
 ```
 

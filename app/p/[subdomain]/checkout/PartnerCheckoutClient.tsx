@@ -269,7 +269,7 @@ export default function PartnerCheckoutClient({
             {/* Trial note */}
             {trialDays > 0 && (
               <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}>
-                ✦ Start with a <strong style={{ color: 'var(--accent)' }}>{trialDays}-day free trial</strong>.
+                Start with a <strong style={{ color: 'var(--accent)' }}>{trialDays}-day free trial</strong>.
                 You won't be charged until day {trialDays + 1}.
                 {savings > 0 && ` Save ₦${savings.toLocaleString()} with annual billing.`}
               </p>

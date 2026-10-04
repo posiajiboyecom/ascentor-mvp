@@ -38,7 +38,7 @@ function buildConfirmationEmailHtml({
 
   const perkRows = perks.map(item => `
     <tr>
-      <td style="width:24px;vertical-align:top;padding:4px 0;"><span style="color:#C8A96E;font-size:14px;">✓</span></td>
+      <td style="width:24px;vertical-align:top;padding:4px 0;"><span style="color:#C8A96E;font-size:14px;">OK</span></td>
       <td style="padding:4px 0;font-size:14px;color:#3F3F3C;line-height:1.5;">${item}</td>
     </tr>`).join('');
 

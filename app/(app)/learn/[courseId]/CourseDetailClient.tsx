@@ -17,8 +17,9 @@
 import Link from 'next/link';
 import { confirmAction } from '@/components/Modal';
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, Play, Check } from 'lucide-react';
+import { ChevronLeft, Play, Check, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { CategoryIcon } from '@/components/learn/CategoryIcon';
 
 // ── Types - match the real schema ────────────────────────────────────
 
@@ -97,19 +98,6 @@ function formatDuration(seconds: number | null): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  Mind: '🧠',
-  Vocation: '💼',
-  Character: '🏛️',
-  Relationships: '🤝',
-  Community: '🌍',
-  Legacy: '🏆',
-};
-
-function categoryEmoji(category: string | null): string {
-  if (!category) return '📘';
-  return CATEGORY_EMOJI[category] ?? '📘';
-}
 
 const DIFFICULTY_COLORS = {
   beginner: ['#14B8A6', '#E8E6E1', '#E8E6E1'],
@@ -371,7 +359,7 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
             <>
               <span className="text-[var(--border)] text-[13px]">/</span>
               <span className="text-[13px] text-[var(--text-dim)]">
-                {categoryEmoji(course.category)} {course.category}
+                <CategoryIcon category={course.category} size={14} /> {course.category}
               </span>
             </>
           )}
@@ -423,7 +411,7 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
               <div className="flex flex-wrap items-center gap-2">
                 {course.category && (
                   <span className="rounded-lg bg-[#C8A96E]/10 border-[0.5px] border-[#C8A96E]/25 px-2.5 py-1 text-[11.5px] font-semibold text-[#A8894E]">
-                    {categoryEmoji(course.category)} {course.category}
+                    <CategoryIcon category={course.category} size={14} /> {course.category}
                   </span>
                 )}
                 <span className="rounded-lg bg-[var(--bg-input)] border-[0.5px] border-[var(--border)] px-2.5 py-1 text-[11.5px] font-semibold text-[var(--text-dim)]">
@@ -510,7 +498,7 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
                   {activeLesson ? `Notes for: ${activeLesson.title}` : `Notes for: ${course.title}`}
                 </h3>
                 <span className="text-[11px] text-[var(--text-dim)]">
-                  {noteSaving ? 'Saving…' : noteSaved ? 'Saved ✓' : ''}
+                  {noteSaving ? 'Saving…' : noteSaved ? 'Saved' : ''}
                 </span>
               </div>
               <textarea
@@ -622,7 +610,7 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
                     {replyTo && (
                       <div className="flex items-center justify-between mb-2 px-3 py-1.5 rounded-lg bg-[var(--bg-input)] text-[12px] text-[var(--text-dim)]">
                         <span>Replying to <strong className="text-[var(--text)]">{profileCache[replyTo.user_id] ?? 'Member'}</strong></span>
-                        <button type="button" onClick={() => setReplyTo(null)} className="text-[var(--text-dim)] hover:text-[var(--text)]">✕</button>
+                        <button type="button" onClick={() => setReplyTo(null)} className="text-[var(--text-dim)] hover:text-[var(--text)]"><X size={13} aria-hidden="true" /></button>
                       </div>
                     )}
                     <textarea
@@ -694,7 +682,7 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
               Up next in {nextCourse.category}
             </p>
             <p className="text-[12.5px] font-bold text-[var(--text)]">
-              {categoryEmoji(nextCourse.category)} {nextCourse.title}
+              <CategoryIcon category={nextCourse.category} size={14} /> {nextCourse.title}
             </p>
           </Link>
         )}

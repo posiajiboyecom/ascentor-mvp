@@ -1,3 +1,4 @@
+import { Brain, Zap, Landmark, Handshake, Globe, Trophy, type LucideIcon } from 'lucide-react';
 // components/community/types.ts
 // ─────────────────────────────────────────────────────────────────────────
 // Shared types + pure helpers for The Circle. Extracted from CommunityClient
@@ -82,18 +83,18 @@ export interface WeekData {
   joinableCircles: { slug: string; name: string; description: string | null }[];
 }
 
-// ── Dimension metadata (colors/emoji) ────────────────────────────────────────
+// ── Dimension metadata (colors/icons) ────────────────────────────────────────
 
 export const DIMENSION_META: Record<
   string,
-  { emoji: string; color: string; bg: string; border: string }
+  { Icon: LucideIcon; color: string; bg: string; border: string }
 > = {
-  Mind:          { emoji: '🧠', color: '#3B82F6', bg: 'rgba(59,130,246,0.08)',  border: 'rgba(59,130,246,0.22)'  },
-  Vocation:      { emoji: '⚡', color: '#7C3AED', bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.22)' },
-  Character:     { emoji: '🏛', color: '#0891B2', bg: 'rgba(8,145,178,0.08)',  border: 'rgba(8,145,178,0.22)'  },
-  Relationships: { emoji: '🤝', color: '#E11D48', bg: 'rgba(225,29,72,0.08)',  border: 'rgba(225,29,72,0.22)'  },
-  Community:     { emoji: '🌍', color: '#16A34A', bg: 'rgba(22,163,74,0.08)',  border: 'rgba(22,163,74,0.22)'  },
-  Legacy:        { emoji: '🏆', color: '#C8A96E', bg: 'rgba(200,169,110,0.08)', border: 'rgba(200,169,110,0.22)' },
+  Mind:          { Icon: Brain, color: '#3B82F6', bg: 'rgba(59,130,246,0.08)',  border: 'rgba(59,130,246,0.22)'  },
+  Vocation:      { Icon: Zap, color: '#7C3AED', bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.22)' },
+  Character:     { Icon: Landmark, color: '#0891B2', bg: 'rgba(8,145,178,0.08)',  border: 'rgba(8,145,178,0.22)'  },
+  Relationships: { Icon: Handshake, color: '#E11D48', bg: 'rgba(225,29,72,0.08)',  border: 'rgba(225,29,72,0.22)'  },
+  Community:     { Icon: Globe, color: '#16A34A', bg: 'rgba(22,163,74,0.08)',  border: 'rgba(22,163,74,0.22)'  },
+  Legacy:        { Icon: Trophy, color: '#C8A96E', bg: 'rgba(200,169,110,0.08)', border: 'rgba(200,169,110,0.22)' },
 };
 
 export const FORUM_DIMENSIONS = ['All', 'Mind', 'Vocation', 'Character', 'Relationships', 'Community', 'Legacy'];

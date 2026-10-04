@@ -75,7 +75,7 @@
 FIND this block in social-scheduler.ts:
 
       } else if (item.type === "Email Newsletter") {
-        postText = `📬 "${cd?.subject || item.title}", sent to subscribers`;
+        postText = `"${cd?.subject || item.title}", sent to subscribers`;
       } else {
         postText = item.title;
       }
@@ -93,7 +93,7 @@ FIND this block in social-scheduler.ts:
 REPLACE WITH:
 
       } else if (item.type === "Email Newsletter") {
-        postText = `📬 "${cd?.subject || item.title}", sent to subscribers`;
+        postText = `"${cd?.subject || item.title}", sent to subscribers`;
       } else if (item.type === "Instagram Carousel") {
         // Caption is the post text; cover image goes to Buffer as image attachment
         postText = cd?.caption

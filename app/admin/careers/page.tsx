@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Mail, Phone } from 'lucide-react';
+import { Mail, Phone, ChevronDown, ChevronUp } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 
@@ -704,7 +704,7 @@ export default function AdminCareersPage() {
                         color: STATUS_COLOR[app.status], padding: '2px 8px',
                         background: `${STATUS_COLOR[app.status]}14`, border: `1px solid ${STATUS_COLOR[app.status]}30`, borderRadius: 100,
                       }}>{app.status}</span>
-                      <span style={{ color: 'var(--admin-text-faint)', fontSize: 11 }}>{expandedApp === app.id ? '▲' : '▼'}</span>
+                      <span style={{ color: 'var(--admin-text-faint)', fontSize: 11 }}>{expandedApp === app.id ? <ChevronUp size={13} aria-hidden="true" /> : <ChevronDown size={13} aria-hidden="true" />}</span>
                     </div>
                   </div>
 
