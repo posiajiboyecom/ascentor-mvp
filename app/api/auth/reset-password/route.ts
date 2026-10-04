@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { strictLimiter, getClientIp } from '@/lib/rate-limit';
+import { getClientIp } from '@/lib/rate-limit';
+import { LIMITS, rateLimit } from '@/lib/auth/rate-limit-shared';
+import { validatePassword } from '@/lib/auth/password-policy';
 import { otpMatches, isPlausibleEmail, OTP_MAX_ATTEMPTS } from '@/lib/otp';
 import { revokeAllSessions } from '@/lib/auth/revoke-sessions';
 import { sendPasswordChangedEmail } from '@/lib/email';
@@ -10,7 +12,7 @@ const invalid = () =>
 
 export async function POST(req: NextRequest) {
   try {
-    const limit = strictLimiter.check(getClientIp(req));
+    const limit = await rateLimit(getClientIp(req), LIMITS.resetIp);
     if (!limit.allowed) {
       return NextResponse.json(
         { error: 'Too many attempts. Please wait a minute and try again.' },
@@ -24,8 +26,9 @@ export async function POST(req: NextRequest) {
     if (!isPlausibleEmail(email) || typeof otp_code !== 'string' || typeof new_password !== 'string') {
       return NextResponse.json({ error: 'Email, OTP code, and new password are required' }, { status: 400 });
     }
-    if (new_password.length < 8 || new_password.length > 128) {
-      return NextResponse.json({ error: 'Password must be between 8 and 128 characters' }, { status: 400 });
+    const policy = await validatePassword(new_password);
+    if (!policy.ok) {
+      return NextResponse.json({ error: policy.error }, { status: 400 });
     }
 
     const normalizedEmail = email.toLowerCase().trim();

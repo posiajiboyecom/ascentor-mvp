@@ -23,6 +23,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import crypto from 'crypto';
+import { adminMfaRequired, sessionIsAal2 } from '@/lib/auth/admin-mfa';
 
 // ── Nonce-based CSP (M-06 fix) ────────────────────────────────────────────────
 // A fresh cryptographic nonce is generated on every request.
@@ -41,12 +42,12 @@ import crypto from 'crypto';
 function buildNoncedCSP(nonce: string): string {
   return [
     // nonce replaces 'unsafe-inline' — only scripts with this nonce attribute run
-    `script-src 'self' 'nonce-${nonce}' https://js.paystack.co https://plausible.io https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com`,
+    `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com https://js.paystack.co https://plausible.io https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com`,
     // style-src keeps unsafe-inline (Next.js CSS-in-JS requirement — low risk)
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://paystack.com`,
     `font-src 'self' data: https://fonts.gstatic.com`,
     `img-src 'self' data: blob: https://*.supabase.co https://www.gravatar.com https://i.ytimg.com https:`,
-    `frame-src https://js.paystack.co https://checkout.paystack.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com`,
+    `frame-src https://challenges.cloudflare.com https://js.paystack.co https://checkout.paystack.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com`,
     `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.paystack.co https://checkout.paystack.com https://plausible.io https://api.bufferapp.com https://www.youtube.com`,
     `worker-src 'self' blob:`,
     `default-src 'self'`,
@@ -119,6 +120,12 @@ const PUBLIC_API_ROUTES = [
   '/api/checkout-pending',
   // Vercel Cron — authenticates itself with the CRON_SECRET bearer token
   '/api/cron',
+  // Server-to-server push triggers: each verifies its own shared secret
+  // (x-push-secret / x-internal-secret) and fails closed when it is unset.
+  // They cannot carry a user session, so the login-only rule below must not apply.
+  '/api/push/send',
+  '/api/push/commitment-reminder',
+  '/api/push/session-reminder',
 ];
 
 // API route prefixes that require authentication.
@@ -259,6 +266,11 @@ export default async function proxy(request: NextRequest) {
       maxAge: 24 * 60 * 60, // 24 hours
       path: '/',
     });
+  }
+
+  // ── Staff API: a password-only session is not enough when MFA is required ──
+  if (user && pathname.startsWith('/api/admin') && adminMfaRequired() && !(await sessionIsAal2(supabase))) {
+    return NextResponse.json({ error: 'Second factor required', code: 'mfa_required' }, { status: 403 });
   }
 
   // ── S3: Protect API routes ────────────────────────────────────────

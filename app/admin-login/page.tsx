@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import Turnstile from '@/components/auth/Turnstile';
 
 const STAFF_ROLES = ['admin', 'moderator'];
 
@@ -34,6 +35,61 @@ export default function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaReset, setCaptchaReset] = useState(0);
+
+  // Second factor (TOTP). Enforced server-side when ADMIN_MFA_REQUIRED=true.
+  const [step, setStep] = useState<'password' | 'verify' | 'enroll'>('password');
+  const [factorId, setFactorId] = useState('');
+  const [qr, setQr] = useState('');
+  const [secret, setSecret] = useState('');
+  const [code, setCode] = useState('');
+
+  function finish() {
+    const redirect = new URLSearchParams(window.location.search).get('redirect');
+    router.replace(safeRedirect(redirect));
+    router.refresh();
+  }
+
+  async function beginMfa(enrolled: boolean) {
+    const supabase = createClient();
+    if (enrolled) {
+      const { data } = await supabase.auth.mfa.listFactors();
+      const factor = data?.totp?.find((f) => f.status === 'verified');
+      if (!factor) { setError('No authenticator is set up for this account.'); return; }
+      setFactorId(factor.id);
+      setStep('verify');
+    } else {
+      // Clear any half-finished enrolment from an earlier attempt.
+      const { data: existing } = await supabase.auth.mfa.listFactors();
+      for (const f of existing?.all ?? []) {
+        if (f.factor_type === 'totp' && f.status !== 'verified') await supabase.auth.mfa.unenroll({ factorId: f.id });
+      }
+      const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Ascentor admin' });
+      if (enrollError || !data) { setError('Could not start authenticator setup. Please try again.'); return; }
+      setFactorId(data.id);
+      setQr(data.totp.qr_code);
+      setSecret(data.totp.secret);
+      setStep('enroll');
+    }
+  }
+
+  async function onVerify(e: FormEvent) {
+    e.preventDefault();
+    if (busy || code.length < 6) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { data: challenge, error: cErr } = await supabase.auth.mfa.challenge({ factorId });
+      if (cErr || !challenge) { setError('Could not start verification. Please try again.'); return; }
+      const { error: vErr } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code: code.trim() });
+      if (vErr) { setError('That code is not right. Check your authenticator app and try again.'); setCode(''); return; }
+      finish();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   // Already signed in as staff? Skip the form.
   useEffect(() => {
@@ -48,6 +104,14 @@ export default function AdminLoginPage() {
         if (user) {
           const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
           if (!cancelled && profile && STAFF_ROLES.includes(profile.role)) {
+            if (params.get('mfa') === '1') {
+              // The admin area asked for a second factor on an existing session.
+              const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+              if (aal?.currentLevel === 'aal2') { router.replace(safeRedirect(params.get('redirect'))); return; }
+              await beginMfa(aal?.nextLevel === 'aal2');
+              if (!cancelled) setChecking(false);
+              return;
+            }
             router.replace(safeRedirect(params.get('redirect')));
             return;
           }
@@ -65,27 +129,26 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      const supabase = createClient();
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password, captchaToken, mode: 'staff' }),
       });
+      const result = await res.json().catch(() => ({}));
 
-      if (authError || !data.user) {
-        setError('Incorrect email or password.');
+      if (!res.ok) {
+        setError(result.error || 'Incorrect email or password.');
+        setCaptchaToken('');
+        setCaptchaReset((n) => n + 1);
         return;
       }
 
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle();
-      if (!profile || !STAFF_ROLES.includes(profile.role)) {
-        await supabase.auth.signOut();
-        setError('This account does not have staff access.');
+      if (result.mfa?.required) {
+        await beginMfa(Boolean(result.mfa.enrolled));
         return;
       }
 
-      const redirect = new URLSearchParams(window.location.search).get('redirect');
-      router.replace(safeRedirect(redirect));
-      router.refresh();
+      finish();
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -148,7 +211,35 @@ export default function AdminLoginPage() {
         {notice && <p className="al-msg al-notice" role="status">{notice}</p>}
         {error && <p className="al-msg al-error" role="alert">{error}</p>}
 
-        {checking ? (
+        {step !== 'password' ? (
+          <form onSubmit={onVerify} noValidate>
+            <p className="al-sub" style={{ marginTop: 0 }}>
+              {step === 'enroll'
+                ? 'Scan this QR code with an authenticator app (Google Authenticator, 1Password, Authy), then enter the 6-digit code.'
+                : 'Enter the 6-digit code from your authenticator app.'}
+            </p>
+            {step === 'enroll' && qr && (
+              <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qr} alt="Authenticator QR code" width={168} height={168} style={{ background: '#fff', borderRadius: 8 }} />
+                <p style={{ fontSize: 11.5, color: 'var(--app-text-dim, #6B7280)', margin: '8px 0 0', wordBreak: 'break-all' }}>
+                  Can&apos;t scan? Enter this key: <code>{secret}</code>
+                </p>
+              </div>
+            )}
+            <div className="al-field">
+              <ShieldCheck className="lead" aria-hidden="true" />
+              <input
+                className="al-input" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+                placeholder="123456" aria-label="Authenticator code"
+                value={code} onChange={(e) => setCode(e.target.value.replace(/D/g, ''))}
+              />
+            </div>
+            <button className="al-btn" type="submit" disabled={busy || code.length < 6}>
+              {busy ? <><Loader2 size={16} className="spin" aria-hidden="true" /> Verifying…</> : 'Verify and continue'}
+            </button>
+          </form>
+        ) : checking ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }} aria-busy="true">
             <Loader2 className="spin" size={22} aria-label="Checking session" />
           </div>
@@ -174,6 +265,7 @@ export default function AdminLoginPage() {
               </button>
             </div>
 
+            <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />
             <button className="al-btn" type="submit" disabled={busy || !email || !password}>
               {busy ? <><Loader2 size={16} className="spin" aria-hidden="true" /> Signing in…</> : 'Sign in'}
             </button>

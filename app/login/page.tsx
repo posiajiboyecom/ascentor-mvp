@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PasswordInput from '@/components/PasswordInput';
 import { OAuthButton } from '@/lib/sso';
 import CheckInbox from '@/components/auth/CheckInbox';
+import Turnstile from '@/components/auth/Turnstile';
 import { safeNext } from '@/lib/auth/safe-next';
 
 const loginSchema = z.object({
@@ -26,12 +26,13 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
-  const supabase = createClient();
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaReset, setCaptchaReset] = useState(0);
 
   useEffect(() => {
     if (searchParams.get('reason') === 'session_expired') {
@@ -39,6 +40,7 @@ export default function LoginPage() {
     }
     const err = searchParams.get('error');
     if (err === 'auth_failed') setError('We couldn’t complete that sign-in. The link may have expired. Please try again.');
+    if (err === 'login_blocked') setError('For your security that sign-in was blocked because it looked unusual. Please try again in a few minutes.');
     if (err === 'session_missing') setError('Your session didn’t start. Please sign in again.');
   }, [searchParams]);
 
@@ -69,34 +71,32 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { data: authData, error } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    });
-
-    if (error) {
-      if (/not confirmed/i.test(error.message)) {
-        setUnconfirmedEmail(data.email);
-      } else {
-        setError(error.message);
-      }
+    // Server-side sign-in: rate limited, CAPTCHA-checked, location-assessed.
+    let res: Response;
+    try {
+      res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email, password: data.password, captchaToken }),
+      });
+    } catch {
+      setError('Network error. Please check your connection and try again.');
       setLoading(false);
       return;
     }
+    const result = await res.json().catch(() => ({}));
 
-    try {
-      const res = await fetch('/api/auth/security-check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: authData.session?.user.id }),
-      });
-      const check = await res.json();
-      if (!check.allowed) {
-        await supabase.auth.signOut();
-        setError(check.message);
-        setLoading(false); return;
+    if (!res.ok) {
+      if (result.code === 'email_not_confirmed') {
+        setUnconfirmedEmail(data.email);
+      } else {
+        setError(result.error || 'Something went wrong. Please try again.');
       }
-    } catch { }
+      setCaptchaToken('');
+      setCaptchaReset((n) => n + 1);
+      setLoading(false);
+      return;
+    }
 
     // Full navigation so the new session cookie is sent. /auth/continue applies
     // the same routing rules as the OAuth callback (onboarding, checkout, next).
@@ -314,6 +314,7 @@ export default function LoginPage() {
                 />
                 {errors.password && <p className="field-error">{errors.password.message}</p>}
               </div>
+              <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />
               {error && <div className="auth-error">{error}</div>}
               <button type="submit" disabled={loading} className="auth-btn" style={{ marginTop: '0.25rem' }}>
                 {loading ? 'Signing in...' : 'Sign In'}

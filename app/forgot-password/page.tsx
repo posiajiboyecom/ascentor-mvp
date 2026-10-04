@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import Turnstile from '@/components/auth/Turnstile';
 
 const forgotPasswordSchema = z.object({
   email: z
@@ -26,6 +27,8 @@ type ModalState =
 export default function ForgotPasswordPage() {
   const [modal, setModal] = useState<ModalState>({ type: 'idle' });
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaReset, setCaptchaReset] = useState(0);
   const [signInHref, setSignInHref] = useState('/login');
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email }),
+        body: JSON.stringify({ email: data.email, captchaToken }),
       });
 
       const result = await res.json();
@@ -66,6 +69,8 @@ export default function ForgotPasswordPage() {
     } catch {
       setModal({ type: 'error', message: 'Network error. Please try again.' });
     }
+    setCaptchaToken('');
+    setCaptchaReset((n) => n + 1);
     setLoading(false);
   }
 
@@ -313,6 +318,7 @@ export default function ForgotPasswordPage() {
                 {errors.email && <p className="field-error">{errors.email.message}</p>}
               </div>
 
+              <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />
               <button type="submit" disabled={loading} className="auth-btn" style={{ marginTop: '0.25rem' }}>
                 {loading ? 'Sending...' : 'Send Reset Code'}
               </button>

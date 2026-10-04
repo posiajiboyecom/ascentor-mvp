@@ -4,6 +4,7 @@ import AdminShell from '@/components/AdminShell';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import type { Permission } from '@/lib/permissions';
+import { adminMfaRequired, sessionIsAal2 } from '@/lib/auth/admin-mfa';
 import '@/styles/admin-ledger.css';
 
 // ═══════════════════════════════════════════════════════════
@@ -67,6 +68,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!profile || !['admin', 'moderator'].includes(profile.role)) {
     redirect('/dashboard');
+  }
+
+  // Second factor: when ADMIN_MFA_REQUIRED=true, a password-only session is not enough.
+  if (adminMfaRequired() && !(await sessionIsAal2(supabase))) {
+    redirect('/admin-login?mfa=1&redirect=/admin');
   }
 
   // Avatar is fetched separately so a missing column can never break the

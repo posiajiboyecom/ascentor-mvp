@@ -8,8 +8,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PasswordInput from '@/components/PasswordInput';
 import { OAuthButton } from '@/lib/sso';
-import { createClient } from '@/lib/supabase/client';
 import CheckInbox from '@/components/auth/CheckInbox';
+import Turnstile from '@/components/auth/Turnstile';
+import { PASSWORD_MIN } from '@/lib/auth/password-policy';
 
 const signupSchema = z.object({
   email: z
@@ -18,7 +19,7 @@ const signupSchema = z.object({
     .email('Please enter a valid email address'),
   password: z
     .string()
-    .min(8, 'Password must be at least 8 characters')
+    .min(PASSWORD_MIN, `Password must be at least ${PASSWORD_MIN} characters`)
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number'),
@@ -33,12 +34,13 @@ function callbackNextFor(isFree: boolean, plan: string | null, billing: string, 
 
 function SignUpForm() {
   const router = useRouter();
-  const supabase = createClient();
   const searchParams = useSearchParams();
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaReset, setCaptchaReset] = useState(0);
 
   const planParam = searchParams.get('plan');
   const billingParam = searchParams.get('billing') ?? 'monthly';
@@ -71,26 +73,33 @@ function SignUpForm() {
 
     const callbackNext = callbackNextFor(isFree, planParam, billingParam, currencyParam);
 
-    const { data: authData, error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackNext)}`,
-      },
-    });
+    // Server-side sign-up: password policy (incl. breached-password check),
+    // rate limiting and CAPTCHA are enforced there, not in the browser.
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email, password: data.password, captchaToken, next: callbackNext }),
+      });
+      const result = await res.json().catch(() => ({}));
 
-    if (error) {
-      setError(error.message);
-    } else if (!authData.session) {
-      // Email confirmation is required: there is no session yet. Show the
-      // "check your inbox" screen (with resend) instead of sending an
-      // unauthenticated visitor into /onboarding or /checkout.
-      setPendingEmail(data.email);
-    } else if (planParam && !isFree) {
-      // The welcome email is sent once, at the end of onboarding.
-      router.push(`/checkout?plan=${planParam}&billing=${billingParam}&currency=${currencyParam}`);
-    } else {
-      router.push('/onboarding');
+      if (!res.ok) {
+        setError(result.error || 'Something went wrong. Please try again.');
+        setCaptchaToken('');
+        setCaptchaReset((n) => n + 1);
+      } else if (result.needsConfirmation) {
+        // Email confirmation is required: no session yet. Show the
+        // "check your inbox" screen (with resend) instead of sending an
+        // unauthenticated visitor into /onboarding or /checkout.
+        setPendingEmail(data.email);
+      } else if (planParam && !isFree) {
+        // The welcome email is sent once, at the end of onboarding.
+        router.push(`/checkout?plan=${planParam}&billing=${billingParam}&currency=${currencyParam}`);
+      } else {
+        router.push('/onboarding');
+      }
+    } catch {
+      setError('Network error. Please check your connection and try again.');
     }
     setLoading(false);
   }
@@ -273,7 +282,7 @@ function SignUpForm() {
               <div>
                 <PasswordInput
                   {...register('password')}
-                  placeholder="Create a password (min 8 chars)"
+                  placeholder="Create a password (min 10 chars)"
                   className={errors.password ? 'error' : ''}
                   light
                 />
@@ -295,6 +304,7 @@ function SignUpForm() {
                 </div>
               )}
 
+              <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />
               {error && <div className="auth-error">{error}</div>}
 
               <button type="submit" disabled={loading} className="auth-btn" style={{ marginTop: '0.25rem' }}>

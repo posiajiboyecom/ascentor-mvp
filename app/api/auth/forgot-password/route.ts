@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendPasswordResetOTP } from '@/lib/email';
-import { strictLimiter, getClientIp } from '@/lib/rate-limit';
+import { getClientIp } from '@/lib/rate-limit';
+import { LIMITS, rateLimit } from '@/lib/auth/rate-limit-shared';
+import { verifyTurnstile } from '@/lib/auth/turnstile';
 import { generateOtp, hashOtp, isPlausibleEmail, OTP_TTL_MS, OTP_MAX_PER_HOUR } from '@/lib/otp';
 
 // The response is identical whether or not the account exists, so this endpoint
@@ -14,7 +16,8 @@ const UNIFORM = {
 
 export async function POST(req: NextRequest) {
   try {
-    const limit = strictLimiter.check(getClientIp(req));
+    const ip = getClientIp(req);
+    const limit = await rateLimit(ip, LIMITS.forgotIp);
     if (!limit.allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please wait a minute and try again.' },
@@ -25,6 +28,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null);
     if (!isPlausibleEmail(body?.email)) {
       return NextResponse.json({ error: 'A valid email is required' }, { status: 400 });
+    }
+    if (!(await verifyTurnstile(body?.captchaToken, ip))) {
+      return NextResponse.json({ error: 'Please complete the security check and try again.', captcha: true }, { status: 400 });
     }
     const email = (body.email as string).toLowerCase().trim();
 
@@ -49,7 +55,7 @@ export async function POST(req: NextRequest) {
 
     const { data: authRes } = await supabaseAdmin.auth.admin.getUserById(profile.id);
     const provider = authRes?.user?.app_metadata?.provider;
-    if (provider === 'google' || provider === 'linkedin') {
+    if (provider === 'google' || provider === 'linkedin' || provider === 'linkedin_oidc') {
       return NextResponse.json(UNIFORM); // social accounts have no password to reset
     }
 

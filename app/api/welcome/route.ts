@@ -9,17 +9,26 @@ export async function POST(req: NextRequest) {
     const internalSecret = req.headers.get('x-internal-secret');
     const isInternal = internalSecret && internalSecret === process.env.INTERNAL_API_SECRET;
 
+    // A signed-in member can only trigger THEIR OWN welcome: identity comes from the
+    // session, never from the request body (the body used to let any member send
+    // a welcome email / subscribe any address). Only the internal-secret caller
+    // (payment settlement etc.) may name another recipient.
+    let sessionUser: { id: string; email?: string } | null = null;
     if (!isInternal) {
-      // Fall back to session check for any other callers
       const { createClient: createAuthClient } = await import('@/lib/supabase/server');
       const authClient = await createAuthClient();
       const { data: { user } } = await authClient.auth.getUser();
       if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
+      sessionUser = { id: user.id, email: user.email };
     }
 
-    const { email, name, userId } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const rawName = typeof body?.name === 'string' ? body.name.trim().slice(0, 80) : '';
+    const name = rawName.replace(/[<>]/g, '');
+    const email = sessionUser ? sessionUser.email : body?.email;
+    const userId = sessionUser ? sessionUser.id : body?.userId;
     if (!email || !userId) {
       return NextResponse.json({ error: "Missing email or userId" }, { status: 400 });
     }

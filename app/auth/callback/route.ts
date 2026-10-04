@@ -19,6 +19,7 @@ import { createClient }        from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextResponse }        from 'next/server';
 import { safeNext }            from '@/lib/auth/safe-next';
+import { assessLogin }         from '@/lib/auth/login-security';
 import { resolvePostLoginPath, syncMailerLite } from '@/lib/auth/post-login';
 
 const supabaseService = createServiceClient(
@@ -50,6 +51,14 @@ export async function GET(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+  }
+
+  // Location-risk check for OAuth / link sign-ins (password sign-ins run it in
+  // /api/auth/login). Blocks this session only; fails open on lookup errors.
+  const assessment = await assessLogin(user.id, request);
+  if (!assessment.allowed) {
+    await supabase.auth.signOut();
+    return NextResponse.redirect(`${origin}/login?error=login_blocked`);
   }
 
   // ── PARTNER FLOW ──────────────────────────────────────────
