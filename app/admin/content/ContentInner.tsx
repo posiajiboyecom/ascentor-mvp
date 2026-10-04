@@ -1788,7 +1788,7 @@ function CarouselTab({ showToast }: { showToast: (msg: string, ok?: boolean) => 
       </div>
 
       <button onClick={run} disabled={running} style={{ width: '100%', padding: '12px 0', borderRadius: 8, border: 'none', cursor: running?'not-allowed':'pointer', background: running?'#9E9B94':'#0C0B08', color: '#fff', fontSize: 13, fontFamily: "Metropolis, 'Inter', sans-serif", letterSpacing: '0.04em' }}>
-        {running ? 'Running\u2026 (~3 min for image generation)' : `\u25b6  Generate ${postCount} carousel${postCount>1?'s':''} \u2014 ${platform}`}
+        {running ? 'Running\u2026 (~3 min for image generation)' : `Generate ${postCount} carousel${postCount>1?'s':''} for ${platform}`}
       </button>
 
       {done && <div style={{ marginTop: 14, padding: '12px 16px', borderRadius: 8, background: '#E8F4F0', border: '1px solid #9FE1CB', fontSize: 12, color: '#1A5C4A', fontFamily: "Metropolis, 'Inter', sans-serif", lineHeight: 1.7 }}>\u2713 Agent started. When done (~3 min):<br/>1. Content tab \u2192 filter: Instagram Carousel<br/>2. Review \u2192 Approve<br/>3. Queue Social \u2192 cover slide auto-attaches to Buffer<br/>4. TikTok: drafts \u2192 add trending sound \u2192 publish</div>}

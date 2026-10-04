@@ -206,7 +206,7 @@ export async function PATCH(req: NextRequest) {
 
     if (!existing) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
 
-    // Sanitise updates — only allow known fields
+    // Sanitise updates - only allow known fields
     const allowed = ['title', 'description', 'youtube_id', 'category', 'difficulty',
                      'duration', 'thumbnail_url', 'is_published', 'sort_order', 'plan_tier'];
 
@@ -263,7 +263,7 @@ export async function DELETE(req: NextRequest) {
 
     if ((count ?? 0) > 0) {
       return NextResponse.json({
-        error: `Cannot delete — ${count} member${count !== 1 ? 's' : ''} enrolled. Unpublish instead.`
+        error: `Cannot delete, ${count} member${count !== 1 ? 's' : ''} enrolled. Unpublish instead.`
       }, { status: 409 });
     }
 

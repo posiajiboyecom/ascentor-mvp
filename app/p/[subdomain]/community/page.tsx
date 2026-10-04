@@ -1,6 +1,6 @@
 // ============================================================
 // app/p/[subdomain]/community/page.tsx
-// Partner community — peer discussions scoped to this platform.
+// Partner community - peer discussions scoped to this platform.
 // Does NOT re-export the main app's circles page (which shows
 // global cohorts that partner members are never enrolled in).
 // ============================================================
@@ -115,7 +115,7 @@ export default function PartnerCommunityPage() {
 
     if (err) {
       if (err.code === '42P01') {
-        setError('Community table not set up yet — run the partner migration SQL.');
+        setError('Community table not set up yet, run the partner migration SQL.');
       } else {
         setError(err.message);
       }

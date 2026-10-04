@@ -2,14 +2,14 @@
 // POST /api/pay/activate-free
 // ================================================================
 // Called when a 100% promo code is applied and the user clicks a plan.
-// Bypasses Paystack entirely — activates subscription immediately.
+// Bypasses Paystack entirely - activates subscription immediately.
 //
 // Security:
-//   • Auth required — userId from session, NOT from body
+//   • Auth required - userId from session, NOT from body
 //   • Validates promo code server-side before activating
 //   • Uses atomic DB RPC to prevent race conditions
 //
-// Plan IDs: explorer | builder | climber (canonical — no legacy)
+// Plan IDs: explorer | builder | climber (canonical - no legacy)
 // ================================================================
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -51,14 +51,14 @@ export async function POST(req: NextRequest) {
     // ── 3. Validate + claim promo (atomic RPC) ────────────────
     // claim_promo_code is a Supabase DB function that validates,
     // checks expiry, checks max_uses, and increments current_uses
-    // atomically in a single transaction — no race condition.
+    // atomically in a single transaction - no race condition.
     let discount: number | null = null
 
     const { data: rpcResult, error: rpcError } = await supabaseAdmin
       .rpc('claim_promo_code', { p_code: code, p_validate_only: false })
 
     if (rpcError) {
-      // RPC not deployed — fall back to manual check with optimistic lock
+      // RPC not deployed - fall back to manual check with optimistic lock
       console.warn('[pay/activate-free] RPC not available, using fallback:', rpcError.message)
 
       const { data: promo } = await supabaseAdmin
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       const count = updated?.length ?? 0
 
       if (!count || count === 0) {
-        // Another request claimed the last use — re-check
+        // Another request claimed the last use - re-check
         return NextResponse.json({ error: 'This promo code has just been fully claimed. Please try another.' }, { status: 409 })
       }
 

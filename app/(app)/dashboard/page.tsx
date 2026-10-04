@@ -41,7 +41,7 @@ export default async function DashboardPage() {
               {daily.text}
               {daily.attribution && (
                 <span className="ml-2 font-sans text-sm not-italic text-[var(--text-dim)]">
-                  — {daily.attribution}
+                 {daily.attribution}
                 </span>
               )}
             </p>

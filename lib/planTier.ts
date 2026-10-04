@@ -66,9 +66,9 @@ export function effectivePlan(profile: {
 
 export interface TierMeta {
   label:      string
-  color:      string       // hex — for text / dot
-  bg:         string       // rgba — for badge background
-  border:     string       // rgba — for badge border
+  color:      string       // hex - for text / dot
+  bg:         string       // rgba - for badge background
+  border:     string       // rgba - for badge border
 }
 
 export const TIER_META: Record<PlanTier, TierMeta> = {
@@ -79,7 +79,7 @@ export const TIER_META: Record<PlanTier, TierMeta> = {
 }
 
 export const TIER_OPTIONS: { value: PlanTier; label: string }[] = [
-  { value: 'free',     label: 'Free — accessible to all users'          },
+  { value: 'free',     label: 'Free, accessible to all users'          },
   { value: 'explorer', label: 'Explorer and above'                       },
   { value: 'builder',  label: 'Builder and above'                        },
   { value: 'climber',  label: 'Climber only (highest tier)'              },

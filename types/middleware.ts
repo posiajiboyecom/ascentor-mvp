@@ -1,5 +1,5 @@
 // ============================================================
-// NEXT.JS PROXY — Auth + Subscription Gating
+// NEXT.JS PROXY - Auth + Subscription Gating
 // Place at project ROOT: proxy.ts
 //
 // SECURITY FIX S3: Added protection for all /api/* routes.
@@ -9,7 +9,7 @@
 // that was skipping all auth checks. /onboarding now correctly
 // requires authentication (unauthenticated users go to /login).
 // Previously-onboarded users are NOT redirected back to /onboarding
-// by this middleware — that routing decision lives in route.ts
+// by this middleware - that routing decision lives in route.ts
 // (the auth callback), which is the single source of truth for
 // post-login destination.
 // ============================================================
@@ -39,7 +39,7 @@ const PROTECTED_API_PREFIXES = [
   '/api/admin',
 ];
 
-// Public routes — no auth needed
+// Public routes - no auth needed
 const PUBLIC_ROUTES = [
   '/login', '/signup', '/checkout',
   '/auth/callback',
@@ -113,7 +113,7 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ── Protect page routes ───────────────────────────────────────────
-  // This includes /onboarding — unauthenticated users go to /login.
+  // This includes /onboarding - unauthenticated users go to /login.
   // Authenticated users who visit /onboarding directly are allowed
   // through (edge case: someone bookmarked it, or is mid-flow).
   if (!user && AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {

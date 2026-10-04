@@ -2,13 +2,13 @@
 // GET /api/subscription/status
 // ================================================================
 // Returns current plan, usage counts, and limit flags.
-// Plan IDs: explorer | builder | climber (canonical — no legacy)
+// Plan IDs: explorer | builder | climber (canonical - no legacy)
 //
 // Fixes applied:
 //   - PLAN_LIMITS now imported from lib/session-limits.ts (single
 //     source of truth) instead of duplicated inline
 //   - communityPosts count now reads from community_messages
-//     (the live table) — not cohort_posts (old/dead schema)
+//     (the live table) - not cohort_posts (old/dead schema)
 // ================================================================
 
 import { NextResponse } from 'next/server'
@@ -42,7 +42,7 @@ export async function GET() {
     // and session-limits.getEffectivePlan for limit lookup (same logic,
     // but returns the raw plan string so PLAN_LIMITS can alias it).
     const canonicalPlan = effectivePlan(profile)        // 'free' | 'explorer' | 'builder' | 'climber'
-    const limitsKey     = getEffectivePlan(profile)     // may be a legacy alias — PLAN_LIMITS handles it
+    const limitsKey     = getEffectivePlan(profile)     // may be a legacy alias - PLAN_LIMITS handles it
     const limits        = PLAN_LIMITS[limitsKey] ?? PLAN_LIMITS.free
 
     const status = profile?.subscription_status || 'free'

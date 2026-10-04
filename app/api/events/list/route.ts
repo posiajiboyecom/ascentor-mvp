@@ -1,5 +1,5 @@
 // app/api/events/list/route.ts
-// Public endpoint — returns all published events for the nav dropdown.
+// Public endpoint - returns all published events for the nav dropdown.
 // Cached at the edge for 60s so the nav doesn't hit the DB on every request.
 
 import { NextResponse } from 'next/server';

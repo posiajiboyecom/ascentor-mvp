@@ -1,11 +1,11 @@
 // app/(marketing)/elevation-summit/page.tsx
-// Server component wrapper — fetches CMS content and passes it to the
+// Server component wrapper - fetches CMS content and passes it to the
 // client component (ElevationSummitClient.tsx) which owns the
 // registration form state. Same split pattern as app/page.tsx →
 // app/LandingPageClient.tsx.
 //
 // SEO: full metadata + Event JSON-LD (hybrid: physical Lagos venue +
-// virtual access). Event constants live in lib/seo.ts (SUMMIT) — update
+// virtual access). Event constants live in lib/seo.ts (SUMMIT) - update
 // the exact date/venue/prices there, not here.
 import type { Metadata } from 'next';
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';

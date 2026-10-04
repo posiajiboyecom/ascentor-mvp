@@ -1,5 +1,5 @@
 // app/survey/[slug]/page.tsx
-// Fully public — no auth, no cookies, no middleware dependency.
+// Fully public - no auth, no cookies, no middleware dependency.
 // Fetches survey data directly via Supabase REST API using the anon key.
 
 import { notFound } from 'next/navigation';
@@ -15,7 +15,7 @@ async function fetchSurvey(slug: string): Promise<Survey | null> {
   const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  // Fetch by slug only — check is_published in code after
+  // Fetch by slug only - check is_published in code after
   // (is_published=eq.true in the query can silently return [] if RLS blocks it)
   const url = `${supabaseUrl}/rest/v1/surveys?slug=eq.${encodeURIComponent(slug)}&select=*&limit=1`;
 
@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const survey = await fetchSurvey(slug);
 
   return {
-    title:       survey ? `${survey.title} — Ascentor` : 'Survey — Ascentor',
+    title:       survey ? `${survey.title} | Ascentor` : 'Survey | Ascentor',
     description: survey?.description ?? 'Share your feedback and help us build what you actually need.',
   };
 }

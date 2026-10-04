@@ -13,7 +13,7 @@ export interface CoachUserMessage {
 }
 
 /**
- * A mentor/source surfaced by RAG retrieval for an assistant turn —
+ * A mentor/source surfaced by RAG retrieval for an assistant turn -
  * the visible form of "Sage Surfaces the Source". Optional and
  * backward-compatible: older persisted messages simply lack it.
  */

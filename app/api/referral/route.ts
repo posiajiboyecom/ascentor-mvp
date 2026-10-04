@@ -77,7 +77,7 @@ export async function POST(request: Request) {
   }
 }
 
-// GET — fetch user's referral stats
+// GET - fetch user's referral stats
 export async function GET() {
   try {
     const supabase = await createClient();

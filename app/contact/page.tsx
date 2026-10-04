@@ -1,7 +1,7 @@
 'use client';
 
 // app/contact/page.tsx
-// Public contact page — matches the landing page light design system.
+// Public contact page - matches the landing page light design system.
 // Submits to POST /api/contact which saves to contact_messages and
 // emails the admin. No auth required.
 

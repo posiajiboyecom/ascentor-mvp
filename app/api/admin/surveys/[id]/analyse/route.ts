@@ -15,7 +15,7 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) 
   return user;
 }
 
-// POST /api/admin/surveys/[id]/analyse — run AI analysis
+// POST /api/admin/surveys/[id]/analyse - run AI analysis
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -78,7 +78,7 @@ export async function POST(
     return { question_id: q.id, question_text: q.text, type: q.type, sample_responses: texts.slice(0, 8) };
   });
 
-  // Willingness to pay — look for q8
+  // Willingness to pay - look for q8
   const wtpQ = perQuestion.find((q) => q.question_id === 'q8');
   let wtpPct = 0;
   if (wtpQ?.distribution) {
@@ -132,7 +132,7 @@ Return ONLY a JSON array with this shape, no other text:
 
   const analysisPayload = {
     total_responses: totalResponses,
-    completion_rate: 74, // placeholder — needs tracking in metadata
+    completion_rate: 74, // placeholder - needs tracking in metadata
     avg_duration_seconds: avgDuration,
     willingness_to_pay_pct: wtpPct,
     key_insights: keyInsights,

@@ -77,12 +77,12 @@ export default function ManifestoPage() {
         </h1>
         <span className="mf-line" aria-hidden="true" style={{ marginBottom: '3rem' }} />
 
-        {/* ── The canonical definition — first prose on the page ── */}
+        {/* ── The canonical definition - first prose on the page ── */}
         <section style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem' }}>
           <p className="mf-body">
             <span className="mf-strong">Ascentor is a purposeful living and leadership
             development platform.</span> It brings together an AI coach named Sage, a
-            community called The Circle, live expert sessions, and structured courses —
+            community called The Circle, live expert sessions, and structured courses -
             all organized around one question: what kind of life are you building, and
             will it outlast you? Ascentor is also the home of{' '}
             <span className="mf-strong">The Elevation Summit</span>, its annual gathering
@@ -94,7 +94,7 @@ export default function ManifestoPage() {
           <p className="mf-body">
             We exist because drift is the default. Most people do not choose their lives;
             they inherit them one unexamined day at a time. Ascentor is built on the
-            conviction that a life can be <span className="mf-strong">designed</span> —
+            conviction that a life can be <span className="mf-strong">designed</span> -
             thought about architecturally, worked on deliberately, and measured by
             something sturdier than applause.
           </p>
@@ -121,13 +121,13 @@ export default function ManifestoPage() {
             <span className="mf-strong">What we believe.</span> That purpose is uncovered
             through work, not found through waiting. That character is infrastructure.
             That community is not an audience but a covenant. That technology should serve
-            transformation, not engagement metrics — which is why we measure success by
+            transformation, not engagement metrics, which is why we measure success by
             the quality of the lives being built on the platform, not the hours spent on it.
           </p>
 
           <p className="mf-body">
             <span className="mf-strong">What we are building.</span> A generation of
-            people — beginning in Nigeria, extending everywhere — who refuse to drift.
+            people, beginning in Nigeria, extending everywhere, who refuse to drift.
             The Elevation Summit gathers them once a year. Ascentor walks with them every
             other day.
           </p>

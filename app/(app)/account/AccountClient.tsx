@@ -1,5 +1,5 @@
 // FILE: app/(app)/account/AccountClient.tsx
-// ASCENTOR REBRAND v2 — Full rebuild with ascent_stage + what_building fields
+// ASCENTOR REBRAND v2 - Full rebuild with ascent_stage + what_building fields
 
 'use client';
 
@@ -46,7 +46,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
     biggest_challenge: profile?.biggest_challenge || '',
     time_commitment:   profile?.time_commitment || '15min',
     avatar_url:        profile?.avatar_url || '',
-    // ── Day 4 — Movement fields ──
+    // ── Day 4 - Movement fields ──
     ascent_stage:      profile?.ascent_stage || '',
     what_building:     profile?.what_building || '',
   });
@@ -133,7 +133,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
         goal_role:         form.goal_role,
         biggest_challenge: form.biggest_challenge,
         time_commitment:   form.time_commitment,
-        // ── Day 4 — Movement fields ──
+        // ── Day 4 - Movement fields ──
         ascent_stage:      form.ascent_stage || null,
         what_building:     form.what_building || null,
         updated_at:        new Date().toISOString(),
@@ -368,7 +368,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               <textarea
                 value={form.what_building}
                 onChange={(e) => setForm({ ...form, what_building: e.target.value })}
-                placeholder="Describe what you are building with your life — not your job title."
+                placeholder="Describe what you are building with your life, not your job title."
                 rows={3}
                 className="w-full px-3.5 py-2.5 text-sm rounded-xl resize-none"
                 style={inputStyle}
@@ -690,7 +690,7 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               {['active', 'trialing'].includes(profile?.subscription_status)
                 ? 'Your subscription renews automatically.'
                 : profile?.subscription_status === 'cancelled'
-                ? 'Subscription cancelled — no future charges.'
+                ? 'Subscription cancelled, no future charges.'
                 : 'No active subscription. Upgrade to access all features.'}
             </p>
             {['active', 'trialing', 'cancelled'].includes(profile?.subscription_status) && (

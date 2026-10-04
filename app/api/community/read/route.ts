@@ -6,14 +6,14 @@
 // last_read_at timestamp in channel_read_positions. Called by CommunityClient
 // whenever a channel is opened (selectChannel) so the unread badge clears.
 //
-// This is a fire-and-forget route from the client's perspective — failures
+// This is a fire-and-forget route from the client's perspective - failures
 // only mean the badge stays stale until the next page load, which is fine.
 //
 // Response:
 //   200 { ok: true }
-//   400 { error }   — missing or invalid slug
-//   401 { error }   — not authenticated
-//   500 { error }   — database error
+//   400 { error }   - missing or invalid slug
+//   401 { error }   - not authenticated
+//   500 { error }   - database error
 //
 // Requires: database/migrations/20260702_community_read_positions.sql
 // ─────────────────────────────────────────────────────────────────────────

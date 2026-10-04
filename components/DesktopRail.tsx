@@ -10,7 +10,7 @@
 // component used as the first column of the Community page's 4-pane shell,
 // so nav chrome is visually identical across every desktop screen.
 //
-// This rail is intentionally NOT theme-reactive — per the prototypes it's
+// This rail is intentionally NOT theme-reactive - per the prototypes it's
 // always the dark "Summit Black" rail regardless of the light/dark content
 // toggle, the same way the prototype's .app-rail / .rail-categories never
 // reference --app-* theme vars. Only the content area to the right of the
@@ -18,7 +18,7 @@
 //
 // Carries the same sign-out / admin / settings / theme-toggle menu that
 // previously lived in the wider labeled rail, so no functionality is lost
-// moving to the compact icon rail — it's all in the avatar dropdown now.
+// moving to the compact icon rail - it's all in the avatar dropdown now.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import Link from 'next/link';
@@ -61,7 +61,7 @@ function summitCountdown() {
   return diff > 0 ? Math.ceil(diff / 86400000) : 0;
 }
 
-// Shared tooltip — appears on hover, anchored to the right of the rail item.
+// Shared tooltip - appears on hover, anchored to the right of the rail item.
 // Mirrors prototype `.tooltip` exactly (left: 58px from a 72px-wide rail).
 function RailTooltip({ label }: { label: string }) {
   return (
@@ -173,7 +173,7 @@ export default function DesktopRail({ initials, fullName, isAdmin }: DesktopRail
 
       <div style={{ width: 28, height: 1, background: 'rgba(255,255,255,0.08)', margin: '4px 0', flexShrink: 0 }} />
 
-      {/* Summit countdown — compact icon, tooltip carries the detail */}
+      {/* Summit countdown - compact icon, tooltip carries the detail */}
       <Link
         href="/elevation-summit"
         className="rail-icon-item"

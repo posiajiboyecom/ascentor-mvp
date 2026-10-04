@@ -6,7 +6,7 @@
 // Elevation Summit mini-card pinned above the footer, profile footer.
 //
 // FIX: Icons now sourced from shared NAV_ITEMS constant defined in
-// @/lib/nav-items — same array consumed by MobileTabBar, guaranteeing
+// @/lib/nav-items - same array consumed by MobileTabBar, guaranteeing
 // identical icons at every breakpoint. Previously DesktopRail used
 // MessageSquare + User while MobileTabBar used MessageCircle + CalendarDays
 // for the same routes, breaking cross-breakpoint wayfinding.
@@ -70,7 +70,7 @@ export function DesktopRail({
 
       <div className="flex-1" />
 
-      {/* ── Rail billboards — managed from Admin → Rail Billboards ── */}
+      {/* ── Rail billboards - managed from Admin → Rail Billboards ── */}
       <RailBillboard />
 
       {/* Elevation Summit mini-card */}
@@ -90,7 +90,7 @@ export function DesktopRail({
           19 Nov 2026 · Lagos
         </p>
         <p className="text-xs text-[#C8A96E]/70 mt-1 font-medium">
-          {summitDaysAway} days away — Learn more →
+          {summitDaysAway} days away, Learn more →
         </p>
       </Link>
 

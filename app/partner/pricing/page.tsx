@@ -1,16 +1,16 @@
 // app/partner/pricing/page.tsx
 //
 // IMPROVED: Added NGN price fields per plan, currency selector, NGN rate override,
-// and trial days. Partners can now set exactly what users see on checkout —
+// and trial days. Partners can now set exactly what users see on checkout -
 // not just Paystack plan codes. Previously partners had no visibility into the
 // prices their users were being charged.
 //
 // Field mapping to plan_overrides JSONB on partners table:
-//   monthly_plan_code / annual_plan_code — Paystack plan identifiers
-//   explorer/builder/climber_monthly_ngn / _yearly_ngn — displayed + charged amounts
-//   currency   — Paystack currency code (default NGN)
-//   ngn_rate   — USD→currency rate override (replaces hardcoded 1600)
-//   trial_days — free trial length in days
+//   monthly_plan_code / annual_plan_code - Paystack plan identifiers
+//   explorer/builder/climber_monthly_ngn / _yearly_ngn - displayed + charged amounts
+//   currency   - Paystack currency code (default NGN)
+//   ngn_rate   - USD→currency rate override (replaces hardcoded 1600)
+//   trial_days - free trial length in days
 
 'use client';
 
@@ -204,11 +204,11 @@ export default function PartnerPricingPage() {
             <label style={LABEL}>Currency</label>
             <select style={{ ...INPUT, appearance: 'none' as const }}
               value={form.currency} onChange={set('currency')}>
-              <option value="NGN">NGN — Nigerian Naira</option>
-              <option value="USD">USD — US Dollar</option>
-              <option value="GHS">GHS — Ghanaian Cedi</option>
-              <option value="KES">KES — Kenyan Shilling</option>
-              <option value="ZAR">ZAR — South African Rand</option>
+              <option value="NGN">NGN, Nigerian Naira</option>
+              <option value="USD">USD, US Dollar</option>
+              <option value="GHS">GHS, Ghanaian Cedi</option>
+              <option value="KES">KES, Kenyan Shilling</option>
+              <option value="ZAR">ZAR, South African Rand</option>
             </select>
           </div>
           <div>

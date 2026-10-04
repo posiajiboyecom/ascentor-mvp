@@ -4,13 +4,13 @@
 // (e.g. partner Paystack keys stored in the database).
 //
 // Requires env var:
-//   ENCRYPTION_KEY — 64-char hex string (32 bytes)
+//   ENCRYPTION_KEY - 64-char hex string (32 bytes)
 //   Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 //
 // Format of encrypted output (all base64, colon-separated):
 //   <iv_base64>:<authTag_base64>:<ciphertext_base64>
 //
-// This format is self-contained — no external state needed to decrypt.
+// This format is self-contained - no external state needed to decrypt.
 // ============================================================
 
 import crypto from 'crypto';

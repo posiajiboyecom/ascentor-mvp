@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 
 export const metadata: Metadata = {
-  title: 'Products — Ascentor',
+  title: 'Products | Ascentor',
   description: 'Tools, playbooks, and resources built for ambitious purposeful individuals.',
 };
 

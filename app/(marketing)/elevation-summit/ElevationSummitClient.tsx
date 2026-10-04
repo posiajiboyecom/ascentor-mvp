@@ -8,7 +8,7 @@ import type { PublishedPage } from '@/lib/supabase/queries/marketing';
 import '@/styles/marketing.css';
 import 'react-phone-number-input/style.css';
 import PhoneInput from 'react-phone-number-input';
-// Bundled inline-SVG flags — the default flag <img> tags load from an
+// Bundled inline-SVG flags - the default flag <img> tags load from an
 // external CDN which fails in production. This renders flags locally.
 import flags from 'react-phone-number-input/flags';
 import { useModal } from '@/components/Modal';
@@ -112,7 +112,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
     '/images/gallery-30.jpg',
   ];
 
-  // Venue carousel — Aderemi Makanjuola Hall, Lagos State University.
+  // Venue carousel - Aderemi Makanjuola Hall, Lagos State University.
   // Same crossfade pattern as the landing page hero carousel.
   const VENUE_IMAGES = [
     '/images/venue-1.jpg',
@@ -184,7 +184,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       }
 
       reset();
-      // Branded success overlay auto-redirects — no click required.
+      // Branded success overlay auto-redirects - no click required.
       setRegistrationSuccess(activeTab);
       successRedirectTimer.current = setTimeout(() => router.push('/elevation-summit/confirmed'), 3200);
     } catch (err) {
@@ -205,12 +205,12 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
 
   return (
     <>
-      {/* Hero — image first in DOM so it always renders on top on mobile;
+      {/* Hero - image first in DOM so it always renders on top on mobile;
           desktop reorders to text-left / image-right. Same pattern as the
           landing page hero-grid. */}
       <section style={{
         background: '#FFFFFF',
-        // SVG texture — graph-paper grid in gold, subtle enough that
+        // SVG texture - graph-paper grid in gold, subtle enough that
         // the white base still reads through.
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath d='M48 0H0V48' fill='none' stroke='%23C8A96E' stroke-opacity='0.20' stroke-width='1'/%3E%3C/svg%3E")`,
         padding: 'clamp(3rem, 6vw, 5rem) 1.5rem clamp(4rem, 8vw, 7rem)',
@@ -395,10 +395,10 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       {/* Speakers */}
       <SummitSpeakers />
 
-      {/* Countdown — sits immediately before the registration form section */}
+      {/* Countdown - sits immediately before the registration form section */}
       <SummitCountdown />
 
-      {/* The Venue — image column first in DOM so it renders on top on
+      {/* The Venue - image column first in DOM so it renders on top on
           mobile; desktop reorders to text-left / image-right. Reuses the
           summit-hero-grid classes and the landing page hero carousel
           pattern (fixed 4:3 box, crossfade, dot nav). */}
@@ -488,7 +488,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
 
           <form onSubmit={handleSubmit(onSubmit)} className="summit-form">
 
-            {/* Attendance tabs — both render the same fields; the tab only
+            {/* Attendance tabs - both render the same fields; the tab only
                 switches attendance_type and the displayed price. */}
             <div role="tablist" aria-label="Choose how you will attend"
               style={{ gridColumn: '1 / -1', display: 'flex', borderBottom: '1px solid #E8E6E1', marginBottom: '0.5rem' }}>
@@ -519,7 +519,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             </div>
 
             {/* key={activeTab} remounts this wrapper on every tab switch,
-                replaying the entrance animation — same fields, fresh feel.
+                replaying the entrance animation, same fields, fresh feel.
                 RHF keeps values in its own store so nothing is lost. */}
             <div key={activeTab} className="summit-fields-anim">
 
@@ -733,10 +733,10 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         `}</style>
       </section>
 
-      {/* FAQ — immediately after the gallery section */}
+      {/* FAQ - immediately after the gallery section */}
       <SummitFAQ />
 
-      {/* Partners Marquee — infinite dual-row scroll, paused on hover */}
+      {/* Partners Marquee - infinite dual-row scroll, paused on hover */}
       <section style={{ background: '#FAFAF8', padding: 'clamp(4rem, 7vw, 6rem) 0', overflow: 'hidden' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto', textAlign: 'center', padding: '0 1.5rem 3rem' }}>
           <p className="mkt-eyebrow" style={{ marginBottom: '1rem' }}>Partners &amp; Supporters</p>
@@ -745,7 +745,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           </h2>
         </div>
 
-        {/* Row 1 — scrolls left */}
+        {/* Row 1 - scrolls left */}
         <div className="pm-outer">
           <div className="pm-track pm-left">
             {[1, 2, 3, 4].flatMap((_, i) => [
@@ -758,7 +758,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           </div>
         </div>
 
-        {/* Row 2 — scrolls right */}
+        {/* Row 2 - scrolls right */}
         <div className="pm-outer" style={{ marginTop: '2rem' }}>
           <div className="pm-track pm-right">
             {[1, 2, 3, 4].flatMap((_, i) => [
@@ -880,7 +880,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         </div>
       </section>
 
-      {/* Registration success overlay — light-themed to match this page (the
+      {/* Registration success overlay - light-themed to match this page (the
           shared Modal uses dark app tokens). Auto-redirects after ~3s;
           the button is a manual escape hatch if navigation stalls. */}
       {registrationSuccess && (

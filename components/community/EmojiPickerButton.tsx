@@ -4,7 +4,7 @@
 // Sits in the message composer where the prototype's '+' icon was.
 // Clicking opens a small categorized emoji grid; picking one calls
 // onSelect(emoji) so the parent composer can insert it into the draft.
-// Pure UI — no message-sending logic lives here.
+// Pure UI - no message-sending logic lives here.
 
 import { useState, useRef, useEffect } from 'react';
 import { Smile } from 'lucide-react';

@@ -1,5 +1,5 @@
 // FILE: app/p/[subdomain]/checkout/PartnerCheckoutClient.tsx
-// FIX: Added channels array to PaystackPop.setup() — previously omitted entirely,
+// FIX: Added channels array to PaystackPop.setup() - previously omitted entirely,
 //      causing Paystack to show only Card + Bank.
 //      Now includes: card, bank, bank_transfer (Transfer), mobile_money (Opay), ussd, qr
 
@@ -7,7 +7,7 @@
 // FILE LOCATION: app/p/[subdomain]/checkout/PartnerCheckoutClient.tsx
 //
 // BUG FIXED:
-//   BUG-11 — The Paystack onSuccess handler called:
+//   BUG-11 - The Paystack onSuccess handler called:
 //               fetch('/api/partner/payment/verify', ...)
 //             This is a relative URL. On the ascentorbi.com
 //             subdomain (john.ascentorbi.com) this works because
@@ -15,7 +15,7 @@
 //             But on custom domains (coaching.johnadeyemi.com),
 //             the relative URL resolves to:
 //               coaching.johnadeyemi.com/api/partner/payment/verify
-//             which does not exist — only ascentorbi.com hosts
+//             which does not exist - only ascentorbi.com hosts
 //             the API routes.
 //
 //             Fix: the proxy middleware now injects an
@@ -26,10 +26,10 @@
 //             The client then prefixes all API calls with it.
 //
 //             When apiBase is empty (subdomain, non-custom domain),
-//             behaviour is unchanged — the relative URL is used.
+//             behaviour is unchanged - the relative URL is used.
 //
 // PREVIOUS FIXES PRESERVED:
-//   W-10 — Dynamic yearly saving percentage badge.
+//   W-10 - Dynamic yearly saving percentage badge.
 // ============================================================
 
 'use client';
@@ -105,7 +105,7 @@ export default function PartnerCheckoutClient({
 
   const handleCheckout = async () => {
     if (!userId) {
-      // Root-relative paths — proxy rewrites them to the partner domain transparently.
+      // Root-relative paths - proxy rewrites them to the partner domain transparently.
       router.push('/login?redirect=/checkout');
       return;
     }

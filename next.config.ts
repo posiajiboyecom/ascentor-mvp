@@ -4,7 +4,7 @@ import type { NextConfig } from 'next';
 // NOTE: script-src 'unsafe-inline' has been removed (M-06 fix).
 // The per-request nonce is now injected by proxy.ts (the Next.js middleware),
 // which overwrites this header with a nonce-based CSP on every request.
-// This static CSP is a fallback only — it applies to routes the middleware
+// This static CSP is a fallback only - it applies to routes the middleware
 // does not process (e.g., _next/static assets). It intentionally omits
 // script-src 'unsafe-inline' so those paths also stay protected.
 const CSP = [
@@ -26,7 +26,7 @@ const CSP = [
 const securityHeaders = [
   // Prevents browsers from MIME-sniffing responses away from declared type
   { key: 'X-Content-Type-Options',       value: 'nosniff' },
-  // Prevents clickjacking — only allow embedding from same origin
+  // Prevents clickjacking - only allow embedding from same origin
   { key: 'X-Frame-Options',              value: 'SAMEORIGIN' },
   // Forces HTTPS for 1 year, includes subdomains
   { key: 'Strict-Transport-Security',    value: 'max-age=31536000; includeSubDomains; preload' },
@@ -34,7 +34,7 @@ const securityHeaders = [
   { key: 'Referrer-Policy',              value: 'strict-origin-when-cross-origin' },
   // Disables browser features we don't use
   { key: 'Permissions-Policy',           value: 'camera=(), microphone=(), geolocation=(), payment=()' },
-  // Cross-Origin policies — use same-origin-allow-popups so YouTube's
+  // Cross-Origin policies - use same-origin-allow-popups so YouTube's
   // iframe player postMessage API works while retaining Spectre mitigations.
   { key: 'Cross-Origin-Opener-Policy',   value: 'same-origin-allow-popups' },
   { key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' },
@@ -43,7 +43,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Keep these on the server only — they use Node.js built-ins
+  // Keep these on the server only - they use Node.js built-ins
   // or native binaries that don't exist in the browser.
   //
   // pdfkit + fontkit: fontkit imports applyDecoratedDescriptor from @swc/helpers,

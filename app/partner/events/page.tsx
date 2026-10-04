@@ -1,5 +1,5 @@
 'use client';
-// app/partner/events/page.tsx — partner expert event scheduler with tier gating
+// app/partner/events/page.tsx - partner expert event scheduler with tier gating
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from 'react';
 import { confirmAction } from '@/components/Modal';

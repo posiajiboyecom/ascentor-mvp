@@ -1,6 +1,6 @@
 // app/p/[subdomain]/[...path]/page.tsx
 
-// CRITICAL: Force dynamic rendering — never statically pre-render this route.
+// CRITICAL: Force dynamic rendering - never statically pre-render this route.
 // Without this, Next.js tries to pre-render at build time, hits Supabase,
 // and the build hangs indefinitely.
 export const dynamic = 'force-dynamic';
@@ -11,8 +11,8 @@ import { createClient } from '@/lib/supabase/server';
 async function requireAuth() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  // Root-relative /login — proxy rewrites it to the partner login page transparently.
-  // NEVER use /p/${subdomain}/login — that exposes the internal path → 404.
+  // Root-relative /login - proxy rewrites it to the partner login page transparently.
+  // NEVER use /p/${subdomain}/login - that exposes the internal path → 404.
   if (!user) redirect('/login');
   return user;
 }
@@ -25,7 +25,7 @@ export default async function TenantSubPage({
   const { subdomain, path } = await params;
   const route = path?.join('/') || '';
 
-  // ── Public routes (lazy imports — no static analysis at build time) ────────
+  // ── Public routes (lazy imports - no static analysis at build time) ────────
   if (route === 'login') {
     const { default: LoginPage } = await import('@/app/login/page');
     return <LoginPage />;

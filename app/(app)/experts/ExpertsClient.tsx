@@ -7,7 +7,7 @@
 // "Prototype A" desktop-sessions.html. Mobile: single column, same
 // grouping, filter rail collapses to horizontal chip strips.
 //
-// Tier gating uses lib/planTier.ts's canAccess() + TIER_META — the
+// Tier gating uses lib/planTier.ts's canAccess() + TIER_META - the
 // single source of truth already shared with Learn/Community per its
 // own header comment.
 // ============================================================
@@ -18,7 +18,7 @@ import { Lock, Check } from 'lucide-react';
 import { canAccess, TIER_META, type PlanTier } from '@/lib/planTier';
 import { usePageSearch } from '@/components/shell/PageSearch';
 
-// ── Types — match the real schema, not database.ts's stale fields ──
+// ── Types - match the real schema, not database.ts's stale fields ──
 
 export interface ExpertSession {
   id: string;
@@ -265,7 +265,7 @@ function SessionCard({
                 >
                   Join Here →
                 </button>
-                {/* Unregister — small secondary */}
+                {/* Unregister - small secondary */}
                 <button
                   type="button"
                   onClick={() => onToggleRegister(session)}
@@ -329,7 +329,7 @@ function SessionCard({
             style={{ color: tierMeta.color, backgroundColor: tierMeta.bg, borderColor: tierMeta.border }}
           >
             <Lock className="w-3 h-3" />
-            Unlock — {tierMeta.label} plan
+            Unlock, {tierMeta.label} plan
           </span>
         </button>
       )}
@@ -511,7 +511,7 @@ export function ExpertsClient({
     });
 
     if (isReg) {
-      // Unregister — DELETE via API route (no notification needed)
+      // Unregister - DELETE via API route (no notification needed)
       const res = await fetch('/api/experts/register', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -522,7 +522,7 @@ export function ExpertsClient({
         setRegisteredIds((prev) => new Set(prev).add(session.id)); // revert
       }
     } else {
-      // Register — POST via API route (triggers in-app notification + push/email)
+      // Register - POST via API route (triggers in-app notification + push/email)
       const res = await fetch('/api/experts/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -576,7 +576,7 @@ export function ExpertsClient({
   }, [sessions, activeDimension, activeStatus, registeredIds, query]);
 
   const liveSessions = filtered.filter((s) => isLive(s.scheduled_at, s.duration_minutes, s.status));
-  // Today includes live sessions too — the prototype shows the live session
+  // Today includes live sessions too - the prototype shows the live session
   // both in the LiveBanner AND as its own card in the Today grid below it.
   const todaySessions = filtered.filter(
     (s) => isToday(s.scheduled_at)
@@ -629,7 +629,7 @@ export function ExpertsClient({
           </div>
         </div>
 
-        {/* Mobile filter chips — horizontal scrollable chip rows */}
+        {/* Mobile filter chips - horizontal scrollable chip rows */}
         {mobileFilterOpen && (
           <div className="lg:hidden mb-4 rounded-2xl border-[0.5px] border-[var(--border)] bg-[var(--bg-card)] p-3">
             {/* Dimension chips */}
@@ -687,7 +687,7 @@ export function ExpertsClient({
       </main>
 
       {/* ── Tier upgrade modal ── */}
-      {/* ── The registration moment — a commitment deserves more than a toast ── */}
+      {/* ── The registration moment - a commitment deserves more than a toast ── */}
       {confirmedSession && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"

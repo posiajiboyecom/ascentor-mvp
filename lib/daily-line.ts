@@ -5,7 +5,7 @@
 //
 // Lines are original Ascentor charges written for the six dimensions,
 // plus short public-domain scripture (WEB translation). Do NOT add
-// copyrighted quotes from books here — write in the spirit of the
+// copyrighted quotes from books here - write in the spirit of the
 // mentor council instead, or attribute ideas without quoting.
 
 export interface DailyLine {

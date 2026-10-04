@@ -1,5 +1,5 @@
 // app/(app)/coach/page.tsx
-// The AI Coach screen. Server Component — fetches session types,
+// The AI Coach screen. Server Component - fetches session types,
 // recent sessions, and this month's usage count, then hands off to
 // the client CoachChat component for the interactive conversation.
 

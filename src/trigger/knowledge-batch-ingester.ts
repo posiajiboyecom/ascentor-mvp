@@ -14,7 +14,7 @@
 //   triggeredBy: string (user id, for logging)
 //
 // Each item is processed sequentially to avoid Cohere rate limits.
-// Failed items are logged and skipped — they do not abort the batch.
+// Failed items are logged and skipped - they do not abort the batch.
 // ═══════════════════════════════════════════════════════════════
 
 import { task, logger } from '@trigger.dev/sdk/v3';
@@ -95,8 +95,7 @@ function htmlToText(html: string): string {
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/&mdash;/g, '—')
-    .replace(/&ndash;/g, '–')
+    .replace(/&[mn]dash;/g, '-')
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -166,7 +165,7 @@ async function processURL(item: BatchURLItem): Promise<{
   const wordCount = text.split(/\s+/).filter(Boolean).length;
 
   if (wordCount < 50) {
-    throw new Error('Extracted text too short (< 50 words) — page may be paywalled or JS-rendered');
+    throw new Error('Extracted text too short (< 50 words), page may be paywalled or JS-rendered');
   }
 
   const urlHash   = Buffer.from(item.url).toString('base64').slice(0, 12).replace(/[^A-Za-z0-9]/g, '');
@@ -213,7 +212,7 @@ async function processPDF(item: BatchPDFItem): Promise<{
   const wordCount    = text.split(/\s+/).filter(Boolean).length;
 
   if (wordCount < 50) {
-    throw new Error('Extracted text too short (< 50 words) — PDF may be scanned/image-only');
+    throw new Error('Extracted text too short (< 50 words), PDF may be scanned/image-only');
   }
 
   const fileSlug   = item.fileName.replace(/[^A-Za-z0-9]/g, '-').slice(0, 20);
@@ -240,12 +239,12 @@ async function processPDF(item: BatchPDFItem): Promise<{
 
 export const knowledgeBatchIngester = task({
   id:          'knowledge-batch-ingester',
-  maxDuration: 600, // 10 minutes — large batches can take a while
+  maxDuration: 600, // 10 minutes - large batches can take a while
 
   run: async (payload: BatchPayload) => {
     const { type, items, triggeredBy } = payload;
 
-    logger.info(`[BatchIngester] Starting — type: ${type}, items: ${items.length}, by: ${triggeredBy ?? 'unknown'}`);
+    logger.info(`[BatchIngester] Starting, type: ${type}, items: ${items.length}, by: ${triggeredBy ?? 'unknown'}`);
 
     const results: {
       index:      number;
@@ -319,11 +318,11 @@ export const knowledgeBatchIngester = task({
           words:      wordCount,
         });
 
-        logger.info(`[BatchIngester] ✓ ${identifier} — ${chunks.length} chunks`);
+        logger.info(`[BatchIngester] ✓ ${identifier}, ${chunks.length} chunks`);
 
       } catch (err: any) {
         const message = err instanceof Error ? err.message : String(err);
-        logger.error(`[BatchIngester] ✗ ${identifier} — ${message}`);
+        logger.error(`[BatchIngester] ✗ ${identifier}, ${message}`);
         results.push({ index: i, identifier, success: false, error: message });
       }
 
@@ -337,7 +336,7 @@ export const knowledgeBatchIngester = task({
     const failed    = results.filter(r => !r.success).length;
     const totalChunks = results.reduce((s, r) => s + (r.chunks ?? 0), 0);
 
-    logger.info(`[BatchIngester] Done — ${succeeded} succeeded, ${failed} failed, ${totalChunks} total chunks`);
+    logger.info(`[BatchIngester] Done, ${succeeded} succeeded, ${failed} failed, ${totalChunks} total chunks`);
 
     return {
       type,

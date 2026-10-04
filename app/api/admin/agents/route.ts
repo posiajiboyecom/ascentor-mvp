@@ -1,5 +1,5 @@
 // ============================================================
-// API — /api/admin/agents
+// API - /api/admin/agents
 // GET  → returns status of all agents (last run, next run, run count)
 // POST → manually triggers a specific agent
 // Protected: admin only
@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { tasks } from "@trigger.dev/sdk/v3";
 
-// ── Agent registry — maps UI agent IDs to Trigger.dev task IDs ──
+// ── Agent registry - maps UI agent IDs to Trigger.dev task IDs ──
 const AGENT_REGISTRY = [
   {
     id: "1",
@@ -17,11 +17,11 @@ const AGENT_REGISTRY = [
     triggerTaskId: "content-researcher-manual",
     type: "manual",
     description: "SerpAPI Google Trends + Perplexity deep research → Claude brief → auto-triggers Content Writer",
-    schedule: "Monday 05:00 UTC (06:00 WAT) — or trigger manually with a custom topic",
+    schedule: "Monday 05:00 UTC (06:00 WAT), or trigger manually with a custom topic",
     toolStack: "SerpAPI + Perplexity + Claude + Supabase",
     requiresPayload: true,
-    // stage is set via the stage-picker modal in the UI — shown here for reference only
-    payloadSchema: { stage: "explorer|builder|climber — picked via modal", topic: "optional: override the AI-chosen topic", pillar: "optional: leadership|career|ai|coaching|community" },
+    // stage is set via the stage-picker modal in the UI - shown here for reference only
+    payloadSchema: { stage: "explorer|builder|climber, picked via modal", topic: "optional: override the AI-chosen topic", pillar: "optional: leadership|career|ai|coaching|community" },
   },
   {
     id: "2",
@@ -98,7 +98,7 @@ const AGENT_REGISTRY = [
     triggerTaskId: "send-newsletter",
     type: "manual",
     description: "Batch sends a newsletter to all active Supabase subscribers via Resend",
-    schedule: "Manual — triggered from admin",
+    schedule: "Manual, triggered from admin",
     toolStack: "Resend + Supabase",
     requiresPayload: true,
     payloadSchema: { subject: "Email subject line", content: "Full HTML email body", sentBy: "admin" },
@@ -109,7 +109,7 @@ const AGENT_REGISTRY = [
     triggerTaskId: "personal-brand-researcher-manual",
     type: "scheduled",
     description: "Researches recent global cybersecurity news (CVEs, breaches, GRC developments) → builds content brief → triggers Personal Brand Writer. 70% Pentest / 30% GRC mix.",
-    schedule: "Mon/Wed/Fri 05:00 UTC (06:00 WAT) — or trigger manually with a topic",
+    schedule: "Mon/Wed/Fri 05:00 UTC (06:00 WAT), or trigger manually with a topic",
     toolStack: "Claude web search + Supabase",
     requiresPayload: false,
     payloadSchema: { topic: "optional: override the auto-chosen topic", pillar: "optional: penetration_testing|offensive_security|vulnerability_research|red_team|exploit_technique|governance_risk_compliance|security_frameworks|compliance_regulation", intent: "optional: authority|career_signal|inbound_magnet" },
@@ -124,14 +124,14 @@ const AGENT_REGISTRY = [
       "Claude + GPT-image-1 → 6-slide portrait carousel with text overlays " +
       "→ saved to Content Calendar as draft. " +
       "Review → approve → Queue Social → Buffer schedules.",
-    schedule: "Manual — trigger from Carousel Agent tab in Content admin",
+    schedule: "Manual, trigger from Carousel Agent tab in Content admin",
     toolStack: "Claude Haiku + GPT-image-1 + Pillow + Supabase Storage",
     requiresPayload: true,
     payloadSchema: {
       pillar:    "career | leadership | ai | coaching | community",
       platform:  "LinkedIn | Instagram | TikTok",
-      postCount: "number — default 3",
-      week:      "number — e.g. 12",
+      postCount: "number, default 3",
+      week:      "number, e.g. 12",
       hooks:
         "optional: string[] from hook bank, one per slot. " +
         "Leave empty to auto-generate.",
@@ -207,7 +207,7 @@ function deriveStatus(agent: typeof AGENT_REGISTRY[0], runData: {
   return "idle";
 }
 
-// ── GET — return all agent statuses ──────────────────────────
+// ── GET - return all agent statuses ──────────────────────────
 export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -252,7 +252,7 @@ export async function GET() {
   return NextResponse.json({ agents: agentStatuses });
 }
 
-// ── POST — manually trigger an agent ─────────────────────────
+// ── POST - manually trigger an agent ─────────────────────────
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -265,7 +265,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (!profile || profile.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden — admin only" }, { status: 403 });
+    return NextResponse.json({ error: "Forbidden, admin only" }, { status: 403 });
   }
 
   const { agentId, payload = {} } = await req.json();
@@ -273,7 +273,7 @@ export async function POST(req: NextRequest) {
   const agent = AGENT_REGISTRY.find(a => a.id === agentId);
   if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
   if (!agent.triggerTaskId) {
-    return NextResponse.json({ error: "This agent has no Trigger.dev task yet — marked as Building" }, { status: 400 });
+    return NextResponse.json({ error: "This agent has no Trigger.dev task yet, marked as Building" }, { status: 400 });
   }
 
   try {

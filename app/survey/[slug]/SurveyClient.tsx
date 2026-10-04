@@ -278,7 +278,7 @@ export default function SurveyClient({ survey }: { survey: Survey }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answers, metadata: { duration_seconds: duration } }),
       });
-    } catch { /* swallow — still show thank you */ }
+    } catch { /* swallow, still show thank you */ }
     setSubmitting(false);
     setSubmitted(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -296,7 +296,7 @@ export default function SurveyClient({ survey }: { survey: Survey }) {
             Thank <span style={{ color: 'var(--gold)', fontStyle: 'italic' }}>you.</span>
           </h2>
           <p style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.7 }}>
-            Your response has been recorded. We read every single one — and this directly informs how we build Ascentor for you next.
+            Your response has been recorded. We read every single one, and this directly informs how we build Ascentor for you next.
           </p>
         </div>
       </div>

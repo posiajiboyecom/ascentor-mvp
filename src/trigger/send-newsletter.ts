@@ -39,7 +39,7 @@ async function buildRecipientList(): Promise<Recipient[]> {
     console.warn("Could not fetch newsletter_subscribers:", newsletterResult);
   }
 
-  // Merge in app users — newsletter_subscribers entry takes precedence if already present
+  // Merge in app users - newsletter_subscribers entry takes precedence if already present
   if (usersResult.status === "fulfilled" && usersResult.value.data) {
     for (const user of usersResult.value.data) {
       if (user.email && !recipients.has(user.email.toLowerCase())) {

@@ -115,7 +115,7 @@ Respond in this exact JSON format:
 
     console.log(`Summary sent to ${profile.email} for session ${sessionId}`);
 
-    // Push notification — lands on phone immediately
+    // Push notification - lands on phone immediately
     try {
       await sendPushToUser(supabase, userId, {
         title: 'Your coaching summary is ready',

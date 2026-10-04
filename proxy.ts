@@ -1,5 +1,5 @@
 // ============================================================
-// NEXT.JS PROXY — Auth + Subscription Gating
+// NEXT.JS PROXY - Auth + Subscription Gating
 // Place at project ROOT: proxy.ts
 //
 // SECURITY FIX S3: Added protection for all /api/* routes.
@@ -9,14 +9,14 @@
 // that was skipping all auth checks. /onboarding now correctly
 // requires authentication (unauthenticated users go to /login).
 // Previously-onboarded users are NOT redirected back to /onboarding
-// by this middleware — that routing decision lives in route.ts
+// by this middleware - that routing decision lives in route.ts
 // (the auth callback), which is the single source of truth for
 // post-login destination.
 //
 // FIX: PROTECTED_API_PREFIXES now includes /api/pay (was /api/payment,
 // which never matched), /api/partner, and /api/community.
 // Webhook endpoints (/api/pay/webhook, /api/partner/webhook) are
-// explicitly public — Paystack/partner platforms call them without
+// explicitly public - Paystack/partner platforms call them without
 // a user session and they verify their own signatures internally.
 // ============================================================
 
@@ -37,13 +37,13 @@ import { adminMfaRequired, sessionIsAal2 } from '@/lib/auth/admin-mfa';
 //   Middleware runs per-request → can generate a unique nonce each time.
 //
 // style-src keeps 'unsafe-inline' because Next.js injects inline <style> tags
-// for CSS-in-JS. Removing it breaks rendering. This is an accepted trade-off —
+// for CSS-in-JS. Removing it breaks rendering. This is an accepted trade-off -
 // style injection does not execute code and is much lower risk than script injection.
 function buildNoncedCSP(nonce: string): string {
   return [
-    // nonce replaces 'unsafe-inline' — only scripts with this nonce attribute run
+    // nonce replaces 'unsafe-inline' - only scripts with this nonce attribute run
     `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com https://js.paystack.co https://plausible.io https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com`,
-    // style-src keeps unsafe-inline (Next.js CSS-in-JS requirement — low risk)
+    // style-src keeps unsafe-inline (Next.js CSS-in-JS requirement - low risk)
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://paystack.com`,
     `font-src 'self' data: https://fonts.gstatic.com`,
     `img-src 'self' data: blob: https://*.supabase.co https://www.gravatar.com https://i.ytimg.com https:`,
@@ -100,7 +100,7 @@ const AUTH_ROUTES = [
   '/referral', '/admin',
 ];
 
-// API routes that are explicitly public — checked BEFORE the protected
+// API routes that are explicitly public - checked BEFORE the protected
 // prefix list so webhooks and public endpoints are never blocked.
 //
 // ORDER MATTERS: this list is checked before PROTECTED_API_PREFIXES.
@@ -110,15 +110,15 @@ const PUBLIC_API_ROUTES = [
   '/api/newsletter',
   '/api/welcome',
   '/api/auth',
-  // Paystack webhook — verified internally via HMAC signature
+  // Paystack webhook - verified internally via HMAC signature
   '/api/pay/webhook',
-  // Partner platform webhook — verified internally
+  // Partner platform webhook - verified internally
   '/api/partner/webhook',
   // Public promo code GET (used on checkout page before auth)
   '/api/pay/promo',
-  // Checkout pending — non-destructive marketing hook, called pre-auth
+  // Checkout pending - non-destructive marketing hook, called pre-auth
   '/api/checkout-pending',
-  // Vercel Cron — authenticates itself with the CRON_SECRET bearer token
+  // Vercel Cron - authenticates itself with the CRON_SECRET bearer token
   '/api/cron',
   // Server-to-server push triggers: each verifies its own shared secret
   // (x-push-secret / x-internal-secret) and fails closed when it is unset.
@@ -134,8 +134,8 @@ const PUBLIC_API_ROUTES = [
 const PROTECTED_API_PREFIXES = [
   '/api/coach',
   '/api/coaching',
-  '/api/pay',        // was /api/payment — that prefix never matched anything
-  '/api/partner',    // 16 routes — all require auth except /webhook (exempted above)
+  '/api/pay',        // was /api/payment - that prefix never matched anything
+  '/api/partner',    // 16 routes - all require auth except /webhook (exempted above)
   '/api/community',  // checkin, circle, read, voice-upload
   '/api/referral',
   '/api/subscription',
@@ -149,7 +149,7 @@ const PROTECTED_API_PREFIXES = [
   '/api/lead-magnet',
 ];
 
-// Public routes — no auth needed
+// Public routes - no auth needed
 const PUBLIC_ROUTES = [
   '/checkout',
   '/auth/callback',
@@ -203,7 +203,7 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(dest);
   }
 
-  // Always pass through public page routes — still attach nonce for theme scripts
+  // Always pass through public page routes - still attach nonce for theme scripts
   if (PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     return withNonce(NextResponse.next({ request }), nonce);
   }

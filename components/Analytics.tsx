@@ -1,7 +1,7 @@
 'use client';
 
 // ============================================================
-// ANALYTICS — Plausible Analytics + Custom Event Tracking
+// ANALYTICS - Plausible Analytics + Custom Event Tracking
 //
 // Why Plausible: Privacy-friendly (no cookie banner needed),
 // lightweight (< 1KB), open source, GDPR compliant out of box.
@@ -29,7 +29,7 @@ export default function AnalyticsProvider() {
 
   return (
     <>
-      {/* Plausible — lightweight, privacy-first analytics */}
+      {/* Plausible - lightweight, privacy-first analytics */}
       <Script
         defer
         data-domain={PLAUSIBLE_DOMAIN}

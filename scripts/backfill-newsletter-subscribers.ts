@@ -9,7 +9,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
-// Load .env.local manually — no dotenv-cli needed
+// Load .env.local manually - no dotenv-cli needed
 function loadEnv() {
   const envFiles = [".env.local", ".env"];
   for (const file of envFiles) {
@@ -51,7 +51,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function backfill() {
   console.log("Fetching all users from Supabase auth...");
 
-  // Pull from auth.users — covers every signed-up user regardless of profile table name
+  // Pull from auth.users - covers every signed-up user regardless of profile table name
   const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
 
   if (authError || !authUsers) {
@@ -104,7 +104,7 @@ async function backfill() {
   }
 
   console.log(`\n✅ Done! ${toInsert.length} users added to newsletter_subscribers.`);
-  console.log(`   ${alreadySubscribed.size} were already subscribed — skipped.`);
+  console.log(`   ${alreadySubscribed.size} were already subscribed, skipped.`);
 }
 
 backfill();

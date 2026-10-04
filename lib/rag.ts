@@ -1,6 +1,6 @@
 // lib/rag.ts
 // ─────────────────────────────────────────────────────────────────────────────
-// Ascentor RAG layer — Supabase pgvector + Cohere
+// Ascentor RAG layer - Supabase pgvector + Cohere
 //
 // Replaces the previous Pinecone implementation. All vector storage now lives
 // in the `knowledge_chunks` table in Supabase. Similarity search uses the
@@ -66,7 +66,7 @@
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { CohereClient } from 'cohere-ai';
 
-// ── Clients (module-level singletons — safe in Node.js API routes) ────────────
+// ── Clients (module-level singletons - safe in Node.js API routes) ────────────
 
 const cohere = new CohereClient({ token: process.env.COHERE_API_KEY! });
 
@@ -82,7 +82,7 @@ function getServiceClient() {
 // Also applied at READ TIME (retrieveContext) as defence-in-depth.
 //
 // What it strips:
-//   1. XML/HTML-like tags — the contextBlock wraps chunks in <knowledge_N> tags.
+//   1. XML/HTML-like tags - the contextBlock wraps chunks in <knowledge_N> tags.
 //      Injected </knowledge_1> tags would break out of the data context and could
 //      be followed by forged system instructions.
 //   2. Common prompt injection trigger phrases ("ignore previous", "system:",
@@ -97,7 +97,7 @@ function getServiceClient() {
 //   could be interpreted as instructions, not to sanitise prose.
 export function sanitiseChunkText(raw: string): string {
   return raw
-    // 1. Strip XML/HTML tags — prevents </knowledge_N> breakout
+    // 1. Strip XML/HTML tags - prevents </knowledge_N> breakout
     .replace(/<[^>]{0,200}>/g, '')
     // 2. Neutralise common prompt injection trigger phrases
     //    Insert zero-width space (U+200B) after the first word so the
@@ -279,7 +279,7 @@ export async function retrieveContext(
 
     const reranked = await rerankResults(userMessage, rawChunks, topN);
 
-    // H-04: Defence-in-depth — sanitise text at read time too, in case any
+    // H-04: Defence-in-depth - sanitise text at read time too, in case any
     // pre-migration chunks in the DB escaped write-time sanitisation.
     // Also wraps contextBlock in a hard delimiter Claude is instructed to
     // treat as data-only (see system prompt in coach/session/route.ts).
@@ -326,7 +326,7 @@ export async function addChunks(
 
   const supabase = getServiceClient();
 
-  // Embed all texts — sanitise first to prevent prompt injection payloads
+  // Embed all texts - sanitise first to prevent prompt injection payloads
   // reaching the DB (H-04: write-time sanitisation)
   const sanitisedChunks = chunks.map((c) => ({
     ...c,

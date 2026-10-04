@@ -1,4 +1,4 @@
-// lib/push.ts — server-side Web Push helper
+// lib/push.ts - server-side Web Push helper
 // IMPORTANT: web-push is a Node.js-only package. This file must only
 // be imported from server components, API routes, and trigger tasks.
 // Never import it from client components.
@@ -33,7 +33,7 @@ function initVapid(): boolean {
   const mail = process.env.VAPID_CONTACT_EMAIL || 'hello@ascentorbi.com';
 
   if (!pub || !priv) {
-    console.warn('[push] VAPID keys not set — push notifications disabled');
+    console.warn('[push] VAPID keys not set, push notifications disabled');
     return false;
   }
 
@@ -54,7 +54,7 @@ async function sendFCMPush(token: string, payload: PushPayload): Promise<void> {
   //     notification: { title: payload.title, body: payload.body },
   //     data: { url: payload.url ?? '' },
   //   });
-  console.warn('[push] FCM not yet configured — skipping native push for token:', token);
+  console.warn('[push] FCM not yet configured, skipping native push for token:', token);
 }
 
 /**
@@ -106,7 +106,7 @@ export async function sendPushToUser(
       if (sub.type === 'native') {
         await sendFCMPush(sub.token, payload);
       } else {
-        // Existing VAPID web push — keep expired-subscription cleanup
+        // Existing VAPID web push - keep expired-subscription cleanup
         const ok = await sendPush(sub as webpush.PushSubscription, payload);
         if (!ok) expiredIds.push(row.id);
       }

@@ -5,7 +5,7 @@
 //
 // BUGS FIXED:
 //   - Was querying the dead `tenants` table (always 404). Migrated to `partners`.
-//   - PATCH had no ownership check — any authenticated user could patch any partner
+//   - PATCH had no ownership check - any authenticated user could patch any partner
 //     if they guessed the fields. Fixed: query by owner_id before updating.
 //   - Updated ALLOWED_FIELDS to match the `partners` table schema (brand JSONB,
 //     not flat columns like accent_color / surface_color that don't exist).
@@ -54,7 +54,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
   }
 
-  // ── FIX: ownership check — fetch partner first, verify owner ──
+  // ── FIX: ownership check - fetch partner first, verify owner ──
   // Previously this was missing: any authenticated user could attempt updates.
   const { data: partner } = await supabaseService
     .from('partners')
@@ -84,7 +84,7 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  // Subdomain changes need uniqueness check + cache bust — delegate to /api/partner/settings
+  // Subdomain changes need uniqueness check + cache bust - delegate to /api/partner/settings
   if ('subdomain' in body) {
     return NextResponse.json(
       { error: 'Subdomain changes must go through /api/partner/settings' },

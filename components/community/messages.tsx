@@ -1,7 +1,7 @@
 'use client';
 
 // components/community/messages.tsx
-// MessageBubble + Composer — the chat/circle message row and its input.
+// MessageBubble + Composer - the chat/circle message row and its input.
 // Moved out of CommunityClient so ForumThread and ChannelView can share them.
 
 import { useMemo, useState } from 'react';
@@ -29,7 +29,7 @@ export function MessageBubble({
   const [showActions, setShowActions] = useState(false);
   // parseVoiceContent handles the canonical [voice:url] format.
   // Legacy messages stored before the wrapper convention were inserted as
-  // bare Supabase storage URLs — detect those too so they render as audio
+  // bare Supabase storage URLs - detect those too so they render as audio
   // rather than overflowing text.
   const voiceUrl = parseVoiceContent(message.content)
     ?? (message.content.startsWith('https://') && message.content.includes('/community-voice/')
@@ -76,7 +76,7 @@ export function MessageBubble({
             <audio controls src={voiceUrl} className="h-8 w-full max-w-[240px]" />
           </div>
         ) : message.is_checkin ? (
-          /* ── The weekly check-in — the feed's punctuation mark ──
+          /* ── The weekly check-in - the feed's punctuation mark ──
              A kept ritual deserves ceremony: framed card, gold ledger
              top line, small-caps label. Same data, different weight. */
           <div

@@ -2,8 +2,8 @@
 
 // components/community/SectionNav.tsx
 // The Circle's left rail (reworked from the old ChannelSidebar). Leads with the
-// three destinations that matter — This Week (home), The Commons (forum), My
-// Circle — then the full channel list by category. Used on desktop as a fixed
+// three destinations that matter - This Week (home), The Commons (forum), My
+// Circle - then the full channel list by category. Used on desktop as a fixed
 // rail and on mobile as the full-screen list.
 
 import { useMemo, useState } from 'react';

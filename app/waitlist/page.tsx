@@ -283,7 +283,7 @@ export default function WaitlistPage() {
 
   /* ── Success state ── */
   if (success) {
-    const txt = encodeURIComponent("I just joined the Ascentor waitlist — Africa's mentorship platform. Early members get 3 months free. Join me 👇");
+    const txt = encodeURIComponent("I just joined the Ascentor waitlist, Africa's mentorship platform. Early members get 3 months free. Join me 👇");
     const url = encodeURIComponent(`${typeof window!=='undefined'?window.location.origin:'https://ascentorbi.com'}/waitlist?ref=${success.referral_code}`);
     const rawUrl = `${typeof window!=='undefined'?window.location.origin:'https://ascentorbi.com'}/waitlist?ref=${success.referral_code}`;
 
@@ -296,14 +296,14 @@ export default function WaitlistPage() {
           <div className="success-wrap">
             <div className="suc-icon"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12v0c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11v0c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98v0C9.52 4.9 9 5.52 9 6.23V7"/></svg></div>
             <h2 className="suc-title">You&apos;re in,<br /><em>officially.</em></h2>
-            <p className="suc-sub">Welcome to the Ascentor waitlist. Check your inbox — a confirmation is on its way. Your mentor is almost ready for you.</p>
+            <p className="suc-sub">Welcome to the Ascentor waitlist. Check your inbox, a confirmation is on its way. Your mentor is almost ready for you.</p>
             <div className="pos-card">
               <div className="pos-label">Your Waitlist Position</div>
               <div className="pos-num">#{success.position}</div>
               <div className="pos-sub">Early members get 3 months free · No credit card needed</div>
             </div>
             <div style={{width:'100%'}}>
-              <p className="share-lbl">Move up the list — share with someone who needs this <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></p>
+              <p className="share-lbl">Move up the list, share with someone who needs this <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></p>
               <div className="share-btns">
                 <a href={`https://wa.me/?text=${txt}%20${url}`} target="_blank" rel="noopener noreferrer" className="share-btn wa"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Share on WhatsApp</a>
                 <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${url}`} target="_blank" rel="noopener noreferrer" className="share-btn li"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg> Share on LinkedIn</a>
@@ -336,7 +336,7 @@ export default function WaitlistPage() {
           <div className="left-mid">
             <div className="eyebrow">
               <div className="eyebrow-line" />
-              <span className="eyebrow-text">Coming Soon — Join the Waitlist</span>
+              <span className="eyebrow-text">Coming Soon, Join the Waitlist</span>
             </div>
 
             <h1 className="headline">
@@ -346,14 +346,14 @@ export default function WaitlistPage() {
             </h1>
 
             <p className="sub">
-              Africa&apos;s mentorship platform — built for{' '}
+              Africa&apos;s mentorship platform, built for{' '}
               <strong>every stage of your journey.</strong>{' '}
               From figuring out what to do with your life, to reaching the very top of your career.
             </p>
 
             <div className="proofs">
               {[
-                { e:'<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>', t:'Meet Sage', d:'Personalized guidance trained on African career context — available at 2am before your biggest moment.' },
+                { e:'<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>', t:'Meet Sage', d:'Personalized guidance trained on African career context, available at 2am before your biggest moment.' },
                 { e:'<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>', t:"Human Mentors Who've Been There", d:"Live sessions with Africa's top professionals. Real experience. Not theory." },
                 { e:'<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', t:'Your Mentorship Circle', d:'Matched with peers at your exact life stage. Your personal board of advisors.' },
               ].map(p => (
@@ -488,7 +488,7 @@ export default function WaitlistPage() {
                 <input type="checkbox" checked={form.consent} onChange={e=>set('consent',e.target.checked)} />
                 <span className="consent-text">
                   I agree to receive updates about Ascentor&apos;s launch and early access offers.
-                  No spam — ever. View our <Link href="/terms">Privacy Policy</Link>.
+                  No spam, ever. View our <Link href="/terms">Privacy Policy</Link>.
                 </span>
               </label>
               {errors.consent && <span className="errmsg" style={{display:'block',marginTop:-18,marginBottom:14}}>{errors.consent}</span>}

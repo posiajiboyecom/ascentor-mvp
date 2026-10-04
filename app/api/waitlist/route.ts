@@ -30,7 +30,7 @@ function buildConfirmationEmailHtml({
   const unsubUrl    = `${process.env.NEXT_PUBLIC_APP_URL}/waitlist/unsubscribe?token=${token}`;
 
   const perks = [
-    'Meet Sage — your 24/7 AI mentor, trained on African career context',
+    'Meet Sage, your 24/7 AI mentor, trained on African career context',
     "Live sessions with Africa's top professionals",
     'Peer mentorship circles matched to your life stage',
     'Career tools from student to executive level',
@@ -43,7 +43,7 @@ function buildConfirmationEmailHtml({
     </tr>`).join('');
 
   return brandedEmailLayout({
-    preheader: `You're on the Ascentor waitlist — position #${position}.`,
+    preheader: `You're on the Ascentor waitlist, position #${position}.`,
     eyebrow: 'Waitlist Confirmed',
     heading: `You're in, ${esc(name)}.`,
     recipient: email,
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Duplicate email — return 409 with their existing position
+    // Duplicate email - return 409 with their existing position
     if (data?.status === 'duplicate') {
       return NextResponse.json(
         { message: "You're already on the waitlist!", position: data.position },
@@ -114,12 +114,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send confirmation email — non-blocking (failure does not break the response)
+    // Send confirmation email - non-blocking (failure does not break the response)
     try {
       await sendEmail({
         from:    'Ascentor <hello@ascentorbi.com>',
         to:      body.email,
-        subject: `You're on the Ascentor waitlist — position #${data.position}`,
+        subject: `You're on the Ascentor waitlist, position #${data.position}`,
         html:    buildConfirmationEmailHtml({
           name:     body.first_name,
           email:    body.email,
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
         }),
       });
     } catch (emailError) {
-      // User is already saved — log only, do not fail the request
+      // User is already saved - log only, do not fail the request
       console.error('[waitlist] Email error:', emailError);
     }
 
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ── GET /api/waitlist — returns current total count ────────
+// ── GET /api/waitlist - returns current total count ────────
 export async function GET() {
   try {
     const { count, error } = await getSupabase()

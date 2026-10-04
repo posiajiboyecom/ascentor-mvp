@@ -1,5 +1,5 @@
 /* ============================================================
-   THE LEDGER — Ascentor Admin Design System
+   THE LEDGER - Ascentor Admin Design System
    styles/admin-ledger.css
    ------------------------------------------------------------
    Scope: every rule here lives under [data-ledger] so it can
@@ -12,7 +12,7 @@
 
    Previous admin theming (--admin-* in app/globals.css, driven
    by [data-admin-theme]) is superseded by this file. That old
-   attribute was never set anywhere in the codebase — dark mode
+   attribute was never set anywhere in the codebase - dark mode
    was effectively dead. This file replaces it with a real,
    working toggle. Do not add new --admin-* usages; migrate
    existing ones to --ledger-* as each page is rebuilt.
@@ -59,7 +59,7 @@
 }
 
 /* ============================================================
-   THEME — "Summit White" (light only; there is no dark mode)
+   THEME - "Summit White" (light only; there is no dark mode)
    ============================================================ */
 [data-ledger] {
   --ledger-bg:            #FAFAF8;
@@ -79,7 +79,7 @@
 }
 
 /* ============================================================
-   Base element resets, scoped — does not touch <body> globally
+   Base element resets, scoped - does not touch <body> globally
    ============================================================ */
 [data-ledger] {
   background: var(--ledger-bg);
@@ -94,7 +94,7 @@
 }
 
 /* ============================================================
-   Reusable primitives — class names, not inline styles, so
+   Reusable primitives - class names, not inline styles, so
    every page that adopts The Ledger looks consistent without
    re-deriving values (the problem with the old admin pages).
    ============================================================ */

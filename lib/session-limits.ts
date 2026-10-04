@@ -1,7 +1,7 @@
 // ============================================================
 // Session Limiting per Subscription Type
 //
-// Plan IDs (canonical — what pay/start, pay/callback, and
+// Plan IDs (canonical - what pay/start, pay/callback, and
 // pay/webhook now write to profiles.subscription_plan):
 //   free     → Free
 //   explorer → Explorer  (₦12,000/mo)
@@ -9,9 +9,9 @@
 //   climber  → Climber   (₦60,000/mo)
 //
 // Legacy DB IDs that may still exist on old subscribers:
-//   builder (old) → was Explorer — aliased to explorer limits
-//   pro           → was Builder  — aliased to builder limits
-//   elite         → was Climber  — aliased to climber limits
+//   builder (old) → was Explorer - aliased to explorer limits
+//   pro           → was Builder  - aliased to builder limits
+//   elite         → was Climber  - aliased to climber limits
 //
 // The canonical IDs are the primary keys below; legacy IDs
 // are explicit aliases at the bottom of PLAN_LIMITS so that
@@ -75,7 +75,7 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
   builder:  BUILDER_LIMITS,
   climber:  CLIMBER_LIMITS,
 
-  // ── Legacy aliases — kept for backward-compat with old subscriber rows ────
+  // ── Legacy aliases - kept for backward-compat with old subscriber rows ────
   // Old DB value → canonical equivalent
   // (old) builder = Explorer tier
   // pro           = Builder tier
@@ -85,7 +85,7 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
   pro:        BUILDER_LIMITS,    // old Builder DB ID
   elite:      CLIMBER_LIMITS,    // old Climber DB ID
   premium:    CLIMBER_LIMITS,    // very old alias
-  tester:     BUILDER_LIMITS,    // promo — builder-level
+  tester:     BUILDER_LIMITS,    // promo - builder-level
   pro_legacy: CLIMBER_LIMITS,    // old pro maps to elite-level
   trialing:   FREE_LIMITS,       // trialing without a plan = free limits
 };

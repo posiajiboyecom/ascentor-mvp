@@ -4,25 +4,25 @@
 // ─────────────────────────────────────────────────────────────────────────
 // Voice message recording for The Circle. Telegram-style strategy, chosen
 // after iOS Safari issues with the original approach:
-//   - getUserMedia({ audio: true }) — minimal constraints, no fancy
+//   - getUserMedia({ audio: true }) - minimal constraints, no fancy
 //     echoCancellation/noiseSuppression options that some browsers choke on
-//   - isTypeSupported() mime detection in cross-browser priority order —
+//   - isTypeSupported() mime detection in cross-browser priority order -
 //     iOS Safari ONLY supports audio/mp4, not webm/opus
-//   - rec.start() with NO timeslice — one clean blob delivered onstop,
+//   - rec.start() with NO timeslice - one clean blob delivered onstop,
 //     instead of rec.start(200) which delivered unreliable chunks on mobile
-//   - secondsRef snapshotted before state resets — fixes a stale closure
+//   - secondsRef snapshotted before state resets - fixes a stale closure
 //     bug where onstop read recSeconds as 0 because React batched the
 //     state reset before the closure captured the real elapsed time
 //   - a shared AnalyserNode on the same MediaStream for live waveform bars
 //
 // Upload goes through a server route (not directly from the client) to
-// bypass storage RLS using the service role key — see
+// bypass storage RLS using the service role key - see
 // app/api/community/voice-upload/route.ts.
 
 import { useRef, useState, useCallback } from 'react';
 
 const MIME_CANDIDATES = [
-  'audio/mp4',                 // iOS Safari — must be checked first or it silently fails
+  'audio/mp4',                 // iOS Safari - must be checked first or it silently fails
   'audio/webm;codecs=opus',
   'audio/ogg;codecs=opus',
   'audio/webm',
@@ -135,7 +135,7 @@ export function useVoiceRecorder(
       };
 
       recorder.onstop = () => {
-        // secondsRef is read here, not the `seconds` state — avoids the
+        // secondsRef is read here, not the `seconds` state - avoids the
         // stale-closure bug where React had already reset `seconds` to 0
         // by the time this fires.
         const finalSeconds = secondsRef.current;
@@ -147,7 +147,7 @@ export function useVoiceRecorder(
         }
       };
 
-      // No timeslice argument — one clean blob delivered at stop(),
+      // No timeslice argument - one clean blob delivered at stop(),
       // instead of unreliable periodic chunks on mobile browsers.
       recorder.start();
       mediaRecorderRef.current = recorder;
@@ -173,7 +173,7 @@ export function useVoiceRecorder(
         analyserRef.current = analyser;
         rafRef.current = requestAnimationFrame(tickLevels);
       } catch {
-        // Waveform is cosmetic — recording still works without it.
+        // Waveform is cosmetic - recording still works without it.
       }
     } catch {
       setError('Please allow microphone access to send voice messages.');

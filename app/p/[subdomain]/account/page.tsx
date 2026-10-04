@@ -1,6 +1,6 @@
 // ============================================================
 // app/p/[subdomain]/account/page.tsx
-// Standalone partner account page — NO Tailwind dependency.
+// Standalone partner account page - NO Tailwind dependency.
 // All styles inline. Works in the partner isolated layout.
 // ============================================================
 

@@ -4,7 +4,7 @@
 // app/p/[subdomain]/account/PartnerAccountClient.tsx
 //
 // Standalone account settings UI for partner platform members.
-// ✦ 100% inline styles — no Tailwind (partner layout is isolated)
+// ✦ 100% inline styles - no Tailwind (partner layout is isolated)
 // ✦ Tabs: Profile · Security · Notifications · Account
 // ✦ Avatar upload, password change, notification prefs, data export
 // ✦ All partner CSS vars: --bg, --bg-card, --bg-input, --accent,

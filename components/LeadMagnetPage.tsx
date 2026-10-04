@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 // ─────────────────────────────────────────────────────────────
-// LeadMagnetPage — shared component for all 3 lead magnet pages
+// LeadMagnetPage - shared component for all 3 lead magnet pages
 // Usage: import and render with props
 // ─────────────────────────────────────────────────────────────
 
@@ -95,7 +95,7 @@ export default function LeadMagnetPage({
 
       <div style={{ maxWidth: 1040, margin: '0 auto', padding: '64px 24px 80px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: 64, alignItems: 'start' }}>
 
-        {/* LEFT — Copy */}
+        {/* LEFT - Copy */}
         <div>
           {/* Type badge */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
@@ -174,7 +174,7 @@ export default function LeadMagnetPage({
           </div>
         </div>
 
-        {/* RIGHT — Form */}
+        {/* RIGHT - Form */}
         <div style={{
           background: '#FFFFFF', borderRadius: 20,
           border: '1px solid rgba(42,40,32,0.08)',
@@ -197,7 +197,7 @@ export default function LeadMagnetPage({
                 It's on its way
               </h3>
               <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 14, color: '#6B6456' }}>
-                Check your email — your free resource is being delivered now. Taking you to the download page...
+                Check your email, your free resource is being delivered now. Taking you to the download page...
               </p>
             </div>
           ) : (

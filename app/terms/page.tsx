@@ -4,7 +4,7 @@ import PublicHeader from '@/components/layout/PublicHeader';
 import PublicFooter from '@/components/layout/PublicFooter';
 
 export const metadata: Metadata = {
-  title: 'Terms & Conditions — Ascentor',
+  title: 'Terms & Conditions | Ascentor',
   description: 'Terms of Service and Privacy Policy for Ascentor leadership coaching platform.',
 };
 
@@ -78,7 +78,7 @@ export default function TermsPage() {
                 <li><strong>Coaching data:</strong> Messages sent to the AI coach and AI responses</li>
                 <li><strong>Community data:</strong> Posts, replies, and votes in peer cohorts</li>
                 <li><strong>Usage data:</strong> Session timestamps, feature usage, course progress</li>
-                <li><strong>Payment data:</strong> Processed by Paystack/Selar — we do not store card numbers</li>
+                <li><strong>Payment data:</strong> Processed by Paystack/Selar, we do not store card numbers</li>
               </ul>
               <Subheading text="7.2 How We Use Your Data" />
               <ul>
@@ -122,7 +122,7 @@ export default function TermsPage() {
             </Section>
 
             <Section title="8. Intellectual Property">
-              <p>All content on the Platform — including AI-generated coaching responses, course materials, expert session recordings, and platform design — is owned by Ascentor Inc. or its licensors.</p>
+              <p>All content on the Platform, including AI-generated coaching responses, course materials, expert session recordings, and platform design, is owned by Ascentor Inc. or its licensors.</p>
               <p>Content you create (community posts, coaching conversations) remains yours, but you grant us a non-exclusive license to store and display it within the Platform.</p>
             </Section>
 

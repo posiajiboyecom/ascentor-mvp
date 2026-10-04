@@ -27,7 +27,7 @@ function getApiBase(): string {
 
 export function useApiBase(): string {
   // Reads synchronously from the <meta> tag injected by the server layout.
-  // useState(getApiBase) runs the initialiser once on first render — the meta
+  // useState(getApiBase) runs the initialiser once on first render - the meta
   // tag is already in the DOM at that point so the value is always correct
   // and no useEffect / re-render is needed.
   const [base] = useState<string>(getApiBase);

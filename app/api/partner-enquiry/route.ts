@@ -8,7 +8,7 @@
 //  3. Sends founder notification email via Resend
 //  4. Sends acknowledgement email to the prospect
 //
-// No auth required — this is a public-facing form.
+// No auth required - this is a public-facing form.
 //
 // SQL to run in Supabase SQL editor (run each statement individually):
 //
@@ -44,7 +44,7 @@ const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'joinascentor@gmail.com'
 function acknowledgementEmail(name: string, org: string, recipient: string) {
   const firstName = name.split(' ')[0] || name
   return {
-    subject: `We received your enquiry, ${firstName} — Ascentor Partners`,
+    subject: `We received your enquiry, ${firstName} | Ascentor Partners`,
     html: brandedEmailLayout({
       preheader: `We received your Ascentor partner enquiry for ${org}`,
       eyebrow: 'Partner Enquiry Received',
@@ -55,7 +55,7 @@ function acknowledgementEmail(name: string, org: string, recipient: string) {
         summaryBox(
           summaryRow('What happens next', 'Our team reviews every enquiry personally. You can expect a reply within <strong>1–2 business days</strong>. We\'ll share details on how the partner programme works and schedule a walkthrough of the platform.')
         ) +
-        p('In the meantime, feel free to explore the platform as a user — it\'s the best way to understand the experience you\'d be offering your members.') +
+        p('In the meantime, feel free to explore the platform as a user, it\'s the best way to understand the experience you\'d be offering your members.') +
         goldButton('Explore the platform →', 'https://ascentorbi.com/signup'),
     }),
   }
@@ -78,7 +78,7 @@ function founderNotificationEmail(name: string, email: string, org: string, mess
           summaryRow('Enquiry ID', `<span style="font-size:12px;color:#9CA3AF;">${esc(enquiryId)}</span>`)
         ) +
         p('<strong>Message</strong>') +
-        messageBlock(esc(message || '—')) +
+        messageBlock(esc(message || '-')) +
         `<table role="presentation" cellpadding="0" cellspacing="0"><tr>
           <td>${goldButton('View in Admin Panel →', adminUrl)}</td>
           <td style="width:12px;">&nbsp;</td>
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (dbErr) {
-      // Non-fatal if table doesn't exist yet — still send emails
+      // Non-fatal if table doesn't exist yet - still send emails
       console.warn('[partner-enquiry] DB insert failed (non-fatal):', dbErr.message)
     }
 

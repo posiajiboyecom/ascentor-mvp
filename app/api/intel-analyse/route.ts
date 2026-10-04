@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 // ============================================================
-// GET  /api/intel-analyse  — fetch latest cached snapshot
-// POST /api/intel-analyse  — run fresh analysis, save snapshot
+// GET  /api/intel-analyse  - fetch latest cached snapshot
+// POST /api/intel-analyse  - run fresh analysis, save snapshot
 // ============================================================
 
 export async function GET(_req: NextRequest) {
@@ -25,7 +25,7 @@ export async function GET(_req: NextRequest) {
       .single();
 
     if (error || !snapshot) {
-      return NextResponse.json({ snapshot: null, message: 'No snapshot yet — run a manual refresh.' });
+      return NextResponse.json({ snapshot: null, message: 'No snapshot yet, run a manual refresh.' });
     }
 
     return NextResponse.json({ snapshot });
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errBody = await response.text();
-      return NextResponse.json({ error: `Anthropic API error: ${response.status} — ${errBody}` }, { status: 502 });
+      return NextResponse.json({ error: `Anthropic API error: ${response.status}, ${errBody}` }, { status: 502 });
     }
 
     const data = await response.json();

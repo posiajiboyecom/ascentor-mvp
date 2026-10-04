@@ -5,7 +5,7 @@
 //            Field names updated to match the partners schema:
 //              accent_color   → primary_color
 //              surface_color  → card_color
-//              text_muted     → (removed — derived from text_color in getPartnerContext)
+//              text_muted     → (removed - derived from text_color in getPartnerContext)
 //            Added platform_name, font_heading, font_body fields.
 'use client';
 
@@ -361,7 +361,7 @@ export default function PartnerBrandPage() {
         <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-dim)', marginBottom: '16px' }}>White-label</p>
 
         {isProPlan ? (
-          /* Pro plan — toggle is functional */
+          /* Pro plan - toggle is functional */
           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -374,7 +374,7 @@ export default function PartnerBrandPage() {
             </span>
           </label>
         ) : (
-          /* Standard plan — locked with upgrade prompt */
+          /* Standard plan - locked with upgrade prompt */
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', opacity: 0.6, cursor: 'not-allowed' }}>
             <input type="checkbox" disabled checked={false} style={{ marginTop: '2px' }} />
             <span style={{ fontSize: '13px', color: 'var(--text)' }}>
@@ -388,7 +388,7 @@ export default function PartnerBrandPage() {
                 }}>
                   Partner Pro
                 </span>
-                {' '}— contact support to upgrade
+                {' '}- contact support to upgrade
               </span>
             </span>
           </div>

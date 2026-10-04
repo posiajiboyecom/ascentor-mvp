@@ -97,7 +97,7 @@ export function CoachChat({
     setError(null);
     setDraft('');
 
-    // Use a stable tempId for rollback — reference identity is unreliable across re-renders
+    // Use a stable tempId for rollback - reference identity is unreliable across re-renders
     const tempId = `optimistic-${Date.now()}-${Math.random()}`;
     const optimisticUser: CoachMessage & { _tempId?: string } = {
       role: 'user',
@@ -163,7 +163,7 @@ export function CoachChat({
           </div>
         </div>
 
-        {/* Session type tabs + usage — desktop: same row; mobile: stacked */}
+        {/* Session type tabs + usage - desktop: same row; mobile: stacked */}
         <div className="lg:px-10 lg:flex lg:items-center lg:justify-between lg:mb-6">
           <SessionTypeTabs
             allTypes={SESSION_TYPES}
@@ -232,8 +232,8 @@ export function CoachChat({
           <div className="relative group shrink-0">
             <button
               type="button"
-              aria-label="Attach file — coming soon"
-              title="Attach file — coming soon"
+              aria-label="Attach file, coming soon"
+              title="Attach file, coming soon"
               className="text-[var(--text-muted)] opacity-50 cursor-default"
             >
               <Plus className="w-[17px] h-[17px] lg:w-5 lg:h-5" />
@@ -275,8 +275,8 @@ export function CoachChat({
           <div className="relative group hidden lg:block shrink-0">
             <button
               type="button"
-              aria-label="Voice input — coming soon"
-              title="Voice input — coming soon"
+              aria-label="Voice input, coming soon"
+              title="Voice input, coming soon"
               className="text-[var(--text-muted)] opacity-50 cursor-default"
             >
               <Mic className="w-5 h-5" />

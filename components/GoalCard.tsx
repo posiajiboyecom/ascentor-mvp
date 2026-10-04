@@ -16,7 +16,7 @@ export default function GoalCard({ goal: initialGoal }: { goal: any }) {
   });
   const supabase = createClient();
 
-  // ── FIX 2: null state — show CTA instead of blank gap ──
+  // ── FIX 2: null state - show CTA instead of blank gap ──
   if (!goal) {
     return (
       <div className="rounded-xl p-5 mb-5"
@@ -189,7 +189,7 @@ export default function GoalCard({ goal: initialGoal }: { goal: any }) {
           }} />
       </div>
 
-      {/* Milestones — clickable */}
+      {/* Milestones - clickable */}
       <div className="flex flex-col gap-2">
         {milestones.map((m, i) => (
           m.text && (

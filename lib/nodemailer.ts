@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 
-// Inferred from the factory — avoids namespace-reference errors
+// Inferred from the factory - avoids namespace-reference errors
 // across different TypeScript/module-resolution configurations.
 type Mailer = ReturnType<typeof nodemailer.createTransport>;
 
@@ -51,7 +51,7 @@ export async function sendEmail(opts: {
 }): Promise<void> {
   const mailer = getMailer();
   if (!mailer) {
-    console.warn('[email] SMTP credentials not configured — skipping send to', opts.to);
+    console.warn('[email] SMTP credentials not configured, skipping send to', opts.to);
     return;
   }
   await mailer.sendMail({

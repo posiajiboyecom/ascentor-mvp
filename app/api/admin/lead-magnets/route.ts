@@ -47,7 +47,7 @@ export async function GET() {
       const uniqueEmails = new Set(magnetRows.map(r => r.email)).size;
 
       // Rough paid conversion: count emails that also exist in profiles as paid
-      // (we'll do a simple count for now — enhance later with join)
+      // (we'll do a simple count for now - enhance later with join)
       return {
         id:          def.id,
         name:        def.name,

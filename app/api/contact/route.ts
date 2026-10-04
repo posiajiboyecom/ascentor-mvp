@@ -1,12 +1,12 @@
 // app/api/contact/route.ts
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /api/contact — public, no auth required.
+// POST /api/contact - public, no auth required.
 // 1. Validates input
 // 2. Saves to `contact_messages` table (Supabase, service role)
 // 3. Emails the admin/founder via Resend
 // 4. Sends an acknowledgement to the sender (non-fatal)
 //
-// SQL migration — run once in Supabase SQL editor:
+// SQL migration - run once in Supabase SQL editor:
 // ─────────────────────────────────────────────────────────────────────────────
 //   CREATE TABLE IF NOT EXISTS contact_messages (
 //     id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -58,7 +58,7 @@ function adminEmailHtml(name: string, email: string, subject: string, message: s
   const subjectLabel = SUBJECT_LABELS[subject] || subject;
   const adminUrl = 'https://ascentorbi.com/admin/inbox';
   return brandedEmailLayout({
-    preheader: `New contact message: ${subjectLabel} — from ${name}`,
+    preheader: `New contact message: ${subjectLabel}, from ${name}`,
     eyebrow: 'New Contact Message',
     heading: subjectLabel,
     recipient: ADMIN_EMAIL,
@@ -135,14 +135,14 @@ export async function POST(req: NextRequest) {
   // Admin notification email (non-fatal)
   sendEmail(
     ADMIN_EMAIL,
-    `[Contact] ${subjectLabel} — from ${name.trim()}`,
+    `[Contact] ${subjectLabel}, from ${name.trim()}`,
     adminEmailHtml(name.trim(), email.trim(), subject, message.trim()),
   ).catch(err => console.warn('[contact] Admin email failed (non-fatal):', err?.message));
 
   // Acknowledgement to sender (non-fatal)
   sendEmail(
     email.trim().toLowerCase(),
-    'We received your message — Ascentor',
+    'We received your message | Ascentor',
     ackEmailHtml(firstName, subjectLabel, email.trim().toLowerCase()),
   ).catch(err => console.warn('[contact] Ack email failed (non-fatal):', err?.message));
 

@@ -1,20 +1,20 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// Personal Brand Researcher — Posi Ajiboye Samuel
+// Personal Brand Researcher - Posi Ajiboye Samuel
 //
 // PURPOSE:
 //   Researches recent global cybersecurity developments and builds a
 //   content brief for the personal brand writer to execute.
 //
 // CONTENT MIX (hard-wired per brief):
-//   70% — Penetration Testing & Offensive Security
-//   30% — GRC (Governance, Risk, Compliance)
+//   70% - Penetration Testing & Offensive Security
+//   30% - GRC (Governance, Risk, Compliance)
 //
 // STRATEGIC GOAL:
 //   Help Posi establish authority in cybersecurity, attract recruiters,
 //   and secure a well-paying role within 2 months.
 //
 // SCHEDULE:
-//   Runs 3× per week — Mon/Wed/Fri at 06:00 WAT (05:00 UTC)
+//   Runs 3× per week - Mon/Wed/Fri at 06:00 WAT (05:00 UTC)
 //   Each run produces one brief → triggers the writer immediately
 //
 // RESEARCH APPROACH:
@@ -55,7 +55,7 @@ type PentestPillar = typeof PENTEST_PILLARS[number];
 type GRCPillar     = typeof GRC_PILLARS[number];
 type CyberPillar   = PentestPillar | GRCPillar;
 
-// ── Pillar context — used in research prompts ─────────────────────────────
+// ── Pillar context - used in research prompts ─────────────────────────────
 const PILLAR_RESEARCH_CONTEXT: Record<CyberPillar, string> = {
   penetration_testing:
     "Web application pentesting, network pentesting, OWASP Top 10, Burp Suite, Metasploit, SQLi, XSS, "
@@ -77,7 +77,7 @@ const PILLAR_RESEARCH_CONTEXT: Record<CyberPillar, string> = {
     + "red team reporting and client communication",
 
   exploit_technique:
-    "Specific technical technique trending in security research — buffer overflows, "
+    "Specific technical technique trending in security research, buffer overflows, "
     + "race conditions, deserialization, SSRF, XXE, JWT vulnerabilities, "
     + "supply chain attacks, dependency confusion",
 
@@ -92,12 +92,12 @@ const PILLAR_RESEARCH_CONTEXT: Record<CyberPillar, string> = {
     + "security maturity models, framework implementation in real organisations",
 
   compliance_regulation:
-    "New regulations affecting cybersecurity — DORA, NIS2, SEC cybersecurity rules, "
+    "New regulations affecting cybersecurity, DORA, NIS2, SEC cybersecurity rules, "
     + "HIPAA enforcement, GDPR security requirements, FedRAMP, "
     + "emerging global cyber laws, compliance deadline news",
 };
 
-// ── Post intent contexts — job-seeking angle ──────────────────────────────
+// ── Post intent contexts - job-seeking angle ──────────────────────────────
 const INTENT_CONTEXT = {
   authority:
     "Makes cybersecurity professionals and hiring managers think: "
@@ -107,7 +107,7 @@ const INTENT_CONTEXT = {
   career_signal:
     "Shows Posi is actively practising, learning, and growing in cybersecurity. "
     + "Signals to recruiters and hiring managers that he is in the market "
-    + "and worth reaching out to — from a position of demonstrated expertise, not desperation.",
+    + "and worth reaching out to, from a position of demonstrated expertise, not desperation.",
 
   inbound_magnet:
     "Creates content so specific and useful that hiring managers DM Posi "
@@ -147,7 +147,7 @@ async function researchCybersecurity(
       content:
         `You are a senior cybersecurity researcher building content briefs for a practitioner's personal brand.\n\n`
         + `Research focus: ${pillarCtx}\n\n`
-        + `Find RECENT (last 7-14 days) developments — NOT generic facts:\n`
+        + `Find RECENT (last 7-14 days) developments, NOT generic facts:\n`
         + `1. A specific CVE, breach, or security incident published this week\n`
         + `2. A technique, tool, or methodology trending in the security community right now\n`
         + `3. A hiring or salary trend for cybersecurity professionals this month\n`
@@ -159,8 +159,8 @@ async function researchCybersecurity(
         + `  ],\n`
         + `  "trendingTools": ["specific tool or technique name trending now"],\n`
         + `  "hotTopics": ["what security professionals are debating this week"],\n`
-        + `  "jobMarket": "1 sentence on cybersecurity hiring trends this month — specific salary range or demand stat if available",\n`
-        + `  "research": "4-5 sentences — specific recent context, named CVEs, tools, or developments"\n`
+        + `  "jobMarket": "1 sentence on cybersecurity hiring trends this month, specific salary range or demand stat if available",\n`
+        + `  "research": "4-5 sentences, specific recent context, named CVEs, tools, or developments"\n`
         + `}`,
     }],
   });
@@ -205,7 +205,7 @@ async function buildPersonalBrief(params: {
 }): Promise<any> {
 
   const avoidBlock = params.recentTopics.length > 0
-    ? `\nDO NOT REPEAT — recently covered topics:\n`
+    ? `\nDO NOT REPEAT, recently covered topics:\n`
       + params.recentTopics.map(t => `- "${t}"`).join("\n")
       + `\nChoose a FRESH angle.\n`
     : "";
@@ -220,7 +220,7 @@ async function buildPersonalBrief(params: {
     messages: [{
       role:    "user",
       content:
-        `You are building a content brief for Posi Ajiboye Samuel — a cybersecurity practitioner\n`
+        `You are building a content brief for Posi Ajiboye Samuel, a cybersecurity practitioner\n`
         + `building his personal brand to secure a well-paying cybersecurity role within 2 months.\n\n`
         + `POSI'S PROFILE:\n`
         + `- Security Analyst background\n`
@@ -237,23 +237,23 @@ async function buildPersonalBrief(params: {
         + `Research: ${params.research.slice(0, 500)}\n`
         + avoidBlock
         + `\nRULES:\n`
-        + `1. Topic must reference a SPECIFIC recent development — not generic advice\n`
+        + `1. Topic must reference a SPECIFIC recent development, not generic advice\n`
         + `2. Content must demonstrate Posi actually works in this field\n`
         + `3. Zero fluff. Practitioner voice. Direct and specific.\n`
         + `4. Must serve the job-seeking goal: make recruiters want to reach out\n\n`
         + `Return ONLY valid JSON:\n`
         + `{\n`
-        + `  "chosenTopic": "punchy specific title max 12 words — references a real recent development",\n`
+        + `  "chosenTopic": "punchy specific title max 12 words, references a real recent development",\n`
         + `  "angle": "the specific practitioner insight that makes this post worth reading",\n`
         + `  "pillar": "${params.pillar}",\n`
         + `  "intent": "${params.intent}",\n`
-        + `  "hook_linkedin": "scroll-stopping first line for LinkedIn — specific, no generic openers",\n`
-        + `  "hook_twitter": "first tweet of the thread — specific, intriguing",\n`
+        + `  "hook_linkedin": "scroll-stopping first line for LinkedIn, specific, no generic openers",\n`
+        + `  "hook_twitter": "first tweet of the thread, specific, intriguing",\n`
         + `  "keyPoints": ["specific technical or GRC point 1", "point 2", "point 3"],\n`
         + `  "practitionerInsight": "the thing only someone who actually does this work would know",\n`
         + `  "careerAngle": "how this post signals to a hiring manager that Posi is worth recruiting",\n`
         + `  "recentReference": "the specific CVE/breach/tool/regulation this is anchored in",\n`
-        + `  "callToAction": "subtle CTA — not 'hire me', but a question or invitation that creates engagement"\n`
+        + `  "callToAction": "subtle CTA, not 'hire me', but a question or invitation that creates engagement"\n`
         + `}`,
     }],
   });
@@ -266,7 +266,7 @@ async function buildPersonalBrief(params: {
     return parsed;
   } catch {
     return {
-      chosenTopic:        params.topicOverride || `${pillar_label(params.pillar)} — week ${new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`,
+      chosenTopic:        params.topicOverride || `${pillar_label(params.pillar)}, week ${new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`,
       angle:              "Practitioner perspective on a recent development",
       pillar:             params.pillar,
       intent:             params.intent,
@@ -307,7 +307,7 @@ async function runPersonalBrandResearch(params: {
   const intent: keyof typeof INTENT_CONTEXT =
     params.intent ?? (runIndex % 3 === 0 ? "inbound_magnet" : runIndex % 3 === 1 ? "career_signal" : "authority");
 
-  console.log(`[PB-Researcher] Run #${runIndex} — pillar: ${pillar} — intent: ${intent}`);
+  console.log(`[PB-Researcher] Run #${runIndex}, pillar: ${pillar}, intent: ${intent}`);
 
   // Load recent topics to avoid repetition
   let recentTopics: string[] = [];
@@ -395,7 +395,7 @@ async function runPersonalBrandResearch(params: {
 // TASKS
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Manual trigger — from the admin UI "Generate Posts" button
+// Manual trigger - from the admin UI "Generate Posts" button
 export const personalBrandResearcherManual = task({
   id:          "personal-brand-researcher-manual",
   maxDuration: 90,
@@ -415,13 +415,13 @@ export const personalBrandResearcherManual = task({
 });
 
 // Scheduled: Mon/Wed/Fri 05:00 UTC (06:00 WAT)
-// 3 posts/week = ~12/month — enough for consistent LinkedIn + Twitter presence
+// 3 posts/week = ~12/month - enough for consistent LinkedIn + Twitter presence
 export const personalBrandResearcherScheduled = schedules.task({
   id:   "personal-brand-researcher-scheduled",
   cron: "0 5 * * 1,3,5",
   maxDuration: 90,
   run: async () => {
-    console.log("[PB-Researcher] Scheduled run — Mon/Wed/Fri");
+    console.log("[PB-Researcher] Scheduled run, Mon/Wed/Fri");
     return runPersonalBrandResearch({ triggeredBy: "schedule" });
   },
 });

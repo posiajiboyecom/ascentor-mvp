@@ -2,12 +2,12 @@
 // FILE LOCATION: app/api/partner/analytics/route.ts
 //
 // BUG FIXED:
-//   BUG-12 — The memberGrowth weekly chart calculated bucket
+//   BUG-12 - The memberGrowth weekly chart calculated bucket
 //             membership using m.created_at, but created_at on
 //             partner_members is set at invitation time (when the
 //             partner owner invites someone). For pre-existing
 //             Ascentor users who were bulk-invited, created_at
-//             equals the invitation date — correct.
+//             equals the invitation date - correct.
 //             But for users who accepted an invite after signup,
 //             the auth callback sets joined_at to the acceptance
 //             date while created_at stays at the invite date.
@@ -163,7 +163,7 @@ export async function GET(req: NextRequest) {
     // ── Member growth trend (last 30 days, weekly buckets) ─
     // FIX BUG-12: use joined_at when available, fall back to created_at
     // joined_at is set when a member accepts their invite and activates.
-    // created_at is set at invite time — wrong for the "joined" metric.
+    // created_at is set at invite time - wrong for the "joined" metric.
     const memberGrowth: { week: string; count: number }[] = [];
     for (let i = 3; i >= 0; i--) {
       const weekStart = new Date(now.getTime() - (i + 1) * 7 * 86400000);

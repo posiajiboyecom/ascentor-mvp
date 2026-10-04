@@ -83,7 +83,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
 
   member: [
-    // Regular users — no admin access
+    // Regular users - no admin access
   ],
 };
 
@@ -252,7 +252,7 @@ export const PERMISSION_LABELS: Record<Permission, PermissionMeta> = {
     page: '/admin/content',
   },
 
-  // ── Content — Blog ────────────────────────────────────────────────────────
+  // ── Content - Blog ────────────────────────────────────────────────────────
   'content.blog.create': {
     label: 'Write blog posts',
     description: 'Can create new blog post drafts in /admin/blog',
@@ -278,7 +278,7 @@ export const PERMISSION_LABELS: Record<Permission, PermissionMeta> = {
     page: '/admin/blog',
   },
 
-  // ── Content — Courses ─────────────────────────────────────────────────────
+  // ── Content - Courses ─────────────────────────────────────────────────────
   'content.courses.create': {
     label: 'Create courses',
     description: 'Can create new courses and lessons in /admin/courses',

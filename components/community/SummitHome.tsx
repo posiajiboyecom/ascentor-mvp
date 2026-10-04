@@ -1,7 +1,7 @@
 'use client';
 
 // components/community/SummitHome.tsx
-// The "This Week" home — the default landing for The Circle. Ritual hero
+// The "This Week" home - the default landing for The Circle. Ritual hero
 // (weekly question + real streak + check-in) → your circle's check-in status
 // → the Commons feed. Replaces "you land inside a dead channel".
 //

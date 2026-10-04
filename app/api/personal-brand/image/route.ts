@@ -1,11 +1,11 @@
 // POST /api/admin/personal-brand/image
 //
 // Image generation with automatic fallback chain:
-//   1. Hugging Face (FLUX.1-schnell) — primary, free tier, best quality
-//   2. Pollinations.ai               — fallback, no key needed, always available
+//   1. Hugging Face (FLUX.1-schnell) - primary, free tier, best quality
+//   2. Pollinations.ai               - fallback, no key needed, always available
 //
 // Required env var: HUGGINGFACE_API_KEY (huggingface.co → Settings → Access Tokens)
-// No other keys needed — Pollinations requires nothing.
+// No other keys needed - Pollinations requires nothing.
 //
 // Body:   { postContent?, style, platform, customPrompt? }
 // Returns: { imageUrl, storedUrl, prompt, provider }
@@ -15,7 +15,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 
-// ── Lazy-initialised clients — never crash at module load ─────────────────
+// ── Lazy-initialised clients - never crash at module load ─────────────────
 function getService() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -63,7 +63,7 @@ Write a concise image generation prompt (max 60 words) based on this ${platform}
 - Visually complement the post theme without illustrating it literally
 - Apply this style: ${STYLE_CONTEXT[style] || style}
 - Absolutely no text, words, logos, or letters anywhere in the image
-- Photorealistic or high-quality digital art — never cartoonish or illustrative
+- Photorealistic or high-quality digital art, never cartoonish or illustrative
 - Professional, premium feel
 
 POST CONTENT:
@@ -84,7 +84,7 @@ async function generateWithHuggingFace(
   const hfKey = process.env.HUGGINGFACE_API_KEY;
   if (!hfKey) throw new Error('HUGGINGFACE_API_KEY not set');
 
-  // HF inference API — FLUX.1-schnell (same model as fal.ai, completely free tier)
+  // HF inference API - FLUX.1-schnell (same model as fal.ai, completely free tier)
   const res = await fetch(
     'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell',
     {
@@ -108,7 +108,7 @@ async function generateWithHuggingFace(
 
   if (!res.ok) {
     const errText = await res.text();
-    // 429 = rate limited / quota hit — caller will fall back to Pollinations
+    // 429 = rate limited / quota hit - caller will fall back to Pollinations
     const err = new Error(`HF error ${res.status}: ${errText}`);
     (err as any).status = res.status;
     throw err;
@@ -118,12 +118,12 @@ async function generateWithHuggingFace(
   return res.arrayBuffer();
 }
 
-// ── Provider 2: Pollinations.ai (fallback — zero config) ─────────────────
+// ── Provider 2: Pollinations.ai (fallback - zero config) ─────────────────
 async function generateWithPollinations(
   prompt: string,
   dims: { width: number; height: number }
 ): Promise<ArrayBuffer> {
-  // Pollinations is a free public API — no key, no signup, just a URL
+  // Pollinations is a free public API - no key, no signup, just a URL
   // Model: FLUX (same underlying model as HF)
   const encoded = encodeURIComponent(prompt);
   const seed    = Math.floor(Math.random() * 999999);
@@ -166,7 +166,7 @@ function toDataUrl(buffer: ArrayBuffer): string {
 
 // ── Main handler ──────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  // ── Startup diagnostic — returns clear JSON errors instead of crashing ──
+  // ── Startup diagnostic - returns clear JSON errors instead of crashing ──
   const missingVars: string[] = [];
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL)    missingVars.push('NEXT_PUBLIC_SUPABASE_URL');
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY)   missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
@@ -216,7 +216,7 @@ export async function POST(req: NextRequest) {
       imageBuffer = await generateWithHuggingFace(imagePrompt, dims);
       console.log('[personal-brand/image] Hugging Face OK');
     } catch (hfErr: any) {
-      // 429 = quota hit, 503 = model loading timeout — fall back gracefully
+      // 429 = quota hit, 503 = model loading timeout - fall back gracefully
       // Any other error also falls back rather than hard-failing
       console.warn(`[personal-brand/image] HF failed (${hfErr.message}), falling back to Pollinations`);
       provider    = 'pollinations';
@@ -248,7 +248,7 @@ export async function POST(req: NextRequest) {
       imageUrl:  storedUrl || imageUrl,
       storedUrl: storedUrl || null,
       prompt:    imagePrompt,
-      provider,  // 'huggingface' or 'pollinations' — shown in UI for transparency
+      provider,  // 'huggingface' or 'pollinations' - shown in UI for transparency
       platform,
       style,
     });

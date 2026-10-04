@@ -2,14 +2,14 @@
 // FILE LOCATION: lib/getPartnerContext.ts
 //
 // BUG FIXED:
-//   BUG-04 — The fallback PartnerContext (isWhiteLabel: false) was
+//   BUG-04 - The fallback PartnerContext (isWhiteLabel: false) was
 //             being written to the Redis/local cache with the same
 //             key as a real partner lookup. On Vercel cold-start,
 //             the DB query for a valid partner subdomain can take
 //             200–400ms and occasionally times out, returning null.
 //             That null result was cached, so every subsequent
 //             request for that subdomain (up to 60s) got a blank
-//             white-label context — the platform appeared broken.
+//             white-label context - the platform appeared broken.
 //
 //             Fix: ONLY cache when a real active partner is found.
 //             The fallback path now returns immediately without
@@ -17,8 +17,8 @@
 //             attempt a fresh DB lookup.
 //
 // PREVIOUS FIXES PRESERVED:
-//   W-04 — buildCssVars reads brand.border_color when set.
-//   W-21 — --bg-input minimum +22 brightness adjustment.
+//   W-04 - buildCssVars reads brand.border_color when set.
+//   W-21 - --bg-input minimum +22 brightness adjustment.
 // ============================================================
 
 import { createClient } from '@supabase/supabase-js';
@@ -122,7 +122,7 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
     try {
       return JSON.parse(cached) as PartnerContext;
     } catch {
-      // Corrupted cache entry — ignore and re-fetch
+      // Corrupted cache entry - ignore and re-fetch
     }
   }
 
@@ -162,7 +162,7 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
   // Previously this block wrote the empty context to cache, which meant
   // a transient DB miss (cold-start, brief timeout) would "poison" the
   // cache for up to 60s and make a real partner's subdomain look blank.
-  // Now we only return the fallback inline — the next request will retry.
+  // Now we only return the fallback inline - the next request will retry.
   if (!partner) {
     const ctx: PartnerContext = {
       isWhiteLabel: false,
@@ -178,7 +178,7 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
       },
       cssVars: buildCssVars(DEFAULT_BRAND),
     };
-    // ⚠️  Do NOT call cacheSet here — fallback must never be cached
+    // ⚠️  Do NOT call cacheSet here - fallback must never be cached
     return ctx;
   }
 

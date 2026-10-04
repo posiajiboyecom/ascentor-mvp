@@ -29,7 +29,7 @@ import * as path         from "path";
 // when OPENAI_API_KEY isn't in the environment yet.
 
 // ── Anthropic + Supabase: safe to init at module level ───────
-// ── OpenAI: lazy — initialised inside generateImages() ───────
+// ── OpenAI: lazy - initialised inside generateImages() ───────
 // ── Trigger.dev imports this file to register the task.      ─
 // ── If OpenAI were init'd here, it would throw on import     ─
 // ── when OPENAI_API_KEY isn't in the environment yet.        ─
@@ -62,7 +62,7 @@ interface CarouselBrief {
   hashtags: string[];
 }
 
-// ── JSON extractor — same pattern as content-writer.ts ───────
+// ── JSON extractor - same pattern as content-writer.ts ───────
 function extractJSON(raw: string): any {
   const text = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
   try { return JSON.parse(text); } catch { /* continue */ }
@@ -104,7 +104,7 @@ const SYSTEM =
   "Represent all newlines inside strings as \\n. Never truncate.";
 
 const FORMULA =
-  "MASTER FORMULA — every hook maps to:\n" +
+  "MASTER FORMULA, every hook maps to:\n" +
   "[PERSON] + [CONFLICT] → [ASCENTOR MOMENT] → [MIND CHANGED]\n\n" +
   "PERSON: Boss, manager, co-founder, investor, mentor, team, skip-level\n" +
   "CONFLICT: Said no · didn't believe · passed them over · was about to quit\n" +
@@ -141,7 +141,7 @@ async function getHooks(
         `${FORMULA}\n\n` +
         `Generate ${postCount * 5} hook options for Ascentor.\n` +
         `Pillar: ${pillar} | Platform: ${platform} | Slots: ${postCount} (5 per slot)\n\n` +
-        `Return ONLY a JSON string array — ${postCount * 5} hooks total.\n["hook 1","hook 2",...]`,
+        `Return ONLY a JSON string array, ${postCount * 5} hooks total.\n["hook 1","hook 2",...]`,
     }],
   });
 
@@ -163,7 +163,7 @@ async function getHooks(
 
 // ════════════════════════════════════════════════════════════
 // STEP 2: Build brief per hook
-// Uses Claude Sonnet as a creative director — it reads the hook,
+// Uses Claude Sonnet as a creative director - it reads the hook,
 // understands the emotional arc, and writes a unique cinematic
 // image prompt for EACH slide from scratch. No template picking.
 // ════════════════════════════════════════════════════════════
@@ -174,7 +174,7 @@ async function buildBrief(
 ): Promise<CarouselBrief> {
   const cta: Record<Platform, string> = {
     LinkedIn:  "Get a mentor who's been where you want to go. Ascentor.com",
-    TikTok:    "Find your mentor at Ascentor.com — link in bio.",
+    TikTok:    "Find your mentor at Ascentor.com, link in bio.",
     Instagram: "Your mentor is on Ascentor. Link in bio.",
   };
 
@@ -199,9 +199,9 @@ async function buildBrief(
         `PILLAR: ${pillar} | PLATFORM: ${platform}\n\n` +
 
         `YOUR JOB:\n` +
-        `1. Read the hook deeply. Understand the human story — the emotion, the stakes, the transformation.\n` +
+        `1. Read the hook deeply. Understand the human story, the emotion, the stakes, the transformation.\n` +
         `2. Write 6 slides that tell this story with cinematic, varied visuals. Each slide must feel like a different scene in a short film.\n` +
-        `3. For each slide, write a UNIQUE imagePrompt — a detailed, specific, photorealistic image generation prompt.\n\n` +
+        `3. For each slide, write a UNIQUE imagePrompt, a detailed, specific, photorealistic image generation prompt.\n\n` +
 
         `SLIDE STRUCTURE:\n` +
         `- Slide 1 (hook): The arresting opening image. Must stop the scroll. Bold, unexpected composition.\n` +
@@ -212,12 +212,12 @@ async function buildBrief(
         `- Slide 6 (cta): Clean, aspirational, inviting. "${cta[platform]}"\n\n` +
 
         `IMAGE PROMPT RULES (apply to every imagePrompt):\n` +
-        `- Be specific and cinematic — describe exact composition, angle, lighting, colour palette, mood\n` +
+        `- Be specific and cinematic, describe exact composition, angle, lighting, colour palette, mood\n` +
         `- Feature Black purposeful individuals in global professional settings\n` +
-        `- Vary the visual concept completely across slides — never repeat the same setting or angle\n` +
-        `- Use documentary/editorial photography style — real moments, not posed stock photos\n` +
+        `- Vary the visual concept completely across slides, never repeat the same setting or angle\n` +
+        `- Use documentary/editorial photography style, real moments, not posed stock photos\n` +
         `- Suggest specific lighting: golden hour, laptop screen glow, harsh fluorescent, soft window light, etc.\n` +
-        `- NO text, words, letters, signs, or captions in the image — ever\n` +
+        `- NO text, words, letters, signs, or captions in the image, ever\n` +
         `- Portrait orientation (vertical). Photorealistic. Cinematic quality.\n` +
         `- Each prompt must be 40–60 words. Specific enough to produce a distinct image every time.\n\n` +
 
@@ -254,7 +254,7 @@ async function buildBrief(
 
 // ════════════════════════════════════════════════════════════
 // STEP 3: Generate images
-// NOTE: OpenAI client is initialised HERE — not at module level.
+// NOTE: OpenAI client is initialised HERE - not at module level.
 // This prevents Trigger.dev from crashing on import when
 // OPENAI_API_KEY is not yet set in the local environment.
 //
@@ -267,7 +267,7 @@ async function generateImages(
   jobId: string
 ): Promise<{ localPaths: string[]; cost: number }> {
 
-  // ── Lazy init — safe to create here at runtime ─────────────
+  // ── Lazy init - safe to create here at runtime ─────────────
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
   const dir = path.join("/tmp", "ascentor-carousel", jobId);
@@ -284,14 +284,14 @@ async function generateImages(
       ? `${slide.imagePrompt}\n\nNo text, words, letters, or captions anywhere in the image. Photorealistic. Cinematic quality. Portrait orientation.`
       : `Professional career moment. Cinematic. Black African professional. No text. Portrait orientation.`;
 
-    logger.info(`[Carousel] Generating slide ${i + 1}/6 — ${slide.purpose}...`);
+    logger.info(`[Carousel] Generating slide ${i + 1}/6, ${slide.purpose}...`);
 
     try {
       const response = await openai.images.generate({
         model:   "gpt-image-1",
         prompt,
-        size:    "1024x1024",  // square — cheapest size, upgrade to 1024x1536 when ready
-        quality: "medium",        // $0.011/image — upgrade to "medium" ($0.063) or "high" ($0.25) when ready
+        size:    "1024x1024",  // square - cheapest size, upgrade to 1024x1536 when ready
+        quality: "medium",        // $0.011/image - upgrade to "medium" ($0.063) or "high" ($0.25) when ready
         n:       1,
       });
 
@@ -306,7 +306,7 @@ async function generateImages(
         logger.info(`[Carousel] Slide ${i + 1} received as URL`);
         imageBuffer = Buffer.from(await (await fetch(item.url)).arrayBuffer());
       } else {
-        throw new Error(`No image data for slide ${i + 1} — response: ${JSON.stringify(response.data)}`);
+        throw new Error(`No image data for slide ${i + 1}, response: ${JSON.stringify(response.data)}`);
       }
 
       const rawPath   = path.join(dir, `slide-${i + 1}-raw.jpg`);
@@ -396,11 +396,11 @@ async function applyOverlay(inputPath: string, text: string, outputPath: string)
       .jpeg({ quality: 92 })
       .toFile(outputPath);
 
-    logger.info(`[Carousel] Overlay applied — ${lines.length} line(s): "${text.slice(0, 50)}"`);
+    logger.info(`[Carousel] Overlay applied, ${lines.length} line(s): "${text.slice(0, 50)}"`);
 
   } catch (err: any) {
     fs.copyFileSync(inputPath, outputPath);
-    logger.warn(`[Carousel] Overlay skipped (${err.message}) — raw image used`);
+    logger.warn(`[Carousel] Overlay skipped (${err.message}), raw image used`);
   }
 }
 
@@ -452,7 +452,7 @@ async function uploadImages(localPaths: string[], jobId: string): Promise<string
 async function uploadTextFile(brief: CarouselBrief, jobId: string): Promise<string | null> {
   try {
     const lines = [
-      `CAROUSEL — ${brief.hook}`,
+      `CAROUSEL, ${brief.hook}`,
       `Pillar: ${brief.pillar} | Platform: ${brief.platform}`,
       `Generated: ${new Date().toISOString()}`,
       `${"─".repeat(60)}`,
@@ -523,7 +523,7 @@ async function saveToCalendar(
     .single();
 
   if (error) throw new Error(`content_calendar insert failed: ${error.message}`);
-  logger.info(`[Carousel] Saved — id: ${data.id}`);
+  logger.info(`[Carousel] Saved, id: ${data.id}`);
   return data.id;
 }
 

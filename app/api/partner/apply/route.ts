@@ -78,14 +78,14 @@ export async function POST(req: NextRequest) {
           platform_name: platform_name.trim(),
           tagline: null,
         },
-        revenue_share_percent: 70, // default — can be adjusted per partner
+        revenue_share_percent: 70, // default - can be adjusted per partner
         features: {
           ai_coach: true, community: true, experts: false,
           courses: true,
-          // referrals: false by default — no partner-facing referral UI exists yet.
+          // referrals: false by default - no partner-facing referral UI exists yet.
           // Enable manually per partner once the UI ships.
           referrals: false,
-          // own_courses / own_events gated by plan_tier — false at apply time,
+          // own_courses / own_events gated by plan_tier - false at apply time,
           // enabled automatically once partner upgrades to Growth or Pro.
           own_courses: false,
           own_events:  false,
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Application failed. Please try again.' }, { status: 500 });
     }
 
-    // Notify founder via email — with one-click approval link (no SQL required)
+    // Notify founder via email - with one-click approval link (no SQL required)
     try {
       const { data: userData } = await supabase.auth.admin.getUserById(user.id);
       const applicantEmail = userData?.user?.email || 'unknown';
@@ -121,8 +121,8 @@ export async function POST(req: NextRequest) {
                 summaryRow('Platform', esc(platform_name)) +
                 summaryRow('Subdomain', `${esc(cleanSubdomain)}.ascentorbi.com`) +
                 summaryRow('Applicant', esc(applicantEmail)) +
-                summaryRow('Niche', esc(coaching_niche || '—')) +
-                summaryRow('Bio', esc(bio || '—'))
+                summaryRow('Niche', esc(coaching_niche || '-')) +
+                summaryRow('Bio', esc(bio || '-'))
               ) +
               goldButton('Review &amp; Approve in Admin Panel →', adminApproveUrl) +
               p('<span style="color:#9CA3AF;font-size:13px;">Log in to your admin account at ascentorbi.com/admin/partners to approve, reject, or adjust the revenue share.</span>'),

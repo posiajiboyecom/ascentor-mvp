@@ -16,7 +16,7 @@ export interface BufferProfile {
 export interface BufferUpdatePayload {
   profile_ids: string[];
   text: string;
-  scheduled_at?: string; // ISO 8601 — if omitted, adds to queue
+  scheduled_at?: string; // ISO 8601 - if omitted, adds to queue
   now?: boolean;         // post immediately
   shorten?: boolean;     // shorten URLs
   top?: boolean;         // add to top of queue

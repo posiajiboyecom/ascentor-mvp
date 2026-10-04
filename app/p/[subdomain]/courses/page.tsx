@@ -1,6 +1,6 @@
 // ============================================================
 // app/p/[subdomain]/courses/page.tsx
-// Partner member — browse and watch courses published by the coach
+// Partner member - browse and watch courses published by the coach
 // ============================================================
 
 'use client';

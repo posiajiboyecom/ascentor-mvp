@@ -14,7 +14,7 @@
 //     - ≤ 767px: desktop nav HIDDEN, bottom nav SHOWN
 //     - ≥ 768px: desktop nav SHOWN, bottom nav HIDDEN
 //
-//   No logic changes — purely CSS class hygiene.
+//   No logic changes - purely CSS class hygiene.
 // ============================================================
 
 'use client';
@@ -115,7 +115,7 @@ export default function PartnerMemberShell({
           }
         </Link>
 
-        {/* ── FIX W-15: Desktop nav — CSS class controls visibility at breakpoint ── */}
+        {/* ── FIX W-15: Desktop nav - CSS class controls visibility at breakpoint ── */}
         <nav style={{ display: 'flex', gap: 4, alignItems: 'center' }} className="partner-desktop-nav">
           {uniqueNav.map(item => {
             const href   = `/${item.segment}`;

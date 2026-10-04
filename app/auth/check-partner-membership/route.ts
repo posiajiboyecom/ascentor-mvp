@@ -1,5 +1,5 @@
 // ============================================================
-// AUTH CALLBACK — app/auth/callback/route.ts
+// AUTH CALLBACK - app/auth/callback/route.ts
 //
 // Handles the OAuth/magic-link redirect after Supabase auth.
 //
@@ -94,7 +94,7 @@ async function handlePartnerCallback(
   const email = user.email;
 
   if (!email) {
-    // OAuth accounts with no email — shouldn't happen but guard anyway
+    // OAuth accounts with no email - shouldn't happen but guard anyway
     return NextResponse.redirect(
       `${origin}/p/${subdomain}/access-denied?reason=no_email`
     );
@@ -109,7 +109,7 @@ async function handlePartnerCallback(
     .single();
 
   if (!partner) {
-    // Partner doesn't exist or isn't active — send to main Ascentor
+    // Partner doesn't exist or isn't active - send to main Ascentor
     return NextResponse.redirect(`${origin}/dashboard`);
   }
 
@@ -151,7 +151,7 @@ async function handlePartnerCallback(
       .eq('id', membership.id);
   }
 
-  // Allowed — redirect to intended destination inside partner shell
+  // Allowed - redirect to intended destination inside partner shell
   const destination = next.startsWith(`/p/${subdomain}`)
     ? next
     : `/p/${subdomain}/dashboard`;

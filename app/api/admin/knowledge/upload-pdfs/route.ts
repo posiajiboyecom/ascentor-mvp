@@ -7,11 +7,11 @@
 // Returns a list of storage paths for the batch ingestion task.
 //
 // Form fields (all repeatable):
-//   files[]        — one or more PDF files
-//   mentorSlugs[]  — one slug per file (same order as files)
-//   namespaces[]   — one namespace per file
-//   sourceTitles[] — one source title per file
-//   tags[]         — one comma-separated tag string per file
+//   files[]        - one or more PDF files
+//   mentorSlugs[]  - one slug per file (same order as files)
+//   namespaces[]   - one namespace per file
+//   sourceTitles[] - one source title per file
+//   tags[]         - one comma-separated tag string per file
 //
 // The bucket is private. The Trigger.dev task reads files using
 // the service role key, so no public URLs are needed.

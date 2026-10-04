@@ -2,7 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────
 // Ascentor UI primitives. Every in-app screen should compose these
 // instead of hand-rolling cards/buttons/labels with inline styles.
-// One radius scale, one border, one voice — this file is where the
+// One radius scale, one border, one voice - this file is where the
 // product's consistency is enforced.
 //
 // All primitives are server-component-safe (no hooks, no state).
@@ -32,7 +32,7 @@ export function Card({
   );
 }
 
-// ── SectionLabel — small-caps eyebrow above a group ─────────────────
+// ── SectionLabel - small-caps eyebrow above a group ─────────────────
 export function SectionLabel({
   children,
   className = '',
@@ -88,7 +88,7 @@ export function GhostButton({ children, className = '', ...rest }: ButtonProps) 
   );
 }
 
-// ── EmptyState — direction, in the brand voice ───────────────────────
+// ── EmptyState - direction, in the brand voice ───────────────────────
 // Serif invitation line + one gold action. Never a gray illustration.
 export function EmptyState({
   line,
@@ -109,7 +109,7 @@ export function EmptyState({
   );
 }
 
-// ── Skeleton — shaped placeholder, never a spinner ───────────────────
+// ── Skeleton - shaped placeholder, never a spinner ───────────────────
 export function Skeleton({
   className = '',
   style,
@@ -120,7 +120,7 @@ export function Skeleton({
   return <div aria-hidden="true" className={`asc-skeleton ${className}`} style={style} />;
 }
 
-// ── LedgerLine — the signature, as a component ───────────────────────
+// ── LedgerLine - the signature, as a component ───────────────────────
 export function LedgerLine({
   animated = true,
   className = '',

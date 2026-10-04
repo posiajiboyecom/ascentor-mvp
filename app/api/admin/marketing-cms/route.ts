@@ -2,11 +2,11 @@
 // ============================================================
 // Admin-only: full read/write for the marketing CMS.
 // Auth pattern matches every other /api/admin/* route in this
-// codebase — Bearer token resolved against a request-scoped anon
+// codebase - Bearer token resolved against a request-scoped anon
 // client, then role-checked via the service-role client.
 //
 // Unlike the public reader (lib/supabase/queries/marketing.ts),
-// THIS route is allowed to return draft_data — it's gated by the
+// THIS route is allowed to return draft_data - it's gated by the
 // same admin/moderator role check as every other admin route, not
 // by RLS alone. Never expose this route's GET response to anything
 // other than the authenticated admin UI.
@@ -19,22 +19,22 @@
 //   action: 'save_section_draft'
 //     { sectionId, draftData }
 //   action: 'publish_section'
-//     { sectionId }   — copies draft_data -> published_data for the section AND all its repeating items
+//     { sectionId }   - copies draft_data -> published_data for the section AND all its repeating items
 //   action: 'unpublish_section'
-//     { sectionId }   — sets section status back to draft; published_data is LEFT INTACT (so the
+//     { sectionId }   - sets section status back to draft; published_data is LEFT INTACT (so the
 //                        live site keeps showing the last published version) until publish_section
 //                        is called again or the section is deleted. Unpublishing only stops it from
-//                        appearing in admin's "published" filter — it does NOT clear published_data,
+//                        appearing in admin's "published" filter - it does NOT clear published_data,
 //                        because that would mean unpublishing accidentally blanks the live page.
 //   action: 'save_item_draft'
 //     { itemId, draftData }
 //   action: 'create_item'
-//     { sectionId, draftData }   — new repeating item (FAQ entry, persona card, etc.), starts as draft
+//     { sectionId, draftData }   - new repeating item (FAQ entry, persona card, etc.), starts as draft
 //   action: 'delete_item'
-//     { itemId }                — hard delete, no undo (matches the hard-delete precedent already
+//     { itemId }                - hard delete, no undo (matches the hard-delete precedent already
 //                                  established for coaching_sessions in this codebase)
 //   action: 'reorder_items'
-//     { itemIds: string[] }     — array in desired order; sort_order is set to array index
+//     { itemIds: string[] }     - array in desired order; sort_order is set to array index
 //   action: 'create_section'
 //     { pageId, sectionKey, label, sectionType }
 // ============================================================
@@ -166,12 +166,12 @@ export async function PATCH(req: NextRequest) {
         if (!sectionId) return NextResponse.json({ error: 'sectionId required' }, { status: 400 });
 
         // Fetch current draft_data so we can copy it to published_data
-        // in the same call — Supabase doesn't support "set column A
+        // in the same call - Supabase doesn't support "set column A
         // to column B's current value" via .update() directly, so
         // this is fetch-then-write rather than a single SQL UPDATE.
         // Not atomic against a concurrent edit between the two calls,
         // but that's an acceptable risk for a single-admin editing
-        // tool — flagging rather than building optimistic-locking
+        // tool - flagging rather than building optimistic-locking
         // for a problem that doesn't exist yet.
         const { data: section, error: fetchErr } = await supabaseAdmin
           .from('marketing_sections')
@@ -190,7 +190,7 @@ export async function PATCH(req: NextRequest) {
           .eq('id', sectionId);
         if (updateErr) throw updateErr;
 
-        // For repeating sections, publish every draft item too — a
+        // For repeating sections, publish every draft item too - a
         // FAQ section being "published" should mean every FAQ entry
         // in it goes live, not just the section shell. Items the
         // admin hasn't touched yet (draft_data === published_data
@@ -221,7 +221,7 @@ export async function PATCH(req: NextRequest) {
       case 'unpublish_section': {
         const { sectionId } = body;
         if (!sectionId) return NextResponse.json({ error: 'sectionId required' }, { status: 400 });
-        // published_data deliberately NOT cleared — see header comment.
+        // published_data deliberately NOT cleared - see header comment.
         const { error } = await supabaseAdmin
           .from('marketing_sections')
           .update({ status: 'draft' })

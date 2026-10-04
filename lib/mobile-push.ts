@@ -2,7 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 
 export async function initMobilePush() {
-  // Only run on native iOS/Android — not in browser
+  // Only run on native iOS/Android - not in browser
   if (!Capacitor.isNativePlatform()) return;
 
   // Request permission

@@ -2,15 +2,15 @@
 
 // components/community/TodayPanel.tsx
 // The right-hand "Today in #channel" rail from the desktop screenshot.
-// Pure presentational — takes everything as props. The parent
+// Pure presentational - takes everything as props. The parent
 // CommunityClient (your real, existing component) owns data-fetching
 // and realtime/presence wiring.
 //
 // NOTE on "This Week's Pulse": the prototype's "38 of 50 logged a win"
 // implies a win-logging feature that doesn't exist in the schema (no
 // table, no UI to log a win). Per an earlier decision in this project,
-// the safer substitute is a REAL derivable number — e.g. distinct
-// members who've posted in the last 7 days — rather than a fabricated
+// the safer substitute is a REAL derivable number - e.g. distinct
+// members who've posted in the last 7 days - rather than a fabricated
 // stat. `pulseLabel`/`pulseValue`/`pulseSubtext` are left generic so
 // you can feed either, but I'd default to the real one.
 
@@ -136,7 +136,7 @@ export function TodayPanel({
 
       <section>
         <h2 className="text-xs font-medium uppercase tracking-[0.06em] text-[var(--color-text-secondary)] mb-3">
-          Online — {onlineCount}
+          Online, {onlineCount}
         </h2>
         <div className="flex flex-col gap-3">
           {onlineMembers.map((member) => (

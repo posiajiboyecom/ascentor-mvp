@@ -26,12 +26,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'targetUserId, title and body required' }, { status: 400 });
     }
 
-    // Don't push to yourself (belt-and-suspenders — client already checks)
+    // Don't push to yourself (belt-and-suspenders - client already checks)
     if (targetUserId === user.id) {
       return NextResponse.json({ ok: true, skipped: 'self' });
     }
 
-    // Use unified notify — push if installed, email fallback otherwise
+    // Use unified notify - push if installed, email fallback otherwise
     await notify(targetUserId, {
       title,
       body,
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    // Push failure is non-critical — log but return 200 so client doesn't retry
+    // Push failure is non-critical - log but return 200 so client doesn't retry
     console.error('[push/community]', err.message);
     return NextResponse.json({ ok: true, error: err.message });
   }

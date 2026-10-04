@@ -14,7 +14,7 @@ import { Lock, Check } from 'lucide-react';
 import { canAccess, TIER_META, type PlanTier } from '@/lib/planTier';
 import { usePageSearch } from '@/components/shell/PageSearch';
 
-// ── Types — match the real schema, not database.ts's stale fields ──
+// ── Types - match the real schema, not database.ts's stale fields ──
 
 export interface Course {
   id: string;
@@ -42,7 +42,7 @@ export interface LearnClientProps {
   userPlan: PlanTier;
 }
 
-// No `emoji` column exists on courses — derive one from `category`
+// No `emoji` column exists on courses - derive one from `category`
 // instead of inventing a DB field. Extend this map as real category
 // values are confirmed; falls back to a generic book icon look.
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -185,7 +185,7 @@ function CourseCard({ course, userPlan, onLockedTap }: {
               style={{ color: tierMeta.color, backgroundColor: tierMeta.bg, borderColor: tierMeta.border }}
             >
               <Lock className="w-3 h-3" />
-              Unlock — {tierMeta.label} plan
+              Unlock, {tierMeta.label} plan
             </span>
           </button>
         </>

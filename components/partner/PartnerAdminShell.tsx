@@ -41,7 +41,7 @@ function getNavItems(base: string) {
   ];
 }
 
-// ── Shared nav list — used by both desktop sidebar and mobile drawer ──
+// ── Shared nav list - used by both desktop sidebar and mobile drawer ──
 function NavList({
   pathname,
   revenueSharePercent,
@@ -165,7 +165,7 @@ export default function PartnerAdminShell({
               The partner layout computes isAdminPath server-side from the
               x-partner-pathname header. Client-side nav skips that re-evaluation,
               so isAdminPath stays true and PartnerMemberShell never wraps the
-              dashboard — resulting in an unstyled, shell-less page until hard reload. */}
+              dashboard, resulting in an unstyled, shell-less page until hard reload. */}
           <a
             href="/dashboard"
             style={{
@@ -202,7 +202,7 @@ export default function PartnerAdminShell({
           </span>
         </div>
 
-        {/* ── FIX W-01: Mobile toggle — visibility controlled by CSS class, not inline display:none ── */}
+        {/* ── FIX W-01: Mobile toggle - visibility controlled by CSS class, not inline display:none ── */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
@@ -220,7 +220,7 @@ export default function PartnerAdminShell({
 
       <div style={{ display: 'flex', flex: 1 }}>
 
-        {/* ── Desktop Sidebar — hidden on mobile via CSS class ── */}
+        {/* ── Desktop Sidebar - hidden on mobile via CSS class ── */}
         <aside
           className="partner-admin-desktop-sidebar"
           style={{
@@ -238,10 +238,10 @@ export default function PartnerAdminShell({
           />
         </aside>
 
-        {/* ── FIX W-02: Mobile drawer — rendered when mobileOpen === true ── */}
+        {/* ── FIX W-02: Mobile drawer - rendered when mobileOpen === true ── */}
         {mobileOpen && (
           <>
-            {/* Backdrop — clicking it closes the drawer */}
+            {/* Backdrop - clicking it closes the drawer */}
             <div
               onClick={() => setMobileOpen(false)}
               style={{

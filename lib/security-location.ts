@@ -57,7 +57,7 @@ export function checkImpossibleTravel(
   newLocation: SessionLocation,
   lastLocation: SessionLocation
 ): SecurityCheckResult {
-  // Same IP — same location, always OK
+  // Same IP - same location, always OK
   if (newLocation.ip === lastLocation.ip) {
     return { allowed: true, risk_level: 'low' };
   }
@@ -78,7 +78,7 @@ export function checkImpossibleTravel(
         allowed: false,
         risk_level: 'critical',
         reason: 'concurrent_different_country',
-        details: `Login from ${newLocation.city}, ${newLocation.country} while active session in ${lastLocation.city}, ${lastLocation.country} — less than 1 minute apart.`,
+        details: `Login from ${newLocation.city}, ${newLocation.country} while active session in ${lastLocation.city}, ${lastLocation.country}, less than 1 minute apart.`,
       };
     }
     return { allowed: true, risk_level: 'low' };
@@ -87,7 +87,7 @@ export function checkImpossibleTravel(
   // Calculate implied travel speed
   const impliedSpeedKmh = timeDiffHours > 0 ? distanceKm / timeDiffHours : Infinity;
 
-  // Same country, reasonable distance — OK
+  // Same country, reasonable distance - OK
   if (newLocation.country === lastLocation.country && distanceKm < 500) {
     return { allowed: true, risk_level: 'low' };
   }

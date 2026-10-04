@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     const resolvedSource = source || 'website';
 
-    // 1. Save to Supabase (upsert — safe for duplicates from any source)
+    // 1. Save to Supabase (upsert - safe for duplicates from any source)
     const { error } = await supabase.from("newsletter_subscribers").upsert({
       email: email.trim().toLowerCase(),
       first_name: firstName || null,
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Newsletter request failed" }, { status: 500 });
     }
 
-    // 2. Add to MailerLite — non-blocking (failure doesn't break response)
+    // 2. Add to MailerLite - non-blocking (failure doesn't break response)
     try {
       await addOrUpdateSubscriber({
         email,

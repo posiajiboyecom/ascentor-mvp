@@ -7,12 +7,12 @@
 // Map when running locally or if env vars are absent.
 //
 // This replaces the in-process Map in getPartnerContext.ts,
-// which silently broke across Vercel serverless instances —
+// which silently broke across Vercel serverless instances -
 // clearPartnerCache only cleared ONE instance's memory.
 //
-// ENV (optional — fallback works without them):
-//   KV_REST_API_URL   — Upstash REST endpoint
-//   KV_REST_API_TOKEN — Upstash read-write token
+// ENV (optional - fallback works without them):
+//   KV_REST_API_URL   - Upstash REST endpoint
+//   KV_REST_API_TOKEN - Upstash read-write token
 // ============================================================
 
 const CACHE_TTL_SECONDS = 60; // 60s TTL matches original

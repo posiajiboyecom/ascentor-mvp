@@ -9,9 +9,9 @@ function SvgIcon({ html, className, style }: { html: string; className?: string;
 }
 
 export const metadata: Metadata = {
-  title: 'How It Works — Ascentor',
+  title: 'How It Works | Ascentor',
   description:
-    "From sign-up to your first breakthrough — here's exactly how Sage, human experts, and peer circles work together for your growth.",
+    "From sign-up to your first breakthrough, here's exactly how Sage, human experts, and peer circles work together for your growth.",
 };
 
 /* ── Data ────────────────────────────────────────────────── */
@@ -19,7 +19,7 @@ const STEPS = [
   {
     number: '01',
     title:  'Join & set your goal',
-    desc:   'Sign up in under 2 minutes. Tell us your life stage, career goal, and biggest challenge. No lengthy forms — just the essentials Sage needs to get started.',
+    desc:   'Sign up in under 2 minutes. Tell us your life stage, career goal, and biggest challenge. No lengthy forms, just the essentials Sage needs to get started.',
     detail: 'Your 90-day goal becomes the anchor for every session. Sage refers back to it constantly, keeping you accountable even when life gets in the way.',
     icon:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
     color:  '#E8A020',
@@ -28,7 +28,7 @@ const STEPS = [
   {
     number: '02',
     title:  'Sage learns you',
-    desc:   'Unlike ChatGPT, Sage is trained on real-world business culture, career dynamics, and leadership frameworks. It uses a Socratic coaching model — asking you the right questions.',
+    desc:   'Unlike ChatGPT, Sage is trained on real-world business culture, career dynamics, and leadership frameworks. It uses a Socratic coaching model, asking you the right questions.',
     detail: 'Every session is saved. The AI remembers what you discussed last week, tracks your progress, and adapts its coaching style to how you respond. It gets smarter about you over time.',
     icon:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>',
     color:  '#14B8A6',
@@ -37,7 +37,7 @@ const STEPS = [
   {
     number: '03',
     title:  'Get matched to your circle',
-    desc:   "We match you with 8–12 professionals at your exact life stage, in a similar industry, facing similar challenges. This isn't a random group chat — it's your personal board.",
+    desc:   "We match you with 8–12 professionals at your exact life stage, in a similar industry, facing similar challenges. This isn't a random group chat, it's your personal board.",
     detail: 'Your circle meets weekly (async or live). You celebrate wins together, hold each other accountable, and share opportunities. Some of our members have co-founded businesses from their circles.',
     icon:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     color:  '#8B5CF6',
@@ -46,8 +46,8 @@ const STEPS = [
   {
     number: '04',
     title:  'Book a human mentor session',
-    desc:   'When you need a real conversation, book a 1-on-1 session with a verified mentor who has walked the exact path you\'re on. Not a coach with a certificate — someone who has done it.',
-    detail: "Our mentors are vetted senior professionals — CTOs, founders, directors, GPs. They've navigated the same systems, the same politics, and the same barriers you're facing right now.",
+    desc:   'When you need a real conversation, book a 1-on-1 session with a verified mentor who has walked the exact path you\'re on. Not a coach with a certificate, someone who has done it.',
+    detail: "Our mentors are vetted senior professionals, CTOs, founders, directors, GPs. They've navigated the same systems, the same politics, and the same barriers you're facing right now.",
     icon:   '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>',
     color:  '#E8A020',
     tags:   ['Verified mentors', 'purposeful individuals', '1-on-1 sessions'],
@@ -71,10 +71,10 @@ const PILLARS = [
     bg:    'rgba(20,184,166,0.06)',
     border:'rgba(20,184,166,0.18)',
     points: [
-      'Available 24/7 — even at 2am before a big presentation',
+      'Available 24/7, even at 2am before a big presentation',
       'Trained on global career context, not generic defaults',
       'Remembers every session and tracks your goal progress',
-      'Uses Socratic questioning — not just giving answers',
+      'Uses Socratic questioning, not just giving answers',
       'Sends weekly progress summaries to your dashboard',
     ],
   },
@@ -85,7 +85,7 @@ const PILLARS = [
     bg:    'rgba(245,158,11,0.06)',
     border:'rgba(245,158,11,0.22)',
     points: [
-      'Verified senior professionals — not generic coaches',
+      'Verified senior professionals, not generic coaches',
       'They\'ve navigated the exact barriers you\'re facing',
       '1-on-1 booking available on Builder & Climber plans',
       'Monthly group masterclasses open to all plans',
@@ -100,10 +100,10 @@ const PILLARS = [
     border:'rgba(139,92,246,0.18)',
     points: [
       '8–12 members matched by stage, industry, and challenge',
-      'Async + live weekly check-ins — fits any schedule',
+      'Async + live weekly check-ins, fits any schedule',
       'Shared goal accountability between members',
       'Safe space to be honest about struggles and wins',
-      'Global exposure — your circle spans continents',
+      'Global exposure, your circle spans continents',
     ],
   },
 ];
@@ -111,11 +111,11 @@ const PILLARS = [
 const FAQS = [
   {
     q: 'How is Sage different from ChatGPT?',
-    a: "ChatGPT is a general tool. Sage is specifically calibrated for real career and business context — it understands the dynamics of professional life wherever you are, not just generic Western defaults. It also remembers your history and tracks your specific 90-day goal across every session.",
+    a: "ChatGPT is a general tool. Sage is specifically calibrated for real career and business context, it understands the dynamics of professional life wherever you are, not just generic Western defaults. It also remembers your history and tracks your specific 90-day goal across every session.",
   },
   {
     q: 'How does mentor matching work?',
-    a: "For peer circles, we use your life stage, industry, goal, and challenge to algorithmically match you with the most relevant peers. For 1-on-1 mentor bookings, you browse verified mentor profiles and book directly — filtered by industry, seniority, and specialty.",
+    a: "For peer circles, we use your life stage, industry, goal, and challenge to algorithmically match you with the most relevant peers. For 1-on-1 mentor bookings, you browse verified mentor profiles and book directly, filtered by industry, seniority, and specialty.",
   },
   {
     q: 'What does a typical week look like?',
@@ -127,7 +127,7 @@ const FAQS = [
   },
   {
     q: 'How quickly will I see results?',
-    a: "Most members report a measurable outcome — a promotion conversation started, a new role landed, a business decision clarified — within their first 90 days. The key is showing up to your sessions consistently.",
+    a: "Most members report a measurable outcome, a promotion conversation started, a new role landed, a business decision clarified, within their first 90 days. The key is showing up to your sessions consistently.",
   },
 ];
 
@@ -183,7 +183,7 @@ export default async function HowItWorksPage() {
   //   hero       → {eyebrow, headline, subhead}
   //   faq        → repeating items {q, a}
   //   bottom_cta → {eyebrow, headline, body, cta_label, cta_href}
-  // PILLARS, STEPS, COMPARISON table are NOT wired — they are design
+  // PILLARS, STEPS, COMPARISON table are NOT wired - they are design
   // components with booleans, colors, and emojis that require code changes.
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
   const heroEyebrow  = hero?.eyebrow  || 'THE SYSTEM';

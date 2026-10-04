@@ -1,8 +1,8 @@
 // app/p/[subdomain]/admin/layout.tsx
 //
 // FIXES:
-//   WL-01 — PartnerMemberShell → PartnerAdminShell (correct sidebar shell)
-//   WL-09 — Owner-only guard (non-owners redirected to access-denied)
+//   WL-01 - PartnerMemberShell → PartnerAdminShell (correct sidebar shell)
+//   WL-09 - Owner-only guard (non-owners redirected to access-denied)
 //
 // HOW ADMIN ROUTING WORKS:
 //   User on demo.ascentorbi.com clicks "Admin" → href="/admin/brand"
@@ -54,7 +54,7 @@ export default async function PartnerAdminLayout({
   const { partner, cssVars } = ctx;
   const brand = partner.brand;
 
-  // 2. Auth — admin is always protected
+  // 2. Auth - admin is always protected
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -83,7 +83,7 @@ export default async function PartnerAdminLayout({
       <div style={cssVarObject as React.CSSProperties}>
         <PartnerProvider context={ctx}>
           {/*
-            basePath="/admin" — sidebar links are /admin/brand, /admin/members etc.
+            basePath="/admin", sidebar links are /admin/brand, /admin/members etc.
             Proxy rewrites those to /p/demo/admin/brand etc. transparently.
           */}
           <PartnerAdminShell partner={partner} userId={user.id} basePath="/admin">
@@ -107,7 +107,7 @@ export async function generateMetadata({
   if (!ctx.isWhiteLabel) return {};
   const { brand } = ctx.partner;
   return {
-    title:       `Admin — ${brand.platform_name}`,
+    title:       `Admin, ${brand.platform_name}`,
     description: brand.tagline ?? undefined,
     icons:       brand.favicon_url ? [{ url: brand.favicon_url }] : [],
   };

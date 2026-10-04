@@ -1,24 +1,24 @@
 ﻿// ═══════════════════════════════════════════════════════════
-// Agent 1: Content Researcher — Ambitious Professional Edition
+// Agent 1: Content Researcher - Ambitious Professional Edition
 //
 // AUDIENCE SEGMENTS:
-//   Explorer  (30% of content) — students, graduates, early jobseekers,
+//   Explorer  (30% of content) - students, graduates, early jobseekers,
 //             anyone figuring out their direction
-//   Builder   (50% of content) — early-career pros, first-time managers,
+//   Builder   (50% of content) - early-career pros, first-time managers,
 //             entrepreneurs, career switchers (0–7 yrs experience)
-//   Climber   (20% of content) — mid-career leaders, senior managers,
+//   Climber   (20% of content) - mid-career leaders, senior managers,
 //             directors, scaling founders, execs moving to board roles
 //
 // VOICE PHILOSOPHY:
 //   Every post must make the target reader stop scrolling and say:
 //   "This is exactly what I'm going through."
-//   Written from lived experience — not from the outside looking in.
+//   Written from lived experience - not from the outside looking in.
 //   Zero generic career advice. Zero region-specific clichés.
 //   Universal relatability. Ascentor's impact is the hero.
 //
 // CONFIDENCE PRINCIPLE:
 //   Ascentor speaks with the authority of results.
-//   Not "maybe try this" — "here is what works,
+//   Not "maybe try this" - "here is what works,
 //   here is what we have seen across hundreds of sessions."
 //
 // Free tier constraints:
@@ -41,7 +41,7 @@ const supabase = createClient(
 // Journey-stage segments (primary)
 export type JourneyStage = 'explorer' | 'builder' | 'climber';
 
-// Legacy age-based segments — kept for backwards compatibility
+// Legacy age-based segments - kept for backwards compatibility
 export type AudiencePreset =
   | 'young_professional'
   | 'mid_career'
@@ -66,19 +66,19 @@ export const PRO_CONTEXT = {
   explorer: [
     "Not knowing which career path to choose when everyone around you seems to have it figured out",
     "Graduating with a degree and realising no one told you how the job market actually works",
-    "Applying to 50 jobs and hearing nothing back — with no idea what you are doing wrong",
+    "Applying to 50 jobs and hearing nothing back, with no idea what you are doing wrong",
     "Watching peers get opportunities that seem to come from connections you do not have",
     "Feeling behind because you are still exploring while others appear to have already arrived",
     "Getting advice from adults that was relevant 20 years ago but useless in today's world",
     "Not knowing how to write a CV, prepare for interviews, or build a professional network from scratch",
-    "The paralysis of too many options — every path looks possible and none feels certain",
+    "The paralysis of too many options, every path looks possible and none feels certain",
   ],
 
   builder: [
     "Working twice as hard as your peers but being consistently overlooked for promotion",
     "Having your idea dismissed in a meeting, only to watch it praised when someone senior restates it",
     "Delivering strong results for two years with no raise, no title change, and no explanation",
-    "Being told you are not ready — with no guidance on what ready actually looks like",
+    "Being told you are not ready, with no guidance on what ready actually looks like",
     "Navigating every major career decision without a mentor because the successful people are always too busy",
     "Watching peers accelerate because they have the right relationships, not because they work harder",
     "Earning below your market value because you never learned how to negotiate",
@@ -86,17 +86,17 @@ export const PRO_CONTEXT = {
     "Experiencing imposter syndrome in rooms where you are genuinely one of the most capable people present",
     "Promotion decisions driven more by relationships and politics than by the quality of your work",
     "Stepping into your first management role with zero training and zero support",
-    "Building a business while holding down a job — exhausted, unclear on what to prioritise",
+    "Building a business while holding down a job, exhausted, unclear on what to prioritise",
   ],
 
   climber: [
     "Being excellent at the technical work but struggling to make the leap to genuine leadership",
-    "Managing people who are older or more experienced than you — with no playbook for earning their respect",
+    "Managing people who are older or more experienced than you, with no playbook for earning their respect",
     "Hitting a director title but still feeling like you are faking it in the boardroom",
     "Building a team culture when the organisation around you rewards individual performance",
-    "The loneliness of senior leadership — fewer peers to be honest with, higher stakes on every decision",
+    "The loneliness of senior leadership, fewer peers to be honest with, higher stakes on every decision",
     "Knowing your next move needs to be strategic but having no one objective to think it through with",
-    "Being passed over for a C-suite role you were clearly ready for — and not understanding why",
+    "Being passed over for a C-suite role you were clearly ready for, and not understanding why",
     "Scaling a business past early traction and discovering the skills that built it are not the skills that grow it",
     "Mentoring others while quietly having no one doing the same for you",
     "The performance review that measures what you delivered but ignores how you are actually leading",
@@ -105,9 +105,9 @@ export const PRO_CONTEXT = {
   ascentorImpactProofs: [
     "Professionals who work with Ascentor get promoted 40% faster than their peers",
     "In our coaching sessions, we have seen one conversation shift what months of isolated effort could not",
-    "The gap between where you are and where you want to be is almost always a clarity gap — not a capability gap",
+    "The gap between where you are and where you want to be is almost always a clarity gap, not a capability gap",
     "Every breakthrough we have seen starts with one thing: someone finally asking the right question out loud",
-    "Ascentor has worked with thousands of professionals worldwide — we know exactly what separates the ones who break through",
+    "Ascentor has worked with thousands of professionals worldwide, we know exactly what separates the ones who break through",
   ],
 };
 
@@ -134,26 +134,26 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       'Also anyone at any age who is unsure which career path to take. ' +
       'Core tensions: overwhelming number of options with no framework to choose; ' +
       'pressure from family, peers, and society to "have a plan"; ' +
-      'no one teaching them how careers actually work — CVs, interviews, networking, salary; ' +
+      'no one teaching them how careers actually work, CVs, interviews, networking, salary; ' +
       'feeling behind or lost while peers seem to be moving forward; ' +
       'needing clarity, direction, and someone to show them the first real steps. ' +
       'They are smart and motivated but lack the map. Ascentor gives them the map.',
     writerVoice:
-      'PERSONA: A brilliant, approachable older sibling or young mentor who figured it out — and wants to share everything. ' +
+      'PERSONA: A brilliant, approachable older sibling or young mentor who figured it out, and wants to share everything. ' +
       'Not a professor. Not a career counsellor. Someone who genuinely remembers what it felt like to not know. ' +
 
       'TONE: Encouraging. Clear. Energising. Zero condescension. ' +
-      'Speak to their intelligence — they are capable, they just need direction. ' +
+      'Speak to their intelligence, they are capable, they just need direction. ' +
 
       'LANGUAGE: Accessible but never dumbed down. Avoid corporate jargon entirely. ' +
-      'Use concrete examples — "here is exactly what to do" not "consider exploring options". ' +
+      'Use concrete examples, "here is exactly what to do" not "consider exploring options". ' +
 
       'SPECIFICITY: Name the exact confusion. ' +
-      '"You have three tabs open — LinkedIn, job boards, and a master\'s application — and you have not moved in an hour." ' +
+      '"You have three tabs open, LinkedIn, job boards, and a master\'s application, and you have not moved in an hour." ' +
       'Make them feel understood before you give them anything actionable. ' +
 
       'ASCENTOR FRAMING: Position Ascentor as the guide they always needed but never had. ' +
-      '"Sage walks you through this step by step — like having a mentor available at 2am before the deadline." ' +
+      '"Sage walks you through this step by step, like having a mentor available at 2am before the deadline." ' +
 
       'CLOSE: One clear first step. Not a list. The single most important thing they can do today.',
 
@@ -169,7 +169,7 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       instagram:
         "Still figuring out what you want to do? You are not behind. You just need a better map 👇",
       email:
-        "The career clarity nobody gave you — and the exact steps to find your direction",
+        "The career clarity nobody gave you, and the exact steps to find your direction",
     },
   },
 
@@ -184,9 +184,9 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       'earning below market value because they never learned to negotiate; ' +
       'imposter syndrome in rooms they have earned their place in; ' +
       'wanting to move faster but not knowing which lever to pull. ' +
-      'They are in execution mode — they know the direction, they need the edge.',
+      'They are in execution mode, they know the direction, they need the edge.',
     writerVoice:
-      'PERSONA: A successful, warm, and direct peer who is two or three steps ahead — and wants to close that gap for you. ' +
+      'PERSONA: A successful, warm, and direct peer who is two or three steps ahead, and wants to close that gap for you. ' +
       'Not a consultant. Not a corporate coach. Someone in the arena who tells you the truth. ' +
 
       'TONE: Confident. Warm. Direct. Occasionally sharp. Never preachy. Never vague. ' +
@@ -203,7 +203,7 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       '"Here is what we have seen across hundreds of coaching sessions." ' +
       'NEVER: "maybe try", "you might consider". ' +
 
-      'CLOSE: One concrete action they can take this week — tied to how Ascentor accelerates the result.',
+      'CLOSE: One concrete action they can take this week, tied to how Ascentor accelerates the result.',
 
     fallbackPersona:
       'A professional, 27 years old, 4 years into their career at a tech or financial services firm. ' +
@@ -212,13 +212,13 @@ export const AUDIENCE_META: Record<AudiencePreset, {
 
     platformHooks: {
       linkedin:
-        "You are working harder than the person who just got promoted. Here is the one thing that actually made the difference — and it was not competence.",
+        "You are working harder than the person who just got promoted. Here is the one thing that actually made the difference, and it was not competence.",
       twitter:
         "The career trap that catches every talented professional in their 20s and 30s. And the way out nobody teaches you 🧵",
       instagram:
         "The thing no one tells you at your first job orientation that changes everything about your career 👇",
       email:
-        "The promotion you were passed over for? Here is the real reason — and it has nothing to do with your performance",
+        "The promotion you were passed over for? Here is the real reason, and it has nothing to do with your performance",
     },
   },
 
@@ -234,20 +234,20 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       'succession planning, legacy, and how to make their next move count; ' +
       'scaling a team or business without losing what made it work; ' +
       'being seen as a leader by others before they fully see it in themselves. ' +
-      'They are experienced and capable — they need strategic sharpness and a thinking partner.',
+      'They are experienced and capable, they need strategic sharpness and a thinking partner.',
     writerVoice:
-      'PERSONA: A respected peer at a leadership retreat — someone who has earned their scars and speaks from them. ' +
+      'PERSONA: A respected peer at a leadership retreat, someone who has earned their scars and speaks from them. ' +
       'Strategic. Reflective. Direct. No performance, no theory. Hard-won clarity shared peer to peer. ' +
 
       'TONE: Measured. Authoritative. Warm but economical with words. ' +
       'Every sentence has earned its place. Nothing is obvious. Nothing is padded. ' +
 
       'LANGUAGE: Sophisticated but not academic. ' +
-      'Speak to the complexity they actually navigate — boards, teams, investors, legacy. ' +
+      'Speak to the complexity they actually navigate, boards, teams, investors, legacy. ' +
 
       'ASCENTOR AUTHORITY: "This is what we consistently see at this level." ' +
       '"The leaders who make this transition successfully do one thing differently." ' +
-      'Position Ascentor as the strategic partner senior leaders deserve — not a coaching tool for beginners. ' +
+      'Position Ascentor as the strategic partner senior leaders deserve, not a coaching tool for beginners. ' +
 
       'CLOSE: One strategic question or action that reframes how they are thinking about the challenge.',
 
@@ -260,7 +260,7 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       linkedin:
         "The most effective leaders consistently do one thing that no leadership course teaches. Here is what the data from our sessions actually shows.",
       twitter:
-        "Why the best talent keeps leaving — and what the leaders who retain them do differently 🧵",
+        "Why the best talent keeps leaving, and what the leaders who retain them do differently 🧵",
       instagram:
         "The leadership gap nobody at the senior level talks about openly (and exactly how to close it) 👇",
       email:
@@ -282,7 +282,7 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       'PERSONA: A successful, warm, and direct older colleague who has walked this exact path. ' +
       'TONE: Confident. Warm. Direct. Occasionally sharp. Never preachy. ' +
       'LANGUAGE: Clean, professional English. Universally relatable. ZERO region-specific slang. ' +
-      'ASCENTOR CONFIDENCE: Speak from results — "professionals who do this get promoted 40% faster."',
+      'ASCENTOR CONFIDENCE: Speak from results, "professionals who do this get promoted 40% faster."',
     fallbackPersona:
       'A professional, 25 years old, 3 years into their career. Outperforms peers. Passed over for promotion without explanation.',
     platformHooks: {
@@ -328,7 +328,7 @@ export const AUDIENCE_META: Record<AudiencePreset, {
       'An executive, 45 years old, C-suite at a major firm, managing 100+ people, focused on retaining young talent.',
     platformHooks: {
       linkedin: "The most effective leaders consistently do one thing that no leadership course teaches. Here is what the data shows.",
-      twitter: "Why the best young talent keeps leaving — and what the leaders who retain them do differently 🧵",
+      twitter: "Why the best young talent keeps leaving, and what the leaders who retain them do differently 🧵",
       instagram: "The leadership gap nobody talks about openly (and exactly how to close it) 👇",
       email: "What separates top-tier executives from everyone else at the same level",
     },
@@ -348,7 +348,7 @@ export const AUDIENCE_META: Record<AudiencePreset, {
     platformHooks: {
       linkedin: "The career playbook every professional should have from day one. Nobody handed it to you. So here it is.",
       twitter: "What the most successful professionals in the room have in common (it is not what you think) 🧵",
-      instagram: "The career truth that actually applies to your life — not the recycled version 👇",
+      instagram: "The career truth that actually applies to your life, not the recycled version 👇",
       email: "What working with thousands of professionals worldwide has taught us about what actually accelerates careers",
     },
   },
@@ -370,19 +370,19 @@ type Pillar = typeof PILLAR_ROTATION[number];
 
 const PILLAR_CONTEXT: Record<Pillar, string> = {
   career:
-    "career acceleration — promotions, salary negotiation, visibility strategies, " +
+    "career acceleration, promotions, salary negotiation, visibility strategies, " +
     "the effort-recognition gap, navigating corporate culture, what actually drives momentum",
   leadership:
-    "leadership development — building executive presence, managing teams, " +
+    "leadership development, building executive presence, managing teams, " +
     "navigating office politics, the individual-contributor-to-leader transition, developing the confidence to lead",
   ai:
-    "AI tools transforming workplaces — which tools are making the biggest real-world difference, " +
+    "AI tools transforming workplaces, which tools are making the biggest real-world difference, " +
     "AI disruption across industries, how to gain an AI-powered career edge before peers catch up",
   coaching:
-    "mentorship and personal development — why real mentors are scarce and hard to access, " +
+    "mentorship and personal development, why real mentors are scarce and hard to access, " +
     "what Ascentor coaching actually delivers, the ROI of intentional development, breakthrough patterns we see in sessions",
   community:
-    "professional community and peer networks — " +
+    "professional community and peer networks, " +
     "why your circle determines your ceiling, how to build valuable professional relationships intentionally, " +
     "the power of peer accountability, what the most connected professionals do differently",
 };
@@ -402,9 +402,9 @@ async function researchAndDiscover(
     messages: [{
       role: "user",
       content:
-        `You are the research lead at Ascentor — an The Elevation Summit platform for purposeful individuals.\n\n` +
+        `You are the research lead at Ascentor, an The Elevation Summit platform for purposeful individuals.\n\n` +
         `MISSION: Find what is ACTUALLY relevant this week for the audience segment below. ` +
-        `Global focus — trends that resonate across industries, cities, and career stages.\n\n` +
+        `Global focus, trends that resonate across industries, cities, and career stages.\n\n` +
         `Audience segment: ${audienceMeta.label}\n` +
         `Context: ${audienceMeta.researchContext}\n\n` +
         `Research pillar: "${PILLAR_CONTEXT[pillar]}"\n\n` +
@@ -417,7 +417,7 @@ async function researchAndDiscover(
         `Return ONLY this JSON, no markdown:\n` +
         `{"trends":["trend relevant to ${audienceMeta.label}s 1","trend 2","trend 3"],` +
         `"news":[{"title":"headline relevant to ${audienceMeta.label}s","snippet":"one sentence with specifics"}],` +
-        `"summary":"2 sentences — what is most relevant THIS WEEK for ${audienceMeta.label}s",` +
+        `"summary":"2 sentences, what is most relevant THIS WEEK for ${audienceMeta.label}s",` +
         `"research":"4-5 sentences with specific stats, named companies where available, real professional context"}`,
     }],
   });
@@ -447,7 +447,7 @@ async function buildBrief(params: {
   const stageLabel = audienceMeta.label;
 
   const avoidBlock = params.recentTopics.length > 0
-    ? `\nDO NOT REPEAT — TOPICS ALREADY COVERED (last ${params.recentTopics.length}):\n` +
+    ? `\nDO NOT REPEAT, TOPICS ALREADY COVERED (last ${params.recentTopics.length}):\n` +
       params.recentTopics.map(t => `- "${t}"`).join("\n") +
       `\nChoose a FRESH angle, scenario, and insight that has not appeared in any of the above.\n`
     : "";
@@ -458,17 +458,17 @@ async function buildBrief(params: {
     messages: [{
       role: "user",
       content:
-        `You are the content strategist at Ascentor — AI mentorship for purposeful individuals.\n\n` +
+        `You are the content strategist at Ascentor, AI mentorship for purposeful individuals.\n\n` +
         `MISSION: Build a brief that makes a ${stageLabel} stop and say "this is EXACTLY my life right now."\n\n` +
         `Audience segment: ${stageLabel} | Pillar: ${params.pillar} | Week: ${params.weekNumber}\n` +
         `Trends: ${params.trends.slice(0, 3).join(", ") || params.pillar}\n` +
         `Research: ${params.research.substring(0, 500)}\n` +
         avoidBlock +
         `\nRULES:\n` +
-        `1. Topic must speak directly to the ${stageLabel} stage — no generic career advice\n` +
+        `1. Topic must speak directly to the ${stageLabel} stage, no generic career advice\n` +
         `2. Every key message must position Ascentor as the platform that closes this specific gap\n` +
         `3. Ascentor speaks from results: "we have seen this", "professionals who do this get promoted 40% faster"\n` +
-        `4. Zero region-specific slang or references — universally relatable\n\n` +
+        `4. Zero region-specific slang or references, universally relatable\n\n` +
         `Return ONLY valid JSON:\n` +
         `{"chosenTopic":"punchy specific title max 12 words",` +
         `"angle":"our unique take rooted in the ${stageLabel} reality",` +
@@ -480,7 +480,7 @@ async function buildBrief(params: {
         `"dataPoints":["specific stat or proof point"],` +
         `"seoKeywords":["primary","secondary","long-tail"],` +
         `"urgencyReason":"why this matters to ${stageLabel}s RIGHT NOW",` +
-        `"professionalAngle":"the exact career truth this content addresses — specific, no jargon"}`,
+        `"professionalAngle":"the exact career truth this content addresses, specific, no jargon"}`,
     }],
   });
 
@@ -491,20 +491,20 @@ async function buildBrief(params: {
   } catch {
     const month = new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" });
     return {
-      chosenTopic: `The ${stageLabel} ${params.pillar} playbook — ${month}`,
+      chosenTopic: `The ${stageLabel} ${params.pillar} playbook, ${month}`,
       angle: `Built for the real challenges of a ${stageLabel}`,
       pillar: params.pillar,
       targetAudience: audienceMeta.fallbackPersona,
       keyMessages: [
         `Generic career advice was not built for where a ${stageLabel} actually is`,
-        "The professionals breaking through have a different playbook — Ascentor gives you that playbook",
+        "The professionals breaking through have a different playbook | Ascentor gives you that playbook",
         "Ascentor closes the gap between the career you have and the one you deserve",
       ],
       hooks: [audienceMeta.platformHooks.linkedin, audienceMeta.platformHooks.twitter, audienceMeta.platformHooks.email],
       instagramHook: audienceMeta.platformHooks.instagram,
       dataPoints: ["Over 1 billion working professionals are navigating their careers without a real mentor"],
       seoKeywords: [`${stageLabel} career`, `professional ${params.pillar}`, `purposeful development`],
-      urgencyReason: `${stageLabel}s face a real mentorship gap — empowering content builds the trust that converts`,
+      urgencyReason: `${stageLabel}s face a real mentorship gap, empowering content builds the trust that converts`,
       professionalAngle: painPoints[Math.floor(Math.random() * painPoints.length)],
     };
   }
@@ -521,7 +521,7 @@ async function runResearch(params: {
   const pillar: Pillar = params.pillar ?? PILLAR_ROTATION[weekNumber % PILLAR_ROTATION.length];
   const audience: AudiencePreset = params.audience ?? 'builder';
 
-  console.log(`[Researcher] Week ${weekNumber} — pillar: ${pillar} — segment: ${audience}`);
+  console.log(`[Researcher] Week ${weekNumber}, pillar: ${pillar}, segment: ${audience}`);
 
   // Fetch recent topics to avoid repetition
   let recentTopics: string[] = [];
@@ -543,7 +543,7 @@ async function runResearch(params: {
   const brief = await buildBrief({ pillar, weekNumber, trends, news, summary, research, audience, recentTopics });
   if (params.topicOverride?.trim()) brief.chosenTopic = params.topicOverride.trim();
 
-  console.log(`[Researcher] Brief: "${brief.chosenTopic}" — segment: ${audience}`);
+  console.log(`[Researcher] Brief: "${brief.chosenTopic}", segment: ${audience}`);
 
   let savedBriefId: string | null = null;
   try {
@@ -607,7 +607,7 @@ export const contentResearcherAgent = schedules.task({
   maxDuration: 60,
   run: async () => {
     // Default scheduled run targets Builders (50% of content mix)
-    console.log("[Researcher] Weekly scheduled research — Builder segment...");
+    console.log("[Researcher] Weekly scheduled research, Builder segment...");
     return runResearch({ audience: 'builder', triggeredBy: "schedule" });
   },
 });

@@ -1,13 +1,13 @@
 ﻿// ═══════════════════════════════════════════════════════════
-// Agent 2: Content Writer — Ambitious Professional Edition
+// Agent 2: Content Writer - Ambitious Professional Edition
 //
 // AUDIENCE SEGMENTS:
-//   Explorer  (30%) — students, graduates, early jobseekers
-//   Builder   (50%) — early-career pros, first-time managers, entrepreneurs
-//   Climber   (20%) — mid-career leaders, directors, scaling founders
+//   Explorer  (30%) - students, graduates, early jobseekers
+//   Builder   (50%) - early-career pros, first-time managers, entrepreneurs
+//   Climber   (20%) - mid-career leaders, directors, scaling founders
 //
 // Each segment gets its own tone, voice, hooks, and CTAs.
-// The researcher picks the segment — the writer executes it precisely.
+// The researcher picks the segment - the writer executes it precisely.
 //
 // FIXES vs previous version:
 //   - Instagram split into 3 separate API calls (carousel / reel / engagement)
@@ -86,23 +86,23 @@ function extractJSON(raw: string): any {
   throw new Error(`Could not parse JSON. Raw: ${raw.slice(0, 120)}`);
 }
 
-// ── System prompt — JSON enforcement ─────────────────────────
+// ── System prompt - JSON enforcement ─────────────────────────
 const SYSTEM =
   "You are a JSON API. Respond with ONLY a valid raw JSON object. " +
   "Never use markdown code fences, backticks, or any text before or after the JSON. " +
   "Your entire response must begin with { and end with }. " +
   "CRITICAL JSON RULES: " +
-  "(1) All string values must be on ONE logical line — represent newlines as \\n (backslash-n), never as actual line breaks inside strings. " +
-  "(2) Never put a raw { or [ character inside a string value — escape it or rephrase. " +
+  "(1) All string values must be on ONE logical line, represent newlines as \\n (backslash-n), never as actual line breaks inside strings. " +
+  "(2) Never put a raw { or [ character inside a string value, escape it or rephrase. " +
   "(3) Every string must be properly closed with a quote before the next field. " +
-  "(4) Never truncate the response — if running long, shorten the content, not the JSON structure.";
+  "(4) Never truncate the response, if running long, shorten the content, not the JSON structure.";
 
 // ── ASCENTOR BRAND ────────────────────────────────────────────
 const ASCENTOR_BRAND =
   "ABOUT ASCENTOR: We are an purposeful development and leadership development platform " +
   "built for purposeful individuals worldwide. " +
   "We have worked with thousands of professionals across industries and continents. " +
-  "We know what works because we have been in the room — not because we studied it from outside. " +
+  "We know what works because we have been in the room, not because we studied it from outside. " +
 
   "OUR VOICE: Warm. Direct. Authoritative. Deeply human. " +
   "We speak with the confidence of a mentor who has earned it through results. " +
@@ -115,19 +115,19 @@ const ASCENTOR_BRAND =
   "ALWAYS write the EXACT situation: 'the performance review where you scored top marks and were still passed over', " +
   "'the meeting where you stayed quiet because no one taught you how to command that room', " +
   "'the salary negotiation you lost before it started because you named a number first'. " +
-  "If a reader can nod and say 'that is literally me right now' — you have it right. " +
-  "If a reader could insert their name into a template — rewrite it.";
+  "If a reader can nod and say 'that is literally me right now', you have it right. " +
+  "If a reader could insert their name into a template, rewrite it.";
 
 // ── Segment-specific CTA framing ─────────────────────────────
 const SEGMENT_CTA: Record<string, string> = {
   explorer:
     "CTA FRAMING FOR EXPLORER: Ascentor is the guide they always needed but never had. " +
     "Speak to first steps, clarity, and having someone in your corner. " +
-    "STRONG: 'This is exactly what Ascentor Sage is built for — a mentor available at 2am before every big decision. Link in bio.' " +
+    "STRONG: 'This is exactly what Ascentor Sage is built for, a mentor available at 2am before every big decision. Link in bio.' " +
     "WEAK: 'Ascentor can help you with your career.'",
   builder:
     "CTA FRAMING FOR BUILDER: Ascentor is the edge that closes the gap between effort and recognition. " +
-    "STRONG: 'Ascentor members are not waiting to be discovered — they are engineering their visibility. This is the playbook. Join them.' " +
+    "STRONG: 'Ascentor members are not waiting to be discovered, they are engineering their visibility. This is the playbook. Join them.' " +
     "WEAK: 'Check out Ascentor for purposeful development.'",
   climber:
     "CTA FRAMING FOR CLIMBER: Ascentor is the strategic thinking partner senior leaders deserve. " +
@@ -146,7 +146,7 @@ function getSegmentCTA(audience: AudiencePreset): string {
 const SEGMENT_SPECIFICITY: Record<string, string> = {
   explorer:
     "SPECIFICITY EXAMPLES FOR EXPLORER:\n" +
-    "GOOD: 'You have three browser tabs open — LinkedIn, a job listing, and your CV — and you have not moved in 40 minutes.'\n" +
+    "GOOD: 'You have three browser tabs open, LinkedIn, a job listing, and your CV, and you have not moved in 40 minutes.'\n" +
     "GOOD: 'Your degree says one thing. Your gut says another. And every adult in your life has a different opinion.'\n" +
     "BAD: 'Starting your career can feel overwhelming and uncertain.'\n" +
     "BAD: 'Many young professionals struggle to find direction.'\n",
@@ -173,7 +173,7 @@ function getSpecificity(audience: AudiencePreset): string {
 
 export const contentWriterAgent = task({
   id: "content-writer-agent",
-  maxDuration: 180, // increased — now 7 parallel calls
+  maxDuration: 180, // increased - now 7 parallel calls
   run: async (payload: {
     topic: string;
     pillar: "leadership" | "career" | "ai" | "coaching" | "community";
@@ -217,7 +217,7 @@ export const contentWriterAgent = task({
           .map(r => `- "${r.title.replace(/^IG \w+: |^Thread: /, '')}"`)
           .join("\n");
         recentTopicsBlock =
-          `\nDO NOT REPEAT — ALREADY PUBLISHED (last ${recentItems.length} pieces):\n` +
+          `\nDO NOT REPEAT, ALREADY PUBLISHED (last ${recentItems.length} pieces):\n` +
           `${recentList}\n` +
           `Every angle, hook, opening scenario, and key insight must be FRESH. ` +
           `If any of the above topics are related, approach from a completely different angle, ` +
@@ -242,17 +242,17 @@ export const contentWriterAgent = task({
       recentTopicsBlock;
 
     const keyMsgBlock = keyMessages.length > 0
-      ? `Key messages (weave in naturally — never as a list):\n${keyMessages.map((m, i) => `${i + 1}. ${m}`).join("\n")}\n\n` : "";
+      ? `Key messages (weave in naturally, never as a list):\n${keyMessages.map((m, i) => `${i + 1}. ${m}`).join("\n")}\n\n` : "";
     const dataBlock = dataPoints.length > 0
-      ? `Data points (cite naturally in prose — never as a bullet list):\n${dataPoints.map(d => `- ${d}`).join("\n")}\n\n` : "";
+      ? `Data points (cite naturally in prose, never as a bullet list):\n${dataPoints.map(d => `- ${d}`).join("\n")}\n\n` : "";
     const hooksBlock = hooks.length >= 3
       ? `Researched hooks:\n- LinkedIn: ${hooks[0]}\n- Twitter/X: ${hooks[1]}\n- Email: ${hooks[2]}\n\n` : "";
 
     if (payload.briefId) logger.info(`[Writer] briefId: ${payload.briefId}`);
-    logger.info(`[Writer] Starting — "${topic}" | ${pillar} | segment: ${audience}`);
+    logger.info(`[Writer] Starting, "${topic}" | ${pillar} | segment: ${audience}`);
     logger.info("[Writer] Firing 7 Claude calls in parallel...");
 
-    // ── 7 parallel calls — Instagram split into 3 ────────────
+    // ── 7 parallel calls - Instagram split into 3 ────────────
     const [
       blogSettled,
       linkedinSettled,
@@ -281,12 +281,12 @@ export const contentWriterAgent = task({
             `  STRONG: "Why the Hardest Workers in the Room Are Still Getting Passed Over for Promotion"\n` +
             `  WEAK: "How to Advance Your Career"\n` +
             `- OPENING PARAGRAPH: Drop into a specific, uncomfortable, recognisable ${audienceMeta.label} moment. Make them feel seen before you give them a single word of advice.\n` +
-            `- 3 SUBHEADINGS: Each must feel like a chapter written specifically for the ${audienceMeta.label} stage — not generic career advice.\n` +
+            `- 3 SUBHEADINGS: Each must feel like a chapter written specifically for the ${audienceMeta.label} stage, not generic career advice.\n` +
             `- EACH SECTION: Lead with the insight, ground it in a scenario, then give the practical application.\n` +
             `- ZERO sentences that could appear in any generic career article. Every point is specific to this stage and this topic.\n` +
             `- ASCENTOR CTA: Close with a confident, specific, single-sentence invitation.\n` +
             `- Represent ALL newlines as \\n in strings.\n\n` +
-            `Return ONLY: { "title": "...", "content": "markdown using \\n for line breaks", "meta_description": "under 160 chars — specific and compelling", "cta": "one sentence" }`,
+            `Return ONLY: { "title": "...", "content": "markdown using \\n for line breaks", "meta_description": "under 160 chars, specific and compelling", "cta": "one sentence" }`,
         }],
       }),
 
@@ -311,7 +311,7 @@ export const contentWriterAgent = task({
             `  The first line must name a SPECIFIC, PAINFUL, RECOGNISABLE ${audienceMeta.label} experience.\n` +
             `- VALUE POST: Hook → real insight grounded in ${audienceMeta.label} reality → 3–4 numbered actions (short, concrete, no jargon) → Ascentor CTA.\n` +
             `- SOCIAL PROOF POST: Open with a real result → the struggle → what changed → confident invite.\n` +
-            `- Max 5 emojis per post. ZERO hashtags inside the post body — list them separately.\n` +
+            `- Max 5 emojis per post. ZERO hashtags inside the post body, list them separately.\n` +
             `- Represent newlines as \\n in all string values.\n\n` +
             `Return ONLY: { "posts": [ { "type": "value|social_proof", "hook": "first line only", "content": "full post with \\n breaks", "hashtags": ["#AmbitiousProfessionals", "#CareerGrowth", "#Ascentor"] } ] }`,
         }],
@@ -331,8 +331,8 @@ export const contentWriterAgent = task({
             `${hooksBlock}` +
             `REQUIREMENTS:\n` +
             `- 2 threads, 5–6 tweets each. Max 280 characters per tweet (count carefully).\n` +
-            `- Thread 1: VALUE — practical insight grounded in ${audienceMeta.label} reality.\n` +
-            `- Thread 2: STORY — a scenario any ${audienceMeta.label} immediately recognises, ending in a lesson.\n` +
+            `- Thread 1: VALUE, practical insight grounded in ${audienceMeta.label} reality.\n` +
+            `- Thread 2: STORY, a scenario any ${audienceMeta.label} immediately recognises, ending in a lesson.\n` +
             `- TWEET 1 (OPENER): Must feel like a direct call-out in the best possible way.\n` +
             `  STRONG: "The most talented person in the room is often the last to get promoted. Here is the specific reason why 🧵"\n` +
             `  WEAK: "Here are some career tips every professional needs to know 🧵"\n` +
@@ -359,11 +359,11 @@ export const contentWriterAgent = task({
             `REQUIREMENTS:\n` +
             `- CAPTION: 100–130 words.\n` +
             `  Open with ONE sentence that makes a ${audienceMeta.label} immediately stop scrolling.\n` +
-            `  STRONG: "The thing nobody tells you before your first big performance review — and the exact reason it blindsides most people."\n` +
+            `  STRONG: "The thing nobody tells you before your first big performance review, and the exact reason it blindsides most people."\n` +
             `  WEAK: "Here is some important advice for professionals at any stage."\n` +
-            `  End with: "Save this — you will need it."\n` +
+            `  End with: "Save this, you will need it."\n` +
             `- SLIDES: Exactly 6 slides. Each slide: ONE punchy statement, max 12 words.\n` +
-            `  Slide 1: The hook — what this carousel is about.\n` +
+            `  Slide 1: The hook, what this carousel is about.\n` +
             `  Slides 2–5: A bold, specific truth about life at the ${audienceMeta.label} stage.\n` +
             `  Slide 6: "This is exactly what Ascentor is built for. Link in bio."\n` +
             `- Represent ALL newlines as \\n in string values.\n\n` +
@@ -408,9 +408,9 @@ export const contentWriterAgent = task({
             `REQUIREMENTS:\n` +
             `- A question post designed to get ${audienceMeta.label}s talking in the comments.\n` +
             `- The question must be specific enough that they feel personally called out.\n` +
-            `  STRONG: "What is the one thing you wish someone had told you before your first salary negotiation? Drop it below — someone reading this needs it."\n` +
+            `  STRONG: "What is the one thing you wish someone had told you before your first salary negotiation? Drop it below, someone reading this needs it."\n` +
             `  WEAK: "What do you think about purposeful development? Let us know!"\n` +
-            `  STRONG: "The moment you realised the job you thought you wanted was not actually the job you wanted — what happened next?"\n` +
+            `  STRONG: "The moment you realised the job you thought you wanted was not actually the job you wanted, what happened next?"\n` +
             `  WEAK: "Have you ever faced challenges in your career journey?"\n` +
             `- CAPTION: 70–90 words. Set the question up in 2–3 sentences, then ask it. Max 2 emojis. ZERO corporate tone.\n` +
             `- Represent ALL newlines as \\n in string values.\n\n` +
@@ -434,18 +434,18 @@ export const contentWriterAgent = task({
             `REQUIREMENTS:\n` +
             `- 450–550 words. Not a corporate newsletter. A personal letter from the most insightful mentor this ${audienceMeta.label} has ever had.\n\n` +
             `SUBJECT LINE:\n` +
-            `  Personal, specific, slightly uncomfortable in the best way — written for a ${audienceMeta.label}.\n` +
-            `  STRONG: "The meeting they had about your promotion — without you in the room"\n` +
+            `  Personal, specific, slightly uncomfortable in the best way, written for a ${audienceMeta.label}.\n` +
+            `  STRONG: "The meeting they had about your promotion, without you in the room"\n` +
             `  STRONG: "You passed the technical round. Here is why you still did not get the job."\n` +
             `  WEAK: "This week's career tips from Ascentor"\n` +
             `  WEAK: "Professional development advice for ambitious people"\n\n` +
             `STRUCTURE:\n` +
             `1. HOOK (2–3 sentences): A specific, recognisable ${audienceMeta.label} moment. So accurate they forward the email.\n` +
-            `2. THE REAL TALK (150–200 words): The core insight. Be specific — name the exact situation, not the category.\n` +
+            `2. THE REAL TALK (150–200 words): The core insight. Be specific, name the exact situation, not the category.\n` +
             `3. WHAT WE HAVE SEEN (80–100 words): One pattern from Ascentor coaching sessions.\n` +
-            `   Use: "In our sessions recently, we keep seeing..." — this is Ascentor's authority.\n` +
+            `   Use: "In our sessions recently, we keep seeing...", this is Ascentor's authority.\n` +
             `4. YOUR MOVE THIS WEEK (80–100 words): ONE specific, doable action. Not a list. One move. Make it concrete.\n` +
-            `5. SIGN-OFF: Warm. Human. Not corporate. One natural Ascentor mention — invitation, not pitch.\n` +
+            `5. SIGN-OFF: Warm. Human. Not corporate. One natural Ascentor mention, invitation, not pitch.\n` +
             `- Represent ALL newlines as \\n in string values.\n\n` +
             `Return ONLY: { "subject": "...", "preview_text": "under 90 chars", "body": "markdown with \\n breaks" }`,
         }],
@@ -459,7 +459,7 @@ export const contentWriterAgent = task({
         const raw = blogSettled.value.content[0].type === "text" ? blogSettled.value.content[0].text : "";
         logger.info(`[Writer] Blog raw (first 300): ${raw.slice(0, 300)}`);
         blog = extractJSON(raw);
-        logger.info(`[Writer] Blog ok — "${blog.title}"`);
+        logger.info(`[Writer] Blog ok, "${blog.title}"`);
       } catch (e) { logger.error(`[Writer] Blog parse failed: ${e}`); }
     } else { logger.error(`[Writer] Blog API error: ${blogSettled.reason}`); }
 
@@ -469,7 +469,7 @@ export const contentWriterAgent = task({
         const raw = linkedinSettled.value.content[0].type === "text" ? linkedinSettled.value.content[0].text : "";
         const parsed = extractJSON(raw);
         linkedinPosts = Array.isArray(parsed.posts) ? parsed.posts : [];
-        logger.info(`[Writer] LinkedIn ok — ${linkedinPosts.length} posts`);
+        logger.info(`[Writer] LinkedIn ok, ${linkedinPosts.length} posts`);
       } catch (e) { logger.error(`[Writer] LinkedIn parse failed: ${e}`); }
     } else { logger.error(`[Writer] LinkedIn API error: ${linkedinSettled.reason}`); }
 
@@ -479,7 +479,7 @@ export const contentWriterAgent = task({
         const raw = twitterSettled.value.content[0].type === "text" ? twitterSettled.value.content[0].text : "";
         const parsed = extractJSON(raw);
         twitterThreads = Array.isArray(parsed.threads) ? parsed.threads : [];
-        logger.info(`[Writer] Twitter ok — ${twitterThreads.length} threads`);
+        logger.info(`[Writer] Twitter ok, ${twitterThreads.length} threads`);
       } catch (e) { logger.error(`[Writer] Twitter parse failed: ${e}`); }
     } else { logger.error(`[Writer] Twitter API error: ${twitterSettled.reason}`); }
 
@@ -495,7 +495,7 @@ export const contentWriterAgent = task({
           const raw = settled.value.content[0].type === "text" ? settled.value.content[0].text : "";
           const parsed = extractJSON(raw);
           instagramPosts.push(parsed);
-          logger.info(`[Writer] ${label} ok — type: ${parsed.type}`);
+          logger.info(`[Writer] ${label} ok, type: ${parsed.type}`);
         } catch (e) { logger.error(`[Writer] ${label} parse failed: ${e}`); }
       } else { logger.error(`[Writer] ${label} API error: ${(settled as PromiseRejectedResult).reason}`); }
     }
@@ -505,7 +505,7 @@ export const contentWriterAgent = task({
       try {
         const raw = newsletterSettled.value.content[0].type === "text" ? newsletterSettled.value.content[0].text : "";
         newsletter = extractJSON(raw);
-        logger.info(`[Writer] Newsletter ok — "${newsletter.subject}"`);
+        logger.info(`[Writer] Newsletter ok, "${newsletter.subject}"`);
       } catch (e) { logger.error(`[Writer] Newsletter parse failed: ${e}`); }
     } else { logger.error(`[Writer] Newsletter API error: ${newsletterSettled.reason}`); }
 

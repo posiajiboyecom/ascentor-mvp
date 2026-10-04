@@ -1,9 +1,9 @@
 // POST /api/admin/personal-brand/image
 //
-// Image generation — provider chain:
-//   1. Pollinations.ai (sdxl)       — free, no key, stable
-//   2. Pollinations.ai (flux)       — free, no key, fallback
-//   3. Hugging Face FLUX.1-schnell  — requires PERSONAL HF token (not org token)
+// Image generation - provider chain:
+//   1. Pollinations.ai (sdxl)       - free, no key, stable
+//   2. Pollinations.ai (flux)       - free, no key, fallback
+//   3. Hugging Face FLUX.1-schnell  - requires PERSONAL HF token (not org token)
 //
 // NOTE on HuggingFace:
 //   If you see "does not have sufficient permissions to call Inference Providers"
@@ -11,7 +11,7 @@
 //   huggingface.co → YOUR PERSONAL profile (not the org) → Settings → Access Tokens
 //   Create a token under YOUR personal account, not under ascentor-mvp.
 //
-// maxDuration = 90s — required for Vercel (image gen takes 20-60s)
+// maxDuration = 90s - required for Vercel (image gen takes 20-60s)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -91,7 +91,7 @@ async function fetchPollinations(
     const ct = res.headers.get('content-type') || '';
     if (!ct.startsWith('image/')) {
       const body = await res.text().catch(() => '');
-      throw new Error(`non-image response: ${ct} — ${body.slice(0, 100)}`);
+      throw new Error(`non-image response: ${ct}, ${body.slice(0, 100)}`);
     }
     return res.arrayBuffer();
   } finally {
@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
   let imageBuffer: ArrayBuffer | null = null;
   let provider = '';
 
-  // ── 1. Pollinations sdxl — most stable free model ─────────────────────
+  // ── 1. Pollinations sdxl - most stable free model ─────────────────────
   try {
     console.log('[pb/image] Trying Pollinations sdxl…');
     imageBuffer = await fetchPollinations(imagePrompt, dims.width, dims.height, 'flux', 75_000);
@@ -214,7 +214,7 @@ export async function POST(req: NextRequest) {
     errors.push(`Pollinations flux: ${e.message}`);
   }
 
-  // ── 2. Pollinations 512×512 — smaller, faster ─────────────────────────
+  // ── 2. Pollinations 512×512 - smaller, faster ─────────────────────────
   if (!imageBuffer) {
     try {
       console.log('[pb/image] Trying Pollinations 512…');
@@ -227,7 +227,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── 3. HuggingFace — requires PERSONAL token, not org token ───────────
+  // ── 3. HuggingFace - requires PERSONAL token, not org token ───────────
   if (!imageBuffer) {
     try {
       console.log('[pb/image] Trying HuggingFace…');
@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
     } catch (e: any) {
       console.warn('[pb/image] HuggingFace failed:', e.message);
       const hint = e.message.includes('permissions')
-        ? 'HF token is an org token — use your personal HF token instead'
+        ? 'HF token is an org token, use your personal HF token instead'
         : e.message;
       errors.push(`HuggingFace: ${hint}`);
     }
@@ -245,7 +245,7 @@ export async function POST(req: NextRequest) {
 
   if (!imageBuffer) {
     return NextResponse.json({
-      error: `All providers failed — ${errors.join(' | ')}`,
+      error: `All providers failed, ${errors.join(' | ')}`,
     }, { status: 500 });
   }
 

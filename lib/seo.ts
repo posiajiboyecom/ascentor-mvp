@@ -1,11 +1,11 @@
 // ============================================================
-// lib/seo.ts — Central SEO configuration & JSON-LD builders
+// lib/seo.ts - Central SEO configuration & JSON-LD builders
 // Single source of truth for site identity, canonical URLs, and
 // structured data. Never hardcode ascentorbi.com in page files.
 //
 // NOTE: this file intentionally contains NO fabricated ratings or
 // review markup. Only add aggregateRating when real, verifiable
-// user reviews exist — fake ratings violate Google's structured
+// user reviews exist - fake ratings violate Google's structured
 // data policies and can get all rich results revoked.
 // ============================================================
 
@@ -141,7 +141,7 @@ export function getSummitEventSchema() {
     startDate: SUMMIT.startDate,
     endDate: SUMMIT.endDate,
     eventStatus: 'https://schema.org/EventScheduled',
-    // Physical + virtual — this value marks it as a hybrid event.
+    // Physical + virtual - this value marks it as a hybrid event.
     eventAttendanceMode: 'https://schema.org/MixedEventAttendanceMode',
     location: [
       {

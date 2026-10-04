@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // scripts/lint-copy.js
-// Repository copy rules: no em dashes, no emoji, in source or documentation.
-//   node scripts/lint-copy.js          report violations (exit 1 if any)
-//   node scripts/lint-copy.js --fix    rewrite em dashes automatically
+// Repository copy rules, enforced in source and documentation:
+//   1. no em dashes (U+2014), literal or written as an escape / HTML entity
+//   2. no emoji or pictographic symbols (copyright sign and plain arrows are allowed)
 //
-// Em dashes are rewritten to a plain hyphen with the surrounding spacing kept.
-// Emoji are never auto-fixed: they need a deliberate replacement (an icon, or
-// plain words), so they are reported with file and line.
+//   node scripts/lint-copy.js          report violations, exit 1 if any
+//   node scripts/lint-copy.js --fix    rewrite em dashes to a hyphen (emoji are never
+//                                      auto-fixed: they need a deliberate replacement)
 const fs = require('fs');
 const path = require('path');
 
@@ -15,17 +15,24 @@ const ROOTS = ['app', 'components', 'lib', 'hooks', 'types', 'styles', 'database
   'CHANGELOG.md', 'CONTRIBUTING.md', 'SECURITY.md', 'docs'];
 const EXT = new Set(['.ts', '.tsx', '.js', '.mjs', '.css', '.sql', '.md', '.json', '.mdx']);
 const SKIP_DIRS = new Set(['node_modules', '.next', '.kilo', '.git', 'generated']);
-// Legacy copies kept only for history; excluded from enforcement.
-const SKIP_PREFIX = ['app/nav/', 'nav/'];
 
-const EM_DASH = /—/g;
-const EMOJI = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}️⃣]/gu;
-// Typographic symbols used as UI glyphs (arrows, stars, bullets) count as emoji-style decoration.
-const GLYPHS = /[✓✔✕✖★☆◆◇◎✦✧✨•●○→←↑↓↗×]/gu;
+const EM = String.fromCharCode(0x2014);
+const EM_RE = new RegExp(EM, 'g');
+const EM_ESCAPES = ['\\' + 'u2014', '&mdash;', '&#8212;', '&#x2014;'];
+
+// Pictographs, flags, and variation selectors. Allowed: copyright/registered/trademark
+// signs and the arrow block (U+2190 to U+21FF), which are ordinary typography.
+const PICT = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{FE0F}\u{20E3}]/gu;
+function isAllowed(ch) {
+  const c = ch.codePointAt(0);
+  return c === 0xa9 || c === 0xae || c === 0x2122 || (c >= 0x2190 && c <= 0x21ff);
+}
+// Pictographs written as \uXXXX / \u{...} escapes inside string literals.
+const ESC_RE = /\\u\{([0-9a-fA-F]{4,6})\}|\\u([0-9a-fA-F]{4})/g;
 
 const fix = process.argv.includes('--fix');
-let emDashHits = 0;
-let emojiHits = [];
+const dashHits = [];
+const emojiHits = [];
 let filesChanged = 0;
 
 function walk(p, out) {
@@ -40,31 +47,36 @@ function walk(p, out) {
 }
 
 const files = [];
-for (const r of ROOTS) walk(r, files);
+ROOTS.forEach((r) => walk(r, files));
 
 for (const file of files) {
-  const rel = file.replace(/\\/g, '/');
-  if (SKIP_PREFIX.some((s) => rel.startsWith(s))) continue;
+  const rel = file.split(path.sep).join('/');
+  if (rel === 'scripts/lint-copy.js') continue;
   let text = fs.readFileSync(file, 'utf8');
-  const lines = text.split('\n');
-  lines.forEach((line, i) => {
-    const m = line.match(EMOJI);
-    if (m) emojiHits.push(`${rel}:${i + 1}  ${m.join(' ')}`);
-  });
-  const count = (text.match(EM_DASH) || []).length;
-  if (count) {
-    emDashHits += count;
-    if (fix) {
-      text = text.replace(EM_DASH, '-');
-      fs.writeFileSync(file, text);
-      filesChanged++;
-    } else {
-      console.log(`em dash x${count}  ${rel}`);
+  text.split('\n').forEach((line, i) => {
+    for (const ch of line.match(PICT) || []) {
+      if (!isAllowed(ch)) emojiHits.push(`${rel}:${i + 1}  ${ch}`);
     }
+    let m;
+    ESC_RE.lastIndex = 0;
+    while ((m = ESC_RE.exec(line))) {
+      const cp = parseInt(m[1] || m[2], 16);
+      const ch = String.fromCodePoint(cp);
+      if (/\p{Extended_Pictographic}/u.test(ch) && !isAllowed(ch)) {
+        emojiHits.push(`${rel}:${i + 1}  \\u${cp.toString(16)}`);
+      }
+    }
+    const n = (line.match(EM_RE) || []).length + EM_ESCAPES.filter((e) => line.includes(e)).length;
+    if (n) dashHits.push(`${rel}:${i + 1}`);
+  });
+  if (fix && text.includes(EM)) {
+    fs.writeFileSync(file, text.replace(EM_RE, '-'));
+    filesChanged++;
   }
 }
 
-console.log(`\nem dashes: ${emDashHits}${fix ? ` (fixed in ${filesChanged} files)` : ''}`);
-console.log(`emoji: ${emojiHits.length}`);
+if (!fix) dashHits.slice(0, 200).forEach((h) => console.log('em dash  ' + h));
+console.log(`em dashes: ${dashHits.length}${fix ? ` (literal ones rewritten in ${filesChanged} files)` : ''}`);
+console.log(`emoji / pictographs: ${emojiHits.length}`);
 emojiHits.slice(0, 400).forEach((h) => console.log('  ' + h));
-process.exit((fix ? 0 : emDashHits) + emojiHits.length > 0 ? 1 : 0);
+process.exit((fix ? 0 : dashHits.length) + emojiHits.length > 0 ? 1 : 0);

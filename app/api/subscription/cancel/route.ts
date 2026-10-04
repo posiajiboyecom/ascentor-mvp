@@ -1,5 +1,5 @@
 // ============================================================
-// CANCEL SUBSCRIPTION — /api/subscription/cancel
+// CANCEL SUBSCRIPTION - /api/subscription/cancel
 //
 // CRIT-1 FIX: userId now taken from authenticated session,
 // NOT from the request body. Any logged-in user could previously
@@ -27,10 +27,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // userId ALWAYS from session — never from body
+    // userId ALWAYS from session - never from body
     const userId = user.id;
 
-    // Only read reason from body — userId is ignored
+    // Only read reason from body - userId is ignored
     const body = await req.json().catch(() => ({}));
     const reason: string | undefined = body.reason;
 
@@ -75,11 +75,11 @@ export async function POST(req: NextRequest) {
         }
       } catch (err) {
         console.error('[Cancel] Paystack error (non-fatal):', err);
-        // Continue — still cancel on our side
+        // Continue - still cancel on our side
       }
     }
 
-    // Mark cancelled — access maintained until subscription_end
+    // Mark cancelled - access maintained until subscription_end
     await supabase.from('profiles').update({
       subscription_status: 'cancelled',
       updated_at: new Date().toISOString(),

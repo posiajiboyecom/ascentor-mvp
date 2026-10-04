@@ -1,11 +1,11 @@
 // components/coach/UsageBar.tsx
 // Shows the user's monthly coaching session usage against their plan limit.
-// When limit is -1 (unlimited plan), the bar is hidden entirely —
+// When limit is -1 (unlimited plan), the bar is hidden entirely -
 // no false cap is displayed.
 
 interface UsageBarProps {
   used: number;
-  /** Monthly session limit. Pass -1 for unlimited — bar will not render. */
+  /** Monthly session limit. Pass -1 for unlimited - bar will not render. */
   limit: number;
 }
 

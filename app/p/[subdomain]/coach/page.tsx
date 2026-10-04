@@ -195,7 +195,7 @@ export default function CoachPage() {
             : msg
         ));
 
-        // Only lock the input on monthly limit — session cap just ends this convo
+        // Only lock the input on monthly limit - session cap just ends this convo
         if (!isSessionCap) setLimitReached(true);
         setLoading(false);
         return;
@@ -223,11 +223,11 @@ export default function CoachPage() {
             const event = JSON.parse(line.slice(6));
 
             if (event.type === 'delta') {
-              // During streaming we only show typing dots — we intentionally
+              // During streaming we only show typing dots - we intentionally
               // do NOT append raw tokens to the UI because the API returns
               // raw JSON fragments which would show as garbled text.
               // The streaming flag keeps the dots visible until `done` fires.
-              // (No state update needed here — dots are already showing.)
+              // (No state update needed here - dots are already showing.)
 
             } else if (event.type === 'done') {
               // ── Replace the streaming placeholder with the final structured
@@ -297,7 +297,7 @@ export default function CoachPage() {
       }}
     >
 
-      {/* ── FIX 2: Header is OUTSIDE the scroll container — always visible ── */}
+      {/* ── FIX 2: Header is OUTSIDE the scroll container - always visible ── */}
       <div style={{ flexShrink: 0 }}>
 
         {/* Title + session type picker */}
@@ -326,7 +326,7 @@ export default function CoachPage() {
               <span style={{ fontSize: 9, opacity: 0.7 }}>{selectorOpen ? '▲' : '▼'}</span>
             </button>
 
-            {/* Dropdown — absolutely positioned below button, right-aligned */}
+            {/* Dropdown - absolutely positioned below button, right-aligned */}
             {selectorOpen && (
               <div style={{
                 position: 'absolute',
@@ -464,7 +464,7 @@ export default function CoachPage() {
               </div>
             </div>
             <p className="text-[15px] max-w-sm mx-auto" style={{ color: 'var(--text-muted)', fontFamily: "'Syne', sans-serif" }}>
-              Share what's on your mind — a challenge, a question, or a reflection on your week.
+              Share what's on your mind, a challenge, a question, or a reflection on your week.
             </p>
           </div>
         )}
@@ -506,7 +506,7 @@ export default function CoachPage() {
 
                 <div className="max-w-[85%] flex flex-col gap-2">
 
-                  {/* Streaming: typing dots only — raw tokens are NEVER shown */}
+                  {/* Streaming: typing dots only - raw tokens are NEVER shown */}
                   {msg.streaming && (
                     <div
                       className="px-4 py-3 rounded-2xl rounded-tl-sm"
@@ -530,7 +530,7 @@ export default function CoachPage() {
                     </div>
                   )}
 
-                  {/* Final structured message — only shown after streaming: false */}
+                  {/* Final structured message - only shown after streaming: false */}
                   {!msg.streaming && msg.reflection && (
                     <div
                       className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed"
@@ -568,7 +568,7 @@ export default function CoachPage() {
                       }}
                     >
                       <span style={{ flexShrink: 0, marginTop: 1 }}>
-                        {/* Pin icon — no emoji */}
+                        {/* Pin icon - no emoji */}
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                         </svg>
@@ -585,7 +585,7 @@ export default function CoachPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* ── Input bar — always at bottom ────────────────────────────────── */}
+      {/* ── Input bar - always at bottom ────────────────────────────────── */}
       <div className="flex gap-2 items-end" style={{ flexShrink: 0, paddingBottom: 8 }}>
         <textarea
           value={input}
@@ -593,7 +593,7 @@ export default function CoachPage() {
           onKeyDown={e => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
           }}
-          placeholder={limitReached ? "Daily session limit reached — upgrade for more" : "Share what's on your mind..."}
+          placeholder={limitReached ? "Daily session limit reached, upgrade for more" : "Share what's on your mind..."}
           rows={2}
           disabled={limitReached}
           className="flex-1 px-4 py-3 text-sm rounded-xl resize-none leading-relaxed disabled:opacity-50"

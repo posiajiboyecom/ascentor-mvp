@@ -15,7 +15,7 @@ const supabase = createClient(
 const BUCKET         = 'content-media';
 const MAX_SIZE_BYTES = 8 * 1024 * 1024; // 8 MB
 
-// C-02: SVG removed — SVG files can embed JS and execute in browsers when served from a public CDN.
+// C-02: SVG removed - SVG files can embed JS and execute in browsers when served from a public CDN.
 // Use PNG or WebP for logos and icons instead.
 const ALLOWED_MIME_TO_EXT: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
 
-    // C-03: sanitise folder — only allow known values
+    // C-03: sanitise folder - only allow known values
     const rawFolder = (formData.get('folder') as string) || 'social';
     const folder = ALLOWED_FOLDERS.has(rawFolder) ? rawFolder : 'social';
 
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File too large (max 8MB)' }, { status: 400 });
     }
 
-    // Use server-validated extension — never derive from file.name or client input
+    // Use server-validated extension - never derive from file.name or client input
     const filename = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const buffer   = await file.arrayBuffer();
 
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { error: uploadErr } = await supabase.storage.from(BUCKET).upload(filename, buffer, {
-      contentType: file.type, // safe — validated against allowlist above
+      contentType: file.type, // safe - validated against allowlist above
       upsert: false,
     });
 

@@ -5,13 +5,13 @@
 //
 // Membership is what makes "X of Y checked in" real: Y is the circle's roster.
 // A member can only add / remove themselves (enforced here AND by the
-// circle_members RLS policies in the migration — defence in depth).
+// circle_members RLS policies in the migration - defence in depth).
 //
 // Response:
 //   200 { ok: true }
-//   400 { error }   — missing slug / not a circle channel
-//   401 { error }   — not authenticated
-//   500 { error }   — database error
+//   400 { error }   - missing slug / not a circle channel
+//   401 { error }   - not authenticated
+//   500 { error }   - database error
 //
 // Requires database/migrations/20260702_community_ritual.sql (circle_members).
 // ─────────────────────────────────────────────────────────────────────────

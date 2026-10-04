@@ -1,8 +1,8 @@
 // ============================================================
-// AUTH CALLBACK — app/auth/callback/route.ts — v2
+// AUTH CALLBACK - app/auth/callback/route.ts - v2
 //
 // FIX: Respects ?next param explicitly when set to /onboarding
-//      (free plan email confirmation — skip checkout entirely)
+//      (free plan email confirmation - skip checkout entirely)
 // FIX: Respects ?next=/checkout?plan=X... so paid plan email
 //      confirmations land at checkout with plan pre-selected
 //

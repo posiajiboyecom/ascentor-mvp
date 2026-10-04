@@ -8,12 +8,12 @@ import PublicHeader from '@/components/layout/PublicHeader';
 import PublicFooter from '@/components/layout/PublicFooter';
 import type { PublishedPage } from '@/lib/supabase/queries/marketing';
 
-// Narrow sanitizer for the hero headline specifically — allows ONLY
+// Narrow sanitizer for the hero headline specifically - allows ONLY
 // <br> / <br/> tags (needed for the two-line headline layout) and
 // strips everything else, including script tags and event handler
 // attributes. Writes to marketing_sections are already gated to
 // admin/moderator role via RLS + the API route's auth check, so this
-// isn't defending against an untrusted public writer — it's defense
+// isn't defending against an untrusted public writer - it's defense
 // in depth in case that assumption ever changes, and it keeps this
 // one field from becoming a general-purpose "admin can inject any
 // HTML" surface just because it needed one tag.
@@ -34,19 +34,19 @@ function sanitizeHeroHeadline(html: string): string {
 // client, which a 'use client' component can't call directly).
 //
 // CMS WIRING STATUS: only the Hero section is wired so far (see the
-// `cms?.sections.hero?.data` usage below) — this is the first proof
+// `cms?.sections.hero?.data` usage below) - this is the first proof
 // of the full CMS loop end to end. The remaining sections (Summit
 // Banner, Problem, Who It's For, Three Pillars, Total Person, Quote,
 // Newsletter, Final CTA, Footer) are NOT yet wired and still render
 // their original hardcoded copy. Wiring those is a separate,
-// section-by-section follow-up — see the chat log for why this was
+// section-by-section follow-up - see the chat log for why this was
 // deliberately scoped to one section first rather than all at once.
 //
 // FALLBACK CONTRACT (see lib/supabase/queries/marketing.ts usage
 // note): every CMS-sourced value below falls back to the ORIGINAL
 // hardcoded copy if cms is null or that section hasn't been
 // published yet. The hardcoded strings are the safety net, not dead
-// code — do not delete them when more sections get wired.
+// code - do not delete them when more sections get wired.
 // Icons keyed by card title so CMS-supplied cards get the same treatment
 // as the hardcoded defaults. Compass is the fallback for unknown titles.
 const DIMENSION_ICONS: Record<string, typeof Brain> = {
@@ -88,10 +88,10 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
     return () => clearInterval(interval);
   }, [heroImages.length]);
 
-  // Hero content — CMS first, hardcoded fallback second. The CMS
+  // Hero content - CMS first, hardcoded fallback second. The CMS
   // shape (set via the 'structured' field editor in
   // /admin/marketing-pages/landing) is whatever fields an admin
-  // chooses to add — headline/subhead/cta_label/cta_href/eyebrow are
+  // chooses to add - headline/subhead/cta_label/cta_href/eyebrow are
   // the field NAMES this component looks for, but nothing enforces
   // an admin actually creating fields with exactly these names. If
   // a field is missing or misnamed, that one value silently falls
@@ -99,7 +99,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
   const heroEyebrow  = hero?.eyebrow   || 'The Elevation Summit Platform';
   const heroHeadline = 'Ascentor exists because drift is the default';
-  const heroSubhead  = hero?.subhead   || 'Ascentor is the daily platform of The Elevation Summit — a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.';
+  const heroSubhead  = hero?.subhead   || 'Ascentor is the daily platform of The Elevation Summit, a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.';
   const heroCtaLabel    = hero?.cta_label    || 'Join the Movement →';
   const heroCtaHref     = hero?.cta_href     || '/signup';
   const heroCta2Label   = hero?.cta2_label   || 'What is The Elevation Summit?';
@@ -128,7 +128,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const defaultWhoCards = [
     { stage: 'The Seeker', description: 'Still finding the thread. You know there is more, but you have not named it yet. Ascentor helps you find your purpose framework and start building toward it.' },
     { stage: 'The Builder', description: 'You know where you are going. Now you are doing the daily work of getting there. Ascentor gives you community, accountability, and development to build faster.' },
-    { stage: 'The Leader', description: 'You have built something. Now you are responsible for others. Ascentor connects you with people operating at your level — and challenges you toward the century-long impact you were built for.' },
+    { stage: 'The Leader', description: 'You have built something. Now you are responsible for others. Ascentor connects you with people operating at your level, and challenges you toward the century-long impact you were built for.' },
   ];
   const whoCards = whoItems.length > 0 ? whoItems : defaultWhoCards;
 
@@ -140,8 +140,8 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const pillarItems = (cms?.sections.pillars?.items || []) as Array<Record<string, string>>;
   const defaultPillars = [
     { pillar: 'Community', description: 'A global circle of purposeful individuals. Not a networking group. A brotherhood and sisterhood anchored by shared ideology and mutual accountability.', featured: '', badge: '', cta_label: '', cta_href: '' },
-    { pillar: 'Development', description: 'Structured pathways for becoming the total person — in mind, character, vocation, relationships, and civic impact.', featured: '', badge: '', cta_label: '', cta_href: '' },
-    { pillar: 'The Elevation Summit', description: 'Once a year, the community gathers. The annual Summit is the peak moment — inspiration, challenge, and the collective experience of people who chose to ascend.', featured: 'true', badge: 'Next gathering: 19 November, 2026', cta_label: 'Learn about The Elevation Summit →', cta_href: '/elevation-summit' },
+    { pillar: 'Development', description: 'Structured pathways for becoming the total person, in mind, character, vocation, relationships, and civic impact.', featured: '', badge: '', cta_label: '', cta_href: '' },
+    { pillar: 'The Elevation Summit', description: 'Once a year, the community gathers. The annual Summit is the peak moment, inspiration, challenge, and the collective experience of people who chose to ascend.', featured: 'true', badge: 'Next gathering: 19 November, 2026', cta_label: 'Learn about The Elevation Summit →', cta_href: '/elevation-summit' },
   ];
   const pillarCards = pillarItems.length > 0 ? pillarItems : defaultPillars;
 
@@ -153,12 +153,12 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   // Repeating dimension cards
   const dimensionItems = (cms?.sections.dimensions?.items || []) as Array<Record<string, string>>;
   const defaultDimensions = [
-    { dimension: 'Mind', description: 'How you think — independently, critically, and without the distortion of trend or fear.' },
-    { dimension: 'Character', description: 'How you live — your private and public life as one consistent, principled whole.' },
-    { dimension: 'Vocation', description: 'How you work — with purpose, not just productivity. For impact, not just income.' },
-    { dimension: 'Relationships', description: 'How you lead others — as a partner, parent, friend, mentor, and example.' },
-    { dimension: 'Community', description: 'What you build beyond yourself — civic contribution and national responsibility.' },
-    { dimension: 'Legacy', description: 'What remains when you are gone — the institutions, ideas, and people you set in motion.' },
+    { dimension: 'Mind', description: 'How you think, independently, critically, and without the distortion of trend or fear.' },
+    { dimension: 'Character', description: 'How you live, your private and public life as one consistent, principled whole.' },
+    { dimension: 'Vocation', description: 'How you work, with purpose, not just productivity. For impact, not just income.' },
+    { dimension: 'Relationships', description: 'How you lead others, as a partner, parent, friend, mentor, and example.' },
+    { dimension: 'Community', description: 'What you build beyond yourself, civic contribution and national responsibility.' },
+    { dimension: 'Legacy', description: 'What remains when you are gone, the institutions, ideas, and people you set in motion.' },
   ];
   const dimensions = dimensionItems.length > 0 ? dimensionItems : defaultDimensions;
 
@@ -171,7 +171,7 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   const newsletter = cms?.sections.newsletter?.data as Record<string, string> | undefined;
   const newsletterEyebrow  = newsletter?.eyebrow  || 'Stay Connected';
   const newsletterHeadline = newsletter?.headline || 'Join the movement newsletter.';
-  const newsletterBody     = newsletter?.body     || 'Insights on purposeful living, updates on The Elevation Summit, and the ideas shaping the movement — delivered weekly.';
+  const newsletterBody     = newsletter?.body     || 'Insights on purposeful living, updates on The Elevation Summit, and the ideas shaping the movement, delivered weekly.';
 
   // Final CTA
   const finalCta = cms?.sections.final_cta?.data as Record<string, string> | undefined;
@@ -514,7 +514,7 @@ display: flex; align-items: center; justify-content: center; }
         <div className="hero-grid">
           {/* Images Column - shown first on mobile, second on desktop */}
           <div className="hero-carousel" style={{ position: 'relative', width: '100%' }}>
-            {/* Fixed 4:3 box on every viewport — the slides are
+            {/* Fixed 4:3 box on every viewport - the slides are
                 position:absolute so they can't size the container
                 themselves, and a fixed ratio can never overflow the
                 grid row (which is what height:100% + aspectRatio did). */}

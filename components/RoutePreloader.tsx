@@ -6,7 +6,7 @@ import Preloader from './Preloader';
 
 // Routes where the branded preloader must never run: /admin/*, the
 // authed app shell ((app) group + legacy /nav tree), and the auth /
-// checkout flows. These are product surfaces — the marketing preloader
+// checkout flows. These are product surfaces - the marketing preloader
 // would flash over dashboards and sign-in screens.
 const EXCLUDED_PREFIXES = [
   '/admin',
@@ -33,7 +33,7 @@ const EXCLUDED_PREFIXES = [
  * route change. The root layout persists across navigations, so without
  * this wrapper the preloader would only ever run once per full reload.
  *
- * Route changes get a faster fill (900ms) — the full 2.2s fill on every
+ * Route changes get a faster fill (900ms) - the full 2.2s fill on every
  * click would make the site feel sluggish.
  */
 export default function RoutePreloader() {
@@ -54,7 +54,7 @@ export default function RoutePreloader() {
 
   // key={navCount} forces a fresh mount on each navigation so the
   // animation restarts from 0. First mount (navCount 0) is the
-  // initial page load — full-speed fill.
+  // initial page load - full-speed fill.
   return (
     <Preloader
       key={navCount}

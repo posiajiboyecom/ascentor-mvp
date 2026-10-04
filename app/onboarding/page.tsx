@@ -1,10 +1,10 @@
 // app/onboarding/page.tsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Ascentor onboarding — 3 screens, ~45 seconds
+// Ascentor onboarding - 3 screens, ~45 seconds
 //
-// Screen 1 — Identity:    Name + primary dimension (one tap → advance)
-// Screen 2 — Mission:     "I am building…" (seeds goal_text + what_building)
-// Screen 3 — Commitment:  "This week I will…" (seeds first user_commitment)
+// Screen 1 - Identity:    Name + primary dimension (one tap → advance)
+// Screen 2 - Mission:     "I am building…" (seeds goal_text + what_building)
+// Screen 3 - Commitment:  "This week I will…" (seeds first user_commitment)
 //
 // Saves: full_name, ascent_stage, what_building, onboarding_completed = true
 //        Creates: user_goals row, user_commitments row
@@ -85,7 +85,7 @@ const BTN_GHOST: React.CSSProperties = {
   cursor: 'pointer', fontFamily: fontDisplay,
 };
 
-// ── Progress — three gold ticks, not a percentage bar ─────────────────────────
+// ── Progress - three gold ticks, not a percentage bar ─────────────────────────
 function ProgressBar({ step, total = 3 }: { step: number; total?: number }) {
   return (
     <div style={{ display: 'flex', gap: 8, marginBottom: '1.75rem' }}>
@@ -248,7 +248,7 @@ export default function OnboardingPage() {
       overflowY: 'auto',
     }}>
 
-      {/* ── Completion set-piece — the product's one orchestrated moment ── */}
+      {/* ── Completion set-piece - the product's one orchestrated moment ── */}
       {celebrating && (
         <div
           role="status"
@@ -398,7 +398,7 @@ export default function OnboardingPage() {
                 fontSize: 11.5, color: MUTED, marginTop: 10,
                 fontFamily: fontBody, textAlign: 'center',
               }}>
-                Tap to select — you'll advance automatically
+                Tap to select, you'll advance automatically
               </p>
             </div>
           </div>

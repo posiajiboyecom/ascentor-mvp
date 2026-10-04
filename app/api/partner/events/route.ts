@@ -1,9 +1,9 @@
 // app/api/partner/events/route.ts
 //
-// GET    — list partner's events (upcoming + past, paginated)
-// POST   — create a new event (Growth/Pro only, monthly limit enforced)
-// PATCH  — update / publish / cancel an event
-// DELETE — delete a draft event (cannot delete published with attendees)
+// GET    - list partner's events (upcoming + past, paginated)
+// POST   - create a new event (Growth/Pro only, monthly limit enforced)
+// PATCH  - update / publish / cancel an event
+// DELETE - delete a draft event (cannot delete published with attendees)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';

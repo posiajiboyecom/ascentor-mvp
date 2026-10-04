@@ -6,10 +6,10 @@
 //
 // Body:
 //   {
-//     videoUrl:    string   — full YouTube URL or video ID
-//     mentorSlug:  string   — must match a slug in mentor_profiles
-//     namespace:   string   — e.g. 'vocation', 'character'
-//     sourceTitle: string   — e.g. "The Power of Discipline (2019)"
+//     videoUrl:    string   - full YouTube URL or video ID
+//     mentorSlug:  string   - must match a slug in mentor_profiles
+//     namespace:   string   - e.g. 'vocation', 'character'
+//     sourceTitle: string   - e.g. "The Power of Discipline (2019)"
 //     tags?:       string[]
 //   }
 //
@@ -23,7 +23,7 @@ import { createClient } from '@/lib/supabase/server';
 import { addChunks, getMentorBySlug } from '@/lib/rag';
 import type { KnowledgeChunk } from '@/lib/rag';
 // youtube-transcript v1.3+ exports both a class and a standalone function.
-// Use the standalone fetchTranscript — it's simpler and avoids class instantiation.
+// Use the standalone fetchTranscript - it's simpler and avoids class instantiation.
 import { fetchTranscript } from 'youtube-transcript';
 
 // ── Config ──
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
   let transcript: string;
   try {
     const segments = await fetchTranscript(videoId);
-    // TranscriptResponse[].text — join all segments into one string
+    // TranscriptResponse[].text - join all segments into one string
     transcript = segments.map(s => s.text).join(' ');
   } catch (err) {
     console.error('[ingest-youtube] Transcript fetch failed:', err);

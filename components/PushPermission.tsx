@@ -249,7 +249,7 @@ export default function PushPermission() {
             letterSpacing: '0.02em',
             lineHeight: 1.5,
           }}>
-            Replies, upvotes &amp; circle activity — straight to your phone
+            Replies, upvotes &amp; circle activity, straight to your phone
           </p>
         </div>
 

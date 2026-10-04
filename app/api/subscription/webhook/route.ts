@@ -1,9 +1,9 @@
 // FILE: app/api/subscription/webhook/route.ts
-// FIX: #5a — billing date uses billing_cycle (monthly → +1 month, annual → +1 year) on renewals
-//      #5b — saves card details from Paystack authorization on each renewal charge
+// FIX: #5a - billing date uses billing_cycle (monthly → +1 month, annual → +1 year) on renewals
+//      #5b - saves card details from Paystack authorization on each renewal charge
 
 // ============================================================
-// PAYSTACK WEBHOOK — /api/subscription/webhook
+// PAYSTACK WEBHOOK - /api/subscription/webhook
 //
 // Matched to YOUR actual checkout flow:
 // - Checkout uses PaystackPop inline (one-time charge), NOT recurring plans
@@ -29,7 +29,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// Service role — webhook runs outside user session
+// Service role - webhook runs outside user session
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -38,7 +38,7 @@ const supabase = createClient(
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!;
 
 // ── Signature verification ────────────────────────────────
-// ⚠️  RETIRED — This handler is superseded by /api/pay/webhook.
+// ⚠️  RETIRED - This handler is superseded by /api/pay/webhook.
 // This file must be deleted and removed from proxy.ts PUBLIC_API_ROUTES.
 // It remains temporarily to avoid a 404 if Paystack still points here,
 // but it now returns 410 Gone so Paystack stops retrying this endpoint.
@@ -68,7 +68,7 @@ async function getProfileByEmail(email: string) {
     .eq('email', email)
     .maybeSingle();
 
-  // HIGH-4 FIX: Removed listUsers() fallback — it fetches ALL users and fails at scale.
+  // HIGH-4 FIX: Removed listUsers() fallback - it fetches ALL users and fails at scale.
   // Ensure your profiles table has an email column populated via DB trigger on user creation.
   if (!data) {
     console.warn(`[Webhook] No profile found for email: ${email}. Ensure profiles.email is populated.`);
@@ -118,7 +118,7 @@ async function notify(userId: string, type: string, title: string, message: stri
 
 /**
  * charge.success
- * Fires on successful payment — initial AND renewals.
+ * Fires on successful payment - initial AND renewals.
  * Your /api/payment/verify handles the initial charge.success from the inline popup.
  * This webhook handles recurring renewals that come in without a browser session.
  */
@@ -128,7 +128,7 @@ async function handleChargeSuccess(data: any) {
 
   const profile = await getProfileByEmail(email);
   if (!profile) {
-    console.warn(`[Webhook] charge.success — no profile for ${email}`);
+    console.warn(`[Webhook] charge.success, no profile for ${email}`);
     return;
   }
 
@@ -143,15 +143,15 @@ async function handleChargeSuccess(data: any) {
   const wasTrialing = profile.subscription_status === 'trialing';
 
   // CRIT-4 FIX: If user is currently trialing, this charge.success is the INITIAL
-  // payment — already handled by /api/payment/verify which set subscription_end
+  // payment - already handled by /api/payment/verify which set subscription_end
   // correctly with the 7-day trial. Skip the update to avoid overwriting
   // subscription_end (37 days → 30 days) and bypassing the trial period.
   if (wasTrialing) {
-    console.log(`[Webhook] Skipping charge.success update for trialing user ${email} — already activated by /api/payment/verify`);
+    console.log(`[Webhook] Skipping charge.success update for trialing user ${email}, already activated by /api/payment/verify`);
     return;
   }
 
-  // Calculate next billing date based on the billing cycle — for RENEWALS only
+  // Calculate next billing date based on the billing cycle - for RENEWALS only
   const paidAt = data.paid_at ? new Date(data.paid_at) : new Date();
   const nextBilling = new Date(paidAt);
 
@@ -197,7 +197,7 @@ async function handleChargeSuccess(data: any) {
     channel: data.channel,
   });
 
-  // Only notify on renewal — not on first payment (trialing → active),
+  // Only notify on renewal - not on first payment (trialing → active),
   // which is already handled by /api/payment/verify.
   // This correctly covers: active→active renewals AND past_due recoveries.
   if (!wasTrialing) {
@@ -210,13 +210,13 @@ async function handleChargeSuccess(data: any) {
     );
   }
 
-  console.log(`[Webhook] ✅ charge.success — ${email} → ${plan}`);
+  console.log(`[Webhook] ✅ charge.success, ${email} → ${plan}`);
 }
 
 /**
  * invoice.payment_failed
  * Renewal charge failed (expired card, insufficient funds, etc.)
- * Paystack will retry — we mark past_due but don't revoke access yet.
+ * Paystack will retry - we mark past_due but don't revoke access yet.
  */
 async function handlePaymentFailed(data: any) {
   const email = data.customer?.email;
@@ -243,13 +243,13 @@ async function handlePaymentFailed(data: any) {
     '/checkout'
   );
 
-  console.log(`[Webhook] ❌ invoice.payment_failed — ${email}`);
+  console.log(`[Webhook] ❌ invoice.payment_failed, ${email}`);
 }
 
 /**
  * subscription.disable / subscription.not_renew
  * User cancelled via Paystack dashboard or our cancel API.
- * Keep access until subscription_end — just update the status.
+ * Keep access until subscription_end - just update the status.
  */
 async function handleSubscriptionDisable(data: any) {
   const email = data.customer?.email;
@@ -258,7 +258,7 @@ async function handleSubscriptionDisable(data: any) {
   const profile = await getProfileByEmail(email);
   if (!profile) return;
 
-  // Only update if currently active — don't overwrite already-expired
+  // Only update if currently active - don't overwrite already-expired
   if (!['active', 'trialing', 'past_due'].includes(profile.subscription_status)) return;
 
   await supabase.from('profiles').update({
@@ -285,10 +285,10 @@ async function handleSubscriptionDisable(data: any) {
     '/checkout'
   );
 
-  console.log(`[Webhook] ⚠️ subscription.disable — ${email}`);
+  console.log(`[Webhook] ⚠️ subscription.disable, ${email}`);
 }
 
-// ── Original handler (no longer exported — superseded by the 410 stub above) ──
+// ── Original handler (no longer exported - superseded by the 410 stub above) ──
 
 async function _legacyHandler(req: NextRequest) {
   try {
@@ -320,7 +320,7 @@ async function _legacyHandler(req: NextRequest) {
         console.log(`[Webhook] Unhandled: ${eventName}`);
     }
 
-    // Always 200 — Paystack retries on non-2xx
+    // Always 200 - Paystack retries on non-2xx
     return NextResponse.json({ received: true });
 
   } catch (err: any) {

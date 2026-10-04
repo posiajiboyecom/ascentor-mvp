@@ -70,7 +70,7 @@ export default function PaymentHealth() {
     <div className="rounded-xl p-5 mb-5 ledger-panel">
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
         <span className="text-sm font-semibold ledger-h2" style={{ fontSize: 15 }}>
-          Payments &mdash; last {health?.windowDays ?? 30} days
+          Payments - last {health?.windowDays ?? 30} days
         </span>
         <button
           type="button"

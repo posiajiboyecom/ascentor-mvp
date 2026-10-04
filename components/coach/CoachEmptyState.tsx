@@ -4,7 +4,7 @@
 //
 // FIX: Added example starter prompts that pre-fill the input on click.
 // Previously the empty state showed session type cards but gave users
-// no nudge for what to actually type — a blank input with no examples
+// no nudge for what to actually type - a blank input with no examples
 // creates hesitation, especially for first-time users.
 //
 // Each session type maps to 3 rotating example prompts. Clicking one
@@ -39,17 +39,17 @@ const ICON_MAP: Record<string, LucideIcon> = {
   leadership_development: Users,
 };
 
-// Example starter prompts per session type — displayed as tappable chips
+// Example starter prompts per session type - displayed as tappable chips
 // beneath the type grid when that type is active.
 const EXAMPLE_PROMPTS: Record<string, string[]> = {
   challenge_navigation: [
-    "I'm being overlooked for promotion despite strong results — how do I address it?",
+    "I'm being overlooked for promotion despite strong results, how do I address it?",
     "My manager micromanages everything. How do I create more autonomy?",
     "I need to push back on an unrealistic deadline without damaging the relationship.",
   ],
   weekly_reflection: [
     "This week felt scattered. Help me find what actually moved the needle.",
-    "I hit a goal I've been working toward for months — let's unpack what made it work.",
+    "I hit a goal I've been working toward for months, let's unpack what made it work.",
     "I'm going into next week with low energy. Help me refocus.",
   ],
   difficult_conversation: [
@@ -60,11 +60,11 @@ const EXAMPLE_PROMPTS: Record<string, string[]> = {
   accountability_check: [
     "I committed to completing my project proposal last week and didn't. Let's dig into why.",
     "I had three wins this week I want to document before I forget them.",
-    "I keep pushing the same task to tomorrow — help me break the pattern.",
+    "I keep pushing the same task to tomorrow, help me break the pattern.",
   ],
   career_planning: [
     "I want to move from individual contributor to a leadership role in 18 months.",
-    "I'm considering a lateral move to a different industry — help me think it through.",
+    "I'm considering a lateral move to a different industry, help me think it through.",
     "I feel stuck in my current role but don't know what the right next step is.",
   ],
   salary_negotiation: [
@@ -74,7 +74,7 @@ const EXAMPLE_PROMPTS: Record<string, string[]> = {
   ],
   leadership_development: [
     "My team respects me but I don't feel like they're bought into the vision.",
-    "I struggle to have direct conversations — I soften feedback too much.",
+    "I struggle to have direct conversations, I soften feedback too much.",
     "I'm managing someone older and more experienced than me. How do I lead with authority?",
   ],
 };
@@ -170,7 +170,7 @@ export function CoachEmptyState({
         })}
       </div>
 
-      {/* Example prompts — appear when a type is selected */}
+      {/* Example prompts - appear when a type is selected */}
       {activePrompts.length > 0 && (
         <div className="w-full text-left">
           <p className="text-[10px] lg:text-xs font-medium uppercase tracking-[0.08em] text-[var(--text-muted)] mb-2 lg:mb-3">

@@ -6,10 +6,10 @@
 //
 // Body:
 //   {
-//     url:         string   — full URL of the article/transcript
-//     mentorSlug:  string   — must match a slug in mentor_profiles
-//     namespace:   string   — e.g. 'vocation', 'leadership'
-//     sourceTitle: string   — e.g. "Why You Should Define Your Fears"
+//     url:         string   - full URL of the article/transcript
+//     mentorSlug:  string   - must match a slug in mentor_profiles
+//     namespace:   string   - e.g. 'vocation', 'leadership'
+//     sourceTitle: string   - e.g. "Why You Should Define Your Fears"
 //     tags?:       string[]
 //   }
 // ─────────────────────────────────────────────────────────────
@@ -39,8 +39,7 @@ function htmlToText(html: string): string {
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/&mdash;/g, '—')
-    .replace(/&ndash;/g, '–')
+    .replace(/&[mn]dash;/g, '-')
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();

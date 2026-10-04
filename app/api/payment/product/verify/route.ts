@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
     }
 
-    // Idempotency — don't duplicate purchases
+    // Idempotency - don't duplicate purchases
     const { data: existing } = await supabaseAdmin
       .from('product_purchases')
       .select('id')

@@ -1,4 +1,4 @@
-// lib/pricing.ts  — PAYMENT SYSTEM v3
+// lib/pricing.ts  - PAYMENT SYSTEM v3
 // ─────────────────────────────────────────────────────────────
 // Single source of truth for all plan prices.
 // To change pricing: edit ONLY this file.
@@ -10,7 +10,7 @@
 //
 // NOTE: Previous code used builder/pro/elite as plan IDs.
 // v3 uses explorer/builder/climber to match the display names.
-// Existing DB rows with old IDs (builder/pro/elite) remain valid —
+// Existing DB rows with old IDs (builder/pro/elite) remain valid -
 // the subscription_plan column accepts any text value.
 // ─────────────────────────────────────────────────────────────
 
@@ -29,7 +29,7 @@ export const PLAN_PRICING: PlanPricing[] = [
     id:             'explorer',
     name:           'Explorer',
     monthlyPrice:   12000,
-    yearlyPrice:    115200,         // ₦9,600/mo — 20% off
+    yearlyPrice:    115200,         // ₦9,600/mo - 20% off
     yearlyPerMonth: 9600,
     yearlyDiscount: 20,
     yearlySavings:  28800,
@@ -38,7 +38,7 @@ export const PLAN_PRICING: PlanPricing[] = [
     id:             'builder',
     name:           'Builder',
     monthlyPrice:   25000,
-    yearlyPrice:    240000,         // ₦20,000/mo — 20% off
+    yearlyPrice:    240000,         // ₦20,000/mo - 20% off
     yearlyPerMonth: 20000,
     yearlyDiscount: 20,
     yearlySavings:  60000,
@@ -47,7 +47,7 @@ export const PLAN_PRICING: PlanPricing[] = [
     id:             'climber',
     name:           'Climber',
     monthlyPrice:   60000,
-    yearlyPrice:    576000,         // ₦48,000/mo — 20% off
+    yearlyPrice:    576000,         // ₦48,000/mo - 20% off
     yearlyPerMonth: 48000,
     yearlyDiscount: 20,
     yearlySavings:  144000,

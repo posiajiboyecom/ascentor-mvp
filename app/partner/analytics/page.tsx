@@ -1,14 +1,14 @@
 'use client';
 // app/partner/analytics/page.tsx
 //
-// Partner engagement analytics — the coaching outcomes dashboard.
+// Partner engagement analytics - the coaching outcomes dashboard.
 // Shows what a serious coach actually cares about:
 //   - Are my members using the platform? (session frequency)
 //   - Are they completing courses? (completion rate)
 //   - Is my community growing? (member growth week-over-week)
 //   - What content is landing? (per-course stats)
 //
-// Data comes from GET /api/partner/analytics — already fully built.
+// Data comes from GET /api/partner/analytics - already fully built.
 // This page is the missing UI for that API.
 
 export const dynamic = 'force-dynamic';
@@ -213,7 +213,7 @@ export default function PartnerAnalyticsPage() {
           <div style={{ ...C.value, fontSize: '36px', color: '#E8A020' }}>
             {overview.activeMembers > 0
               ? (overview.totalSessions / overview.activeMembers).toFixed(1)
-              : '—'}
+              : '-'}
           </div>
           <div style={C.sub}>coaching sessions ÷ active members (90 days)</div>
           <div style={{ marginTop: '16px' }}>
@@ -227,7 +227,7 @@ export default function PartnerAnalyticsPage() {
 
         {/* Member growth (weekly) */}
         <div style={C.card}>
-          <div style={C.label}>New members — last 4 weeks</div>
+          <div style={C.label}>New members, last 4 weeks</div>
           <BarChart data={memberGrowth} valueKey="count" labelKey="week" color="#E8A020" maxHeight={70} />
         </div>
       </div>
@@ -282,7 +282,7 @@ export default function PartnerAnalyticsPage() {
       )}
 
       {/* ── Row 4: Revenue trend ── */}
-      <p style={C.sectionTitle}>Revenue trend — your share (last 6 months)</p>
+      <p style={C.sectionTitle}>Revenue trend, your share (last 6 months)</p>
       <div style={C.card}>
         {revenueTrend.every(r => r.amount === 0) ? (
           <div style={{ textAlign: 'center', padding: '24px', color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>

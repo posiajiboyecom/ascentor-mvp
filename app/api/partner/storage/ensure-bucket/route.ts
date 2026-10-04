@@ -2,7 +2,7 @@
 // FILE LOCATION: app/api/partner/storage/ensure-bucket/route.ts
 //
 // BUG FIXED:
-//   BUG-02 — This file contained a verbatim copy of
+//   BUG-02 - This file contained a verbatim copy of
 //             app/api/partner/brand/route.ts. The actual
 //             ensure-bucket logic was completely absent.
 //             Any component calling this endpoint to provision
@@ -11,10 +11,10 @@
 //             data or returning unexpected responses.
 //
 // PURPOSE:
-//   POST — Ensures the partner's private storage bucket exists
+//   POST - Ensures the partner's private storage bucket exists
 //          in Supabase Storage. Called once during onboarding
 //          and before any file upload (logo, favicon, etc.).
-//          Idempotent — safe to call multiple times.
+//          Idempotent - safe to call multiple times.
 //
 //   Bucket naming: partner-assets-{partner_id}
 //   Policy: private (authenticated owner access only)
@@ -65,11 +65,11 @@ export async function POST(req: NextRequest) {
     const exists = (buckets || []).some(b => b.name === bucketName);
 
     if (exists) {
-      // Already provisioned — return success (idempotent)
+      // Already provisioned - return success (idempotent)
       return NextResponse.json({ success: true, bucket: bucketName, created: false });
     }
 
-    // 4. Create the bucket (private by default — no public read)
+    // 4. Create the bucket (private by default - no public read)
     const { error: createErr } = await supabase.storage.createBucket(bucketName, {
       public: false,
       allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'],

@@ -8,7 +8,7 @@
 //   2. If remaining count >= limit → deny
 //   3. Otherwise push current timestamp → allow
 //
-// Resets on server restart (fine for Vercel — use Redis for
+// Resets on server restart (fine for Vercel - use Redis for
 // multi-region persistence if needed later).
 //
 // Usage:
@@ -104,7 +104,7 @@ export const summitStreamLimiter = new RateLimiter({
 /**
  * Extract the real client IP from request headers.
  * Prefers x-vercel-forwarded-for (Vercel's tamper-proof header, set by the
- * platform — cannot be spoofed by the client), then falls back to
+ * platform - cannot be spoofed by the client), then falls back to
  * x-forwarded-for for non-Vercel environments.
  */
 export function getClientIp(req: Request): string {

@@ -1,7 +1,7 @@
 // app/api/partner/subscription/route.ts
 //
-// GET  — current subscription details (plan, billing, period, usage summary)
-// POST — request a plan change (admin-applied for now; Paystack automation later)
+// GET  - current subscription details (plan, billing, period, usage summary)
+// POST - request a plan change (admin-applied for now; Paystack automation later)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';

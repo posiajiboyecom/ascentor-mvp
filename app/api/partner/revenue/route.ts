@@ -8,7 +8,7 @@
 //   drags multiple files quickly), both called this endpoint.
 //   The second request failed because the first had just created
 //   the bucket, and the Supabase "already exists" error was NOT
-//   caught cleanly — it returned a 500 to the client.
+//   caught cleanly - it returned a 500 to the client.
 //
 //   The old code had a comment noting the race condition but
 //   only checked createError.message.includes('already exists'),
@@ -18,7 +18,7 @@
 //   Fix:
 //   - Catch "already exists" by BOTH message string check AND
 //     statusCode === '409' check so neither can slip through.
-//   - In both cases return { ok: true } — the bucket exists, the
+//   - In both cases return { ok: true } - the bucket exists, the
 //     caller can proceed, no error should be surfaced.
 //   - No other logic changes.
 // ============================================================
@@ -67,7 +67,7 @@ export async function POST() {
       });
 
       if (createError) {
-        // FIX W-05: treat ANY "already exists" signal as success — not an error.
+        // FIX W-05: treat ANY "already exists" signal as success - not an error.
         // Supabase may return a 409 Conflict status code or an "already exists"
         // message string depending on version. Both mean the bucket is ready to use.
         const isAlreadyExists =
@@ -78,7 +78,7 @@ export async function POST() {
         if (!isAlreadyExists) {
           return NextResponse.json({ error: 'Failed to create bucket: ' + createError.message }, { status: 500 });
         }
-        // else: bucket was created by a concurrent request — fall through and return ok
+        // else: bucket was created by a concurrent request - fall through and return ok
       }
     }
 

@@ -10,7 +10,7 @@ import { summitRegisterLimiter, getClientIp } from '@/lib/rate-limit';
 // of the app already checks for the livestream gate, admin views, etc, so
 // nothing else needed to change to support this).
 export async function POST(req: NextRequest) {
-  // Rate limit: 5 submissions per IP per 10 minutes (in-memory — see
+  // Rate limit: 5 submissions per IP per 10 minutes (in-memory - see
   // lib/rate-limit.ts; resets on restart and is per serverless instance)
   const rateLimit = summitRegisterLimiter.check(getClientIp(req));
   if (!rateLimit.allowed) {
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   if (existing) {
     // A row from before registration was free (they never finished the old
     // payment step), or a genuine resubmit. Refresh their details and
-    // confirm them now — registering is the only step there is.
+    // confirm them now - registering is the only step there is.
     const { data: updated, error } = await supabaseAdmin
       .from('summit_registrations')
       .update({
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
 
   // Ticket PDF + confirmation email, and the admin new-registration alert.
   // Never throws; delivery failures are tracked on the row, not surfaced
-  // here — the registration itself has already succeeded.
+  // here - the registration itself has already succeeded.
   await deliverPaidEmails(registration, 0, 'NGN', '');
 
   return NextResponse.json({ registrationId: registration.id });

@@ -14,7 +14,7 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) 
   return user;
 }
 
-// GET /api/admin/surveys — list all surveys
+// GET /api/admin/surveys - list all surveys
 export async function GET() {
   const supabase = await createClient();
   if (!await requireAdmin(supabase)) {
@@ -30,7 +30,7 @@ export async function GET() {
   return NextResponse.json(data);
 }
 
-// POST /api/admin/surveys — create survey
+// POST /api/admin/surveys - create survey
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const user = await requireAdmin(supabase);

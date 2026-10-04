@@ -2,7 +2,7 @@
 // ============================================================
 // Shown when a user taps locked content (event, course, community).
 // Displays the required plan and a CTA to upgrade.
-// Triggered by all three content pages — zero prop drilling needed.
+// Triggered by all three content pages - zero prop drilling needed.
 // ============================================================
 
 'use client'

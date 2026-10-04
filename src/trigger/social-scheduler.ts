@@ -1,9 +1,9 @@
-// src/trigger/social-scheduler.ts — PATCH ONLY
+// src/trigger/social-scheduler.ts - PATCH ONLY
 // ─────────────────────────────────────────────────────────────
 // Find the postText extraction block (around line 105) and add
 // the Instagram Carousel case BEFORE the final `else` fallback.
 //
-// DO NOT replace the full file — just insert this case.
+// DO NOT replace the full file - just insert this case.
 // ─────────────────────────────────────────────────────────────
 //
 // BEFORE (the existing else block at the end):
@@ -18,7 +18,7 @@
 //     // Carousel: caption is the post text, coverImageUrl goes to image_url
 //     postText = cd?.caption || cd?.hook || item.title;
 //     // Pass coverImageUrl into the queue row so buffer-send can use it
-//     // (image_url column is set separately below — see amended queueItems.push)
+//     // (image_url column is set separately below - see amended queueItems.push)
 //   } else {
 //     postText = item.title;
 //   }
@@ -59,7 +59,7 @@
 // BEFORE:
 //   .in("status", autoApprove ? ["draft", "scheduled"] : ["scheduled"])
 //
-// This line is fine as-is — it filters by STATUS not type,
+// This line is fine as-is - it filters by STATUS not type,
 // so carousels with status="scheduled" are already included.
 // No change needed here.
 //
@@ -75,7 +75,7 @@
 FIND this block in social-scheduler.ts:
 
       } else if (item.type === "Email Newsletter") {
-        postText = `📬 "${cd?.subject || item.title}" — sent to subscribers`;
+        postText = `📬 "${cd?.subject || item.title}", sent to subscribers`;
       } else {
         postText = item.title;
       }
@@ -93,7 +93,7 @@ FIND this block in social-scheduler.ts:
 REPLACE WITH:
 
       } else if (item.type === "Email Newsletter") {
-        postText = `📬 "${cd?.subject || item.title}" — sent to subscribers`;
+        postText = `📬 "${cd?.subject || item.title}", sent to subscribers`;
       } else if (item.type === "Instagram Carousel") {
         // Caption is the post text; cover image goes to Buffer as image attachment
         postText = cd?.caption

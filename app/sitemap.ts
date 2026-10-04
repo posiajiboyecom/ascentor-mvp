@@ -1,5 +1,5 @@
 // app/sitemap.ts
-// Dynamic XML sitemap — served at /sitemap.xml automatically by Next.js.
+// Dynamic XML sitemap - served at /sitemap.xml automatically by Next.js.
 // Includes all public marketing routes + published blog posts from Supabase.
 //
 // Uses a bare supabase-js client (not the cookie-bound server client)
@@ -42,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: r.priority,
   }));
 
-  // Published blog posts — fail soft: a Supabase hiccup must never 500 the sitemap.
+  // Published blog posts - fail soft: a Supabase hiccup must never 500 the sitemap.
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

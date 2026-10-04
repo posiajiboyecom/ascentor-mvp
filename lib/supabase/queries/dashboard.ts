@@ -1,8 +1,8 @@
 // lib/supabase/queries/dashboard.ts
 // ============================================================
 // Data for the Home / Dashboard screen.
-//   getDashboardData() — the main fetch (one parallel pass).
-//   getContinueData()  — secondary data, streamed behind <Suspense>.
+//   getDashboardData() - the main fetch (one parallel pass).
+//   getContinueData()  - secondary data, streamed behind <Suspense>.
 // Called from Server Components (app/(app)/dashboard/page.tsx).
 // ============================================================
 

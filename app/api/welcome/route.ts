@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         await triggerAutomation(email, ML_AUTOMATIONS.WELCOME_SEQUENCE);
       }
     } catch (mlError) {
-      // Non-fatal — log and continue
+      // Non-fatal - log and continue
       console.error("[welcome] MailerLite error (non-fatal):", mlError);
     }
 

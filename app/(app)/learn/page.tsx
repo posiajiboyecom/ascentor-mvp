@@ -1,14 +1,14 @@
 // app/(app)/learn/page.tsx
-// Resources screen — server component. Fetches all published courses
+// Resources screen - server component. Fetches all published courses
 // and merges the user's progress into each, then hands off to
 // LearnClient.
 //
-// Schema notes — confirmed via information_schema, NOT database.ts's
+// Schema notes - confirmed via information_schema, NOT database.ts's
 // stale types:
 //   courses: id, title, description, youtube_id, category, difficulty,
 //     duration, sort_order, is_published, total_duration_seconds,
 //     created_at, plan_tier. NO emoji column, NO confirmed
-//     is_free_preview column — don't reference either.
+//     is_free_preview column - don't reference either.
 //   user_progress: id, user_id, course_id, lesson_id (FK→lessons.id),
 //     progress_percent, last_position, completed, updated_at.
 //
@@ -47,7 +47,7 @@ export default async function LearnPage() {
       .eq('id', user.id)
       .single(),
 
-    // lessons has no aggregate count on `courses` itself — pull
+    // lessons has no aggregate count on `courses` itself - pull
     // course_id for every lesson and tally client-side below.
     supabase.from('lessons').select('course_id'),
   ]);
@@ -56,11 +56,11 @@ export default async function LearnPage() {
     console.error('[learn/page] courses query failed:', coursesRes.error.message);
   }
 
-  // user_progress is per-LESSON, not per-course — a course can have
+  // user_progress is per-LESSON, not per-course - a course can have
   // several rows (one per lesson watched). Aggregate to one summary per
   // course: highest progress_percent seen, and "completed" only if every
   // progress row for that course is marked completed. This is a
-  // reasonable course-level rollup, not a verified stored procedure —
+  // reasonable course-level rollup, not a verified stored procedure -
   // flag if your real progress logic differs.
   const progressByCourse = new Map<
     string,

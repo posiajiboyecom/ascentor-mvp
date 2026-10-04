@@ -1,19 +1,19 @@
 // app/api/admin/export/route.ts
 // ============================================================
-// Admin data export — community_messages and coaching_sessions
+// Admin data export - community_messages and coaching_sessions
 // GET /api/admin/export
 //   ?source=community|coaching|both   (required)
 //   &format=csv|json|pdf              (required)
 //   &from=2026-01-01                  (optional, ISO date, inclusive)
 //   &to=2026-06-20                    (optional, ISO date, inclusive)
 //
-// Auth: same pattern as app/api/admin/community-messages/route.ts —
+// Auth: same pattern as app/api/admin/community-messages/route.ts -
 // Bearer token resolved against a request-scoped anon client, then
 // role-checked via the service-role client. role === 'member' is
 // rejected; admin and moderator both pass, matching every other
 // /api/admin/* route in this codebase.
 //
-// PDF generation uses pdfkit (added to package.json — see note at
+// PDF generation uses pdfkit (added to package.json - see note at
 // bottom of this file) rather than a React-based PDF renderer,
 // since this route has no JSX/bundler step and pdfkit streams
 // directly to a Buffer without one.
@@ -24,7 +24,7 @@
 // request hits the cap, `truncated: true` is included in the
 // JSON format's metadata and a notice line is added to the PDF
 // summary; CSV includes a trailing comment row. There's no UI
-// for paginated/chunked exports yet — if exports start regularly
+// for paginated/chunked exports yet - if exports start regularly
 // hitting these caps, that's the next thing to build, not a
 // silent data-loss risk today.
 // ============================================================
@@ -82,7 +82,7 @@ async function fetchCommunity(from: string | null, to: string | null) {
   const rows = (data || []) as CommunityRow[];
 
   // Hydrate author name/email in a single batched lookup rather than
-  // N+1 queries — same approach as app/admin/community-intel/page.tsx
+  // N+1 queries - same approach as app/admin/community-intel/page.tsx
   // uses for its message list.
   const userIds = Array.from(new Set(rows.map(r => r.user_id)));
   if (userIds.length) {
@@ -173,7 +173,7 @@ function buildPdf(opts: {
     for (const section of opts.sections) {
       doc.font('Helvetica-Bold').fontSize(14).fillColor('#161412').text(section.heading);
       doc.font('Helvetica').fontSize(9).fillColor('#A8894E')
-        .text(`${section.rowCount} record${section.rowCount === 1 ? '' : 's'}${section.truncated ? ` — truncated at export cap` : ''}`);
+        .text(`${section.rowCount} record${section.rowCount === 1 ? '' : 's'}${section.truncated ? `, truncated at export cap` : ''}`);
       doc.moveDown(0.5);
 
       doc.font('Courier').fontSize(8).fillColor('#1F2937');
@@ -301,7 +301,7 @@ export async function GET(req: NextRequest) {
     }
 
     const pdfBuffer = await buildPdf({
-      title: 'Ascentor — Chat Data Export',
+      title: 'Ascentor, Chat Data Export',
       generatedBy: admin.name || admin.id,
       range: { from: fromIso, to: toIso },
       sections,
@@ -320,11 +320,11 @@ export async function GET(req: NextRequest) {
 }
 
 // ============================================================
-// SETUP REQUIRED — pdfkit is not yet in package.json.
+// SETUP REQUIRED - pdfkit is not yet in package.json.
 // Run from project root:
 //   npm install pdfkit
 //   npm install --save-dev @types/pdfkit
-// No other new dependencies were added — CSV and JSON formatting
-// are hand-rolled in this file (no papaparse — that library is
+// No other new dependencies were added - CSV and JSON formatting
+// are hand-rolled in this file (no papaparse - that library is
 // meant for client-side parsing, not server-side generation).
 // ============================================================

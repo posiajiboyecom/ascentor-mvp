@@ -1,5 +1,5 @@
 // ============================================================
-// PARTNER PAYMENT VERIFY — /api/partner/payment/verify
+// PARTNER PAYMENT VERIFY - /api/partner/payment/verify
 //
 // Called by PartnerCheckoutClient after Paystack popup success.
 // Unlike the main /api/payment/verify, this route:
@@ -9,7 +9,7 @@
 //   4. Notifies both the member and the partner owner
 //
 // SECURITY: userId is taken from the authenticated session cookie.
-// partner_id from the request body is used for context only —
+// partner_id from the request body is used for context only -
 // the caller cannot activate a different user's subscription.
 // ============================================================
 
@@ -64,7 +64,7 @@ function calcSubscriptionEnd(billing: string, trialDays: number): Date {
 
 export async function POST(req: NextRequest) {
   try {
-    // ── 1. Authenticate session — never trust body for userId ──
+    // ── 1. Authenticate session - never trust body for userId ──
     const authClient = await createAuthClient();
     const { data: { user }, error: authError } = await authClient.auth.getUser();
     if (authError || !user) {
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
         );
       }
     } else if (process.env.NODE_ENV === 'development') {
-      console.warn('[PartnerVerify] No Paystack secret — dev mode bypass');
+      console.warn('[PartnerVerify] No Paystack secret, dev mode bypass');
       verified     = true;
       paystackData = { reference, status: 'success', amount: 0, currency: 'NGN' };
     } else {
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (existingTx) {
-      // Already processed — return success (idempotent)
+      // Already processed - return success (idempotent)
       return NextResponse.json({ success: true, plan, already_processed: true });
     }
 
@@ -249,7 +249,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (txErr) {
-      // Non-fatal — subscription is already activated; log and continue
+      // Non-fatal - subscription is already activated; log and continue
       console.error('[PartnerVerify] Transaction insert failed (non-fatal):', txErr);
     }
 

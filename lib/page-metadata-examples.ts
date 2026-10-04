@@ -7,7 +7,7 @@
 // --- /checkout/page.tsx ---
 // import { generatePageMetadata } from '@/lib/seo';
 // export const metadata = generatePageMetadata({
-//   title: 'Pricing — Start Your Free Trial',
+//   title: 'Pricing - Start Your Free Trial',
 //   description: 'Choose the plan that matches your ambition. All plans include a  with AI coaching, courses, and community access.',
 //   path: '/checkout',
 // });
@@ -25,7 +25,7 @@
 // import { generatePageMetadata } from '@/lib/seo';
 // export const metadata = generatePageMetadata({
 //   title: 'Create Your Account',
-//   description: 'Join Ascentor — AI leadership coaching built for purposeful individuals. Start free, upgrade anytime.',
+//   description: 'Join Ascentor - AI leadership coaching built for purposeful individuals. Start free, upgrade anytime.',
 //   path: '/signup',
 // });
 
@@ -33,7 +33,7 @@
 // import { generatePageMetadata } from '@/lib/seo';
 // export const metadata = generatePageMetadata({
 //   title: 'Dashboard',
-//   description: 'Your Ascentor coaching dashboard — track goals, review sessions, and continue your leadership journey.',
+//   description: 'Your Ascentor coaching dashboard - track goals, review sessions, and continue your leadership journey.',
 //   path: '/dashboard',
 //   noIndex: true,
 // });
@@ -50,7 +50,7 @@
 // --- /(app)/learn/page.tsx ---
 // import { generatePageMetadata } from '@/lib/seo';
 // export const metadata = generatePageMetadata({
-//   title: 'Learn — Courses & Resources',
+//   title: 'Learn - Courses & Resources',
 //   description: 'Expert-curated courses on leadership, management, and career growth for purposeful individuals.',
 //   path: '/learn',
 // });

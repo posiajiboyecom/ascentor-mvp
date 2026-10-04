@@ -7,7 +7,7 @@
 //
 // FIX (W-16):
 //   The "Access to this platform is by invite only." notice was
-//   positioned BELOW the card in 11px dim text — visually buried
+//   positioned BELOW the card in 11px dim text - visually buried
 //   and nearly invisible on dark backgrounds. It also appeared
 //   simultaneously with the error state, creating two competing
 //   messages stacked below the card.
@@ -96,7 +96,7 @@ function PartnerLoginForm() {
         </div>
 
         {/*
-          FIX W-16: Invite notice — shown ABOVE the card, hidden when error is showing.
+          FIX W-16: Invite notice, shown ABOVE the card, hidden when error is showing.
           Previous position was below the card in tiny dim text, which was buried and
           conflicted with the error state.
         */}

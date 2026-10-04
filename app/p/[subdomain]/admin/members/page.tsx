@@ -2,7 +2,7 @@
 // app/partner/members/page.tsx  (also used via re-export at
 // app/p/[subdomain]/admin/members/page.tsx)
 //
-// Partner member management — invite, search, status management.
+// Partner member management - invite, search, status management.
 // Calls /api/partner/members (GET, POST, PATCH, DELETE).
 // ============================================================
 
@@ -137,7 +137,7 @@ export default function MembersAdminPage() {
               {(m.full_name || m.email)[0].toUpperCase()}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{m.full_name || '—'}</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{m.full_name || '-'}</p>
               <p style={{ fontSize: 12, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.email}</p>
             </div>
             <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>{m.status}</span>

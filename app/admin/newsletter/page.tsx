@@ -233,7 +233,7 @@ export default function AdminNewsletterPage() {
   <div class="final-word">
     <p>The world isn\u2019t waiting for a perfect leader.</p>
     <p>It\u2019s waiting for a <span class="highlight">real one.</span></p>
-    <p style="color:var(--admin-text-faint);font-size:13px;margin-top:16px;font-family:Metropolis,'Inter',sans-serif,sans-serif;letter-spacing:0.06em;text-transform:uppercase;">That\u2019s you \u2014 if you choose to show up.</p>
+    <p style="color:var(--admin-text-faint);font-size:13px;margin-top:16px;font-family:Metropolis,'Inter',sans-serif,sans-serif;letter-spacing:0.06em;text-transform:uppercase;">That\u2019s you, if you choose to show up.</p>
   </div>
   <div class="footer">
     <div class="footer-brand">Ascentor</div>

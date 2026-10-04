@@ -71,7 +71,7 @@ export const AUDIT_ACTIONS = {
 
 /**
  * Log an action to the audit trail.
- * This is designed to NEVER throw or block — always wrapped in try/catch.
+ * This is designed to NEVER throw or block - always wrapped in try/catch.
  *
  * Usage:
  *   await logAudit(supabase, {
@@ -106,7 +106,7 @@ export async function logAudit(
       user_agent: params.userAgent || null,
     });
   } catch (err) {
-    // Never throw — audit logging should never break user flows
+    // Never throw - audit logging should never break user flows
     console.error('Audit log failed:', err);
   }
 }

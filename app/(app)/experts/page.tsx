@@ -1,8 +1,8 @@
 // app/(app)/experts/page.tsx
-// Server Component — fetches expert sessions, the user's registrations,
+// Server Component - fetches expert sessions, the user's registrations,
 // and their plan, then hands off to ExpertsClient.
 //
-// Schema notes — confirmed via prior live-codebase reads, NOT the stale
+// Schema notes - confirmed via prior live-codebase reads, NOT the stale
 // database.ts types (which say `is_published`/`session_date`, neither
 // of which exist on the real table):
 //   expert_sessions: id, title, expert_name, expert_bio, expert_avatar,
@@ -12,7 +12,7 @@
 //     registration_url, max_attendees, current_attendees.
 //   session_registrations: id, session_id, user_id, registered_at.
 //
-// Route is /experts (not /sessions) — the desktop rail just labels the
+// Route is /experts (not /sessions) - the desktop rail just labels the
 // nav item "Sessions".
 
 import { redirect } from 'next/navigation';

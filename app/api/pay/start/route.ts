@@ -1,5 +1,5 @@
 // ================================================================
-// POST /api/pay/start  — PAYMENT SYSTEM v4 (HOSTED PAGE)
+// POST /api/pay/start  - PAYMENT SYSTEM v4 (HOSTED PAGE)
 // ================================================================
 // RADICAL FIX: Switched from Paystack inline popup to Paystack
 // hosted payment page. No inline.js, no CSP issues, no SW
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 3. Resolve plan amount ────────────────────────────────────────────────
-    // Plan codes (PLN_xxx) are no longer passed to Paystack — they lock channels.
+    // Plan codes (PLN_xxx) are no longer passed to Paystack - they lock channels.
     // Amount is derived directly from PLAN_AMOUNTS instead.
     const planAmount = subscriptionAmountKobo(planId, billing)
     if (!planAmount) {
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
     // ── 5. Initialize Paystack transaction ───────────────────────────────────
     // IMPORTANT: We do NOT pass `plan` (PLN_xxx) here. When a Paystack plan code
     // is attached, Paystack locks channels to whatever was configured on that plan
-    // in the dashboard — ignoring the `channels` array entirely.
+    // in the dashboard - ignoring the `channels` array entirely.
     // Instead we pass `amount` directly and track the plan in metadata.
     // Subscription renewal is handled by our webhook (charge.success events).
     const psRes = await fetch('https://api.paystack.co/transaction/initialize', {

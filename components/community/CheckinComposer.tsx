@@ -2,7 +2,7 @@
 
 // components/community/CheckinComposer.tsx
 // Modal for writing this week's ritual check-in. Posts to /api/community/checkin
-// (one per week — a 409 comes back friendly). On success the parent updates the
+// (one per week - a 409 comes back friendly). On success the parent updates the
 // hero + circle status optimistically from the returned message.
 
 import { useState } from 'react';
@@ -40,7 +40,7 @@ export function CheckinComposer({
       }
       onDone(data.message as Message);
     } catch {
-      setError('Check-in failed — check your connection.');
+      setError('Check-in failed, check your connection.');
     } finally {
       setSubmitting(false);
     }

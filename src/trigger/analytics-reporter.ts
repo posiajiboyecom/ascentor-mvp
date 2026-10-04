@@ -57,7 +57,7 @@ export const analyticsReporterAgent = schedules.task({
       ? Math.round(((thisWeekSessions - lastWeekSessions) / lastWeekSessions) * 100)
       : 0;
 
-    // WACU — unique users who coached this week
+    // WACU - unique users who coached this week
     const { data: wacuData } = await supabase
       .from("coaching_sessions")
       .select("user_id")
@@ -92,7 +92,7 @@ export const analyticsReporterAgent = schedules.task({
       max_tokens: 400,
       messages: [{
         role: "user",
-        content: `You are writing a weekly business report email for the founder of Ascentor — an AI mentorship platform for purposeful individuals.
+        content: `You are writing a weekly business report email for the founder of Ascentor, an AI mentorship platform for purposeful individuals.
 
 Here are this week's metrics:
 ${JSON.stringify(metrics, null, 2)}
@@ -115,7 +115,7 @@ Return plain text only (no JSON, no markdown headers).`,
       : "Weekly metrics collected. Review your dashboard for full details.";
 
     // ── Build and send the email ──────────────────────────
-    const changeArrow = (n: number) => n > 0 ? `↑${n}%` : n < 0 ? `↓${Math.abs(n)}%` : "—";
+    const changeArrow = (n: number) => n > 0 ? `↑${n}%` : n < 0 ? `↓${Math.abs(n)}%` : "-";
 
     const html = `
 <!DOCTYPE html>

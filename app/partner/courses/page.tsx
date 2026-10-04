@@ -1,5 +1,5 @@
 ﻿'use client';
-// app/partner/courses/page.tsx — full partner course manager with tier gating
+// app/partner/courses/page.tsx - full partner course manager with tier gating
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from 'react';
 import { confirmAction } from '@/components/Modal';
@@ -93,7 +93,7 @@ export default function PartnerCoursesPage() {
         <div>
           <h1 style={{ fontSize:'20px', fontWeight:500, color:'#f8fafc', marginBottom:'4px' }}>Courses</h1>
           <p style={{ fontSize:'13px', color:'rgba(255,255,255,0.4)' }}>
-            {limitStr} used{tier?.maxCourses !== -1 && <span style={{ color: atLimit?'#EF4444':'rgba(255,255,255,0.25)' }}> — {tier?.name} plan</span>}
+            {limitStr} used{tier?.maxCourses !== -1 && <span style={{ color: atLimit?'#EF4444':'rgba(255,255,255,0.25)' }}>, {tier?.name} plan</span>}
           </p>
         </div>
         {!atLimit && !showForm

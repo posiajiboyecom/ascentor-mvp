@@ -18,7 +18,7 @@ import { useState } from 'react'
 
 type Billing = 'monthly' | 'annual'
 
-// NGN prices — $1 ≈ ₦1,600. Update this rate in one place as needed.
+// NGN prices - $1 ≈ ₦1,600. Update this rate in one place as needed.
 const PLANS = [
   {
     id: 'studio',

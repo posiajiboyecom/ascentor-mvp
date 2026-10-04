@@ -1,5 +1,5 @@
 -- ============================================================================
--- 2026-07-04_master_repair.sql — Ascentor full admin/feature repair
+-- 2026-07-04_master_repair.sql - Ascentor full admin/feature repair
 --
 -- HOW TO RUN: paste this ENTIRE file into the Supabase SQL Editor
 --   (Dashboard → SQL Editor → New query → Run). Same manual convention
@@ -14,7 +14,7 @@
 --   2. Missing tables & columns for admin-managed features
 --      (contact inbox, summit, public events, billboards, products,
 --       careers, newsletter, mentors, waitlist, marketing CMS, blog)
---   3. THE BIG ONE — admin RLS on EVERY table: admin pages use the
+--   3. THE BIG ONE - admin RLS on EVERY table: admin pages use the
 --      browser Supabase client, so without an admin policy on each
 --      table the admin panel silently sees empty lists and all edits
 --      fail. A dynamic block below grants the admin role full access
@@ -23,7 +23,7 @@
 --      newsletter, careers applications, event & summit registration
 --      reads, published content).
 --   5. Storage buckets + policies (avatars, product-images,
---      content-media, community-voice, resumes) — the root cause of
+--      content-media, community-voice, resumes) - the root cause of
 --      "image links not processing": uploads from the browser client
 --      fail without these, or succeed into a missing/private bucket
 --      so the saved public URL 404s.
@@ -400,7 +400,7 @@ ALTER TABLE blog_posts
 --    Adds an admin_all policy to every public table so admin pages
 --    (which use the browser Supabase client) can read & write.
 --    IMPORTANT: this block does NOT force-enable RLS on pre-existing
---    tables — enabling RLS on a table that currently works without it
+--    tables - enabling RLS on a table that currently works without it
 --    would instantly break its user-facing flows. The policy simply
 --    sits dormant on RLS-off tables and becomes active if/when RLS is
 --    enabled. RLS is explicitly enabled further below ONLY on the
@@ -502,7 +502,7 @@ DROP POLICY IF EXISTS member_read ON rail_billboards;
 CREATE POLICY member_read ON rail_billboards
   FOR SELECT TO authenticated USING (is_active = true);
 
--- Marketing CMS: policies must match lib/supabase/queries/marketing.ts —
+-- Marketing CMS: policies must match lib/supabase/queries/marketing.ts -
 -- the page row is fetched with NO status filter (status lives on sections),
 -- and sections/items are filtered by status = 'published'.
 DROP POLICY IF EXISTS public_read ON marketing_pages;
@@ -529,7 +529,7 @@ CREATE POLICY own_delete ON summit_registrations
 
 
 -- ════════════════════════════════════════════════════════════════════════
--- 5. STORAGE — buckets + policies ("image links not processing" fix)
+-- 5. STORAGE - buckets + policies ("image links not processing" fix)
 -- ════════════════════════════════════════════════════════════════════════
 
 -- Create buckets (public = files reachable via getPublicUrl).
@@ -582,7 +582,7 @@ CREATE POLICY resumes_admin_read ON storage.objects
 
 
 -- ════════════════════════════════════════════════════════════════════════
--- 6. TRIGGERS — keep updated_at honest where the code expects it
+-- 6. TRIGGERS - keep updated_at honest where the code expects it
 -- ════════════════════════════════════════════════════════════════════════
 DO $$
 DECLARE t text;

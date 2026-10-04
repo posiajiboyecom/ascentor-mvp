@@ -2,7 +2,7 @@
 // ── Checkout gate ──────────────────────────────────────────────
 // Reads `checkout_enabled` from Supabase platform_settings on the
 // server. If checkout is disabled (Free Mode), redirects straight
-// to /dashboard — no pricing page shown, no client JS runs.
+// to /dashboard - no pricing page shown, no client JS runs.
 //
 // The env var FREE_MODE=true acts as a hard override for local dev.
 // ──────────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ export default async function CheckoutPage() {
       redirect('/dashboard');
     }
   } catch {
-    // Table not seeded yet — allow through (safe default: paid mode)
+    // Table not seeded yet - allow through (safe default: paid mode)
   }
 
   return <CheckoutClient />;

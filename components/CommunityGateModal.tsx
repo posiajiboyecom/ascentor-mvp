@@ -34,7 +34,7 @@ export default function CommunityGateModal() {
 
   return (
     <>
-      {/* URL watcher — detects ?gate=1 and opens modal directly (no event timing issue) */}
+      {/* URL watcher - detects ?gate=1 and opens modal directly (no event timing issue) */}
       <Suspense fallback={null}>
         <GateWatcher onOpen={() => setOpen(true)} />
       </Suspense>

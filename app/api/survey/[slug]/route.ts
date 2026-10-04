@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-// GET /api/survey/[slug] — fetch published survey
+// GET /api/survey/[slug] - fetch published survey
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -24,7 +24,7 @@ export async function GET(
   return NextResponse.json(data);
 }
 
-// POST /api/survey/[slug] — submit response
+// POST /api/survey/[slug] - submit response
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -51,7 +51,7 @@ export async function POST(
     return NextResponse.json({ error: 'Survey not found' }, { status: 404 });
   }
 
-  // Get current user (optional — anonymous submissions allowed)
+  // Get current user (optional - anonymous submissions allowed)
   const { data: { user } } = await supabase.auth.getUser();
 
   const { error: insertErr } = await supabase

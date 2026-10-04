@@ -4,7 +4,7 @@
 --
 -- HOW TO RUN: paste this whole file into the Supabase SQL Editor
 --   (Dashboard → SQL Editor → New query → Run). There is no migrations
---   runner in this repo — same manual convention as the milestone columns
+--   runner in this repo - same manual convention as the milestone columns
 --   documented in app/api/goals/milestone/route.ts.
 --
 -- Safe to run more than once (IF NOT EXISTS / ON CONFLICT throughout).
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS community_prompts (
 ALTER TABLE community_prompts ENABLE ROW LEVEL SECURITY;
 
 -- Everyone reads the prompt. Writes are admin-only via this SQL editor /
--- service role — intentionally no INSERT/UPDATE policy for the client.
+-- service role - intentionally no INSERT/UPDATE policy for the client.
 DROP POLICY IF EXISTS cp_read ON community_prompts;
 CREATE POLICY cp_read ON community_prompts FOR SELECT TO authenticated USING (true);
 
@@ -76,12 +76,12 @@ ON CONFLICT (week_start) DO NOTHING;
 
 -- A few weeks ahead so the ritual never shows a blank prompt during testing.
 INSERT INTO community_prompts (week_start, question) VALUES
-  ((date_trunc('week', now()) + interval '1 week')::date, 'What did you say no to this week — and what did it protect?'),
+  ((date_trunc('week', now()) + interval '1 week')::date, 'What did you say no to this week - and what did it protect?'),
   ((date_trunc('week', now()) + interval '2 week')::date, 'Where are you still performing instead of being honest?'),
   ((date_trunc('week', now()) + interval '3 week')::date, 'What is the smallest promise you kept to yourself?')
 ON CONFLICT (week_start) DO NOTHING;
 
--- ── 5. OPTIONAL dev seed — populate a circle so "Your Circle" isn't empty ─────
+-- ── 5. OPTIONAL dev seed - populate a circle so "Your Circle" isn't empty ─────
 -- Uncomment and edit. Find a circle slug:
 --   SELECT slug, name FROM community_channels WHERE channel_type = 'circle';
 -- Find user ids:

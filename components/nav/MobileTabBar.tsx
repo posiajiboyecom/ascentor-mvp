@@ -5,7 +5,7 @@
 // structure: dark chrome, 5 icons, gold active state.
 //
 // FIX: Icons now sourced from shared NAV_ITEMS constant defined in
-// @/lib/nav-items — same array consumed by DesktopRail, guaranteeing
+// @/lib/nav-items - same array consumed by DesktopRail, guaranteeing
 // identical icons at every breakpoint. Previously used MessageCircle +
 // CalendarDays while DesktopRail used MessageSquare + User for the
 // same routes.

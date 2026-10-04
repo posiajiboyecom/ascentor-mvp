@@ -1,13 +1,13 @@
 // app/api/admin/coaching-sessions/route.ts
 // Admin-only: hard-delete coaching_sessions (single or bulk).
-// Uses service role to bypass RLS — same auth convention as
+// Uses service role to bypass RLS - same auth convention as
 // app/api/admin/community-messages/route.ts.
 //
 // HARD DELETE: coaching_sessions has no `deleted` column (unlike
 // community_messages, which soft-deletes), so this permanently
 // removes rows via .delete(), not .update({ deleted: true }).
-// No undo. Confirmed with Anifie before building — see chat log:
-// "Hard delete — permanently removed from the database, no undo."
+// No undo. Confirmed with Anifie before building - see chat log:
+// "Hard delete - permanently removed from the database, no undo."
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -33,7 +33,7 @@ async function getAdminUser(authHeader: string | null) {
 }
 
 // DELETE /api/admin/coaching-sessions
-// Body: { ids: string[] }  — one or many session IDs, hard-deleted.
+// Body: { ids: string[] }  - one or many session IDs, hard-deleted.
 export async function DELETE(req: NextRequest) {
   try {
     const user = await getAdminUser(req.headers.get('authorization'));

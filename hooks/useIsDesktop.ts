@@ -6,11 +6,11 @@
 // used throughout DesktopRail/AppLayout for the desktop split).
 //
 // Most of the app's mobile/desktop split is pure CSS (`lg:hidden` /
-// `hidden lg:flex`) — both trees mount, only one is visible, which is fine
+// `hidden lg:flex`) - both trees mount, only one is visible, which is fine
 // for static content. This hook exists for the rare case where mounting
 // twice has a real cost: components that open Supabase Realtime
 // subscriptions, start intervals, or fetch on mount. CommunityClient uses
-// this to guarantee only ONE ChannelView ever mounts at a time — without
+// this to guarantee only ONE ChannelView ever mounts at a time - without
 // it, both the mobile and desktop chat panes would open their own
 // Realtime subscription to the same channel simultaneously.
 //

@@ -13,7 +13,7 @@
 // Messaging (history load, realtime, send, react, pin) lives in the shared
 // useChannelMessages hook so the home's Commons feed and an open channel run
 // the same code. Only ONE consumer per channel slug is ever mounted at a time
-// (home shows the forum; a channel view shows the selected slug — never both),
+// (home shows the forum; a channel view shows the selected slug - never both),
 // which is what keeps us from opening duplicate Realtime subscriptions.
 // ============================================================
 
@@ -45,7 +45,7 @@ export interface CommunityClientProps {
 }
 
 // ── Chat background pattern ──────────────────────────────────────────
-// Dense scattered doodle pattern — Ascentor brand motifs (triangles,
+// Dense scattered doodle pattern - Ascentor brand motifs (triangles,
 // diamonds, circles, stars, lines, dots) at varying sizes, rotations,
 // and opacities on a warm parchment base. Matches the telegram/whatsapp
 // doodle-wall aesthetic while staying on-brand. 400×400 tile so the
@@ -56,7 +56,7 @@ const CHAT_BG_PATTERN_SVG = `<svg width="400" height="400" viewBox="0 0 400 400"
   <!-- ── Scattered brand motifs in warm amber/brown at low opacity ── -->
   <!-- Color palette: #8B6208 (deep amber), #A07820 (mid amber), #C8A050 (light amber) -->
 
-  <!-- Ascending triangles (Ascentor mark) — various sizes & rotations -->
+  <!-- Ascending triangles (Ascentor mark) - various sizes & rotations -->
   <polygon points="32,28 40,44 24,44" fill="none" stroke="#8B6208" stroke-width="1.2" opacity="0.18"/>
   <polygon points="120,15 126,27 114,27" fill="none" stroke="#A07820" stroke-width="1" opacity="0.14"/>
   <polygon points="310,52 320,72 300,72" fill="none" stroke="#8B6208" stroke-width="1.3" opacity="0.16"/>
@@ -101,7 +101,7 @@ const CHAT_BG_PATTERN_SVG = `<svg width="400" height="400" viewBox="0 0 400 400"
   <rect x="356" y="318" width="8" height="8" rx="0.5" fill="none" stroke="#A07820" stroke-width="1" opacity="0.13" transform="rotate(45 360 322)"/>
   <rect x="246" y="368" width="10" height="10" rx="1" fill="none" stroke="#8B6208" stroke-width="1.1" opacity="0.15" transform="rotate(45 251 373)"/>
 
-  <!-- Circles — various sizes -->
+  <!-- Circles - various sizes -->
   <circle cx="55" cy="52" r="7" fill="none" stroke="#A07820" stroke-width="1" opacity="0.14"/>
   <circle cx="185" cy="30" r="5" fill="none" stroke="#8B6208" stroke-width="1" opacity="0.13"/>
   <circle cx="350" cy="38" r="9" fill="none" stroke="#C8A050" stroke-width="1.1" opacity="0.15"/>
@@ -264,11 +264,11 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           console.error('[CommunityClient] voice upload failed:', data.error);
-          showError("Voice message didn't send — try again.");
+          showError("Voice message didn't send, try again.");
         }
       } catch (err) {
         console.error('[CommunityClient] voice upload error:', err);
-        showError("Voice message didn't send — check your connection.");
+        showError("Voice message didn't send, check your connection.");
       }
     },
     [channel.slug, showError]
@@ -348,14 +348,14 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
       {channel.channel_type === 'announce' && (
         <div className="flex items-center gap-1.5 px-4 lg:px-6 py-2 bg-[var(--app-bg-input)] text-xs text-[var(--text-muted)] shrink-0">
           <span className="text-[#C8A96E]">🔒</span>
-          Admin-only. React freely — replies not available here.
+          Admin-only. React freely, replies not available here.
         </div>
       )}
 
       {channel.channel_type === 'circle' && (
         <div className="flex items-center gap-1.5 px-4 lg:px-6 py-2 bg-[#0F6E56]/[0.08] text-xs text-[#0F6E56] shrink-0">
           <span>👥</span>
-          Accountability circle — weekly check-ins, kept between members.
+          Accountability circle, weekly check-ins, kept between members.
         </div>
       )}
 
@@ -392,7 +392,7 @@ function ChannelView({ channel, userId, userName, onBack, isModerator, onMessage
               <p className="text-center text-sm text-[var(--color-text-secondary)] py-8">Loading…</p>
             ) : messages.length === 0 ? (
               <p className="text-center text-sm text-[var(--color-text-secondary)] py-8">
-                No messages yet — be the first to post.
+                No messages yet, be the first to post.
               </p>
             ) : (
               messages.map((msg, i) => {

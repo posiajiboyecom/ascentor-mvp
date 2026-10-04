@@ -1,5 +1,5 @@
 // app/partner/page.tsx
-// Partner portal overview — shows key stats and quick actions
+// Partner portal overview - shows key stats and quick actions
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +47,7 @@ export default async function PartnerOverviewPage() {
     stats.sessions = sessionsRes.count || 0;
   }
 
-  // Setup checklist — reads from correct fields
+  // Setup checklist - reads from correct fields
   const checklist = [
     {
       done: !!(brand.logo_url),

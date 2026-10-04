@@ -239,7 +239,7 @@ export function ForumBody({
           <p className="text-center text-sm text-[var(--color-text-secondary)] py-8">Loading…</p>
         ) : topLevelPosts.length === 0 ? (
           <p className="text-center text-sm text-[var(--color-text-secondary)] py-8">
-            No posts yet in this dimension — be the first to share.
+            No posts yet in this dimension, be the first to share.
           </p>
         ) : (
           topLevelPosts.map((post) => (
@@ -295,7 +295,7 @@ export function ForumThread({
 
         {replies.length === 0 ? (
           <p className="text-center text-sm text-[var(--color-text-secondary)] py-6">
-            No replies yet — start the conversation.
+            No replies yet, start the conversation.
           </p>
         ) : (
           <div className="flex flex-col gap-3">

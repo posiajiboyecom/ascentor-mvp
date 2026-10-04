@@ -2,7 +2,7 @@
 // FILE LOCATION: app/api/partner/webhook/route.ts
 //
 // BUG FIXED:
-//   BUG-07 — No idempotency check on charge.success handler.
+//   BUG-07 - No idempotency check on charge.success handler.
 //             Paystack's documentation states webhooks may be
 //             delivered more than once (retries on non-200, or
 //             duplicate delivery during failover). Without a
@@ -64,7 +64,7 @@ async function handleChargeSuccess(data: any, partner: any) {
 
   if (!email) return;
 
-  // FIX BUG-07: idempotency guard — exit early if already processed
+  // FIX BUG-07: idempotency guard - exit early if already processed
   const { data: existingTx } = await supabase
     .from('partner_transactions')
     .select('id')
@@ -72,7 +72,7 @@ async function handleChargeSuccess(data: any, partner: any) {
     .maybeSingle();
 
   if (existingTx) {
-    console.log(`[PartnerWebhook] Duplicate event for ref ${ref} — skipping`);
+    console.log(`[PartnerWebhook] Duplicate event for ref ${ref}, skipping`);
     return;
   }
 
@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
         partnerSecret = decryptSecret((partner as any).paystack_secret_key_enc);
       } catch (decryptErr) {
         console.error(`[PartnerWebhook] Failed to decrypt secret for partner ${partnerId}:`, decryptErr);
-        // Do NOT fall back to Ascentor's global key — that would allow any
+        // Do NOT fall back to Ascentor's global key - that would allow any
         // Ascentor-signed webhook to pass HMAC verification for this partner.
         return NextResponse.json({ error: 'Webhook configuration error' }, { status: 500 });
       }

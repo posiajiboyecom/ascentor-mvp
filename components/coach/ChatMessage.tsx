@@ -81,7 +81,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           </div>
         )}
 
-        {/* ── "Sage Surfaces the Source" — mentor attribution card ──
+        {/* ── "Sage Surfaces the Source" - mentor attribution card ──
             The visible form of the RAG attribution system: which
             member(s) of the mentor council informed this answer. */}
         {message.role === 'assistant' &&

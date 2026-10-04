@@ -4,7 +4,7 @@ import Link from 'next/link';
 export const metadata = {
   title: 'Blog',
   description:
-    'Insights on purposeful living, leadership, and legacy — across Mind, Character, Work, Relationships, Community, and Legacy.',
+    'Insights on purposeful living, leadership, and legacy, across Mind, Character, Work, Relationships, Community, and Legacy.',
   alternates: { canonical: 'https://ascentorbi.com/blog' },
   openGraph: {
     title: 'The Ascentor Blog',

@@ -278,7 +278,7 @@ select:focus {
   outline-offset: 2px;
 }
 
-/* Interactive elements — keyboard focus ring */
+/* Interactive elements - keyboard focus ring */
 button:focus-visible,
 a:focus-visible,
 [role="button"]:focus-visible,
@@ -422,7 +422,7 @@ a:focus-visible,
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   ASCENTOR PREMIUM LAYER — added July 2026
+   ASCENTOR PREMIUM LAYER - added July 2026
    The Ledger Line signature system, extended tokens, skeletons,
    reading typography for Sage, and reduced-motion guards.
    ════════════════════════════════════════════════════════════════════ */
@@ -430,8 +430,8 @@ a:focus-visible,
 :root {
   /* Extended semantic tokens (both themes share these) */
   --app-accent-strong: #D9BC85;            /* gold hover/active */
-  --app-success:       #7BA37A;            /* muted sage green — never neon */
-  --app-danger:        #B96A5E;            /* muted terracotta — never alarm red */
+  --app-success:       #7BA37A;            /* muted sage green - never neon */
+  --app-danger:        #B96A5E;            /* muted terracotta - never alarm red */
   --app-radius-sm: 8px;
   --app-radius-md: 12px;
   --app-radius-lg: 16px;
@@ -461,7 +461,7 @@ a:focus-visible,
   animation: ledger-draw 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Continuous draw loop — the "Sage is reflecting…" thinking state */
+/* Continuous draw loop - the "Sage is reflecting…" thinking state */
 @keyframes ledger-think {
   0%   { transform: scaleX(0);   opacity: 1; }
   70%  { transform: scaleX(1);   opacity: 1; }
@@ -552,7 +552,7 @@ a:focus-visible,
   .ledger-strike::after { transform: scaleX(1); }
 }
 
-/* ── Expert portrait duotone — visual unity regardless of source photo ── */
+/* ── Expert portrait duotone - visual unity regardless of source photo ── */
 .asc-duotone {
   filter: grayscale(1) sepia(0.32) saturate(1.15) brightness(0.96) contrast(1.05);
 }

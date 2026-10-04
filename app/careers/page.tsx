@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import PublicShell from '@/components/layout/PublicShell';
 
 // ============================================================
-// CAREERS PAGE — /careers
+// CAREERS PAGE - /careers
 // Public-facing. Inline application form per job listing.
 // Ascentor brand: Dark #0C0B08 · Gold #E8A020 · Metropolis · DM Mono · Metropolis
 // ============================================================
@@ -414,7 +414,7 @@ export default function CareersPage() {
               fontSize: 16, color: '#7A7260',
               lineHeight: 1.7, maxWidth: 480, margin: '0 auto 36px',
             }}>
-              We're a small team with an outsized mission — democratising mentorship
+              We're a small team with an outsized mission, democratising mentorship
               across the world. Every role here shapes what that looks like.
             </p>
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -561,7 +561,7 @@ export default function CareersPage() {
                     </div>
                   ) : applyingTo === job.id ? (
                     <div className="cr-app-form">
-                      <p className="cr-app-form-title">Apply — {job.title}</p>
+                      <p className="cr-app-form-title">Apply, {job.title}</p>
                       <p className="cr-app-form-sub">{job.department} · {job.type} · {job.mode}</p>
 
                       <div className="cr-field-row">
@@ -654,7 +654,7 @@ export default function CareersPage() {
                       <div className="cr-field">
                         <label className="cr-label">Cover Letter *</label>
                         <textarea className="cr-input cr-textarea"
-                          placeholder={`Why do you want to work at Ascentor? What makes you the right person for this role? Be specific — we read every word.`}
+                          placeholder={`Why do you want to work at Ascentor? What makes you the right person for this role? Be specific, we read every word.`}
                           value={appForm.cover_letter} onChange={e => setField('cover_letter', e.target.value)} />
                       </div>
 

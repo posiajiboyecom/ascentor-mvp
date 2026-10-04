@@ -27,7 +27,7 @@ export function mondayOf(d: Date = new Date()): string {
   return monday.toISOString().slice(0, 10);
 }
 
-/** Milliseconds in one week — for stepping back through consecutive weeks. */
+/** Milliseconds in one week - for stepping back through consecutive weeks. */
 export const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
@@ -36,7 +36,7 @@ export const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
  * (or last week, so the streak doesn't drop to 0 the instant a new week
  * starts before they've checked in) they have a check-in.
  *
- * Honest and derived — there is no cached streak column to drift out of sync.
+ * Honest and derived - there is no cached streak column to drift out of sync.
  */
 export function streakFromWeeks(weeks: string[], today: Date = new Date()): number {
   const set = new Set(weeks);

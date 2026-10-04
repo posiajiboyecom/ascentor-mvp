@@ -5,7 +5,7 @@
 // Table: coaching_sessions (confirmed via src/trigger/coaching-summary.ts)
 //   One row per session. `messages` is a flat array of
 //   { role: 'user' | 'assistant', content: string, ... } objects,
-//   stored as a single jsonb column — not one DB row per message.
+//   stored as a single jsonb column - not one DB row per message.
 //
 // Fix applied:
 //   usedThisMonth + monthlyLimit replace the cosmetic PLACEHOLDER_DAILY_LIMIT.
@@ -74,7 +74,7 @@ export async function getCoachPageData(): Promise<CoachPageData | null> {
       .order('created_at', { ascending: false })
       .limit(10),
 
-    // Count sessions started this calendar month — the real enforcement window.
+    // Count sessions started this calendar month - the real enforcement window.
     supabase
       .from('coaching_sessions')
       .select('id', { count: 'exact', head: true })

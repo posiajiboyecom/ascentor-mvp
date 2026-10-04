@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     // 6. Add domain to Vercel project
     if (!VERCEL_TOKEN || !VERCEL_PROJECT_ID) {
-      // Env vars not configured — save to DB only, return instructions
+      // Env vars not configured - save to DB only, return instructions
       await saveDomainToDb(partnerId, domain, partner.subdomain, null);
       return NextResponse.json({
         success: true,
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     const vercelData = await vercelRes.json();
 
     if (!vercelRes.ok) {
-      // Domain already exists on project — that's fine, continue
+      // Domain already exists on project - that's fine, continue
       if (vercelData.error?.code !== 'domain_already_in_use') {
         console.error('[Domain] Vercel error:', vercelData);
         return NextResponse.json({

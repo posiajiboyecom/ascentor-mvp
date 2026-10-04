@@ -1,4 +1,4 @@
-// Intentionally empty — the site preloader lives in app/layout.tsx.
+// Intentionally empty - the site preloader lives in app/layout.tsx.
 // A loading.tsx copy would render as a Suspense fallback that never
 // hydrates, leaving a frozen 0% bar behind the real preloader.
 export default function Loading() {

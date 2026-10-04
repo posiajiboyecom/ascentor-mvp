@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 // ============================================================
-// API — /api/careers
+// API - /api/careers
 // GET  → public, returns all active job listings
 // POST / PATCH / DELETE → protected, admin only (handled by
 //   the admin page via direct Supabase client with RLS)

@@ -5,7 +5,7 @@
 //
 // FILE LOCATION: app/p/[subdomain]/signup/signup.tsx
 //
-// FIX (W-17 — SECURITY):
+// FIX (W-17 - SECURITY):
 //   The catch block in checkWhitelist() previously returned
 //   { allowed: true }, meaning any network blip during the
 //   whitelist check would silently let ANY email bypass the
@@ -13,7 +13,7 @@
 //
 //   Fix: catch now returns { allowed: false, reason: 'network_error' }.
 //   A user-facing message is shown ("Could not verify your invite
-//   status — check your connection and try again.") so they know
+//   status - check your connection and try again.") so they know
 //   the failure is transient and can retry, not a permanent block.
 //
 //   No other logic changes in this file.
@@ -58,7 +58,7 @@ function PartnerSignupForm() {
       const data = await res.json();
       return { allowed: data.allowed, reason: data.reason };
     } catch {
-      // FIX W-17: fail CLOSED — never silently allow through on network error
+      // FIX W-17: fail CLOSED - never silently allow through on network error
       return { allowed: false, reason: 'network_error' };
     }
   }
@@ -78,14 +78,14 @@ function PartnerSignupForm() {
         not_invited:   `${email} hasn't been invited to this platform. Ask the coach for an invite link.`,
         suspended:     'Your access to this platform has been suspended. Please contact the coach.',
         removed:       'Your access to this platform has been removed.',
-        network_error: 'Could not verify your invite status — check your connection and try again.',
+        network_error: 'Could not verify your invite status, check your connection and try again.',
       };
       setError(messages[reason || 'not_invited'] || messages.not_invited);
       setLoading(false);
       return;
     }
 
-    // 2. Sign up — pass partner context through callback URL
+    // 2. Sign up - pass partner context through callback URL
     const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
     callbackUrl.searchParams.set('partner_subdomain', subdomain);
     callbackUrl.searchParams.set('next', redirectTo);

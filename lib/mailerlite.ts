@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-// lib/mailerlite.ts  —  Ascentor × MailerLite integration
+// lib/mailerlite.ts  -  Ascentor × MailerLite integration
 // ═══════════════════════════════════════════════════════════
 // Handles all subscriber management and automation triggers.
 // MailerLite docs: https://developers.mailerlite.com/docs
@@ -7,7 +7,7 @@
 
 const ML_BASE = 'https://connect.mailerlite.com/api';
 
-// ── Group IDs — create these in MailerLite dashboard ───────
+// ── Group IDs - create these in MailerLite dashboard ───────
 // Dashboard → Subscribers → Groups → Create group
 // Then paste the IDs here
 export const ML_GROUPS = {
@@ -18,7 +18,7 @@ export const ML_GROUPS = {
   NEWSLETTER:     process.env.MAILERLITE_GROUP_NEWSLETTER     || '',  // "Newsletter"
 };
 
-// ── Automation IDs — create these in MailerLite dashboard ──
+// ── Automation IDs - create these in MailerLite dashboard ──
 // Dashboard → Automation → Create automation → copy the ID from the URL
 export const ML_AUTOMATIONS = {
   WELCOME_SEQUENCE:  process.env.MAILERLITE_AUTOMATION_WELCOME  || '',  // 14-email nurture
@@ -43,7 +43,7 @@ async function mlFetch(
     ...(options.body ? { body: JSON.stringify(options.body) } : {}),
   });
 
-  // 204 No Content — success with no body
+  // 204 No Content - success with no body
   if (res.status === 204) return null;
 
   const json = await res.json();

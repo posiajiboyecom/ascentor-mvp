@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PATCH /api/admin/community-messages — delete or flag message(s)
+// PATCH /api/admin/community-messages - delete or flag message(s)
 // Body: { id, action } for a single message, OR
 //       { ids: string[], action } for bulk (action must be 'delete' for bulk)
 export async function PATCH(req: NextRequest) {
@@ -92,7 +92,7 @@ export async function PATCH(req: NextRequest) {
 
     if (!action) return NextResponse.json({ error: 'action required' }, { status: 400 });
 
-    // Bulk path — only used for delete from the admin UI's multi-select.
+    // Bulk path - only used for delete from the admin UI's multi-select.
     // Flag/unflag stay single-id (no bulk UI need identified for those).
     if (Array.isArray(ids)) {
       if (ids.length === 0 || !ids.every(x => typeof x === 'string')) {
@@ -112,7 +112,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ ok: true, deleted: count ?? ids.length });
     }
 
-    // Single-id path — original behavior, unchanged.
+    // Single-id path - original behavior, unchanged.
     if (!id) return NextResponse.json({ error: 'id or ids required' }, { status: 400 });
 
     if (action === 'delete') {

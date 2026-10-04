@@ -1,5 +1,5 @@
 ﻿// ═══════════════════════════════════════════════════════════════
-// ASCENTOR EMAIL TEMPLATES — The Rise Letter
+// ASCENTOR EMAIL TEMPLATES - The Rise Letter
 // Aesthetic: Dark editorial luxury · Cormorant Garamond · Syne
 // Brand: #0C0B08 bg · #E8A020 gold · #F5F0E8 cream text
 // ═══════════════════════════════════════════════════════════════
@@ -28,7 +28,7 @@ function preheader(text: string) {
 }
 
 // ══════════════════════════════════════════════════════
-// MASTER LAYOUT — newsletter edition
+// MASTER LAYOUT - newsletter edition
 // ══════════════════════════════════════════════════════
 function newsletterLayout(opts: {
   preheaderText: string;
@@ -208,7 +208,7 @@ function newsletterLayout(opts: {
 }
 
 // ══════════════════════════════════════════════════════
-// TRANSACTIONAL LAYOUT — welcome / coaching / reminders
+// TRANSACTIONAL LAYOUT - welcome / coaching / reminders
 // ══════════════════════════════════════════════════════
 function transactionalLayout(opts: {
   preheaderText: string;
@@ -295,7 +295,7 @@ function transactionalLayout(opts: {
 }
 
 // ══════════════════════════════════════════════════════
-// HELPER — convert plain newsletter text to styled HTML
+// HELPER - convert plain newsletter text to styled HTML
 // Handles: **bold**, *italic*, section headers (##), bullet lists
 // ══════════════════════════════════════════════════════
 function parseNewsletterBody(raw: string): string {
@@ -421,7 +421,7 @@ export function welcomeEmail(name: string) {
             <td valign="top">
               <p style="margin:0;font-size:15px;color:#A09888;line-height:1.6">
                 <strong style="color:${B.cream}">Talk to Sage, your AI coach.</strong>
-                Ask about your biggest challenge right now — career move, visibility, next promotion. Sage is ready.
+                Ask about your biggest challenge right now, career move, visibility, next promotion. Sage is ready.
               </p>
             </td>
           </tr>
@@ -485,7 +485,7 @@ export function coachingSummaryEmail(
     </li>`).join('');
 
   return {
-    subject: `Your session recap — Ascentor`,
+    subject: `Your session recap | Ascentor`,
     html: transactionalLayout({
       preheaderText: `Here is what you worked through today and what comes next.`,
       headline: `Session recap, ${firstName}`,
@@ -530,7 +530,7 @@ export function goalReminderEmail(
     : `It has been ${daysSinceActive} days since your last session.`;
 
   return {
-    subject: `${firstName} — your goals are still here`,
+    subject: `${firstName}, your goals are still here`,
     html: transactionalLayout({
       preheaderText: `${urgency} Five minutes with Sage can get you back on track.`,
       headline: `Still with you, ${firstName}.`,

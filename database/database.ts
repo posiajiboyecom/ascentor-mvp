@@ -1,5 +1,5 @@
 // ============================================================
-// DATABASE TYPES — Ascentor MVP
+// DATABASE TYPES - Ascentor MVP
 // C2 FIX: Replaces `any` on all Supabase query results.
 //
 // Usage:
@@ -342,7 +342,7 @@ export interface CoachingSession {
 
 // ── PushSubscription addendum ─────────────────────────────────
 export interface PushSubscription {
-  /** Browser push endpoint URL — used as upsert conflict target. */
+  /** Browser push endpoint URL - used as upsert conflict target. */
   endpoint: string | null;
 }
 
@@ -364,7 +364,7 @@ export interface ContentCalendar {
   platform:     string;
   week:         number;
   status:       ContentStatus;
-  /** JSONB — shape varies by type (blog, linkedin post, twitter thread, newsletter) */
+  /** JSONB - shape varies by type (blog, linkedin post, twitter thread, newsletter) */
   content_data: Json | null;
   triggered_by: string | null;
   created_at:   string;
@@ -376,7 +376,7 @@ export interface ResearchBrief {
   pillar:       ContentPillar;
   week_number:  number | null;
   angle:        string | null;
-  /** JSONB — { angle, targetAudience, keyMessages, hooks, dataPoints, seoKeywords, urgencyReason } */
+  /** JSONB - { angle, targetAudience, keyMessages, hooks, dataPoints, seoKeywords, urgencyReason } */
   brief_data:   Json | null;
   research_raw: string | null;
   news_raw:     string | null;
@@ -569,7 +569,7 @@ export interface PartnerRow {
   owner_id:                 string;
   revenue_share_percent:    number;
   paystack_subaccount_code: string | null;
-  paystack_secret_key_enc:  string | null;  // encrypted at rest — never return raw
+  paystack_secret_key_enc:  string | null;  // encrypted at rest - never return raw
   brand:                    Record<string, unknown>;  // see types/partner.ts PartnerBrand
   features:                 Record<string, boolean>;  // see types/partner.ts PartnerFeatures
   ai_config:                Record<string, unknown> | null;  // AI persona + knowledge config
@@ -672,7 +672,7 @@ export interface PartnerEventRegistration {
 // Added for the marketing-pages CMS (landing, elevation-summit,
 // movement, about, how-it-works, who-its-for, products). See
 // database/migrations/001_marketing_cms_schema.sql for the full
-// schema definition and design rationale — particularly why
+// schema definition and design rationale - particularly why
 // marketing_repeating_items.draft_data/published_data are typed
 // as Json rather than a fixed shape (FAQ, persona cards, and
 // pillar cards each have genuinely different field sets).

@@ -1,13 +1,13 @@
 // FILE: app/api/admin/users/route.ts
 // FIX: change_plan action now:
 //   - Validates against explorer/builder/climber (not basic/standard/premium)
-//   - Sets subscription_end 1 year from today (was 30 days — expired too fast)
+//   - Sets subscription_end 1 year from today (was 30 days - expired too fast)
 //   - Sets billing_cycle = 'manual' to mark admin-granted access
 //   - Handles downgrade to 'free' correctly (nulls subscription_end)
 //   - Writes audit log entry with expiry date
 
 // ============================================================
-// ADMIN USERS API — /api/admin/users
+// ADMIN USERS API - /api/admin/users
 // GET: list all users with search/filter
 // PATCH: update role, ban/unban
 // ============================================================
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     // M-04: Use a single listUsers call instead of one getUserById per profile (was N+1).
-    // We fetch up to 1000 auth users and join in memory — auth users are lightweight objects.
+    // We fetch up to 1000 auth users and join in memory - auth users are lightweight objects.
     const { data: authList } = await supabase.auth.admin.listUsers({ perPage: 1000 });
     const authMap = new Map(
       (authList?.users || []).map(u => [u.id, u])
@@ -198,7 +198,7 @@ export async function PATCH(req: NextRequest) {
         }
 
         if (value === 'free') {
-          // Downgrade to free — cancel subscription immediately
+          // Downgrade to free - cancel subscription immediately
           await supabase.from('profiles').update({
             subscription_plan:   'free',
             subscription_status: 'free',
@@ -208,7 +208,7 @@ export async function PATCH(req: NextRequest) {
           return NextResponse.json({ success: true, message: 'User moved to free plan' });
         }
 
-        // Grant paid plan — set 1 year from today so access doesn't expire soon
+        // Grant paid plan - set 1 year from today so access doesn't expire soon
         const subscriptionEnd = new Date();
         subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
 
@@ -260,14 +260,14 @@ export async function PATCH(req: NextRequest) {
           try {
             await supabase.from(table).delete().eq('user_id', targetUserId);
           } catch {
-            // Table may not exist or column may differ — continue
+            // Table may not exist or column may differ - continue
           }
         }
 
         // 2. Delete the profile row
         await supabase.from('profiles').delete().eq('id', targetUserId);
 
-        // 3. Delete from Supabase Auth — this is the critical step
+        // 3. Delete from Supabase Auth - this is the critical step
         const { error: deleteError } = await supabase.auth.admin.deleteUser(targetUserId);
         if (deleteError) {
           return NextResponse.json({ error: 'Failed to delete auth user: ' + deleteError.message }, { status: 500 });
@@ -295,7 +295,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Action failed' }, { status: 500 });
   }
 }
-// POST /api/admin/users — find a single user by email (for permissions page)
+// POST /api/admin/users - find a single user by email (for permissions page)
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization') || '';

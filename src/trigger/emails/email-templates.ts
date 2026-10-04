@@ -1,5 +1,5 @@
 ﻿// ═══ ASCENTOR EMAIL TEMPLATES ═══
-// All emails use the shared branded shell from lib/emailTemplate.ts —
+// All emails use the shared branded shell from lib/emailTemplate.ts -
 // the same layout rendered for summit payment confirmations.
 import { brandedEmailLayout, esc, p, goldButton, summaryBox, summaryRow } from '@/lib/emailTemplate';
 
@@ -91,7 +91,7 @@ export function goalReminderEmail(
 }
 
 // ═══ NEWSLETTER TEMPLATE ═══
-// The send-newsletter task passes raw HTML content — this wraps it in
+// The send-newsletter task passes raw HTML content - this wraps it in
 // the branded shell so every broadcast matches the system look.
 export function newsletterTemplate(
   subject: string,

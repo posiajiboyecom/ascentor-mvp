@@ -5,9 +5,9 @@
 // Change a limit once, it's reflected everywhere.
 //
 // Tiers:
-//   starter  — ₦10,000/month, 100 members, Ascentor content only
-//   growth   — ₦30,000/month, 500 members, own courses + events
-//   pro      — ₦70,000/month, unlimited, full white-label + RAG
+//   starter  - ₦10,000/month, 100 members, Ascentor content only
+//   growth   - ₦30,000/month, 500 members, own courses + events
+//   pro      - ₦70,000/month, unlimited, full white-label + RAG
 
 export type PartnerTier = 'starter' | 'growth' | 'pro';
 

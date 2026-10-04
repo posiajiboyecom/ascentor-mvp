@@ -12,7 +12,7 @@ async function handleCheck(feature: string | null) {
     return NextResponse.json({ error: 'Missing feature parameter' }, { status: 400 });
   }
 
-  // Use server-side Supabase client — reads session from cookies automatically
+  // Use server-side Supabase client - reads session from cookies automatically
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

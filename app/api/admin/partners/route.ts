@@ -2,7 +2,7 @@
 // FILE LOCATION: app/api/admin/partners/route.ts
 //
 // BUG FIXED:
-//   BUG-09 — The 'approve' action did not set onboarded_at on
+//   BUG-09 - The 'approve' action did not set onboarded_at on
 //             the partner record. The partner dashboard layout
 //             and onboarding page both check onboarded_at to
 //             decide whether to redirect to /partner/onboarding.
@@ -14,7 +14,7 @@
 //             Fix: when action === 'approve', set onboarded_at
 //             to the current timestamp in the same update call.
 //             Partners who complete onboarding themselves will
-//             have it set by the onboarding route — this only
+//             have it set by the onboarding route - this only
 //             applies to admin-side approvals.
 // ============================================================
 
@@ -176,7 +176,7 @@ export async function PATCH(req: NextRequest) {
     update.revenue_share_percent = revenue_share;
   }
 
-  // Set plan_tier on approval — default to 'starter' if not provided
+  // Set plan_tier on approval - default to 'starter' if not provided
   if (action === 'approve') {
     const tier = requestedTier && ['starter','growth','pro'].includes(requestedTier)
       ? requestedTier : 'starter';
@@ -223,7 +223,7 @@ export async function PATCH(req: NextRequest) {
       const partnerName = esc(partner.name);
       const messages: Record<string, { subject: string; body: string }> = {
         approve: {
-          subject: `Your partner application is approved — ${partner.name}`,
+          subject: `Your partner application is approved, ${partner.name}`,
           body: brandedEmailLayout({
             preheader: `${partner.name} is now live.`,
             eyebrow: 'Partner Application',
@@ -236,7 +236,7 @@ export async function PATCH(req: NextRequest) {
           }),
         },
         suspend: {
-          subject: `Your partner account has been suspended — ${partner.name}`,
+          subject: `Your partner account has been suspended, ${partner.name}`,
           body: brandedEmailLayout({
             preheader: `Your partner account ${partner.name} has been suspended.`,
             eyebrow: 'Partner Account',
@@ -247,7 +247,7 @@ export async function PATCH(req: NextRequest) {
           }),
         },
         reject: {
-          subject: `Partner application update — ${partner.name}`,
+          subject: `Partner application update, ${partner.name}`,
           body: brandedEmailLayout({
             preheader: `An update on your partner application for ${partner.name}.`,
             eyebrow: 'Partner Application',

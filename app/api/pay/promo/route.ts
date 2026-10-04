@@ -1,11 +1,11 @@
 // ================================================================
-// /api/pay/promo  — NEW PAYMENT SYSTEM v2
+// /api/pay/promo  - NEW PAYMENT SYSTEM v2
 // ================================================================
 // GET  → returns active auto-apply promo code (public, no auth)
 // POST → validates a manually entered promo code (auth required)
 //
 // GET is used on checkout page load to pre-fill auto-promos.
-// POST validates but does NOT activate — activation happens in
+// POST validates but does NOT activate - activation happens in
 // /api/pay/start when the promo code is passed along.
 // ================================================================
 
@@ -38,7 +38,7 @@ export async function GET() {
 // ── POST: Validate a manually entered promo code ─────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    // Auth required — promo validation is tied to the user
+    // Auth required - promo validation is tied to the user
     const auth = await createAuthClient()
     const { data: { user } } = await auth.auth.getUser()
     if (!user) {
@@ -73,12 +73,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'This promo code has reached its usage limit.' }, { status: 400 })
     }
 
-    // Valid — return discount info (do NOT activate or increment yet)
+    // Valid - return discount info (do NOT activate or increment yet)
     return NextResponse.json({
       valid:    true,
       code:     promo.code,
       discount: promo.discount,         // e.g. 0.2 = 20% off
-      label:    promo.label,            // e.g. "20% off — Welcome offer"
+      label:    promo.label,            // e.g. "20% off - Welcome offer"
       isFree:   promo.discount >= 1.0,  // 100% off = free activation
     })
 

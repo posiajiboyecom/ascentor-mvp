@@ -2,7 +2,7 @@
 // FILE LOCATION: app/p/[subdomain]/checkout/page.tsx
 //
 // BUG FIXED:
-//   BUG-11 — Added extraction of the x-ascentor-api-base header
+//   BUG-11 - Added extraction of the x-ascentor-api-base header
 //             that proxy.ts (FILE_09) injects on custom domain
 //             requests. The value is passed as the `apiBase` prop
 //             to PartnerCheckoutClient so the Paystack onSuccess
@@ -46,20 +46,20 @@ export default async function PartnerCheckoutPage({
     (partner as any).paystack_public_key ||
     process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!;
 
-  // NGN exchange rate — read from env first, then plan_overrides, then safe default.
+  // NGN exchange rate - read from env first, then plan_overrides, then safe default.
   // Set PAYSTACK_NGN_RATE in Vercel env to update without a code deploy.
   // Partners can also override per-platform via plan_overrides.ngn_rate.
-  // NEVER hardcode this — the Naira rate changes regularly.
+  // NEVER hardcode this - the Naira rate changes regularly.
   const NGN_RATE = Number(
     overrides?.ngn_rate ||                      // partner-specific override
     process.env.PAYSTACK_NGN_RATE ||            // global env var (update without deploy)
     1600                                         // last-resort fallback
   );
 
-  // Determine currency — default NGN for Nigerian partners, configurable per partner
+  // Determine currency - default NGN for Nigerian partners, configurable per partner
   const currency = String(overrides?.currency || 'NGN').toUpperCase();
 
-  // Build plan pricing — prefer explicit NGN overrides, fall back to USD * rate, then defaults.
+  // Build plan pricing - prefer explicit NGN overrides, fall back to USD * rate, then defaults.
   // All numeric fields explicitly cast with Number() to satisfy TypeScript
   // (plan_overrides is JSONB so Supabase types fields as string | number).
   const plans = {

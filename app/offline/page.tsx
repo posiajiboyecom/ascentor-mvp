@@ -12,7 +12,7 @@ export default function OfflinePage() {
         </h1>
         <p className="text-sm mb-6" style={{ color: '#8B8A85', lineHeight: 1.7 }}>
           It looks like you've lost your internet connection. 
-          Your coaching progress is safe — reconnect to continue.
+          Your coaching progress is safe, reconnect to continue.
         </p>
         <button
           onClick={() => window.location.reload()}

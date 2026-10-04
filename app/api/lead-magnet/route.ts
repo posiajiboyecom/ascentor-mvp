@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (mlErr: any) {
       console.error('[LeadMagnet] MailerLite error:', mlErr.message);
-      // Non-fatal — still record in Supabase and return success
+      // Non-fatal - still record in Supabase and return success
     }
 
     // 2. Track in Supabase ────────────────────────────────
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (dbErr: any) {
       console.error('[LeadMagnet] Supabase error:', dbErr.message);
-      // Non-fatal — table may not exist yet
+      // Non-fatal - table may not exist yet
     }
 
     return NextResponse.json({

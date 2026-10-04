@@ -12,7 +12,7 @@
 // or already /embed/) OR a bare 11-character video ID, rather than
 // betting on one format. If lessons.video_url turns out to store
 // something else entirely (Vimeo, a Mux playback ID, etc.), this
-// needs revisiting — it cannot be verified without real data.
+// needs revisiting - it cannot be verified without real data.
 
 import Link from 'next/link';
 import { confirmAction } from '@/components/Modal';
@@ -20,7 +20,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, Play, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-// ── Types — match the real schema ────────────────────────────────────
+// ── Types - match the real schema ────────────────────────────────────
 
 export interface CourseRow {
   id: string;
@@ -84,7 +84,7 @@ function extractYouTubeId(videoUrl: string): string | null {
       if (v) return v;
     }
   } catch {
-    // Not a valid URL — fall through
+    // Not a valid URL - fall through
   }
 
   return null;
@@ -305,7 +305,7 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
 
   // Resolve video ID: prefer the active lesson's video_url, fall back to
   // course.youtube_id (the field admin sets when adding a course without
-  // individual lesson rows). This is the primary reason videos don't play —
+  // individual lesson rows). This is the primary reason videos don't play -
   // most courses have no lesson rows, so activeLesson is null and only
   // course.youtube_id is populated.
   const videoId =
@@ -332,7 +332,7 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
 
     // NOTE: onConflict assumes a unique constraint on (user_id, lesson_id)
     // in user_progress. That constraint was never confirmed via
-    // information_schema — only the columns themselves were verified. If
+    // information_schema - only the columns themselves were verified. If
     // it doesn't exist, this upsert will insert duplicate rows instead of
     // updating in place. Check `select conname from pg_constraint where
     // conrelid = 'user_progress'::regclass` before relying on this.
@@ -537,7 +537,7 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
                   {/* Thread */}
                   <div className="flex flex-col gap-5 mb-6">
                     {posts.filter(p => !p.reply_to_id).length === 0 && (
-                      <p className="text-sm text-[var(--text-dim)]">No posts yet — start the conversation.</p>
+                      <p className="text-sm text-[var(--text-dim)]">No posts yet, start the conversation.</p>
                     )}
                     {posts.filter(p => !p.reply_to_id).map((post) => {
                       const replies = posts.filter(r => r.reply_to_id === post.id);

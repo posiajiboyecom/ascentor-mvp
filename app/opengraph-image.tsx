@@ -1,13 +1,13 @@
 // app/opengraph-image.tsx
 // Default Open Graph image for every page that doesn't define its own.
-// Rendered at the edge via next/og — no static asset to maintain.
+// Rendered at the edge via next/og - no static asset to maintain.
 // WhatsApp, X, LinkedIn, iMessage all pick this up automatically once
 // metadataBase is set in the root layout.
 
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'Ascentor — Build a life that outlasts you.';
+export const alt = 'Ascentor, Build a life that outlasts you.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -52,7 +52,7 @@ export default function OpengraphImage() {
         </div>
 
         <div style={{ fontSize: 26, color: '#9CA3AF', display: 'flex' }}>
-          ascentorbi.com — home of The Elevation Summit
+          ascentorbi.com, home of The Elevation Summit
         </div>
       </div>
     ),

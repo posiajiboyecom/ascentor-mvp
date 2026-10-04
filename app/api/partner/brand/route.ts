@@ -2,7 +2,7 @@
 // FILE LOCATION: app/api/partner/brand/route.ts
 //
 // BUG FIXED:
-//   BUG-03 — The GET handler selected column 'paystack_secret_key'
+//   BUG-03 - The GET handler selected column 'paystack_secret_key'
 //             (a plaintext column that does not exist in the schema).
 //             The actual encrypted column is 'paystack_secret_key_enc'.
 //             This caused has_paystack_key to always be false, so the
@@ -10,8 +10,8 @@
 //             badge even for partners who had connected their key.
 //
 // PREVIOUS FIXES PRESERVED:
-//   W-04 — border_color validation and safe brand save.
-//   W-08 — has_paystack_key boolean returned; raw key stripped from response.
+//   W-04 - border_color validation and safe brand save.
+//   W-08 - has_paystack_key boolean returned; raw key stripped from response.
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -146,7 +146,7 @@ export async function GET(req: NextRequest) {
 
     if (!partner) return NextResponse.json({ error: 'No partner account found' }, { status: 404 });
 
-    // Compute boolean — the actual key value is NEVER sent to the client
+    // Compute boolean - the actual key value is NEVER sent to the client
     const has_paystack_key = Boolean(
       (partner as any).paystack_secret_key_enc &&
       ((partner as any).paystack_secret_key_enc as string).length > 0

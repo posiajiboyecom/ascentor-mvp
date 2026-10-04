@@ -5,13 +5,13 @@
 //
 // Behaviour:
 //  - Logged in  → redirect to /dashboard  (proxy rewrites it transparently;
-//                 NEVER redirect to /p/[subdomain]/dashboard — that exposes
+//                 NEVER redirect to /p/[subdomain]/dashboard - that exposes
 //                 the internal rewrite path and causes a 404)
 //  - Logged out → show partner-branded landing page
 //
 // BUGS FIXED:
 //  - Was redirecting to `/p/${subdomain}/dashboard` (internal path → 404).
-//    Fixed: redirect to `/dashboard` — proxy handles the rewrite.
+//    Fixed: redirect to `/dashboard` - proxy handles the rewrite.
 //  - Was querying dead `tenants` table. Fixed: queries `partners` table.
 //  - Was using emoji (⬆) instead of SVG. Fixed: inline SVG icon.
 //  - Nav hrefs were `/p/${subdomain}/signup` (internal). Fixed: `/signup`.
@@ -53,7 +53,7 @@ export default async function SubdomainHomePage({
 
   // Fetch partner brand for landing copy.
   // Layout.tsx has already validated the partner exists and is active,
-  // so this is a display-only query — failure is non-fatal.
+  // so this is a display-only query - failure is non-fatal.
   const { data: partner } = await supabaseService
     .from('partners')
     .select('name, brand')
@@ -71,7 +71,7 @@ export default async function SubdomainHomePage({
     >
       <div className="max-w-lg text-center">
 
-        {/* SVG icon — no emoji */}
+        {/* SVG icon - no emoji */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
           <svg
             width="48"
@@ -111,7 +111,7 @@ export default async function SubdomainHomePage({
           {tagline ?? 'Your AI-powered coaching platform. Sign in to continue your journey.'}
         </p>
 
-        {/* ── FIX: hrefs are root-relative — proxy rewrites them ── */}
+        {/* ── FIX: hrefs are root-relative - proxy rewrites them ── */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/signup"

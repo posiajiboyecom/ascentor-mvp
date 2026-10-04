@@ -38,7 +38,7 @@ const SOCIALS = [
 ];
 
 /**
- * Floating social rail — fixed on the left edge, bottom aligned.
+ * Floating social rail - fixed on the left edge, bottom aligned.
  * Rendered by PublicHeader, so it only ever appears on public pages.
  *
  * Entrance animation is staggered per icon and timed to lift after the

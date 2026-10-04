@@ -3,7 +3,7 @@
 // Runs daily at 7am UTC (Mon–Fri) + 8am weekends.
 // Pulls full platform data, generates AI BI report via Claude,
 // saves to platform_snapshots table.
-// Intel page reads from this cache — zero live Claude calls.
+// Intel page reads from this cache - zero live Claude calls.
 //
 // Cost: ~$0.023/run × 7 days = ~$0.16/week = ~$0.70/month
 // ═══════════════════════════════════════════════════════════
@@ -157,7 +157,7 @@ async function fetchPlatformData() {
 }
 
 function buildPrompt(data: Awaited<ReturnType<typeof fetchPlatformData>>): string {
-  return `You are the AI business intelligence engine for Ascentor — an AI-powered leadership development platform.
+  return `You are the AI business intelligence engine for Ascentor, an AI-powered leadership development platform.
 
 Analyse this real-time platform snapshot and generate a sharp, actionable business intelligence report.
 
@@ -206,7 +206,7 @@ ${JSON.stringify({
 Respond ONLY with valid JSON, no markdown, no preamble:
 {
   "generated_at": "<ISO timestamp>",
-  "headline": "<1 punchy sentence — the single most important thing happening on this platform right now>",
+  "headline": "<1 punchy sentence, the single most important thing happening on this platform right now>",
   "top_priority": "<The ONE thing the founder should focus on this week and why, max 2 sentences>",
   "insights": [
     {
@@ -230,7 +230,7 @@ Respond ONLY with valid JSON, no markdown, no preamble:
 
 Rules:
 - Generate 6-10 insights covering all domains
-- Be specific — reference actual numbers
+- Be specific, reference actual numbers
 - community_recs: 2-4 recommendations
 - Think like a $100M SaaS founder advising on their metrics`;
 }
@@ -294,7 +294,7 @@ export const intelReporterAgent = schedules.task({
       throw error;
     }
 
-    // 5. Prune old snapshots — keep last 30 only
+    // 5. Prune old snapshots - keep last 30 only
     const { data: old } = await supabase
       .from("platform_snapshots")
       .select("id, generated_at")

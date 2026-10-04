@@ -77,7 +77,7 @@ export default function PartnerSubscriptionPage() {
   const currentTier = plan?.tier || 'starter';
 
   const fmt = (n: number) => `₦${n.toLocaleString('en-NG')}`;
-  const maxLabel = (n: number) => n === -1 ? '∞' : n === 0 ? '—' : String(n);
+  const maxLabel = (n: number) => n === -1 ? '∞' : n === 0 ? '-' : String(n);
 
   return (
     <div style={{ maxWidth:'640px' }}>
@@ -190,7 +190,7 @@ export default function PartnerSubscriptionPage() {
           <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' as const, marginBottom:'16px' }}>
             {TIER_ORDER.filter(t => t !== currentTier).map(t => (
               <button key={t} onClick={() => setTargetTier(t)} style={{ padding:'8px 18px', borderRadius:'7px', fontSize:'13px', fontWeight:600, cursor:'pointer', border:`1px solid ${targetTier===t?'rgba(232,160,32,0.5)':'rgba(255,255,255,0.1)'}`, background: targetTier===t?'rgba(232,160,32,0.1)':'transparent', color: targetTier===t?'#E8A020':'rgba(255,255,255,0.5)' }}>
-                {TIER_LABELS[t]} — {fmt(cycle==='annual' ? allTiers?.[t]?.annualNgn : allTiers?.[t]?.monthlyNgn)}/{cycle==='annual'?'yr':'mo'}
+                {TIER_LABELS[t]}, {fmt(cycle==='annual' ? allTiers?.[t]?.annualNgn : allTiers?.[t]?.monthlyNgn)}/{cycle==='annual'?'yr':'mo'}
               </button>
             ))}
           </div>

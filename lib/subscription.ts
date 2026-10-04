@@ -1,7 +1,7 @@
 // lib/subscription.ts
 // M-2 fix: was querying 'subscriptions' table which nothing writes to.
 // All payment handlers write subscription state to 'profiles'.
-// This now reads from profiles — the actual source of truth.
+// This now reads from profiles - the actual source of truth.
 
 import { createServerClient } from '@supabase/ssr'
 

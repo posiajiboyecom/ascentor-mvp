@@ -2,7 +2,7 @@
 
 // app/components/PWAInstallPrompt.tsx
 // ─────────────────────────────────────────────────────────────────────────────
-// PWA install prompt — dark app design system (#0F0F0E / #C8A96E).
+// PWA install prompt - dark app design system (#0F0F0E / #C8A96E).
 // Shows once per 24 hours per user (localStorage key: pwa_dismissed_until).
 // Three surfaces:
 //   • Desktop: slim top bar (slides down)
@@ -53,13 +53,13 @@ export default function PWAInstallPrompt() {
       });
     }
 
-    // Already installed as PWA — never show
+    // Already installed as PWA - never show
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
       return;
     }
 
-    // Within the 24-hour suppression window — skip
+    // Within the 24-hour suppression window - skip
     const dismissedUntil = localStorage.getItem(DISMISS_KEY);
     if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) return;
 
@@ -178,7 +178,7 @@ export default function PWAInstallPrompt() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <IOSStep num={1} text={<>Tap the <strong style={{ color: T.gold }}>Share</strong> button at the bottom of Safari</>} />
               <IOSStep num={2} text={<>Scroll down and tap <strong style={{ color: T.gold }}>"Add to Home Screen"</strong></>} />
-              <IOSStep num={3} text={<>Tap <strong style={{ color: T.gold }}>"Add"</strong> — Ascentor appears on your home screen</>} />
+              <IOSStep num={3} text={<>Tap <strong style={{ color: T.gold }}>"Add"</strong> | Ascentor appears on your home screen</>} />
             </div>
 
             {/* CTA */}

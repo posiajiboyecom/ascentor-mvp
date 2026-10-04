@@ -43,7 +43,7 @@ export default async function AboutPage() {
   //   values       → {eyebrow, headline}
   //   final_cta    → {eyebrow, headline, body, cta_label, cta_href}
   // The product list items (The Circle, Coach, Resources, Summit) and
-  // value cards are NOT wired to CMS — they're structured design
+  // value cards are NOT wired to CMS - they're structured design
   // components whose shape (emoji, background colors, etc.) can't be
   // changed safely via a text editor. Only prose sections are wired.
   const whatWeAre = cms?.sections.what_we_are?.data as Record<string, string> | undefined;
@@ -63,7 +63,7 @@ export default async function AboutPage() {
   const ctaLabel    = finalCta?.cta_label || 'Join Ascentor →';
   const ctaHref     = finalCta?.cta_href  || '/signup';
 
-  // ── Founder — fully admin-managed at /admin/about ──────────────────
+  // ── Founder - fully admin-managed at /admin/about ──────────────────
   // Structured section 'founder': { name, photo_url, bio, quote,
   // quote_attribution }. `bio` is one textarea; blank lines split it
   // into paragraphs. Falls back to the original copy until published.
@@ -287,7 +287,7 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* The Founder — content managed at /admin/about */}
+      {/* The Founder - content managed at /admin/about */}
       <section style={{ background: '#F4F3EF', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{

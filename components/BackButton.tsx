@@ -9,9 +9,9 @@ import { useRouter } from 'next/navigation';
 // ============================================================
 
 interface BackButtonProps {
-  /** Custom label — defaults to "Back" */
+  /** Custom label - defaults to "Back" */
   label?: string;
-  /** Explicit route — if not set, uses router.back() */
+  /** Explicit route - if not set, uses router.back() */
   href?: string;
   /** Additional inline styles */
   style?: React.CSSProperties;

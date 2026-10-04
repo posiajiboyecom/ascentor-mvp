@@ -14,13 +14,13 @@ import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 const FALLBACK_EXPERTS = [
-  { id: '1', title: "Breaking Through — A Mentor's Playbook", expert_name: 'Amara Obi', expert_bio: '15+ years mentoring professionals and scaling teams', scheduled_at: new Date(Date.now() + 6 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
+  { id: '1', title: "Breaking Through, A Mentor's Playbook", expert_name: 'Amara Obi', expert_bio: '15+ years mentoring professionals and scaling teams', scheduled_at: new Date(Date.now() + 6 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
   { id: '2', title: 'From IC to Senior Leader: What No One Tells You', expert_name: 'Kwame Asante', expert_bio: 'Serial founder. 3 exits. Now mentoring the next generation of builders.', scheduled_at: new Date(Date.now() + 13 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
-  { id: '3', title: 'Navigating Workplace Politics — With Your Integrity Intact', expert_name: 'Fatima Hassan', expert_bio: 'Led large-scale operations across 7 countries. Now mentoring leaders navigating complex organisations.', scheduled_at: new Date(Date.now() + 20 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
+  { id: '3', title: 'Navigating Workplace Politics, With Your Integrity Intact', expert_name: 'Fatima Hassan', expert_bio: 'Led large-scale operations across 7 countries. Now mentoring leaders navigating complex organisations.', scheduled_at: new Date(Date.now() + 20 * 86400000).toISOString(), max_participants: 50, status: 'scheduled' },
 ];
 
 const PAST_RECORDINGS = [
-  { title: 'Building Executive Presence — A Framework', speaker: 'Ngozi Adeola', views: 234 },
+  { title: 'Building Executive Presence, A Framework', speaker: 'Ngozi Adeola', views: 234 },
   { title: 'Managing Up Without Losing Yourself', speaker: 'Samuel Mensah', views: 187 },
 ];
 

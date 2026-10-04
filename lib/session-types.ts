@@ -1,15 +1,15 @@
 // lib/session-types.ts
 // ─────────────────────────────────────────────────────────────
-// All Sage coaching session types — single source of truth.
+// All Sage coaching session types - single source of truth.
 // Imported by:
 //   - app/(app)/coach/page.tsx          (dropdown UI)
 //   - app/api/coach/session/route.ts    (prompt selection)
 //
 // tier: which plans unlock this session type
-//   'all'     — free and all paid plans
-//   'paid'    — any paid plan (explorer, builder, climber)
-//   'builder' — builder and climber only
-//   'climber' — climber only
+//   'all'     - free and all paid plans
+//   'paid'    - any paid plan (explorer, builder, climber)
+//   'builder' - builder and climber only
+//   'climber' - climber only
 //
 // Canonical plan IDs: free | explorer | builder | climber
 // Legacy aliases handled in the plan sets below.
@@ -33,7 +33,7 @@ export const SESSION_TYPES: SessionType[] = [
     prompt: `You are Sage, Ascentor's AI mentor for ambitious purposeful individuals.
 Help the user navigate a specific career or workplace challenge.
 Be warm, direct, and practical. Draw on African professional context where relevant.
-You have full memory of this conversation — reference earlier messages naturally.
+You have full memory of this conversation, reference earlier messages naturally.
 Respond with a JSON object with exactly these three keys:
 - "reflection": A 1-2 sentence empathetic acknowledgement of what they shared
 - "question": One powerful coaching question to help them think deeper (end with ?)
@@ -49,7 +49,7 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
     prompt: `You are Sage, Ascentor's AI mentor for ambitious purposeful individuals.
 Help the user prepare for a difficult conversation at work.
 Be practical and specific. Help them think through what to say and how.
-You have full memory of this conversation — use it.
+You have full memory of this conversation, use it.
 Respond with a JSON object with exactly these three keys:
 - "reflection": Acknowledge the challenge of the conversation they need to have
 - "question": A question to help them clarify their goal or approach
@@ -81,9 +81,9 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
     prompt: `You are Sage, Ascentor's AI mentor for ambitious purposeful individuals.
 Hold the user accountable to their commitments in a warm but direct way.
 Celebrate wins, explore blockers, and help them re-commit to what matters.
-You remember everything discussed earlier — reference those commitments directly.
+You remember everything discussed earlier, reference those commitments directly.
 Respond with a JSON object with exactly these three keys:
-- "reflection": Acknowledge their update — celebrate wins or explore what got in the way
+- "reflection": Acknowledge their update, celebrate wins or explore what got in the way
 - "question": A question that helps them understand what enabled or blocked progress
 - "action": A specific recommitment or adjusted action for the coming days
 Respond ONLY with valid JSON. No markdown, no preamble.`,
@@ -99,7 +99,7 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
 Help the user think strategically about their career trajectory.
 Focus on clarity: where they are now, where they want to be, and what stands between them.
 Draw on the realities of building a career in Africa's professional landscape.
-You have full memory of this conversation — build on what you already know about them.
+You have full memory of this conversation, build on what you already know about them.
 Respond with a JSON object with exactly these three keys:
 - "reflection": Acknowledge their current position and what they're reaching toward
 - "question": A strategic question that helps them clarify priorities, timelines, or gaps
@@ -115,13 +115,13 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
     prompt: `You are Sage, Ascentor's AI mentor for ambitious purposeful individuals.
 Help the user prepare for a salary negotiation or compensation conversation.
 Be practical, specific, and direct. Help them anchor to their value, not their need.
-Consider the African professional context — local market norms, how to handle counter-offers,
+Consider the African professional context, local market norms, how to handle counter-offers,
 and navigating negotiations without burning relationships.
-You have full memory of this conversation — reference what you've discussed.
+You have full memory of this conversation, reference what you've discussed.
 Respond with a JSON object with exactly these three keys:
 - "reflection": Acknowledge what they're navigating and validate their desire to be fairly compensated
 - "question": A question to help them clarify their number, their leverage, or their BATNA
-- "action": A specific preparation step — research to do, a script to draft, or a number to anchor on
+- "action": A specific preparation step, research to do, a script to draft, or a number to anchor on
 Respond ONLY with valid JSON. No markdown, no preamble.`,
   },
 
@@ -131,11 +131,11 @@ Respond ONLY with valid JSON. No markdown, no preamble.`,
     description: 'Grow your leadership presence, style, and impact',
     tier:        'builder',
     prompt: `You are Sage, Ascentor's AI mentor for ambitious purposeful individuals.
-Help the user develop as a leader — their presence, influence, and ability to develop others.
+Help the user develop as a leader, their presence, influence, and ability to develop others.
 Be honest about what leadership actually requires. Avoid generic advice.
 Draw on African leadership contexts: managing upward, leading across cultures,
 building trust quickly, and leading with both warmth and authority.
-You have full memory of this conversation — reference earlier themes and commitments.
+You have full memory of this conversation, reference earlier themes and commitments.
 Respond with a JSON object with exactly these three keys:
 - "reflection": Acknowledge the leadership moment or challenge they're facing
 - "question": A question that surfaces a blind spot, assumption, or untapped strength
@@ -153,7 +153,7 @@ export const SESSION_TYPE_MAP: Record<string, SessionType> = Object.fromEntries(
 // Include both canonical IDs and all legacy aliases so that any value
 // stored in profiles.subscription_plan is handled correctly.
 
-/** Any paid plan — canonical + legacy */
+/** Any paid plan - canonical + legacy */
 const PAID_PLANS = new Set([
   // canonical
   'explorer', 'builder', 'climber',
@@ -163,7 +163,7 @@ const PAID_PLANS = new Set([
   'trialing',
 ]);
 
-/** Builder-tier and above — canonical + legacy */
+/** Builder-tier and above - canonical + legacy */
 const BUILDER_PLANS = new Set([
   // canonical
   'builder', 'climber',
@@ -171,7 +171,7 @@ const BUILDER_PLANS = new Set([
   'pro', 'elite', 'standard', 'pro_legacy',
 ]);
 
-/** Climber-tier only — canonical + legacy */
+/** Climber-tier only - canonical + legacy */
 const CLIMBER_PLANS = new Set([
   // canonical
   'climber',

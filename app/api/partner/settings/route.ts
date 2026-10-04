@@ -1,6 +1,6 @@
 // app/api/partner/settings/route.ts
 //
-// PATCH /api/partner/settings — handles subdomain, custom_domain,
+// PATCH /api/partner/settings - handles subdomain, custom_domain,
 //   plan_overrides, and ai_persona_prompt changes on the partners table.
 //   Calls clearPartnerCache when subdomain changes.
 
@@ -76,7 +76,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (ai_persona_prompt !== undefined) {
-      // ai_persona_prompt lives in ai_config — /api/partner/config reads from here, not brand
+      // ai_persona_prompt lives in ai_config - /api/partner/config reads from here, not brand
       const { data: current } = await supabase
         .from('partners')
         .select('ai_config')

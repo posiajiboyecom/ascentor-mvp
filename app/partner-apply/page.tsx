@@ -1,6 +1,6 @@
 // ============================================================
 // app/partner-apply/page.tsx
-// Public page — coaches apply to become Ascentor partners
+// Public page - coaches apply to become Ascentor partners
 // Already in your PUBLIC_ROUTES so no auth needed to view.
 // ============================================================
 
@@ -104,7 +104,7 @@ export default function PartnerApplyPage() {
             Launch your coaching platform
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.7 }}>
-            Get your own branded platform — your logo, your colours, your domain.
+            Get your own branded platform, your logo, your colours, your domain.
             Powered by Ascentor's AI and community infrastructure.
           </p>
         </div>

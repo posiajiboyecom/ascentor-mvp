@@ -2,12 +2,12 @@
 // FILE LOCATION: app/api/partner/members/route.ts
 //
 // BUG FIXED:
-//   BUG-08 — The GET handler applied the search filter client-side
+//   BUG-08 - The GET handler applied the search filter client-side
 //             AFTER the paginated DB query. This meant:
 //               - Page 1 returned up to 50 records, then filtered
 //                 down to matching emails/names within those 50.
 //               - Page 2+ returned records 51-100, filtered within
-//                 that window — a search for "alice" on page 2
+//                 that window - a search for "alice" on page 2
 //                 would miss all "alice" entries on page 1.
 //               - The 'total' and 'pages' counts came from the
 //                 unfiltered DB count, making pagination controls
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ── No search — use DB-level pagination (original path) ──
+    // ── No search - use DB-level pagination (original path) ──
     let query = supabase
       .from('partner_members')
       .select(`
@@ -226,7 +226,7 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // Per-email profile lookup — avoids loading all platform users into memory.
+        // Per-email profile lookup - avoids loading all platform users into memory.
         // profiles.id is the auth user UUID so we get user_id from here.
         const { data: profileData } = await supabase
           .from('profiles')
@@ -270,7 +270,7 @@ export async function POST(req: NextRequest) {
                 heading: 'You\'re invited.',
                 recipient: email,
                 content:
-                  p(`You've been personally invited to join <strong>${esc(partner.name)}</strong> — a private coaching community.`) +
+                  p(`You've been personally invited to join <strong>${esc(partner.name)}</strong>, a private coaching community.`) +
                   goldButton('Accept Invitation →', inviteUrl) +
                   p(`<span style="color:#9CA3AF;font-size:13px;">This invite is for ${esc(email)} only.</span>`),
               }),

@@ -1,7 +1,7 @@
 // app/p/[subdomain]/layout.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 // CRITICAL FIX: Replaced getTenant() (old "tenants" table) with
-// getPartnerContext(hostname). Partners live in the "partners" table —
+// getPartnerContext(hostname). Partners live in the "partners" table -
 // any partner not in "tenants" caused notFound() on every page.
 //
 // HOW PROXY ROUTING WORKS (proxy.ts at project root):
@@ -13,11 +13,11 @@
 //
 // This layout receives the rewritten request at /p/[subdomain]/coach.
 // getPartnerContext(hostname) uses the ORIGINAL host header (demo.ascentorbi.com)
-// to look up the partner — the regex /^([^.]+)\.ascentorbi\.com$/ matches correctly.
+// to look up the partner - the regex /^([^.]+)\.ascentorbi\.com$/ matches correctly.
 //
 // Nav links in PartnerMemberShell stay as root-relative (/dashboard, /coach,
-// /admin/brand etc.) — the proxy rewrites them on each navigation. Do NOT
-// prefix them with /p/${sub}/ — the proxy handles that transparently.
+// /admin/brand etc.) - the proxy rewrites them on each navigation. Do NOT
+// prefix them with /p/${sub}/ - the proxy handles that transparently.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const dynamic = 'force-dynamic';
@@ -37,7 +37,7 @@ const supabaseService = createServiceClient(
 );
 
 // Paths that skip the PartnerMemberShell wrapper entirely.
-// /admin is here because it has its own PartnerAdminShell layout — wrapping it
+// /admin is here because it has its own PartnerAdminShell layout - wrapping it
 // in PartnerMemberShell too causes the "viewing as member" banner to appear on
 // every admin page, and double-wraps the shell UI.
 const PUBLIC_PATHS  = ['/login', '/signup', '/join', '/access-denied'];
@@ -77,7 +77,7 @@ export default async function SubdomainLayout({
 
     // Build ctx from the direct DB hit
     const { getPartnerContext: _gcpc, ...ctxModule } = await import('@/lib/getPartnerContext');
-    // Re-use exported clearPartnerCache type — we only need cssVars here
+    // Re-use exported clearPartnerCache type - we only need cssVars here
     const DEFAULT_BRAND = {
       platform_name: 'Partner Platform', tagline: null,
       logo_url: null, logo_dark_url: null, favicon_url: null,
@@ -110,7 +110,7 @@ export default async function SubdomainLayout({
     partnerPathname.endsWith(p)
   );
 
-  // Admin routes have their own PartnerAdminShell — bypass the member shell entirely
+  // Admin routes have their own PartnerAdminShell - bypass the member shell entirely
   const isAdminPath = ADMIN_PATHS.some(p =>
     partnerPathname === p || partnerPathname.startsWith(p + '/')
   );
@@ -132,8 +132,8 @@ export default async function SubdomainLayout({
     // ── FIX: partner-level suspension cascade ──────────────────────────────
     // Previously, suspending a partner only blocked the settings API route.
     // Members could still log in because only membership.status was checked.
-    // Fix: if the partner itself is suspended, redirect ALL users — including
-    // the owner — so the platform is fully locked down immediately.
+    // Fix: if the partner itself is suspended, redirect ALL users - including
+    // the owner - so the platform is fully locked down immediately.
     if (partner.status === 'suspended') {
       redirect(isOwner
         ? `/access-denied?reason=partner_suspended`

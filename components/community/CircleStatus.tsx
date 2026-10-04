@@ -1,7 +1,7 @@
 'use client';
 
 // components/community/CircleStatus.tsx
-// "Your Circle this week" — member cards with real check-in status pulled from
+// "Your Circle this week" - member cards with real check-in status pulled from
 // weekData. A "Cheer" adds a 👏 reaction to that member's check-in message
 // (real, reuses community_messages.likes). Empty state lets you join a circle.
 
@@ -89,7 +89,7 @@ export function CircleStatus({
               ))}
             </div>
           ) : (
-            <p className="text-xs text-[var(--color-text-secondary)]">No circles are open right now — check back soon.</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">No circles are open right now, check back soon.</p>
           )}
         </div>
       </section>

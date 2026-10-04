@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 // ============================================================
-// API — /api/admin/mailerlite
+// API - /api/admin/mailerlite
 // GET  → fetches subscriber stats, groups, recent campaigns
 // Protected: admin/moderator only
 // Env: MAILERLITE_API_KEY
@@ -62,7 +62,7 @@ export async function GET() {
       total: g.total_count || 0,
     }));
 
-    // ── Campaigns — calc avg open/click rates ─────────────
+    // ── Campaigns - calc avg open/click rates ─────────────
     const campaigns = (campaignsRes.data || []).map((c: any) => ({
       id:           c.id,
       name:         c.name,
@@ -108,10 +108,10 @@ export async function GET() {
 
 // ============================================================
 // POST /api/admin/mailerlite
-// action: "sync"         — sync all Supabase users → MailerLite
-// action: "sync-user"    — sync a single email
-// action: "get-groups"   — list all ML groups (for diagnostics)
-// action: "ensure-groups"— create missing groups, return IDs
+// action: "sync"         - sync all Supabase users → MailerLite
+// action: "sync-user"    - sync a single email
+// action: "get-groups"   - list all ML groups (for diagnostics)
+// action: "ensure-groups"- create missing groups, return IDs
 // ============================================================
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -166,10 +166,10 @@ export async function POST(req: Request) {
   // ── ensure-groups: create any missing groups, return ID map ─
   async function ensureGroups(): Promise<Record<string, string>> {
     const needed = [
-      { key: 'APP_USERS',  name: 'Ascentor — App Users',    env: 'MAILERLITE_GROUP_APP_USERS'  },
-      { key: 'FREE_USERS', name: 'Ascentor — Free Users',   env: 'MAILERLITE_GROUP_FREE_USERS' },
-      { key: 'PAID_USERS', name: 'Ascentor — Paid Users',   env: 'MAILERLITE_GROUP_PAID_USERS' },
-      { key: 'NEWSLETTER', name: 'Ascentor — Newsletter',   env: 'MAILERLITE_GROUP_NEWSLETTER' },
+      { key: 'APP_USERS',  name: 'Ascentor, App Users',    env: 'MAILERLITE_GROUP_APP_USERS'  },
+      { key: 'FREE_USERS', name: 'Ascentor, Free Users',   env: 'MAILERLITE_GROUP_FREE_USERS' },
+      { key: 'PAID_USERS', name: 'Ascentor, Paid Users',   env: 'MAILERLITE_GROUP_PAID_USERS' },
+      { key: 'NEWSLETTER', name: 'Ascentor, Newsletter',   env: 'MAILERLITE_GROUP_NEWSLETTER' },
     ];
 
     // Check env vars first
@@ -244,7 +244,7 @@ export async function POST(req: Request) {
     const groupIds = await ensureGroups();
 
     // Step 2: Fetch all data from Supabase
-    // IMPORTANT: profiles.email is often null — auth.admin.listUsers() is the
+    // IMPORTANT: profiles.email is often null - auth.admin.listUsers() is the
     // authoritative email source. profiles gives us name + subscription data.
     const [
       { data: nlSubs },
@@ -288,7 +288,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // All auth users (this is the complete list — 37 users, not 8)
+    // All auth users (this is the complete list - 37 users, not 8)
     for (const [userId, email] of authEmailMap) {
       const profile = profileMap.get(userId);
       const existing = map.get(email) || { email, name: '', groups: [] as string[] };

@@ -114,7 +114,7 @@ export async function POST(req: Request) {
       success:  true,
       runId:    handle.id,
       itemCount: items.length,
-      message:  `Batch ingestion queued — ${items.length} ${type === 'pdfs' ? 'PDFs' : 'URLs'} being processed in the background.`,
+      message:  `Batch ingestion queued, ${items.length} ${type === 'pdfs' ? 'PDFs' : 'URLs'} being processed in the background.`,
     });
   } catch (err: any) {
     console.error('[batch-ingest] tasks.trigger failed:', err);

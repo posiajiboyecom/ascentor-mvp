@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq('is_published', true)
     .single();
 
-  if (!post) return { title: 'Post Not Found — Ascentor', robots: { index: false } };
+  if (!post) return { title: 'Post Not Found | Ascentor', robots: { index: false } };
 
   const url = `${SITE_URL}/blog/${slug}`;
   return {

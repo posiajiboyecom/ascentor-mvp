@@ -13,10 +13,10 @@
 //
 // Body:
 //   {
-//     mode: 'stream' | 'json'   — stream for intel page, json for community-intel
-//     system?: string            — system prompt (optional)
-//     prompt: string             — user message / full prompt
-//     max_tokens?: number        — default 1500
+//     mode: 'stream' | 'json'   - stream for intel page, json for community-intel
+//     system?: string            - system prompt (optional)
+//     prompt: string             - user message / full prompt
+//     max_tokens?: number        - default 1500
 //   }
 //
 // Response:

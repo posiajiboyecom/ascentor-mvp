@@ -1,11 +1,11 @@
 // lib/admin-design/tokens.ts
 // ============================================================
-// THE LEDGER — token values for JS/TS contexts (charts, canvas,
+// THE LEDGER - token values for JS/TS contexts (charts, canvas,
 // conditional inline styles, the theme toggle itself).
 //
 // These are the canonical hex/value source. styles/admin-ledger.css
 // is the canonical CSS custom-property source. If you change a
-// color, change it in BOTH files — they intentionally don't
+// color, change it in BOTH files - they intentionally don't
 // share a build step so the CSS file can be imported directly
 // in app/layout.tsx without a CSS-in-JS pipeline.
 //
@@ -82,7 +82,7 @@ export const ledgerTokens = {
   light: ledgerThemes.light,
 };
 
-// Chart palette in priority order — use for any multi-series
+// Chart palette in priority order - use for any multi-series
 // chart (subscription mix, content performance, etc.) so colors
 // stay consistent across every page that visualizes data.
 export const ledgerChartPalette = [

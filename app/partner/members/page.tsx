@@ -70,7 +70,7 @@ export default async function PartnerMembersPage() {
                 return (
                   <tr key={m.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <td style={{ padding: '12px 16px', color: '#f8fafc' }}>
-                      <div>{profile.full_name || '—'}</div>
+                      <div>{profile.full_name || '-'}</div>
                       <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '1px' }}>{m.email}</div>
                     </td>
                     <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.6)' }}>{profile.subscription_plan || 'free'}</td>
@@ -82,7 +82,7 @@ export default async function PartnerMembersPage() {
                     <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
                       {m.joined_at
                         ? new Date(m.joined_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                        : '—'}
+                        : '-'}
                     </td>
                   </tr>
                 );

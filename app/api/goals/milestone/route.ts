@@ -8,15 +8,15 @@
 //
 // Response:
 //   200 { ok: true }
-//   400 { error: string }   — missing/invalid fields
-//   401 { error: string }   — not authenticated
-//   403 { error: string }   — goal belongs to a different user
-//   500 { error: string }   — database error
+//   400 { error: string }   - missing/invalid fields
+//   401 { error: string }   - not authenticated
+//   403 { error: string }   - goal belongs to a different user
+//   500 { error: string }   - database error
 //
 // ── Database prerequisite ─────────────────────────────────────────────────
 // This route writes to milestone_1_completed, milestone_2_completed, and
 // milestone_3_completed columns on the user_goals table. These columns do
-// not exist in the original schema — add them with this migration before
+// not exist in the original schema - add them with this migration before
 // deploying:
 //
 //   ALTER TABLE user_goals
@@ -30,7 +30,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-// Only these three field names are accepted — anything else is rejected.
+// Only these three field names are accepted - anything else is rejected.
 const VALID_FIELDS = new Set([
   'milestone_1',
   'milestone_2',
@@ -86,7 +86,7 @@ export async function PATCH(req: Request) {
 
   // ── Ownership check ───────────────────────────────────────────────────
   // Fetch just enough to verify the goal belongs to this user.
-  // Never trust goalId alone — without this check any authenticated user
+  // Never trust goalId alone - without this check any authenticated user
   // could toggle another user's milestones by guessing a UUID.
   const { data: existing, error: fetchError } = await supabase
     .from('user_goals')

@@ -1,5 +1,5 @@
 // ============================================================
-// ANALYTICS — Event Tracking Library
+// ANALYTICS - Event Tracking Library
 //
 // Track key conversion funnel events + feature usage.
 // Works with Plausible. Falls back silently if not configured.
@@ -40,7 +40,7 @@ export function trackEvent(
       window.plausible(eventName, props ? { props } : undefined);
     }
   } catch {
-    // Silent fail — analytics should never break the app
+    // Silent fail - analytics should never break the app
   }
 }
 

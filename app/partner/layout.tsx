@@ -49,7 +49,7 @@ export default async function PartnerLayout({
     redirect('/login?next=/partner');
   }
 
-  // 2. Partner access check — user must own a row in the partners table.
+  // 2. Partner access check - user must own a row in the partners table.
   // Previously this checked profiles.role = 'partner', which is fragile:
   //   - The role field must be manually set and kept in sync
   //   - An admin visiting /partner would pass the check but have no partner row
@@ -74,11 +74,11 @@ export default async function PartnerLayout({
   const isPartnerOwner = !!partnerCheck;
 
   if (!isAscentorAdmin && !isPartnerOwner) {
-    // Not a partner owner and not Ascentor admin — redirect to main app
+    // Not a partner owner and not Ascentor admin - redirect to main app
     redirect('/dashboard');
   }
 
-  // 3. Fetch this partner's config — FIX: was querying dead `tenants` table
+  // 3. Fetch this partner's config - FIX: was querying dead `tenants` table
   const { data: tenant } = await supabase
     .from('partners')
     .select('id, name, subdomain, brand, status')

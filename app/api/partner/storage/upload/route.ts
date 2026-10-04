@@ -2,10 +2,10 @@
 //
 // POST /api/partner/storage/upload
 // Accepts a multipart/form-data body with:
-//   file  — the image file (logo or favicon)
-//   type  — 'logo' | 'logo_dark' | 'favicon'
+//   file  - the image file (logo or favicon)
+//   type  - 'logo' | 'logo_dark' | 'favicon'
 //
-// Returns: { url: string } — the public URL of the uploaded file.
+// Returns: { url: string } - the public URL of the uploaded file.
 //
 // Storage layout: one shared public bucket 'partner-assets'.
 // Files are stored at: {partner_id}/{type}/{filename}
@@ -74,13 +74,13 @@ export async function POST(req: NextRequest) {
     }
     if (file.size > MAX_SIZE_BYTES) {
       return NextResponse.json(
-        { error: 'File too large — maximum 2 MB' },
+        { error: 'File too large, maximum 2 MB' },
         { status: 400 }
       );
     }
 
     // ── 4. Verify bucket exists (created by storage-migration.sql) ───────────
-    // We do NOT attempt to create the bucket at runtime — that approach is
+    // We do NOT attempt to create the bucket at runtime - that approach is
     // unreliable because the bucket also needs storage policies, which cannot
     // be set via the JS client. The bucket must be created via the SQL migration
     // in scripts/storage-migration.sql before this route is used.
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     const bucketExists = (buckets || []).some(b => b.name === BUCKET);
     if (!bucketExists) {
       console.error('[Upload] Bucket not found:', BUCKET,
-        '— run scripts/storage-migration.sql in Supabase dashboard');
+        '- run scripts/storage-migration.sql in Supabase dashboard');
       return NextResponse.json({
         error: 'Storage not configured. Please contact support.',
       }, { status: 503 });

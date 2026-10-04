@@ -59,13 +59,13 @@ function Shell({
   return (
     <div style={{ height: '100dvh', minHeight: '100vh', display: 'flex', flexDirection: 'row', background: 'var(--app-bg)', overflow: 'hidden' }}>
 
-      {/* ── Desktop left rail — ≥1024px only, replaces mobile header + BottomNav ── */}
+      {/* ── Desktop left rail - ≥1024px only, replaces mobile header + BottomNav ── */}
       <DesktopRail initials={initials} fullName={fullName} isAdmin={isAdmin} />
 
       {/* ── Mobile/desktop content column ── */}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-      {/* ── Mobile header — hidden on community (chat is fullscreen) and hidden ≥1024px (DesktopRail replaces it) ── */}
+      {/* ── Mobile header - hidden on community (chat is fullscreen) and hidden ≥1024px (DesktopRail replaces it) ── */}
       {!isCommunity && (
         <header className="lg:hidden" style={{
           position:             'sticky',

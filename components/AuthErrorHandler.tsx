@@ -17,7 +17,7 @@
 // On SIGNED_OUT → redirect to /login?reason=session_expired so the login
 // page can display a friendly "session expired" banner.
 //
-// This complements the proxy.ts server-side check — the client-side handler
+// This complements the proxy.ts server-side check - the client-side handler
 // catches cases where the token expires WHILE the user is already on a page.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -25,7 +25,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-// Routes that don't need auth — we never redirect away from these
+// Routes that don't need auth - we never redirect away from these
 const PUBLIC_PATHS = [
   '/login', '/signup', '/checkout', '/auth',
   '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
@@ -50,14 +50,14 @@ export default function AuthErrorHandler() {
       (event, session) => {
         if (event === 'SIGNED_OUT') {
           // Token refresh failed or user was signed out remotely.
-          // Only redirect if on a protected page — don't disrupt public pages.
+          // Only redirect if on a protected page - don't disrupt public pages.
           if (!isPublicPath(pathname)) {
             router.push('/login?reason=session_expired');
           }
         }
 
         if (event === 'TOKEN_REFRESHED') {
-          // Token refreshed successfully — no action needed, just log in dev
+          // Token refreshed successfully - no action needed, just log in dev
           if (process.env.NODE_ENV === 'development') {
             console.debug('[AuthErrorHandler] token refreshed');
           }

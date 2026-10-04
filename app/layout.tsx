@@ -24,11 +24,11 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://ascentorbi.com'),
   alternates: { canonical: '/' },
   title: {
-    default: 'Ascentor — Build a life that outlasts you.',
+    default: 'Ascentor, Build a life that outlasts you.',
     template: '%s | Ascentor',
   },
   description:
-    'Ascentor is the platform of The Elevation Summit — a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.',
+    'Ascentor is the platform of The Elevation Summit, a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.',
   keywords: [
     'purposeful living',
     'personal development',
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     startupImage: '/icon/icon-512.png',
   },
   openGraph: {
-    title: 'Ascentor — The Elevation Summit Platform',
+    title: 'Ascentor, The Elevation Summit Platform',
     description:
       'Join a global community of purposeful individuals. The official platform of The Elevation Summit movement.',
     url: 'https://ascentorbi.com',
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ascentor — Build a life that outlasts you.',
+    title: 'Ascentor, Build a life that outlasts you.',
     description: 'The platform of The Elevation Summit movement.',
     creator: '@ascentorhq',
   },
@@ -83,7 +83,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     // suppressHydrationWarning is required here because the inline theme
     // script sets data-app-theme before React hydrates, causing a mismatch.
-    // This is intentional and safe — it only suppresses the warning on <html>.
+    // This is intentional and safe - it only suppresses the warning on <html>.
       <html
         lang="en"
         data-app-theme="light"

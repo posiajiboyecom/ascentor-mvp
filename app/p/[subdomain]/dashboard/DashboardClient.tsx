@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useParams } from 'next/navigation';
 
 // ─────────────────────────────────────────────────────────────────
-// ASCENTOR · Dashboard · SVG icons — no emojis
+// ASCENTOR · Dashboard · SVG icons - no emojis
 // ─────────────────────────────────────────────────────────────────
 
 function Card({ children, className = '', style = {}, onClick }: any) {
@@ -76,7 +76,7 @@ export default function DashboardClient({ profile, goal, sessionsThisWeek, commi
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
   const goalProgress = goal?.progress || 0;
 
-  // Root-relative paths — the proxy (proxy.ts) rewrites them transparently.
+  // Root-relative paths - the proxy (proxy.ts) rewrites them transparently.
   // NEVER prefix with /p/${sub}/: that exposes the internal rewrite path → 404.
   const navHref = (segment: string) => `/${segment}`;
 

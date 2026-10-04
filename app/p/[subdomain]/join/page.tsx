@@ -88,7 +88,7 @@ export default async function JoinPage({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (user) {
-    // Logged in — check their email matches the invite
+    // Logged in - check their email matches the invite
     if (user.email?.toLowerCase() !== payload.email.toLowerCase()) {
       return (
         <JoinError
@@ -99,7 +99,7 @@ export default async function JoinPage({
       );
     }
 
-    // Email matches — activate the membership
+    // Email matches - activate the membership
     await supabaseService
       .from('partner_members')
       .update({
@@ -113,7 +113,7 @@ export default async function JoinPage({
     redirect('/dashboard?joined=1');
   }
 
-  // ── 6. Not logged in — redirect to signup with context ────
+  // ── 6. Not logged in - redirect to signup with context ────
   // Pass email as a hint so the signup form can pre-fill it
   const signupUrl = `/signup?` + new URLSearchParams({
     invite: token,

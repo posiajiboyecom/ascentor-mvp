@@ -3,7 +3,7 @@
 // Shared types + pure helpers for The Circle. Extracted from CommunityClient
 // so the new "This Week" home components (SummitHome, CircleStatus, etc.) and
 // the useChannelMessages hook can reuse them without importing the whole
-// client screen. No React state or side effects live here — the Avatar
+// client screen. No React state or side effects live here - the Avatar
 // component lives in ./ui (it's the one thing here that renders JSX).
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ export interface Message {
   checkin_week?: string | null;
 }
 
-// ── "This Week" ritual data — computed server-side, passed to the client ──────
+// ── "This Week" ritual data - computed server-side, passed to the client ──────
 
 export interface CircleMemberStatus {
   id: string;
@@ -112,7 +112,7 @@ export function getInitials(name: string) {
 }
 
 /**
- * fmtTime — relative for messages < 24h old, absolute + timezone abbreviation
+ * fmtTime - relative for messages < 24h old, absolute + timezone abbreviation
  * for anything older. Meaningful across a global community (Lagos, London, LA).
  */
 export function fmtTime(iso: string): string {

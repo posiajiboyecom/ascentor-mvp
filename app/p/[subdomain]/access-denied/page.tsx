@@ -1,7 +1,7 @@
 'use client';
 
 // ============================================================
-// ACCESS DENIED — app/p/[subdomain]/access-denied/page.tsx
+// ACCESS DENIED - app/p/[subdomain]/access-denied/page.tsx
 //
 // Shown when a user tries to access a partner platform but:
 //   - reason=not_invited  → email not in partner_members

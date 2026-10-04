@@ -9,9 +9,9 @@ function SvgIcon({ html, className, style }: { html: string; className?: string;
 }
 
 export const metadata: Metadata = {
-  title: "Who It's For — Ascentor",
+  title: "Who It's For | Ascentor",
   description:
-    "Ascentor is built for every stage of the ambitious professional journey — from students figuring out their path to executives scaling their impact.",
+    "Ascentor is built for every stage of the ambitious professional journey, from students figuring out their path to executives scaling their impact.",
 };
 
 /* ── Data ────────────────────────────────────────────────── */
@@ -32,7 +32,7 @@ const PERSONAS = [
     ],
     problems: [
       "You don't know which career path is right for you",
-      "You have no professional network — yet",
+      "You have no professional network, yet",
       "You can't afford a career counsellor",
       'Imposter syndrome is real and loud',
     ],
@@ -69,7 +69,7 @@ const PERSONAS = [
     ],
     outcomes: [
       'Get promoted or land your next role faster',
-      'Build real leadership skills — not just theory',
+      'Build real leadership skills, not just theory',
       "1-on-1 sessions with mentors who've done it",
       'A personal board of advisors in your peer circle',
     ],
@@ -94,14 +94,14 @@ const PERSONAS = [
       'Executives transitioning to board or advisory roles',
     ],
     problems: [
-      "You're the expert in the room — but who advises you?",
+      "You're the expert in the room, but who advises you?",
       'The higher you go, the lonelier it gets',
       'Strategic decisions carry real weight and real risk',
       'Your network is strong but lacks true peers at your level',
     ],
     outcomes: [
       'An executive peer cohort of equals who challenge you',
-      'AI-powered strategic thinking partner — 24/7',
+      'AI-powered strategic thinking partner, 24/7',
       'Unlimited access to world-class senior mentors',
       'Legacy planning: building something that outlasts you',
     ],
@@ -117,7 +117,7 @@ const ACROSS_AFRICA = [
   { flag: '🇬🇭', country: 'Ghana',        desc: 'Growing fast in Accra\'s startup and finance scene' },
   { flag: '🇰🇪', country: 'Kenya',        desc: 'Nairobi\'s tech ecosystem and beyond' },
   { flag: '🇬🇧', country: 'United Kingdom', desc: 'London, Manchester, and the broader diaspora' },
-  { flag: '🌐', country: 'Diaspora',      desc: 'UK, US, Canada — professionals building global careers' },
+  { flag: '🌐', country: 'Diaspora',      desc: 'UK, US, Canada, professionals building global careers' },
   { flag: '🌍', country: '15+ Countries', desc: 'And growing across the entire continent' },
 ];
 
@@ -163,11 +163,11 @@ export default async function WhoItsForPage() {
   // CMS section keys for /admin/marketing-pages/who-its-for:
   //   hero       → {eyebrow, headline, subhead}
   //   bottom_cta → {eyebrow, headline, body, cta_label, cta_href}
-  // PERSONAS cards are NOT wired — they have emoji, bg, border, color,
+  // PERSONAS cards are NOT wired - they have emoji, bg, border, color,
   // popular flags that require code changes, not just content editing.
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
   const heroEyebrow  = hero?.eyebrow  || 'BUILT FOR AFRICA';
-  const heroHeadline = hero?.headline || "Wherever you are on your journey — we're built for you.";
+  const heroHeadline = hero?.headline || "Wherever you are on your journey, we're built for you.";
   const heroSubhead  = hero?.subhead  || 'Ascentor serves every stage of the ambitious professional journey. From the student figuring out what to do with their life, to the executive deciding what kind of legacy to leave.';
 
   const cta = cms?.sections.bottom_cta?.data as Record<string, string> | undefined;
@@ -296,7 +296,7 @@ export default async function WhoItsForPage() {
               style={{ background: '#0C0B08' }}>
               <div>
                 <p className="text-sm font-semibold" style={{ color: '#F3F4F6' }}>
-                  {p.plan} — starts at <span style={{ color: p.color }}>₦{p.priceNgn.toLocaleString('en-NG')}/month</span>
+                  {p.plan}, starts at <span style={{ color: p.color }}>₦{p.priceNgn.toLocaleString('en-NG')}/month</span>
                   <span className="text-xs font-normal ml-2" style={{ color: '#6B7280' }}>(~${p.priceUsd} USD)</span>
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
@@ -333,7 +333,7 @@ export default async function WhoItsForPage() {
           </h2>
           <p className="text-sm max-w-xl mx-auto mb-10" style={{ color: '#6B7280', lineHeight: 1.7 }}>
             Our mentors, peer circles, and AI context are specifically calibrated
-            for real professional experience — not a generic tool adapted here.
+            for real professional experience, not a generic tool adapted here.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {ACROSS_AFRICA.map(c => (

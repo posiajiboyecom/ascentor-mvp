@@ -36,7 +36,7 @@ export interface NotifyPayload {
   url?:         string;
   tag?:         string;
   icon?:        string;
-  // Email fallback — if omitted, email is not sent even without push
+  // Email fallback - if omitted, email is not sent even without push
   emailSubject?: string;
   emailHtml?:   string;
 }
@@ -100,11 +100,11 @@ export async function notify(userId: string, payload: NotifyPayload): Promise<vo
         tag:   payload.tag,
         icon:  payload.icon || '/icon/icon-192.png',
       });
-      // Push succeeded — no email needed
+      // Push succeeded - no email needed
       return;
     }
 
-    // No push subscription — fall back to email if subject provided
+    // No push subscription - fall back to email if subject provided
     if (payload.emailSubject) {
       const email = await getUserEmail(userId);
       if (email) {
@@ -113,7 +113,7 @@ export async function notify(userId: string, payload: NotifyPayload): Promise<vo
       }
     }
   } catch (err: any) {
-    // Never throw — notifications are non-fatal
+    // Never throw - notifications are non-fatal
     console.error('[notify] error:', err.message);
   }
 }
@@ -176,9 +176,9 @@ export const NotifyTemplates = {
 
   welcomeToApp: (firstName: string) => ({
     title: 'Welcome to Ascentor',
-    body:  `Hey ${firstName} — Sage is ready when you are`,
+    body:  `Hey ${firstName}, Sage is ready when you are`,
     url:   '/coach',
     tag:   'welcome',
-    emailSubject: 'Welcome to Ascentor — your first session is waiting',
+    emailSubject: 'Welcome to Ascentor, your first session is waiting',
   }),
 };

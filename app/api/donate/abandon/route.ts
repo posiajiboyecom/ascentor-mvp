@@ -5,7 +5,7 @@ import { paymentLimiter, getClientIp } from '@/lib/rate-limit';
 
 // Called by the browser the moment the payment window / confirm overlay is
 // closed or the tab is left. Never trusts the browser: the reference must be
-// a donation attempt issued for that donation, and Paystack is asked first —
+// a donation attempt issued for that donation, and Paystack is asked first -
 // if the donor actually paid, this settles instead of marking it abandoned.
 export async function POST(req: NextRequest) {
   const limit = paymentLimiter.check(getClientIp(req));

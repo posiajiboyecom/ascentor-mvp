@@ -4,16 +4,16 @@
 'use client'
 
 // ================================================================
-// app/checkout/page.tsx — UNIFIED PLAN SELECTION PAGE
+// app/checkout/page.tsx - UNIFIED PLAN SELECTION PAGE
 // ================================================================
 // Single page for all plan decisions. Replaces /pricing entirely.
 //
 // States handled:
 //   1. New user (from onboarding)  → full plan picker + free escape hatch
 //   2. Free user (from dashboard)  → full plan picker + "stay free" option
-//   3. Paid user — Explorer        → current plan highlighted + upgrade to Builder/Climber
-//   4. Paid user — Builder         → current plan highlighted + upgrade to Climber
-//   5. Paid user — Climber         → you're at the top, manage in account
+//   3. Paid user - Explorer        → current plan highlighted + upgrade to Builder/Climber
+//   4. Paid user - Builder         → current plan highlighted + upgrade to Climber
+//   5. Paid user - Climber         → you're at the top, manage in account
 //
 // Flow: click plan → POST /api/pay/start → redirect to Paystack hosted page
 //       → pay → GET /api/pay/callback → subscription activated → /dashboard?welcome=1
@@ -51,7 +51,7 @@ const PLANS: Plan[] = [
     yearlyPrice:   PLAN_PRICING[0].yearlyPrice,
     yearlyMonthly: PLAN_PRICING[0].yearlyPerMonth,
     features: [
-      'Sage AI — 10 sessions/month',
+      'Sage AI, 10 sessions/month',
       '1 mentorship circle',
       'Mentor session recordings',
       'Playbooks & frameworks library',
@@ -69,7 +69,7 @@ const PLANS: Plan[] = [
     yearlyPrice:   PLAN_PRICING[1].yearlyPrice,
     yearlyMonthly: PLAN_PRICING[1].yearlyPerMonth,
     features: [
-      'Sage AI — unlimited sessions',
+      'Sage AI, unlimited sessions',
       'Up to 3 mentorship circles',
       'Live mentor sessions (monthly)',
       'Human mentor matching',
@@ -339,14 +339,14 @@ export default function CheckoutClient() {
           {fromOnboarding && (
             <div className="co-hero-badge">
               <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#14B8A6' }} />
-              Step 3 of 3 — Choose Your Plan
+              Step 3 of 3, Choose Your Plan
             </div>
           )}
           <h1 className="co-hero-heading">
             Everyone who made it<br/>had <em>someone.</em>
           </h1>
           <p className="co-hero-sub">
-            Sage, expert sessions, and peer accountability — for purposeful individuals. Start free, upgrade when ready.
+            Sage, expert sessions, and peer accountability, for purposeful individuals. Start free, upgrade when ready.
           </p>
 
           <div className="co-billing">
@@ -436,7 +436,7 @@ export default function CheckoutClient() {
           })}
         </div>
 
-        {/* Free escape hatch — always visible */}
+        {/* Free escape hatch - always visible */}
         <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 40, position: 'relative', zIndex: 1 }}>
           <div style={{
             display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 6,

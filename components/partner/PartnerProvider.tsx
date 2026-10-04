@@ -1,5 +1,5 @@
 // ============================================================
-// PARTNER PROVIDER — components/partner/PartnerProvider.tsx
+// PARTNER PROVIDER - components/partner/PartnerProvider.tsx
 //
 // React context that makes partner brand available to
 // ALL client components without prop drilling.
@@ -28,7 +28,7 @@ export function PartnerProvider({
 export function usePartner(): PartnerContext & { brand: PartnerBrand } {
   const ctx = useContext(PartnerCtx);
   if (!ctx) {
-    // Graceful fallback — on main Ascentor domain, return defaults
+    // Graceful fallback - on main Ascentor domain, return defaults
     return {
       partner: {} as any,
       isWhiteLabel: false,
@@ -91,7 +91,7 @@ export function PartnerLogo({
   );
 }
 
-/** Renders "Powered by Ascentor" footer — hidden if partner opts out */
+/** Renders "Powered by Ascentor" footer - hidden if partner opts out */
 export function PoweredByAscentor() {
   const { brand, isWhiteLabel } = usePartner();
   if (!isWhiteLabel || brand.hide_ascentor_branding) return null;

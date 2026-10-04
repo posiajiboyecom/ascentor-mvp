@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
 // ─────────────────────────────────────────────────────────────────
-// /products/[id] — Product detail + Paystack purchase
+// /products/[id] - Product detail + Paystack purchase
 // Free products: instant access via CTA URL
 // Paid products: Paystack popup → /api/payment/product/verify
 // ─────────────────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   async function handleBuy() {
     if (!product) return;
 
-    // Free product — go straight to CTA URL
+    // Free product - go straight to CTA URL
     if (product.price === 0) {
       window.open(product.cta_url, product.cta_url.startsWith('http') ? '_blank' : '_self');
       return;
@@ -145,7 +145,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               setError('Payment received but verification failed. Contact support.');
             }
           } catch {
-            setError('Payment may have succeeded — contact support if you have issues.');
+            setError('Payment may have succeeded, contact support if you have issues.');
           }
           setPaying(false);
         },
@@ -310,7 +310,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
       <div className="pd-layout">
 
-        {/* LEFT — Image */}
+        {/* LEFT - Image */}
         <div className="pd-image-wrap">
           {product.image_url ? (
             <img src={product.image_url} alt={product.name} />
@@ -324,7 +324,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           )}
         </div>
 
-        {/* RIGHT — Info + Purchase */}
+        {/* RIGHT - Info + Purchase */}
         <div>
           {/* Eyebrow */}
           <div className="pd-eyebrow">
@@ -365,7 +365,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                 className="pd-buy-btn done"
                 style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
               >
-                ✓ Purchased — Access Now
+                ✓ Purchased, Access Now
               </a>
             ) : (
               <button

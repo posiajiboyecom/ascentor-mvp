@@ -7,7 +7,7 @@
 // Usage:
 //   PAYSTACK_SECRET_KEY=sk_live_xxx npx ts-node scripts/seed-paystack-plans.ts
 //
-// Run ONCE. Safe to re-run — it checks for existing plans first and skips duplicates.
+// Run ONCE. Safe to re-run - it checks for existing plans first and skips duplicates.
 
 const SECRET = process.env.PAYSTACK_SECRET_KEY
 if (!SECRET) {
@@ -15,25 +15,25 @@ if (!SECRET) {
   process.exit(1)
 }
 
-// Paystack amounts are in KOBO (NGN) — multiply naira × 100
+// Paystack amounts are in KOBO (NGN) - multiply naira × 100
 // For USD we store kobo-equivalent but Paystack Nigeria settles everything in NGN.
 // USD plans are for reference only; actual USD billing goes through Lemonsqueezy.
 
 const PLANS = [
   // ── B2C NGN ──────────────────────────────────────────────────────────────
   { key: 'ngn_free',            name: 'Free',                    interval: 'monthly',  amount: 0,          currency: 'NGN', description: 'Ascentor Free plan' },
-  { key: 'ngn_builder_monthly', name: 'Builder Monthly (₦)',     interval: 'monthly',  amount: 1200000,    currency: 'NGN', description: 'Ascentor Builder — billed monthly' },
-  { key: 'ngn_builder_annual',  name: 'Builder Annual (₦)',      interval: 'annually', amount: 11520000,   currency: 'NGN', description: 'Ascentor Builder — billed annually (save ₦28,800)' },
-  { key: 'ngn_pro_monthly',     name: 'Pro Monthly (₦)',         interval: 'monthly',  amount: 2500000,    currency: 'NGN', description: 'Ascentor Pro — billed monthly' },
-  { key: 'ngn_pro_annual',      name: 'Pro Annual (₦)',          interval: 'annually', amount: 24000000,   currency: 'NGN', description: 'Ascentor Pro — billed annually (save ₦60,000)' },
-  { key: 'ngn_elite_monthly',   name: 'Elite Monthly (₦)',       interval: 'monthly',  amount: 6000000,    currency: 'NGN', description: 'Ascentor Elite — billed monthly' },
-  { key: 'ngn_elite_annual',    name: 'Elite Annual (₦)',        interval: 'annually', amount: 57600000,   currency: 'NGN', description: 'Ascentor Elite — billed annually (save ₦144,000)' },
+  { key: 'ngn_builder_monthly', name: 'Builder Monthly (₦)',     interval: 'monthly',  amount: 1200000,    currency: 'NGN', description: 'Ascentor Builder, billed monthly' },
+  { key: 'ngn_builder_annual',  name: 'Builder Annual (₦)',      interval: 'annually', amount: 11520000,   currency: 'NGN', description: 'Ascentor Builder, billed annually (save ₦28,800)' },
+  { key: 'ngn_pro_monthly',     name: 'Pro Monthly (₦)',         interval: 'monthly',  amount: 2500000,    currency: 'NGN', description: 'Ascentor Pro, billed monthly' },
+  { key: 'ngn_pro_annual',      name: 'Pro Annual (₦)',          interval: 'annually', amount: 24000000,   currency: 'NGN', description: 'Ascentor Pro, billed annually (save ₦60,000)' },
+  { key: 'ngn_elite_monthly',   name: 'Elite Monthly (₦)',       interval: 'monthly',  amount: 6000000,    currency: 'NGN', description: 'Ascentor Elite, billed monthly' },
+  { key: 'ngn_elite_annual',    name: 'Elite Annual (₦)',        interval: 'annually', amount: 57600000,   currency: 'NGN', description: 'Ascentor Elite, billed annually (save ₦144,000)' },
 
-  // ── B2B NGN (partners pay in NGN too — USD B2B goes via Lemonsqueezy) ──
-  { key: 'ngn_b2b_studio_monthly',  name: 'Partner Studio Monthly',  interval: 'monthly',  amount: 22350000,  currency: 'NGN', description: 'Ascentor Partner Studio — monthly flat fee (~$149)' },
-  { key: 'ngn_b2b_studio_annual',   name: 'Partner Studio Annual',   interval: 'annually', amount: 228000000, currency: 'NGN', description: 'Ascentor Partner Studio — annual flat fee (~$1,520)' },
-  { key: 'ngn_b2b_academy_monthly', name: 'Partner Academy Monthly', interval: 'monthly',  amount: 74850000,  currency: 'NGN', description: 'Ascentor Partner Academy — monthly flat fee (~$499)' },
-  { key: 'ngn_b2b_academy_annual',  name: 'Partner Academy Annual',  interval: 'annually', amount: 763500000, currency: 'NGN', description: 'Ascentor Partner Academy — annual flat fee (~$5,090)' },
+  // ── B2B NGN (partners pay in NGN too - USD B2B goes via Lemonsqueezy) ──
+  { key: 'ngn_b2b_studio_monthly',  name: 'Partner Studio Monthly',  interval: 'monthly',  amount: 22350000,  currency: 'NGN', description: 'Ascentor Partner Studio, monthly flat fee (~$149)' },
+  { key: 'ngn_b2b_studio_annual',   name: 'Partner Studio Annual',   interval: 'annually', amount: 228000000, currency: 'NGN', description: 'Ascentor Partner Studio, annual flat fee (~$1,520)' },
+  { key: 'ngn_b2b_academy_monthly', name: 'Partner Academy Monthly', interval: 'monthly',  amount: 74850000,  currency: 'NGN', description: 'Ascentor Partner Academy, monthly flat fee (~$499)' },
+  { key: 'ngn_b2b_academy_annual',  name: 'Partner Academy Annual',  interval: 'annually', amount: 763500000, currency: 'NGN', description: 'Ascentor Partner Academy, annual flat fee (~$5,090)' },
 ] as const
 
 type Plan = typeof PLANS[number]
@@ -82,7 +82,7 @@ async function main() {
 
   for (const plan of PLANS) {
     if (plan.amount === 0) {
-      // Free plan — no Paystack plan needed, just skip
+      // Free plan - no Paystack plan needed, just skip
       results[plan.key] = ''
       console.log(`⏭   Skipping Free plan (no Paystack plan needed)`)
       continue

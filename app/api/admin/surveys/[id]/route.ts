@@ -11,7 +11,7 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) 
   return user;
 }
 
-// PATCH /api/admin/surveys/[id] — update survey
+// PATCH /api/admin/surveys/[id] - update survey
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -53,7 +53,7 @@ const navItems = [
   },
 ];
 
-// Gold — elevation gold from brand token
+// Gold - elevation gold from brand token
 const GOLD = '#C8A96E';
 
 export default function BottomNav() {

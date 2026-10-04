@@ -1,9 +1,9 @@
 // app/api/experts/register/route.ts
-// POST  — registers an authenticated user for an expert session and fires
+// POST  - registers an authenticated user for an expert session and fires
 //          an in-app notification (written to `notifications` table so the
 //          existing real-time NotificationProvider picks it up instantly) plus
 //          push / email fallback via lib/notify.
-// DELETE — unregisters (no notification needed for unregister).
+// DELETE - unregisters (no notification needed for unregister).
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   if (regError) {
     if (regError.code === '23505') {
-      // Already registered — not an error from the user's perspective
+      // Already registered - not an error from the user's perspective
       return NextResponse.json({ ok: true, alreadyRegistered: true });
     }
     console.error('[experts/register] insert failed:', regError.message);

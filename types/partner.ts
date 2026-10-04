@@ -2,15 +2,15 @@
 // FILE LOCATION: types/partner.ts
 //
 // BUGS FIXED:
-//   BUG-05 — PartnerFeatures was missing the 'referrals' field.
+//   BUG-05 - PartnerFeatures was missing the 'referrals' field.
 //             apply/route.ts inserts { referrals: true } but the
 //             type had no such field, causing TS errors in strict
 //             mode and the flag being silently ignored everywhere.
 //
-//   BUG-06 — PartnerBrand was missing the 'border_color' field.
+//   BUG-06 - PartnerBrand was missing the 'border_color' field.
 //             getPartnerContext.ts, brand/route.ts and the DEFAULT_BRAND
 //             constant all use border_color, but the type didn't
-//             declare it — TypeScript strict mode threw errors on
+//             declare it - TypeScript strict mode threw errors on
 //             every read/write of that property.
 // ============================================================
 

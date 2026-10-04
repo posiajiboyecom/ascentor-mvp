@@ -7,16 +7,16 @@
 // attribution.
 //
 // Form fields:
-//   file        — the PDF file (multipart/form-data)
-//   mentorSlug  — string
-//   namespace   — string
-//   sourceTitle — string (e.g. "Atomic Habits — Chapter 3")
-//   tags        — optional comma-separated string
+//   file        - the PDF file (multipart/form-data)
+//   mentorSlug  - string
+//   namespace   - string
+//   sourceTitle - string (e.g. "Atomic Habits - Chapter 3")
+//   tags        - optional comma-separated string
 //
 // Install: npm install pdf-parse
 // ─────────────────────────────────────────────
 
-// Force Node.js runtime — pdf-parse requires Node APIs (Buffer, fs)
+// Force Node.js runtime - pdf-parse requires Node APIs (Buffer, fs)
 // and must never run in the Edge runtime.
 export const runtime = 'nodejs';
 
@@ -25,7 +25,7 @@ import { createClient } from '@/lib/supabase/server';
 import { addChunks, getMentorBySlug } from '@/lib/rag';
 import type { KnowledgeChunk } from '@/lib/rag';
 // pdf-parse v2 exports a class, not a default function.
-// Import the named class directly — no default import needed.
+// Import the named class directly - no default import needed.
 import { PDFParse } from 'pdf-parse';
 
 // ── Config ──

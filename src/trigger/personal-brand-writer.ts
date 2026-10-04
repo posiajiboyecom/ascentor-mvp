@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// Personal Brand Writer — Posi Ajiboye Samuel
+// Personal Brand Writer - Posi Ajiboye Samuel
 //
 // Triggered by: personal-brand-researcher (automatic) or manual UI trigger
 //
@@ -12,8 +12,8 @@
 //   - Practitioner, not commentator. Write from doing, not from reading.
 //   - Direct and specific. No vague generalisations.
 //   - Zero corporate speak, zero buzzword soup.
-//   - When technical — be genuinely technical. Naming tools, CVEs, frameworks.
-//   - When career-focused — strength, not desperation.
+//   - When technical - be genuinely technical. Naming tools, CVEs, frameworks.
+//   - When career-focused - strength, not desperation.
 //   - First person, active voice, short paragraphs.
 //
 // CYBERSECURITY CONTENT MIX (inherited from researcher):
@@ -31,26 +31,26 @@ const supabase  = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ── Posi's full voice brief — injected into every write prompt ────────────
+// ── Posi's full voice brief - injected into every write prompt ────────────
 const POSI_VOICE = `
 ABOUT POSI (the author):
-- Cybersecurity professional — Security Analyst background
+- Cybersecurity professional, Security Analyst background
 - Certifications: CompTIA Security+, Google Cybersecurity Professional, ISACA member
 - Specialisations: Penetration Testing and GRC
 - Currently building his personal brand to land a well-paying cybersecurity role
-- Also founder of Ascentor (AI mentorship platform) — understands both technical and leadership dimensions
-- Based in Lagos, Nigeria — but posts for a global professional audience
+- Also founder of Ascentor (AI mentorship platform), understands both technical and leadership dimensions
+- Based in Lagos, Nigeria, but posts for a global professional audience
 
 VOICE RULES:
-1. Write from the perspective of someone who actually does this work — not someone who read about it
+1. Write from the perspective of someone who actually does this work, not someone who read about it
 2. Be specific: name real tools (Burp Suite, Nmap, Metasploit, Cobalt Strike, Nuclei), real CVEs, real frameworks
-3. Short paragraphs — 1-3 sentences maximum
+3. Short paragraphs, 1-3 sentences maximum
 4. Active voice. First person.
 5. No openers: "Excited to share", "Hot take:", "Unpopular opinion:", "In today's digital landscape"
 6. No closing phrases: "Hope this helps!", "Drop a comment!", "Let me know your thoughts!"
 7. No emojis in technical posts. Maximum 1 emoji in career-signal posts.
 8. No lists of 10 things. Maximum 3-4 numbered points if listing at all.
-9. End LinkedIn posts with a genuine question or a clear single takeaway — not a call to action
+9. End LinkedIn posts with a genuine question or a clear single takeaway, not a call to action
 10. Confidence without arrogance. Share knowledge generously.
 `;
 
@@ -63,7 +63,7 @@ const INTENT_MODIFIERS: Record<string, string> = {
 
   career_signal:
     "This post signals to hiring managers and recruiters that Posi is actively "
-    + "practising and growing in cybersecurity — from a position of strength. "
+    + "practising and growing in cybersecurity, from a position of strength. "
     + "Not 'I am looking for work.' Rather: 'Here is the work I am doing and thinking about.' "
     + "The job-seeking intent is visible through demonstrated expertise, not stated.",
 
@@ -106,10 +106,10 @@ async function writeLinkedInPost(params: {
         + `Close with: ${params.callToAction}\n\n`
         + `LINKEDIN FORMAT:\n`
         + `- 150-280 words\n`
-        + `- Hook on line 1 — stops the scroll (use the provided hook as a starting point, make it sharper)\n`
+        + `- Hook on line 1, stops the scroll (use the provided hook as a starting point, make it sharper)\n`
         + `- Blank line between each paragraph\n`
         + `- Maximum 3-4 numbered points if you use a list\n`
-        + `- End with ONE question or takeaway — not a sales pitch\n`
+        + `- End with ONE question or takeaway, not a sales pitch\n`
         + `- 3-5 hashtags on the last line\n\n`
         + `Return ONLY the post. No explanation, no "Here is the post:".`,
     }],
@@ -147,9 +147,9 @@ async function writeTwitterThread(params: {
         + `TWITTER FORMAT:\n`
         + `- 5-7 tweets\n`
         + `- Number each: "1/" "2/" etc.\n`
-        + `- Tweet 1: The hook — 240 chars max. Make it impossible to scroll past.\n`
-        + `- Tweets 2-5: The substance — specific, technical, each one standalone valuable\n`
-        + `- Tweet 6: The practitioner insight — the thing only someone doing this knows\n`
+        + `- Tweet 1: The hook, 240 chars max. Make it impossible to scroll past.\n`
+        + `- Tweets 2-5: The substance, specific, technical, each one standalone valuable\n`
+        + `- Tweet 6: The practitioner insight, the thing only someone doing this knows\n`
         + `- Final tweet: Takeaway + one question. Max 2 hashtags total in the whole thread.\n`
         + `- Blank line between each tweet\n`
         + `- No hashtags except optionally on the final tweet\n\n`
@@ -177,12 +177,12 @@ async function writeTwitterSingle(params: {
       content:
         `${POSI_VOICE}\n\n`
         + `TASK: Write ONE standalone tweet (not a thread) about "${params.topic}".\n\n`
-        + `This is for high-frequency posting — a single sharp observation, fact, or question.\n`
+        + `This is for high-frequency posting, a single sharp observation, fact, or question.\n`
         + `Reference: ${params.recentReference}\n`
         + `Pillar: ${params.pillar.replace(/_/g, " ")}\n\n`
         + `Rules:\n`
         + `- Max 240 characters\n`
-        + `- Specific — reference a real tool, CVE, or concept\n`
+        + `- Specific, reference a real tool, CVE, or concept\n`
         + `- No hashtags\n`
         + `- Ends with a question OR a sharp statement that invites replies\n`
         + `- Feels like something a practitioner just thought of, not polished marketing\n\n`
@@ -211,7 +211,7 @@ async function savePost(params: {
         title:          params.title,
         type:           params.type,
         platform:       params.platform,
-        pillar:         "personal_brand",  // distinct pillar — won't mix with Ascentor brand content
+        pillar:         "personal_brand",  // distinct pillar - won't mix with Ascentor brand content
         week:           params.weekNum,
         status:         "draft",
         content_data: {
@@ -258,7 +258,7 @@ export const personalBrandWriter = task({
     callToAction:        string;
     triggeredBy?:        string;
   }) => {
-    console.log(`[PB-Writer] Writing posts for: "${payload.topic}" — intent: ${payload.intent}`);
+    console.log(`[PB-Writer] Writing posts for: "${payload.topic}", intent: ${payload.intent}`);
 
     const results: {
       linkedin?: { id: string | null; preview: string };
@@ -298,7 +298,7 @@ export const personalBrandWriter = task({
       });
 
       results.linkedin = { id: liId, preview: liBody.slice(0, 100) };
-      console.log(`[PB-Writer] LinkedIn post saved — id: ${liId}`);
+      console.log(`[PB-Writer] LinkedIn post saved, id: ${liId}`);
     } catch (e: any) {
       console.error("[PB-Writer] LinkedIn failed:", e.message);
       results.errors.push(`LinkedIn: ${e.message}`);
@@ -328,7 +328,7 @@ export const personalBrandWriter = task({
       });
 
       results.thread = { id: threadId, preview: threadText.slice(0, 100) };
-      console.log(`[PB-Writer] Thread saved — id: ${threadId}`);
+      console.log(`[PB-Writer] Thread saved, id: ${threadId}`);
     } catch (e: any) {
       console.error("[PB-Writer] Thread failed:", e.message);
       results.errors.push(`Thread: ${e.message}`);
@@ -356,7 +356,7 @@ export const personalBrandWriter = task({
       });
 
       results.single = { id: singleId, preview: singleText.slice(0, 100) };
-      console.log(`[PB-Writer] Single tweet saved — id: ${singleId}`);
+      console.log(`[PB-Writer] Single tweet saved, id: ${singleId}`);
     } catch (e: any) {
       console.error("[PB-Writer] Single tweet failed:", e.message);
       results.errors.push(`Single: ${e.message}`);
@@ -372,7 +372,7 @@ export const personalBrandWriter = task({
       } catch { /* non-fatal */ }
     }
 
-    console.log(`[PB-Writer] Done — ${3 - results.errors.length}/3 posts saved`);
+    console.log(`[PB-Writer] Done, ${3 - results.errors.length}/3 posts saved`);
 
     return {
       success:      results.errors.length < 3,

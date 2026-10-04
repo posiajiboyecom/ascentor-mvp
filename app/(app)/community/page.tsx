@@ -1,9 +1,9 @@
 // app/(app)/community/page.tsx
-// The Circle — server component. Fetches channels + this week's ritual data
+// The Circle - server component. Fetches channels + this week's ritual data
 // (prompt, your circle rosters + who's checked in, your streak), then hands
 // off to CommunityClient which lands on the "This Week" home.
 //
-// Schema notes (confirmed via information_schema against the live DB —
+// Schema notes (confirmed via information_schema against the live DB -
 // do not "fix" these back to guessed names):
 //   community_categories: id, name, icon, color, default_type, sort_order
 //   community_channels:   slug (PK, no `id` column), name, description,
@@ -19,7 +19,7 @@
 //   channel_read_positions: user_id, channel_slug, last_read_at ← new
 //                            (database/migrations/20260702_community_read_positions.sql)
 //
-// NOTE: community_channels has NO is_active column — a previous bug filtered
+// NOTE: community_channels has NO is_active column - a previous bug filtered
 // on .eq('is_active', true) and silently returned zero channels. Do not
 // reintroduce that filter. The ritual queries below degrade to empty (not a
 // crash) if the migration hasn't been run yet.

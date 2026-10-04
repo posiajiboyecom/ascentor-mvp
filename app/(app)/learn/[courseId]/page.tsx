@@ -1,19 +1,19 @@
 // app/(app)/learn/[courseId]/page.tsx
-// Server Component — fetches one course, its lessons, and the user's
+// Server Component - fetches one course, its lessons, and the user's
 // per-lesson progress, then passes everything to CourseDetailClient.
 //
-// Schema notes — confirmed via information_schema:
+// Schema notes - confirmed via information_schema:
 //   lessons: id, course_id, title, description, video_url,
 //     duration_seconds, order_index, key_takeaways (text[]),
-//     quiz (jsonb), created_at. No is_published column on lessons —
+//     quiz (jsonb), created_at. No is_published column on lessons -
 //     gating happens only at the course level via courses.plan_tier.
 //   user_progress: id, user_id, course_id, lesson_id (FK→lessons.id),
 //     progress_percent, last_position, completed, updated_at.
 //
-// Deliberately does NOT reference courses.is_free_preview — that
+// Deliberately does NOT reference courses.is_free_preview - that
 // column was never confirmed to exist in the real schema. Referencing
 // it wouldn't throw (JS reads undefined silently), but would make
-// free-preview courses incorrectly stay locked — a real, documented
+// free-preview courses incorrectly stay locked - a real, documented
 // bug from an earlier pass. Tier gating here uses only plan_tier.
 
 import { redirect, notFound } from 'next/navigation';
@@ -60,7 +60,7 @@ export default async function CourseDetailPage({
   const userPlan: PlanTier = effectivePlan(profileRes.data);
   const requiredTier = (courseRes.data.plan_tier || 'free') as PlanTier;
 
-  // Gate at the route level — locked courses redirect back to the grid,
+  // Gate at the route level - locked courses redirect back to the grid,
   // where the existing tier-upgrade modal flow handles the upsell.
   if (!canAccess(userPlan, requiredTier)) redirect('/learn');
 

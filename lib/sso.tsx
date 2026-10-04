@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 
 // ============================================================
-// SSO Module — Google + LinkedIn + Discord OAuth
+// SSO Module - Google + LinkedIn + Discord OAuth
 // ============================================================
 
 const supabase = createClient();

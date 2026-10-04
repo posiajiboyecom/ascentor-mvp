@@ -1,7 +1,7 @@
 // POST /api/admin/personal-brand
 // Generates LinkedIn and/or Twitter posts for Posi's personal brand
 // Cybersecurity authority + job-seeking signal
-// Uses Claude directly — no Trigger.dev needed, instant generation
+// Uses Claude directly - no Trigger.dev needed, instant generation
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -11,10 +11,10 @@ const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 const PILLAR_CONTEXT: Record<string, string> = {
   authority:  'Share deep cybersecurity expertise. Educate. Be specific about tools, frameworks, attack patterns, or defence strategies. The goal is to make readers think "this person really knows their stuff." Avoid generic advice. Get granular.',
-  career:     'Post with visible job-seeking intent — but from a position of strength. Not "I am looking for work" but signals that attract hiring managers: sharing what you are working on, your approach to problems, your values as a practitioner. Make recruiters want to reach out.',
+  career:     'Post with visible job-seeking intent, but from a position of strength. Not "I am looking for work" but signals that attract hiring managers: sharing what you are working on, your approach to problems, your values as a practitioner. Make recruiters want to reach out.',
   insight:    'A strong take on something happening in cybersecurity right now. Could be a trend, a breach analysis, a policy development, or a tool observation. Have a real opinion. Do not sit on the fence.',
-  story:      'A specific experience from your cybersecurity work — what happened, what you learned, what you would do differently. The more concrete the detail, the more credible and engaging. Vulnerability without oversharing.',
-  tool:       'Share a specific tool, technique, resource, or framework that actually works. Not a list — a single thing, explained with enough depth that the reader can immediately use or understand it.',
+  story:      'A specific experience from your cybersecurity work, what happened, what you learned, what you would do differently. The more concrete the detail, the more credible and engaging. Vulnerability without oversharing.',
+  tool:       'Share a specific tool, technique, resource, or framework that actually works. Not a list, a single thing, explained with enough depth that the reader can immediately use or understand it.',
   myth:       'Correct a common misconception in cybersecurity. Something that most people believe but is wrong, incomplete, or more nuanced than it appears. Direct, evidence-based, respectful but clear.',
 };
 
@@ -26,14 +26,14 @@ const INTENT_CONTEXT: Record<string, string> = {
 };
 
 const POSI_VOICE = `
-You are writing social media content for Posi Ajiboye Samuel — a cybersecurity professional with a background as a Security Analyst, CompTIA Security+ certified, Google Cybersecurity Professional certified, ISACA member.
+You are writing social media content for Posi Ajiboye Samuel, a cybersecurity professional with a background as a Security Analyst, CompTIA Security+ certified, Google Cybersecurity Professional certified, ISACA member.
 
 POSI'S VOICE:
-- Direct and specific — no vague generalisations
-- Practitioner tone — writes from experience, not from reading about it
-- Confident but not arrogant — shares knowledge generously
-- Global perspective — not region-specific
-- Concise — respects the reader's time
+- Direct and specific, no vague generalisations
+- Practitioner tone, writes from experience, not from reading about it
+- Confident but not arrogant, shares knowledge generously
+- Global perspective, not region-specific
+- Concise, respects the reader's time
 - No corporate speak, no buzzword soup
 - First person, active voice
 - When he gives advice it is specific enough to act on immediately
@@ -43,7 +43,7 @@ BACKGROUND CONTEXT:
 - Wants to establish himself as a recognised practitioner worth recruiting
 - Experience in penetration testing lab setup, vulnerability assessment, GRC
 - Credentials: CompTIA Security+, Google Cybersecurity Professional, ISACA member
-- Also founder of Ascentor — so understands both technical and leadership dimensions
+- Also founder of Ascentor, so understands both technical and leadership dimensions
 `;
 
 function buildLinkedInPrompt(pillar: string, intent: string, topic: string): string {
@@ -58,16 +58,16 @@ INTENT: ${INTENT_CONTEXT[intent] || intent}
 ${topic ? `SPECIFIC TOPIC/ANGLE: ${topic}` : 'Choose a topic that fits the pillar and would genuinely resonate with cybersecurity professionals and hiring managers.'}
 
 LINKEDIN FORMAT RULES:
-- Hook in the first line — must stop the scroll (no "I am excited to share")
-- No bullet points in the first 3 lines — start with prose
-- Short paragraphs — 1-3 sentences max each
-- White space between paragraphs — LinkedIn rewards this
+- Hook in the first line, must stop the scroll (no "I am excited to share")
+- No bullet points in the first 3 lines, start with prose
+- Short paragraphs, 1-3 sentences max each
+- White space between paragraphs, LinkedIn rewards this
 - 150-300 words ideal for engagement
 - End with one clear takeaway or question that invites comments
 - 3-5 relevant hashtags at the very end (on a separate line)
 - Do NOT use these openers: "Excited to share", "Hot take:", "Unpopular opinion:", "Let's talk about"
 
-Return ONLY the post content — no preamble, no "Here is the post:", just the post itself, then a new line, then the hashtags.`;
+Return ONLY the post content, no preamble, no "Here is the post:", just the post itself, then a new line, then the hashtags.`;
 }
 
 function buildTwitterPrompt(pillar: string, intent: string, topic: string): string {
@@ -82,17 +82,17 @@ INTENT: ${INTENT_CONTEXT[intent] || intent}
 ${topic ? `SPECIFIC TOPIC/ANGLE: ${topic}` : 'Choose a topic that fits the pillar and would genuinely resonate with cybersecurity professionals.'}
 
 TWITTER FORMAT RULES:
-- Tweet 1 is the hook — must make someone stop scrolling AND want to read the rest
+- Tweet 1 is the hook, must make someone stop scrolling AND want to read the rest
 - Each tweet stands alone but flows into the next
 - Tweet 1: max 240 chars (hook)
-- Tweets 2-5: the substance — specific, concrete, actionable
+- Tweets 2-5: the substance, specific, concrete, actionable
 - Final tweet: the takeaway + optional CTA
 - Number each tweet: "1/" "2/" etc.
 - No hashtags in the thread except optionally on the last tweet (max 2)
 - Conversational but knowledgeable tone
 - Total thread: 4-6 tweets
 
-Return ONLY the thread — numbered tweets separated by blank lines. No preamble.`;
+Return ONLY the thread, numbered tweets separated by blank lines. No preamble.`;
 }
 
 export async function POST(req: NextRequest) {

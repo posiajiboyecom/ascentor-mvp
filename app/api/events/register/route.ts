@@ -1,5 +1,5 @@
 // app/api/events/register/route.ts
-// Public POST — registers a visitor for any public event.
+// Public POST - registers a visitor for any public event.
 // Body: { eventId, full_name, email, whatsapp?, country?, ...optional fields }
 
 import { NextResponse } from 'next/server';
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
     await sendEmail({
       from:    'Ascentor <notifications@ascentorbi.com>',
       to:      (email as string).trim().toLowerCase(),
-      subject: event.confirmation_subject || `You're registered — ${event.title}`,
+      subject: event.confirmation_subject || `You're registered, ${event.title}`,
       html:    confirmationHtml({
         firstName,
         eventTitle:        event.title,

@@ -118,7 +118,7 @@ export default function DemoGatePage() {
           </h1>
 
           <p className="dg-body">
-            This is a live demonstration of the Ascentor white-label platform &mdash; exactly
+            This is a live demonstration of the Ascentor white-label platform - exactly
             as your members would experience it. To explore the demo, you first need to be{' '}
             <strong>approved by Team Ascentor</strong>.
           </p>
@@ -155,7 +155,7 @@ export default function DemoGatePage() {
           <div className="dg-email">joinascentor@gmail.com</div>
 
           <a
-            href="mailto:joinascentor@gmail.com?subject=Demo Access Request — Ascentor Partner Platform&body=Hi Team Ascentor,%0A%0AI would like to request access to the Ascentor partner demo.%0A%0AOrganisation name:%0AUse case:%0AEstimated member count:%0A%0AThank you."
+            href="mailto:joinascentor@gmail.com?subject=Demo Access Request | Ascentor Partner Platform&body=Hi Team Ascentor,%0A%0AI would like to request access to the Ascentor partner demo.%0A%0AOrganisation name:%0AUse case:%0AEstimated member count:%0A%0AThank you."
             className="dg-cta"
           >
             Email Team Ascentor to request access →

@@ -10,19 +10,19 @@
 //
 // The unique partial index (user_id, checkin_week WHERE is_checkin) was
 // designed for a single-circle world. With fan-out we lift that constraint by
-// including channel_slug in the uniqueness key — each (user, week, channel)
+// including channel_slug in the uniqueness key - each (user, week, channel)
 // triple can only have one check-in. The migration below updates the index.
 //
 // Request body:
 //   { content: string, dimensionTag?: string | null }
 //
 // Response:
-//   200 { message }                 — the first inserted check-in row
+//   200 { message }                 - the first inserted check-in row
 //                                     (client uses it for optimistic UI)
-//   400 { error }                   — empty content / bad dimension / no circles
-//   401 { error }                   — not authenticated
-//   409 { error }                   — already checked in this week (all circles)
-//   500 { error }                   — database error
+//   400 { error }                   - empty content / bad dimension / no circles
+//   401 { error }                   - not authenticated
+//   409 { error }                   - already checked in this week (all circles)
+//   500 { error }                   - database error
 //
 // ── Database prerequisites ────────────────────────────────────────────────
 // 1. database/migrations/20260702_community_ritual.sql
@@ -165,7 +165,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Check-in failed. Try again.' }, { status: 500 });
   }
 
-  // Return the first row — the client uses it for optimistic UI (hero + circle
+  // Return the first row - the client uses it for optimistic UI (hero + circle
   // card update). All circles get the check-in; the client's snapshot is
   // updated on the next server render or realtime update.
   return NextResponse.json({ message: inserted[0] });

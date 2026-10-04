@@ -1,5 +1,5 @@
 // ============================================================
-// ADMIN PROMO CODES API — /api/admin/promo-codes
+// ADMIN PROMO CODES API - /api/admin/promo-codes
 // GET:    list all promo codes
 // POST:   create one code OR bulk-generate for events
 // PATCH:  enable/disable / update code
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       codes.push({
         code:         `${prefix}${suffix}`,
         discount:     discountValue,
-        label:        label || `${Math.round(discountValue * 100)}% Off — ${prefix}`,
+        label:        label || `${Math.round(discountValue * 100)}% Off, ${prefix}`,
         applies_to:   plansArr,
         max_uses:     1,
         current_uses: 0,

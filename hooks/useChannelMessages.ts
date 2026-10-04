@@ -2,7 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 // The message engine for a single Circle channel: history load, realtime
 // INSERT/UPDATE subscription, author-name enrichment, optimistic send,
-// reaction toggle, and pin toggle — plus a shared error-toast.
+// reaction toggle, and pin toggle - plus a shared error-toast.
 //
 // Extracted from CommunityClient's ChannelView so BOTH the channel view and
 // the "This Week" home's Commons feed run the exact same logic instead of
@@ -86,7 +86,7 @@ export function useChannelMessages(channelSlug: string, { userId, userName }: Op
 
       if (error) {
         console.error('[useChannelMessages] load failed:', error.message);
-        if (!cancelled) showError("Couldn't load messages — check your connection and try again.");
+        if (!cancelled) showError("Couldn't load messages, check your connection and try again.");
       }
       if (!cancelled) {
         setMessages(await enrichMessages(data ?? []));
@@ -96,7 +96,7 @@ export function useChannelMessages(channelSlug: string, { userId, userName }: Op
     return () => { cancelled = true; };
   }, [channelSlug, supabase, enrichMessages, showError]);
 
-  // ── Realtime — the one place this MUST never double-fire ──
+  // ── Realtime - the one place this MUST never double-fire ──
   useEffect(() => {
     const sub = supabase
       .channel(`community:${channelSlug}`)
@@ -161,7 +161,7 @@ export function useChannelMessages(channelSlug: string, { userId, userName }: Op
       if (error || !data) {
         console.error('[useChannelMessages] send failed:', error?.message);
         setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-        showError("Message didn't send — try again.");
+        showError("Message didn't send, try again.");
         return;
       }
 
@@ -206,7 +206,7 @@ export function useChannelMessages(channelSlug: string, { userId, userName }: Op
       if (error) {
         console.error('[useChannelMessages] reaction failed:', error.message);
         setMessages((prev) => prev.map((m) => (m.id === message.id ? message : m)));
-        showError("Reaction didn't save — try again.");
+        showError("Reaction didn't save, try again.");
       }
     },
     [supabase, userId, showError]
@@ -220,7 +220,7 @@ export function useChannelMessages(channelSlug: string, { userId, userName }: Op
         .eq('id', message.id);
       if (error) {
         console.error('[useChannelMessages] pin toggle failed:', error.message);
-        showError("Couldn't pin message — try again.");
+        showError("Couldn't pin message, try again.");
       }
     },
     [supabase, showError]

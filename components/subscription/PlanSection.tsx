@@ -1,10 +1,10 @@
 // FILE: components/subscription/PlanSection.tsx
-// FIX: #5a — Next billing date visible for active/trialing/cancelled
-//      #5b — displays rich card info from card_details JSONB column
+// FIX: #5a - Next billing date visible for active/trialing/cancelled
+//      #5b - displays rich card info from card_details JSONB column
 //            also shows billing_cycle row (Monthly / Annual)
 
 // ============================================================
-// PLAN SECTION — Drop into AccountClient.tsx
+// PLAN SECTION - Drop into AccountClient.tsx
 //
 // Replaces the existing {section === 'plan' && (...)} block.
 // Matches your existing styling: var(--bg-card), var(--border),
@@ -222,7 +222,7 @@ export function PlanSection({ profile, userId }: PlanSectionProps) {
           {isActive
             ? 'Your subscription renews automatically.'
             : isCancelled
-            ? 'Subscription cancelled — no future charges.'
+            ? 'Subscription cancelled, no future charges.'
             : 'No active subscription. Upgrade to access all features.'}
         </p>
         {(isActive || isCancelled) && (

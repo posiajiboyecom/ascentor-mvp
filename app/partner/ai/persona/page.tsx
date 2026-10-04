@@ -160,7 +160,7 @@ export default function AIPersonaPage() {
         />
         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '6px' }}>
           The output format instructions (reflection/question/action XML tags) are appended
-          automatically — you only need to define the coach&apos;s role and context here.
+          automatically, you only need to define the coach&apos;s role and context here.
         </p>
       </div>
 

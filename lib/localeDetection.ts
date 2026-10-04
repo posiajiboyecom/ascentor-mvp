@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// LOCALE DETECTION — drop this into your proxy file
+// LOCALE DETECTION - drop this into your proxy file
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // HOW TO INTEGRATE:
 //
 // 1. Find where your proxy reads/modifies the incoming Request or Response
-//    headers — typically near the top of the default export function.
+//    headers - typically near the top of the default export function.
 //
 // 2. Call detectCountry(req) to get the country code.
 //
@@ -39,12 +39,12 @@ export async function detectCountry(req: NextRequest): Promise<string> {
   const cfCountry = req.headers.get('cf-ipcountry')
   if (cfCountry && cfCountry !== 'XX') return cfCountry
 
-  // 3. Forwarded header — useful in self-hosted / Railway / Render envs
+  // 3. Forwarded header - useful in self-hosted / Railway / Render envs
   //    Some providers set x-vercel-ip-country themselves
   const fwdCountry = req.headers.get('x-vercel-ip-country')
   if (fwdCountry) return fwdCountry
 
-  // 4. ipapi.co free lookup — only fires if none of the above worked.
+  // 4. ipapi.co free lookup - only fires if none of the above worked.
   //    Free tier: 1,000 req/day. Upgrade to $11/mo for 50k/day if needed.
   //    To disable this fallback (e.g. in local dev), set:
   //      DISABLE_IP_GEOLOCATION=true in .env.local
@@ -57,7 +57,7 @@ export async function detectCountry(req: NextRequest): Promise<string> {
       if (ip && ip !== '127.0.0.1' && ip !== '::1') {
         const res = await fetch(`https://ipapi.co/${ip}/country/`, {
           headers: { 'User-Agent': 'ascentorbi.com/1.0' },
-          // Short timeout — don't let a slow API kill page load
+          // Short timeout - don't let a slow API kill page load
           signal: AbortSignal.timeout(800),
         })
         if (res.ok) {
@@ -66,7 +66,7 @@ export async function detectCountry(req: NextRequest): Promise<string> {
         }
       }
     } catch {
-      // Silently fail — fall through to default
+      // Silently fail - fall through to default
     }
   }
 
@@ -133,5 +133,5 @@ export function currencyFromCountry(country: string): 'ngn' | 'usd' {
 // to:
 //   const [currency, setCurrency] = useState<Currency>(defaultCurrency)
 //
-// And remove the useEffect timezone heuristic — it's no longer needed.
+// And remove the useEffect timezone heuristic - it's no longer needed.
 // ─────────────────────────────────────────────────────────────────────────

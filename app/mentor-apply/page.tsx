@@ -92,7 +92,7 @@ export default function MentorApplyPage() {
     setLoading(true);
     setError('');
     try {
-      // agree_to_terms is a UI-only field — the 'agree_to_terms' column doesn't
+      // agree_to_terms is a UI-only field - the 'agree_to_terms' column doesn't
       // exist in mentor_applications. Destructure it out before inserting.
       const { agree_to_terms: _terms, ...dbFields } = form;
       const { error: dbErr } = await supabase.from('mentor_applications').insert({
@@ -141,7 +141,7 @@ export default function MentorApplyPage() {
             <div className="ma-success-icon">✦</div>
             <h1 className="ma-success-title">Application Received</h1>
             <p className="ma-success-sub">
-              Thank you, <strong>{form.full_name.split(' ')[0]}</strong>. We've received your application to join as a Founding Mentor. Our team reviews every application personally — you'll hear from us within 5–7 business days.
+              Thank you, <strong>{form.full_name.split(' ')[0]}</strong>. We've received your application to join as a Founding Mentor. Our team reviews every application personally, you'll hear from us within 5–7 business days.
             </p>
             <div className="ma-success-detail">
               <span>Sent to</span>
@@ -170,10 +170,10 @@ export default function MentorApplyPage() {
             <span className="ma-accent">Change a career.</span>
           </h1>
           <p className="ma-hero-sub">
-            Founding Mentors are the backbone of Ascentor. You've done the hard work of building a career worth sharing — now help the next generation do the same. Limited spots. Serious applicants only.
+            Founding Mentors are the backbone of Ascentor. You've done the hard work of building a career worth sharing, now help the next generation do the same. Limited spots. Serious applicants only.
           </p>
           <div className="ma-hero-perks">
-            {['Recognized as a Founding Mentor', 'Shape the platform with your feedback', 'Connect with purposeful individuals worldwide', 'Flexible — 2–4 hrs/month commitment'].map(p => (
+            {['Recognized as a Founding Mentor', 'Shape the platform with your feedback', 'Connect with purposeful individuals worldwide', 'Flexible, 2–4 hrs/month commitment'].map(p => (
               <div key={p} className="ma-perk"><span className="ma-perk-check">✓</span>{p}</div>
             ))}
           </div>
@@ -304,7 +304,7 @@ export default function MentorApplyPage() {
                 </div>
                 <div className="ma-field">
                   <Label>A mentee success story (optional)</Label>
-                  <p className="ma-field-hint">If you've mentored before — formally or informally — share a moment that stuck with you.</p>
+                  <p className="ma-field-hint">If you've mentored before, formally or informally, share a moment that stuck with you.</p>
                   <textarea className={inputClass} style={{ ...inputStyle, minHeight: '100px', resize: 'vertical' }}
                     placeholder="A junior colleague I supported for 6 months went on to lead their own team..."
                     value={form.success_story} onChange={e => set('success_story', e.target.value)} />
@@ -318,7 +318,7 @@ export default function MentorApplyPage() {
             <div className="ma-step">
               <div className="ma-step-header">
                 <h2 className="ma-step-title">Your Commitment</h2>
-                <p className="ma-step-desc">We keep it lean — great mentorship doesn't require hours every day.</p>
+                <p className="ma-step-desc">We keep it lean, great mentorship doesn't require hours every day.</p>
               </div>
               <div className="ma-fields">
                 <div className="ma-field">
@@ -359,12 +359,12 @@ export default function MentorApplyPage() {
                 <div className="ma-review-box">
                   <p className="ma-review-title">Your application summary</p>
                   <div className="ma-review-grid">
-                    <span>Name</span><strong>{form.full_name || '—'}</strong>
-                    <span>Email</span><strong>{form.email || '—'}</strong>
+                    <span>Name</span><strong>{form.full_name || '-'}</strong>
+                    <span>Email</span><strong>{form.email || '-'}</strong>
                     <span>Role</span><strong>{form.role_title}{form.company ? ` · ${form.company}` : ''}</strong>
-                    <span>Industry</span><strong>{form.industry || '—'}</strong>
-                    <span>Experience</span><strong>{form.years_experience || '—'}</strong>
-                    <span>Country</span><strong>{form.country || '—'}</strong>
+                    <span>Industry</span><strong>{form.industry || '-'}</strong>
+                    <span>Experience</span><strong>{form.years_experience || '-'}</strong>
+                    <span>Country</span><strong>{form.country || '-'}</strong>
                   </div>
                 </div>
 

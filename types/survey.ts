@@ -1,5 +1,5 @@
 // ============================================================
-// SURVEY TYPES — Ascentor
+// SURVEY TYPES - Ascentor
 // ============================================================
 
 export type QuestionType = 'radio' | 'checkbox' | 'scale' | 'textarea' | 'text';
