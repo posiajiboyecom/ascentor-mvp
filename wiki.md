@@ -596,6 +596,38 @@ Running record of significant engineering work, newest first. The system documen
 [README.md](README.md); released changes are in [CHANGELOG.md](CHANGELOG.md). This section records the
 reasoning, discoveries and decisions behind them.
 
+### 2026-10-05 (later): schema baseline and the RLS audit
+
+Method: `scripts/export-schema.ts` reads the live catalogs (read-only SELECTs through the existing `scripts/db.ts`
+connection) and writes `database/migrations/00000000_baseline.sql`: 87 tables, 1008 columns, 280 constraints, 209
+indexes, 38 functions, 38 triggers (including the two on `auth.users` that sync profile email), 367 policies. No data
+is read. It is idempotent, so it is also safe on the existing project.
+
+What the audit found, by comparing the exported schema with the code:
+
+- **Row Level Security is enabled on every table, but several policies are open to everyone.** Policies named
+  "Service role ..." were created `TO public`. The service role bypasses RLS, so they grant it nothing, but they do
+  grant their action to `anon` and `authenticated`:
+  - `partners`, `partner_members`, `partner_transactions`: `FOR ALL USING (true)`. Anyone holding the anon key can
+    read, change and delete every white-label tenant.
+  - `payments`, `product_purchases`, `usage_tracking`, `session_locations`, `audit_logs`: `INSERT WITH CHECK (true)`
+    (forged payments, purchases, usage and audit entries). `notifications`: any signed-in user may insert for any
+    user. `referrals`: open insert and update. `push_subscriptions`, `push_events`: `FOR ALL (true)`.
+  - `platform_settings` and `community_categories`: a policy called "admin write" is `FOR ALL (true) TO authenticated`,
+    so any signed-in member can change platform settings such as checkout and stream switches.
+  - Intentional public-submission forms (contact, newsletter, waitlist, applications, event and survey
+    registration) were reviewed and left alone.
+  `20261005_lock_down_open_policies.sql` drops these and adds the narrowest replacements the app needs (own-row
+  inserts for usage, audit, notifications; participant-only referrals). It is **not applied automatically**; it is
+  written for review and idempotent. Plaintext partner Paystack keys: the legacy `paystack_secret_key` column exists
+  and is empty for the one partner on file.
+- **Schema drift between code and database**, fixed in `20261005_member_features.sql`: the live `expert_sessions`
+  lacked `expert_avatar`, `meeting_url`, `max_attendees`, `current_attendees`, `dimension` and `is_free`, which both
+  admin session forms write, so saving a session failed; `partners.paystack_secret_key_enc` (read by partner
+  payment verification) did not exist. The member Sessions page now also maps the older column names so it works
+  before and after the migration.
+- **Reproducibility**: a new project can now be built from the repository (`database/README.md`).
+
 ### 2026-10-05: validation, copy rules, launch switch, contract fixes
 
 Branch `feat/platform-v1` (not for production).

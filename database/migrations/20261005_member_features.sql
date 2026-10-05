@@ -6,6 +6,8 @@
 --   * user_goals.milestone_N_completed   - dashboard goal card + progress
 --   * unique targets for the app's upserts (ON CONFLICT clauses)
 --   * lookup indexes for the dashboard and community unread counts
+--   * expert_sessions / partners columns the application reads and writes but the live
+--     database was missing (found by comparing code against the exported schema)
 -- ============================================================================
 
 DO $m$
@@ -45,6 +47,23 @@ BEGIN
   IF to_regclass('public.expert_sessions') IS NOT NULL THEN
     CREATE INDEX IF NOT EXISTS expert_sessions_status_scheduled_idx
       ON public.expert_sessions (status, scheduled_at);
+  END IF;
+
+  -- The admin session forms and the member Sessions page use these columns; the live table
+  -- only had the older max_participants / zoom_link / join_url set, so saving a session failed.
+  IF to_regclass('public.expert_sessions') IS NOT NULL THEN
+    ALTER TABLE public.expert_sessions
+      ADD COLUMN IF NOT EXISTS expert_avatar     text,
+      ADD COLUMN IF NOT EXISTS meeting_url       text,
+      ADD COLUMN IF NOT EXISTS max_attendees     integer,
+      ADD COLUMN IF NOT EXISTS current_attendees integer NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS dimension         text,
+      ADD COLUMN IF NOT EXISTS is_free           boolean NOT NULL DEFAULT false;
+  END IF;
+
+  -- Partner payment verification reads the encrypted per-partner Paystack key from this column.
+  IF to_regclass('public.partners') IS NOT NULL THEN
+    ALTER TABLE public.partners ADD COLUMN IF NOT EXISTS paystack_secret_key_enc text;
   END IF;
 
   -- Referral codes must be unique so onboarding collisions fail loudly

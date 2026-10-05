@@ -464,15 +464,18 @@ never stored separately; edits go through server actions that re-check the sessi
 | `scripts/check-api-contracts.ts` | Proves client payloads match strict schemas |
 | `scripts/generate-api-docs.ts` | Generates `docs/api-contracts.md` |
 | `scripts/auth-tests/` | Unit and black-box HTTP tests for the auth system |
+| `scripts/export-schema.ts` | Exports the live schema (read-only catalog queries) into the baseline migration |
+| `scripts/db.ts` | Ad-hoc read-only SQL against the database |
 | `scripts/audit-rls.sql` | Read-only report of tables without Row Level Security |
 | `scripts/seed-*.ts`, `scripts/db.ts` | Seeding and database helpers |
 
 ## 7. Data model
 
-Schema source of truth is the Supabase project. `database/migrations/` holds the migrations that exist in the
-repository; the core member tables predate them and are created in Supabase directly (see section 15).
-`database/database.ts` holds TypeScript types; where it disagrees with the live schema, the live schema wins
-(`expert_sessions` uses `status` and `scheduled_at`).
+Schema source of truth is the Supabase project, reproduced in the repository by
+`database/migrations/00000000_baseline.sql` (87 tables, 38 functions, 38 triggers, 367 policies), exported from
+the live database by `scripts/export-schema.ts`. [database/README.md](database/README.md) explains how to build a
+new project from it and how to apply later migrations to the existing one. `database/database.ts` holds
+TypeScript types; where it disagrees with the live schema, the live schema wins.
 
 ```mermaid
 erDiagram
@@ -540,7 +543,8 @@ contract is generated into [docs/api-contracts.md](docs/api-contracts.md).
 | One-time code reset with hashed codes and attempt locking, sessions revoked on reset | `app/api/auth/*-password` |
 | Impossible-travel sign-in check (server-side, fails open) | `lib/auth/login-security.ts` |
 | Optional TOTP second factor for staff (`ADMIN_MFA_REQUIRED=true`) | `app/admin-login`, `lib/auth/admin-mfa.ts` |
-| Row Level Security, admin and own-row policies | `database/migrations/` |
+| Row Level Security on all 87 tables, admin and own-row policies | `database/migrations/00000000_baseline.sql` |
+| Closing over-permissive policies (see wiki Engineering Log, 2026-10-05) | `20261005_lock_down_open_policies.sql` (review and apply) |
 | Self-service profile updates cannot change role, plan or subscription fields | DB trigger `check_profile_role_permissions` |
 | Webhook HMAC verification and idempotent settlement | `lib/paymentSettlement.ts` |
 | Secrets only on the server; service-role client is `server-only` | `lib/supabase/admin.ts` |
@@ -660,8 +664,8 @@ known gaps.
 
 | Gap | Impact | Next step |
 |-----|--------|-----------|
-| Core member tables are not created by repository migrations | A fresh Supabase project cannot be bootstrapped from the repo | Export the live schema into a baseline migration |
-| RLS is not defined in the repo for `community_messages` and `community_channels` | Protection relies on app routes | Enable RLS with a like-reaction RPC (see `20261004_member_data_rls.sql` notes) |
+| **Over-permissive RLS policies exist in production** (partners, payments, notifications, platform settings and others accept writes from the public anon key) | Data exposure and forgery | Review and apply `20261005_lock_down_open_policies.sql`, then run its verification query |
+| Storage buckets, auth settings and edge functions are not in the baseline | A new project needs them configured by hand | Document or script them |
 | Authenticated end-to-end tests do not exist | Regressions in signed-in flows are caught manually | Add a seeded test project and Playwright journeys |
 | GET query parameters are validated on a few routes only | Lower risk, bodies are strict | Extend `parseQuery` to remaining list endpoints |
 | Reminder cron is not scheduled | Commitment and session reminders only run when called | Schedule `/api/cron/reminders` (Hobby plan allows two cron jobs) |

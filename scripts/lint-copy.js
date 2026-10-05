@@ -56,6 +56,8 @@ ROOTS.forEach((r) => walk(r, files));
 for (const file of files) {
   const rel = file.split(path.sep).join('/');
   if (rel === 'scripts/lint-copy.js') continue;
+  // Generated snapshot of the live schema: column defaults there are data, not authored copy.
+  if (rel === 'database/migrations/00000000_baseline.sql') continue;
   let text = fs.readFileSync(file, 'utf8');
   text.split('\n').forEach((line, i) => {
     for (const ch of line.match(PICT) || []) {

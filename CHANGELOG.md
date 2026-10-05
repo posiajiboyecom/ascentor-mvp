@@ -21,6 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.env.example`, `scripts/lint-copy.js`, `scripts/audit-rls.sql`, auth unit and HTTP test suites.
 - Documentation: system architecture, component, use case and deployment diagrams, module and concern tables.
 
+### Security (platform-v1, requires action)
+- Audit of the live database found over-permissive Row Level Security policies that let the public anon key
+  read or write partner tenants, payments, notifications, platform settings and more. The fix is
+  `database/migrations/20261005_lock_down_open_policies.sql` (review, then apply). Details in the wiki
+  Engineering Log, 2026-10-05.
+
+### Added (schema)
+- `database/migrations/00000000_baseline.sql` (full schema snapshot), `scripts/export-schema.ts`,
+  `database/README.md`.
+
 ### Changed (platform-v1)
 - Light theme across the member app, community and coach; the navigation sidebar stays dark.
 - Community reactions are icons (like, love, fire, support, cheer, insight); the emoji picker was removed.
@@ -30,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All em dashes and emoji removed from source and documentation.
 
 ### Fixed (platform-v1)
+- Admin could not save an expert session (columns missing in the live table); the member Sessions page tolerates
+  both column shapes. Partner payment verification referenced a missing `paystack_secret_key_enc` column.
 - Open redirect in `/auth/callback` (`next=@host`).
 - Dashboard never showed an upcoming session: the code used non-existent `is_published` and `session_date`
   columns; the live table uses `status` and `scheduled_at`.

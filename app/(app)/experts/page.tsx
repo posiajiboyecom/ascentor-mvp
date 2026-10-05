@@ -22,6 +22,22 @@ import { ExpertsClient } from './ExpertsClient';
 
 export const dynamic = 'force-dynamic';
 
+// The table has existed in two shapes (see database/migrations/20261005_member_features.sql).
+// Older rows only carry category / join_url / zoom_link / max_participants / expert_photo_url;
+// this maps either shape onto the one the client renders, so the page works before and after
+// the migration is applied.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normaliseSession(row: any) {
+  return {
+    ...row,
+    expert_avatar: row.expert_avatar ?? row.expert_photo_url ?? null,
+    dimension: row.dimension ?? row.category ?? null,
+    meeting_url: row.meeting_url ?? row.join_url ?? row.zoom_link ?? null,
+    max_attendees: row.max_attendees ?? row.max_participants ?? null,
+    current_attendees: row.current_attendees ?? null,
+  };
+}
+
 export default async function ExpertsPage() {
   const supabase = await createClient();
   const {
@@ -55,7 +71,7 @@ export default async function ExpertsPage() {
 
   return (
     <ExpertsClient
-      sessions={sessionsRes.data ?? []}
+      sessions={(sessionsRes.data ?? []).map(normaliseSession)}
       registeredIds={regsRes.data?.map((r) => r.session_id) ?? []}
       userPlan={effectivePlan(profileRes.data)}
       userId={user.id}

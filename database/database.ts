@@ -200,6 +200,7 @@ export interface ExpertSession {
   expert_name:       string;
   expert_bio:        string | null;
   expert_avatar:     string | null;
+  /** Older rows: expert_photo_url, category, join_url / zoom_link, max_participants (see experts/page.tsx). */
   status:            'scheduled' | 'live' | 'completed' | 'cancelled';
   scheduled_at:      string;
   duration_minutes:  number;
