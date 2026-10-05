@@ -19,7 +19,7 @@ Run each file in the Supabase SQL editor, `psql`, or `npx tsx scripts/apply-migr
 ## Applying to the EXISTING project
 
 Do not run the baseline there (it is a snapshot of it). Run, in order, the dated files you have not applied:
-`20261004_auth_hardening.sql`, `20261005_member_features.sql`, then `20261005_lock_down_open_policies.sql` (already applied to production on 2026-10-05; it removes policies that exposed data to the public anon key).
+`20261004_auth_hardening.sql` (rate-limit table), then `20261005_member_features.sql` (applied 2026-10-05), then `20261005_lock_down_open_policies.sql` (already applied to production on 2026-10-05; it removes policies that exposed data to the public anon key).
 
 ## Regenerating the baseline
 

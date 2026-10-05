@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All em dashes and emoji removed from source and documentation.
 
 ### Fixed (platform-v1)
-- Admin could not save an expert session (columns missing in the live table); the member Sessions page tolerates
+- Admin could not save an expert session (columns missing in the live table; migration applied to production 2026-10-05); the member Sessions page tolerates
   both column shapes. Partner payment verification referenced a missing `paystack_secret_key_enc` column.
 - Open redirect in `/auth/callback` (`next=@host`).
 - Dashboard never showed an upcoming session: the code used non-existent `is_published` and `session_date`

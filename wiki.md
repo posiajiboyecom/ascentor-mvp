@@ -625,7 +625,7 @@ What the audit found, by comparing the exported schema with the code:
 - **Schema drift between code and database**, fixed in `20261005_member_features.sql`: the live `expert_sessions`
   lacked `expert_avatar`, `meeting_url`, `max_attendees`, `current_attendees`, `dimension` and `is_free`, which both
   admin session forms write, so saving a session failed; `partners.paystack_secret_key_enc` (read by partner
-  payment verification) did not exist. The member Sessions page now also maps the older column names so it works
+  payment verification) did not exist. **Applied to production on 2026-10-05** (no duplicate rows blocked the new unique indexes). The member Sessions page now also maps the older column names so it works
   before and after the migration.
 - **Reproducibility**: a new project can now be built from the repository (`database/README.md`).
 

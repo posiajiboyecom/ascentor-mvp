@@ -374,7 +374,13 @@ CREATE TABLE IF NOT EXISTS public."expert_sessions" (
   "created_by" uuid,
   "updated_at" timestamp with time zone DEFAULT now(),
   "partner_id" uuid,
-  "plan_tier" text DEFAULT 'free'::text NOT NULL
+  "plan_tier" text DEFAULT 'free'::text NOT NULL,
+  "expert_avatar" text,
+  "meeting_url" text,
+  "max_attendees" integer,
+  "current_attendees" integer DEFAULT 0 NOT NULL,
+  "dimension" text,
+  "is_free" boolean DEFAULT false NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS public."guardsmann_applications" (
@@ -729,7 +735,8 @@ CREATE TABLE IF NOT EXISTS public."partners" (
   "paystack_public_key" text,
   "plan_tier" text,
   "active_member_count" integer DEFAULT 0 NOT NULL,
-  "ai_config" jsonb DEFAULT '{}'::jsonb
+  "ai_config" jsonb DEFAULT '{}'::jsonb,
+  "paystack_secret_key_enc" text
 );
 
 CREATE TABLE IF NOT EXISTS public."password_reset_otps" (
@@ -1576,6 +1583,12 @@ ALTER TABLE public."expert_sessions" ADD COLUMN IF NOT EXISTS "created_by" uuid;
 ALTER TABLE public."expert_sessions" ADD COLUMN IF NOT EXISTS "updated_at" timestamp with time zone DEFAULT now();
 ALTER TABLE public."expert_sessions" ADD COLUMN IF NOT EXISTS "partner_id" uuid;
 ALTER TABLE public."expert_sessions" ADD COLUMN IF NOT EXISTS "plan_tier" text DEFAULT 'free'::text;
+ALTER TABLE public."expert_sessions" ADD COLUMN IF NOT EXISTS "expert_avatar" text;
+ALTER TABLE public."expert_sessions" ADD COLUMN IF NOT EXISTS "meeting_url" text;
+ALTER TABLE public."expert_sessions" ADD COLUMN IF NOT EXISTS "max_attendees" integer;
+ALTER TABLE public."expert_sessions" ADD COLUMN IF NOT EXISTS "current_attendees" integer DEFAULT 0;
+ALTER TABLE public."expert_sessions" ADD COLUMN IF NOT EXISTS "dimension" text;
+ALTER TABLE public."expert_sessions" ADD COLUMN IF NOT EXISTS "is_free" boolean DEFAULT false;
 ALTER TABLE public."guardsmann_applications" ADD COLUMN IF NOT EXISTS "id" uuid DEFAULT gen_random_uuid();
 ALTER TABLE public."guardsmann_applications" ADD COLUMN IF NOT EXISTS "company" text;
 ALTER TABLE public."guardsmann_applications" ADD COLUMN IF NOT EXISTS "title" text;
@@ -1856,6 +1869,7 @@ ALTER TABLE public."partners" ADD COLUMN IF NOT EXISTS "paystack_public_key" tex
 ALTER TABLE public."partners" ADD COLUMN IF NOT EXISTS "plan_tier" text;
 ALTER TABLE public."partners" ADD COLUMN IF NOT EXISTS "active_member_count" integer DEFAULT 0;
 ALTER TABLE public."partners" ADD COLUMN IF NOT EXISTS "ai_config" jsonb DEFAULT '{}'::jsonb;
+ALTER TABLE public."partners" ADD COLUMN IF NOT EXISTS "paystack_secret_key_enc" text;
 ALTER TABLE public."password_reset_otps" ADD COLUMN IF NOT EXISTS "id" uuid DEFAULT gen_random_uuid();
 ALTER TABLE public."password_reset_otps" ADD COLUMN IF NOT EXISTS "email" text;
 ALTER TABLE public."password_reset_otps" ADD COLUMN IF NOT EXISTS "otp_code" text;
@@ -2642,6 +2656,7 @@ CREATE INDEX IF NOT EXISTS er_event_idx ON public.event_registrations USING btre
 CREATE INDEX IF NOT EXISTS er_status_idx ON public.event_registrations USING btree (status);
 CREATE INDEX IF NOT EXISTS expert_sessions_partner_idx ON public.expert_sessions USING btree (partner_id) WHERE (partner_id IS NOT NULL);
 CREATE INDEX IF NOT EXISTS expert_sessions_scheduled_idx ON public.expert_sessions USING btree (scheduled_at);
+CREATE INDEX IF NOT EXISTS expert_sessions_status_scheduled_idx ON public.expert_sessions USING btree (status, scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON public.audit_logs USING btree (action);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON public.audit_logs USING btree (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON public.audit_logs USING btree (entity_type, entity_id);
@@ -2816,16 +2831,22 @@ CREATE INDEX IF NOT EXISTS social_queue_scheduled_idx ON public.social_queue USI
 CREATE INDEX IF NOT EXISTS social_queue_status_idx ON public.social_queue USING btree (status);
 CREATE INDEX IF NOT EXISTS soundtracks_mood_active_idx ON public.soundtracks USING btree (mood, active);
 CREATE INDEX IF NOT EXISTS subscriptions_lemon_id_idx ON public.subscriptions USING btree (lemon_subscription_id) WHERE (lemon_subscription_id IS NOT NULL);
+CREATE INDEX IF NOT EXISTS user_commitments_user_created_idx ON public.user_commitments USING btree (user_id, created_at);
+CREATE INDEX IF NOT EXISTS user_goals_user_created_idx ON public.user_goals USING btree (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS video_jobs_client_req_idx ON public.video_jobs USING btree (client_request_id, created_by, created_at DESC);
 CREATE INDEX IF NOT EXISTS video_jobs_created_at_idx ON public.video_jobs USING btree (created_at DESC);
 CREATE INDEX IF NOT EXISTS video_jobs_created_by_idx ON public.video_jobs USING btree (created_by, created_at DESC);
 CREATE INDEX IF NOT EXISTS video_jobs_deleted_at_idx ON public.video_jobs USING btree (deleted_at) WHERE (deleted_at IS NULL);
 CREATE INDEX IF NOT EXISTS video_jobs_status_idx ON public.video_jobs USING btree (status);
 CREATE INDEX IF NOT EXISTS video_jobs_used_preset_idx ON public.video_jobs USING btree (used_preset, created_at DESC) WHERE (used_preset = true);
+CREATE UNIQUE INDEX IF NOT EXISTS channel_read_positions_user_channel_uniq ON public.channel_read_positions USING btree (user_id, channel_slug);
 CREATE UNIQUE INDEX IF NOT EXISTS community_messages_one_checkin_per_channel_week ON public.community_messages USING btree (user_id, channel, checkin_week) WHERE is_checkin;
 CREATE UNIQUE INDEX IF NOT EXISTS event_regs_one_per_email ON public.event_registrations USING btree (event_id, lower(email));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_blog_posts_slug ON public.blog_posts USING btree (slug);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_newsletter_email ON public.newsletter_subscribers USING btree (email);
+CREATE UNIQUE INDEX IF NOT EXISTS profiles_referral_code_uniq ON public.profiles USING btree (referral_code) WHERE (referral_code IS NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS push_subscriptions_endpoint_uniq ON public.push_subscriptions USING btree (endpoint);
+CREATE UNIQUE INDEX IF NOT EXISTS session_registrations_session_user_uniq ON public.session_registrations USING btree (session_id, user_id);
 
 -- ==========================================================================
 -- Functions
