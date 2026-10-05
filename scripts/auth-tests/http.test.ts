@@ -9,8 +9,9 @@ import assert from 'node:assert/strict';
 const BASE = process.env.BASE_URL ?? 'http://localhost:3111';
 const RUN = Date.now().toString(36);
 // Each test uses its own fake client IP so rate-limit tests cannot bleed into others.
-let ipCounter = 10;
-const nextIp = () => `203.0.113.${(ipCounter++ % 250) + 1}`;
+let ipCounter = Math.floor(Math.random() * 200);
+const IP_BLOCK = 1 + Math.floor(Math.random() * 250);
+const nextIp = () => `198.51.${IP_BLOCK}.${(ipCounter++ % 250) + 1}`;
 
 async function post(path: string, body: unknown, ip = nextIp()) {
   const res = await fetch(BASE + path, {
@@ -24,11 +25,17 @@ async function post(path: string, body: unknown, ip = nextIp()) {
 }
 const get = (path: string) => fetch(BASE + path, { redirect: 'manual' });
 
-test('prod gate is intact: /login and /signup redirect home with the gate flag', async () => {
+const OPEN = process.env.NEXT_PUBLIC_PLATFORM_OPEN === 'true';
+
+test(OPEN ? 'open mode: /login and /signup render' : 'closed mode: /login and /signup redirect home with the gate flag', async () => {
   for (const p of ['/login', '/signup']) {
     const r = await get(p);
-    assert.equal(r.status, 307, p);
-    assert.match(r.headers.get('location') ?? '', /\/\?gate=1$/, p);
+    if (OPEN) {
+      assert.equal(r.status, 200, p);
+    } else {
+      assert.equal(r.status, 307, p);
+      assert.match(r.headers.get('location') ?? '', /\/\?gate=1$/, p);
+    }
   }
 });
 
@@ -130,4 +137,23 @@ test('push: server-to-server routes answer 403 (secret check), not the proxy 401
 test('cron/reminders refuses without the bearer secret', async () => {
   const r = await get('/api/cron/reminders');
   assert.ok([401, 500].includes(r.status), `got ${r.status}`);
+});
+
+test('strict validation: unknown fields and bad input are rejected with field-level issues', async () => {
+  const extra = await post('/api/contact', { name: 'A', email: 'a@example.com', subject: 'Hi', message: 'Hello', isAdmin: true });
+  assert.equal(extra.res.status, 400);
+  assert.match(String(extra.json.error), /Unexpected field/i);
+  assert.ok(Array.isArray(extra.json.issues) && extra.json.issues.length > 0);
+
+  const bad = await post('/api/contact', { name: '', email: 'nope', subject: '', message: '' });
+  assert.equal(bad.res.status, 400);
+  assert.ok(bad.json.issues.length >= 3);
+
+  const notJson = await fetch(BASE + '/api/contact', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{oops' });
+  assert.equal(notJson.status, 400);
+
+  for (const p of ['/api/waitlist', '/api/newsletter', '/api/lead-magnet', '/api/partner-enquiry', '/api/events/register', '/api/summit/register', '/api/donate/initiate']) {
+    const r = await post(p, { definitely: 'not valid' });
+    assert.equal(r.res.status, 400, p);
+  }
 });

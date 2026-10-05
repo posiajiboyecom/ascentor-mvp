@@ -65,7 +65,7 @@ export function UpcomingSessionCard({ session }: UpcomingSessionCardProps) {
       </p>
       <p className="mt-2 text-lg font-semibold text-[var(--text)] leading-snug">{session.title}</p>
       <p className="mt-1 text-base text-[var(--text-muted)]">
-        with {session.expert_name} · {formatSessionTime(session.session_date)}
+        with {session.expert_name} · {formatSessionTime(session.scheduled_at)}
       </p>
       <Link
         href={`/experts#${session.id}`}

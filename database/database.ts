@@ -200,15 +200,16 @@ export interface ExpertSession {
   expert_name:       string;
   expert_bio:        string | null;
   expert_avatar:     string | null;
-  session_date:      string;
+  status:            'scheduled' | 'live' | 'completed' | 'cancelled';
+  scheduled_at:      string;
   duration_minutes:  number;
+  dimension:         string | null;
+  plan_tier:         string | null;
   max_attendees:     number | null;
   current_attendees: number;
   meeting_url:       string | null;
   registration_url:  string | null;
-  topic:             string | null;
-  is_published:      boolean;
-  created_at:        string;
+  created_at?:       string;
 }
 
 export interface SessionRegistration {

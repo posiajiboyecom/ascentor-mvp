@@ -34,11 +34,11 @@ function pickAction(d: DashboardData): Action {
 
   const s = d.upcomingSession;
   if (s?.isRegistered) {
-    const hoursAway = (new Date(s.session_date).getTime() - Date.now()) / 3600000;
+    const hoursAway = (new Date(s.scheduled_at).getTime() - Date.now()) / 3600000;
     if (hoursAway > 0 && hoursAway < 48) {
       return {
         headline: `Your session with ${s.expert_name} is coming up.`,
-        sub: formatSessionTime(s.session_date),
+        sub: formatSessionTime(s.scheduled_at),
         cta: 'View session',
         href: `/experts#${s.id}`,
       };

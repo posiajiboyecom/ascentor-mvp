@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { openGateOrSignup } from '@/lib/gate-client';
 
 type PublicFooterProps = {
   hasBlogPosts?: boolean;
@@ -133,7 +134,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                 Community
               </h4>
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                <button className="pf-link" style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, textAlign: 'left' }} onClick={() => window.dispatchEvent(new Event('community-gate'))}>
+                <button className="pf-link" style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, textAlign: 'left' }} onClick={() => openGateOrSignup()}>
                   Join Free
                 </button>
                 <Link href="/community" className="pf-link">

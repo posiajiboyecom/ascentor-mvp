@@ -24,6 +24,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import crypto from 'crypto';
 import { adminMfaRequired, sessionIsAal2 } from '@/lib/auth/admin-mfa';
+import { platformOpen } from '@/lib/launch';
 
 // ── Nonce-based CSP (M-06 fix) ────────────────────────────────────────────────
 // A fresh cryptographic nonce is generated on every request.
@@ -108,6 +109,8 @@ const AUTH_ROUTES = [
 const PUBLIC_API_ROUTES = [
   '/api/waitlist',
   '/api/newsletter',
+  // Free-resource capture on public landing pages (no account exists yet)
+  '/api/lead-magnet',
   '/api/welcome',
   '/api/auth',
   // Paystack webhook - verified internally via HMAC signature
@@ -131,10 +134,13 @@ const PUBLIC_API_ROUTES = [
 // API route prefixes that require authentication.
 // Unauthenticated requests return 401 at the edge, before the route
 // handler runs. Each route still does its own auth check (defence in depth).
+// Matching is boundary-aware ('/api/partner' protects /api/partner and /api/partner/*, but NOT the
+// public /api/partner-enquiry form).
 const PROTECTED_API_PREFIXES = [
   '/api/coach',
   '/api/coaching',
-  '/api/pay',        // was /api/payment - that prefix never matched anything
+  '/api/pay',
+  '/api/payment',    // product purchase verification (matched by prefix before the boundary-aware check)
   '/api/partner',    // 16 routes - all require auth except /webhook (exempted above)
   '/api/community',  // checkin, circle, read, voice-upload
   '/api/referral',
@@ -146,7 +152,6 @@ const PROTECTED_API_PREFIXES = [
   '/api/search',
   '/api/goals',
   '/api/intel-analyse',
-  '/api/lead-magnet',
 ];
 
 // Public routes - no auth needed
@@ -187,7 +192,7 @@ export default async function proxy(request: NextRequest) {
   // Community gate: /login and /signup are not yet open.
   // Redirect back to the referrer page (so the modal appears there), or
   // fall back to the home page if there is no referrer.
-  if (pathname === '/login' || pathname === '/signup') {
+  if (!platformOpen() && (pathname === '/login' || pathname === '/signup')) {
     const referer = request.headers.get('referer');
     let dest: URL;
     try {
@@ -274,7 +279,7 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ── S3: Protect API routes ────────────────────────────────────────
-  if (PROTECTED_API_PREFIXES.some(p => pathname.startsWith(p))) {
+  if (PROTECTED_API_PREFIXES.some(p => pathname === p || pathname.startsWith(p + '/'))) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

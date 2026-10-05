@@ -14,7 +14,11 @@ export default function GateButton({ children, className, style }: GateButtonPro
     <button
       className={className}
       style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, ...style }}
-      onClick={() => window.dispatchEvent(new Event('community-gate'))}
+      onClick={() => {
+        // When the platform is open the CTA is a real sign-up; otherwise it shows the gate modal.
+        if (process.env.NEXT_PUBLIC_PLATFORM_OPEN === 'true') window.location.assign('/signup');
+        else window.dispatchEvent(new Event('community-gate'));
+      }}
     >
       {children}
     </button>

@@ -172,9 +172,9 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     supabase
       .from('expert_sessions')
       .select('*')
-      .eq('is_published', true)
-      .gte('session_date', new Date().toISOString())
-      .order('session_date', { ascending: true })
+      .in('status', ['scheduled', 'live'])
+      .gte('scheduled_at', new Date().toISOString())
+      .order('scheduled_at', { ascending: true })
       .limit(1)
       .maybeSingle(),
 

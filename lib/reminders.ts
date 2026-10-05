@@ -36,7 +36,7 @@ export async function sendCommitmentReminders(): Promise<number> {
 export async function sendSessionReminder(sessionId: string): Promise<number | null> {
   const { data: session } = await service
     .from('expert_sessions')
-    .select('title, expert_name, session_date')
+    .select('title, expert_name, scheduled_at')
     .eq('id', sessionId)
     .single();
   if (!session) return null;
@@ -47,7 +47,7 @@ export async function sendSessionReminder(sessionId: string): Promise<number | n
     .eq('session_id', sessionId);
   if (!registrations?.length) return 0;
 
-  const hoursAway = Math.max(1, Math.round((new Date(session.session_date).getTime() - Date.now()) / 3_600_000));
+  const hoursAway = Math.max(1, Math.round((new Date(session.scheduled_at).getTime() - Date.now()) / 3_600_000));
   const payload = NotifyTemplates.expertSessionReminder(session.title, session.expert_name, '/experts', hoursAway);
   await Promise.allSettled(registrations.map((r) => notify(r.user_id, payload)));
   return registrations.length;
@@ -62,9 +62,9 @@ export async function sendUpcomingSessionReminders(): Promise<{ sessions: number
   const { data: sessions } = await service
     .from('expert_sessions')
     .select('id')
-    .eq('is_published', true)
-    .gte('session_date', now.toISOString())
-    .lt('session_date', new Date(now.getTime() + 24 * 3_600_000).toISOString());
+    .eq('status', 'scheduled')
+    .gte('scheduled_at', now.toISOString())
+    .lt('scheduled_at', new Date(now.getTime() + 24 * 3_600_000).toISOString());
 
   let notified = 0;
   for (const s of sessions ?? []) {

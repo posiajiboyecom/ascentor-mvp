@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import FloatingSocials from '@/components/layout/FloatingSocials';
+import { openGateOrSignup } from '@/lib/gate-client';
 
-const openGate = () => window.dispatchEvent(new Event('community-gate'));
+const openGate = () => openGateOrSignup();
 
 type PublicHeaderProps = {
   hasBlogPosts?: boolean;

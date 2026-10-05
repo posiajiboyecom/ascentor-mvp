@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { openGateOrSignup } from '@/lib/gate-client';
 
 interface DownloadPageProps {
   title: string;
@@ -112,7 +113,7 @@ export default function DownloadPage({
           <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 14, color: '#4A4438', lineHeight: 1.7, marginBottom: 12 }}>
             Open Ascentor and ask Sage: <em style={{ color: '#0C0B08' }}>"I just downloaded {title}. Help me apply it to my specific situation."</em>
           </p>
-          <button onClick={() => window.dispatchEvent(new Event('community-gate'))} style={{
+          <button onClick={() => openGateOrSignup()} style={{
             fontFamily: "'Metropolis', sans-serif", fontSize: 13, fontWeight: 600,
             color: gold, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
           }}>
