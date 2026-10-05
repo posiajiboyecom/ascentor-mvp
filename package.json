@@ -17,6 +17,7 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:sql": "tsx scripts/db.ts",
+    "docs:api": "tsx scripts/generate-api-docs.ts",
     "check:contracts": "tsx scripts/check-api-contracts.ts",
     "lint:copy": "node scripts/lint-copy.js",
     "typecheck": "tsc --noEmit -p .",

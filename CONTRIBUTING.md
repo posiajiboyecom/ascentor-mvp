@@ -37,7 +37,7 @@ By participating in this project, you agree to:
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Ensure tests pass (`npm run test` if available)
+4. Run the quality gates (see README section 12): `npm run typecheck`, `npm run lint:copy`, `npm run check:contracts`, `npm run test:auth:unit`
 5. Ensure linting passes (`npm run lint`)
 6. Commit with a clear message (`git commit -m 'Add amazing feature'`)
 7. Push to your fork (`git push origin feature/amazing-feature`)
@@ -129,3 +129,12 @@ docs(readme): add project architecture section
 
 - Open a [Discussion](https://github.com/ascentor/ascentor-mvp/discussions)
 - Reach out via email: **hello@ascentorbi.com**
+
+## Project conventions
+
+- No em dashes and no emoji in source or documentation. Use commas, colons or hyphens, and lucide icons.
+- Every API route that reads a body uses `parseJson` with a strict schema from `lib/validation/schemas`, registered in
+  `lib/validation/registry.ts`. Run `npm run docs:api` after changing a schema.
+- Never redirect to a user-supplied path without `safeNext()`; never take identity from a request body.
+- Light theme only; the navigation sidebar is dark by design. Use `--app-*` tokens, not hard-coded colours.
+- Branch from `feat/platform-v1`. `main` is production and is not merged until the launch decision.

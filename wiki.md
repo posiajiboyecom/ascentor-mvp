@@ -16,6 +16,7 @@
 12. [Deployment Architecture](#deployment-architecture)
 13. [Payments & Checkout](#payments--checkout)
 14. [Dashboard Shell & Search](#dashboard-shell--search)
+15. [Engineering Log](#engineering-log)
 
 ---
 
@@ -586,3 +587,68 @@ to `/coach`. Clicking the orb reopens the panel at any time. Sound can be muted
 interacted, the chime is armed for the first click or key press in the next
 10 seconds instead of failing. It respects `prefers-reduced-motion` and is hidden
 on `/coach`.
+
+---
+
+## Engineering Log
+
+Running record of significant engineering work, newest first. The system documentation is in
+[README.md](README.md); released changes are in [CHANGELOG.md](CHANGELOG.md). This section records the
+reasoning, discoveries and decisions behind them.
+
+### 2026-10-05: validation, copy rules, launch switch, contract fixes
+
+Branch `feat/platform-v1` (not for production).
+
+- **Strict validation everywhere.** Added `lib/validation` (helpers, primitives, six schema modules and a
+  registry). Roughly eighty route bodies now go through `parseJson` with `z.strictObject`. Unknown fields are
+  rejected, bodies over 256 KB are refused, and errors carry a field-level `issues` array.
+- **Contract checker.** `scripts/check-api-contracts.ts` statically compares every client `fetch` body with the
+  schema for the route. On first run it found three real bugs: the newsletter form sent `name` while the
+  server read `firstName` (names were silently dropped); the subscription cancel call sent a `userId` the
+  server ignores; and the white-label coach page still spoke the retired streaming protocol
+  (`userInput`, `sessionType`) so partner coaching could not work. A fourth was found later: the partner
+  members screen sent `member_id` and the action `reactivate`, while the server expects `memberId` and
+  `reinstate`.
+- **Schema drift found.** The live `expert_sessions` table uses `status` and `scheduled_at`; the TypeScript
+  type and the original dashboard query used `is_published` and `session_date`, so the dashboard never showed
+  an upcoming session. The type, dashboard, hero card and reminders now agree with the experts page.
+- **Proxy fixes.** Protected API prefixes matched without a path boundary, so the public
+  `/api/partner-enquiry` form was swallowed by `/api/partner`. `/api/lead-magnet` (public free-download
+  capture) was listed as login-only. Both returned 401 to visitors. Matching is now boundary-aware and
+  `/api/payment` is listed explicitly.
+- **Copy rules.** All em dashes removed from source, comments and documentation; all emoji and decorative glyphs
+  removed. Community reactions became an icon vocabulary (`components/community/reactions.tsx`; stored values
+  are `userId:reactionId`, unknown legacy values display as a like) and the emoji picker was deleted. Course
+  categories and community dimensions use lucide icons. The waitlist selects had raw SVG markup inside label
+  strings (rendered as text); they are plain text now. `scripts/lint-copy.js` enforces the rules.
+- **Dead code removed.** `app/nav`, `nav`, `app/components`, `app/lib`, `app/middleware`, `app/src` and a stale
+  copy of the proxy were unreferenced; `app/nav/*` were still routable legacy dashboards in the old dark theme.
+- **Launch switch.** `NEXT_PUBLIC_PLATFORM_OPEN` opens sign-in and sign-up on a branch; production leaves it
+  unset and keeps the gate. One helper, `openGateOrSignup()`, drives every join call to action.
+- **Migration** `20261005_member_features.sql`: goal milestone columns, upsert targets, lookup indexes, unique
+  referral codes.
+- **Documentation.** README rewritten as system documentation with architecture, component, use case and
+  deployment diagrams and a module and concern table; `docs/api-contracts.md` is generated from the schemas.
+
+### 2026-10-04: authentication hardening
+
+Branch `feat/auth-hardening`, merged to `main` with the public gate unchanged.
+
+- Server-side `/api/auth/login` and `/api/auth/signup`; shared Postgres-backed rate limits with a memory
+  fallback; optional Turnstile CAPTCHA; password policy with a breached-password check; location-risk check moved
+  server-side and extended to OAuth; staff TOTP flow enforceable with `ADMIN_MFA_REQUIRED`; `/api/welcome`
+  bound to the session; push routes made reachable by server callers; reminders cron route added.
+- Single post-login router (`lib/auth/post-login.ts`), `/auth/continue`, check-your-inbox screen with resend,
+  `safeNext()` open-redirect guard, idempotent onboarding, password reset revokes sessions and notifies.
+- Decision: the admin session-revocation call takes an access token, not a user id, so reset signs in with the
+  new password briefly and revokes that session globally.
+- Decision: a blocked location check ends only the current session; the old code attempted a global sign-out
+  with an argument the API does not accept, so it never worked.
+
+### 2026-10-02 to 2026-10-03: member dashboard redesign
+
+- Light theme with the dark sidebar retained. New Today hero, editable 90-day goal (progress derived from
+  milestones), commitments with add and remove, six-week consistency strip, summit card, upcoming session and a
+  Suspense-streamed Continue rail. Unread Circle counts moved from one query per channel to a single query.
+- Broken links to a non-existent `/sessions` route repointed to `/experts`; the dead notification bell removed.

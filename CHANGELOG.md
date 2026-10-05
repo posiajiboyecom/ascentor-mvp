@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (platform-v1, not released to production)
+- Strict Zod validation on every API body (`lib/validation`), a route to schema registry, a client payload
+  contract checker and generated request-contract documentation (`docs/api-contracts.md`).
+- Server-side `/api/auth/login` and `/api/auth/signup` with three-layer rate limiting, optional Cloudflare
+  Turnstile, password policy and breached-password check, and server-side location-risk assessment.
+- Optional staff TOTP second factor (`ADMIN_MFA_REQUIRED`) enforced on admin pages and `/api/admin`.
+- Single post-login router, `/auth/continue`, check-your-inbox screen with resend, same-site redirect guard.
+- Member dashboard: Today hero, editable 90-day goal and commitments, consistency strip, Continue rail.
+- `NEXT_PUBLIC_PLATFORM_OPEN` launch switch (closed by default).
+- `/api/cron/reminders` (commitments due and sessions starting within 24 hours).
+- Migrations: `20261004_auth_hardening.sql`, `20261004_member_data_rls.sql`, `20261005_member_features.sql`.
+- `.env.example`, `scripts/lint-copy.js`, `scripts/audit-rls.sql`, auth unit and HTTP test suites.
+- Documentation: system architecture, component, use case and deployment diagrams, module and concern tables.
+
+### Changed (platform-v1)
+- Light theme across the member app, community and coach; the navigation sidebar stays dark.
+- Community reactions are icons (like, love, fire, support, cheer, insight); the emoji picker was removed.
+- Password policy raised to 10 or more characters with a breached-password check, enforced server-side.
+- Password reset signs the account out of every device and emails a change notice.
+- Onboarding checks write errors, is idempotent and sends the welcome email once.
+- All em dashes and emoji removed from source and documentation.
+
+### Fixed (platform-v1)
+- Open redirect in `/auth/callback` (`next=@host`).
+- Dashboard never showed an upcoming session: the code used non-existent `is_published` and `session_date`
+  columns; the live table uses `status` and `scheduled_at`.
+- Public `/api/partner-enquiry` and `/api/lead-magnet` returned 401 to visitors (prefix matching in the proxy).
+- Push reminder routes were unreachable by server callers; session reminders read the wrong column.
+- Partner coach page used a retired streaming protocol; partner member actions sent the wrong field names.
+- Newsletter form dropped the subscriber's name; subscription cancel sent an ignored `userId`.
+- `/api/welcome` could be used to email or subscribe arbitrary addresses.
+- Dead notification bell, broken `/sessions` links, raw SVG markup shown as text in the waitlist selects.
+
+### Removed (platform-v1)
+- Unreferenced legacy trees: `app/nav`, `nav`, `app/components`, `app/lib`, `app/middleware`, `app/src`.
+- Unauthenticated email-enumeration endpoints `/api/auth/check-email` and `/api/check-email`.
+- Client-called `/api/auth/security-check`.
+
+### Summit (previous unreleased work)
+
 ### Changed (Summit livestream, hardening)
 - The watch page no longer reveals the video/channel id (or even whether the
   stream is switched on) until the exact confirmed start instant
