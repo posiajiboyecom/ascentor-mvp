@@ -21,8 +21,20 @@ function walk(dir: string, out: string[]) {
 }
 
 function schemaKeys(schema: z.ZodType): Set<string> | null {
-  const s = schema as unknown as { def?: { type?: string; shape?: Record<string, unknown> }; shape?: Record<string, unknown> };
-  const shape = s.shape ?? s.def?.shape;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = schema as any;
+  const def = s.def ?? s._def;
+  if (def?.type === "union") {
+    const all = new Set<string>();
+    for (const o of def.options as z.ZodType[]) {
+      const k = schemaKeys(o);
+      if (!k) return null;
+      k.forEach((x) => all.add(x));
+    }
+    return all;
+  }
+  if (def?.type === "pipe") return schemaKeys(def.in);
+  const shape = s.shape ?? def?.shape;
   return shape ? new Set(Object.keys(shape)) : null;
 }
 
@@ -56,8 +68,8 @@ for (const file of files) {
   let m: RegExpExecArray | null;
   while ((m = re.exec(src))) {
     const route = m[2];
-    const schema = BODY_SCHEMAS[route];
-    if (!schema) continue;
+    const schemas = Object.entries(BODY_SCHEMAS).filter(([k]) => k === route || k.startsWith(route + '#')).map(([, v]) => v);
+    if (!schemas.length) continue;
     // the options object ends at the matching brace; find JSON.stringify( inside it
     const optStart = m.index + m[0].length - 1;
     let depth = 0, end = optStart;
@@ -68,9 +80,11 @@ for (const file of files) {
     const brace = opts.indexOf('{', js);
     if (brace < 0 || opts.slice(js + 15, brace).trim() !== '') continue; // stringify(variable): skip
     const sent = literalKeys(opts, brace);
-    const allowed = schemaKeys(schema);
+    const keySets = schemas.map(schemaKeys);
     calls++;
-    if (!allowed) continue;
+    if (keySets.some((k) => k === null)) continue;
+    const allowed = new Set<string>();
+    keySets.forEach((k) => k!.forEach((x) => allowed.add(x)));
     const extra = sent.filter((k) => !allowed.has(k));
     if (extra.length) problems.push(`${path.relative(ROOT, file)}  ${route}  sends unknown: ${extra.join(', ')}`);
   }

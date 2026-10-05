@@ -75,11 +75,11 @@ export default function MembersAdminPage() {
     setInviting(false);
   }
 
-  async function handleAction(memberId: string, action: 'suspend' | 'reactivate' | 'remove') {
+  async function handleAction(memberId: string, action: 'suspend' | 'reinstate' | 'remove') {
     setActionId(memberId);
     await fetch('/api/partner/members', {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ member_id: memberId, action }),
+      body: JSON.stringify({ memberId, action }),
     });
     setActionId(null);
     fetchMembers(page);
@@ -146,7 +146,7 @@ export default function MembersAdminPage() {
             </span>
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
               {m.status === 'active'    && <button style={btn()} onClick={() => handleAction(m.id, 'suspend')}    disabled={actionId === m.id}>Suspend</button>}
-              {m.status === 'suspended' && <button style={btn()} onClick={() => handleAction(m.id, 'reactivate')} disabled={actionId === m.id}>Reactivate</button>}
+              {m.status === 'suspended' && <button style={btn()} onClick={() => handleAction(m.id, 'reinstate')} disabled={actionId === m.id}>Reactivate</button>}
               {m.status !== 'removed'   && <button style={{ ...btn(), color: 'var(--error)' }} onClick={() => handleAction(m.id, 'remove')} disabled={actionId === m.id}>Remove</button>}
             </div>
           </div>

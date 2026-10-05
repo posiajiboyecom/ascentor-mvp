@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { tasks } from "@trigger.dev/sdk/v3";
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 // ── Agent registry - maps UI agent IDs to Trigger.dev task IDs ──
 const AGENT_REGISTRY = [
@@ -268,7 +270,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden, admin only" }, { status: 403 });
   }
 
-  const { agentId, payload = {} } = await req.json();
+  const parsed = await parseJson(req, adminSchemas.agentTrigger);
+  if (!parsed.ok) return parsed.response;
+  const { agentId, payload } = parsed.data;
 
   const agent = AGENT_REGISTRY.find(a => a.id === agentId);
   if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });

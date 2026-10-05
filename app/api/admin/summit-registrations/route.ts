@@ -19,6 +19,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { deliverPaidEmails, deliverCompTicket, sendPaymentReminderEmail } from '@/lib/summitEmails';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -99,15 +101,12 @@ export async function POST(req: NextRequest) {
   try {
     if (!(await requireAdmin(req))) return forbidden();
 
-    const body = await req.json().catch(() => null);
-    const id: unknown = body?.id;
-    const action: unknown = body?.action;
+    const parsedAction = await parseJson(req, adminSchemas.summitRegistrationAction);
+    if (!parsedAction.ok) return parsedAction.response;
 
-    if (action === 'remind_all') return await remindAll();
-
-    if (typeof id !== 'string' || (action !== 'resend' && action !== 'remind' && action !== 'comp')) {
-      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
-    }
+    if (parsedAction.data.action === 'remind_all') return await remindAll();
+    const id = parsedAction.data.id;
+    const action = parsedAction.data.action;
 
     const { data: reg } = await supabaseAdmin.from('summit_registrations').select('*').eq('id', id).maybeSingle();
     if (!reg) return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
@@ -184,8 +183,9 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     if (!(await requireAdmin(req))) return forbidden();
-    const body = await req.json().catch(() => null);
-    if (typeof body?.id !== 'string') return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    const parsedPatch = await parseJson(req, adminSchemas.summitRegistrationPatch);
+    if (!parsedPatch.ok) return parsedPatch.response;
+    const body = parsedPatch.data;
 
     // Deliberately no status / payment fields: those are set only by verified payments.
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };

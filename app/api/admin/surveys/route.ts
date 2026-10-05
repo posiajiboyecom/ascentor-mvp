@@ -1,6 +1,8 @@
 // app/api/admin/surveys/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -36,12 +38,9 @@ export async function POST(req: NextRequest) {
   const user = await requireAdmin(supabase);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await req.json();
-  const { title, description, slug, questions } = body;
-
-  if (!title || !slug || !Array.isArray(questions)) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-  }
+  const parsed = await parseJson(req, adminSchemas.surveyCreate);
+  if (!parsed.ok) return parsed.response;
+  const { title, description, slug, questions } = parsed.data;
 
   const { data, error } = await supabase
     .from('surveys')

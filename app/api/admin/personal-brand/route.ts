@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
@@ -107,7 +109,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { pillar = 'authority', platform = 'both', topic = '', intent = 'authority' } = await req.json();
+  const parsed = await parseJson(req, adminSchemas.personalBrandGenerate);
+  if (!parsed.ok) return parsed.response;
+  const { pillar, platform, topic, intent } = parsed.data;
 
   const posts: any[] = [];
 

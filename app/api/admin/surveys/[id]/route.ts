@@ -1,6 +1,8 @@
 // app/api/admin/surveys/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -22,7 +24,9 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await req.json();
+  const parsed = await parseJson(req, adminSchemas.surveyUpdate);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
   const { error } = await supabase
     .from('surveys')
     .update({ ...body, updated_at: new Date().toISOString() })

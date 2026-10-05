@@ -8,6 +8,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,22 +50,19 @@ export async function POST(req: NextRequest) {
   const adminId = await isAdmin(req);
   if (!adminId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
-  const body = await req.json();
-  const { code, discount, label, applies_to, max_uses, expires_at, bulk_count, bulk_prefix } = body;
+  const parsedCreate = await parseJson(req, adminSchemas.promoCreate);
+  if (!parsedCreate.ok) return parsedCreate.response;
+  const { code, discount, label, applies_to, max_uses, expires_at, bulk_count, bulk_prefix } = parsedCreate.data;
 
-  if (discount === undefined) {
-    return NextResponse.json({ error: 'Discount is required' }, { status: 400 });
-  }
-
-  const discountValue = Math.min(1, Math.max(0, parseFloat(discount)));
+  const discountValue = Math.min(1, Math.max(0, discount));
   const plansArr = applies_to || ['explorer', 'builder', 'climber'];
   const expiryVal = expires_at || null;
-  const maxUsesVal = max_uses ? parseInt(max_uses) : null;
+  const maxUsesVal = typeof max_uses === 'number' ? max_uses : null;
 
   // Bulk generation for events
-  if (bulk_count && parseInt(bulk_count) > 1) {
+  if (typeof bulk_count === 'number' && bulk_count > 1) {
     const prefix = (bulk_prefix || 'EVENT').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const count = Math.min(parseInt(bulk_count), 1000);
+    const count = Math.min(Number(bulk_count), 1000);
     const codes = [];
 
     for (let i = 0; i < count; i++) {
@@ -132,8 +131,9 @@ export async function PATCH(req: NextRequest) {
   const adminId = await isAdmin(req);
   if (!adminId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
-  const { id, active, expires_at, max_uses, label, auto_apply } = await req.json();
-  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+  const parsedUpdate = await parseJson(req, adminSchemas.promoUpdate);
+  if (!parsedUpdate.ok) return parsedUpdate.response;
+  const { id, active, expires_at, max_uses, label, auto_apply } = parsedUpdate.data;
 
   const updates: any = {};
   if (active !== undefined)     updates.active     = active;
@@ -155,8 +155,9 @@ export async function DELETE(req: NextRequest) {
   const adminId = await isAdmin(req);
   if (!adminId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
-  const { id } = await req.json();
-  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+  const parsedDelete = await parseJson(req, adminSchemas.promoDelete);
+  if (!parsedDelete.ok) return parsedDelete.response;
+  const { id } = parsedDelete.data;
 
   const { error } = await supabase.from('promo_codes').delete().eq('id', id);
   if (error) {

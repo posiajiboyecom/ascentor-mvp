@@ -20,6 +20,8 @@ import { userHasPermission, type Permission, type UserRole } from '@/lib/permiss
 import { reconcilePayments } from '@/lib/paymentReconciliation';
 import { getAttemptByReference, settleReference } from '@/lib/paymentSettlement';
 import { deliverPaidEmails } from '@/lib/summitEmails';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -205,12 +207,14 @@ export async function POST(req: NextRequest) {
   const gate = await requirePaymentsAccess();
   if (gate.error) return gate.error;
 
-  const body = await req.json().catch(() => null);
+  const parsed = await parseJson(req, adminSchemas.paymentsPost);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
 
   // Per-attempt actions from the off-canvas
-  if (body?.action === 'verify' || body?.action === 'resend') {
+  if ('action' in body) {
     if (!gate.isAdmin) return adminOnly();
-    const reference = typeof body.reference === 'string' ? body.reference : '';
+    const reference = body.reference;
     try {
       const attempt = await getAttemptByReference(reference);
       if (!attempt) return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
@@ -260,7 +264,9 @@ export async function DELETE(req: NextRequest) {
   if (gate.error) return gate.error;
   if (!gate.isAdmin) return adminOnly();
 
-  const body = await req.json().catch(() => null);
+  const parsedDelete = await parseJson(req, adminSchemas.paymentsDelete);
+  if (!parsedDelete.ok) return parsedDelete.response;
+  const body = parsedDelete.data as Record<string, any>;
   const userId = gate.user!.id;
 
   try {

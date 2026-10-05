@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 // ============================================================
 // API - /api/admin/mailerlite
@@ -133,8 +135,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'MAILERLITE_API_KEY not set in Vercel env vars' }, { status: 500 });
   }
 
-  const body = await req.json().catch(() => ({}));
-  const action = body.action || 'sync';
+  const parsedBody = await parseJson(req, adminSchemas.mailerlite);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.data as { action: string; email?: string; firstName?: string; groups?: string[] };
+  const action = body.action;
 
   // ── Helper: raw ML fetch ────────────────────────────────────
   async function ml(path: string, method = 'GET', payload?: object) {

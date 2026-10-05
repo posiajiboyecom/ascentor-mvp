@@ -8,6 +8,8 @@ import * as auth from './schemas/auth';
 import * as member from './schemas/member';
 import * as pub from './schemas/public';
 import * as commerce from './schemas/commerce';
+import * as partner from './schemas/partner';
+import * as admin from './schemas/admin';
 
 export const BODY_SCHEMAS: Record<string, z.ZodType> = {
   '/api/auth/login': auth.login,
@@ -55,4 +57,51 @@ export const BODY_SCHEMAS: Record<string, z.ZodType> = {
   '/api/donate/initiate': commerce.donateInitiate,
   '/api/donate/verify': commerce.donateVerify,
   '/api/donate/abandon': commerce.donateAbandon,
+  // partner portal
+  '/api/partner/brand': partner.brandSave,
+  '/api/partner/config': partner.configPatch,
+  '/api/partner/settings': partner.settingsPatch,
+  '/api/partner/domain': partner.domainSave,
+  '/api/partner/apply': partner.apply,
+  '/api/partner/courses': partner.courseUpdate,
+  '/api/partner/events': partner.eventUpdate,
+  '/api/partner/members': partner.memberAction,
+  '/api/partner/payment/verify': partner.paymentVerify,
+  '/api/partner/subscription': partner.subscriptionChange,
+
+  // admin
+  '/api/admin/agents': admin.agentTrigger,
+  '/api/admin/buffer-send': admin.bufferSend,
+  '/api/admin/coaching-sessions': admin.coachingSessionsDelete,
+  '/api/admin/community-messages': admin.communityMessagesAction,
+  '/api/admin/intel-analyse': admin.adminIntelAnalyse,
+  '/api/admin/knowledge/ingest-text': admin.ingestText,
+  '/api/admin/knowledge/ingest-url': admin.ingestUrl,
+  '/api/admin/knowledge/ingest-youtube': admin.ingestYoutube,
+  '/api/admin/knowledge/batch-ingest': admin.batchIngest,
+  '/api/admin/mailerlite': admin.mailerlite,
+  '/api/admin/marketing-cms': admin.marketingCms,
+  '/api/admin/partners': admin.partnerAdminAction,
+  '/api/admin/permissions': admin.permissionsAction,
+  '/api/admin/users': admin.userAdminAction,
+  '/api/admin/payments': admin.paymentsPost,
+  '/api/admin/summit-registrations': admin.summitRegistrationAction,
+  '/api/admin/summit-donations': admin.summitDonationAction,
+  '/api/admin/summit-stream': admin.summitStream,
+  '/api/admin/surveys': admin.surveyCreate,
+  '/api/admin/promo-codes': admin.promoCreate,
+  '/api/admin/personal-brand': admin.personalBrandGenerate,
+  '/api/admin/personal-brand/image': admin.personalBrandImage,
+
+  // Secondary handlers on the same path (other HTTP methods / modes): "<path>#<label>"
+  '/api/admin/payments#DELETE': admin.paymentsDelete,
+  '/api/admin/users#FIND': admin.findUser,
+  '/api/admin/promo-codes#PATCH': admin.promoUpdate,
+  '/api/admin/promo-codes#DELETE': admin.promoDelete,
+  '/api/admin/summit-registrations#PATCH': admin.summitRegistrationPatch,
+  '/api/admin/surveys#PATCH': admin.surveyUpdate,
+  '/api/partner/members#POST': partner.membersInvite,
+  '/api/partner/courses#POST': partner.courseCreate,
+  '/api/partner/courses#DELETE': partner.courseDelete,
+  '/api/partner/events#POST': partner.eventCreate,
 };

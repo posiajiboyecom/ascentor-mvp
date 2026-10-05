@@ -11,6 +11,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,15 +41,9 @@ export async function DELETE(req: NextRequest) {
     const user = await getAdminUser(req.headers.get('authorization'));
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json().catch(() => null);
-    const ids: unknown = body?.ids;
-
-    if (!Array.isArray(ids) || ids.length === 0 || !ids.every(id => typeof id === 'string')) {
-      return NextResponse.json({ error: 'ids must be a non-empty array of strings' }, { status: 400 });
-    }
-    if (ids.length > 500) {
-      return NextResponse.json({ error: 'Cannot delete more than 500 sessions in one request' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, adminSchemas.coachingSessionsDelete);
+    if (!parsed.ok) return parsed.response;
+    const { ids } = parsed.data;
 
     const { error, count } = await supabaseAdmin
       .from('coaching_sessions')

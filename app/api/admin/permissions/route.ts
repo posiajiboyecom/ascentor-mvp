@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { ALL_PERMISSIONS, userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 async function getCaller(userId: string): Promise<{ role: UserRole; permissions: Permission[] | null } | null> {
   const { data } = await supabaseAdmin
@@ -45,10 +47,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden: users.edit_role required' }, { status: 403 });
     }
 
-    const { targetUserId, action, value } = await req.json();
-    if (!targetUserId || !action) {
-      return NextResponse.json({ error: 'Missing targetUserId or action' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, adminSchemas.permissionsAction);
+    if (!parsed.ok) return parsed.response;
+    const { targetUserId, action, value } = parsed.data;
 
     const { data: before } = await supabaseAdmin
       .from('profiles')

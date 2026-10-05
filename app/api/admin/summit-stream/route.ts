@@ -18,6 +18,8 @@ import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendStreamAccessEmail } from '@/lib/summitEmails';
 import { sendEventDayEmails } from '@/lib/summitEventDay';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -82,9 +84,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   if (!(await requireAdmin(req))) return forbidden();
 
-  const body = await req.json().catch(() => null);
+  const parsedStream = await parseJson(req, adminSchemas.summitStream);
+  if (!parsedStream.ok) return parsedStream.response;
+  const body = parsedStream.data as Record<string, any>;
 
-  if (body?.action === 'save') {
+  if (body.action === 'save') {
     const enabled = body.enabled === true;
     const rawVideoId = typeof body.videoId === 'string' ? body.videoId : '';
     const videoId = rawVideoId.trim() ? parseYouTubeId(rawVideoId) : '';

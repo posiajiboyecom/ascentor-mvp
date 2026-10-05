@@ -41,6 +41,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -143,9 +145,10 @@ export async function PATCH(req: NextRequest) {
     const user = await getAdminUser(req.headers.get('authorization'));
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json().catch(() => null);
-    const action: string | undefined = body?.action;
-    if (!action) return NextResponse.json({ error: 'action required' }, { status: 400 });
+    const parsed = await parseJson(req, adminSchemas.marketingCms);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data as Record<string, any>;
+    const action: string = parsed.data.action;
 
     switch (action) {
       case 'save_section_draft': {

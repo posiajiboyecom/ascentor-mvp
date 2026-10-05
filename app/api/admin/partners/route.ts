@@ -22,6 +22,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
 import { sendEmail } from '@/lib/nodemailer';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -126,10 +128,9 @@ export async function PATCH(req: NextRequest) {
   const adminId = await isAdmin(req.headers.get('authorization'));
   if (!adminId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
-  const { partnerId, action, revenue_share, plan_tier: requestedTier } = await req.json();
-  if (!partnerId || !action) {
-    return NextResponse.json({ error: 'partnerId and action required' }, { status: 400 });
-  }
+  const parsed = await parseJson(req, adminSchemas.partnerAdminAction);
+  if (!parsed.ok) return parsed.response;
+  const { partnerId, action, revenue_share, plan_tier: requestedTier } = parsed.data;
 
   const { data: partner } = await supabase
     .from('partners')

@@ -17,6 +17,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 export const maxDuration = 90;
 
@@ -183,12 +185,9 @@ export async function POST(req: NextRequest) {
   const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).single();
   if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const {
-    postContent  = '',
-    style        = 'dark_gold',
-    platform     = 'linkedin',
-    customPrompt = '',
-  } = await req.json();
+  const parsed = await parseJson(req, adminSchemas.personalBrandImage);
+  if (!parsed.ok) return parsed.response;
+  const { postContent, style, platform, customPrompt } = parsed.data;
 
   const dims = DIMENSIONS[platform] || DIMENSIONS.linkedin;
 

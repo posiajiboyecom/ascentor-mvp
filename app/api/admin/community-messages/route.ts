@@ -4,6 +4,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,10 +89,11 @@ export async function PATCH(req: NextRequest) {
     const user = await getAdminUser(req.headers.get('authorization'));
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json();
-    const { id, ids, action } = body as { id?: string; ids?: string[]; action?: string };
-
-    if (!action) return NextResponse.json({ error: 'action required' }, { status: 400 });
+    const parsed = await parseJson(req, adminSchemas.communityMessagesAction);
+    if (!parsed.ok) return parsed.response;
+    const { action } = parsed.data;
+    const id = 'id' in parsed.data ? parsed.data.id : undefined;
+    const ids = 'ids' in parsed.data ? parsed.data.ids : undefined;
 
     // Bulk path - only used for delete from the admin UI's multi-select.
     // Flag/unflag stay single-id (no bulk UI need identified for those).

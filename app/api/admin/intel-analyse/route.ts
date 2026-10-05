@@ -27,6 +27,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 const MODEL = 'claude-sonnet-4-6';
@@ -49,15 +51,9 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Parse body ─────────────────────────────────────────────
-    const body = await req.json();
-    const { mode = 'json', system, prompt, max_tokens = 1500 } = body;
-
-    if (!prompt || typeof prompt !== 'string') {
-      return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
-    }
-    if (!['stream', 'json'].includes(mode)) {
-      return NextResponse.json({ error: 'mode must be "stream" or "json"' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, adminSchemas.adminIntelAnalyse);
+    if (!parsed.ok) return parsed.response;
+    const { mode, system, prompt, max_tokens } = parsed.data;
 
     const messages: Anthropic.MessageParam[] = [{ role: 'user', content: prompt }];
 

@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 import {
   getBufferProfiles,
   getProfileIdsForPlatform,
@@ -27,8 +29,9 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { queueId, imageUrl: bodyImageUrl } = await req.json();
-    if (!queueId) return NextResponse.json({ error: 'queueId required' }, { status: 400 });
+    const parsed = await parseJson(req, adminSchemas.bufferSend);
+    if (!parsed.ok) return parsed.response;
+    const { queueId, imageUrl: bodyImageUrl } = parsed.data;
 
     // Fetch the queue row
     const { data: post, error: fetchErr } = await supabase

@@ -24,6 +24,8 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { tasks } from '@trigger.dev/sdk/v3';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 export async function POST(req: Request) {
   // ── Auth + admin gate ──────────────────────────────────────
@@ -42,24 +44,9 @@ export async function POST(req: Request) {
   }
 
   // ── Parse body ─────────────────────────────────────────────
-  let body: { type: 'urls' | 'pdfs'; items: unknown[] };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-  }
-
-  const { type, items } = body;
-
-  if (!type || !['urls', 'pdfs'].includes(type)) {
-    return NextResponse.json({ error: 'type must be "urls" or "pdfs"' }, { status: 400 });
-  }
-  if (!Array.isArray(items) || items.length === 0) {
-    return NextResponse.json({ error: 'items array is required and must not be empty' }, { status: 400 });
-  }
-  if (items.length > 50) {
-    return NextResponse.json({ error: 'Maximum 50 items per batch' }, { status: 400 });
-  }
+  const parsed = await parseJson(req, adminSchemas.batchIngest);
+  if (!parsed.ok) return parsed.response;
+  const { type, items } = parsed.data;
 
   // ── Validate each item's structure and namespace ───────────
   const VALID_NAMESPACES = new Set(['framework','vocation','character','mind',

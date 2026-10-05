@@ -20,6 +20,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { addChunks, getMentorBySlug } from '@/lib/rag';
 import type { KnowledgeChunk } from '@/lib/rag';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 // ── Config ──
 const CHUNK_SIZE    = 400;
@@ -85,26 +87,9 @@ export async function POST(req: Request) {
     tags?: string[];
   };
 
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-  }
-
-  const { url, mentorSlug, namespace, sourceTitle, tags = [] } = body;
-
-  if (!url || !mentorSlug || !namespace || !sourceTitle) {
-    return NextResponse.json(
-      { error: 'url, mentorSlug, namespace, and sourceTitle are required' },
-      { status: 400 }
-    );
-  }
-
-  const VALID_NAMESPACES = ['framework','vocation','character','mind',
-    'relationships','community','legacy','finance','leadership','career','coaching'];
-  if (!VALID_NAMESPACES.includes(namespace)) {
-    return NextResponse.json({ error: `Invalid namespace. Valid values: ${VALID_NAMESPACES.join(', ')}` }, { status: 400 });
-  }
+  const parsed = await parseJson(req, adminSchemas.ingestUrl);
+  if (!parsed.ok) return parsed.response;
+  const { url, mentorSlug, namespace, sourceTitle, tags } = parsed.data;
 
   // Validate URL format + SSRF blocklist
   try {

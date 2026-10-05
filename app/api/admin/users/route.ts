@@ -15,6 +15,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -109,10 +111,10 @@ export async function PATCH(req: NextRequest) {
     const caller = await getCaller(user.id);
     if (!caller) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { targetUserId, action, value } = await req.json();
-    if (!targetUserId || !action) {
-      return NextResponse.json({ error: 'Missing targetUserId or action' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, adminSchemas.userAdminAction);
+    if (!parsed.ok) return parsed.response;
+    const { targetUserId, action } = parsed.data;
+    const value: string = 'value' in parsed.data ? (parsed.data.value ?? '') : '';
 
     const required: Permission = action === 'delete' ? 'users.delete' : 'users.edit_role';
     if (!userHasPermission(caller.role, caller.permissions, required)) {
@@ -308,10 +310,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden: users.view required' }, { status: 403 });
     }
 
-    const { email } = await req.json();
-    if (!email) return NextResponse.json({ error: 'Missing email' }, { status: 400 });
-
-    const target = email.trim().toLowerCase();
+    const parsedFind = await parseJson(req, adminSchemas.findUser);
+    if (!parsedFind.ok) return parsedFind.response;
+    const target = parsedFind.data.email;
 
     // Search auth.users: covers users whose profiles.email is null
     const { data: authList } = await supabase.auth.admin.listUsers({ perPage: 1000 });

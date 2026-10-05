@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendDonationReceiptEmail } from '@/lib/summitEmails';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,13 +62,9 @@ export async function POST(req: NextRequest) {
   try {
     if (!(await requireAdmin(req))) return forbidden();
 
-    const body = await req.json().catch(() => null);
-    const id: unknown = body?.id;
-    const action: unknown = body?.action;
-
-    if (typeof id !== 'string' || action !== 'resend') {
-      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
-    }
+    const parsed = await parseJson(req, adminSchemas.summitDonationAction);
+    if (!parsed.ok) return parsed.response;
+    const { id } = parsed.data;
 
     const { data: donation } = await supabaseAdmin.from('summit_donations').select('*').eq('id', id).maybeSingle();
     if (!donation) return NextResponse.json({ error: 'Donation not found' }, { status: 404 });

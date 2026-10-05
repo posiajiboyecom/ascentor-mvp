@@ -25,6 +25,8 @@ import type { KnowledgeChunk } from '@/lib/rag';
 // youtube-transcript v1.3+ exports both a class and a standalone function.
 // Use the standalone fetchTranscript - it's simpler and avoids class instantiation.
 import { fetchTranscript } from 'youtube-transcript';
+import { parseJson, parseQuery } from '@/lib/validation/http';
+import * as adminSchemas from '@/lib/validation/schemas/admin';
 
 // ── Config ──
 const CHUNK_SIZE    = 400;
@@ -80,26 +82,9 @@ export async function POST(req: Request) {
     tags?: string[];
   };
 
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-  }
-
-  const { videoUrl, mentorSlug, namespace, sourceTitle, tags = [] } = body;
-
-  if (!videoUrl || !mentorSlug || !namespace || !sourceTitle) {
-    return NextResponse.json(
-      { error: 'videoUrl, mentorSlug, namespace, and sourceTitle are required' },
-      { status: 400 }
-    );
-  }
-
-  const VALID_NAMESPACES = ['framework','vocation','character','mind',
-    'relationships','community','legacy','finance','leadership','career','coaching'];
-  if (!VALID_NAMESPACES.includes(namespace)) {
-    return NextResponse.json({ error: `Invalid namespace. Valid values: ${VALID_NAMESPACES.join(', ')}` }, { status: 400 });
-  }
+  const parsed = await parseJson(req, adminSchemas.ingestYoutube);
+  if (!parsed.ok) return parsed.response;
+  const { videoUrl, mentorSlug, namespace, sourceTitle, tags } = parsed.data;
 
   // Validate mentor exists
   const mentor = await getMentorBySlug(mentorSlug);
