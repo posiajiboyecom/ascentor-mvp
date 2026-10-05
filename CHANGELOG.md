@@ -21,10 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.env.example`, `scripts/lint-copy.js`, `scripts/audit-rls.sql`, auth unit and HTTP test suites.
 - Documentation: system architecture, component, use case and deployment diagrams, module and concern tables.
 
-### Security (platform-v1, requires action)
+### Security
 - Audit of the live database found over-permissive Row Level Security policies that let the public anon key
-  read or write partner tenants, payments, notifications, platform settings and more. The fix is
-  `database/migrations/20261005_lock_down_open_policies.sql` (review, then apply). Details in the wiki
+  read or write partner tenants, payments, notifications, platform settings and more. The fix,
+  `database/migrations/20261005_lock_down_open_policies.sql`, was applied to production on 2026-10-05. Details in the wiki
   Engineering Log, 2026-10-05.
 
 ### Added (schema)

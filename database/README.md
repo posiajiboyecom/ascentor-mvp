@@ -14,13 +14,12 @@ Source of truth: the Supabase project. This folder makes it reproducible.
 Older dated migrations (2026-07 to 2026-09) are already reflected in the baseline. They are idempotent and may
 still be run on an existing database, but they are not needed on a new one.
 
-Run each file in the Supabase SQL editor (or `psql`). Every file is idempotent.
+Run each file in the Supabase SQL editor, `psql`, or `npx tsx scripts/apply-migration.ts <file> --yes` (single transaction). Every file is idempotent.
 
 ## Applying to the EXISTING project
 
 Do not run the baseline there (it is a snapshot of it). Run, in order, the dated files you have not applied:
-`20261004_auth_hardening.sql`, `20261005_member_features.sql`, then **review and apply
-`20261005_lock_down_open_policies.sql`** (it removes policies that expose data to the public anon key).
+`20261004_auth_hardening.sql`, `20261005_member_features.sql`, then `20261005_lock_down_open_policies.sql` (already applied to production on 2026-10-05; it removes policies that exposed data to the public anon key).
 
 ## Regenerating the baseline
 

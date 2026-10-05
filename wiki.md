@@ -618,8 +618,9 @@ What the audit found, by comparing the exported schema with the code:
   - Intentional public-submission forms (contact, newsletter, waitlist, applications, event and survey
     registration) were reviewed and left alone.
   `20261005_lock_down_open_policies.sql` drops these and adds the narrowest replacements the app needs (own-row
-  inserts for usage, audit, notifications; participant-only referrals). It is **not applied automatically**; it is
-  written for review and idempotent. Plaintext partner Paystack keys: the legacy `paystack_secret_key` column exists
+  inserts for usage, audit, notifications; participant-only referrals). It was
+  idempotent. **Applied to production on 2026-10-05** with `scripts/apply-migration.ts` (one transaction, 5 statements);
+  the verification query then returned no open write policies and the six replacement policies exist. Plaintext partner Paystack keys: the legacy `paystack_secret_key` column exists
   and is empty for the one partner on file.
 - **Schema drift between code and database**, fixed in `20261005_member_features.sql`: the live `expert_sessions`
   lacked `expert_avatar`, `meeting_url`, `max_attendees`, `current_attendees`, `dimension` and `is_free`, which both

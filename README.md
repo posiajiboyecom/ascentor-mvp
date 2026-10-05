@@ -544,7 +544,7 @@ contract is generated into [docs/api-contracts.md](docs/api-contracts.md).
 | Impossible-travel sign-in check (server-side, fails open) | `lib/auth/login-security.ts` |
 | Optional TOTP second factor for staff (`ADMIN_MFA_REQUIRED=true`) | `app/admin-login`, `lib/auth/admin-mfa.ts` |
 | Row Level Security on all 87 tables, admin and own-row policies | `database/migrations/00000000_baseline.sql` |
-| Closing over-permissive policies (see wiki Engineering Log, 2026-10-05) | `20261005_lock_down_open_policies.sql` (review and apply) |
+| Open policies closed in production on 2026-10-05 (see wiki Engineering Log) | `20261005_lock_down_open_policies.sql` (applied) |
 | Self-service profile updates cannot change role, plan or subscription fields | DB trigger `check_profile_role_permissions` |
 | Webhook HMAC verification and idempotent settlement | `lib/paymentSettlement.ts` |
 | Secrets only on the server; service-role client is `server-only` | `lib/supabase/admin.ts` |
@@ -664,7 +664,6 @@ known gaps.
 
 | Gap | Impact | Next step |
 |-----|--------|-----------|
-| **Over-permissive RLS policies exist in production** (partners, payments, notifications, platform settings and others accept writes from the public anon key) | Data exposure and forgery | Review and apply `20261005_lock_down_open_policies.sql`, then run its verification query |
 | Storage buckets, auth settings and edge functions are not in the baseline | A new project needs them configured by hand | Document or script them |
 | Authenticated end-to-end tests do not exist | Regressions in signed-in flows are caught manually | Add a seeded test project and Playwright journeys |
 | GET query parameters are validated on a few routes only | Lower risk, bodies are strict | Extend `parseQuery` to remaining list endpoints |

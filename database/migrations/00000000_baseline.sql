@@ -4,8 +4,8 @@
 -- Structure only: tables, types, sequences, constraints, indexes, functions, triggers,
 -- views, Row Level Security and policies. No data.
 --
--- SECURITY NOTE: this is a faithful snapshot, so it includes the over-permissive policies that
--- exist in production. Apply 20261005_lock_down_open_policies.sql immediately after it.
+-- SECURITY NOTE: this is a faithful snapshot of production AFTER 20261005_lock_down_open_policies.sql
+-- was applied (2026-10-05), so it contains the narrowed policies. Re-running that file is harmless.
 --
 -- Idempotent: safe on a database that already has these objects. Apply this FIRST on a
 -- fresh project, then the dated migrations in order (they are all idempotent too).
@@ -3956,8 +3956,6 @@ DROP POLICY IF EXISTS "Admins can read audit logs" ON public."audit_logs";
 CREATE POLICY "Admins can read audit logs" ON public."audit_logs" AS PERMISSIVE FOR SELECT TO public USING ((EXISTS ( SELECT 1
    FROM profiles
   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text)))));
-DROP POLICY IF EXISTS "Service role insert audit" ON public."audit_logs";
-CREATE POLICY "Service role insert audit" ON public."audit_logs" AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
 DROP POLICY IF EXISTS "Users read own audit logs" ON public."audit_logs";
 CREATE POLICY "Users read own audit logs" ON public."audit_logs" AS PERMISSIVE FOR SELECT TO public USING ((auth.uid() = user_id));
 DROP POLICY IF EXISTS "admin_all" ON public."audit_logs";
@@ -3966,8 +3964,8 @@ DROP POLICY IF EXISTS "admin_audit_logs_select" ON public."audit_logs";
 CREATE POLICY "admin_audit_logs_select" ON public."audit_logs" AS PERMISSIVE FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
    FROM profiles p
   WHERE ((p.id = auth.uid()) AND (p.role = ANY (ARRAY['admin'::text, 'moderator'::text, 'root_admin'::text]))))));
-DROP POLICY IF EXISTS "audit_logs_insert" ON public."audit_logs";
-CREATE POLICY "audit_logs_insert" ON public."audit_logs" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "audit_logs_insert_own" ON public."audit_logs";
+CREATE POLICY "audit_logs_insert_own" ON public."audit_logs" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK ((user_id = auth.uid()));
 DROP POLICY IF EXISTS "admin_all" ON public."blog_posts";
 CREATE POLICY "admin_all" ON public."blog_posts" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 DROP POLICY IF EXISTS "blog_posts_anon_read" ON public."blog_posts";
@@ -4135,8 +4133,6 @@ DROP POLICY IF EXISTS "cohorts_update" ON public."cohorts";
 CREATE POLICY "cohorts_update" ON public."cohorts" AS PERMISSIVE FOR UPDATE TO authenticated USING ((EXISTS ( SELECT 1
    FROM profiles p
   WHERE ((p.id = auth.uid()) AND (p.role = ANY (ARRAY['admin'::text, 'moderator'::text]))))));
-DROP POLICY IF EXISTS "admin write" ON public."community_categories";
-CREATE POLICY "admin write" ON public."community_categories" AS PERMISSIVE FOR ALL TO authenticated USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS "admin_all" ON public."community_categories";
 CREATE POLICY "admin_all" ON public."community_categories" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 DROP POLICY IF EXISTS "public read" ON public."community_categories";
@@ -4405,14 +4401,6 @@ DROP POLICY IF EXISTS "newsletter_sub_auth" ON public."newsletter_subscribers";
 CREATE POLICY "newsletter_sub_auth" ON public."newsletter_subscribers" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (true);
 DROP POLICY IF EXISTS "public_insert" ON public."newsletter_subscribers";
 CREATE POLICY "public_insert" ON public."newsletter_subscribers" AS PERMISSIVE FOR INSERT TO anon, authenticated WITH CHECK (true);
-DROP POLICY IF EXISTS "Authenticated users can create notifications" ON public."notifications";
-CREATE POLICY "Authenticated users can create notifications" ON public."notifications" AS PERMISSIVE FOR INSERT TO public WITH CHECK ((auth.role() = 'authenticated'::text));
-DROP POLICY IF EXISTS "Authenticated users insert notifications" ON public."notifications";
-CREATE POLICY "Authenticated users insert notifications" ON public."notifications" AS PERMISSIVE FOR INSERT TO public WITH CHECK ((auth.role() = 'authenticated'::text));
-DROP POLICY IF EXISTS "Service insert notifications" ON public."notifications";
-CREATE POLICY "Service insert notifications" ON public."notifications" AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
-DROP POLICY IF EXISTS "Service role insert notifications" ON public."notifications";
-CREATE POLICY "Service role insert notifications" ON public."notifications" AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
 DROP POLICY IF EXISTS "Users can delete own notifications" ON public."notifications";
 CREATE POLICY "Users can delete own notifications" ON public."notifications" AS PERMISSIVE FOR DELETE TO public USING ((auth.uid() = user_id));
 DROP POLICY IF EXISTS "Users can read own notifications" ON public."notifications";
@@ -4429,6 +4417,8 @@ DROP POLICY IF EXISTS "Users update own notifications" ON public."notifications"
 CREATE POLICY "Users update own notifications" ON public."notifications" AS PERMISSIVE FOR UPDATE TO public USING ((auth.uid() = user_id));
 DROP POLICY IF EXISTS "admin_all" ON public."notifications";
 CREATE POLICY "admin_all" ON public."notifications" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "notifications_insert_own" ON public."notifications";
+CREATE POLICY "notifications_insert_own" ON public."notifications" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK ((user_id = auth.uid()));
 DROP POLICY IF EXISTS "admin_all" ON public."partner_course_enrollments";
 CREATE POLICY "admin_all" ON public."partner_course_enrollments" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 DROP POLICY IF EXISTS "enrollment_owner" ON public."partner_course_enrollments";
@@ -4510,8 +4500,6 @@ DROP POLICY IF EXISTS "Partner owners see their members" ON public."partner_memb
 CREATE POLICY "Partner owners see their members" ON public."partner_members" AS PERMISSIVE FOR SELECT TO public USING ((EXISTS ( SELECT 1
    FROM partners
   WHERE ((partners.id = partner_members.partner_id) AND (partners.owner_id = auth.uid())))));
-DROP POLICY IF EXISTS "Service role full access members" ON public."partner_members";
-CREATE POLICY "Service role full access members" ON public."partner_members" AS PERMISSIVE FOR ALL TO public USING (true);
 DROP POLICY IF EXISTS "admin_all" ON public."partner_members";
 CREATE POLICY "admin_all" ON public."partner_members" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 DROP POLICY IF EXISTS "partner_members_owner_select" ON public."partner_members";
@@ -4532,8 +4520,6 @@ DROP POLICY IF EXISTS "Partner owners see their transactions" ON public."partner
 CREATE POLICY "Partner owners see their transactions" ON public."partner_transactions" AS PERMISSIVE FOR SELECT TO public USING ((EXISTS ( SELECT 1
    FROM partners
   WHERE ((partners.id = partner_transactions.partner_id) AND (partners.owner_id = auth.uid())))));
-DROP POLICY IF EXISTS "Service role full access transactions" ON public."partner_transactions";
-CREATE POLICY "Service role full access transactions" ON public."partner_transactions" AS PERMISSIVE FOR ALL TO public USING (true);
 DROP POLICY IF EXISTS "admin_all" ON public."partner_transactions";
 CREATE POLICY "admin_all" ON public."partner_transactions" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 DROP POLICY IF EXISTS "partner_owner_read_transactions" ON public."partner_transactions";
@@ -4548,8 +4534,6 @@ DROP POLICY IF EXISTS "Partners read own record" ON public."partners";
 CREATE POLICY "Partners read own record" ON public."partners" AS PERMISSIVE FOR SELECT TO public USING ((auth.uid() = owner_id));
 DROP POLICY IF EXISTS "Partners update own record" ON public."partners";
 CREATE POLICY "Partners update own record" ON public."partners" AS PERMISSIVE FOR UPDATE TO public USING ((auth.uid() = owner_id));
-DROP POLICY IF EXISTS "Service role full access partners" ON public."partners";
-CREATE POLICY "Service role full access partners" ON public."partners" AS PERMISSIVE FOR ALL TO public USING (true);
 DROP POLICY IF EXISTS "admin_all" ON public."partners";
 CREATE POLICY "admin_all" ON public."partners" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 DROP POLICY IF EXISTS "partners_owner_select" ON public."partners";
@@ -4566,8 +4550,6 @@ DROP POLICY IF EXISTS "Admins can view all payments" ON public."payments";
 CREATE POLICY "Admins can view all payments" ON public."payments" AS PERMISSIVE FOR SELECT TO public USING ((EXISTS ( SELECT 1
    FROM profiles
   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text)))));
-DROP POLICY IF EXISTS "Service insert payments" ON public."payments";
-CREATE POLICY "Service insert payments" ON public."payments" AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
 DROP POLICY IF EXISTS "Service role can manage payments" ON public."payments";
 CREATE POLICY "Service role can manage payments" ON public."payments" AS PERMISSIVE FOR ALL TO public USING ((auth.role() = 'service_role'::text));
 DROP POLICY IF EXISTS "Users can view own payments" ON public."payments";
@@ -4590,8 +4572,6 @@ CREATE POLICY "Admin full access to personal_brand_briefs" ON public."personal_b
   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text)))));
 DROP POLICY IF EXISTS "admin_all" ON public."personal_brand_briefs";
 CREATE POLICY "admin_all" ON public."personal_brand_briefs" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
-DROP POLICY IF EXISTS "admin write" ON public."platform_settings";
-CREATE POLICY "admin write" ON public."platform_settings" AS PERMISSIVE FOR ALL TO authenticated USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS "admin_all" ON public."platform_settings";
 CREATE POLICY "admin_all" ON public."platform_settings" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 DROP POLICY IF EXISTS "public read" ON public."platform_settings";
@@ -4616,8 +4596,6 @@ DROP POLICY IF EXISTS "Admins can view all purchases" ON public."product_purchas
 CREATE POLICY "Admins can view all purchases" ON public."product_purchases" AS PERMISSIVE FOR SELECT TO public USING ((EXISTS ( SELECT 1
    FROM profiles
   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text)))));
-DROP POLICY IF EXISTS "Service role can insert purchases" ON public."product_purchases";
-CREATE POLICY "Service role can insert purchases" ON public."product_purchases" AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
 DROP POLICY IF EXISTS "Users can view own purchases" ON public."product_purchases";
 CREATE POLICY "Users can view own purchases" ON public."product_purchases" AS PERMISSIVE FOR SELECT TO public USING ((auth.uid() = user_id));
 DROP POLICY IF EXISTS "admin_all" ON public."product_purchases";
@@ -4682,8 +4660,6 @@ DROP POLICY IF EXISTS "public_read" ON public."public_events";
 CREATE POLICY "public_read" ON public."public_events" AS PERMISSIVE FOR SELECT TO anon, authenticated USING ((is_published = true));
 DROP POLICY IF EXISTS "admin_all" ON public."push_events";
 CREATE POLICY "admin_all" ON public."push_events" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
-DROP POLICY IF EXISTS "push_events_service" ON public."push_events";
-CREATE POLICY "push_events_service" ON public."push_events" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS "Users manage own push subscriptions" ON public."push_subscriptions";
 CREATE POLICY "Users manage own push subscriptions" ON public."push_subscriptions" AS PERMISSIVE FOR ALL TO public USING ((auth.uid() = user_id)) WITH CHECK ((auth.uid() = user_id));
 DROP POLICY IF EXISTS "admin_all" ON public."push_subscriptions";
@@ -4694,8 +4670,6 @@ DROP POLICY IF EXISTS "push_subs_insert" ON public."push_subscriptions";
 CREATE POLICY "push_subs_insert" ON public."push_subscriptions" AS PERMISSIVE FOR INSERT TO public WITH CHECK ((auth.uid() = user_id));
 DROP POLICY IF EXISTS "push_subs_select" ON public."push_subscriptions";
 CREATE POLICY "push_subs_select" ON public."push_subscriptions" AS PERMISSIVE FOR SELECT TO public USING ((auth.uid() = user_id));
-DROP POLICY IF EXISTS "push_subs_service" ON public."push_subscriptions";
-CREATE POLICY "push_subs_service" ON public."push_subscriptions" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS "admin_all" ON public."rail_billboards";
 CREATE POLICY "admin_all" ON public."rail_billboards" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 DROP POLICY IF EXISTS "admin_full_access" ON public."rail_billboards";
@@ -4708,16 +4682,16 @@ DROP POLICY IF EXISTS "member_read" ON public."rail_billboards";
 CREATE POLICY "member_read" ON public."rail_billboards" AS PERMISSIVE FOR SELECT TO authenticated USING ((is_active = true));
 DROP POLICY IF EXISTS "users_read_active" ON public."rail_billboards";
 CREATE POLICY "users_read_active" ON public."rail_billboards" AS PERMISSIVE FOR SELECT TO public USING ((is_active = true));
-DROP POLICY IF EXISTS "System can insert referrals" ON public."referrals";
-CREATE POLICY "System can insert referrals" ON public."referrals" AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
-DROP POLICY IF EXISTS "System can update referrals" ON public."referrals";
-CREATE POLICY "System can update referrals" ON public."referrals" AS PERMISSIVE FOR UPDATE TO public USING (true);
 DROP POLICY IF EXISTS "Users can see own referrals" ON public."referrals";
 CREATE POLICY "Users can see own referrals" ON public."referrals" AS PERMISSIVE FOR SELECT TO public USING (((auth.uid() = referrer_id) OR (auth.uid() = referred_id)));
 DROP POLICY IF EXISTS "Users can view own referrals" ON public."referrals";
 CREATE POLICY "Users can view own referrals" ON public."referrals" AS PERMISSIVE FOR SELECT TO public USING (((auth.uid() = referrer_id) OR (auth.uid() = referred_id)));
 DROP POLICY IF EXISTS "admin_all" ON public."referrals";
 CREATE POLICY "admin_all" ON public."referrals" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "referrals_insert_as_referred" ON public."referrals";
+CREATE POLICY "referrals_insert_as_referred" ON public."referrals" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK ((referred_id = auth.uid()));
+DROP POLICY IF EXISTS "referrals_update_participant" ON public."referrals";
+CREATE POLICY "referrals_update_participant" ON public."referrals" AS PERMISSIVE FOR UPDATE TO authenticated USING (((auth.uid() = referrer_id) OR (auth.uid() = referred_id))) WITH CHECK (((auth.uid() = referrer_id) OR (auth.uid() = referred_id)));
 DROP POLICY IF EXISTS "Admins can manage research briefs" ON public."research_briefs";
 CREATE POLICY "Admins can manage research briefs" ON public."research_briefs" AS PERMISSIVE FOR ALL TO public USING ((EXISTS ( SELECT 1
    FROM profiles
@@ -4744,8 +4718,6 @@ DROP POLICY IF EXISTS "Admins can view all session locations" ON public."session
 CREATE POLICY "Admins can view all session locations" ON public."session_locations" AS PERMISSIVE FOR SELECT TO public USING ((EXISTS ( SELECT 1
    FROM profiles
   WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text)))));
-DROP POLICY IF EXISTS "Service insert session locations" ON public."session_locations";
-CREATE POLICY "Service insert session locations" ON public."session_locations" AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
 DROP POLICY IF EXISTS "Users can view own session locations" ON public."session_locations";
 CREATE POLICY "Users can view own session locations" ON public."session_locations" AS PERMISSIVE FOR SELECT TO public USING ((auth.uid() = user_id));
 DROP POLICY IF EXISTS "admin_all" ON public."session_locations";
@@ -4836,16 +4808,16 @@ DROP POLICY IF EXISTS "Public anon can read published surveys" ON public."survey
 CREATE POLICY "Public anon can read published surveys" ON public."surveys" AS PERMISSIVE FOR SELECT TO anon, authenticated USING ((is_published = true));
 DROP POLICY IF EXISTS "admin_all" ON public."surveys";
 CREATE POLICY "admin_all" ON public."surveys" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
-DROP POLICY IF EXISTS "Service insert usage" ON public."usage_tracking";
-CREATE POLICY "Service insert usage" ON public."usage_tracking" AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
-DROP POLICY IF EXISTS "Service inserts usage" ON public."usage_tracking";
-CREATE POLICY "Service inserts usage" ON public."usage_tracking" AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
 DROP POLICY IF EXISTS "Users can view own usage" ON public."usage_tracking";
 CREATE POLICY "Users can view own usage" ON public."usage_tracking" AS PERMISSIVE FOR SELECT TO public USING ((auth.uid() = user_id));
 DROP POLICY IF EXISTS "Users view own usage" ON public."usage_tracking";
 CREATE POLICY "Users view own usage" ON public."usage_tracking" AS PERMISSIVE FOR SELECT TO public USING ((auth.uid() = user_id));
 DROP POLICY IF EXISTS "admin_all" ON public."usage_tracking";
 CREATE POLICY "admin_all" ON public."usage_tracking" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "usage_delete_own" ON public."usage_tracking";
+CREATE POLICY "usage_delete_own" ON public."usage_tracking" AS PERMISSIVE FOR DELETE TO authenticated USING ((user_id = auth.uid()));
+DROP POLICY IF EXISTS "usage_insert_own" ON public."usage_tracking";
+CREATE POLICY "usage_insert_own" ON public."usage_tracking" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK ((user_id = auth.uid()));
 DROP POLICY IF EXISTS "admin_all" ON public."user_commitments";
 CREATE POLICY "admin_all" ON public."user_commitments" AS PERMISSIVE FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 DROP POLICY IF EXISTS "commitments_all" ON public."user_commitments";
