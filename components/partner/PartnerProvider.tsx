@@ -109,7 +109,7 @@ export function PoweredByAscentor() {
     >
       Powered by{' '}
       <a
-        href="https://ascentorbi.com"
+        href="https://joinascentor.com"
         target="_blank"
         rel="noopener noreferrer"
         style={{ color: '#E8A020', textDecoration: 'none' }}

@@ -13,11 +13,11 @@ export const metadata: Metadata = {
   title: 'The Ascentor Manifesto',
   description:
     'What Ascentor is, what it believes, and what it is building. Ascentor (formerly AscentorBI) is a purposeful living and leadership development platform, and the home of The Elevation Summit.',
-  alternates: { canonical: 'https://ascentorbi.com/manifesto' },
+  alternates: { canonical: 'https://joinascentor.com/manifesto' },
   openGraph: {
     title: 'The Ascentor Manifesto',
     description: 'What Ascentor is, what it believes, and what it is building.',
-    url: 'https://ascentorbi.com/manifesto',
+    url: 'https://joinascentor.com/manifesto',
     siteName: 'Ascentor',
     type: 'article',
   },
@@ -37,14 +37,14 @@ export default function ManifestoPage() {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: 'The Ascentor Manifesto',
-    url: 'https://ascentorbi.com/manifesto',
+    url: 'https://joinascentor.com/manifesto',
     author: { '@type': 'Organization', name: 'Ascentor' },
-    publisher: { '@type': 'Organization', name: 'Ascentor', url: 'https://ascentorbi.com' },
+    publisher: { '@type': 'Organization', name: 'Ascentor', url: 'https://joinascentor.com' },
     about: {
       '@type': 'Organization',
       name: 'Ascentor',
       alternateName: ['AscentorBI'],
-      url: 'https://ascentorbi.com',
+      url: 'https://joinascentor.com',
     },
   };
 

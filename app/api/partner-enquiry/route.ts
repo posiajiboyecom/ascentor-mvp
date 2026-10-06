@@ -56,13 +56,13 @@ function acknowledgementEmail(name: string, org: string, recipient: string) {
           summaryRow('What happens next', 'Our team reviews every enquiry personally. You can expect a reply within <strong>1–2 business days</strong>. We\'ll share details on how the partner programme works and schedule a walkthrough of the platform.')
         ) +
         p('In the meantime, feel free to explore the platform as a user — it\'s the best way to understand the experience you\'d be offering your members.') +
-        goldButton('Explore the platform →', 'https://ascentorbi.com/signup'),
+        goldButton('Explore the platform →', 'https://joinascentor.com/signup'),
     }),
   }
 }
 
 function founderNotificationEmail(name: string, email: string, org: string, message: string, enquiryId: string) {
-  const adminUrl = `https://ascentorbi.com/admin/partners`
+  const adminUrl = `https://joinascentor.com/admin/partners`
   return {
     subject: `New Partner Enquiry: ${org}`,
     html: brandedEmailLayout({

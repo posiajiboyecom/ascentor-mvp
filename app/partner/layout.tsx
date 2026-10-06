@@ -3,7 +3,7 @@
 
 export const dynamic = 'force-dynamic';
 // PARTNER PORTAL LAYOUT
-// Accessible at: ascentorbi.com/partner
+// Accessible at: joinascentor.com/partner
 //
 // This is the admin/settings portal for white-label partners (licensees).
 // It is completely separate from the main app and the tenant subdomain system.
@@ -127,7 +127,7 @@ export default async function PartnerLayout({
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {tenant && (
             <a
-              href={`https://${tenant.subdomain}.ascentorbi.com`}
+              href={`https://${tenant.subdomain}.joinascentor.com`}
               target="_blank"
               rel="noopener noreferrer"
               style={{

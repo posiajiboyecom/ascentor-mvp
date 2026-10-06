@@ -566,7 +566,7 @@ export default function ElevationSummitRegistrationsPage() {
                   </div>
                   {open.whatsapp && (
                     <a
-                      href={`${waLink(open.whatsapp)}?text=${encodeURIComponent(`Hi ${open.full_name.split(' ')[0]}, this is Ascentor. Your Elevation Summit registration (${open.attendance_type === 'virtual' ? 'virtual' : 'physical'}) is saved but not confirmed yet. You can finish here: https://ascentorbi.com/elevation-summit#register`)}`}
+                      href={`${waLink(open.whatsapp)}?text=${encodeURIComponent(`Hi ${open.full_name.split(' ')[0]}, this is Ascentor. Your Elevation Summit registration (${open.attendance_type === 'virtual' ? 'virtual' : 'physical'}) is saved but not confirmed yet. You can finish here: https://joinascentor.com/elevation-summit#register`)}`}
                       target="_blank" rel="noopener noreferrer" className="ledger-btn ledger-btn-ghost"
                       style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}
                     >

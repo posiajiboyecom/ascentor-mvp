@@ -5,14 +5,14 @@
 // any partner not in "tenants" caused notFound() on every page.
 //
 // HOW PROXY ROUTING WORKS (proxy.ts at project root):
-//   User visits: demo.ascentorbi.com/coach
-//   Proxy sees:  host = demo.ascentorbi.com → subdomain = "demo"
+//   User visits: demo.joinascentor.com/coach
+//   Proxy sees:  host = demo.joinascentor.com → subdomain = "demo"
 //   Rewrites to: /p/demo/coach  (internal, browser URL unchanged)
 //   Sets header: x-partner-pathname = /coach
 //   Sets header: x-partner-subdomain = demo
 //
 // This layout receives the rewritten request at /p/[subdomain]/coach.
-// getPartnerContext(hostname) uses the ORIGINAL host header (demo.ascentorbi.com)
+// getPartnerContext(hostname) uses the ORIGINAL host header (demo.joinascentor.com)
 // to look up the partner — the regex /^([^.]+)\.ascentorbi\.com$/ matches correctly.
 //
 // Nav links in PartnerMemberShell stay as root-relative (/dashboard, /coach,
@@ -55,7 +55,7 @@ export default async function SubdomainLayout({
   const hostname      = headersList.get('host') || '';
 
   // ── 1. Resolve partner ────────────────────────────────────
-  // Primary: use hostname (works when proxy rewrites *.ascentorbi.com)
+  // Primary: use hostname (works when proxy rewrites *.joinascentor.com)
   let ctx = await getPartnerContext(hostname);
 
   // Fallback: if hostname didn't resolve (local dev, missing host header),

@@ -1,7 +1,7 @@
 // app/p/[subdomain]/page.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 // ROOT PAGE for a white-label partner subdomain.
-// e.g. demo.ascentorbi.com → proxy rewrites to /p/demo → this page
+// e.g. demo.joinascentor.com → proxy rewrites to /p/demo → this page
 //
 // Behaviour:
 //  - Logged in  → redirect to /dashboard  (proxy rewrites it transparently;
@@ -43,7 +43,7 @@ export default async function SubdomainHomePage({
   } = await supabase.auth.getUser();
 
   // ── FIX: redirect to /dashboard, NOT /p/${subdomain}/dashboard ──
-  // The proxy (proxy.ts) rewrites demo.ascentorbi.com/dashboard →
+  // The proxy (proxy.ts) rewrites demo.joinascentor.com/dashboard →
   // /p/demo/dashboard internally. Redirecting to the internal path
   // bypasses the proxy and exposes /p/demo/dashboard in the browser,
   // which Next.js has no direct route for → 404.

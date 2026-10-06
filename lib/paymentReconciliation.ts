@@ -87,7 +87,7 @@ async function sendRecoveryEmail(a: PaymentAttempt): Promise<boolean> {
   if (!a.email) return false;
   const { sendEmail } = await import('@/lib/nodemailer');
   const { brandedEmailLayout, esc, p, goldButton } = await import('@/lib/emailTemplate');
-  const base = process.env.NEXT_PUBLIC_URL || 'https://ascentorbi.com';
+  const base = process.env.NEXT_PUBLIC_URL || 'https://joinascentor.com';
 
   const isSummit = a.kind === 'summit';
   const url      = isSummit ? `${base}/elevation-summit#register` : `${base}/checkout`;

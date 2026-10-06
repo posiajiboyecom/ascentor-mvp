@@ -165,14 +165,14 @@ export default function DemoGatePage() {
             Already approved?{' '}
             <a href="/login?redirect=/pricing">Log in to view NGN pricing</a>
             {' '}·{' '}
-            <a href="https://ascentorbi.com/pricing" target="_blank" rel="noopener noreferrer">
+            <a href="https://joinascentor.com/pricing" target="_blank" rel="noopener noreferrer">
               Main pricing page
             </a>
           </p>
         </div>
 
         <p style={{ marginTop: 40, fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#2E2A22', letterSpacing: '0.08em' }}>
-          © {new Date().getFullYear()} Ascentor Inc. · demo.ascentorbi.com
+          © {new Date().getFullYear()} Ascentor Inc. · demo.joinascentor.com
         </p>
       </div>
     </>

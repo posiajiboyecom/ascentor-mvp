@@ -8,5 +8,25 @@
       "path": "/api/cron/summit-event-day",
       "schedule": "0 6 * * *"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/:path(.*)",
+      "has": [{ "type": "host", "value": "ascentorbi.com" }],
+      "destination": "https://joinascentor.com/:path",
+      "permanent": true
+    },
+    {
+      "source": "/:path(.*)",
+      "has": [{ "type": "host", "value": "www.ascentorbi.com" }],
+      "destination": "https://joinascentor.com/:path",
+      "permanent": true
+    },
+    {
+      "source": "/:path(.*)",
+      "has": [{ "type": "host", "value": "www.joinascentor.com" }],
+      "destination": "https://joinascentor.com/:path",
+      "permanent": true
+    }
   ]
 }

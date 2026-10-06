@@ -258,7 +258,7 @@ export async function POST(req: NextRequest) {
         if (!existingUserId) {
           try {
             const token     = createInviteToken(partner.id, email);
-            const inviteUrl = `https://${partner.subdomain}.ascentorbi.com/join?token=${encodeURIComponent(token)}`;
+            const inviteUrl = `https://${partner.subdomain}.joinascentor.com/join?token=${encodeURIComponent(token)}`;
 
             await sendEmail({
               from:    `${partner.name} <noreply@ascentorbi.com>`,
@@ -351,7 +351,7 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: 'Can only resend to pending invites' }, { status: 400 });
       }
       const token     = createInviteToken(partner.id, member.email);
-      const inviteUrl = `https://${partner.subdomain}.ascentorbi.com/join?token=${encodeURIComponent(token)}`;
+      const inviteUrl = `https://${partner.subdomain}.joinascentor.com/join?token=${encodeURIComponent(token)}`;
       try {
         await sendEmail({
           from:    `${partner.name} <noreply@ascentorbi.com>`,

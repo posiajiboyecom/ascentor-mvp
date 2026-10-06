@@ -58,7 +58,7 @@ export default async function SubdomainOnboardingPage() {
   const liveUrl = tenant?.custom_domain
     ? `https://${tenant.custom_domain}`
     : tenant?.subdomain
-      ? `https://${tenant.subdomain}.ascentorbi.com`
+      ? `https://${tenant.subdomain}.joinascentor.com`
       : null;
 
   const steps = [

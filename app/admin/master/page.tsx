@@ -1054,7 +1054,7 @@ export default function MasterAdminPage() {
                     <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: '#E8A020', letterSpacing: '0.1em', margin: '0 0 6px' }}>CONVERSION PATH</p>
                     <p style={{ fontFamily: "'Metropolis', sans-serif", fontSize: 11, color: 'var(--admin-text-muted)', lineHeight: 1.6, margin: '0 0 10px' }}>{m.conversionPath}</p>
                     <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 9, color: 'var(--admin-text-faint)', margin: '0 0 4px' }}>URL</p>
-                    <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#14B8A6', margin: 0 }}>ascentorbi.com{m.url}</p>
+                    <p style={{ fontFamily: "Metropolis, 'Inter', sans-serif", fontSize: 10, color: '#14B8A6', margin: 0 }}>joinascentor.com{m.url}</p>
                   </div>
                 </div>
               </div>

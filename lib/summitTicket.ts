@@ -225,7 +225,7 @@ export async function generateSummitTicket(data: TicketData): Promise<Buffer> {
     // Socials
     doc
       .font('Metro-Regular').fontSize(6.5).fillColor(GRAY)
-      .text('X: @joinascentor  -  instagram.com/joinascentor  -  ascentorbi.com', PAD, FOOTER_Y + 44, {
+      .text('X: @joinascentor  -  instagram.com/joinascentor  -  joinascentor.com', PAD, FOOTER_Y + 44, {
         width: W - PAD * 2, align: 'center',
       });
 

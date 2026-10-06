@@ -18,11 +18,11 @@
 //               fetch('/api/partner/payment/verify', ...)
 //             On custom domains (coaching.johnadeyemi.com) this
 //             resolves to coaching.johnadeyemi.com/api/... which
-//             doesn't exist — the API lives on ascentorbi.com.
+//             doesn't exist — the API lives on joinascentor.com.
 //             The middleware fixes this by injecting an
 //             x-ascentor-api-base header so the checkout client
 //             can always construct the correct absolute URL.
-//             The header value is always https://ascentorbi.com
+//             The header value is always https://joinascentor.com
 //             (or NEXT_PUBLIC_URL on non-prod). The checkout
 //             client reads this header via a <meta> tag inserted
 //             server-side — see PartnerCheckoutClient notes.
@@ -34,8 +34,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const MAIN_DOMAIN  = 'ascentorbi.com';
-const MAIN_APP_URL = process.env.NEXT_PUBLIC_URL || 'https://ascentorbi.com';
+const MAIN_DOMAIN  = 'joinascentor.com';
+const MAIN_APP_URL = process.env.NEXT_PUBLIC_URL || 'https://joinascentor.com';
 
 const RESERVED_SUBDOMAINS = ['www', 'app', 'api', 'admin', 'mail', 'cdn', 'static'];
 
@@ -121,8 +121,8 @@ export default async function proxy(request: NextRequest) {
       // BUG-11 header: checkout needs the canonical API base
       response.headers.set('x-ascentor-api-base', MAIN_APP_URL);
       return response;
-      // NOTE: subdomain rewrites still early-return — they ARE on *.ascentorbi.com
-      // so Vercel handles auth at the edge via the *.ascentorbi.com rewrite.
+      // NOTE: subdomain rewrites still early-return — they ARE on *.joinascentor.com
+      // so Vercel handles auth at the edge via the *.joinascentor.com rewrite.
       // Custom domains below do NOT early-return (see BUG-10 fix).
     }
   }

@@ -3,7 +3,7 @@
 // the same layout rendered for summit payment confirmations.
 import { brandedEmailLayout, esc, p, goldButton, summaryBox, summaryRow } from '@/lib/emailTemplate';
 
-const APP_URL = 'https://ascentorbi.com';
+const APP_URL = 'https://joinascentor.com';
 
 // ═══ WELCOME EMAIL ═══
 export function welcomeEmail(name: string, email = '') {

@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   // resolve against the production domain (incl. the dynamic
   // app/opengraph-image.tsx). Without it Next falls back to localhost
   // or the Vercel deployment URL.
-  metadataBase: new URL('https://ascentorbi.com'),
+  metadataBase: new URL('https://joinascentor.com'),
   alternates: { canonical: '/' },
   title: {
     default: 'Ascentor — Build a life that outlasts you.',
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     title: 'Ascentor — The Elevation Summit Platform',
     description:
       'Join a global community of purposeful individuals. The official platform of The Elevation Summit movement.',
-    url: 'https://ascentorbi.com',
+    url: 'https://joinascentor.com',
     siteName: 'Ascentor',
     type: 'website',
   },
@@ -98,7 +98,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Script
           defer
           nonce={nonce}
-          data-domain="ascentorbi.com"
+          data-domain="joinascentor.com"
           src="https://plausible.io/js/script.js"
           strategy="afterInteractive"
         />

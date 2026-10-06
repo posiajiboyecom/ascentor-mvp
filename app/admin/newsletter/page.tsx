@@ -238,7 +238,7 @@ export default function AdminNewsletterPage() {
   <div class="footer">
     <div class="footer-brand">Ascentor</div>
     <div class="footer-text">Your Mentorship Platform</div>
-    <div class="social-links"><a href="https://ascentorbi.com">ascentorbi.com</a></div>
+    <div class="social-links"><a href="https://joinascentor.com">joinascentor.com</a></div>
     <div class="footer-text" style="margin-top:16px;font-size:10px;">You received this because you subscribed to The Rise Letter.<br><a href="#" style="color:var(--admin-text-faint);">Unsubscribe</a></div>
   </div>
 </div>
@@ -280,7 +280,7 @@ export default function AdminNewsletterPage() {
   </div>
   <div class="content">${bodyContent}</div>
   <div class="footer">
-    <div class="footer-text">Ascentor &middot; <a href="https://ascentorbi.com">ascentorbi.com</a></div>
+    <div class="footer-text">Ascentor &middot; <a href="https://joinascentor.com">joinascentor.com</a></div>
     <div class="footer-text" style="margin-top:12px;font-size:10px;">You received this because you subscribed to The Rise Letter.<br><a href="#" style="color:#9A8F85;">Unsubscribe</a></div>
   </div>
 </div>

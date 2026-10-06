@@ -221,7 +221,7 @@ export async function notifyAdmins(input: {
     const { sendEmail } = await import('@/lib/nodemailer');
     const { brandedEmailLayout, esc, p, goldButton } = await import('@/lib/emailTemplate');
     const adminEmail = process.env.ADMIN_EMAIL ?? 'joinascentor@gmail.com';
-    const base = process.env.NEXT_PUBLIC_URL || 'https://ascentorbi.com';
+    const base = process.env.NEXT_PUBLIC_URL || 'https://joinascentor.com';
     await sendEmail({
       to: adminEmail,
       subject: input.title,

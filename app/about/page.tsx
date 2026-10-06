@@ -18,12 +18,12 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'About Ascentor',
     description:
       'Ascentor (formerly AscentorBI) is a purposeful living and leadership development platform: AI coaching with Sage, community in The Circle, expert sessions, and The Elevation Summit, its annual gathering in Lagos.',
-    alternates: { canonical: 'https://ascentorbi.com/about' },
+    alternates: { canonical: 'https://joinascentor.com/about' },
     openGraph: {
       title: 'About Ascentor',
       description:
         'A purposeful living and leadership development platform, and the home of The Elevation Summit.',
-      url: 'https://ascentorbi.com/about',
+      url: 'https://joinascentor.com/about',
       siteName: 'Ascentor',
       type: 'website',
       ...(founderPhoto ? { images: [{ url: founderPhoto }] } : {}),
@@ -88,12 +88,12 @@ export default async function AboutPage() {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',
     name: 'About Ascentor',
-    url: 'https://ascentorbi.com/about',
+    url: 'https://joinascentor.com/about',
     mainEntity: {
       '@type': 'Organization',
       name: 'Ascentor',
       alternateName: ['AscentorBI'],
-      url: 'https://ascentorbi.com',
+      url: 'https://joinascentor.com',
       founder: {
         '@type': 'Person',
         name: founderName,

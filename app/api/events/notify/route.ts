@@ -17,7 +17,7 @@ function buildHtml(opts: { firstName: string; eventTitle: string; message: strin
     recipient: opts.recipient,
     content:
       `<p style="margin:0 0 16px;">${body}</p>` +
-      goldButton('View all events →', 'https://ascentorbi.com/events'),
+      goldButton('View all events →', 'https://joinascentor.com/events'),
   });
 }
 

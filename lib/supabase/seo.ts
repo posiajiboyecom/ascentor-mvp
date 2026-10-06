@@ -1,7 +1,7 @@
 // ============================================================
 // lib/seo.ts — Central SEO configuration & JSON-LD builders
 // Single source of truth for site identity, canonical URLs, and
-// structured data. Never hardcode ascentorbi.com in page files.
+// structured data. Never hardcode joinascentor.com in page files.
 //
 // NOTE: this file intentionally contains NO fabricated ratings or
 // review markup. Only add aggregateRating when real, verifiable
@@ -9,7 +9,7 @@
 // data policies and can get all rich results revoked.
 // ============================================================
 
-export const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://ascentorbi.com';
+export const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://joinascentor.com';
 export const SITE_NAME = 'Ascentor';
 export const TWITTER_HANDLE = '@ascentorhq';
 

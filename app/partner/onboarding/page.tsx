@@ -59,8 +59,8 @@ export default async function PartnerOnboardingPage() {
     {
       num: 5,
       title: 'Go live',
-      description: `Your platform is live at ${tenant?.subdomain ? `${tenant.subdomain}.ascentorbi.com` : 'yourname.ascentorbi.com'}`,
-      href: tenant?.subdomain ? `https://${tenant.subdomain}.ascentorbi.com` : '#',
+      description: `Your platform is live at ${tenant?.subdomain ? `${tenant.subdomain}.joinascentor.com` : 'yourname.joinascentor.com'}`,
+      href: tenant?.subdomain ? `https://${tenant.subdomain}.joinascentor.com` : '#',
       done: tenant?.status === 'active',
       action: 'View live site ↗',
       external: true,

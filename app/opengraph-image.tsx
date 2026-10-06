@@ -52,7 +52,7 @@ export default function OpengraphImage() {
         </div>
 
         <div style={{ fontSize: 26, color: '#9CA3AF', display: 'flex' }}>
-          ascentorbi.com — home of The Elevation Summit
+          joinascentor.com — home of The Elevation Summit
         </div>
       </div>
     ),

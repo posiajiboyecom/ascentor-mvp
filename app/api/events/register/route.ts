@@ -27,7 +27,7 @@ function confirmationHtml(opts: {
         summaryRow('Location', esc(opts.eventLocation))
       ) +
       p(esc(opts.confirmationBody).replace(/\n/g, '<br>')) +
-      goldButton('View all events →', 'https://ascentorbi.com/events'),
+      goldButton('View all events →', 'https://joinascentor.com/events'),
   });
 }
 

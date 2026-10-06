@@ -126,12 +126,14 @@ export async function getPartnerContext(hostname: string): Promise<PartnerContex
     }
   }
 
-  // Extract subdomain from *.ascentorbi.com
-  const subdomainMatch = host.match(/^([^.]+)\.ascentorbi\.com$/);
+  // Extract subdomain from *.joinascentor.com
+  const subdomainMatch = host.match(/^([^.]+)\.(?:joinascentor|ascentorbi)\.com$/);
   const subdomain = subdomainMatch?.[1];
 
   // Skip non-partner hosts
   const isMainDomain =
+    host === 'joinascentor.com' ||
+    host === 'www.joinascentor.com' ||
     host === 'ascentorbi.com' ||
     host === 'www.ascentorbi.com' ||
     host === 'localhost';

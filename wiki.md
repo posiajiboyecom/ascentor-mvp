@@ -445,8 +445,8 @@ database (see the audit notes in the README).
 | Environment | URL | Purpose |
 |-------------|-----|---------|
 | Development | localhost:3000 | Local development |
-| Staging | staging.ascentorbi.com | Pre-production testing |
-| Production | ascentorbi.com | Live platform |
+| Staging | staging.joinascentor.com | Pre-production testing |
+| Production | joinascentor.com | Live platform |
 
 ### CI/CD Pipeline
 
