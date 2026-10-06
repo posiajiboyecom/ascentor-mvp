@@ -275,7 +275,7 @@ export default function AdminEventsPage() {
               })}
             </div>
             <p style={{ fontFamily: B.fontMono, fontSize: '10px', color: B.dim, marginBottom: '20px' }}>
-              Event URL: ascentorbi.com/events/<strong style={{ color: B.muted }}>{editing.slug || 'your-slug'}</strong>
+              Event URL: joinascentor.com/events/<strong style={{ color: B.muted }}>{editing.slug || 'your-slug'}</strong>
             </p>
 
             {saveMsg && (

@@ -38,7 +38,7 @@ import * as commerceSchemas from '@/lib/validation/schemas/commerce';
 const VALID_PLANS   = ['explorer', 'builder', 'climber'] as const
 const VALID_BILLING = ['monthly', 'annual'] as const
 
-const APP_URL = process.env.NEXT_PUBLIC_URL || 'https://ascentorbi.com'
+const APP_URL = process.env.NEXT_PUBLIC_URL || 'https://joinascentor.com'
 
 export async function POST(req: NextRequest) {
   const limit = paymentLimiter.check(getClientIp(req))

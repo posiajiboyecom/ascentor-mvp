@@ -83,7 +83,7 @@ export default async function PartnerOverviewPage() {
       </h1>
       <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '32px' }}>
         {tenant
-          ? `Your platform is live at ${tenant.subdomain}.ascentorbi.com`
+          ? `Your platform is live at ${tenant.subdomain}.joinascentor.com`
           : 'Complete setup to launch your platform'}
       </p>
 

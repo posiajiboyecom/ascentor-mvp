@@ -7,8 +7,8 @@
 // x-ascentor-api-base response header set by proxy.ts on every
 // partner subdomain / custom domain request.
 //
-// Value is 'https://ascentorbi.com' on partner subdomains and custom domains.
-// Value is '' on ascentorbi.com itself (relative URLs work fine there).
+// Value is 'https://joinascentor.com' on partner subdomains and custom domains.
+// Value is '' on joinascentor.com itself (relative URLs work fine there).
 //
 // Usage:
 //   const apiBase = useApiBase();

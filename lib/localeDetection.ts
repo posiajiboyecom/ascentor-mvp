@@ -56,7 +56,7 @@ export async function detectCountry(req: NextRequest): Promise<string> {
 
       if (ip && ip !== '127.0.0.1' && ip !== '::1') {
         const res = await fetch(`https://ipapi.co/${ip}/country/`, {
-          headers: { 'User-Agent': 'ascentorbi.com/1.0' },
+          headers: { 'User-Agent': 'joinascentor.com/1.0' },
           // Short timeout - don't let a slow API kill page load
           signal: AbortSignal.timeout(800),
         })

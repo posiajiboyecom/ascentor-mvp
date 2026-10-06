@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to save brand' }, { status: 500 });
     }
 
-    if (partner.subdomain)     await clearPartnerCache(`${partner.subdomain}.ascentorbi.com`);
+    if (partner.subdomain)     await clearPartnerCache(`${partner.subdomain}.joinascentor.com`);
     if (partner.custom_domain) await clearPartnerCache(partner.custom_domain);
 
     try {

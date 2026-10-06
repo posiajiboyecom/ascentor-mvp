@@ -94,7 +94,7 @@ export default function PartnerSettingsPage() {
             background: 'var(--bg-card)', border: '1px solid var(--border)', borderLeft: 'none',
             borderRadius: '0 8px 8px 0', padding: '10px 14px', color: 'var(--text-dim)', fontSize: '13px',
           }}>
-            .ascentorbi.com
+            .joinascentor.com
           </div>
         </div>
         {subdomainChanged && (
@@ -116,7 +116,7 @@ export default function PartnerSettingsPage() {
           placeholder="coaching.yourdomain.com"
         />
         <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '8px' }}>
-          Point a CNAME record at <strong>ascentorbi.com</strong> then enter your domain here.
+          Point a CNAME record at <strong>joinascentor.com</strong> then enter your domain here.
         </p>
       </div>
 

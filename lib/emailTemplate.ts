@@ -6,9 +6,9 @@
 // SVGs are blocked by most email clients.
 // ---------------------------------------------------------------------------
 
-const SITE_URL = 'https://ascentorbi.com';
+const SITE_URL = 'https://joinascentor.com';
 // Gold mark + dark wordmark on transparent background - same logo shown on
-// ascentorbi.com/elevation-summit. This email shell has a white header, so it
+// joinascentor.com/elevation-summit. This email shell has a white header, so it
 // needs the dark-text variant (do not point this at ascentor-logo-email.png,
 // which is white text meant for lib/summitTicket.ts's black PDF header).
 const LOGO_URL = `${SITE_URL}/images/ascentor-logo-email-light.png`;

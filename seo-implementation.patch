@@ -182,12 +182,12 @@ index be602ca..4aa5320 100644
 +  title: 'Blog',
 +  description:
 +    'Insights on purposeful living, leadership, and legacy — across Mind, Character, Work, Relationships, Community, and Legacy.',
-+  alternates: { canonical: 'https://ascentorbi.com/blog' },
++  alternates: { canonical: 'https://joinascentor.com/blog' },
 +  openGraph: {
 +    title: 'The Ascentor Blog',
 +    description:
 +      'Insights on purposeful living, leadership, and legacy from the Ascentor movement.',
-+    url: 'https://ascentorbi.com/blog',
++    url: 'https://joinascentor.com/blog',
 +    siteName: 'Ascentor',
 +    type: 'website',
 +  },
@@ -258,7 +258,7 @@ index 29fed57..253ce42 100644
 +  // resolve against the production domain (incl. the dynamic
 +  // app/opengraph-image.tsx). Without it Next falls back to localhost
 +  // or the Vercel deployment URL.
-+  metadataBase: new URL('https://ascentorbi.com'),
++  metadataBase: new URL('https://joinascentor.com'),
 +  alternates: { canonical: '/' },
    title: {
      default: 'Ascentor — Build a life that outlasts you.',
@@ -331,7 +331,7 @@ index 0000000..3f66e6c
 +        </div>
 +
 +        <div style={{ fontSize: 26, color: '#9CA3AF', display: 'flex' }}>
-+          ascentorbi.com — home of The Elevation Summit
++          joinascentor.com — home of The Elevation Summit
 +        </div>
 +      </div>
 +    ),
@@ -514,7 +514,7 @@ index 04845ac..dc52453 100644
 +// ============================================================
 +// lib/seo.ts — Central SEO configuration & JSON-LD builders
 +// Single source of truth for site identity, canonical URLs, and
-+// structured data. Never hardcode ascentorbi.com in page files.
++// structured data. Never hardcode joinascentor.com in page files.
  //
 -// Next.js App Router uses the exported `metadata` object
 -// for automatic <head> tag generation.
@@ -546,7 +546,7 @@ index 04845ac..dc52453 100644
 -    default: 'Ascentor — AI Leadership Coaching for Ambitious Professionals',
 -    template: '%s | Ascentor',
 -  },
-+export const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://ascentorbi.com';
++export const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://joinascentor.com';
 +export const SITE_NAME = 'Ascentor';
 +export const TWITTER_HANDLE = '@ascentorhq';
  

@@ -130,7 +130,7 @@ function ActionMenu({
               onClick={() => {
                 setOpen(false);
                 if (a.special === 'revenue') { onEditRevenue(partner); return; }
-                if (a.special === 'link') { window.open(`https://${partner.subdomain}.ascentorbi.com`, '_blank'); return; }
+                if (a.special === 'link') { window.open(`https://${partner.subdomain}.joinascentor.com`, '_blank'); return; }
                 if (a.action) onAction(partner.id, a.action);
               }}
               style={{
@@ -532,7 +532,7 @@ function AdminPartnersPageInner() {
                     )}
                   </div>
                   <p style={{ fontSize: 11, color: 'var(--admin-text-faint)', fontFamily: "Metropolis, 'Inter', sans-serif" }}>
-                    {p.subdomain}.ascentorbi.com
+                    {p.subdomain}.joinascentor.com
                   </p>
                   <p style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 2 }}>
                     {p.profiles?.full_name || '-'} · {p.profiles?.email}

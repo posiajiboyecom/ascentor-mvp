@@ -71,8 +71,8 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
 // ── Build email HTML from push payload ──────────────────────────────────────
 function buildEmailHtml(payload: NotifyPayload, recipient: string): string {
   const url = payload.url
-    ? `https://ascentorbi.com${payload.url.startsWith('/') ? '' : '/'}${payload.url}`
-    : 'https://ascentorbi.com/dashboard';
+    ? `https://joinascentor.com${payload.url.startsWith('/') ? '' : '/'}${payload.url}`
+    : 'https://joinascentor.com/dashboard';
 
   return brandedEmailLayout({
     preheader: payload.body,
@@ -82,7 +82,7 @@ function buildEmailHtml(payload: NotifyPayload, recipient: string): string {
     content:
       p(esc(payload.body)) +
       goldButton('View in Ascentor →', url) +
-      p('<span style="color:#9CA3AF;font-size:13px;">You are receiving this because you have an Ascentor account. <a href="https://ascentorbi.com/account" style="color:#C8A96E;text-decoration:none;">Manage notification preferences</a></span>'),
+      p('<span style="color:#9CA3AF;font-size:13px;">You are receiving this because you have an Ascentor account. <a href="https://joinascentor.com/account" style="color:#C8A96E;text-decoration:none;">Manage notification preferences</a></span>'),
   });
 }
 

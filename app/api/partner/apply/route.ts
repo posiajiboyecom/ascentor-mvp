@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       const applicantEmail = userData?.user?.email || 'unknown';
 
       // Build a signed approval URL pointing to the admin partners page
-      const adminApproveUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://ascentorbi.com'}/admin/partners?action=approve&id=${partner.id}`;
+      const adminApproveUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://joinascentor.com'}/admin/partners?action=approve&id=${partner.id}`;
 
       await sendEmail({
         from:    'Ascentor Partners <noreply@ascentorbi.com>',
@@ -119,13 +119,13 @@ export async function POST(req: NextRequest) {
             content:
               summaryBox(
                 summaryRow('Platform', esc(platform_name)) +
-                summaryRow('Subdomain', `${esc(cleanSubdomain)}.ascentorbi.com`) +
+                summaryRow('Subdomain', `${esc(cleanSubdomain)}.joinascentor.com`) +
                 summaryRow('Applicant', esc(applicantEmail)) +
                 summaryRow('Niche', esc(coaching_niche || '-')) +
                 summaryRow('Bio', esc(bio || '-'))
               ) +
               goldButton('Review &amp; Approve in Admin Panel →', adminApproveUrl) +
-              p('<span style="color:#9CA3AF;font-size:13px;">Log in to your admin account at ascentorbi.com/admin/partners to approve, reject, or adjust the revenue share.</span>'),
+              p('<span style="color:#9CA3AF;font-size:13px;">Log in to your admin account at joinascentor.com/admin/partners to approve, reject, or adjust the revenue share.</span>'),
         }),
       });
     } catch (emailErr) {

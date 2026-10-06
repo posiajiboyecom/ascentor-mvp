@@ -231,9 +231,9 @@ export async function PATCH(req: NextRequest) {
             heading: 'You\'re approved.',
             recipient: ownerProfile.email,
             content:
-              p(`Your partner platform <strong>${partnerName}</strong> is now live at <a href="https://${esc(partner.subdomain)}.ascentorbi.com" style="color:#C8A96E;text-decoration:none;">${esc(partner.subdomain)}.ascentorbi.com</a>.`) +
+              p(`Your partner platform <strong>${partnerName}</strong> is now live at <a href="https://${esc(partner.subdomain)}.joinascentor.com" style="color:#C8A96E;text-decoration:none;">${esc(partner.subdomain)}.joinascentor.com</a>.`) +
               p('Head to your partner dashboard to customise your brand and invite members.') +
-              goldButton('Go to Partner Dashboard →', 'https://ascentorbi.com/partner/brand'),
+              goldButton('Go to Partner Dashboard →', 'https://joinascentor.com/partner/brand'),
           }),
         },
         suspend: {

@@ -6,7 +6,7 @@
 //
 // Register this URL in Paystack Dashboard:
 //   Settings -> API Keys & Webhooks -> Webhook URL
-//   -> https://ascentorbi.com/api/pay/webhook
+//   -> https://joinascentor.com/api/pay/webhook
 //
 // charge.success -> lib/paymentSettlement.settleReference()
 //   The reference must belong to a payment_attempts row we created;

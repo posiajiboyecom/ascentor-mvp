@@ -46,7 +46,7 @@ function newsletterLayout(opts: {
     preheaderText, eyebrow = 'THE RISE LETTER · ASCENTOR · FOR THE AMBITIOUS',
     headline, subhead, meta = 'VOL 1 · 5-MIN READ',
     pullQuote, body,
-    ctaText = 'Read on Ascentor →', ctaUrl = 'https://ascentorbi.com/blog',
+    ctaText = 'Read on Ascentor →', ctaUrl = 'https://joinascentor.com/blog',
     unsubscribeToken = '',
   } = opts;
 
@@ -112,7 +112,7 @@ function newsletterLayout(opts: {
           <!-- Wordmark -->
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
             <tr><td align="center" style="padding-bottom:32px">
-              <a href="https://ascentorbi.com" style="text-decoration:none">
+              <a href="https://joinascentor.com" style="text-decoration:none">
                 <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:700;letter-spacing:0.08em;color:${B.cream}">ASCENTOR</span>
               </a>
             </td></tr>
@@ -186,14 +186,14 @@ function newsletterLayout(opts: {
             purposeful development for purposeful individuals worldwide.
           </p>
           <p style="margin:0;font-family:'DM Mono',monospace,sans-serif;font-size:10px;color:${B.faint}">
-            <a href="https://ascentorbi.com/privacy" style="color:${B.faint};text-decoration:none">Privacy</a>
+            <a href="https://joinascentor.com/privacy" style="color:${B.faint};text-decoration:none">Privacy</a>
             &nbsp;·&nbsp;
-            <a href="https://ascentorbi.com/terms" style="color:${B.faint};text-decoration:none">Terms</a>
+            <a href="https://joinascentor.com/terms" style="color:${B.faint};text-decoration:none">Terms</a>
             &nbsp;·&nbsp;
-            <a href="https://ascentorbi.com/unsubscribe${unsubscribeToken ? `?token=${unsubscribeToken}` : ''}" style="color:${B.muted};text-decoration:underline">Unsubscribe</a>
+            <a href="https://joinascentor.com/unsubscribe${unsubscribeToken ? `?token=${unsubscribeToken}` : ''}" style="color:${B.muted};text-decoration:underline">Unsubscribe</a>
           </p>
           <p style="margin:12px 0 0;font-family:'DM Mono',monospace,sans-serif;font-size:9px;color:${B.faint}">
-            © ${new Date().getFullYear()} Ascentor · ascentorbi.com
+            © ${new Date().getFullYear()} Ascentor · joinascentor.com
           </p>
         </td></tr>
 
@@ -249,7 +249,7 @@ function transactionalLayout(opts: {
 
         <!-- Header -->
         <tr><td align="center" style="padding:36px 40px 24px;border-bottom:1px solid ${B.border}">
-          <a href="https://ascentorbi.com" style="text-decoration:none">
+          <a href="https://joinascentor.com" style="text-decoration:none">
             <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-weight:700;letter-spacing:0.1em;color:${B.cream}">ASCENTOR</span>
           </a>
         </td></tr>
@@ -277,9 +277,9 @@ function transactionalLayout(opts: {
         <!-- Footer -->
         <tr><td style="padding:20px 40px 28px;border-top:1px solid ${B.border};text-align:center">
           <p style="margin:0;font-family:'DM Mono',monospace,sans-serif;font-size:10px;color:${B.faint}">
-            <a href="https://ascentorbi.com/terms" style="color:${B.faint};text-decoration:none">Terms</a>
+            <a href="https://joinascentor.com/terms" style="color:${B.faint};text-decoration:none">Terms</a>
             &nbsp;·&nbsp;
-            <a href="https://ascentorbi.com/privacy" style="color:${B.faint};text-decoration:none">Privacy</a>
+            <a href="https://joinascentor.com/privacy" style="color:${B.faint};text-decoration:none">Privacy</a>
             &nbsp;·&nbsp;
             © ${new Date().getFullYear()} Ascentor
           </p>
@@ -460,7 +460,7 @@ export function welcomeEmail(name: string) {
         <p style="margin:0;font-size:13px;color:${B.faint}">Your  is active. No credit card needed.</p>
       `,
       ctaText: 'Go to Dashboard →',
-      ctaUrl: 'https://ascentorbi.com/dashboard',
+      ctaUrl: 'https://joinascentor.com/dashboard',
     }),
   };
 }
@@ -507,7 +507,7 @@ export function coachingSummaryEmail(
         ` : ''}
       `,
       ctaText: 'Continue with Sage →',
-      ctaUrl: 'https://ascentorbi.com/coach',
+      ctaUrl: 'https://joinascentor.com/coach',
     }),
   };
 }
@@ -549,7 +549,7 @@ export function goalReminderEmail(
         </p>
       `,
       ctaText: 'Resume with Sage →',
-      ctaUrl: 'https://ascentorbi.com/coach',
+      ctaUrl: 'https://joinascentor.com/coach',
     }),
   };
 }

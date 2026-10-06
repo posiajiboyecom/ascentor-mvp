@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { settleReference } from '@/lib/paymentSettlement'
 
-const APP_URL = process.env.NEXT_PUBLIC_URL || 'https://ascentorbi.com'
+const APP_URL = process.env.NEXT_PUBLIC_URL || 'https://joinascentor.com'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)

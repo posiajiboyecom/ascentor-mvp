@@ -227,7 +227,7 @@ export default function PartnerMemberShell({
           color: 'var(--text-dim)', opacity: 0.5,
         }}>
           Powered by{' '}
-          <a href="https://ascentorbi.com" target="_blank" rel="noopener noreferrer"
+          <a href="https://joinascentor.com" target="_blank" rel="noopener noreferrer"
             style={{ color: 'var(--accent)', textDecoration: 'none' }}>
             Ascentor
           </a>

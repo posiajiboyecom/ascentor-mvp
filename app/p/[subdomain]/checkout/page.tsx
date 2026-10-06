@@ -6,10 +6,10 @@
 //             that proxy.ts (FILE_09) injects on custom domain
 //             requests. The value is passed as the `apiBase` prop
 //             to PartnerCheckoutClient so the Paystack onSuccess
-//             verify fetch hits ascentorbi.com/api/... instead of
+//             verify fetch hits joinascentor.com/api/... instead of
 //             customdomain.com/api/... (which would 404).
 //
-//             On *.ascentorbi.com subdomains the header is absent,
+//             On *.joinascentor.com subdomains the header is absent,
 //             apiBase is '' and relative URLs work unchanged.
 // ============================================================
 
@@ -29,9 +29,9 @@ export default async function PartnerCheckoutPage({
   const hostname = headersList.get('host') || '';
 
   // BUG-11: on custom domains (coaching.johnadeyemi.com) the middleware
-  // injects x-ascentor-api-base = 'https://ascentorbi.com' so the client
+  // injects x-ascentor-api-base = 'https://joinascentor.com' so the client
   // can prefix /api/... calls with the correct origin.
-  // On *.ascentorbi.com subdomains this header is absent and apiBase is '',
+  // On *.joinascentor.com subdomains this header is absent and apiBase is '',
   // which means relative URLs continue to work unchanged.
   const apiBase = headersList.get('x-ascentor-api-base') || '';
 

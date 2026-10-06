@@ -4,9 +4,9 @@ import { generateSummitTicket, type TicketData } from './summitTicket';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { SUMMIT_DATE_LABEL, SUMMIT_DATETIME_LABEL } from '@/lib/elevationSummit';
 
-const SUMMIT_URL = 'https://ascentorbi.com/elevation-summit';
+const SUMMIT_URL = 'https://joinascentor.com/elevation-summit';
 const SUMMIT_WATCH_URL = `${SUMMIT_URL}/watch`;
-const DONATE_URL = 'https://ascentorbi.com/donate';
+const DONATE_URL = 'https://joinascentor.com/donate';
 
 /** Where every Summit admin alert goes. Deliberately NOT ADMIN_EMAIL, which may point elsewhere. */
 export const SUMMIT_ADMIN_EMAIL = process.env.SUMMIT_ADMIN_EMAIL || 'joinascentor@gmail.com';
@@ -215,7 +215,7 @@ export async function sendAdminPaymentNotification(i: AdminPaidInfo) {
           summaryRow('Amount', isFree ? 'Free' : naira(i.amountPaid)) +
           (i.reference ? summaryRow('Reference', esc(i.reference)) : '')
         ) +
-        goldButton('Open registrations', 'https://ascentorbi.com/admin/elevation-summit/registrations'),
+        goldButton('Open registrations', 'https://joinascentor.com/admin/elevation-summit/registrations'),
     }),
   });
 }
@@ -420,7 +420,7 @@ export async function sendAdminDonationNotification(i: AdminDonationInfo) {
           summaryRow('Reference', esc(i.reference)) +
           (i.message ? summaryRow('Message', esc(i.message)) : '')
         ) +
-        goldButton('Open donations', 'https://ascentorbi.com/admin/summit-donations'),
+        goldButton('Open donations', 'https://joinascentor.com/admin/summit-donations'),
     }),
   });
 }

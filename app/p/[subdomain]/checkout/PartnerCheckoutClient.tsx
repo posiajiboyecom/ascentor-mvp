@@ -9,13 +9,13 @@
 // BUG FIXED:
 //   BUG-11 - The Paystack onSuccess handler called:
 //               fetch('/api/partner/payment/verify', ...)
-//             This is a relative URL. On the ascentorbi.com
-//             subdomain (john.ascentorbi.com) this works because
-//             the request stays on ascentorbi.com's Vercel deployment.
+//             This is a relative URL. On the joinascentor.com
+//             subdomain (john.joinascentor.com) this works because
+//             the request stays on joinascentor.com's Vercel deployment.
 //             But on custom domains (coaching.johnadeyemi.com),
 //             the relative URL resolves to:
 //               coaching.johnadeyemi.com/api/partner/payment/verify
-//             which does not exist - only ascentorbi.com hosts
+//             which does not exist - only joinascentor.com hosts
 //             the API routes.
 //
 //             Fix: the proxy middleware now injects an
@@ -135,7 +135,7 @@ export default function PartnerCheckoutClient({
         },
         onSuccess: async (response: { reference: string }) => {
           // FIX BUG-11: prefix with apiBase so custom domain requests hit
-          // ascentorbi.com/api/... instead of customdomain.com/api/...
+          // joinascentor.com/api/... instead of customdomain.com/api/...
           const verifyUrl = `${apiBase}/api/partner/payment/verify`;
 
           const res = await fetch(verifyUrl, {

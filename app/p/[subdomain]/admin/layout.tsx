@@ -5,7 +5,7 @@
 //   WL-09 - Owner-only guard (non-owners redirected to access-denied)
 //
 // HOW ADMIN ROUTING WORKS:
-//   User on demo.ascentorbi.com clicks "Admin" → href="/admin/brand"
+//   User on demo.joinascentor.com clicks "Admin" → href="/admin/brand"
 //   Proxy rewrites: /admin/brand → /p/demo/admin/brand (internal)
 //   This layout loads at /p/demo/admin/*, wraps children in PartnerAdminShell.
 //   basePath="/admin" so sidebar links stay as /admin/brand, /admin/members etc.

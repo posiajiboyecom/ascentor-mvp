@@ -75,7 +75,7 @@ export default function PartnerApplyPage() {
           <p style={{ color: 'var(--text-muted)', fontSize: 15, lineHeight: 1.7, marginBottom: 28 }}>
             We'll review your application and get back to you within 48 hours.
             Your platform will be live at{' '}
-            <strong style={{ color: 'var(--accent)' }}>{subdomain}.ascentorbi.com</strong>{' '}
+            <strong style={{ color: 'var(--accent)' }}>{subdomain}.joinascentor.com</strong>{' '}
             once approved.
           </p>
           <Link href="/dashboard"
@@ -157,12 +157,12 @@ export default function PartnerApplyPage() {
                 border: '1px solid var(--border)', borderRadius: '0 10px 10px 0',
                 fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap',
               }}>
-                .ascentorbi.com
+                .joinascentor.com
               </span>
             </div>
             {subdomain && (
               <p style={{ fontSize: 11, color: 'var(--accent)', marginTop: 6 }}>
-                Your platform: {subdomain}.ascentorbi.com
+                Your platform: {subdomain}.joinascentor.com
               </p>
             )}
           </Field>

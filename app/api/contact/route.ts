@@ -58,7 +58,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
 
 function adminEmailHtml(name: string, email: string, subject: string, message: string): string {
   const subjectLabel = SUBJECT_LABELS[subject] || subject;
-  const adminUrl = 'https://ascentorbi.com/admin/inbox';
+  const adminUrl = 'https://joinascentor.com/admin/inbox';
   return brandedEmailLayout({
     preheader: `New contact message: ${subjectLabel}, from ${name}`,
     eyebrow: 'New Contact Message',
@@ -88,7 +88,7 @@ function ackEmailHtml(firstName: string, subjectLabel: string, recipient: string
     recipient,
     content:
       p(`Your message about <strong>${esc(subjectLabel)}</strong> reached us. We read every message and aim to reply within <strong>2–3 business days</strong>.`) +
-      goldButton('Back to Ascentor →', 'https://ascentorbi.com'),
+      goldButton('Back to Ascentor →', 'https://joinascentor.com'),
   });
 }
 

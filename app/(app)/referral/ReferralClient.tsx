@@ -25,7 +25,7 @@ export default function ReferralClient({ firstName, referralCode, referralCount,
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ascentorbi.com';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://joinascentor.com';
   const referralLink = `${baseUrl}/signup?ref=${referralCode}`;
 
   const rewardedCount = referrals.filter((r) => r.status === 'rewarded').length;

@@ -5,12 +5,12 @@ export const metadata = {
   title: 'Blog',
   description:
     'Insights on purposeful living, leadership, and legacy, across Mind, Character, Work, Relationships, Community, and Legacy.',
-  alternates: { canonical: 'https://ascentorbi.com/blog' },
+  alternates: { canonical: 'https://joinascentor.com/blog' },
   openGraph: {
     title: 'The Ascentor Blog',
     description:
       'Insights on purposeful living, leadership, and legacy from the Ascentor movement.',
-    url: 'https://ascentorbi.com/blog',
+    url: 'https://joinascentor.com/blog',
     siteName: 'Ascentor',
     type: 'website',
   },

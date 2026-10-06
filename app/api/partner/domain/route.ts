@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
     await saveDomainToDb(partnerId, domain, partner.subdomain, vercelData);
 
     // 9. Bust partner context cache
-    if (partner.subdomain) await clearPartnerCache(`${partner.subdomain}.ascentorbi.com`);
+    if (partner.subdomain) await clearPartnerCache(`${partner.subdomain}.joinascentor.com`);
     if (partner.custom_domain) await clearPartnerCache(partner.custom_domain);
     await clearPartnerCache(domain);
 
