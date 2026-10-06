@@ -5,13 +5,12 @@
 // notifications, and Sage, the floating AI coach.
 // Light theme only.
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import { Gift, Settings, ShieldCheck, LayoutDashboard, UserRound } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { NotificationBell } from '@/components/Notifications';
-import RailBillboard from '@/components/nav/RailBillboard';
+import SummitModal from './SummitModal';
 import { NAV_ITEMS } from '@/lib/nav-items';
 import ShellLayout from './ShellLayout';
 import SageFloat, { clearSageGreeting } from './SageFloat';
@@ -22,11 +21,12 @@ interface UserShellProps {
   email?: string | null;
   avatarUrl?: string | null;
   role?: string | null;
-  summitDaysAway: number;
+  userId: string;
+  summitRegistered: boolean;
   children: React.ReactNode;
 }
 
-export default function UserShell({ userName, email, avatarUrl, role, summitDaysAway, children }: UserShellProps) {
+export default function UserShell({ userId, userName, email, avatarUrl, role, summitRegistered, children }: UserShellProps) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const isStaff = role === 'admin' || role === 'moderator';
@@ -73,32 +73,12 @@ export default function UserShell({ userName, email, avatarUrl, role, summitDays
           ...(isStaff ? [{ href: '/admin', label: 'Admin dashboard', icon: <ShieldCheck /> }] : []),
         ]}
         headerActions={<NotificationBell />}
-        sidebarExtra={
-          <>
-            {/* Managed from Admin -> Rail Billboards */}
-            <RailBillboard />
-            <Link
-              href="/elevation-summit"
-              style={{
-                display: 'block', marginTop: 8, padding: '12px 14px', borderRadius: 12, textDecoration: 'none',
-                border: '1px solid rgba(200,169,110,0.28)', background: 'rgba(200,169,110,0.08)',
-              }}
-            >
-              <p style={{ margin: 0, fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#C8A96E' }}>
-                The Elevation Summit
-              </p>
-              <p style={{ margin: '4px 0 0', fontSize: 13.5, fontWeight: 600, color: '#FAFAF8' }}>19 Nov 2026 · Lagos</p>
-              <p style={{ margin: '4px 0 0', fontSize: 12, fontWeight: 500, color: '#C8A96E' }}>
-                {summitDaysAway} days away, learn more →
-              </p>
-            </Link>
-          </>
-        }
       >
         {children}
       </ShellLayout>
 
       <SageFloat userName={userName} />
+      <SummitModal registered={summitRegistered} userId={userId} />
     </>
   );
 }

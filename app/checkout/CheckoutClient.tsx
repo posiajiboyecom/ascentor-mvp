@@ -110,7 +110,7 @@ function yearlySavings(plan: Plan) {
   return Math.round(plan.monthlyPrice * 12 - plan.yearlyPrice)
 }
 
-export default function CheckoutClient() {
+export default function CheckoutClient({ embedded = false }: { embedded?: boolean }) {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const supabase     = useMemo(() => createClient(), [])
@@ -205,10 +205,10 @@ export default function CheckoutClient() {
     return (
       <>
         <style>{checkoutStyles()}</style>
-        <div className="co-root" data-co-theme="light">
-          <nav className="co-nav">
+        <div className={`co-root${embedded ? ' co-embedded' : ''}`} data-co-theme="light">
+          {!embedded && <nav className="co-nav">
             <Link href="/dashboard" className="co-back-btn">← Dashboard</Link>
-          </nav>
+          </nav>}
 
           <div className="co-hero">
             <div className="co-hero-badge" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}>
@@ -324,17 +324,16 @@ export default function CheckoutClient() {
   return (
     <>
       <style>{checkoutStyles()}</style>
-      <div className="co-root" data-co-theme="light">
+      <div className={`co-root${embedded ? ' co-embedded' : ''}`} data-co-theme="light">
 
-        <nav className="co-nav">
+        {!embedded && <nav className="co-nav">
           <Link href="/" className="co-nav-logo">
             <LogoImg />
-            <span className="co-logo-text">Ascentor</span>
           </Link>
           {!fromOnboarding && (
             <Link href="/dashboard" className="co-back-btn">← Dashboard</Link>
           )}
-        </nav>
+        </nav>}
 
         <div className="co-hero">
           {fromOnboarding && (
@@ -525,6 +524,8 @@ function checkoutStyles(): string {
       font-family: 'Metropolis', sans-serif; color: var(--text);
       position: relative; overflow-x: hidden;
     }
+    .co-root.co-embedded { min-height: 0; background: transparent; }
+    .co-root.co-embedded::before, .co-root.co-embedded::after { display: none; }
     .co-root::before {
       content: ''; position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
       width: 900px; height: 900px;

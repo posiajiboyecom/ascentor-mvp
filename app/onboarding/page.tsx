@@ -1,10 +1,11 @@
 // app/onboarding/page.tsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Ascentor onboarding - 3 screens, about a minute, personalised with the member's name.
+// Ascentor onboarding - 4 screens, about a minute, personalised with the member's name.
 //
 // Screen 1 - Identity:    confirm name + primary dimension (one tap advances)
 // Screen 2 - Mission:     "I am building..." (seeds goal_text + what_building)
-// Screen 3 - Commitment:  "This week I will..." (seeds the first user_commitment)
+// Screen 3 - About you:   stage, current and goal role, industry, daily time, biggest challenge
+// Screen 4 - Commitment:  "This week I will..." (seeds the first user_commitment)
 //
 // The name comes from the account itself: the sign-up form (email) or the provider profile (Google,
 // LinkedIn). Saves: full_name, primary_dimension, what_building, onboarding_completed = true and
@@ -78,7 +79,20 @@ const BTN_GHOST: React.CSSProperties = {
   cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
 };
 
-function ProgressBar({ step, total = 3 }: { step: number; total?: number }) {
+const STAGES = [
+  { value: 'seeker',  label: 'The Seeker',  sub: 'Finding my purpose' },
+  { value: 'builder', label: 'The Builder', sub: 'Building toward it' },
+  { value: 'leader',  label: 'The Leader',  sub: 'Leading others' },
+] as const;
+const INDUSTRIES = ['Technology', 'Finance & Banking', 'Consulting', 'Healthcare', 'Education', 'Energy', 'Telecom', 'Government', 'NGO', 'Real Estate', 'Manufacturing', 'Media & Entertainment', 'Agriculture', 'Legal', 'Retail', 'Other'];
+// Must match the profiles_time_commitment_check constraint.
+const TIMES = [
+  { value: '5min',  label: '5 min a day' },
+  { value: '15min', label: '15 min a day' },
+  { value: '30min', label: '30 min a day' },
+] as const;
+
+function ProgressBar({ step, total = 4 }: { step: number; total?: number }) {
   return (
     <div role="img" aria-label={`Step ${step} of ${total}`} style={{ display: 'flex', gap: 8, marginBottom: '1.75rem' }}>
       {Array.from({ length: total }).map((_, i) => (
@@ -129,10 +143,15 @@ export default function OnboardingPage() {
   const supabase     = createClient();
 
   const initialStep = parseInt(searchParams.get('step') || '1', 10);
-  const [screen, setScreen]         = useState<1 | 2 | 3>(initialStep === 2 ? 2 : initialStep === 3 ? 3 : 1);
+  const [screen, setScreen]         = useState<1 | 2 | 3 | 4>(initialStep === 2 ? 2 : initialStep === 3 ? 3 : initialStep === 4 ? 4 : 1);
+  const [stage, setStage]           = useState('');
+  const [currentRole, setCurrentRole] = useState('');
+  const [goalRole, setGoalRole]     = useState('');
+  const [industry, setIndustry]     = useState('');
+  const [timeCommitment, setTimeCommitment] = useState('15min');
+  const [challenge, setChallenge]   = useState('');
   const [fullName, setFullName]     = useState('');
   const [nameFromAccount, setNameFromAccount] = useState(false);
-  const [email, setEmail]           = useState('');
   const [dimension, setDimension]   = useState<string | null>(null);
   const [building, setBuilding]     = useState('');
   const [commitment, setCommitment] = useState('');
@@ -156,11 +175,10 @@ export default function OnboardingPage() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/login'); return; }
-      setEmail(user.email ?? '');
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, onboarding_completed, primary_dimension, what_building')
+        .select('full_name, onboarding_completed, primary_dimension, what_building, ascent_stage, current_role, goal_role, industry, time_commitment, biggest_challenge')
         .eq('id', user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -174,6 +192,12 @@ export default function OnboardingPage() {
       if (name) { setFullName(name); setNameFromAccount(true); }
       if (profile?.primary_dimension && DIMENSIONS.some((d) => d.value === profile.primary_dimension)) setDimension(profile.primary_dimension);
       if (profile?.what_building) setBuilding(profile.what_building);
+      if (profile?.ascent_stage) setStage(profile.ascent_stage);
+      if (profile?.current_role) setCurrentRole(profile.current_role);
+      if (profile?.goal_role) setGoalRole(profile.goal_role);
+      if (profile?.industry) setIndustry(profile.industry);
+      if (profile?.time_commitment) setTimeCommitment(profile.time_commitment);
+      if (profile?.biggest_challenge) setChallenge(profile.biggest_challenge);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -181,7 +205,7 @@ export default function OnboardingPage() {
 
   useEffect(() => { if (screen === 1 && !nameFromAccount) nameRef.current?.focus(); }, [screen, nameFromAccount]);
   useEffect(() => { if (screen === 2) buildingRef.current?.focus(); }, [screen]);
-  useEffect(() => { if (screen === 3) commitmentRef.current?.focus(); }, [screen]);
+  useEffect(() => { if (screen === 4) commitmentRef.current?.focus(); }, [screen]);
 
   function handleDimensionSelect(value: string) {
     setDimension(value);
@@ -197,6 +221,11 @@ export default function OnboardingPage() {
   function handleMissionNext() {
     if (!building.trim() || saving) return;
     setScreen(3);
+  }
+
+  function handleAboutNext() {
+    if (!stage) return;
+    setScreen(4);
   }
 
   // Idempotent: a double click, a retry after an error or a revisit never duplicates the goal or the
@@ -227,6 +256,12 @@ export default function OnboardingPage() {
         full_name:            fullName.trim(),
         primary_dimension:    dimension,
         what_building:        building.trim(),
+        ascent_stage:         stage || null,
+        current_role:         currentRole.trim() || null,
+        goal_role:            goalRole.trim() || null,
+        industry:             industry || null,
+        time_commitment:      timeCommitment,
+        biggest_challenge:    challenge.trim() || null,
         referral_code:        referralCode,
         onboarding_completed: true,
         updated_at:           new Date().toISOString(),
@@ -342,9 +377,6 @@ export default function OnboardingPage() {
                 }}
               />
               {nameError && <p role="alert" style={{ fontFamily: fontBody, fontSize: 12, color: '#EF4444', marginTop: 6 }}>Enter your name first</p>}
-              {nameFromAccount && !nameError && (
-                <p style={HINT}>We took this from your account{email ? ` (${email})` : ''}. Change it if it is not how you want to be known.</p>
-              )}
             </div>
 
             <div>
@@ -431,10 +463,72 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ── SCREEN 3: Commitment ── */}
+        {/* ── SCREEN 3: About you ── */}
         {screen === 3 && (
           <div key="s3" style={{ animation: 'fadeUp 0.25s ease both' }}>
             <ProgressBar step={3} />
+            <Eyebrow>About you</Eyebrow>
+            <h1 style={H1}>{first ? `${first}, where are you in your ascent?` : 'Where are you in your ascent?'}</h1>
+            <p style={SUB}>This shapes your coaching, sessions and goals. You can change any of it later in Settings.</p>
+
+            <div role="group" aria-label="Your stage" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '1.25rem' }}>
+              {STAGES.map((st) => {
+                const active = stage === st.value;
+                return (
+                  <button key={st.value} type="button" aria-pressed={active} onClick={() => setStage(st.value)}
+                    style={{ padding: '0.8rem 0.5rem', borderRadius: '0.75rem', textAlign: 'center', cursor: 'pointer',
+                      border: active ? `2px solid ${GOLD_BG}` : `1.5px solid ${BORDER}`, background: active ? 'rgba(200,169,110,0.09)' : BG }}>
+                    <span style={{ display: 'block', fontFamily: fontDisplay, fontSize: 13, fontWeight: 700, color: active ? GOLD : DARK }}>{st.label}</span>
+                    <span style={{ display: 'block', fontFamily: fontBody, fontSize: 11, color: MUTED, marginTop: 2 }}>{st.sub}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.875rem', marginBottom: '0.875rem' }}>
+              <div>
+                <label htmlFor="ob-role" style={LABEL}>Current role</label>
+                <input id="ob-role" type="text" value={currentRole} onChange={(e) => setCurrentRole(e.target.value)} placeholder="e.g. Software Engineer" maxLength={80} style={INPUT} />
+              </div>
+              <div>
+                <label htmlFor="ob-goal" style={LABEL}>Goal role</label>
+                <input id="ob-goal" type="text" value={goalRole} onChange={(e) => setGoalRole(e.target.value)} placeholder="e.g. Engineering Manager" maxLength={80} style={INPUT} />
+              </div>
+              <div>
+                <label htmlFor="ob-industry" style={LABEL}>Industry</label>
+                <select id="ob-industry" value={industry} onChange={(e) => setIndustry(e.target.value)} style={INPUT}>
+                  <option value="">Select industry</option>
+                  {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="ob-time" style={LABEL}>Daily commitment</label>
+                <select id="ob-time" value={timeCommitment} onChange={(e) => setTimeCommitment(e.target.value)} style={INPUT}>
+                  {TIMES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label htmlFor="ob-challenge" style={LABEL}>Biggest challenge right now</label>
+              <textarea id="ob-challenge" value={challenge} onChange={(e) => setChallenge(e.target.value)} rows={2} maxLength={300}
+                placeholder="What is getting in the way?" style={{ ...INPUT, resize: 'none' }} />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.625rem' }}>
+              <button type="button" onClick={() => setScreen(2)} style={BTN_GHOST} aria-label="Back"><ArrowLeft size={18} aria-hidden="true" /></button>
+              <button type="button" onClick={handleAboutNext} disabled={!stage}
+                style={{ ...BTN_PRIMARY, flex: 1, opacity: stage ? 1 : 0.35, cursor: stage ? 'pointer' : 'not-allowed' }}>
+                Continue <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── SCREEN 4: Commitment ── */}
+        {screen === 4 && (
+          <div key="s4" style={{ animation: 'fadeUp 0.25s ease both' }}>
+            <ProgressBar step={4} />
             <Eyebrow>Your First Commitment</Eyebrow>
             <h1 style={H1}>{first ? `What will you do this week, ${first}?` : 'What will you do this week?'}</h1>
             <p style={SUB}>
@@ -459,7 +553,7 @@ export default function OnboardingPage() {
             </div>
 
             <div style={{ display: 'flex', gap: '0.625rem' }}>
-              <button type="button" onClick={() => setScreen(2)} style={BTN_GHOST} aria-label="Back"><ArrowLeft size={18} aria-hidden="true" /></button>
+              <button type="button" onClick={() => setScreen(3)} style={BTN_GHOST} aria-label="Back"><ArrowLeft size={18} aria-hidden="true" /></button>
               <button
                 type="button"
                 onClick={handleComplete}

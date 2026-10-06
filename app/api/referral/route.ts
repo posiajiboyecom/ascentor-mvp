@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as memberSchemas from '@/lib/validation/schemas/member';
@@ -17,7 +18,9 @@ export async function POST(request: Request) {
     const code = parsed.data.referralCode;
 
     // 1. Find referrer by code
-    const { data: referrer, error: lookupError } = await supabase
+    const { data: referrer, error: lookupError } = // Reading ANOTHER member's profile (the referrer) is a server-side lookup: members cannot read
+    // each other's profiles directly.
+    await supabaseAdmin
       .from('profiles')
       .select('id, full_name, referral_code')
       .eq('referral_code', code)
@@ -109,7 +112,7 @@ export async function GET() {
     const referralDetails = [];
     if (referrals && referrals.length > 0) {
       const referredIds = referrals.map((r: any) => r.referred_id);
-      const { data: referredProfiles } = await supabase
+      const { data: referredProfiles } = await supabaseAdmin
         .from('profiles')
         .select('id, full_name, created_at')
         .in('id', referredIds);

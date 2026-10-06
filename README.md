@@ -385,6 +385,22 @@ identically so the endpoint cannot be used to discover accounts. `/api/auth/rese
 with an optimistic-lock attempt counter, enforces the password policy, updates the password, revokes every
 session, and emails a "password changed" notice.
 
+### 5.2.1 Settings, password change and account deletion
+
+Settings has five tabs: **Account** (name, email, member since and sign-in method, all read-only, plus sign out
+and account deletion), **Profile** (what the member is building, ascent stage, current and goal role, industry,
+daily commitment, biggest challenge; these are collected during onboarding and edited here), **Security**,
+**Plan** and **Alerts**.
+
+Changing a password (`/api/account/password`) requires the current password, applies the password policy,
+keeps the current session, signs every other device out and emails a notice. Accounts that sign in with Google
+or LinkedIn see which provider manages their credentials instead.
+
+Deleting an account (`/api/account/delete`) requires typing `DELETE`, plus the password for email accounts. It
+refuses while a paid subscription is live (the member cancels under Plan first), for staff accounts and for
+partner owners. Otherwise it removes the avatar and Summit registrations, writes an audit entry, deletes the
+auth user (every table that references it cascades), sends a confirmation email and ends the session.
+
 ### 5.3 A Sage coaching message
 
 ```mermaid
@@ -429,7 +445,7 @@ never stored separately; edits go through server actions that re-check the sessi
 |--------|------|---------|---------|------------|
 | Edge proxy | `proxy.ts` | Authentication, route and API gating, 24 hour inactivity sign-out, CSP nonce, platform gate, admin MFA enforcement | Every request | `lib/auth`, `lib/launch`, Supabase SSR |
 | Marketing site | `app/(marketing)`, `app/about`, `app/blog`, `app/free`, public pages | Acquisition, SEO, lead capture, Summit and donations | Visitors | `components/layout`, `lib/seo`, public APIs |
-| Member app | `app/(app)/` | Dashboard, Coach, Circle, Sessions, Learn, Referral, Account (member since, sign-in methods, change password) | Members | `components/shell`, `lib/supabase/queries`, member APIs |
+| Member app | `app/(app)/` | Dashboard, Coach, Circle, Sessions, Learn, Referral, Settings (Account, Profile, Security, Plan, Alerts tabs) | Members | `components/shell`, `lib/supabase/queries`, member APIs |
 | Auth pages | `app/login`, `signup`, `forgot-password`, `reset-password`, `onboarding`, `admin-login`, `auth/` | Account lifecycle | Visitors, members, staff | `lib/auth`, `components/auth` |
 | Admin console | `app/admin/` | Operations: users, content, payments, community, Summit, AI agents | Staff | Admin APIs, `lib/permissions` |
 | Partner portal | `app/partner`, `app/partner-apply`, `app/p/[subdomain]` | White-label tenants | Partner owners and members | `lib/getPartnerContext`, partner APIs |
@@ -457,12 +473,12 @@ never stored separately; edits go through server actions that re-check the sessi
 
 | Group | Concern |
 |-------|---------|
-| `shell/` | Member shell: collapsible dark sidebar, header, search palette, Sage floating button |
+| `shell/` | Member shell: collapsible dark sidebar, header, search palette, Sage floating button, one-time Summit invitation dialog. Also wraps `/checkout` for signed-in members |
 | `dashboard/` | Today hero, goal card, commitments card, consistency strip, summit card, upcoming session, continue rail |
 | `community/` | Channels, messages, check-in composer, circle status, reactions (icon vocabulary, no emoji) |
 | `coach/` | Sage chat, session types, usage bar, recent sessions |
 | `learn/` | Course category icons |
-| `auth/` | Check-your-inbox screen, Turnstile widget |
+| `auth/` | Auth dialog, sign-up code entry, provider icons, check-your-inbox screen, Turnstile widget |
 | `admin/`, `partner/`, `layout/`, `nav/`, `subscription/`, `ui/` | Admin widgets, partner shell, public layout, navigation, plan UI, primitives |
 
 ### 6.4 Background tasks (`src/trigger`)
@@ -526,7 +542,7 @@ erDiagram
 
 | Domain | Tables |
 |--------|--------|
-| Identity and plans | `profiles`, `referrals`, `session_locations`, `password_reset_otps`, `auth_rate_limits`, `audit_logs` |
+| Identity and plans | `profiles`, `member_directory` (view), `referrals`, `session_locations`, `password_reset_otps`, `auth_rate_limits`, `audit_logs` |
 | Growth tracking | `user_goals`, `user_commitments`, `usage_tracking`, `notifications`, `notification_preferences`, `push_subscriptions` |
 | Coach and knowledge | `coaching_sessions`, `knowledge_chunks`, `mentor_profiles` |
 | Community | `community_categories`, `community_channels`, `community_messages`, `community_prompts`, `circle_members`, `channel_read_positions` |
@@ -567,7 +583,9 @@ contract is generated into [docs/api-contracts.md](docs/api-contracts.md).
 | Impossible-travel sign-in check (server-side, fails open) | `lib/auth/login-security.ts` |
 | Optional TOTP second factor for staff (`ADMIN_MFA_REQUIRED=true`) | `app/admin-login`, `lib/auth/admin-mfa.ts` |
 | Row Level Security on all 87 tables, admin and own-row policies | `database/migrations/00000000_baseline.sql` |
-| Open policies closed in production on 2026-10-05 (see wiki Engineering Log) | `20261005_lock_down_open_policies.sql` (applied) |
+| No policy grants the public anon key access to tenant, payment or notification data | `20261005_lock_down_open_policies.sql` |
+| A member can read only their own profile row; other members' names and avatars come from the `member_directory` view (id, name, avatar only) | `20261007_member_directory.sql` |
+| Re-authentication and typed confirmation for account deletion | `app/api/account/delete` |
 | Self-service profile updates cannot change role, plan or subscription fields | DB trigger `check_profile_role_permissions` |
 | Webhook HMAC verification and idempotent settlement | `lib/paymentSettlement.ts` |
 | Secrets only on the server; service-role client is `server-only` | `lib/supabase/admin.ts` |

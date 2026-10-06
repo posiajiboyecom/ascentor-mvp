@@ -596,6 +596,39 @@ Running record of significant engineering work, newest first. The system documen
 [README.md](README.md); released changes are in [CHANGELOG.md](CHANGELOG.md). This section records the
 reasoning, discoveries and decisions behind them.
 
+### 2026-10-07: settings cleanup, account deletion, member directory, checkout in the shell
+
+- **Why profiles were readable by every member:** the policy `profiles_read` allowed any signed-in member to
+  select every column of every profile, including `card_details`, `payment_method`, `referral_code` and
+  subscription fields. It existed so Circle and course discussions could show author names. Fix: the view
+  `member_directory` (id, full_name, avatar_url only) runs with its owner's rights, is granted to
+  `authenticated` only (nothing to `anon`), and the policy was dropped (`20261007_member_directory.sql`, applied to
+  production). Client code that shows author names (`hooks/useChannelMessages.ts`, `app/(app)/community`,
+  course discussions) reads the view. The referral route needs names of people the member referred, so it reads
+  with the service-role client after authorising the caller. Verified: a member can read their own row, other
+  rows are invisible, and the view returns only the three columns. A column-restricted policy was rejected
+  because Postgres cannot express per-column read rules on a shared row without triggers or a view anyway.
+- **Delete account** used to insert a `deletion_requests` row that nothing processed. `/api/account/delete` now
+  deletes immediately after typed confirmation (and password for email accounts), with guards for live
+  subscriptions, staff and partner owners. Tested against a throwaway account: wrong password, missing password,
+  bad confirmation and live subscription are refused; a valid request removes the auth user and profile, and
+  sign-in afterwards fails. Cascades cover goals, commitments, sessions, messages, notifications and payments;
+  Summit registrations (no foreign key) and the avatar are removed explicitly.
+- **Change password** tested end to end: wrong current and weak new passwords are refused, a valid change works,
+  the old password stops working, the new one signs in.
+- **Settings** went from five overlapping tabs to Account, Profile, Security, Plan, Alerts. The sign-in method
+  appeared on three or four pages; it now appears once (Account tab, with the provider icon). Name, email,
+  member since and sign-in method are read-only, two per row on desktop. The stray "Your journey" preview, the
+  placeholder two-factor tab and the duplicate account details were removed. Saving the profile now updates the
+  row instead of upserting, and the daily commitment options match the database constraint (5, 15, 30 minutes).
+- **Onboarding** gained an "About you" step (stage, roles, industry, daily time, biggest challenge), so Settings only
+  shows these. The "we took this from your account" line was removed.
+- **Summit** cards were removed from the sidebar. A once-per-member dialog on the dashboard invites members who
+  have not registered (`components/shell/SummitModal.tsx`).
+- **Checkout** renders inside the member shell for signed-in members (`lib/shell-data.ts` supplies the same data
+  as the app layout), and the duplicated logo text was removed.
+- Still not applied to production: `20261004_auth_hardening.sql` (shared rate-limit table; the memory fallback is in use).
+
 ### 2026-10-06: sign-up with a verification code, clear account errors, account settings
 
 - **Why OAuth then email both failed:** the first attempt hit the broken auth trigger (below). After the fix the

@@ -247,7 +247,7 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
     const unknownIds = [...new Set(rows.map((r: any) => r.user_id))].filter(id => !profileCache[id]);
     if (unknownIds.length) {
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('member_directory')
         .select('id, full_name')
         .in('id', unknownIds);
       const next: Record<string, string> = { ...profileCache };

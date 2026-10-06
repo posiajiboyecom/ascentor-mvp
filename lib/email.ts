@@ -70,3 +70,26 @@ export async function sendSignupOTP({ to, otpCode }: SendSignupOTPParams) {
 
   await sendEmail({ to, subject: `${otpCode} is your Ascentor verification code`, html });
 }
+
+type SendAccountDeletedParams = {
+  to: string;
+  firstName: string;
+};
+
+/** Final confirmation that an account and its data were permanently deleted at the member's request. */
+export async function sendAccountDeletedEmail({ to, firstName }: SendAccountDeletedParams) {
+  const html = brandedEmailLayout({
+    preheader: 'Your Ascentor account has been deleted',
+    eyebrow: 'Account',
+    heading: 'Your account has been deleted.',
+    recipient: to,
+    content:
+      p(`Hi ${esc(firstName || 'there')},`) +
+      p('As you asked, your Ascentor account and the personal data attached to it (profile, goals, commitments, coaching sessions and community messages) have been permanently deleted.') +
+      p('Payment records held by our payment processor, and anything we are legally required to keep, are retained as the law requires.') +
+      p('<span style="color:#9CA3AF;font-size:13px;">If you did not request this, contact support immediately.</span>') +
+      p('The Ascentor Team'),
+  });
+
+  await sendEmail({ to, subject: 'Your Ascentor account has been deleted', html });
+}

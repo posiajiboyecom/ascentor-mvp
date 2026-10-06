@@ -20,12 +20,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrations: `20261004_auth_hardening.sql`, `20261004_member_data_rls.sql`, `20261005_member_features.sql`.
 - `.env.example`, `scripts/lint-copy.js`, `scripts/audit-rls.sql`, auth unit and HTTP test suites.
 - Documentation: system architecture, component, use case and deployment diagrams, module and concern tables.
+- Settings reorganised into Account, Profile, Security, Plan and Alerts; sign-in method shown once with its provider icon.
+- Self-service account deletion (`/api/account/delete`) with typed confirmation, password check and subscription guard.
+- Onboarding "About you" step; Summit invitation dialog for members; checkout inside the member shell.
+- `member_directory` view (migration `20261007_member_directory.sql`).
 
 ### Security
+- Members can no longer read other members' full profile rows. Names and avatars come from the `member_directory` view
+  (`20261007_member_directory.sql`, applied to production 2026-10-07).
 - Audit of the live database found over-permissive Row Level Security policies that let the public anon key
   read or write partner tenants, payments, notifications, platform settings and more. The fix,
   `database/migrations/20261005_lock_down_open_policies.sql`, was applied to production on 2026-10-05. Details in the wiki
   Engineering Log, 2026-10-05.
+
+### Removed
+- Elevation Summit cards and the rail billboard from the member sidebar.
+- Placeholder two-factor tab and duplicate account details from Settings.
 
 ### Changed (local development)
 - `npm run dev` is always open (no gate); production builds stay gated unless `NEXT_PUBLIC_PLATFORM_OPEN=true`.

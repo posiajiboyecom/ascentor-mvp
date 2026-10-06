@@ -7,6 +7,13 @@ field-level `issues` array. Routes that share a path across HTTP methods list ea
 
 ## account
 
+### `/api/account/delete`
+
+| Field | Type | Required |
+|-------|------|----------|
+| `confirm` | "DELETE" | yes |
+| `password` | string (0..256 chars) | no |
+
 ### `/api/account/password`
 
 | Field | Type | Required |

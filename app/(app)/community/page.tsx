@@ -125,7 +125,7 @@ export default async function CommunityPage() {
     const memberIds = [...new Set(memberRows.map((m: { user_id: string }) => m.user_id))];
 
     const namesRes = memberIds.length
-      ? await supabase.from('profiles').select('id, full_name').in('id', memberIds)
+      ? await supabase.from('member_directory').select('id, full_name').in('id', memberIds)
       : { data: [] as { id: string; full_name: string | null }[] };
     const nameMap = new Map((namesRes.data ?? []).map((p) => [p.id, p.full_name?.trim() || 'Member']));
 

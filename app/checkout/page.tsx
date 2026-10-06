@@ -8,9 +8,11 @@
 // ──────────────────────────────────────────────────────────────
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getShellData } from '@/lib/shell-data';
+import UserShell from '@/components/shell/UserShell';
 import CheckoutClient from './CheckoutClient';
 
-export default async function CheckoutPage() {
+export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
   // Hard env override
   if (process.env.FREE_MODE === 'true') {
     redirect('/dashboard');
@@ -33,5 +35,16 @@ export default async function CheckoutPage() {
     // Table not seeded yet - allow through (safe default: paid mode)
   }
 
+  // A signed-in member checks out inside their own shell (sidebar and header). Guests, and members who
+  // are mid-onboarding, get the standalone page.
+  const { from } = await searchParams;
+  const shell = from === 'onboarding' ? null : await getShellData();
+  if (shell) {
+    return (
+      <UserShell userId={shell.userId} userName={shell.userName} email={shell.email} avatarUrl={shell.avatarUrl} role={shell.role} summitRegistered={shell.summitRegistered}>
+        <CheckoutClient embedded />
+      </UserShell>
+    );
+  }
   return <CheckoutClient />;
 }

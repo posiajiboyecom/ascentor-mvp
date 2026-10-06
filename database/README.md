@@ -10,8 +10,9 @@ Source of truth: the Supabase project. This folder makes it reproducible.
 2. `migrations/20261004_auth_hardening.sql`
 3. `migrations/20261005_member_features.sql`
 4. `migrations/20261005_lock_down_open_policies.sql` (security fix, see below)
-5. `migrations/20261006_fix_signup_trigger.sql` (sign-up trigger fix, applied to production 2026-10-06)
-6. `migrations/20261006_signup_otp.sql` (sign-up code purpose column, applied to production 2026-10-06)
+5. `migrations/20261006_fix_signup_trigger.sql` (sign-up trigger functions use schema-qualified names)
+6. `migrations/20261006_signup_otp.sql` (sign-up code purpose column)
+7. `migrations/20261007_member_directory.sql` (`member_directory` view; profile rows readable by their owner only)
 
 Older dated migrations (2026-07 to 2026-09) are already reflected in the baseline. They are idempotent and may
 still be run on an existing database, but they are not needed on a new one.
@@ -20,8 +21,11 @@ Run each file in the Supabase SQL editor, `psql`, or `npx tsx scripts/apply-migr
 
 ## Applying to the EXISTING project
 
-Do not run the baseline there (it is a snapshot of it). Run, in order, the dated files you have not applied:
-`20261004_auth_hardening.sql` (rate-limit table), then `20261005_member_features.sql` (applied 2026-10-05), then `20261005_lock_down_open_policies.sql` (already applied to production on 2026-10-05; it removes policies that exposed data to the public anon key).
+Do not run the baseline there (it is a snapshot of it). Run the dated files you have not applied, in filename order. `scripts/apply-migration.ts` applies one file in a single transaction; `scripts/db.ts` shows what is already in place.
+
+## Reading other members
+
+The `profiles` table holds private columns (billing details, referral codes, role). A member can read only their own row. Anything that needs another member's name or avatar (Circle authors, course discussions) reads the `member_directory` view, which exposes `id`, `full_name` and `avatar_url` to signed-in users and nothing to the public key. Server routes that need more (for example the referral list) use the service-role client after authorising the caller.
 
 ## Regenerating the baseline
 

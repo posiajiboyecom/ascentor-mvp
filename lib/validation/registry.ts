@@ -17,6 +17,7 @@ export const BODY_SCHEMAS: Record<string, z.ZodType> = {
   '/api/auth/verify-signup': auth.verifySignup,
   '/api/auth/resend-signup': auth.resendSignup,
   '/api/account/password': auth.changePassword,
+  '/api/account/delete': auth.deleteAccount,
   '/api/auth/forgot-password': auth.forgotPassword,
   '/api/auth/reset-password': auth.resetPassword,
   '/api/welcome': auth.welcome,

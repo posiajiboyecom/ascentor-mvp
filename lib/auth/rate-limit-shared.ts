@@ -75,5 +75,6 @@ export const LIMITS = {
   resetIp:      { scope: 'reset:ip',      max: 15, windowSeconds: 600 },
   verifySignupIp: { scope: 'verify-signup:ip', max: 20, windowSeconds: 600 },
   resendSignupIp: { scope: 'resend-signup:ip', max: 10, windowSeconds: 600 },
+  accountDeleteUser: { scope: 'acctdelete:user', max: 5, windowSeconds: 600 },
   passwordChangeUser: { scope: 'pwchange:user', max: 6, windowSeconds: 600 },
 } satisfies Record<string, Limit>;

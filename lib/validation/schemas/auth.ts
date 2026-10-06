@@ -44,6 +44,12 @@ export const changePassword = z.strictObject({
   newPassword: z.string().min(1, 'Enter a new password.').max(256),
 });
 
+/** Permanently delete the signed-in member's account. Email accounts must re-enter their password. */
+export const deleteAccount = z.strictObject({
+  confirm: z.literal('DELETE', { error: 'Type DELETE to confirm.' }),
+  password: z.string().max(256).optional(),
+});
+
 /** Welcome email trigger. Identity is taken from the session; name is cosmetic. */
 export const welcome = z.strictObject({
   email: email.optional(),

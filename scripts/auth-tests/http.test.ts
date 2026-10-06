@@ -199,3 +199,8 @@ test('change password requires a session', async () => {
   const { res } = await post('/api/account/password', { currentPassword: 'x', newPassword: 'Tr4vel-Lantern-Mist' });
   assert.equal(res.status, 401);
 });
+
+test('delete account requires a session', async () => {
+  const { res } = await post('/api/account/delete', { confirm: 'DELETE' });
+  assert.equal(res.status, 401);
+});

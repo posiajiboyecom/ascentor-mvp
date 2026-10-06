@@ -56,7 +56,7 @@ export function useChannelMessages(channelSlug: string, { userId, userName }: Op
       );
       if (unknownIds.length > 0) {
         const { data: profiles } = await supabase
-          .from('profiles')
+          .from('member_directory')
           .select('id, full_name')
           .in('id', unknownIds);
         (profiles || []).forEach((p: any) => {
