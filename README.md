@@ -321,7 +321,7 @@ Environments:
 | Environment | Branch | Purpose | Public sign-in |
 |-------------|--------|---------|----------------|
 | Production | `main` | Live marketing site and the Summit | Closed (gate) |
-| Local (`npm run dev`) | `feat/platform-v1` | Full platform on a separate, fresh Supabase project | Always open, no gate |
+| Local (`npm run dev`) | `feat/platform-v1` | Full platform against the existing Supabase project, nothing deployed | Always open, no gate |
 | Draft pull request | `feat/platform-v1` into `main` | Review only; not merged until after the Summit | n/a |
 
 ## 5. Key flows
@@ -466,7 +466,7 @@ never stored separately; edits go through server actions that re-check the sessi
 | `scripts/auth-tests/` | Unit and black-box HTTP tests for the auth system |
 | `scripts/export-schema.ts` | Exports the live schema (read-only catalog queries) into the baseline migration |
 | `scripts/db.ts` | Ad-hoc read-only SQL against the database |
-| `scripts/setup-fresh-db.ts`, `scripts/seed-fresh-db.ts`, `scripts/dev-guard.js` | Fresh development project setup, test data, and the guard that keeps `npm run dev` off production |
+| `scripts/dev-guard.js` | Prints the local-run reminder before `npm run dev` |
 | `scripts/apply-migration.ts` | Applies one migration file in a single transaction (needs `--yes`) |
 | `scripts/audit-rls.sql` | Read-only report of tables without Row Level Security |
 | `scripts/seed-*.ts`, `scripts/db.ts` | Seeding and database helpers |
@@ -589,29 +589,18 @@ in order, then run `scripts/audit-rls.sql`.
 
 ### Local development
 
-`npm run dev` runs the whole platform with **no gate**: `/login` and `/signup` always work (see `lib/launch.ts`:
-the gate applies only to production builds). No Docker is needed.
+`npm run dev` runs the whole platform with **no gate**: `/login` and `/signup` always work (see `lib/launch.ts`;
+the gate applies only to production builds). No Docker and no local database are needed: it uses the Supabase
+project configured in `.env.local`.
 
-`.env.local` in this repository holds production credentials, so `npm run dev` refuses to start until local work is
-pointed at a separate database (`scripts/dev-guard.js`):
+Rules for local work:
 
-1. Create a free, fresh project at supabase.com (not the production project).
-2. `cp .env.development.local.example .env.development.local` and fill in that project's URL, anon key,
-   service-role key and database connection string (and `ANTHROPIC_API_KEY` if you want to test Sage). Next.js
-   loads this file only in development and it overrides `.env.local`. Leave the SMTP, Paystack and MailerLite
-   values empty so test actions cannot send real email or take payments.
-3. In that project's dashboard: Authentication, URL Configuration: add `http://localhost:3000/auth/callback` to the
-   redirect URLs. Authentication, Providers, Email: decide whether "Confirm email" is on (on: sign-up shows the
-   check-your-inbox screen and the link arrives in the project's email logs; off: you go straight to onboarding).
-   Optionally enable TOTP under Multi-Factor.
-4. `npm run db:setup-fresh` builds the schema, applies the migrations and creates the storage buckets
-   (it refuses to run against the production project).
-5. `npm run db:seed-fresh` creates the test accounts and sample data (accounts and password are listed at the top
-   of `scripts/seed-fresh-db.ts`): an onboarded member with a goal, commitments and sessions, a not-yet-onboarded
-   member, and an admin (sign in at `/admin-login`).
-6. `npm run dev` and open http://localhost:3000.
-
-To run against production data anyway (not recommended): `ALLOW_PROD_DB=1 npm run dev`.
+- Nothing is deployed from a local run. Production code changes only when `main` changes, and `main` gets no
+  commits until after the Summit. Work is pushed to `feat/platform-v1` only.
+- Because the database is the real project, test with throwaway accounts (an address you control, such as a
+  `+test` alias) and delete them afterwards. Do not run bulk email, payments or newsletter sends from the admin
+  console: the SMTP, Paystack and MailerLite keys in `.env.local` are live.
+- Optional: add `ANTHROPIC_API_KEY` to `.env.local` to test Sage.
 
 ```bash
 npm install
@@ -621,7 +610,6 @@ npm run dev                      # http://localhost:3000
 | Command | What it does |
 |---------|--------------|
 | `npm run dev` / `build` / `start` | Develop (guarded, see Local development), production build, serve |
-| `npm run db:setup-fresh` / `db:seed-fresh` | Build and seed a fresh development Supabase project |
 | `npm run typecheck` | `tsc --noEmit` in strict mode |
 | `npm run lint:copy` | Copy rules: no em dashes, no emoji |
 | `npm run check:contracts` | Client payloads vs strict schemas |

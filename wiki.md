@@ -600,11 +600,9 @@ reasoning, discoveries and decisions behind them.
 
 Decision: local means `npm run dev`, not containers. The gate is removed for development only by making
 `platformOpen()` true whenever `NODE_ENV === 'development'`; production builds are unchanged (closed unless
-`NEXT_PUBLIC_PLATFORM_OPEN=true`). Because `.env.local` holds production credentials, a `predev` guard refuses to
-start without `.env.development.local`, and the setup and seed scripts refuse to run against the production
-project. Release plan: `main` gets no commits until after the Summit; the branch is reviewed through a draft pull
-request that is finalised only afterwards. (A fully local Supabase stack with Docker was started and abandoned: it
-was not what was asked for.)
+`NEXT_PUBLIC_PLATFORM_OPEN=true`). Local runs use the existing Supabase project (a separate project and scripts for one were
+written and then removed as unnecessary); a `predev` notice reminds that test data is real data. Release plan: `main` gets no commits until after the Summit; the branch is reviewed through a draft pull
+request that is finalised only afterwards. (A Docker-based local Supabase stack was started and abandoned: not what was asked for.)
 
 ### 2026-10-05 (later): schema baseline and the RLS audit
 

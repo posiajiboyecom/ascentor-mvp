@@ -29,8 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (local development)
 - `npm run dev` is always open (no gate); production builds stay gated unless `NEXT_PUBLIC_PLATFORM_OPEN=true`.
-- `npm run dev` refuses to start without `.env.development.local` so it cannot use production credentials by accident.
-- `npm run db:setup-fresh` and `db:seed-fresh` build and seed a separate development Supabase project.
+- `npm run dev` prints a reminder that it uses the Supabase project in `.env.local`; nothing is deployed from a local run.
 
 ### Added (schema)
 - `database/migrations/00000000_baseline.sql` (full schema snapshot), `scripts/export-schema.ts`,

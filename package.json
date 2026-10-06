@@ -5,8 +5,6 @@
   "scripts": {
     "predev": "node scripts/dev-guard.js",
     "dev": "next dev",
-    "db:setup-fresh": "tsx scripts/setup-fresh-db.ts",
-    "db:seed-fresh": "tsx scripts/seed-fresh-db.ts",
     "build": "next build",
     "build:mobile": "next build && npx cap sync",
     "start": "next start",
