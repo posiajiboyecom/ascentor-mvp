@@ -27,7 +27,7 @@ const EXISTS = (email: string) => NextResponse.json(
 export async function POST(req: NextRequest) {
   const parsed = await parseJson(req, authSchemas.signup);
   if (!parsed.ok) return parsed.response;
-  const { email, password, captchaToken } = parsed.data;
+  const { fullName, email, password, captchaToken } = parsed.data;
 
   const ip = getClientIp(req);
   const limit = await rateLimit(ip, LIMITS.signupIp);
@@ -61,14 +61,18 @@ export async function POST(req: NextRequest) {
     if (existing.emailConfirmed) return EXISTS(email);
 
     // An earlier attempt never finished: let them resume with the password they just chose.
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(existing.id, { password });
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(existing.id, { password, user_metadata: { full_name: fullName } });
     if (updateError) {
       console.error('[signup] could not refresh unconfirmed user:', updateError.message);
       return NextResponse.json({ error: 'We could not restart your sign-up. Please try again.', code: 'server_error' }, { status: 500 });
     }
   } else {
     // 3. Create the user unconfirmed. The admin API sends no email of its own.
-    const { error: createError } = await supabaseAdmin.auth.admin.createUser({ email, password, email_confirm: false });
+    const { error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email, password, email_confirm: false,
+      // The trigger copies full_name into the profile, so onboarding already knows the name.
+      user_metadata: { full_name: fullName },
+    });
     if (createError) {
       if (/already|registered|exists/i.test(createError.message)) return EXISTS(email);
       console.error('[signup] createUser failed:', createError.message);

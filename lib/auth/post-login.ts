@@ -26,7 +26,7 @@ export async function resolvePostLoginPath(
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('onboarding_completed, subscription_status, full_name, ascent_stage, role')
+    .select('onboarding_completed, subscription_status, full_name, primary_dimension, role')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -39,7 +39,7 @@ export async function resolvePostLoginPath(
   if (next.startsWith('/onboarding')) return '/onboarding';
   if (next.startsWith('/checkout')) return next;
 
-  if (profile?.full_name && profile?.ascent_stage) return '/onboarding?step=2';
+  if (profile?.full_name && profile?.primary_dimension) return '/onboarding?step=2';
   return '/onboarding';
 }
 

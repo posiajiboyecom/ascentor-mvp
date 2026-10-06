@@ -269,7 +269,7 @@ flowchart TB
             SSR[Server components]
             RH[Route handlers]
         end
-        CR[Cron: reconcile-payments 07:00 UTC<br/>summit-event-day 06:00 UTC]
+        CR[Cron: /api/cron/daily 06:00 UTC<br/>keep-alive, reconcile, event-day, reminders]
         ENV[(Environment variables)]
     end
 
@@ -551,7 +551,7 @@ contract is generated into [docs/api-contracts.md](docs/api-contracts.md).
 | Public forms | `/api/contact`, `/api/newsletter`, `/api/waitlist`, `/api/lead-magnet`, `/api/partner-enquiry`, `/api/events/register`, `/api/summit/*`, `/api/survey/*` | Public | Marketing capture and Summit |
 | Partner | `/api/partner/*` | Partner owner | Brand, domain, courses, events, members, billing |
 | Admin | `/api/admin/*` | Staff, per-permission | Operations (MFA enforceable) |
-| Cron | `/api/cron/*` | Bearer `CRON_SECRET` | Reconciliation, event-day mail, reminders |
+| Cron | `/api/cron/*` | Bearer `CRON_SECRET` | `daily` (the one scheduled job: keep-alive, payment reconciliation, event-day mail, reminders), plus the individual routes and `keepalive` for manual or external use |
 
 ## 9. Security model
 
@@ -706,5 +706,5 @@ known gaps.
 | Storage buckets, auth settings and edge functions are not in the baseline | A new project needs them configured by hand | Document or script them |
 | Authenticated end-to-end tests do not exist | Regressions in signed-in flows are caught manually | Add a seeded test project and Playwright journeys |
 | GET query parameters are validated on a few routes only | Lower risk, bodies are strict | Extend `parseQuery` to remaining list endpoints |
-| Reminder cron is not scheduled | Commitment and session reminders only run when called | Schedule `/api/cron/reminders` (Hobby plan allows two cron jobs) |
+| Supabase can still pause if the site is down | The daily cron touches the database once a day; a free project pauses after about a week without activity | For more frequent pings point an external scheduler at `/api/cron/keepalive` with the bearer token |
 | Community access tiers are not enforced | Any signed-in member can read and post in every channel | Define the access matrix, enforce it in RLS |

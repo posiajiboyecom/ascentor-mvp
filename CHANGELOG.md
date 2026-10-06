@@ -43,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Onboarding checks write errors, is idempotent and sends the welcome email once.
 - All em dashes and emoji removed from source and documentation.
 
+### Added (platform)
+- One daily cron, `/api/cron/daily` (Hobby plan: two jobs, once a day): keep-alive read of the database, payment reconciliation, Summit event-day mail, commitment and session reminders. `/api/cron/keepalive` for external pingers. `vercel.json` now schedules only the daily job.
+- Onboarding: name prefilled from the account (sign-up form, Google or LinkedIn), personalised copy, dimension icons, Metropolis only, light completion screen, copyright and legal links, logo links home. Email sign-up now collects the full name.
+
 ### Added (sign-up and account)
 - Email sign-up verifies the address with a six-digit code sent through nodemailer (sign-up only, never at ordinary
   sign-in). `/api/auth/verify-signup`, `/api/auth/resend-signup`, migration `20261006_signup_otp.sql`.
@@ -55,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mail uses port 465 (implicit TLS) by default: many networks block 587.
 
 ### Fixed (platform-v1)
+- Onboarding could never be saved: it wrote the chosen dimension into `profiles.ascent_stage`, which is constrained to seeker, builder or leader. The dimension has its own column, `primary_dimension` (`20261006_profile_primary_dimension.sql`, applied 2026-10-06); no profile in the project had ever completed onboarding.
 - Sign-up (email and Google) failed for everyone with "Database error saving new user": a trigger on auth.users used an unqualified table name under Auth's search_path. Fixed by `20261006_fix_signup_trigger.sql` (applied to production on 2026-10-06), which also creates the profile row on sign-up.
 - Provider and Supabase sign-in errors were visible only in the address bar; `AuthRedirectError` now shows them in a dialog, logs them to the console and cleans the URL.
 - Admin could not save an expert session (columns missing in the live table; migration applied to production 2026-10-05); the member Sessions page tolerates

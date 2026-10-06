@@ -1,11 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/cron/reconcile-payments",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/summit-event-day",
+      "path": "/api/cron/daily",
       "schedule": "0 6 * * *"
     }
   ]

@@ -332,6 +332,7 @@ field-level `issues` array. Routes that share a path across HTTP methods list ea
 
 | Field | Type | Required |
 |-------|------|----------|
+| `fullName` | string (1..80 chars) | yes |
 | `email` | string (0..254 chars) | yes |
 | `password` | string (1..256 chars) | yes |
 | `captchaToken` | string (0..4096 chars) | no |

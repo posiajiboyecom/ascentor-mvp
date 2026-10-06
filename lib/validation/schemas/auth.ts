@@ -13,6 +13,7 @@ export const login = z.strictObject({
 });
 
 export const signup = z.strictObject({
+  fullName: text(80, 'Your name').refine((v) => v.length >= 2, 'Please enter your full name'),
   email,
   // Shape/strength rules live in lib/auth/password-policy (async: breach check).
   password: z.string().min(1, 'Password is required.').max(256),

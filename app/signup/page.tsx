@@ -16,6 +16,11 @@ import Turnstile from '@/components/auth/Turnstile';
 import { PASSWORD_MIN } from '@/lib/auth/password-policy';
 
 const signupSchema = z.object({
+  fullName: z
+    .string()
+    .trim()
+    .min(2, 'Please enter your full name')
+    .max(80, 'That name is too long'),
   email: z
     .string()
     .min(1, 'Email is required')
@@ -114,7 +119,7 @@ function SignUpForm() {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email, password: data.password, captchaToken, next: callbackNext }),
+        body: JSON.stringify({ fullName: data.fullName, email: data.email, password: data.password, captchaToken, next: callbackNext }),
       });
       const result = await res.json().catch(() => ({}));
 
@@ -308,6 +313,17 @@ function SignUpForm() {
 
             {/* Form */}
             <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div>
+                <input
+                  type="text"
+                  {...register('fullName')}
+                  placeholder="Full name"
+                  autoComplete="name"
+                  className={`auth-input ${errors.fullName ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.fullName && <p className="field-error">{errors.fullName.message}</p>}
+              </div>
               <div>
                 <input
                   type="email"

@@ -76,10 +76,10 @@ test('login: rate limits repeated attempts for one email+IP (429 + Retry-After)'
 });
 
 test('signup: invalid email / weak passwords are rejected BEFORE any account is created', async () => {
-  const bad = await post('/api/auth/signup', { email: 'not-an-email', password: 'Tr4vel-Lantern-Mist' });
+  const bad = await post('/api/auth/signup', { fullName: 'Test Person', email: 'not-an-email', password: 'Tr4vel-Lantern-Mist' });
   assert.equal(bad.res.status, 400);
   for (const pw of ['short', 'alllowercase123', 'NoNumbersHereAtAll', 'Password1234']) {
-    const { res, json } = await post('/api/auth/signup', { email: `weak-${RUN}@example.com`, password: pw });
+    const { res, json } = await post('/api/auth/signup', { fullName: 'Test Person', email: `weak-${RUN}@example.com`, password: pw });
     assert.equal(res.status, 400, pw);
     assert.ok(typeof json.error === 'string' && json.error.length > 0, pw);
   }
@@ -164,7 +164,7 @@ test('strict validation: unknown fields and bad input are rejected with field-le
 // instead of a generic error. Both calls are read-only (they return before creating anything).
 const GOOGLE_ACCOUNT = process.env.TEST_OAUTH_EMAIL;
 test('signup with an address that already uses Google says to use Google', { skip: !GOOGLE_ACCOUNT }, async () => {
-  const { res, json } = await post('/api/auth/signup', { email: GOOGLE_ACCOUNT, password: 'Tr4vel-Lantern-Mist' });
+  const { res, json } = await post('/api/auth/signup', { fullName: 'Test Person', email: GOOGLE_ACCOUNT, password: 'Tr4vel-Lantern-Mist' });
   assert.equal(res.status, 409);
   assert.equal(json.code, 'use_oauth');
   assert.equal(json.provider, 'google');

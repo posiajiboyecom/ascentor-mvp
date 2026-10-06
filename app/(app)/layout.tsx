@@ -52,12 +52,12 @@ export default async function AppLayout({
   if (!isStaffRole) {
     const ob = await supabase
       .from('profiles')
-      .select('onboarding_completed, ascent_stage, subscription_status')
+      .select('onboarding_completed, primary_dimension, subscription_status')
       .eq('id', user.id)
       .maybeSingle();
     if (!ob.error && ob.data) {
       const paid = ob.data.subscription_status === 'active' || ob.data.subscription_status === 'trialing';
-      if (ob.data.onboarding_completed !== true && !ob.data.ascent_stage && !paid) {
+      if (ob.data.onboarding_completed !== true && !ob.data.primary_dimension && !paid) {
         redirect('/onboarding');
       }
     }
