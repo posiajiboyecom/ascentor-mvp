@@ -7,6 +7,7 @@ import { ModalProvider } from '@/components/Modal';
 import { NotificationProvider } from '@/components/Notifications';
 import { MobileInit } from '@/components/MobileInit';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
+import AuthRedirectError from '@/components/AuthRedirectError';
 import StructuredData from '@/components/StructuredData';
 import { headers } from 'next/headers';
 import Script from 'next/script';
@@ -106,6 +107,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body suppressHydrationWarning>
         <RoutePreloader />
         <AuthErrorHandler />
+        <AuthRedirectError />
         <ModalProvider>
           <NotificationProvider>
             <MobileInit />

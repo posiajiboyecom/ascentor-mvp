@@ -596,6 +596,15 @@ Running record of significant engineering work, newest first. The system documen
 [README.md](README.md); released changes are in [CHANGELOG.md](CHANGELOG.md). This section records the
 reasoning, discoveries and decisions behind them.
 
+### 2026-10-06: sign-up outage found and fixed
+
+A test sign-in with Google ended on `/?error=server_error&error_code=unexpected_failure&error_description=Database+error+saving+new+user`.
+That message comes from Supabase Auth when its INSERT into `auth.users` fails; the cause was the
+`on_auth_user_created` trigger calling `sync_profile_email()`, which updated `profiles` without a schema prefix while Auth
+runs with `search_path = auth`. Reproduced in a rolled-back transaction, fixed and verified with
+`scripts/dry-run-migration.ts`, then applied. No user had been created in the project since 2026-04-01. Errors that
+Supabase reports by redirecting with `error` parameters are now surfaced by `components/AuthRedirectError.tsx`.
+
 ### 2026-10-06: local development without the gate
 
 Decision: local means `npm run dev`, not containers. The gate is removed for development only by making

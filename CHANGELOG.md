@@ -44,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All em dashes and emoji removed from source and documentation.
 
 ### Fixed (platform-v1)
+- Sign-up (email and Google) failed for everyone with "Database error saving new user": a trigger on auth.users used an unqualified table name under Auth's search_path. Fixed by `20261006_fix_signup_trigger.sql` (applied to production on 2026-10-06), which also creates the profile row on sign-up.
+- Provider and Supabase sign-in errors were visible only in the address bar; `AuthRedirectError` now shows them in a dialog, logs them to the console and cleans the URL.
 - Admin could not save an expert session (columns missing in the live table; migration applied to production 2026-10-05); the member Sessions page tolerates
   both column shapes. Partner payment verification referenced a missing `paystack_secret_key_enc` column.
 - Open redirect in `/auth/callback` (`next=@host`).
