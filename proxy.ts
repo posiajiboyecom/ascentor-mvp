@@ -189,6 +189,15 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // OAuth fallback: when the requested redirect is not in Supabase's allow-list, Supabase sends the
+  // browser to the Site URL with ?code=... instead of /auth/callback. Forward it so the sign-in still
+  // completes (and the member lands on onboarding or the dashboard) instead of stranding on the home page.
+  if (pathname === '/' && request.nextUrl.searchParams.has('code') && !request.nextUrl.searchParams.has('error')) {
+    const callback = new URL('/auth/callback', request.url);
+    callback.searchParams.set('code', request.nextUrl.searchParams.get('code')!);
+    return NextResponse.redirect(callback);
+  }
+
   // Community gate: /login and /signup are not yet open.
   // Redirect back to the referrer page (so the modal appears there), or
   // fall back to the home page if there is no referrer.
@@ -206,6 +215,17 @@ export default async function proxy(request: NextRequest) {
     }
     dest.searchParams.set('gate', '1');
     return NextResponse.redirect(dest);
+  }
+
+  // A signed-in member opening the home page goes straight to where their registration says they
+  // belong (onboarding if unfinished, otherwise the dashboard) via /auth/continue. Only when the
+  // platform is open and only when a session cookie exists, so anonymous visitors pay nothing.
+  if (pathname === '/' && platformOpen() && request.cookies.getAll().some((c) => c.name.startsWith('sb-') && c.name.includes('auth-token'))) {
+    const probe = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      cookies: { getAll: () => request.cookies.getAll(), setAll: () => {} },
+    });
+    const { data: { user: homeUser } } = await probe.auth.getUser();
+    if (homeUser) return NextResponse.redirect(new URL('/auth/continue', request.url));
   }
 
   // Always pass through public page routes - still attach nonce for theme scripts

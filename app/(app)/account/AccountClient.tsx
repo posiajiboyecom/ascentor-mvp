@@ -7,7 +7,8 @@ import { useState, useRef } from 'react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { Check } from 'lucide-react';
+import { Check, CalendarDays, KeyRound } from 'lucide-react';
+import { ProviderIcon, PROVIDER_NAME } from '@/components/auth/ProviderIcon';
 
 const industries = [
   'Technology', 'Finance & Banking', 'Consulting', 'Healthcare',
@@ -25,10 +26,14 @@ const timeOptions = [
 
 type Section = 'profile' | 'security' | 'plan' | 'notifications' | 'danger';
 
-export default function AccountClient({ profile, email, authProvider, userId, notifications }: {
+export default function AccountClient({ profile, email, authProvider, providers, memberSince, userId, notifications }: {
   profile: any;
   email: string;
   authProvider: string;
+  /** Every sign-in method on the account (email, google, linkedin_oidc). */
+  providers: string[];
+  /** ISO timestamp the account was created. */
+  memberSince: string;
   userId: string;
   notifications: any;
 }) {
@@ -153,8 +158,8 @@ export default function AccountClient({ profile, email, authProvider, userId, no
       setPwResult({ success: false, message: 'Please enter your current password.' });
       setPwSaving(false); return;
     }
-    if (passwords.newPassword.length < 8) {
-      setPwResult({ success: false, message: 'New password must be at least 8 characters.' });
+    if (passwords.newPassword.length < 10) {
+      setPwResult({ success: false, message: 'New password must be at least 10 characters.' });
       setPwSaving(false); return;
     }
     if (passwords.newPassword !== passwords.confirm) {
@@ -166,26 +171,27 @@ export default function AccountClient({ profile, email, authProvider, userId, no
       setPwSaving(false); return;
     }
 
-    // Verify current password before allowing update
-    const { error: verifyError } = await supabase.auth.signInWithPassword({
-      email,
-      password: passwords.current,
-    });
-
-    if (verifyError) {
-      setPwResult({ success: false, message: 'Current password is incorrect.' });
-      setPwSaving(false); return;
-    }
-
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: passwords.newPassword,
-    });
-
-    if (updateError) {
-      setPwResult({ success: false, message: updateError.message });
-    } else {
-      setPwResult({ success: true, message: 'Password updated successfully.' });
-      setPasswords({ current: '', newPassword: '', confirm: '' });
+    // The server verifies the current password, applies the password policy (including the
+    // breached-password check), keeps THIS session signed in, signs every other device out,
+    // and emails a change notice.
+    try {
+      const res = await fetch('/api/account/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: passwords.current, newPassword: passwords.newPassword }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPwResult({ success: false, message: result.error || 'Could not update your password. Please try again.' });
+      } else {
+        setPwResult({ success: true, message: result.message || 'Password updated.' });
+        setPasswords({ current: '', newPassword: '', confirm: '' });
+        // Confirm the session survived the change; if it did not, send the member to sign in.
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) router.push('/login?reason=session_expired');
+      }
+    } catch {
+      setPwResult({ success: false, message: 'Network error. Please check your connection and try again.' });
     }
     setPwSaving(false);
   };
@@ -351,6 +357,33 @@ export default function AccountClient({ profile, email, authProvider, userId, no
               <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })}
                 placeholder="Your full name" className="w-full px-3.5 py-2.5 text-sm rounded-xl" style={inputStyle} />
             </Field>
+
+            {/* Account facts */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-1">
+              <div className="rounded-xl p-3.5 flex items-start gap-3" style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
+                <CalendarDays size={18} style={{ color: 'var(--accent-dim)', marginTop: 2 }} aria-hidden="true" />
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-dim)' }}>Member since</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+                    {new Date(memberSince).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-xl p-3.5 flex items-start gap-3" style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
+                <KeyRound size={18} style={{ color: 'var(--accent-dim)', marginTop: 2 }} aria-hidden="true" />
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-dim)' }}>Sign-in method</p>
+                  <div className="flex flex-col gap-1">
+                    {(providers.length ? providers : [authProvider]).map((p) => (
+                      <p key={p} className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text)' }}>
+                        <ProviderIcon provider={p} size={16} />
+                        {PROVIDER_NAME[p] ?? p}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Email */}
             <Field label="Email Address">

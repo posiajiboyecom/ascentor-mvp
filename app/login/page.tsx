@@ -8,7 +8,10 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PasswordInput from '@/components/PasswordInput';
 import { OAuthButton } from '@/lib/sso';
-import CheckInbox from '@/components/auth/CheckInbox';
+import OtpVerify from '@/components/auth/OtpVerify';
+import AuthModal, { type AuthModalAction } from '@/components/auth/AuthModal';
+import { ProviderIcon, PROVIDER_NAME } from '@/components/auth/ProviderIcon';
+import { signInWithSSO } from '@/lib/sso';
 import Turnstile from '@/components/auth/Turnstile';
 import { safeNext } from '@/lib/auth/safe-next';
 
@@ -31,6 +34,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
+  const [unconfirmedPassword, setUnconfirmedPassword] = useState('');
+  const [modal, setModal] = useState<{ title: string; message: string; actions: AuthModalAction[] } | null>(null);
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaReset, setCaptchaReset] = useState(0);
 
@@ -88,7 +93,24 @@ export default function LoginPage() {
 
     if (!res.ok) {
       if (result.code === 'email_not_confirmed') {
+        // Sign-up was never finished: send a fresh code and continue the verification step.
+        void fetch('/api/auth/resend-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: data.email, captchaToken }),
+        }).catch(() => undefined);
+        setUnconfirmedPassword(data.password);
         setUnconfirmedEmail(data.email);
+      } else if (result.code === 'use_oauth') {
+        const provider: string = result.provider ?? 'google';
+        const name = PROVIDER_NAME[provider] ?? 'your provider';
+        setModal({
+          title: `Please continue with ${name}`,
+          message: result.error,
+          actions: [
+            { label: `Continue with ${name}`, icon: <ProviderIcon provider={provider} />, onClick: () => void signInWithSSO(provider === 'linkedin' ? 'linkedin_oidc' : (provider as 'google' | 'linkedin_oidc')) },
+          ],
+        });
       } else {
         setError(result.error || 'Something went wrong. Please try again.');
       }
@@ -210,9 +232,12 @@ export default function LoginPage() {
         }
       `}</style>
 
+      {modal && (
+        <AuthModal open title={modal.title} message={modal.message} actions={modal.actions} onClose={() => setModal(null)} />
+      )}
       {unconfirmedEmail ? (
         <div className="auth-split" style={{ gridTemplateColumns: '1fr' }}>
-          <div className="auth-form-panel"><div className="auth-form-inner"><CheckInbox email={unconfirmedEmail} next={destination} /></div></div>
+          <div className="auth-form-panel"><div className="auth-form-inner"><OtpVerify email={unconfirmedEmail} password={unconfirmedPassword} next={destination} captchaToken={captchaToken} initialNotice="Your email is not confirmed yet. We sent you a new code." onBack={() => setUnconfirmedEmail(null)} /></div></div>
         </div>
       ) : (
       <div className="auth-split">

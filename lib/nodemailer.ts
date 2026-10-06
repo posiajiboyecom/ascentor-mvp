@@ -6,8 +6,12 @@ type Mailer = ReturnType<typeof nodemailer.createTransport>;
 
 export const summitMailer = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
+  // 465 (implicit TLS) rather than 587 (STARTTLS): many home and office networks block 587,
+  // while 465 is open everywhere Gmail is reachable.
+  port: 465,
+  secure: true,
+  connectionTimeout: 10_000,
+  greetingTimeout: 10_000,
   auth: {
     user: process.env.SUMMIT_GMAIL_USER,
     pass: process.env.SUMMIT_GMAIL_APP_PASSWORD,
@@ -28,12 +32,14 @@ export function getMailer(): Mailer | null {
   if (!user || !pass) return null;
 
   if (!cachedMailer) {
-    const port = Number(process.env.SMTP_PORT || 587);
+    const port = Number(process.env.SMTP_PORT || 465);
     cachedMailer = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port,
       secure: port === 465,
       auth: { user, pass },
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
     });
   }
   return cachedMailer;

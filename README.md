@@ -326,35 +326,56 @@ Environments:
 
 ## 5. Key flows
 
-### 5.1 Sign-up, confirmation, sign-in and routing
+### 5.1 Sign-up, verification, sign-in and routing
+
+Email sign-up verifies the address with a one-time code sent through our own SMTP (nodemailer), once, at sign-up.
+It is never asked for at ordinary sign-in. Google and LinkedIn sign-in skip the code (the provider already
+verified the address).
 
 ```mermaid
 sequenceDiagram
     actor U as Visitor
     participant B as Browser
     participant S as /api/auth/signup
-    participant SB as Supabase Auth
-    participant CB as /auth/callback
+    participant V as /api/auth/verify-signup
+    participant L as /api/auth/login
+    participant A as Supabase Auth (admin API)
+    participant M as SMTP (nodemailer)
     participant R as lib/auth/post-login
 
-    U->>B: Submit email and password (Turnstile token)
-    B->>S: POST (strict Zod body)
-    S->>S: Rate limit, CAPTCHA, password policy, breached-password check
-    S->>SB: signUp(email, password, redirect)
-    SB-->>U: Confirmation email
-    S-->>B: needsConfirmation
-    B-->>U: Check your inbox screen (resend, 60s cooldown)
-    U->>CB: Click confirmation link (code, next)
-    CB->>SB: exchangeCodeForSession
-    CB->>CB: Location-risk check (fails open)
-    CB->>R: resolvePostLoginPath(user, safeNext(next))
-    R-->>B: /onboarding, /checkout, or /dashboard
+    U->>B: Email, password
+    B->>S: POST (strict body, Turnstile token)
+    S->>S: Rate limit, CAPTCHA, password policy, breach check
+    S->>A: Does this email already have an account?
+    alt registered with Google or LinkedIn
+        S-->>B: 409 use_oauth (dialog: Continue with Google)
+    else already has email and password
+        S-->>B: 409 account_exists (dialog: Sign in, Reset password)
+    else new or unfinished
+        S->>A: create user, email NOT confirmed
+        S->>M: 6-digit code (hashed in password_reset_otps, purpose signup, 15 min)
+        S-->>B: needsVerification
+    end
+    B-->>U: Enter your code
+    U->>B: 6 digits
+    B->>V: POST { email, code }
+    V->>V: Five guesses per code, single use, purpose bound
+    V->>A: mark email confirmed
+    B->>L: POST email + password (held in memory)
+    L-->>B: session cookie
+    B->>R: /auth/continue
+    R-->>B: /onboarding, or /dashboard once onboarded
 ```
 
-Email and password sign-in goes through `/api/auth/login` (rate limits per IP, per email and IP, per email;
-CAPTCHA; location risk; staff role check), then navigates to `/auth/continue`, which applies the same
-routing function as the OAuth callback. `next` and `redirect` parameters are reduced to same-site paths by
-`safeNext()` everywhere.
+Rules: an unconfirmed address never receives a session (enforced in `/api/auth/login` even if Supabase is set not
+to require confirmation); a password sign-in against an account that only uses Google or LinkedIn answers
+"please continue with Google" instead of a generic error; `next` and `redirect` parameters are reduced to same-site
+paths by `safeNext()`. If Supabase redirects to the Site URL with `?code=` (its redirect allow-list did not
+include `/auth/callback`), the proxy forwards it to `/auth/callback` so the sign-in still completes, and a
+signed-in member opening the home page is sent to `/auth/continue` (onboarding or dashboard).
+
+Errors that Supabase reports by redirecting with `error` parameters are shown in a dialog by
+`components/AuthRedirectError.tsx` instead of only appearing in the address bar.
 
 ### 5.2 Password reset
 
@@ -408,7 +429,7 @@ never stored separately; edits go through server actions that re-check the sessi
 |--------|------|---------|---------|------------|
 | Edge proxy | `proxy.ts` | Authentication, route and API gating, 24 hour inactivity sign-out, CSP nonce, platform gate, admin MFA enforcement | Every request | `lib/auth`, `lib/launch`, Supabase SSR |
 | Marketing site | `app/(marketing)`, `app/about`, `app/blog`, `app/free`, public pages | Acquisition, SEO, lead capture, Summit and donations | Visitors | `components/layout`, `lib/seo`, public APIs |
-| Member app | `app/(app)/` | Dashboard, Coach, Circle, Sessions, Learn, Referral, Account | Members | `components/shell`, `lib/supabase/queries`, member APIs |
+| Member app | `app/(app)/` | Dashboard, Coach, Circle, Sessions, Learn, Referral, Account (member since, sign-in methods, change password) | Members | `components/shell`, `lib/supabase/queries`, member APIs |
 | Auth pages | `app/login`, `signup`, `forgot-password`, `reset-password`, `onboarding`, `admin-login`, `auth/` | Account lifecycle | Visitors, members, staff | `lib/auth`, `components/auth` |
 | Admin console | `app/admin/` | Operations: users, content, payments, community, Summit, AI agents | Staff | Admin APIs, `lib/permissions` |
 | Partner portal | `app/partner`, `app/partner-apply`, `app/p/[subdomain]` | White-label tenants | Partner owners and members | `lib/getPartnerContext`, partner APIs |
@@ -419,7 +440,7 @@ never stored separately; edits go through server actions that re-check the sessi
 | Module | Concern |
 |--------|---------|
 | `lib/validation/` | `http.ts` (parseJson, parseQuery), `common.ts` (primitives), `schemas/*` (auth, member, public, commerce, partner, admin), `registry.ts` (route to schema map) |
-| `lib/auth/` | `safe-next` (open-redirect guard), `post-login` (single post-login router), `password-policy` (rules and breach check), `rate-limit-shared` (Postgres-backed limits with memory fallback), `turnstile`, `login-security` (impossible-travel check), `revoke-sessions`, `admin-mfa` |
+| `lib/auth/` | `account-lookup` (how an email signs in), `signup-otp` (issue and verify sign-up codes), `safe-next` (open-redirect guard), `post-login` (single post-login router), `password-policy` (rules and breach check), `rate-limit-shared` (Postgres-backed limits with memory fallback), `turnstile`, `login-security` (impossible-travel check), `revoke-sessions`, `admin-mfa` |
 | `lib/supabase/` | Browser, server and service-role clients; `queries/` for page data (dashboard, coach) |
 | `lib/launch.ts`, `lib/gate-client.ts` | The platform-open switch and the join/sign-in call to action |
 | `lib/planTier.ts`, `pricing.ts`, `subscription*.ts` | Plan ranks, effective plan, prices, subscription state and webhook handling |
@@ -615,6 +636,7 @@ npm run dev                      # http://localhost:3000
 | `npm run check:contracts` | Client payloads vs strict schemas |
 | `npm run docs:api` | Regenerate `docs/api-contracts.md` |
 | `npm run test:auth:unit` | Pure-logic tests |
+| `npm run test:auth:otp` | Sign-up code logic against the real table (no email sent, no account created) |
 | `npm run test:auth:http` | Black-box tests against a running server (`BASE_URL`, default `http://localhost:3111`) |
 | `npm run trigger:dev` / `trigger:deploy` | Run or deploy Trigger.dev tasks |
 | `npm run build:mobile` | Build and sync the Capacitor apps |
@@ -642,6 +664,7 @@ npm run typecheck
 npm run lint:copy
 npm run check:contracts
 npm run test:auth:unit
+npm run test:auth:otp
 # with the dev server running on :3111
 BASE_URL=http://localhost:3111 npm run test:auth:http
 ```

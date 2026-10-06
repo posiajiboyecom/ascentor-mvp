@@ -10,6 +10,8 @@ Source of truth: the Supabase project. This folder makes it reproducible.
 2. `migrations/20261004_auth_hardening.sql`
 3. `migrations/20261005_member_features.sql`
 4. `migrations/20261005_lock_down_open_policies.sql` (security fix, see below)
+5. `migrations/20261006_fix_signup_trigger.sql` (sign-up trigger fix, applied to production 2026-10-06)
+6. `migrations/20261006_signup_otp.sql` (sign-up code purpose column, applied to production 2026-10-06)
 
 Older dated migrations (2026-07 to 2026-09) are already reflected in the baseline. They are idempotent and may
 still be run on an existing database, but they are not needed on a new one.

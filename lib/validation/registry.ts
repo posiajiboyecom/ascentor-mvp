@@ -14,6 +14,9 @@ import * as admin from './schemas/admin';
 export const BODY_SCHEMAS: Record<string, z.ZodType> = {
   '/api/auth/login': auth.login,
   '/api/auth/signup': auth.signup,
+  '/api/auth/verify-signup': auth.verifySignup,
+  '/api/auth/resend-signup': auth.resendSignup,
+  '/api/account/password': auth.changePassword,
   '/api/auth/forgot-password': auth.forgotPassword,
   '/api/auth/reset-password': auth.resetPassword,
   '/api/welcome': auth.welcome,

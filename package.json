@@ -23,6 +23,7 @@
     "lint:copy": "node scripts/lint-copy.js",
     "typecheck": "tsc --noEmit -p .",
     "test:auth:unit": "tsx --test scripts/auth-tests/unit.test.ts",
+    "test:auth:otp": "tsx --conditions=react-server --test scripts/auth-tests/signup-otp.test.ts",
     "test:auth:http": "tsx --test scripts/auth-tests/http.test.ts",
     "test:auth": "npm run test:auth:unit && npm run test:auth:http"
   },
@@ -103,6 +104,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "prisma": "^7.10.0",
+    "server-only": "^0.0.1",
     "shadcn": "^3.8.4",
     "supabase": "^2.76.15",
     "tailwindcss": "^4",

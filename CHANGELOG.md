@@ -43,6 +43,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Onboarding checks write errors, is idempotent and sends the welcome email once.
 - All em dashes and emoji removed from source and documentation.
 
+### Added (sign-up and account)
+- Email sign-up verifies the address with a six-digit code sent through nodemailer (sign-up only, never at ordinary
+  sign-in). `/api/auth/verify-signup`, `/api/auth/resend-signup`, migration `20261006_signup_otp.sql`.
+- Clear dialogs for sign-up and sign-in problems: address already registered, or registered with Google or LinkedIn
+  (the dialog offers the right provider). `components/auth/AuthModal.tsx`.
+- Settings shows "Member since" and the sign-in methods with real brand icons; password change from settings is
+  verified server-side (current password, policy, other devices signed out, notice email).
+- A signed-in member opening the home page goes to onboarding or the dashboard; `/?code=` is forwarded to the OAuth
+  callback when Supabase falls back to the Site URL.
+- Mail uses port 465 (implicit TLS) by default: many networks block 587.
+
 ### Fixed (platform-v1)
 - Sign-up (email and Google) failed for everyone with "Database error saving new user": a trigger on auth.users used an unqualified table name under Auth's search_path. Fixed by `20261006_fix_signup_trigger.sql` (applied to production on 2026-10-06), which also creates the profile row on sign-up.
 - Provider and Supabase sign-in errors were visible only in the address bar; `AuthRedirectError` now shows them in a dialog, logs them to the console and cleans the URL.

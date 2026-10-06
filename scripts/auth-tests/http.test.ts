@@ -51,7 +51,7 @@ test('login: wrong credentials return a generic 401 (no account hints)', async (
   const { res, json } = await post('/api/auth/login', { email: `nobody-${RUN}@example.com`, password: 'Wrong-Passw0rd-x' });
   assert.equal(res.status, 401);
   assert.equal(json.error, 'Incorrect email or password.');
-  assert.ok(!('code' in json));
+  assert.equal(json.code, 'invalid_credentials');
 });
 
 test('login: staff mode never keeps a session for bad credentials', async () => {
@@ -158,4 +158,44 @@ test('strict validation: unknown fields and bad input are rejected with field-le
     const r = await post(p, { definitely: 'not valid' });
     assert.equal(r.res.status, 400, p);
   }
+});
+
+// The exact scenarios from manual testing: an account created with Google must get a clear answer
+// instead of a generic error. Both calls are read-only (they return before creating anything).
+const GOOGLE_ACCOUNT = process.env.TEST_OAUTH_EMAIL;
+test('signup with an address that already uses Google says to use Google', { skip: !GOOGLE_ACCOUNT }, async () => {
+  const { res, json } = await post('/api/auth/signup', { email: GOOGLE_ACCOUNT, password: 'Tr4vel-Lantern-Mist' });
+  assert.equal(res.status, 409);
+  assert.equal(json.code, 'use_oauth');
+  assert.equal(json.provider, 'google');
+  assert.match(String(json.error), /Google/);
+});
+
+test('email login against a Google-only account says to use Google', { skip: !GOOGLE_ACCOUNT }, async () => {
+  const { res, json } = await post('/api/auth/login', { email: GOOGLE_ACCOUNT, password: 'Wrong-Passw0rd-x' });
+  assert.equal(res.status, 401);
+  assert.equal(json.code, 'use_oauth');
+});
+
+test('forgot-password for a Google-only account names the provider', { skip: !GOOGLE_ACCOUNT }, async () => {
+  const { res, json } = await post('/api/auth/forgot-password', { email: GOOGLE_ACCOUNT });
+  assert.equal(res.status, 200);
+  assert.equal(json.status, 'oauth_only');
+});
+
+test('sign-up code: wrong or malformed codes are rejected, resend never reveals accounts', async () => {
+  const bad = await post('/api/auth/verify-signup', { email: `nobody-${RUN}@example.com`, code: '123456' });
+  assert.equal(bad.res.status, 400);
+  assert.equal(bad.json.code, 'invalid_code');
+  const malformed = await post('/api/auth/verify-signup', { email: `nobody-${RUN}@example.com`, code: '12ab' });
+  assert.equal(malformed.res.status, 400);
+  const a = await post('/api/auth/resend-signup', { email: `ghost-${RUN}@example.com` });
+  const b = await post('/api/auth/resend-signup', { email: `ghost2-${RUN}@example.com` });
+  assert.equal(a.res.status, 200);
+  assert.deepEqual(a.json, b.json);
+});
+
+test('change password requires a session', async () => {
+  const { res } = await post('/api/account/password', { currentPassword: 'x', newPassword: 'Tr4vel-Lantern-Mist' });
+  assert.equal(res.status, 401);
 });

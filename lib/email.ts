@@ -48,3 +48,25 @@ export async function sendPasswordChangedEmail({ to, firstName }: SendPasswordCh
 
   await sendEmail({ to, subject: 'Your Ascentor password was changed', html });
 }
+
+type SendSignupOTPParams = {
+  to: string;
+  otpCode: string;
+};
+
+/** Six-digit code that confirms ownership of the email address during sign-up. */
+export async function sendSignupOTP({ to, otpCode }: SendSignupOTPParams) {
+  const html = brandedEmailLayout({
+    preheader: `Your Ascentor verification code is ${otpCode}`,
+    eyebrow: 'Welcome to Ascentor',
+    heading: 'Confirm your email.',
+    recipient: to,
+    content:
+      p('Enter this code to finish creating your Ascentor account. It expires in <strong>15 minutes</strong>.') +
+      codeBox(esc(otpCode)) +
+      p('<span style="color:#9CA3AF;font-size:13px;">If you did not start creating an account, you can ignore this email.</span>') +
+      p('The Ascentor Team'),
+  });
+
+  await sendEmail({ to, subject: `${otpCode} is your Ascentor verification code`, html });
+}

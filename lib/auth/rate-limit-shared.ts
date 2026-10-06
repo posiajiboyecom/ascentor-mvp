@@ -73,4 +73,7 @@ export const LIMITS = {
   signupIp:     { scope: 'signup:ip',     max: 10, windowSeconds: 3600 },
   forgotIp:     { scope: 'forgot:ip',     max: 10, windowSeconds: 600 },
   resetIp:      { scope: 'reset:ip',      max: 15, windowSeconds: 600 },
+  verifySignupIp: { scope: 'verify-signup:ip', max: 20, windowSeconds: 600 },
+  resendSignupIp: { scope: 'resend-signup:ip', max: 10, windowSeconds: 600 },
+  passwordChangeUser: { scope: 'pwchange:user', max: 6, windowSeconds: 600 },
 } satisfies Record<string, Limit>;

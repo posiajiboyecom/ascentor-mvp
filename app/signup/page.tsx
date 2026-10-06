@@ -8,7 +8,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PasswordInput from '@/components/PasswordInput';
 import { OAuthButton } from '@/lib/sso';
-import CheckInbox from '@/components/auth/CheckInbox';
+import OtpVerify from '@/components/auth/OtpVerify';
+import AuthModal, { type AuthModalAction } from '@/components/auth/AuthModal';
+import { ProviderIcon, PROVIDER_NAME } from '@/components/auth/ProviderIcon';
+import { signInWithSSO } from '@/lib/sso';
 import Turnstile from '@/components/auth/Turnstile';
 import { PASSWORD_MIN } from '@/lib/auth/password-policy';
 
@@ -39,6 +42,8 @@ function SignUpForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [pendingPassword, setPendingPassword] = useState('');
+  const [modal, setModal] = useState<{ title: string; message: string; actions: AuthModalAction[] } | null>(null);
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaReset, setCaptchaReset] = useState(0);
 
@@ -67,6 +72,36 @@ function SignUpForm() {
     resolver: zodResolver(signupSchema),
   });
 
+  /** Clear, actionable explanations in a dialog (not a line of red text). */
+  function showProblem(result: { error?: string; code?: string; provider?: string }, email: string) {
+    const provider = result.provider ?? '';
+    const name = PROVIDER_NAME[provider] ?? 'your provider';
+    if (result.code === 'use_oauth') {
+      setModal({
+        title: `Please continue with ${name}`,
+        message: result.error || `${email} is registered with ${name}.`,
+        actions: [
+          { label: `Continue with ${name}`, icon: <ProviderIcon provider={provider} />, onClick: () => void signInWithSSO(provider === 'linkedin' ? 'linkedin_oidc' : (provider as 'google' | 'linkedin_oidc')) },
+        ],
+      });
+    } else if (result.code === 'account_exists') {
+      setModal({
+        title: 'You already have an account',
+        message: result.error || `${email} is already registered.`,
+        actions: [
+          { label: 'Sign in', href: '/login' },
+          { label: 'Reset my password', href: '/forgot-password', variant: 'secondary' },
+        ],
+      });
+    } else if (result.code === 'weak_password') {
+      setModal({ title: 'Choose a stronger password', message: result.error || 'That password is not strong enough.', actions: [] });
+    } else if (result.code === 'rate_limited') {
+      setModal({ title: 'Please wait a little', message: result.error || 'Too many attempts.', actions: [] });
+    } else {
+      setModal({ title: 'We could not create your account', message: result.error || 'Something went wrong. Please try again.', actions: [] });
+    }
+  }
+
   async function onSubmit(data: SignupFormData) {
     setLoading(true);
     setError(null);
@@ -83,20 +118,15 @@ function SignUpForm() {
       });
       const result = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
-        setError(result.error || 'Something went wrong. Please try again.');
+      if (res.ok || result.needsVerification) {
+        // A six-digit code has been emailed: ask for it. Existing members never see this step.
+        setPendingPassword(data.password);
+        setPendingEmail(data.email);
+        if (result.code === 'email_failed') setError(result.error);
+      } else {
+        showProblem(result, data.email);
         setCaptchaToken('');
         setCaptchaReset((n) => n + 1);
-      } else if (result.needsConfirmation) {
-        // Email confirmation is required: no session yet. Show the
-        // "check your inbox" screen (with resend) instead of sending an
-        // unauthenticated visitor into /onboarding or /checkout.
-        setPendingEmail(data.email);
-      } else if (planParam && !isFree) {
-        // The welcome email is sent once, at the end of onboarding.
-        router.push(`/checkout?plan=${planParam}&billing=${billingParam}&currency=${currencyParam}`);
-      } else {
-        router.push('/onboarding');
       }
     } catch {
       setError('Network error. Please check your connection and try again.');
@@ -211,6 +241,9 @@ function SignUpForm() {
         }
       `}</style>
 
+      {modal && (
+        <AuthModal open title={modal.title} message={modal.message} actions={modal.actions} onClose={() => setModal(null)} />
+      )}
       <div className="auth-split">
         {/* Left: Image */}
         <div className="auth-image">
@@ -221,7 +254,13 @@ function SignUpForm() {
         <div className="auth-form-panel">
           <div className="auth-form-inner">
             {pendingEmail ? (
-              <CheckInbox email={pendingEmail} next={callbackNextFor(isFree, planParam, billingParam, currencyParam)} />
+              <OtpVerify
+                email={pendingEmail}
+                password={pendingPassword}
+                next={callbackNextFor(isFree, planParam, billingParam, currencyParam)}
+                captchaToken={captchaToken}
+                onBack={() => { setPendingEmail(null); setPendingPassword(''); }}
+              />
             ) : (
             <>
             {/* Mobile logo */}

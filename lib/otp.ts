@@ -19,12 +19,16 @@ function key(): string {
   return k;
 }
 
-export function hashOtp(email: string, code: string): string {
-  return crypto.createHmac('sha256', key()).update(`${email.toLowerCase()}:${code}`).digest('hex');
+export type OtpPurpose = 'password_reset' | 'signup';
+
+/** Codes are bound to their purpose, so a sign-up code can never reset a password (and vice versa). */
+export function hashOtp(email: string, code: string, purpose: OtpPurpose = 'password_reset'): string {
+  const payload = purpose === 'password_reset' ? `${email.toLowerCase()}:${code}` : `${purpose}:${email.toLowerCase()}:${code}`;
+  return crypto.createHmac('sha256', key()).update(payload).digest('hex');
 }
 
-export function otpMatches(email: string, code: string, storedHash: string): boolean {
-  const a = Buffer.from(hashOtp(email, code), 'hex');
+export function otpMatches(email: string, code: string, storedHash: string, purpose: OtpPurpose = 'password_reset'): boolean {
+  const a = Buffer.from(hashOtp(email, code, purpose), 'hex');
   const b = Buffer.from(storedHash, 'hex');
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }

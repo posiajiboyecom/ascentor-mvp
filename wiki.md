@@ -596,6 +596,24 @@ Running record of significant engineering work, newest first. The system documen
 [README.md](README.md); released changes are in [CHANGELOG.md](CHANGELOG.md). This section records the
 reasoning, discoveries and decisions behind them.
 
+### 2026-10-06: sign-up with a verification code, clear account errors, account settings
+
+- **Why OAuth then email both failed:** the first attempt hit the broken auth trigger (below). After the fix the
+  Google account was created (confirmed, provider google, profile present, onboarding not finished), so an email
+  sign-up for the same address correctly cannot create a second password account.
+- **Landing on the home page after Google sign-in:** the redirect `/auth/callback` was not in Supabase's allow-list, so Supabase
+  fell back to the Site URL with `?code=`. The proxy now forwards that code to the callback, and a signed-in member on
+  `/` is routed by registration state. Still add `http://localhost:3000/auth/callback` (and the production callback) to the
+  Supabase redirect URLs.
+- **OTP design:** the admin API creates the user unconfirmed (Supabase sends nothing); our code is stored hashed in
+  `password_reset_otps` with `purpose = 'signup'` (a reset code can never confirm a sign-up); `/api/auth/login` refuses
+  unconfirmed users regardless of the Supabase "Confirm email" setting. Tested without sending mail by inserting the
+  hashed row and calling the verifier (`npm run test:auth:otp`).
+- **SMTP:** port 587 timed out from the development network while 465 connected and authenticated, so the default is
+  now 465 with 10 second timeouts.
+- **Account lookup messages** deliberately reveal that an address exists (requested for clarity); the endpoints are rate
+  limited and CAPTCHA protected.
+
 ### 2026-10-06: sign-up outage found and fixed
 
 A test sign-in with Google ended on `/?error=server_error&error_code=unexpected_failure&error_description=Database+error+saving+new+user`.

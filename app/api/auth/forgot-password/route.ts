@@ -56,7 +56,8 @@ export async function POST(req: NextRequest) {
     const { data: authRes } = await supabaseAdmin.auth.admin.getUserById(profile.id);
     const provider = authRes?.user?.app_metadata?.provider;
     if (provider === 'google' || provider === 'linkedin' || provider === 'linkedin_oidc') {
-      return NextResponse.json(UNIFORM); // social accounts have no password to reset
+      // Social accounts have no password to reset: say which provider to use instead.
+      return NextResponse.json({ success: true, status: 'oauth_only', provider, message: 'This account signs in with a provider, not a password.' });
     }
 
     // Only the newest code is ever valid.

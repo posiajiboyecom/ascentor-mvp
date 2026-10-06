@@ -15,6 +15,7 @@ import { getClientIp } from '@/lib/rate-limit';
 import { LIMITS, rateLimitAll } from '@/lib/auth/rate-limit-shared';
 import { verifyTurnstile } from '@/lib/auth/turnstile';
 import { assessLogin } from '@/lib/auth/login-security';
+import { findAccountByEmail, oauthOnlyProvider, PROVIDER_LABEL } from '@/lib/auth/account-lookup';
 import { parseJson } from '@/lib/validation/http';
 import * as authSchemas from '@/lib/validation/schemas/auth';
 
@@ -52,7 +53,24 @@ export async function POST(req: NextRequest) {
     if (error && /not confirmed/i.test(error.message)) {
       return NextResponse.json({ error: 'Please confirm your email address first.', code: 'email_not_confirmed' }, { status: 403 });
     }
-    return NextResponse.json({ error: GENERIC_FAIL }, { status: 401 });
+    // A password sign-in against an account that only ever used Google or LinkedIn cannot work:
+    // say so plainly instead of a misleading "incorrect password".
+    const oauth = oauthOnlyProvider(await findAccountByEmail(normalizedEmail));
+    if (oauth) {
+      const label = PROVIDER_LABEL[oauth] ?? oauth;
+      return NextResponse.json(
+        { error: `This account was created with ${label}. Please continue with ${label} instead of entering a password.`, code: 'use_oauth', provider: oauth },
+        { status: 401 },
+      );
+    }
+    return NextResponse.json({ error: GENERIC_FAIL, code: 'invalid_credentials' }, { status: 401 });
+  }
+
+  // Sign-up requires a verified email. Supabase may be configured not to enforce confirmation, so
+  // enforce it here: an unconfirmed address never gets a session.
+  if (!data.user.email_confirmed_at) {
+    await supabase.auth.signOut();
+    return NextResponse.json({ error: 'Please confirm your email address first.', code: 'email_not_confirmed' }, { status: 403 });
   }
 
   // Staff sign-in: the session is only kept for admins / moderators.
