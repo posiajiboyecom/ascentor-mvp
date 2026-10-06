@@ -627,7 +627,7 @@ reasoning, discoveries and decisions behind them.
   have not registered (`components/shell/SummitModal.tsx`).
 - **Checkout** renders inside the member shell for signed-in members (`lib/shell-data.ts` supplies the same data
   as the app layout), and the duplicated logo text was removed.
-- Still not applied to production: `20261004_auth_hardening.sql` (shared rate-limit table; the memory fallback is in use).
+- `20261004_auth_hardening.sql` applied to production 2026-10-07: auth rate limits are now shared across instances (verified: the app writes counters to `auth_rate_limits`). Also found: a dev server started after a half-deleted `.next` served 404 for route handlers such as `/auth/continue`; stop the server, delete `.next`, restart.
 
 ### 2026-10-06: sign-up with a verification code, clear account errors, account settings
 
