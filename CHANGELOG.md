@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `database/migrations/20261005_lock_down_open_policies.sql`, was applied to production on 2026-10-05. Details in the wiki
   Engineering Log, 2026-10-05.
 
+### Changed (local development)
+- `npm run dev` is always open (no gate); production builds stay gated unless `NEXT_PUBLIC_PLATFORM_OPEN=true`.
+- `npm run dev` refuses to start without `.env.development.local` so it cannot use production credentials by accident.
+- `npm run db:setup-fresh` and `db:seed-fresh` build and seed a separate development Supabase project.
+
 ### Added (schema)
 - `database/migrations/00000000_baseline.sql` (full schema snapshot), `scripts/export-schema.ts`,
   `database/README.md`.

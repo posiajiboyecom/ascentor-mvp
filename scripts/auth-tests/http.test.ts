@@ -25,7 +25,9 @@ async function post(path: string, body: unknown, ip = nextIp()) {
 }
 const get = (path: string) => fetch(BASE + path, { redirect: 'manual' });
 
-const OPEN = process.env.NEXT_PUBLIC_PLATFORM_OPEN === 'true';
+// A dev server (next dev) is always open. Set EXPECT_GATE=true when testing a production build
+// without NEXT_PUBLIC_PLATFORM_OPEN to assert the gate instead.
+const OPEN = process.env.EXPECT_GATE !== 'true';
 
 test(OPEN ? 'open mode: /login and /signup render' : 'closed mode: /login and /signup redirect home with the gate flag', async () => {
   for (const p of ['/login', '/signup']) {

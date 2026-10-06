@@ -321,8 +321,8 @@ Environments:
 | Environment | Branch | Purpose | Public sign-in |
 |-------------|--------|---------|----------------|
 | Production | `main` | Live marketing site and the Summit | Closed (gate) |
-| Development | `feat/platform-v1` | Full platform, never deployed to production | Open (`NEXT_PUBLIC_PLATFORM_OPEN=true`) |
-| Local | any | Developer machines | Either, via `.env.local` |
+| Local (`npm run dev`) | `feat/platform-v1` | Full platform on a separate, fresh Supabase project | Always open, no gate |
+| Draft pull request | `feat/platform-v1` into `main` | Review only; not merged until after the Summit | n/a |
 
 ## 5. Key flows
 
@@ -466,6 +466,8 @@ never stored separately; edits go through server actions that re-check the sessi
 | `scripts/auth-tests/` | Unit and black-box HTTP tests for the auth system |
 | `scripts/export-schema.ts` | Exports the live schema (read-only catalog queries) into the baseline migration |
 | `scripts/db.ts` | Ad-hoc read-only SQL against the database |
+| `scripts/setup-fresh-db.ts`, `scripts/seed-fresh-db.ts`, `scripts/dev-guard.js` | Fresh development project setup, test data, and the guard that keeps `npm run dev` off production |
+| `scripts/apply-migration.ts` | Applies one migration file in a single transaction (needs `--yes`) |
 | `scripts/audit-rls.sql` | Read-only report of tables without Row Level Security |
 | `scripts/seed-*.ts`, `scripts/db.ts` | Seeding and database helpers |
 
@@ -559,7 +561,7 @@ Set values in `.env.local` locally and in Vercel project settings for deployed e
 |----------|----------|---------|
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase client |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-only, bypasses RLS |
-| `NEXT_PUBLIC_PLATFORM_OPEN` | No | `true` opens `/login` and `/signup`. Unset keeps the production gate |
+| `NEXT_PUBLIC_PLATFORM_OPEN` | No | `true` opens `/login` and `/signup` in a production build. Unset keeps the gate. `npm run dev` is always open |
 | `NEXT_PUBLIC_URL` | Recommended | Public base URL for redirects and emails |
 | `ANTHROPIC_API_KEY` | Yes | Sage coach and admin intelligence |
 | `PAYSTACK_SECRET_KEY`, `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | Yes | Payments |
@@ -585,15 +587,41 @@ in order, then run `scripts/audit-rls.sql`.
 
 ## 11. Development
 
+### Local development
+
+`npm run dev` runs the whole platform with **no gate**: `/login` and `/signup` always work (see `lib/launch.ts`:
+the gate applies only to production builds). No Docker is needed.
+
+`.env.local` in this repository holds production credentials, so `npm run dev` refuses to start until local work is
+pointed at a separate database (`scripts/dev-guard.js`):
+
+1. Create a free, fresh project at supabase.com (not the production project).
+2. `cp .env.development.local.example .env.development.local` and fill in that project's URL, anon key,
+   service-role key and database connection string (and `ANTHROPIC_API_KEY` if you want to test Sage). Next.js
+   loads this file only in development and it overrides `.env.local`. Leave the SMTP, Paystack and MailerLite
+   values empty so test actions cannot send real email or take payments.
+3. In that project's dashboard: Authentication, URL Configuration: add `http://localhost:3000/auth/callback` to the
+   redirect URLs. Authentication, Providers, Email: decide whether "Confirm email" is on (on: sign-up shows the
+   check-your-inbox screen and the link arrives in the project's email logs; off: you go straight to onboarding).
+   Optionally enable TOTP under Multi-Factor.
+4. `npm run db:setup-fresh` builds the schema, applies the migrations and creates the storage buckets
+   (it refuses to run against the production project).
+5. `npm run db:seed-fresh` creates the test accounts and sample data (accounts and password are listed at the top
+   of `scripts/seed-fresh-db.ts`): an onboarded member with a goal, commitments and sessions, a not-yet-onboarded
+   member, and an admin (sign in at `/admin-login`).
+6. `npm run dev` and open http://localhost:3000.
+
+To run against production data anyway (not recommended): `ALLOW_PROD_DB=1 npm run dev`.
+
 ```bash
 npm install
-cp .env.example .env.local       # fill in values; add NEXT_PUBLIC_PLATFORM_OPEN=true to open sign-in locally
 npm run dev                      # http://localhost:3000
 ```
 
 | Command | What it does |
 |---------|--------------|
-| `npm run dev` / `build` / `start` | Develop, production build, serve |
+| `npm run dev` / `build` / `start` | Develop (guarded, see Local development), production build, serve |
+| `npm run db:setup-fresh` / `db:seed-fresh` | Build and seed a fresh development Supabase project |
 | `npm run typecheck` | `tsc --noEmit` in strict mode |
 | `npm run lint:copy` | Copy rules: no em dashes, no emoji |
 | `npm run check:contracts` | Client payloads vs strict schemas |
@@ -637,14 +665,14 @@ known gaps.
 
 ## 13. Release policy and launch switch
 
-- `main` is production. It remains gated: `/login` and `/signup` redirect to the home page with the "something
-  is coming" modal. Nothing in the member platform is reachable by the public.
-- All platform work lands on `feat/platform-v1` (and short-lived branches off it). It is **not** deployed to
-  production and not merged to `main` until the launch decision.
-- The launch switch is one environment variable, `NEXT_PUBLIC_PLATFORM_OPEN=true`, read by the proxy and the
-  join/sign-in call to action. To launch: apply migrations, verify Supabase settings (section 10), merge the
-  branch, set the variable in Vercel, redeploy.
-- Production releases are frozen until after The Elevation Summit (19 November 2026).
+- `main` is production and receives **no commits until after The Elevation Summit (19 November 2026)**. The public
+  gate stays in place there: `/login` and `/signup` redirect to the home page with the "something is coming" modal.
+- All platform work lands on `feat/platform-v1` (and short-lived branches off it) and is reviewed through a **draft
+  pull request** into `main` that is not finalised or merged until after the event.
+- Locally the gate does not exist: `npm run dev` is always open (`lib/launch.ts`). A production build is open only
+  if `NEXT_PUBLIC_PLATFORM_OPEN=true` is set, which is the deliberate launch switch.
+- To launch after the Summit: apply any pending migrations, verify the Supabase settings (section 10), finalise and
+  merge the pull request, set `NEXT_PUBLIC_PLATFORM_OPEN=true` in Vercel, redeploy.
 
 ## 14. Conventions
 

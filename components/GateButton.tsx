@@ -9,6 +9,8 @@ interface GateButtonProps {
   style?: React.CSSProperties;
 }
 
+import { platformOpen } from '@/lib/launch';
+
 export default function GateButton({ children, className, style }: GateButtonProps) {
   return (
     <button
@@ -16,7 +18,7 @@ export default function GateButton({ children, className, style }: GateButtonPro
       style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, ...style }}
       onClick={() => {
         // When the platform is open the CTA is a real sign-up; otherwise it shows the gate modal.
-        if (process.env.NEXT_PUBLIC_PLATFORM_OPEN === 'true') window.location.assign('/signup');
+        if (platformOpen()) window.location.assign('/signup');
         else window.dispatchEvent(new Event('community-gate'));
       }}
     >
