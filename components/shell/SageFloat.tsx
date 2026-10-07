@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, Volume2, VolumeX, X } from 'lucide-react';
+import { openSage } from '@/components/rx/sage-bus';
 
 const GREETED_KEY = 'sage:greeted';
 const MUTED_KEY = 'sage:muted';
@@ -198,7 +199,7 @@ export default function SageFloat({ userName }: { userName: string }) {
 
   const onOrbClick = () => {
     if (open) { close(); return; }
-    setPhase('static');
+    openSage({ topic: 'plan' });
   };
 
   return (
@@ -242,9 +243,9 @@ export default function SageFloat({ userName }: { userName: string }) {
 
           {(phase === 'done' || phase === 'static') && (
             <div className="sage-actions">
-              <Link href="/coach" className="sage-cta" onClick={close}>
+              <button type="button" className="sage-cta" onClick={() => { close(); openSage({ topic: 'plan' }); }}>
                 Talk to Sage <ArrowRight aria-hidden="true" />
-              </Link>
+              </button>
               <button type="button" className="sage-ghost" onClick={close}>Later</button>
             </div>
           )}

@@ -53,6 +53,12 @@ export default function PlanCard({ goal, plan }: { goal: string | null; plan: Pl
     return () => window.removeEventListener('rx:plan-draft', onDraft);
   }, []);
   useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('rx:plan-draft');
+      if (raw) { sessionStorage.removeItem('rx:plan-draft'); setDraft((cur) => ({ ...cur, ...(JSON.parse(raw) as Partial<PlanData>) })); setOpen(true); }
+    } catch { /* storage unavailable */ }
+  }, []);
+  useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('keydown', onKey);
@@ -62,7 +68,7 @@ export default function PlanCard({ goal, plan }: { goal: string | null; plan: Pl
   function submit() {
     setError('');
     start(async () => {
-      const r = await savePractice({ ...draft, source: 'set on Today' });
+      const r = await savePractice({ ...draft, source: draft.source && draft.source.startsWith('planned') ? draft.source : 'set on Today' });
       if (!r.ok) { setError(r.error); return; }
       setOpen(false);
       toast('Plan set for this week.');

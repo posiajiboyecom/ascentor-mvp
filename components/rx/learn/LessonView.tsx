@@ -3,7 +3,7 @@
 // A lesson: watch or read, reflect, and turn it into this week's practice.
 
 import Link from 'next/link';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Check, Play } from 'lucide-react';
 import { saveReflection, setLessonPractice } from '@/app/(app)/learn/lesson/actions';
@@ -32,6 +32,14 @@ export default function LessonView(p: LessonViewProps) {
   const [error, setError] = useState('');
   const [pending, start] = useTransition();
   const yt = youtubeId(p.videoUrl);
+
+  // Sage can hand a drafted practice to this lesson.
+  useEffect(() => {
+    const apply = (d: Partial<PlanData>) => setDraft((cur) => ({ ...cur, ...d }));
+    const onDraft = (e: Event) => { const d = (e as CustomEvent<Partial<PlanData>>).detail; if (d) apply(d); };
+    window.addEventListener('rx:plan-draft', onDraft);
+    return () => window.removeEventListener('rx:plan-draft', onDraft);
+  }, []);
 
   function submit() {
     setError('');

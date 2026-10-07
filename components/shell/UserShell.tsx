@@ -18,6 +18,7 @@ import SummitModal from './SummitModal';
 import { NAV_ITEMS } from '@/lib/nav-items';
 import ShellLayout from './ShellLayout';
 import SageFloat, { clearSageGreeting } from './SageFloat';
+import SagePanel from '@/components/rx/sage/SagePanel';
 import type { ShellNavGroup } from './types';
 
 export interface ShellCountsProp {
@@ -111,6 +112,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
       </ShellLayout>
 
       <SageFloat userName={userName} />
+      <SagePanel />
       <SummitModal registered={summitRegistered} userId={userId} />
     </ToastProvider>
   );

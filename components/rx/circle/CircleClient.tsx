@@ -85,6 +85,10 @@ export function ReportForm({ week, initial, shared }: { week: number; initial: {
       const d = (e as CustomEvent<{ kept: string; obstacle: string; next: string }>).detail;
       if (d) { setKept(d.kept); setObstacle(d.obstacle); setNext(d.next); }
     };
+    try {
+      const raw = sessionStorage.getItem('rx:report-draft');
+      if (raw) { sessionStorage.removeItem('rx:report-draft'); onDraft({ detail: JSON.parse(raw) } as unknown as Event); }
+    } catch { /* storage unavailable */ }
     window.addEventListener('rx:report-draft', onDraft);
     return () => window.removeEventListener('rx:report-draft', onDraft);
   }, []);
