@@ -1,101 +1,121 @@
 // app/(app)/dashboard/page.tsx
-// The Home / Dashboard screen (light theme). Server Component: the main
-// data arrives in one parallel pass; the "Continue" rail streams in behind
-// <Suspense> so it never blocks first paint.
+// Today: this week's plan, today's check-in, and the few things that matter next (lesson, Circle, mentor).
+// Server component: everything arrives in one parallel pass; the interactive cards are small client islands.
 
-import { Suspense } from 'react';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getDashboardData } from '@/lib/supabase/queries/dashboard';
-import { getDailyLine, getLagosDateParts } from '@/lib/daily-line';
-import { LedgerLine } from '@/components/ui';
-import { TodayHero } from '@/components/dashboard/TodayHero';
-import { SummitBanner } from '@/components/dashboard/SummitBanner';
-import { GoalCard } from '@/components/dashboard/GoalCard';
-import { CommitmentsCard } from '@/components/dashboard/CommitmentsCard';
-import { WeekHistory } from '@/components/dashboard/WeekHistory';
-import { UpcomingSessionCard } from '@/components/dashboard/UpcomingSessionCard';
-import { DimensionStrip } from '@/components/dashboard/DimensionStrip';
-import { ContinueRail, ContinueRailSkeleton } from '@/components/dashboard/ContinueRail';
+import { CalendarDays, Play } from 'lucide-react';
+import { createClient } from '@/lib/supabase/server';
+import { getMe, getMyCircle } from '@/lib/rx/server';
+import { getLessonProgress, getLessons, getTodayState, pickWeekLesson } from '@/lib/rx/practice';
+import { getBannerAnnouncement } from '@/lib/rx/announcements';
+import { CIRCLE_FOCUS, CIRCLE_MIN_TO_START } from '@/lib/rx/constants';
+import { longDate, nextWeekdayAt, whenLabel } from '@/lib/rx/dates';
+import { Aside, Page, SageLine, Tag } from '@/components/rx/ui';
+import PlanCard from '@/components/rx/today/PlanCard';
+import CheckinCard from '@/components/rx/today/CheckinCard';
+import AnnouncementBanner from '@/components/rx/today/AnnouncementBanner';
+import MoreForToday, { type MoreRow } from '@/components/rx/today/MoreForToday';
 
-export default async function DashboardPage() {
-  const data = await getDashboardData();
-  if (!data) redirect('/login');
+export const dynamic = 'force-dynamic';
 
-  const daily = getDailyLine();
-  const date = getLagosDateParts();
+export default async function TodayPage() {
+  const me = await getMe();
+  if (!me) redirect('/login');
+
+  const [state, circle, banner, lessons, progress] = await Promise.all([
+    getTodayState(), getMyCircle(), getBannerAnnouncement(), getLessons(), getLessonProgress(),
+  ]);
+  if (!state) redirect('/login');
+
+  const db = await createClient();
+  const { data: match } = await db.from('mentor_matches').select('id').eq('member_id', me.userId).in('status', ['active', 'accepted']).limit(1).maybeSingle();
+  let tasks: { done: boolean }[] = [];
+  if (match) {
+    const { data } = await db.from('mentor_tasks').select('done').eq('match_id', match.id);
+    tasks = (data ?? []) as { done: boolean }[];
+  }
+
+  const lesson = pickWeekLesson(lessons, state.week, progress);
+  const lessonDone = !!(lesson && progress.get(lesson.id)?.practice_id);
+  const plan = state.practice;
+
+  const sageLine = state.missed ? 'Welcome back. Today is open.' : plan ? 'Your plan is set. One step is enough.' : 'Let’s set this week’s plan together.';
+
+  // Circle row: waiting for 6 members, or the next meeting.
+  const ready = !!circle && circle.memberCount >= CIRCLE_MIN_TO_START && !!circle.circle.cycle_start;
+  let circleRow: MoreRow;
+  if (!circle) circleRow = { title: 'Your Circle', meta: 'Being set up', href: '/circle' };
+  else if (!ready) circleRow = { title: 'Your Circle', meta: `${circle.memberCount} of ${CIRCLE_MIN_TO_START} joined · chat is open`, href: '/circle' };
+  else {
+    const next = nextWeekdayAt(circle.circle.meeting_dow, circle.circle.meeting_time.slice(0, 5), circle.circle.timezone);
+    circleRow = { title: 'Next Circle meeting', meta: whenLabel(next, me.tz), href: '/circle' };
+  }
+  const lessonRow: MoreRow | null = lesson ? { title: lesson.title, meta: `This week’s lesson · ${lessonDone ? 'practice set' : `${lesson.minutes} min`}`, href: `/learn/lesson/${lesson.slug}` } : null;
+  const mentorRow: MoreRow = match
+    ? { title: 'Mentor agreement', meta: `${tasks.filter((t) => t.done).length} of ${tasks.length} tasks done`, href: '/sessions' }
+    : { title: 'Find a mentor', meta: 'One-to-one sessions', href: '/sessions' };
+
+  const mobileRows = [circleRow, ...(lessonRow ? [lessonRow] : []), mentorRow];
+  const kept = state.keptThisWeek;
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="mx-auto w-full max-w-[1200px] px-4 pb-10 pt-6 lg:px-10 lg:pt-10">
-        {/* ── Header: one responsive block ── */}
-        <header className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 max-w-[640px]">
-            <p className="asc-eyebrow">
-              {date.weekday} · {date.day} {date.month} {date.year}
-            </p>
-            <h1 className="mt-2 font-[family-name:var(--font-editorial)] text-3xl lg:text-4xl font-medium text-[var(--text)]">
-              {getGreeting()}, {data.firstName}.
-            </h1>
-            <LedgerLine className="mt-3 max-w-[280px]" />
-            <p className="mt-3 font-[family-name:var(--font-editorial)] text-base italic leading-relaxed text-[var(--text-muted)]">
-              {daily.text}
-              {daily.attribution && (
-                <span className="ml-2 font-sans text-sm not-italic text-[var(--text-dim)]">
-                 {daily.attribution}
-                </span>
-              )}
-            </p>
-          </div>
-          <span
-            className="rounded-full border px-3 py-1 text-sm font-medium"
-            style={{ color: data.planColor, backgroundColor: data.planBg, borderColor: data.planBorder }}
-          >
-            {data.planLabel}
-          </span>
-        </header>
+    <Page>
+      <div className="rx-two">
+        <div className="rx-stack-lg">
+          {banner && <AnnouncementBanner id={banner.id} title={banner.title} line={banner.line} btn={banner.btn_label || 'Open'} />}
 
-        <div className="mt-5">
-          <DimensionStrip today={daily.dimension} />
-        </div>
-
-        <div className="mt-6">
-          <TodayHero data={data} />
-        </div>
-
-        {/* ── Content: main column + sticky aside on desktop ── */}
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
-            <div id="goal" className="scroll-mt-6">
-              <GoalCard goal={data.goal} progressPct={data.goalProgressPct} goalDay={data.goalDay} />
+          <div>
+            <p className="rx-sm">{longDate(me.today)}</p>
+            <div className="rx-between" style={{ alignItems: 'flex-end' }}>
+              <h1 className="rx-title">Today</h1>
+              {state.hasCycle && <Tag>Week {state.week} of 12</Tag>}
             </div>
-            <div id="commitments" className="scroll-mt-6">
-              <CommitmentsCard commitments={data.commitments} />
-            </div>
-            <WeekHistory weeks={data.weekHistory} sessionsThisWeek={data.sessionsThisWeek} />
+            <span className="rx-rule" style={{ marginBottom: 14 }} />
+            <SageLine>{sageLine}</SageLine>
           </div>
 
-          <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-            <SummitBanner daysAway={data.summitDaysAway} registered={data.summitRegistered} />
-            <UpcomingSessionCard session={data.upcomingSession} />
-            <Suspense fallback={<ContinueRailSkeleton />}>
-              <ContinueRail />
-            </Suspense>
-          </aside>
+          {state.missed && (
+            <div className="rx-soft rx-row rx-nw rx-rise" style={{ gap: 14 }}>
+              <div><p className="rx-p rx-strong">A missed day doesn’t reset anything.</p><p className="rx-sm">Today’s practice is still here.</p></div>
+            </div>
+          )}
+
+          <PlanCard
+            goal={state.goal?.goal_text ?? null}
+            plan={plan ? { cue: plan.cue, action: plan.action, trigger: plan.trigger ?? '', fallback: plan.fallback ?? '', obstacle: plan.obstacle ?? '', source: plan.source ?? '' } : null}
+          />
+          <CheckinCard initial={state.todayStatus} kept={kept} total={state.daysThisWeek} hasPlan={!!plan} />
+
+          <div className="rx-mob"><MoreForToday rows={mobileRows} /></div>
         </div>
+
+        <Aside>
+          {lesson && (
+            <div className="rx-card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div className="rx-thumb" style={{ borderRadius: 0, aspectRatio: '16/8', alignItems: 'center', justifyContent: 'center' }}><Play aria-hidden style={{ width: 40, height: 40 }} /></div>
+              <div className="rx-stack-sm" style={{ padding: '16px 18px 18px' }}>
+                <p className="rx-sm">This week’s lesson · {lesson.minutes} min</p>
+                <p className="rx-h3">{lesson.title}</p>
+                <p className="rx-sm">{lessonDone ? 'Practice set' : 'Practice not set yet'}</p>
+                <div><Link href={`/learn/lesson/${lesson.slug}`} className="rx-btn secondary">Open lesson</Link></div>
+              </div>
+            </div>
+          )}
+          <div className="rx-stack-sm rx-dsk">
+            <p className="rx-label">More for today</p>
+            <div>
+              {[circleRow, mentorRow].map((r) => (
+                <Link key={r.title} href={r.href} className="rx-rowlink">
+                  <span className="ri"><CalendarDays aria-hidden /></span>
+                  <span className="rt"><span className="t">{r.title}</span><span className="m">{r.meta}</span></span>
+                </Link>
+              ))}
+            </div>
+            {circle?.week ? <p className="rx-sm">Circle focus: {CIRCLE_FOCUS[circle.week - 1]}</p> : null}
+          </div>
+        </Aside>
       </div>
-    </div>
+    </Page>
   );
-}
-
-function getGreeting(): string {
-  const hour = Number(
-    new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Africa/Lagos',
-      hour: 'numeric',
-      hour12: false,
-    }).format(new Date())
-  );
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
 }

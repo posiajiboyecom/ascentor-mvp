@@ -264,3 +264,10 @@ select.rx-in { appearance: auto; }
   .rx-stage-art { align-items: center; padding: 48px; }
   .rx-stage-body { justify-content: center; padding: 48px 96px 48px 32px; }
 }
+
+/* ── responsive helpers ───────────────────────────────────────────────────── */
+.rx-mob { display: block; }
+.rx-dsk { display: none; }
+@media (min-width: 1024px) { .rx-mob { display: none; } .rx-dsk { display: flex; } }
+
+.rx-sticky-bottom { position: sticky; bottom: 0; background: var(--rx-bg); padding: 12px 0; margin-top: 8px; z-index: 5; }
