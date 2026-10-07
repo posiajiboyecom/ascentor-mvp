@@ -26,7 +26,7 @@
 .rx *, .rx *::before, .rx *::after { box-sizing: border-box; }
 
 /* ── layout ───────────────────────────────────────────────────────────────── */
-.rx-page { width: 100%; max-width: 1200px; margin: 0 auto; padding: 24px 16px 96px; }
+.rx-page { width: 100%; max-width: 1200px; margin: 0 auto; padding: 24px 16px 40px; }
 @media (min-width: 1024px) { .rx-page { padding: 40px 40px 64px; } }
 .rx-two { display: grid; gap: 24px; grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 1024px) { .rx-two { grid-template-columns: minmax(0, 1fr) 340px; gap: 48px; align-items: start; } }
@@ -187,7 +187,7 @@ select.rx-in { appearance: auto; }
 .rx-grid5 { display: grid; grid-template-columns: 64px repeat(5, minmax(0, 1fr)); gap: 6px; font-size: 13px; }
 
 /* ── toast ────────────────────────────────────────────────────────────────── */
-.rx-toast { position: fixed; z-index: 9990; left: 16px; right: 16px; bottom: 84px; background: #161616; color: #fff; border-radius: 12px; padding: 12px 16px; font-size: 14px; display: flex; gap: 10px; align-items: center; min-height: 48px; box-shadow: 0 8px 24px rgba(0,0,0,.25); animation: rx-rise .3s ease-out both; font-family: Metropolis, sans-serif; }
+.rx-toast { position: fixed; z-index: 9990; left: 16px; right: 16px; bottom: 76px; background: #161616; color: #fff; border-radius: 12px; padding: 12px 16px; font-size: 14px; display: flex; gap: 10px; align-items: center; min-height: 48px; box-shadow: 0 8px 24px rgba(0,0,0,.25); animation: rx-rise .3s ease-out both; font-family: Metropolis, sans-serif; }
 .rx-toast svg { width: 18px; height: 18px; color: var(--app-accent, #C8A96E); flex: none; }
 @media (min-width: 1024px) { .rx-toast { left: auto; right: 24px; bottom: auto; top: 84px; max-width: 420px; } }
 

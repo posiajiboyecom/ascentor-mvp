@@ -75,7 +75,6 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
 
   const idx = FLOW.indexOf(step as ObStep);
   const seg = OB_SEG[step as ObStep];
-  const isQuestion = seg !== undefined || step === 'tzlist';
 
   const goal = goals[Math.min(gi, goals.length - 1)] ?? { g: '', who: '' };
   const setGoalField = (field: 'g' | 'who', v: string) =>

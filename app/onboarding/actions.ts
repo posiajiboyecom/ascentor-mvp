@@ -139,6 +139,19 @@ export async function finishOnboarding(): Promise<ActionResult<{ result: FinishR
 
     await db.from('member_profile').update({ stage, onboarded_at: new Date().toISOString(), onboarding_step: 'stage', timezone: mp.timezone ?? DEFAULT_TZ }).eq('user_id', userId);
 
+    // Sage's first notes: plain facts the member gave us, visible and editable under "What Sage knows".
+    const { count: noteCount } = await db.from('sage_memories').select('id', { count: 'exact', head: true }).eq('user_id', userId);
+    if (!noteCount) {
+      const notes: string[] = [];
+      const city = mp.city as string | null;
+      const interests = (mp.interests as string[]) ?? [];
+      if (interests.length) notes.push(`You want to grow in ${interests.slice(0, 3).join(', ').toLowerCase()}${city ? `, and you’re based in ${city}` : ''}.`);
+      if (goals[0]) notes.push(`Your goal: ${goals[0].g.charAt(0).toLowerCase()}${goals[0].g.slice(1)}${goals[0].who ? `, for ${goals[0].who.toLowerCase()}` : ''}.`);
+      const slots = (mp.slots as string[]) ?? [];
+      if (slots.length) notes.push(`You usually show up on ${slots.map((s) => s.toLowerCase()).join(' and ')}.`);
+      if (notes.length) await db.from('sage_memories').insert(notes.map((text) => ({ user_id: userId, text: text.slice(0, 160) })));
+    }
+
     // Place in a Circle and read it back.
     let circle: FinishResult['circle'] = null;
     const cid = await assignCircle(userId);

@@ -12,6 +12,5 @@ export function looksLikeScam(text: string): boolean {
 /** Collapses control characters and trims; keeps normal punctuation. */
 export function cleanText(input: unknown, max = 2000): string {
   if (typeof input !== 'string') return '';
-  // eslint-disable-next-line no-control-regex
   return input.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, max);
 }

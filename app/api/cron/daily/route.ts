@@ -5,6 +5,7 @@
 //   2. reconcile payments (settle anything Paystack confirmed that we missed)
 //   3. Summit event-day emails (a no-op on every day but the Summit)
 //   4. commitment reminders (due today) and session reminders (starting in the next 24 hours)
+//   5. member app: announcement start/end, daily practice nudges, quiet-member notices to facilitators
 // Each step is isolated: one failing never stops the others. Authenticates with the CRON_SECRET bearer
 // token like the other cron routes. The individual routes still exist for manual runs.
 
@@ -14,6 +15,7 @@ import { pingDatabase } from '@/lib/keepalive';
 import { reconcilePayments } from '@/lib/paymentReconciliation';
 import { sendEventDayEmails } from '@/lib/summitEventDay';
 import { sendCommitmentReminders, sendUpcomingSessionReminders } from '@/lib/reminders';
+import { notifyFacilitatorsOfQuietMembers, sendPracticeReminders, syncAnnouncementStatus } from '@/lib/rx/cron';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Hobby maximum
@@ -50,6 +52,9 @@ export async function GET(req: NextRequest) {
     await step('summit-event-day', () => sendEventDayEmails()),
     await step('commitment-reminders', sendCommitmentReminders),
     await step('session-reminders', sendUpcomingSessionReminders),
+    await step('announcement-status', syncAnnouncementStatus),
+    await step('practice-reminders', sendPracticeReminders),
+    await step('quiet-members', notifyFacilitatorsOfQuietMembers),
   ];
 
   const ok = results.every((r) => r.ok);

@@ -19,6 +19,7 @@ import { NAV_ITEMS } from '@/lib/nav-items';
 import ShellLayout from './ShellLayout';
 import SageFloat, { clearSageGreeting } from './SageFloat';
 import SagePanel from '@/components/rx/sage/SagePanel';
+import { MobileTabBar } from '@/components/nav/MobileTabBar';
 import type { ShellNavGroup } from './types';
 
 export interface ShellCountsProp {
@@ -113,6 +114,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
 
       <SageFloat userName={userName} />
       <SagePanel />
+      <MobileTabBar />
       <SummitModal registered={summitRegistered} userId={userId} />
     </ToastProvider>
   );

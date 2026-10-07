@@ -490,3 +490,8 @@ body[data-sh-lock='true'] { overflow: hidden; }
   .sage-orb::after, .sage-bubble, .sage-typing > i, .sage-caret { animation: none; }
   .sage-orb, .sage-orb:hover { transition: none; transform: none; }
 }
+
+/* The member app has a bottom tab bar on phones: keep content clear of it. */
+@media (max-width: 1023.98px) {
+  .sh-root[data-variant='app'] .sh-main { padding-bottom: 58px; }
+}

@@ -5,6 +5,11 @@ All notable changes to the Ascentor platform will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased: reimagined member app
+- New data model (`20261008_reimagine.sql`), 12-step onboarding, Today, Learn, Circle, Community feed and Groups, Messages,
+  mentor Sessions, Sage panel, My Growth, Profile, Settings, Announcements and four admin screens. See `docs/reimagine.md`.
+- The old channel-based community moved to `/community/channels` and the course catalogue to `/learn/courses`.
+
 ## [Unreleased]
 
 ### Added (platform-v1, not released to production)

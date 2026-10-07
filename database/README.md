@@ -13,6 +13,7 @@ Source of truth: the Supabase project. This folder makes it reproducible.
 5. `migrations/20261006_fix_signup_trigger.sql` (sign-up trigger functions use schema-qualified names)
 6. `migrations/20261006_signup_otp.sql` (sign-up code purpose column)
 7. `migrations/20261007_member_directory.sql` (`member_directory` view; profile rows readable by their owner only)
+8. `migrations/20261008_reimagine.sql` (data model for the reimagined member app: onboarding profile, weekly practice and check-ins, pathway lessons, Circles, Groups, feed, direct messages, human mentorship, Sage notes, announcements, growth scores; row level security throughout; seeds lessons, groups and two announcements; realtime for chat tables)
 
 Older dated migrations (2026-07 to 2026-09) are already reflected in the baseline. They are idempotent and may
 still be run on an existing database, but they are not needed on a new one.
