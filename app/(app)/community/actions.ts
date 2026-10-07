@@ -6,6 +6,7 @@ import type { ActionResult } from '@/lib/rx/types';
 import type { ChatMsg } from '@/lib/rx/chat-types';
 import { groupMessages } from '@/lib/rx/community';
 import { cleanText } from '@/lib/rx/safety';
+import { flagIfRisky } from '@/lib/rx/moderation';
 import { isOwnMediaUrl, parseBody } from '@/lib/rx/media';
 import { DIMENSIONS, POST_TYPES } from '@/lib/rx/constants';
 
@@ -97,6 +98,7 @@ export async function sendGroupMessage(groupId: string, raw: string): Promise<Ac
     if (p.kind !== 'text' && !isOwnMediaUrl(p.url)) throw new Error('That attachment isn’t allowed.');
     const { data, error } = await db.from('rx_group_messages').insert({ group_id: groupId, user_id: userId, body }).select('id, created_at').single();
     if (error) throw error;
+    void flagIfRisky('group', data.id as string, userId, body);
     const me = await getMe();
     return { ok: true, message: { id: data.id as string, userId, name: me?.fullName ?? 'You', avatarUrl: me?.avatarUrl ?? null, body, createdAt: data.created_at as string } };
   } catch (e) { return fail(e, 'We couldn’t send that. Join the group to post.'); }

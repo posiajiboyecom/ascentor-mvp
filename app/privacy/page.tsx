@@ -101,6 +101,7 @@ const SECTIONS: Section[] = [
         rows: [
           { purpose: "Provide & personalise the platform", detail: "Your profile, goals, and career stage directly shape how Sage AI responds to you and which content and experts are surfaced." },
           { purpose: "AI coaching (Sage)", detail: "Your conversation history with Sage is processed through Anthropic's Claude API to generate contextual, relevant responses. Your data is not used to train Anthropic's models." },
+          { purpose: "Chat review for safety and improvement", detail: "Messages on the platform (Circle chats, group rooms, direct messages and your conversations with Sage) can be read by authorised members of the Ascentor team, to keep members safe, to investigate reports, and to improve Ascentor and Sage. Other members cannot read chats they are not part of. Every time the team opens or downloads a chat, it is recorded. You agree to this when you join, and you can ask us to export or delete your data at any time from Settings." },
           { purpose: "Match you with peer cohorts", detail: "Onboarding data (industry, experience level, goals) drives the algorithm that places you in the right Accountability Circle." },
           { purpose: "Process subscriptions & payments", detail: "Plan selection, billing cycle, and payment confirmations are handled via Paystack. We never store card numbers." },
           { purpose: "Send relevant communications", detail: "Service emails (billing receipts, session reminders, platform updates) and, with consent, occasional marketing emails." },

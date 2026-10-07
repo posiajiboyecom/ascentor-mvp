@@ -9,6 +9,7 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { coachSessionLimiter, getClientIp } from '@/lib/rate-limit';
 import { CRISIS_PATTERN } from '@/lib/rx/constants';
 import { cleanText } from '@/lib/rx/safety';
@@ -23,6 +24,35 @@ const CRISIS_REPLY = {
   reply: 'Thank you for telling me. I’m an AI, and you deserve a real person right now. You don’t have to explain everything. Please reach out below.',
   crisis: true,
 };
+
+
+/**
+ * Saves one exchange. Conversations are kept so the Ascentor team can review them for safety and to improve Sage; the
+ * member agreed to this at signup. Returns the conversation id. A storage failure never blocks the reply.
+ */
+async function saveExchange(userId: string, topic: string, conversationId: string | null | undefined, userText: string, sageText: string): Promise<string | null> {
+  try {
+    let id = conversationId && /^[0-9a-f-]{36}$/i.test(conversationId) ? conversationId : null;
+    if (id) {
+      const { data } = await supabaseAdmin.from('sage_conversations').select('id').eq('id', id).eq('user_id', userId).maybeSingle();
+      if (!data) id = null;
+    }
+    if (!id) {
+      const { data } = await supabaseAdmin.from('sage_conversations').insert({ user_id: userId, topic }).select('id').single();
+      id = (data?.id as string | undefined) ?? null;
+    }
+    if (!id) return null;
+    await supabaseAdmin.from('sage_messages').insert([
+      { conversation_id: id, user_id: userId, role: 'user', body: userText },
+      { conversation_id: id, user_id: userId, role: 'sage', body: sageText },
+    ]);
+    await supabaseAdmin.from('sage_conversations').update({ updated_at: new Date().toISOString() }).eq('id', id);
+    return id;
+  } catch (e) {
+    console.error('[rx/sage] could not store conversation', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
 
 const TOPIC_GUIDE: Record<string, string> = {
   plan: 'The member wants to plan their week. Ask one short question at a time: what matters most this week, what usually gets in the way. After you know both, propose a draft if-then plan in the "draft" field. Keep the plan small enough to do on a bad day.',
@@ -60,7 +90,7 @@ export async function POST(req: Request) {
   const { data: { user } } = await db.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Please sign in again.' }, { status: 401 });
 
-  let body: { topic?: string; messages?: { role?: string; text?: string }[] };
+  let body: { topic?: string; conversationId?: string | null; messages?: { role?: string; text?: string }[] };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }
   const topic = TOPICS.has(body.topic ?? '') ? (body.topic as string) : 'plan';
   const history = (Array.isArray(body.messages) ? body.messages : [])
@@ -72,7 +102,10 @@ export async function POST(req: Request) {
   if (!last || last.role !== 'user') return NextResponse.json({ error: 'Say something first.' }, { status: 400 });
 
   // Anything that looks like a crisis in the recent messages is handled without the model.
-  if (history.slice(-3).some((m) => m.role === 'user' && CRISIS_PATTERN.test(m.content))) return NextResponse.json(CRISIS_REPLY);
+  if (history.slice(-3).some((m) => m.role === 'user' && CRISIS_PATTERN.test(m.content))) {
+    const cid = await saveExchange(user.id, topic, body.conversationId, last.content, CRISIS_REPLY.reply);
+    return NextResponse.json({ ...CRISIS_REPLY, conversationId: cid });
+  }
 
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: 'Sage is resting. Try again soon.' }, { status: 503 });
 
@@ -124,7 +157,8 @@ export async function POST(req: Request) {
       const { error } = await db.from('sage_memories').insert({ user_id: user.id, text: n });
       if (!error) note = n;
     }
-    return NextResponse.json({ reply, draft, note });
+    const conversationId = await saveExchange(user.id, topic, body.conversationId, last.content, reply);
+    return NextResponse.json({ reply, draft, note, conversationId });
   } catch (e) {
     console.error('[rx/sage] model call failed', e instanceof Error ? e.message : e);
     return NextResponse.json({ error: 'Sage is having trouble right now. Please try again.' }, { status: 502 });

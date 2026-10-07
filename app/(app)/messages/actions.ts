@@ -5,7 +5,8 @@ import { requireMember, getMe, getMyCircle, fail } from '@/lib/rx/server';
 import type { ActionResult } from '@/lib/rx/types';
 import type { ChatMsg } from '@/lib/rx/chat-types';
 import { dmMessages } from '@/lib/rx/messages';
-import { cleanText, looksLikeScam } from '@/lib/rx/safety';
+import { assessMessage, cleanText, holdForNewAccount } from '@/lib/rx/safety';
+import { accountAgeDays, accountGate, flagIfRisky } from '@/lib/rx/moderation';
 import { isOwnMediaUrl, parseBody } from '@/lib/rx/media';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
@@ -46,6 +47,18 @@ export async function openThread(otherId: string): Promise<ActionResult<{ thread
       const { data: seat } = await supabaseAdmin.from('circle_seats').select('user_id').eq('circle_id', circle.circle.id).eq('user_id', otherId).maybeSingle();
       sameCircle = !!seat;
     }
+    if (!sameCircle) {
+      // Outside the Circle: new accounts cannot start conversations, and nobody can flood people with requests.
+      const gate = await accountGate(userId);
+      if (!gate.ok) throw new Error(gate.reason);
+      const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+      const [{ count: today }, { count: pending }] = await Promise.all([
+        supabaseAdmin.from('dm_threads').select('id', { count: 'exact', head: true }).eq('requested_by', userId).gte('created_at', since),
+        supabaseAdmin.from('dm_threads').select('id', { count: 'exact', head: true }).eq('requested_by', userId).eq('status', 'request'),
+      ]);
+      if ((today ?? 0) >= 5) throw new Error('You have sent several requests today. Try again tomorrow.');
+      if ((pending ?? 0) >= 15) throw new Error('You have many requests waiting. Wait for replies before sending more.');
+    }
     const policy = (theirs?.dm_policy as string | undefined) ?? 'circle_and_requests';
     if (!sameCircle && policy === 'none') throw new Error('This member isn’t taking new messages.');
     if (!sameCircle && policy === 'circle_and_mentor') {
@@ -71,11 +84,16 @@ export async function sendDm(threadId: string, raw: string): Promise<ActionResul
       if (t.requested_by !== userId) throw new Error('Accept the request to reply.');
       const { count } = await db.from('dm_messages').select('id', { count: 'exact', head: true }).eq('thread_id', threadId);
       if ((count ?? 0) >= 1) throw new Error('Wait for them to accept your request before sending more.');
+      // A first message from a new account cannot carry links, phone numbers or a hand-off to another app.
+      if (holdForNewAccount(assessMessage(body)) && (await accountAgeDays(userId)) < 30) {
+        throw new Error('A first message cannot include links, phone numbers or other apps while your account is new. Say hello in words, and share more once they accept.');
+      }
     } else if (t.status !== 'accepted') throw new Error('This conversation isn’t available.');
 
-    const { data, error } = await db.from('dm_messages').insert({ thread_id: threadId, sender_id: userId, body, flagged: looksLikeScam(body) }).select('id, created_at').single();
+    const { data, error } = await db.from('dm_messages').insert({ thread_id: threadId, sender_id: userId, body, flagged: assessMessage(body).flagged }).select('id, created_at').single();
     if (error) throw error;
     await supabaseAdmin.from('dm_threads').update({ last_message_at: data.created_at }).eq('id', threadId);
+    void flagIfRisky('dm', data.id as string, userId, body);
     const me = await getMe();
     revalidatePath('/messages');
     return { ok: true, message: { id: data.id as string, userId, name: me?.fullName ?? 'You', avatarUrl: me?.avatarUrl ?? null, body, createdAt: data.created_at as string } };

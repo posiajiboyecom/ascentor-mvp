@@ -51,7 +51,7 @@ export default async function CirclePage() {
         <div className="rx-two">
           <div className="rx-card rx-stack">
             <p className="rx-label">Confidentiality pledge</p>
-            <p className="rx-big" style={{ fontSize: 20 }}>What’s shared in this Circle stays in this Circle.</p>
+            <p className="rx-big" style={{ fontSize: 20 }}>What’s shared in this Circle stays among its members.</p>
             <div className="rx-stack-sm">
               {['I won’t share others’ stories, names or screenshots.', 'I’ll listen first and advise only when asked.', 'I’ll tell the facilitator if I can’t make it.'].map((t) => (
                 <p key={t} className="rx-row rx-nw rx-p" style={{ gap: 10, alignItems: 'flex-start' }}><Check aria-hidden style={{ width: 18, height: 18, marginTop: 3, flex: 'none', color: 'var(--rx-gold)' }} />{t}</p>
@@ -59,7 +59,7 @@ export default async function CirclePage() {
             </div>
             <PledgeButtons />
           </div>
-          <Aside><p className="rx-label">Why this matters</p><p className="rx-p">People share more when they feel safe. Wins you choose to post publicly are the one exception, and only your own.</p></Aside>
+          <Aside><p className="rx-label">Why this matters</p><p className="rx-p">People share more when they feel safe. Wins you choose to post publicly are the one exception, and only your own.</p><p className="rx-sm">The Ascentor team can review chats for safety and to improve Ascentor, as you agreed when you joined. Other members outside your Circle cannot read them.</p></Aside>
         </div>
       </Page>
     );

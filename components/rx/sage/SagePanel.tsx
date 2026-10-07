@@ -38,6 +38,7 @@ export default function SagePanel() {
   const [draft, setDraft] = useState<PlanDraft | null>(null);
   const [report, setReport] = useState<ReportDraft | null>(null);
   const [crisis, setCrisis] = useState(false);
+  const [convId, setConvId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -49,7 +50,7 @@ export default function SagePanel() {
   const recRef = useRef<SpeechRec | null>(null);
 
   const begin = useCallback((t: SageTopic) => {
-    setTopic(t); setMsgs(OPENERS[t]); setDraft(null); setReport(null); setError(''); setCrisis(t === 'crisis');
+    setTopic(t); setMsgs(OPENERS[t]); setDraft(null); setReport(null); setError(''); setCrisis(t === 'crisis'); setConvId(null);
     if (t === 'report') start(async () => { const r = await buildReportDraft(); if (r.ok) setReport(r.draft); });
   }, []);
 
@@ -80,10 +81,11 @@ export default function SagePanel() {
     const next: Msg[] = [...msgs, { role: 'user', text: t }];
     setMsgs(next); setInput(''); setBusy(true); setError('');
     try {
-      const res = await fetch('/api/rx/sage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic, messages: next }) });
-      const j = (await res.json().catch(() => ({}))) as { reply?: string; draft?: PlanDraft; note?: string; crisis?: boolean; error?: string };
+      const res = await fetch('/api/rx/sage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic, conversationId: convId, messages: next }) });
+      const j = (await res.json().catch(() => ({}))) as { reply?: string; draft?: PlanDraft; note?: string; crisis?: boolean; error?: string; conversationId?: string | null };
       if (!res.ok || !j.reply) { setError(j.error ?? 'Sage is having trouble right now. Please try again.'); return; }
       setMsgs((m) => [...m, { role: 'sage', text: j.reply as string }]);
+      if (j.conversationId) setConvId(j.conversationId);
       if (j.crisis) setCrisis(true);
       if (j.draft) setDraft(j.draft);
     } catch { setError('Sage couldn’t be reached. Check your connection and try again.'); }

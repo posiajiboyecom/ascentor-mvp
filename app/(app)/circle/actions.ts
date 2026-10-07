@@ -6,6 +6,7 @@ import type { ActionResult } from '@/lib/rx/types';
 import type { ChatMsg } from '@/lib/rx/chat-types';
 import { circleMessages } from '@/lib/rx/circle';
 import { cleanText } from '@/lib/rx/safety';
+import { flagIfRisky } from '@/lib/rx/moderation';
 import { isOwnMediaUrl, parseBody } from '@/lib/rx/media';
 import { dimensionOf } from '@/lib/rx/constants';
 
@@ -48,6 +49,7 @@ export async function sendCircleMessage(circleId: string, raw: string): Promise<
     const body = checkBody(raw);
     const { data, error } = await db.from('circle_messages').insert({ circle_id: circleId, user_id: userId, body, kind: 'text' }).select('id, created_at').single();
     if (error) throw error;
+    void flagIfRisky('circle', data.id as string, userId, body);
     const me = await getMe();
     return { ok: true, message: { id: data.id as string, userId, name: me?.fullName ?? 'You', avatarUrl: me?.avatarUrl ?? null, body, createdAt: data.created_at as string } };
   } catch (e) { return fail(e, 'We couldn’t send that. Please try again.'); }
