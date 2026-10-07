@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getMe, getMyCircle } from '@/lib/rx/server';
 import { cycleSummary } from '@/lib/rx/circle';
 import { addDays, localISODate } from '@/lib/rx/dates';
+import { loadScores } from '@/lib/rx/survey';
 import { Aside, BackLink, Bar, Page, Title } from '@/components/rx/ui';
 import { BeyondSelfEditor, RetakeSurvey } from '@/components/rx/growth/GrowthClient';
 
@@ -24,15 +25,14 @@ export default async function GrowthPage() {
   if (!me) redirect('/login');
   const db = await createClient();
   const circle = await getMyCircle();
-  const [{ data }, sum, { data: threads }] = await Promise.all([
-    db.from('growth_scores').select('kind, flourishing, purpose, initiative, taken_at').eq('user_id', me.userId),
+  const [scoreMap, sum, { data: threads }] = await Promise.all([
+    loadScores(me.userId),
     circle ? cycleSummary(me.userId, circle.circle.id, circle.circle.cycle_start) : Promise.resolve(null),
     db.from('dm_threads').select('id').eq('status', 'accepted').gte('last_message_at', addDays(localISODate(me.tz), -30)),
   ]);
-  const scores = new Map(((data ?? []) as Score[]).map((s) => [s.kind, s]));
-  const base = scores.get('baseline');
-  const m3 = scores.get('m3');
-  const m6 = scores.get('m6');
+  const base = scoreMap.get('baseline') as Score | undefined;
+  const m3 = scoreMap.get('m3') as Score | undefined;
+  const m6 = scoreMap.get('m6') as Score | undefined;
 
   // Survey schedule: 3 months and 6 months after the baseline.
   const dueFor = (months: number) => (base ? new Date(new Date(base.taken_at).setMonth(new Date(base.taken_at).getMonth() + months)) : null);

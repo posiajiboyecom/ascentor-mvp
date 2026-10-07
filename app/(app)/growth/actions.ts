@@ -4,24 +4,23 @@ import { revalidatePath } from 'next/cache';
 import { requireMember, fail } from '@/lib/rx/server';
 import type { ActionResult } from '@/lib/rx/types';
 import { cleanText } from '@/lib/rx/safety';
-import { SURVEY_QUESTIONS } from '@/lib/rx/constants';
+import { SURVEY } from '@/lib/rx/constants';
+import { loadScores, saveAnswers, scoreWave } from '@/lib/rx/survey';
 
-/** Records a follow-up survey. Flourishing = questions 1 and 4, purpose = 2, initiative = 3 (each 1 to 5). */
+/** Records a follow-up survey (3 and 6 months after the baseline). Answers go to private tables only. */
 export async function submitSurvey(answers: number[]): Promise<ActionResult> {
   try {
-    const { db, userId } = await requireMember();
-    if (answers.length !== SURVEY_QUESTIONS.length || answers.some((a) => !(a >= 1 && a <= 5))) throw new Error('Answer every question to finish.');
-    const { data: rows } = await db.from('growth_scores').select('kind, taken_at').eq('user_id', userId);
-    const have = new Map(((rows ?? []) as { kind: string; taken_at: string }[]).map((r) => [r.kind, r.taken_at]));
+    const { userId } = await requireMember();
+    if (answers.length !== SURVEY.length || answers.some((a) => !(a >= 1 && a <= 5))) throw new Error('Answer every question to finish.');
+    const have = await loadScores(userId);
     const base = have.get('baseline');
     if (!base) throw new Error('Take the baseline first.');
-    const days = (Date.now() - new Date(base).getTime()) / 86400000;
-    const kind = !have.has('m3') ? 'm3' : !have.has('m6') ? 'm6' : null;
-    if (!kind) throw new Error('You’ve completed all three surveys.');
-    if ((kind === 'm3' && days < 60) || (kind === 'm6' && days < 150)) throw new Error('This survey isn’t due yet.');
-    const [a, b, c, d] = answers;
-    const { error } = await db.from('growth_scores').insert({ user_id: userId, kind, flourishing: (a + d) / 2, purpose: b, initiative: c });
-    if (error) throw error;
+    const days = (Date.now() - new Date(base.taken_at).getTime()) / 86400000;
+    const wave = !have.has('m3') ? 'm3' : !have.has('m6') ? 'm6' : null;
+    if (!wave) throw new Error('You’ve completed all three surveys.');
+    if ((wave === 'm3' && days < 60) || (wave === 'm6' && days < 150)) throw new Error('This survey isn’t due yet.');
+    await saveAnswers(userId, wave, answers);
+    await scoreWave(userId, wave);
     revalidatePath('/growth');
     return { ok: true };
   } catch (e) { return fail(e); }

@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Download, Globe } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getMe } from '@/lib/rx/server';
+import { getMe, namesFor } from '@/lib/rx/server';
 import { Aside, BackLink, GoLink, Page, Title } from '@/components/rx/ui';
-import { LanguageSelect, MessagingCard, NotificationsCard, ResearchToggle } from '@/components/rx/settings/SettingsClient';
+import { LanguageSelect, MessagingCard, NotificationsCard, ResearchToggle, TimezoneSelect } from '@/components/rx/settings/SettingsClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,10 @@ export default async function SettingsPage() {
   const me = await getMe();
   if (!me) redirect('/login');
   const db = await createClient();
-  const { count: blocked } = await db.from('dm_blocks').select('blocked_id', { count: 'exact', head: true }).eq('blocker_id', me.userId);
+  const { data: blockRows } = await db.from('dm_blocks').select('blocked_id').eq('blocker_id', me.userId);
+  const blockedIds = ((blockRows ?? []) as { blocked_id: string }[]).map((b) => b.blocked_id);
+  const blockedNames = blockedIds.length ? await namesFor(db, blockedIds) : new Map();
+  const blocked = blockedIds.map((id) => ({ id, name: (blockedNames.get(id) as { name: string } | undefined)?.name ?? 'Member' }));
   const p = me.profile;
 
   return (
@@ -22,7 +25,7 @@ export default async function SettingsPage() {
       <div className="rx-two">
         <div className="rx-stack-lg">
           <NotificationsCard notif={p?.notif ?? {}} annMuted={p?.ann_muted ?? false} quiet={p?.quiet_hours ?? true} />
-          <MessagingCard policy={p?.dm_policy ?? 'circle_and_requests'} blocked={blocked ?? 0} />
+          <MessagingCard policy={p?.dm_policy ?? 'circle_and_requests'} blocked={blocked} />
           <div className="rx-card rx-stack">
             <p className="rx-label">Privacy and data</p>
             <ResearchToggle on={p?.research_opt_in ?? false} />
@@ -36,6 +39,8 @@ export default async function SettingsPage() {
           <p className="rx-label">Sage</p>
           <GoLink href="/sage/memory">What Sage knows</GoLink>
           <GoLink href="/sage/reminders">Reminder settings</GoLink>
+          <p className="rx-label">Time zone</p>
+          <TimezoneSelect label={p?.timezone_label ?? p?.timezone ?? ''} />
           <p className="rx-label">Language</p>
           <LanguageSelect value={p?.language ?? 'English'} />
           <p className="rx-label">Account</p>

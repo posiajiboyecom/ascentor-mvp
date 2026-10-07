@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requireMember, fail } from '@/lib/rx/server';
 import type { ActionResult } from '@/lib/rx/types';
 import { DM_POLICIES, LANGUAGES, NOTIF_TYPES } from '@/lib/rx/constants';
+import { TZC, tzInfo } from '@/lib/rx/timezones';
 
 async function patch(values: Record<string, unknown>): Promise<ActionResult> {
   try {
@@ -31,4 +32,23 @@ export async function saveResearch(on: boolean): Promise<ActionResult> { return 
 export async function saveLanguage(language: string): Promise<ActionResult> {
   if (!LANGUAGES.includes(language)) return { ok: false, error: 'Choose one of the languages.' };
   return patch({ language });
+}
+
+/** Changes the member's time zone. Times across the app follow it. */
+export async function saveTimezone(zone: string): Promise<ActionResult> {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: zone });
+  } catch { return { ok: false, error: 'That time zone isn’t valid.' }; }
+  const info = tzInfo(zone);
+  return patch({ timezone: zone, timezone_label: `${info.city}, ${info.country} (${info.off})`, city: info.city, country: TZC[zone] ?? info.country });
+}
+
+export async function unblockMember(blockedId: string): Promise<ActionResult> {
+  try {
+    const { db, userId } = await requireMember();
+    const { error } = await db.from('dm_blocks').delete().eq('blocker_id', userId).eq('blocked_id', blockedId);
+    if (error) throw error;
+    revalidatePath('/settings');
+    return { ok: true };
+  } catch (e) { return fail(e); }
 }

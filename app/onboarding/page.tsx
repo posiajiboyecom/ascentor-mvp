@@ -28,7 +28,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams?: 
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
   const name = usable(s.fullName) || usable(meta.full_name) || usable(meta.name) || [usable(meta.given_name), usable(meta.family_name)].filter(Boolean).join(' ') || (user.email?.split('@')[0] ?? 'there');
 
-  const mp = s.profile as (Record<string, unknown> & { baseline?: { answers?: (number | null)[]; goals?: { g: string; who: string }[] } }) | null;
+  const mp = s.profile as (Record<string, unknown> & { baseline?: { goals?: { g: string; who: string }[] } }) | null;
   const saved = (mp?.onboarding_step as string | null) ?? null;
   // Resume where they stopped: the step after the last one saved. Fresh members see the welcome.
   let step: ObStep = 'welcome';
@@ -53,7 +53,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams?: 
     timezone: (mp?.timezone as string | null) ?? null,
     timezoneLabel: (mp?.timezone_label as string | null) ?? null,
     language: (mp?.language as string | null) ?? null,
-    answers: mp?.baseline?.answers ?? [],
+    answers: s.answers ?? [],
   };
 
   return <OnboardingFlow initial={initial} />;

@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { DM_POLICIES, LANGUAGES, NOTIF_TYPES } from '@/lib/rx/constants';
-import { saveMessaging, saveNotifications, saveResearch, saveLanguage } from '@/app/(app)/settings/actions';
+import { saveMessaging, saveNotifications, saveResearch, saveLanguage, saveTimezone, unblockMember } from '@/app/(app)/settings/actions';
+import { searchZones } from '@/lib/rx/timezones';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/rx/Toast';
 
 export function NotificationsCard({ notif, annMuted, quiet }: { notif: Record<string, boolean>; annMuted: boolean; quiet: boolean }) {
@@ -29,7 +31,8 @@ export function NotificationsCard({ notif, annMuted, quiet }: { notif: Record<st
   );
 }
 
-export function MessagingCard({ policy, blocked }: { policy: string; blocked: number }) {
+export function MessagingCard({ policy, blocked }: { policy: string; blocked: { id: string; name: string }[] }) {
+  const router = useRouter();
   const toast = useToast();
   const [v, setV] = useState(policy);
   const [, start] = useTransition();
@@ -40,7 +43,13 @@ export function MessagingCard({ policy, blocked }: { policy: string; blocked: nu
         <select id="who" className="rx-in" value={v} onChange={(e) => { setV(e.target.value); start(async () => { const r = await saveMessaging(e.target.value); toast(r.ok ? 'Saved.' : r.error); }); }}>
           {DM_POLICIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
         </select></div>
-      <div className="rx-between"><span>Blocked members</span><span className="rx-sm">{blocked}</span></div>
+      <div className="rx-stack-sm">
+        <div className="rx-between"><span>Blocked members</span><span className="rx-sm">{blocked.length}</span></div>
+        {blocked.map((b) => (
+          <div key={b.id} className="rx-between"><span className="rx-sm">{b.name}</span>
+            <button type="button" className="rx-link" style={{ minHeight: 36, fontSize: 14 }} onClick={() => start(async () => { const r = await unblockMember(b.id); toast(r.ok ? 'Unblocked.' : r.error); router.refresh(); })}>Unblock</button></div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -63,5 +72,31 @@ export function LanguageSelect({ value }: { value: string }) {
     <select className="rx-in" aria-label="Language" value={v} onChange={(e) => { setV(e.target.value); start(async () => { const r = await saveLanguage(e.target.value); toast(r.ok ? 'Language saved.' : r.error); }); }}>
       {LANGUAGES.map((l) => <option key={l}>{l}</option>)}
     </select>
+  );
+}
+
+export function TimezoneSelect({ label }: { label: string }) {
+  const toast = useToast();
+  const [q, setQ] = useState('');
+  const [current, setCurrent] = useState(label);
+  const [open, setOpen] = useState(false);
+  const [, start] = useTransition();
+  const res = open ? searchZones(q).list.slice(0, 30) : [];
+  return (
+    <div className="rx-stack-sm">
+      <p className="rx-sm">{current || 'Not set'}</p>
+      {!open ? <div><button type="button" className="rx-btn secondary" onClick={() => setOpen(true)}>Change time zone</button></div> : (
+        <>
+          <input className="rx-in" aria-label="Search time zones" placeholder="Search by city or country" value={q} onChange={(e) => setQ(e.target.value)} />
+          <div className="rx-stack-sm" style={{ maxHeight: 240, overflowY: 'auto' }}>
+            {res.map((z) => (
+              <button key={z.id} type="button" className="rx-tzrow" onClick={() => start(async () => { const r = await saveTimezone(z.id); if (r.ok) { setCurrent(`${z.city}, ${z.country} (${z.off})`); setOpen(false); setQ(''); } toast(r.ok ? `Time zone set to ${z.city}.` : r.error); })}>
+                <span className="rx-tzc"><span>{z.city} ({z.off})</span><span className="rx-sm">{z.country}</span></span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }

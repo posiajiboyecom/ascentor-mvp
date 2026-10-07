@@ -9,11 +9,12 @@ import { requireMember, assignCircle, fail, type ActionResult } from '@/lib/rx/s
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { cleanText } from '@/lib/rx/safety';
 import {
-  ALL_INTERESTS, LANGUAGES, LEAD_OPTIONS, PROJ_OPTIONS, SLOT_OPTIONS, SURVEY_QUESTIONS,
+  ALL_INTERESTS, LANGUAGES, LEAD_OPTIONS, PROJ_OPTIONS, SLOT_OPTIONS, SURVEY,
   OB_ORDER, deriveStage, dimensionOf, type ObStep, type Stage,
 } from '@/lib/rx/constants';
 import { TZC, tzInfo } from '@/lib/rx/timezones';
 import { DEFAULT_TZ } from '@/lib/rx/dates';
+import { loadAnswers, saveAnswers, scoreWave } from '@/lib/rx/survey';
 
 export interface OnboardingInput {
   interests?: string[];
@@ -27,6 +28,7 @@ export interface OnboardingInput {
   timezoneLabel?: string;
   language?: string;
   answers?: (number | null)[];
+  consent?: boolean;
   remindLater?: boolean;
 }
 
@@ -58,19 +60,15 @@ export async function saveOnboardingStep(step: ObStep, input: OnboardingInput): 
         row.country = TZC[z] ?? info.country;
       }
     }
-    if (input.answers) {
-      row.baseline = { answers: input.answers.slice(0, SURVEY_QUESTIONS.length).map(scale) };
-    }
+    if (input.answers) await saveAnswers(userId, 'baseline', input.answers.slice(0, SURVEY.length).map(scale));
+    if (input.consent) row.chat_consent_at = new Date().toISOString();
     if (input.remindLater) row.survey_remind_at = new Date(Date.now() + 48 * 3600 * 1000).toISOString();
 
     // Goals live in the baseline column until the member finishes, then become user_goals rows.
     if (input.goals) {
       const goals = input.goals.slice(0, 3).map((x) => ({ g: cleanText(x.g, 240), who: cleanText(x.who, 120) }));
       const { data: cur } = await db.from('member_profile').select('baseline').eq('user_id', userId).maybeSingle();
-      row.baseline = { ...((cur?.baseline as Record<string, unknown>) ?? {}), ...((row.baseline as Record<string, unknown>) ?? {}), goals };
-    } else if (row.baseline) {
-      const { data: cur } = await db.from('member_profile').select('baseline').eq('user_id', userId).maybeSingle();
-      row.baseline = { ...((cur?.baseline as Record<string, unknown>) ?? {}), ...(row.baseline as Record<string, unknown>) };
+      row.baseline = { ...((cur?.baseline as Record<string, unknown>) ?? {}), goals };
     }
 
     const { error } = await db.from('member_profile').upsert(row, { onConflict: 'user_id' });
@@ -91,7 +89,7 @@ export async function finishOnboarding(): Promise<ActionResult<{ result: FinishR
     const { data: mp } = await db.from('member_profile').select('*').eq('user_id', userId).maybeSingle();
     if (!mp) throw new Error('Please answer the earlier questions first.');
 
-    const baseline = (mp.baseline ?? {}) as { answers?: (number | null)[]; goals?: { g: string; who: string }[] };
+    const baseline = (mp.baseline ?? {}) as { goals?: { g: string; who: string }[] };
     const stage = deriveStage({ purpose: mp.purpose_score, lead: mp.lead_exp, project: mp.project_exp });
     const goals = (baseline.goals ?? []).filter((x) => x.g);
 
@@ -104,15 +102,8 @@ export async function finishOnboarding(): Promise<ActionResult<{ result: FinishR
       else await db.from('user_goals').insert({ user_id: userId, goal_text: g.g, serves: g.who || null, position: i, progress: 0, timeframe: '90 days' });
     }
 
-    // Baseline survey scores (1 to 5): flourishing = questions 1 and 4, purpose = 2, initiative = 3.
-    const a = baseline.answers ?? [];
-    if (a.length === SURVEY_QUESTIONS.length && a.every((x) => typeof x === 'number')) {
-      const n = (i: number) => (a[i] as number);
-      await db.from('growth_scores').upsert(
-        { user_id: userId, kind: 'baseline', flourishing: (n(0) + n(3)) / 2, purpose: n(1), initiative: n(2), taken_at: new Date().toISOString() },
-        { onConflict: 'user_id,kind' },
-      );
-    }
+    // Baseline survey scores, from the private answers (flourishing, purpose, initiative; each 1 to 5).
+    await scoreWave(userId, 'baseline').catch(() => false);
 
     // Profile: dimension, building, stage, referral code, onboarded.
     const { data: prof } = await db.from('profiles').select('referral_code, onboarding_completed').eq('id', userId).maybeSingle();
@@ -183,7 +174,17 @@ export async function answerOpenHouse(join: boolean): Promise<ActionResult> {
   } catch (e) { return fail(e); }
 }
 
-/** Fires the welcome email once, after the first completion. */
+/** Records that the member has read and accepted that the Ascentor team can review chats for safety and to improve the product. */
+export async function recordChatConsent(): Promise<ActionResult> {
+  try {
+    const { db, userId } = await requireMember();
+    const { error } = await db.from('member_profile').upsert({ user_id: userId, chat_consent_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) { return fail(e); }
+}
+
+/** Everything the onboarding page needs to resume. */
 export async function loadOnboardingState() {
   const { db, userId } = await requireMember();
   const [{ data: mp }, { data: prof }, { data: { user } }] = await Promise.all([
@@ -191,5 +192,6 @@ export async function loadOnboardingState() {
     db.from('profiles').select('full_name, onboarding_completed').eq('id', userId).maybeSingle(),
     db.auth.getUser(),
   ]);
-  return { userId, email: user?.email ?? null, profile: mp, fullName: (prof?.full_name as string | null) ?? null, completed: prof?.onboarding_completed === true };
+  const answers = await loadAnswers(userId, 'baseline').catch(() => []);
+  return { userId, email: user?.email ?? null, profile: mp, fullName: (prof?.full_name as string | null) ?? null, completed: prof?.onboarding_completed === true, answers };
 }

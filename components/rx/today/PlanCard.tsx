@@ -26,10 +26,10 @@ export function IfThenFields({ value, onChange }: { value: PlanData; onChange: (
   const set = (k: keyof PlanData) => (e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...value, [k]: e.target.value });
   return (
     <p className="rx-ifthen">
-      After I <input className="rx-in" aria-label="After I" placeholder="get home from work" value={value.cue} onChange={set('cue')} maxLength={200} />, I will{' '}
-      <input className="rx-in" aria-label="I will" placeholder="study one section for 25 minutes" value={value.action} onChange={set('action')} maxLength={240} />. If{' '}
-      <input className="rx-in" aria-label="If" placeholder="work runs late" value={value.trigger} onChange={set('trigger')} maxLength={200} />, then I will{' '}
-      <input className="rx-in" aria-label="then I will" placeholder="read one page before bed" value={value.fallback} onChange={set('fallback')} maxLength={240} />.
+      After I <input className="rx-in" aria-label="After I" placeholder="get home from work" value={value.cue} onChange={set('cue')} maxLength={140} />, I will{' '}
+      <input className="rx-in" aria-label="I will" placeholder="study one section for 25 minutes" value={value.action} onChange={set('action')} maxLength={140} />. If{' '}
+      <input className="rx-in" aria-label="If" placeholder="work runs late" value={value.trigger} onChange={set('trigger')} maxLength={140} />, then I will{' '}
+      <input className="rx-in" aria-label="then I will" placeholder="read one page before bed" value={value.fallback} onChange={set('fallback')} maxLength={140} />.
     </p>
   );
 }

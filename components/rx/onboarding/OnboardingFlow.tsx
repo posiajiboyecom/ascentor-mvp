@@ -15,7 +15,7 @@ import {
   SLOT_OPTIONS, STAGE_COPY, SURVEY_QUESTIONS, WHO_SUGGEST, type ObStep, type Stage,
 } from '@/lib/rx/constants';
 import { detectedZone, searchZones, type TzInfo } from '@/lib/rx/timezones';
-import { answerOpenHouse, finishOnboarding, saveOnboardingStep, type FinishResult, type OnboardingInput } from '@/app/onboarding/actions';
+import { answerOpenHouse, finishOnboarding, recordChatConsent, saveOnboardingStep, type FinishResult, type OnboardingInput } from '@/app/onboarding/actions';
 import { useToast } from '@/components/rx/Toast';
 import SageMark from '@/components/rx/SageMark';
 
@@ -45,7 +45,7 @@ const DIM_ICON: Record<string, React.ReactNode> = {
   Finance: <Coins aria-hidden />, Relationships: <HeartHandshake aria-hidden />, Community: <Users aria-hidden />, Legacy: <Sprout aria-hidden />,
 };
 
-const FLOW: ObStep[] = ['welcome', 'notify', 'interests', 'purpose', 'goal', 'serve', 'slots', 'timezone', 'language', 'survey', 'stage', 'forming'];
+const FLOW: ObStep[] = ['welcome', 'notify', 'interests', 'timezone', 'slots', 'language', 'purpose', 'goal', 'serve', 'survey', 'stage', 'forming'];
 
 export default function OnboardingFlow({ initial }: { initial: OnboardingInitial }) {
   const router = useRouter();
@@ -71,6 +71,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
   const [language, setLanguage] = useState<string>(initial.language ?? 'English');
   const [answers, setAnswers] = useState<(number | null)[]>(initial.answers.length ? initial.answers : SURVEY_QUESTIONS.map(() => null));
   const [sq, setSq] = useState(0);
+  const [consent, setConsent] = useState(false);
   const [finish, setFinish] = useState<FinishResult | null>(null);
   const [ohChoice, setOhChoice] = useState<'pending' | 'joined' | 'later'>('pending');
 
@@ -120,21 +121,26 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
 
   function onContinue() {
     switch (step) {
-      case 'welcome': return setStep('notify');
+      case 'welcome': {
+        if (!consent) { setError('Please tick the box to continue.'); return; }
+        setError('');
+        start(async () => { const r = await recordChatConsent(); if (!r.ok) { setError(r.error); return; } setStep('notify'); });
+        return;
+      }
       case 'notify': {
         if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
           Notification.requestPermission().catch(() => undefined).finally(() => save('notify', {}, () => setStep('interests')));
         } else save('notify', {}, () => setStep('interests'));
         return;
       }
-      case 'interests': return save('interests', { interests }, () => setStep('purpose'));
+      case 'interests': return save('interests', { interests }, () => setStep('timezone'));
       case 'purpose': return save('purpose', { purpose, effort, lead, project }, () => setStep('goal'));
       case 'goal': return save('goal', { goals }, () => setStep('serve'));
-      case 'serve': return save('serve', { goals }, () => setStep('slots'));
-      case 'slots': return save('slots', { slots }, () => setStep('timezone'));
-      case 'timezone': return save('timezone', { timezone: tz.id, timezoneLabel: tz.label }, () => setStep('language'));
+      case 'serve': return save('serve', { goals }, () => setStep('survey'));
+      case 'timezone': return save('timezone', { timezone: tz.id, timezoneLabel: tz.label }, () => setStep('slots'));
+      case 'slots': return save('slots', { slots }, () => setStep('language'));
       case 'tzlist': return setStep('timezone');
-      case 'language': return save('language', { language }, () => setStep('survey'));
+      case 'language': return save('language', { language }, () => setStep('purpose'));
       case 'survey':
         if (sq < SURVEY_QUESTIONS.length - 1) return setSq(sq + 1);
         return complete(false);
@@ -181,8 +187,13 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
               </p>
               <div className="rx-welcome-actions">
                 <p className="rx-sm">Welcome, {initial.firstName}. Let’s set up your space.</p>
-                <button type="button" className="rx-btn primary block" onClick={onContinue}>Get started<ArrowRight aria-hidden style={{ width: 18, height: 18 }} /></button>
-                <p className="rx-sm" style={{ textAlign: 'center' }}>Everything you share here stays private to you and Sage.</p>
+                <label className="rx-row rx-nw" style={{ gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={consent} onChange={(e) => { setConsent(e.target.checked); setError(''); }} style={{ width: 20, height: 20, marginTop: 2, accentColor: '#0F0F0E', flex: 'none' }} />
+                  <span className="rx-sm" style={{ color: 'var(--rx-ink)' }}>I understand that the Ascentor team can read chats on the platform, including conversations with Sage, to keep members safe and to improve Ascentor. Other members cannot read my chats. <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--rx-gold)', fontWeight: 700 }}>Privacy policy</a></span>
+                </label>
+                {error && <p className="rx-sm" role="alert" style={{ color: 'var(--rx-danger)' }}>{error}</p>}
+                <button type="button" className="rx-btn primary block" disabled={pending} onClick={onContinue}>{pending ? 'Saving…' : 'Get started'}<ArrowRight aria-hidden style={{ width: 18, height: 18 }} /></button>
+                <p className="rx-sm" style={{ textAlign: 'center' }}>Other members never see your answers or your chats with Sage.</p>
               </div>
             </div>
           </div>

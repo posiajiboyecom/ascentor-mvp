@@ -38,6 +38,8 @@ export interface MemberProfileRow {
   dm_policy: string;
   is_facilitator: boolean;
   oh_invite: 'pending' | 'later' | 'joined';
+  chat_consent_at: string | null;
+  messaging_blocked: boolean;
   beyond_self_project: string | null;
   beyond_self_since: string | null;
 }

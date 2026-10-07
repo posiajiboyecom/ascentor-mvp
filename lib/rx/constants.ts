@@ -33,11 +33,11 @@ export type ObStep =
   | 'welcome' | 'notify' | 'interests' | 'purpose' | 'goal' | 'serve'
   | 'slots' | 'timezone' | 'language' | 'survey' | 'stage' | 'forming';
 
-export const OB_ORDER: ObStep[] = ['welcome', 'notify', 'interests', 'purpose', 'goal', 'serve', 'slots', 'timezone', 'language', 'survey', 'stage', 'forming'];
+export const OB_ORDER: ObStep[] = ['welcome', 'notify', 'interests', 'timezone', 'slots', 'language', 'purpose', 'goal', 'serve', 'survey', 'stage', 'forming'];
 
 /** Which of the six progress segments a step belongs to. */
 export const OB_SEG: Partial<Record<ObStep, number>> = {
-  notify: 0, interests: 1, purpose: 2, goal: 3, serve: 3, slots: 4, timezone: 4, language: 4, survey: 5,
+  notify: 0, interests: 1, timezone: 2, slots: 2, language: 2, purpose: 3, goal: 4, serve: 4, survey: 5,
 };
 
 export const OB_SAGE: Partial<Record<ObStep, string>> = {
@@ -52,7 +52,7 @@ export const OB_SAGE: Partial<Record<ObStep, string>> = {
   survey: 'Your first instinct is fine.',
 };
 
-export const OB_NEXT = ['Reminders', 'Interests', 'Where you are', 'Goals', 'Times and language', 'Baseline'];
+export const OB_NEXT = ['Reminders', 'Interests', 'Times and language', 'Where you are', 'Goals', 'Baseline'];
 
 export const REASSURE = {
   purpose: ['An honest place to start.', 'Plenty of people start here.', 'Some clarity is enough to begin.', 'Good. We’ll help you put it to work.', 'Then let’s turn it into practice.'],
@@ -65,12 +65,30 @@ export const PROJ_OPTIONS = ['No', 'Under 6 months', '6 to 12 months', 'Over a y
 export const LANGUAGES = ['English', 'Nigerian Pidgin', 'Yoruba', 'Igbo', 'Hausa'];
 export const WHO_SUGGEST = ['My family', 'My future team', 'My community', 'People starting out'];
 
-export const SURVEY_QUESTIONS = [
-  'I feel the things I do each day are worthwhile.',
-  'I know what I want my life to stand for.',
-  'When I see a problem, I act without being asked.',
-  'I have people who help me grow.',
+export type SurveyScale = 'flourishing' | 'purpose' | 'initiative';
+
+/** The baseline and follow-up survey: ten statements, each answered 1 (strongly disagree) to 5 (strongly agree). */
+export const SURVEY: { text: string; scale: SurveyScale }[] = [
+  { text: 'I feel the things I do each day are worthwhile.', scale: 'flourishing' },
+  { text: 'I know what I want my life to stand for.', scale: 'purpose' },
+  { text: 'When I see a problem, I act without being asked.', scale: 'initiative' },
+  { text: 'I have people who help me grow.', scale: 'flourishing' },
+  { text: 'My goals connect to something bigger than me.', scale: 'purpose' },
+  { text: 'I start things even when I am not sure they will work.', scale: 'initiative' },
+  { text: 'I feel hopeful about the year ahead.', scale: 'flourishing' },
+  { text: 'I can explain why my work matters.', scale: 'purpose' },
+  { text: 'I follow through on what I start.', scale: 'initiative' },
+  { text: 'I feel connected to the people around me.', scale: 'flourishing' },
 ];
+export const SURVEY_QUESTIONS = SURVEY.map((q) => q.text);
+
+/** Averages (1 to 5) per scale from ten answers in order. */
+export function surveyScores(values: number[]): { flourishing: number; purpose: number; initiative: number } {
+  const acc: Record<SurveyScale, number[]> = { flourishing: [], purpose: [], initiative: [] };
+  SURVEY.forEach((q, i) => { if (values[i] >= 1 && values[i] <= 5) acc[q.scale].push(values[i]); });
+  const avg = (a: number[]) => (a.length ? Math.round((a.reduce((x, y) => x + y, 0) / a.length) * 100) / 100 : 0);
+  return { flourishing: avg(acc.flourishing), purpose: avg(acc.purpose), initiative: avg(acc.initiative) };
+}
 export const AGREE = ['Strongly disagree', 'Disagree', 'Neither', 'Agree', 'Strongly agree'];
 
 export type Stage = 'Seeking' | 'Building' | 'Leading';

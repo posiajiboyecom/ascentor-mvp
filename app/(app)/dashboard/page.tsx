@@ -16,6 +16,7 @@ import PlanCard from '@/components/rx/today/PlanCard';
 import CheckinCard from '@/components/rx/today/CheckinCard';
 import AnnouncementBanner from '@/components/rx/today/AnnouncementBanner';
 import MoreForToday, { type MoreRow } from '@/components/rx/today/MoreForToday';
+import ConsentCard from '@/components/rx/today/ConsentCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +64,7 @@ export default async function TodayPage() {
     <Page>
       <div className="rx-two">
         <div className="rx-stack-lg">
+          {me.profile?.onboarded_at && !me.profile?.chat_consent_at && <ConsentCard />}
           {!me.profile?.onboarded_at && (
             <div className="rx-soft rx-stack-sm rx-rise">
               <p className="rx-p rx-strong">Finish setting up</p>

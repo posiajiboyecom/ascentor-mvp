@@ -4,12 +4,13 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 
 const OWN: [string, string][] = [
   ['member_profile', 'user_id'], ['user_goals', 'user_id'], ['practices', 'user_id'], ['practice_checkins', 'user_id'],
-  ['rx_lesson_progress', 'user_id'], ['growth_scores', 'user_id'], ['sage_memories', 'user_id'], ['mentee_intake', 'user_id'],
+  ['rx_lesson_progress', 'user_id'], ['sage_memories', 'user_id'], ['mentee_intake', 'user_id'],
   ['feed_posts', 'user_id'], ['feed_replies', 'user_id'], ['circle_reports', 'user_id'], ['circle_reviews', 'user_id'],
   ['rx_group_members', 'user_id'], ['announcement_reads', 'user_id'], ['rx_group_requests', 'user_id'],
 ];
@@ -29,6 +30,13 @@ export async function GET() {
     db.from('dm_messages').select('*').eq('sender_id', user.id),
     db.from('circle_messages').select('*').eq('user_id', user.id),
   ]);
+  // Survey answers and scores are private tables, read here for the member only.
+  const [answers, scores, sage] = await Promise.all([
+    supabaseAdmin.from('private_survey_responses').select('wave, item, value, taken_at').eq('user_id', user.id),
+    supabaseAdmin.from('private_growth_scores').select('kind, flourishing, purpose, initiative, taken_at').eq('user_id', user.id),
+    supabaseAdmin.from('sage_messages').select('role, body, created_at').eq('user_id', user.id).order('created_at'),
+  ]);
+  out.survey_answers = answers.data ?? []; out.growth_scores = scores.data ?? []; out.sage_conversations = sage.data ?? [];
   out.group_messages = msgs.data ?? []; out.direct_messages_sent = dms.data ?? []; out.circle_messages = circleMsgs.data ?? [];
 
   return new NextResponse(JSON.stringify(out, null, 2), {
