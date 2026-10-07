@@ -9,7 +9,7 @@ import { useToast } from '@/components/rx/Toast';
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const errp = (m: string) => <p className="rx-sm" role="alert" style={{ color: 'var(--rx-danger)' }}>{m}</p>;
 
-export interface CircleAdminRow { id: string; name: string; number: number; status: string; members: number; facilitatorId: string | null; cycleStart: string | null; dow: number; time: string; url: string }
+export interface CircleAdminRow { id: string; name: string; number: number; status: string; members: number; facilitatorId: string | null; cycleStart: string | null; dow: number; time: string }
 export interface FacilitatorOpt { id: string; name: string }
 
 export function FacilitatorManager({ facilitators }: { facilitators: FacilitatorOpt[] }) {
@@ -37,7 +37,6 @@ export function CircleRow({ c, facilitators }: { c: CircleAdminRow; facilitators
   const [fac, setFac] = useState(c.facilitatorId ?? '');
   const [dow, setDow] = useState(c.dow);
   const [time, setTime] = useState(c.time);
-  const [url, setUrl] = useState(c.url);
   const [error, setError] = useState('');
   const [pending, start] = useTransition();
   return (
@@ -47,11 +46,10 @@ export function CircleRow({ c, facilitators }: { c: CircleAdminRow; facilitators
         <div className="rx-fld"><label>Facilitator</label>
           <select className="rx-in" value={fac} onChange={(e) => { setFac(e.target.value); start(async () => { const r = await assignFacilitator(c.id, e.target.value || null); if (!r.ok) { setError(r.error); return; } setError(''); toast('Facilitator updated.'); router.refresh(); }); }}>
             <option value="">None yet</option>{facilitators.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}</select></div>
-        <div className="rx-fld"><label>Meeting link</label><input className="rx-in" value={url} placeholder="https://…" onChange={(e) => setUrl(e.target.value)} /></div>
         <div className="rx-fld"><label>Meets on</label><select className="rx-in" value={dow} onChange={(e) => setDow(Number(e.target.value))}>{DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}</select></div>
         <div className="rx-fld"><label>At (circle time zone)</label><input className="rx-in" type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
       </div>
-      <div className="rx-row"><button type="button" className="rx-btn secondary" disabled={pending} onClick={() => start(async () => { const r = await updateCircleMeeting(c.id, { dow, time, url }); if (!r.ok) { setError(r.error); return; } setError(''); toast('Meeting details saved.'); router.refresh(); })}>Save meeting</button></div>
+      <div className="rx-row"><button type="button" className="rx-btn secondary" disabled={pending} onClick={() => start(async () => { const r = await updateCircleMeeting(c.id, { dow, time }); if (!r.ok) { setError(r.error); return; } setError(''); toast('Meeting details saved.'); router.refresh(); })}>Save meeting</button></div>
       {error && errp(error)}
     </div>
   );

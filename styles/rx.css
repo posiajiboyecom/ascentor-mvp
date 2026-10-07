@@ -338,3 +338,21 @@ a.rx-opt { text-decoration: none; }
 }
 .rx-smark.still { animation: none; }
 @media (prefers-reduced-motion: reduce) { .rx-smark { animation: none !important; } }
+
+/* -- audio call ------------------------------------------------------------ */
+.rx-call { position: fixed; inset: 0; z-index: 9000; background: var(--rx-bg); display: flex; align-items: stretch; justify-content: center; overflow-y: auto; }
+.rx-call-panel { width: 100%; max-width: 720px; padding: 20px 16px 32px; display: flex; flex-direction: column; gap: 20px; }
+@media (min-width: 1024px) { .rx-call { background: rgba(20,20,20,.38); align-items: center; } .rx-call-panel { background: var(--rx-card); border-radius: 12px; padding: 28px; border: 1px solid var(--rx-border); max-height: 92vh; overflow-y: auto; } }
+.rx-call-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rx-call-warn { color: var(--rx-gold); }
+.rx-call-grid { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 20px 18px; justify-content: center; }
+.rx-call-person { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 104px; text-align: center; }
+.rx-call-ring { display: inline-flex; padding: 3px; border-radius: 50%; border: 3px solid transparent; transition: border-color .2s; }
+.rx-call-ring.on { border-color: var(--rx-accent); }
+.rx-call-ring .rx-avatar.lg { width: 64px; height: 64px; }
+@media (min-width: 1024px) { .rx-call-ring .rx-avatar.lg { width: 80px; height: 80px; } .rx-call-person { width: 120px; } }
+.rx-call-controls { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.rx-call-btn { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 76px; height: 76px; border-radius: 50%; border: 1.5px solid var(--rx-line); background: var(--rx-card); color: var(--rx-ink); cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 600; }
+.rx-call-btn svg { width: 22px; height: 22px; }
+.rx-call-btn[aria-pressed='true'] { background: #0F0F0E; color: #FAFAF8; border-color: #0F0F0E; }
+.rx-call-btn.leave { border-color: var(--rx-danger); color: var(--rx-danger); }

@@ -127,11 +127,10 @@ export const CIRCLE_MIN_TO_START = 6;
 export const CIRCLE_MAX = 8;
 export const CYCLE_WEEKS = 12;
 export const MEETING_AGENDA: [string, string][] = [
-  ['Arrive and check in', '5 min'],
-  ['Wins and misses', '20 min'],
-  ['Focus topic', '20 min'],
-  ['Next if-thens, in pairs', '10 min'],
-  ['Close', '5 min'],
+  ['Opening', '1 min'],
+  ['One shared obstacle or the weekly topic', '10 min'],
+  ['Each member states one commitment', '3 min'],
+  ['Close', '1 min'],
 ];
 
 /** Focus topic of each cycle week. */

@@ -8,6 +8,7 @@ import * as path from 'path';
 import type { Transcript } from './chats';
 
 const FONT_DIR = path.join(process.cwd(), 'public', 'fonts', 'metropolis');
+const NOTO_DIR = path.join(process.cwd(), 'public', 'fonts', 'noto');
 const INK = '#0F0F0E';
 const MUTED = '#6B7280';
 const GOLD = '#8A6A2B';
@@ -36,10 +37,26 @@ export function toPdf(transcripts: Transcript[], meta: ExportMeta): Promise<Buff
     doc.registerFont('R', path.join(FONT_DIR, 'Metropolis-Regular.otf'));
     doc.registerFont('B', path.join(FONT_DIR, 'Metropolis-Bold.otf'));
     doc.registerFont('S', path.join(FONT_DIR, 'Metropolis-SemiBold.otf'));
+    // Metropolis has no Yoruba dot-below letters, tone marks or the naira sign. Anything it cannot draw uses Noto Sans.
+    doc.registerFont('NR', path.join(NOTO_DIR, 'NotoSans-Regular.ttf'));
+    doc.registerFont('NB', path.join(NOTO_DIR, 'NotoSans-Bold.ttf'));
     const chunks: Buffer[] = [];
     doc.on('data', (c: Buffer) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
+
+
+    type Weight = 'R' | 'S' | 'B';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const metroFont = (w: Weight): any => { doc.font(w); return (doc as any)._font?.font; };
+    const supported = (w: Weight, text: string) => {
+      const f = metroFont(w);
+      if (!f || typeof f.hasGlyphForCodePoint !== 'function') return true;
+      for (const ch of text.normalize('NFC')) { const cp = ch.codePointAt(0)!; if (cp > 0x20 && cp !== 0xA0 && !f.hasGlyphForCodePoint(cp)) return false; }
+      return true;
+    };
+    /** Metropolis when it can draw every character, otherwise Noto Sans. */
+    const fontFor = (w: Weight, text: string) => (supported(w, text) ? w : w === 'R' ? 'NR' : 'NB');
 
     const W = doc.page.width - 112;
 
@@ -56,14 +73,16 @@ export function toPdf(transcripts: Transcript[], meta: ExportMeta): Promise<Buff
     transcripts.forEach((t, ti) => {
       if (ti > 0) doc.addPage();
       doc.moveDown(1);
-      doc.font('B').fontSize(15).fillColor(INK).text(t.title, { width: W });
-      doc.font('R').fontSize(10).fillColor(MUTED).text(`${t.subtitle} · ${t.lines.length} messages${t.truncated ? ' (truncated: more exist)' : ''}`, { width: W });
+      doc.font(fontFor('B', t.title)).fontSize(15).fillColor(INK).text(t.title, { width: W });
+      const sub = `${t.subtitle} - ${t.lines.length} messages${t.truncated ? ' (truncated: more exist)' : ''}`;
+      doc.font(fontFor('R', sub)).fontSize(10).fillColor(MUTED).text(sub, { width: W });
       doc.moveDown(0.6);
       if (!t.lines.length) doc.font('R').fontSize(10.5).fillColor(MUTED).text('No messages in this range.');
       for (const l of t.lines) {
         if (doc.y > doc.page.height - 110) doc.addPage();
-        doc.font('S').fontSize(9).fillColor(GOLD).text(`${l.who}  ·  ${stamp(l.at)}`, { width: W });
-        doc.font('R').fontSize(10.5).fillColor(INK).text(l.text || ' ', { width: W, lineGap: 1.5 });
+        const head = `${l.who}  -  ${stamp(l.at)}`;
+        doc.font(fontFor('S', head)).fontSize(9).fillColor(GOLD).text(head, { width: W });
+        doc.font(fontFor('R', l.text)).fontSize(10.5).fillColor(INK).text(l.text || ' ', { width: W, lineGap: 1.5 });
         doc.moveDown(0.55);
       }
     });
@@ -72,7 +91,7 @@ export function toPdf(transcripts: Transcript[], meta: ExportMeta): Promise<Buff
     const range = doc.bufferedPageRange();
     for (let i = range.start; i < range.start + range.count; i++) {
       doc.switchToPage(i);
-      doc.font('R').fontSize(8.5).fillColor(MUTED).text(`Ascentor · Confidential · Page ${i - range.start + 1} of ${range.count}`, 56, doc.page.height - 40, { width: W, align: 'center', lineBreak: false });
+      doc.font('R').fontSize(8.5).fillColor(MUTED).text(`Ascentor - Confidential - Page ${i - range.start + 1} of ${range.count}`, 56, doc.page.height - 40, { width: W, align: 'center', lineBreak: false });
     }
     doc.end();
   });

@@ -112,9 +112,9 @@ export default async function CirclePage() {
             <div className="rx-card rx-stack-sm">
               <p className="rx-label">Next meeting</p>
               <p className="rx-h2">{whenLabel(next, me.tz)}</p>
-              <p className="rx-sm">Video · 60 minutes · focus: {focus}</p>
+              <p className="rx-sm">Audio · 15 minutes · focus: {focus}</p>
               <div className="rx-row" style={{ marginTop: 6 }}>
-                <Link href="/circle/meeting" className="rx-btn primary">Join</Link>
+                <Link href={`/call/${circle.circle.id}`} className="rx-btn primary">Join</Link>
                 <Link href="/circle/meeting" className="rx-link">See agenda</Link>
               </div>
             </div>
