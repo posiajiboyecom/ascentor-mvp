@@ -16,7 +16,7 @@ export default async function AdminGroupsPage({ searchParams }: { searchParams: 
 
   return (
     <ToastProvider>
-      <div className="rx" style={{ padding: 4 }}>
+      <div className="rx rx-admin-desktop" style={{ padding: 4 }}>
         <p className="rx-sm">Community</p>
         <Title>{tab === 'groups' ? 'Created groups' : 'Group suggestions'}</Title>
         <div className="rx-opts" style={{ marginBottom: 24 }} role="tablist" aria-label="Groups">

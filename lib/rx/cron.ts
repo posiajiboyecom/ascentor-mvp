@@ -7,7 +7,9 @@ import 'server-only';
 
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { notify } from '@/lib/notify';
-import { diffDays, localISODate, mondayOfISO } from './dates';
+import { diffDays, localISODate, mondayOfISO, whenLabel } from './dates';
+import { circleWindow, MENTOR_CALL_MINUTES } from './calls';
+import { MIN_GOING } from './cmentor';
 
 export async function syncAnnouncementStatus(): Promise<{ started: number; ended: number }> {
   const today = localISODate('Africa/Lagos');
@@ -70,4 +72,65 @@ export async function notifyFacilitatorsOfQuietMembers(): Promise<{ notices: num
     } catch (e) { console.error('[rx/cron] quiet-member notice failed', e instanceof Error ? e.message : e); }
   }
   return { notices };
+}
+
+
+async function circleAudience(circleId: string): Promise<string[]> {
+  const { data } = await supabaseAdmin.from('circle_seats').select('user_id').eq('circle_id', circleId);
+  return ((data ?? []) as { user_id: string }[]).map((s) => s.user_id);
+}
+
+/** A reminder the day before each weekly Circle call and each mentor session. */
+export async function sendCallReminders(): Promise<{ circle: number; mentor: number }> {
+  let circleN = 0; let mentorN = 0;
+  const now = new Date();
+  const horizon = new Date(now.getTime() + 24 * 3600000);
+
+  const { data: circles } = await supabaseAdmin.from('circles').select('id, name, number, meeting_dow, meeting_time, timezone').eq('status', 'active');
+  for (const c of (circles ?? []) as { id: string; name: string; number: number; meeting_dow: number; meeting_time: string; timezone: string | null }[]) {
+    const w = circleWindow(c, now);
+    if (w.startsAt > now && w.startsAt <= horizon) {
+      for (const uid of await circleAudience(c.id)) { await notify(uid, { title: 'Circle call tomorrow', body: `${c.name}, ${whenLabel(w.startsAt, c.timezone)}. Audio only, 15 minutes.`, url: `/circle`, tag: `call-${c.id}` }); circleN++; }
+    }
+  }
+
+  const { data: sessions } = await supabaseAdmin.from('circle_mentor_sessions').select('id, circle_id, starts_at, mentor_id').eq('status', 'scheduled').gt('starts_at', now.toISOString()).lte('starts_at', horizon.toISOString());
+  for (const s of (sessions ?? []) as { id: string; circle_id: string; starts_at: string; mentor_id: string }[]) {
+    const ids = await circleAudience(s.circle_id);
+    const { data: m } = await supabaseAdmin.from('human_mentors').select('user_id').eq('id', s.mentor_id).maybeSingle();
+    if (m?.user_id) ids.push(m.user_id as string);
+    for (const uid of ids) { await notify(uid, { title: 'Mentor session tomorrow', body: `${whenLabel(s.starts_at, 'Africa/Lagos')} (WAT). ${MENTOR_CALL_MINUTES} minutes, audio only. Say whether you are going.`, url: '/sessions', tag: `mentor-${s.id}` }); mentorN++; }
+  }
+  return { circle: circleN, mentor: mentorN };
+}
+
+/**
+ * The RSVP rule: a mentor session runs only if MIN_GOING or more members are going a day before. If not, the session and the
+ * rest of the series are cancelled, the Circle goes back to choosing a time from the mentor's open slots, and everyone is told.
+ * Also marks finished sessions as held.
+ */
+export async function enforceMentorSessionRules(): Promise<{ cancelled: number; held: number }> {
+  const now = new Date();
+  const horizon = new Date(now.getTime() + 24 * 3600000);
+  let cancelled = 0; let held = 0;
+
+  const { data: ended } = await supabaseAdmin.from('circle_mentor_sessions').select('id, starts_at, duration_min').eq('status', 'scheduled').lt('starts_at', now.toISOString());
+  for (const s of (ended ?? []) as { id: string; starts_at: string; duration_min: number }[]) {
+    if (new Date(s.starts_at).getTime() + s.duration_min * 60000 < now.getTime()) { await supabaseAdmin.from('circle_mentor_sessions').update({ status: 'held' }).eq('id', s.id); held++; }
+  }
+
+  const { data: soon } = await supabaseAdmin.from('circle_mentor_sessions').select('id, circle_id, circle_mentor_id, mentor_id, starts_at').eq('status', 'scheduled').gt('starts_at', now.toISOString()).lte('starts_at', horizon.toISOString());
+  for (const s of (soon ?? []) as { id: string; circle_id: string; circle_mentor_id: string; mentor_id: string; starts_at: string }[]) {
+    const { count } = await supabaseAdmin.from('session_rsvps').select('user_id', { count: 'exact', head: true }).eq('session_id', s.id).eq('status', 'going');
+    if ((count ?? 0) >= MIN_GOING) continue;
+    await supabaseAdmin.from('circle_mentor_sessions').update({ status: 'cancelled', cancel_reason: 'low_rsvp' }).eq('circle_mentor_id', s.circle_mentor_id).eq('status', 'scheduled').gte('starts_at', now.toISOString());
+    await supabaseAdmin.from('slot_marks').delete().eq('circle_mentor_id', s.circle_mentor_id);
+    await supabaseAdmin.from('circle_mentors').update({ status: 'scheduling' }).eq('id', s.circle_mentor_id).eq('status', 'active');
+    const ids = await circleAudience(s.circle_id);
+    const { data: m } = await supabaseAdmin.from('human_mentors').select('user_id').eq('id', s.mentor_id).maybeSingle();
+    if (m?.user_id) ids.push(m.user_id as string);
+    for (const uid of ids) await notify(uid, { title: 'Tomorrow’s mentor session is moved', body: `Fewer than ${MIN_GOING} members were going. Mark the times you can attend and your Circle will pick a new one.`, url: '/sessions', tag: `mentor-low-${s.circle_mentor_id}` });
+    cancelled++;
+  }
+  return { cancelled, held };
 }

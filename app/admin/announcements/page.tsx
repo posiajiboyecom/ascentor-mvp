@@ -20,7 +20,7 @@ export default async function AdminAnnouncementsPage() {
 
   return (
     <ToastProvider>
-      <div className="rx" style={{ padding: 4 }}>
+      <div className="rx rx-admin-desktop" style={{ padding: 4 }}>
         <p className="rx-sm">Community</p>
         <Title>Announcements</Title>
         {initial.length ? <AnnouncementsAdmin initial={initial} /> : <AnnouncementsAdmin initial={[{ id: '', title: 'New announcement', text: '', date_label: '', time_label: '', location: '', btn_label: 'Learn more', link: '', image_url: null, audience: 'All members', aud_value: '', banner: false, featured: false, starts_on: '', ends_on: '', status: 'Draft' }]} />}

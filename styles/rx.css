@@ -356,3 +356,9 @@ a.rx-opt { text-decoration: none; }
 .rx-call-btn svg { width: 22px; height: 22px; }
 .rx-call-btn[aria-pressed='true'] { background: #0F0F0E; color: #FAFAF8; border-color: #0F0F0E; }
 .rx-call-btn.leave { border-color: var(--rx-danger); color: var(--rx-danger); }
+
+/* The new admin screens are for a computer. On a phone they show one line instead. */
+@media (max-width: 1023.98px) {
+  .rx-admin-desktop > * { display: none !important; }
+  .rx-admin-desktop::before { content: 'The admin panel is desktop only. Open this page on a computer to manage it.'; display: block; padding: 28px 16px; text-align: center; color: var(--rx-muted); font-size: 15px; }
+}

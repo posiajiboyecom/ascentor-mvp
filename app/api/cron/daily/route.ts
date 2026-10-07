@@ -15,7 +15,7 @@ import { pingDatabase } from '@/lib/keepalive';
 import { reconcilePayments } from '@/lib/paymentReconciliation';
 import { sendEventDayEmails } from '@/lib/summitEventDay';
 import { sendCommitmentReminders, sendUpcomingSessionReminders } from '@/lib/reminders';
-import { notifyFacilitatorsOfQuietMembers, sendPracticeReminders, syncAnnouncementStatus } from '@/lib/rx/cron';
+import { enforceMentorSessionRules, notifyFacilitatorsOfQuietMembers, sendCallReminders, sendPracticeReminders, syncAnnouncementStatus } from '@/lib/rx/cron';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Hobby maximum
@@ -55,6 +55,8 @@ export async function GET(req: NextRequest) {
     await step('announcement-status', syncAnnouncementStatus),
     await step('practice-reminders', sendPracticeReminders),
     await step('quiet-members', notifyFacilitatorsOfQuietMembers),
+    await step('mentor-session-rules', enforceMentorSessionRules),
+    await step('call-reminders', sendCallReminders),
   ];
 
   const ok = results.every((r) => r.ok);

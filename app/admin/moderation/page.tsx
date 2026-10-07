@@ -55,7 +55,7 @@ export default async function ModerationPage() {
 
   return (
     <ToastProvider>
-      <div className="rx" style={{ padding: 4 }}>
+      <div className="rx rx-admin-desktop" style={{ padding: 4 }}>
         <p className="rx-sm">Community</p>
         <Title>Moderation</Title>
         <div className="rx-two">

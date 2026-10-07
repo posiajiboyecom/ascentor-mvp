@@ -18,6 +18,9 @@ export interface Suggestion {
   picks: number; posts: number; requests: number; fitN: number; size: string; fit: string[];
 }
 
+/** Suggest a group only when about 20 members are interested (set GROUP_SUGGESTION_MIN to change it). */
+const MIN_SIGNAL = Math.max(1, Number(process.env.GROUP_SUGGESTION_MIN ?? 20));
+
 const sizeFor = (n: number) => (n < 15 ? '10 to 30' : n < 40 ? '30 to 60' : n < 80 ? '40 to 80' : '50 to 100');
 
 /**
@@ -47,7 +50,7 @@ export async function computeSuggestions(): Promise<Suggestion[]> {
       const picks = interests.filter((i) => i.toLowerCase() === k).length;
       const postsN = subs.filter((s) => s === k || s.includes(k)).length;
       const requestsN = requests.filter((r) => r.includes(k)).length;
-      if (picks + postsN + requestsN === 0) continue;
+      if (picks < MIN_SIGNAL && picks + postsN + requestsN < MIN_SIGNAL + 5) continue;
       const dim = dimensionOf(item) ?? 'Community';
       out.push({
         key: item, name: item, description: `Members who want to grow in ${item.toLowerCase()}, together.`, dimension: dim,

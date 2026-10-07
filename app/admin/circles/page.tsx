@@ -24,7 +24,7 @@ export default async function AdminCirclesPage() {
 
   return (
     <ToastProvider>
-      <div className="rx" style={{ padding: 4 }}>
+      <div className="rx rx-admin-desktop" style={{ padding: 4 }}>
         <p className="rx-sm">Community</p>
         <Title>Circles</Title>
         {!callsConfigured() && <div style={{ marginBottom: 16 }}><Banner error>Audio calls are off because DAILY_API_KEY is not set on the server. Members see “The call isn’t working right now.”</Banner></div>}
