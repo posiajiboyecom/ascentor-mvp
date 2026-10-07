@@ -72,7 +72,7 @@ export function MentorForm({ initial, isNew }: { initial: MentorInput; isNew?: b
         <div className="rx-fld"><label>Topics (commas)</label><input className="rx-in" value={f.tags} placeholder="Cybersecurity, Career switch" onChange={(e) => set('tags', e.target.value)} /></div>
         <div className="rx-fld"><label>Languages (commas)</label><input className="rx-in" value={f.langs} onChange={(e) => set('langs', e.target.value)} /></div>
         <div className="rx-fld"><label>Formats (commas)</label><input className="rx-in" value={f.formats} onChange={(e) => set('formats', e.target.value)} /></div>
-        <div className="rx-fld"><label>Capacity (mentees)</label><input className="rx-in" type="number" min={0} max={8} value={f.capacity} onChange={(e) => set('capacity', Number(e.target.value))} /></div>
+        <div className="rx-fld"><label>Capacity (Circles)</label><input className="rx-in" type="number" min={0} max={8} value={f.capacity} onChange={(e) => set('capacity', Number(e.target.value))} /></div>
       </div>
       <div className="rx-fld"><label>Bio</label><textarea className="rx-in" value={f.bio} onChange={(e) => set('bio', e.target.value)} /></div>
       <div className="rx-between"><span>Taking new requests</span><button type="button" className="rx-toggle" aria-label="Taking new requests" aria-pressed={f.accepting} onClick={() => set('accepting', !f.accepting)} /></div>

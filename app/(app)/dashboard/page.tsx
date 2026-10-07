@@ -5,10 +5,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { CalendarDays, Play } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
 import { getMe, getMyCircle } from '@/lib/rx/server';
 import { getLessonProgress, getLessons, getTodayState, pickWeekLesson } from '@/lib/rx/practice';
 import { getBannerAnnouncement } from '@/lib/rx/announcements';
+import { getMentorship } from '@/lib/rx/cmentor';
 import { CIRCLE_FOCUS, CIRCLE_MIN_TO_START } from '@/lib/rx/constants';
 import { longDate, nextWeekdayAt, whenLabel } from '@/lib/rx/dates';
 import { Aside, Page, SageLine, Tag } from '@/components/rx/ui';
@@ -29,13 +29,7 @@ export default async function TodayPage() {
   ]);
   if (!state) redirect('/login');
 
-  const db = await createClient();
-  const { data: match } = await db.from('mentor_matches').select('id').eq('member_id', me.userId).in('status', ['active', 'accepted']).limit(1).maybeSingle();
-  let tasks: { done: boolean }[] = [];
-  if (match) {
-    const { data } = await db.from('mentor_tasks').select('done').eq('match_id', match.id);
-    tasks = (data ?? []) as { done: boolean }[];
-  }
+  const ms = await getMentorship().catch(() => null);
 
   const lesson = pickWeekLesson(lessons, state.week, progress);
   const lessonDone = !!(lesson && progress.get(lesson.id)?.practice_id);
@@ -53,9 +47,12 @@ export default async function TodayPage() {
     circleRow = { title: 'Next Circle meeting', meta: whenLabel(next, me.tz), href: '/circle' };
   }
   const lessonRow: MoreRow | null = lesson ? { title: lesson.title, meta: `This week’s lesson · ${lessonDone ? 'practice set' : `${lesson.minutes} min`}`, href: `/learn/lesson/${lesson.slug}` } : null;
-  const mentorRow: MoreRow = match
-    ? { title: 'Mentor agreement', meta: `${tasks.filter((t) => t.done).length} of ${tasks.length} tasks done`, href: '/sessions' }
-    : { title: 'Find a mentor', meta: 'One-to-one sessions', href: '/sessions' };
+  const mst = ms?.state;
+  const mentorRow: MoreRow = mst && (mst.kind === 'active' || mst.kind === 'paused')
+    ? { title: 'Mentor session', meta: mst.next ? whenLabel(mst.next.startsAt, me.tz) : `${mst.agreement.tasks.filter((t) => t.ownerConfirmed && t.mentorConfirmed).length} of ${mst.agreement.tasks.length} agreement tasks done`, href: '/sessions' }
+    : mst && (mst.kind === 'voting' || mst.kind === 'tie') ? { title: 'Choose your Circle’s mentor', meta: 'Voting is open', href: '/sessions' }
+    : mst && (mst.kind === 'requested' || mst.kind === 'scheduling') ? { title: 'Your Circle’s mentor', meta: mst.kind === 'scheduling' ? 'Pick a time' : 'Waiting for their answer', href: '/sessions' }
+    : { title: 'Mentor sessions', meta: 'Your Circle chooses a mentor together', href: '/sessions' };
 
   const mobileRows = [circleRow, ...(lessonRow ? [lessonRow] : []), mentorRow];
   const kept = state.keptThisWeek;

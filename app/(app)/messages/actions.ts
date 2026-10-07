@@ -46,6 +46,22 @@ export async function openThread(otherId: string): Promise<ActionResult<{ thread
     if (circle) {
       const { data: seat } = await supabaseAdmin.from('circle_seats').select('user_id').eq('circle_id', circle.circle.id).eq('user_id', otherId).maybeSingle();
       sameCircle = !!seat;
+      // A Circle's own mentor and its members can talk freely, as the mentor sits inside that Circle's agreement.
+      if (!sameCircle) {
+        const { data: mentorOfMyCircle } = await supabaseAdmin.from('circle_mentors').select('id, human_mentors!inner(user_id)').eq('circle_id', circle.circle.id).in('status', ['scheduling', 'active', 'paused']).eq('human_mentors.user_id', otherId).maybeSingle();
+        sameCircle = !!mentorOfMyCircle;
+      }
+    }
+    if (!sameCircle) {
+      const { data: mine } = await supabaseAdmin.from('human_mentors').select('id').eq('user_id', userId).maybeSingle();
+      if (mine) {
+        const { data: theirSeats } = await supabaseAdmin.from('circle_seats').select('circle_id').eq('user_id', otherId);
+        const cids = ((theirSeats ?? []) as { circle_id: string }[]).map((x) => x.circle_id);
+        if (cids.length) {
+          const { data: cm } = await supabaseAdmin.from('circle_mentors').select('id').eq('mentor_id', mine.id).in('circle_id', cids).in('status', ['scheduling', 'active', 'paused']).maybeSingle();
+          sameCircle = !!cm;
+        }
+      }
     }
     if (!sameCircle) {
       // Outside the Circle: new accounts cannot start conversations, and nobody can flood people with requests.
@@ -61,10 +77,7 @@ export async function openThread(otherId: string): Promise<ActionResult<{ thread
     }
     const policy = (theirs?.dm_policy as string | undefined) ?? 'circle_and_requests';
     if (!sameCircle && policy === 'none') throw new Error('This member isn’t taking new messages.');
-    if (!sameCircle && policy === 'circle_and_mentor') {
-      const { data: mm } = await supabaseAdmin.from('mentor_matches').select('id, human_mentors!inner(user_id)').eq('member_id', userId).in('status', ['accepted', 'active']).eq('human_mentors.user_id', otherId).maybeSingle();
-      if (!mm) throw new Error('This member isn’t taking new messages.');
-    }
+    if (!sameCircle && policy === 'circle_and_mentor') throw new Error('This member isn’t taking new messages.');
 
     const { data: t, error } = await db.from('dm_threads').insert({ user_a: userId, user_b: otherId, requested_by: userId, status: 'request' }).select('id').single();
     if (error) throw error;
