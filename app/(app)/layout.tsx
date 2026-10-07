@@ -9,6 +9,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getShellData } from '@/lib/shell-data';
 import UserShell from '@/components/shell/UserShell';
+import { getShellCounts } from '@/lib/rx/shell-counts';
+import '@/styles/rx.css';
 
 export default async function AppLayout({
   children,
@@ -38,6 +40,8 @@ export default async function AppLayout({
     }
   }
 
+  const counts = await getShellCounts().catch(() => undefined);
+
   return (
     <UserShell
       userId={shell.userId}
@@ -46,6 +50,7 @@ export default async function AppLayout({
       avatarUrl={shell.avatarUrl}
       role={shell.role}
       summitRegistered={shell.summitRegistered}
+      counts={counts}
     >
       {children}
     </UserShell>

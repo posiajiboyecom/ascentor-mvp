@@ -10,8 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import {
-  Home,
-  MessageCircle,
+  Sun,
   Users,
   CalendarDays,
   BookOpen,
@@ -25,9 +24,8 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { icon: Home,          label: 'Home',      href: '/dashboard' },
-  { icon: MessageCircle, label: 'AI Coach',  href: '/coach'     },
-  { icon: Users,         label: 'The Circle', href: '/community' },
-  { icon: CalendarDays,  label: 'Sessions',  href: '/experts'   },
+  { icon: Sun,           label: 'Today',     href: '/dashboard' },
+  { icon: Users,         label: 'Circle',    href: '/circle'    },
   { icon: BookOpen,      label: 'Learn',     href: '/learn'     },
+  { icon: CalendarDays,  label: 'Sessions',  href: '/sessions'  },
 ];
