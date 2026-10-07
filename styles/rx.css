@@ -271,3 +271,19 @@ select.rx-in { appearance: auto; }
 @media (min-width: 1024px) { .rx-mob { display: none; } .rx-dsk { display: flex; } }
 
 .rx-sticky-bottom { position: sticky; bottom: 0; background: var(--rx-bg); padding: 12px 0; margin-top: 8px; z-index: 5; }
+
+/* ── messages panes and list items ────────────────────────────────────────── */
+.rx-panes { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 100%; height: 100%; }
+.rx-pane { min-height: 0; overflow-y: auto; }
+.rx-panes[data-pane='list'] .rx-pane-convo, .rx-panes[data-pane='list'] .rx-pane-card,
+.rx-panes[data-pane='convo'] .rx-pane-list, .rx-panes[data-pane='convo'] .rx-pane-card,
+.rx-panes[data-pane='card'] .rx-pane-list, .rx-panes[data-pane='card'] .rx-pane-convo { display: none; }
+@media (min-width: 1024px) {
+  .rx-panes { grid-template-columns: 340px minmax(0, 1fr) 300px; }
+  .rx-panes .rx-pane { display: block !important; border-right: 1px solid var(--rx-border); }
+  .rx-panes .rx-pane:last-child { border-right: 0; }
+  .rx-pane-convo { overflow: hidden; }
+}
+.rx-li { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border: 0; border-radius: 10px; background: none; width: 100%; text-align: left; cursor: pointer; color: var(--rx-ink); min-height: 60px; text-decoration: none; }
+.rx-li:hover, .rx-li[aria-current='true'] { background: var(--rx-hover); }
+a.rx-opt { text-decoration: none; }

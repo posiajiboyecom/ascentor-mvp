@@ -229,6 +229,8 @@ BEGIN
     IF v_fac IS NOT NULL THEN
       INSERT INTO public.circle_seats (circle_id, user_id, role) VALUES (v_cid, v_fac, 'facilitator') ON CONFLICT DO NOTHING;
     END IF;
+    INSERT INTO public.circle_messages (circle_id, user_id, body, pinned)
+      VALUES (v_cid, NULL, 'Welcome, everyone. Tell us your name and one thing you''re working on.', true);
   END IF;
 
   INSERT INTO public.circle_seats (circle_id, user_id, role) VALUES (v_cid, p_user, 'member') ON CONFLICT DO NOTHING;
@@ -726,3 +728,16 @@ WHERE NOT EXISTS (SELECT 1 FROM public.announcements WHERE title = 'The Elevatio
 INSERT INTO public.announcements (title, text, btn_label, link, status, starts_on)
 SELECT 'Groups are open', 'Find people who share your interests in Community.', 'Browse groups', '/community/groups', 'Live', current_date
 WHERE NOT EXISTS (SELECT 1 FROM public.announcements WHERE title = 'Groups are open');
+
+-- ── realtime: chat tables push new rows to open conversations ───────────────
+DO $rt$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['circle_messages','rx_group_messages','dm_messages','mentor_messages'] LOOP
+    BEGIN
+      EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', t);
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN undefined_object THEN NULL;
+    END;
+  END LOOP;
+END
+$rt$;

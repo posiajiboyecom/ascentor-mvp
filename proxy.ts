@@ -50,6 +50,7 @@ function buildNoncedCSP(nonce: string): string {
     `img-src 'self' data: blob: https://*.supabase.co https://www.gravatar.com https://i.ytimg.com https:`,
     `frame-src https://challenges.cloudflare.com https://js.paystack.co https://checkout.paystack.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com`,
     `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.paystack.co https://checkout.paystack.com https://plausible.io https://api.bufferapp.com https://www.youtube.com`,
+    `media-src 'self' blob: https://*.supabase.co`,
     `worker-src 'self' blob:`,
     `default-src 'self'`,
     `object-src 'none'`,
@@ -99,6 +100,7 @@ const AUTH_ROUTES = [
   '/dashboard', '/coach', '/community', '/account',
   '/learn', '/courses', '/experts', '/onboarding',
   '/referral', '/admin',
+  '/circle', '/sessions', '/messages', '/growth', '/profile', '/settings', '/announcements', '/sage',
 ];
 
 // API routes that are explicitly public - checked BEFORE the protected
@@ -152,6 +154,7 @@ const PROTECTED_API_PREFIXES = [
   '/api/search',
   '/api/goals',
   '/api/intel-analyse',
+  '/api/rx',
 ];
 
 // Public routes - no auth needed

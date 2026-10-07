@@ -36,3 +36,5 @@ supabase/.temp/
 
 # Prisma generated client
 /generated/prisma
+
+.vercel

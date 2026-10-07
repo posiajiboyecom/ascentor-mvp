@@ -125,11 +125,11 @@ export interface MyCircle {
 }
 
 /** The member's Circle (member seat), with seats and the cycle week, or null when none has been assigned. */
-export const getMyCircle = cache(async (): Promise<MyCircle | null> => {
+export const getMyCircle = cache(async (kind: 'member' | 'facilitator' = 'member'): Promise<MyCircle | null> => {
   const me = await getMe();
   if (!me) return null;
   const db = await createClient();
-  const { data: mySeat } = await db.from('circle_seats').select('circle_id, role, pledged_at').eq('user_id', me.userId).order('role').limit(1).maybeSingle();
+  const { data: mySeat } = await db.from('circle_seats').select('circle_id, role, pledged_at').eq('user_id', me.userId).eq('role', kind).limit(1).maybeSingle();
   if (!mySeat) return null;
   const [{ data: circle }, { data: seatRows }] = await Promise.all([
     db.from('circles').select('*').eq('id', mySeat.circle_id).maybeSingle(),
@@ -173,7 +173,7 @@ export async function namesFor(db: Db, ids: (string | null)[]): Promise<Map<stri
   return out;
 }
 
-export type ActionResult<T = unknown> = ({ ok: true } & T) | { ok: false; error: string };
+export type { ActionResult } from './types';
 
 export function fail(e: unknown, fallback = 'Something went wrong. Please try again.'): { ok: false; error: string } {
   const msg = e instanceof Error ? e.message : '';
