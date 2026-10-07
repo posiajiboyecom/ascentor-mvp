@@ -35,7 +35,7 @@ export default async function TenantSubPage({
     return <SignupPage />;
   }
   if (route === 'onboarding') {
-    const { default: OnboardingPage } = await import('@/app/onboarding/page');
+    const { default: OnboardingPage } = await import('@/components/onboarding/LegacyOnboarding');
     return <OnboardingPage />;
   }
 
@@ -43,7 +43,7 @@ export default async function TenantSubPage({
   await requireAuth();
 
   if (route === '' || route === 'dashboard') {
-    const { default: DashboardPage } = await import('@/app/(app)/dashboard/page');
+    const { default: DashboardPage } = await import('@/components/dashboard/LegacyDashboard');
     return <DashboardPage />;
   }
   if (route === 'coach') {
@@ -55,7 +55,7 @@ export default async function TenantSubPage({
     return <AccountPage />;
   }
   if (route === 'learn') {
-    const { default: LearnPage } = await import('@/app/(app)/learn/page');
+    const { default: LearnPage } = await import('@/app/(app)/learn/courses/page');
     return <LearnPage />;
   }
   if (route === 'community') {
