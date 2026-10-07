@@ -63,6 +63,13 @@ export default async function TodayPage() {
     <Page>
       <div className="rx-two">
         <div className="rx-stack-lg">
+          {!me.profile?.onboarded_at && (
+            <div className="rx-soft rx-stack-sm rx-rise">
+              <p className="rx-p rx-strong">Finish setting up</p>
+              <p className="rx-sm">Two minutes: your interests, goals, time zone and language. It places you in a Circle and personalises Sage.</p>
+              <div><Link href="/onboarding?redo=1" className="rx-btn primary">Continue setup</Link></div>
+            </div>
+          )}
           {banner && <AnnouncementBanner id={banner.id} title={banner.title} line={banner.line} btn={banner.btn_label || 'Open'} />}
 
           <div>

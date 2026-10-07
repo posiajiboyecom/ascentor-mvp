@@ -15,13 +15,15 @@ function usable(raw: unknown): string {
   return v && v.toLowerCase() !== 'new user' ? v : '';
 }
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ redo?: string }> }) {
+  const sp = await searchParams;
   const db = await createClient();
   const { data: { user } } = await db.auth.getUser();
   if (!user) redirect('/login');
 
   const s = await loadOnboardingState();
-  if (s.completed) redirect('/dashboard');
+  // Members who finished the earlier onboarding can reopen it from Today to set up their Circle and profile.
+  if (s.completed && sp.redo !== '1' ) redirect('/dashboard');
 
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
   const name = usable(s.fullName) || usable(meta.full_name) || usable(meta.name) || [usable(meta.given_name), usable(meta.family_name)].filter(Boolean).join(' ') || (user.email?.split('@')[0] ?? 'there');
