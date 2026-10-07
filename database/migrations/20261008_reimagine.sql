@@ -592,7 +592,7 @@ REVOKE INSERT, UPDATE ON public.member_profile FROM authenticated;
 GRANT INSERT (user_id, interests, purpose_score, effort_score, lead_exp, project_exp, slots, timezone, timezone_label,
               language, stage, city, country, baseline, survey_remind_at, onboarding_step, onboarded_at, notif,
               max_per_day, quiet_hours, reminders_paused_until, research_opt_in, ann_muted, dm_policy,
-              oh_invite, beyond_self_project, beyond_self_since) ON public.member_profile TO authenticated;
+              oh_invite, beyond_self_project, beyond_self_since, updated_at) ON public.member_profile TO authenticated;
 GRANT UPDATE (interests, purpose_score, effort_score, lead_exp, project_exp, slots, timezone, timezone_label,
               language, stage, city, country, baseline, survey_remind_at, onboarding_step, onboarded_at, notif,
               max_per_day, quiet_hours, reminders_paused_until, research_opt_in, ann_muted, dm_policy,
