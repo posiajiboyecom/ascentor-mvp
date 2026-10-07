@@ -59,7 +59,7 @@ export default async function TenantSubPage({
     return <LearnPage />;
   }
   if (route === 'community') {
-    const { default: CommunityPage } = await import('@/app/(app)/community/page');
+    const { default: CommunityPage } = await import('@/app/(app)/community/channels/page');
     return <CommunityPage />;
   }
   if (route === 'referral') {

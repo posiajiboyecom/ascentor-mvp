@@ -37,6 +37,7 @@ export interface MemberProfileRow {
   ann_muted: boolean;
   dm_policy: string;
   is_facilitator: boolean;
+  oh_invite: 'pending' | 'later' | 'joined';
   beyond_self_project: string | null;
   beyond_self_since: string | null;
 }
