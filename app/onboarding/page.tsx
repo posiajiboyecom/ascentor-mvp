@@ -15,8 +15,8 @@ function usable(raw: unknown): string {
   return v && v.toLowerCase() !== 'new user' ? v : '';
 }
 
-export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ redo?: string }> }) {
-  const sp = await searchParams;
+export default async function OnboardingPage({ searchParams }: { searchParams?: Promise<{ redo?: string }> }) {
+  const sp = (await searchParams) ?? {};
   const db = await createClient();
   const { data: { user } } = await db.auth.getUser();
   if (!user) redirect('/login');
