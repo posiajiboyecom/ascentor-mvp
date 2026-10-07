@@ -8,11 +8,11 @@
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import {
-  Compass, Gift, LayoutDashboard, Megaphone, MapPin, Settings, ShieldCheck, TrendingUp, UserRound, Users,
+  CalendarClock, Compass, Gift, LayoutDashboard, Megaphone, MapPin, Settings, ShieldCheck, TrendingUp, UserRound, Users,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { NotificationBell } from '@/components/Notifications';
-import { AnnouncementsBell, MessagesLink, type BellItem } from '@/components/rx/HeaderActions';
+import { AnnouncementsBell, MessagesLink, SageHeaderButton, type BellItem } from '@/components/rx/HeaderActions';
 import { ToastProvider } from '@/components/rx/Toast';
 import SummitModal from './SummitModal';
 import { NAV_ITEMS } from '@/lib/nav-items';
@@ -60,9 +60,17 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         ],
       },
       {
+        label: 'This week',
+        items: [
+          { href: '/community',                  label: 'Monday prompt',     icon: <CalendarClock />, badge: 'Mon 8:00 AM' },
+          { href: '/community/groups/open-house', label: 'Live conversation', icon: <CalendarClock />, badge: 'Wed 7:00 PM' },
+          { href: '/community?tab=wins',          label: 'Friday wins',       icon: <CalendarClock />, badge: 'Fri 5:00 PM' },
+        ],
+      },
+      {
         label: 'You',
         items: [
-          { href: '/announcements', label: 'Announcements', icon: <Megaphone />, badge: unread > 0 ? unread : undefined },
+          { href: '/announcements', label: 'Announcements', icon: <Megaphone />, dot: unread > 0 },
           { href: '/growth',        label: 'My Growth',     icon: <TrendingUp /> },
           { href: '/referral',      label: 'Refer & earn',  icon: <Gift /> },
           { href: '/settings',      label: 'Settings',      icon: <Settings /> },
@@ -103,6 +111,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         ]}
         headerActions={
           <>
+            <SageHeaderButton />
             <AnnouncementsBell items={counts?.latest ?? []} unread={unread} />
             <MessagesLink requests={counts?.messageRequests ?? 0} />
             <NotificationBell />

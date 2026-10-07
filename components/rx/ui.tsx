@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Sparkles, TriangleAlert, Check } from 'lucide-react';
+import SageMark from './SageMark';
 import { avatarTone, initials } from '@/lib/rx/dates';
 
 export function Page({ children, className = '' }: { children: ReactNode; className?: string }) {
@@ -53,10 +54,10 @@ export function Avatar({ name, url, size, seed }: { name?: string | null; url?: 
   return <span className={cls} aria-hidden>{initials(name)}</span>;
 }
 
-export function SageLine({ children, label = 'Sage · AI coach' }: { children: ReactNode; label?: string }) {
+export function SageLine({ children, label = 'Sage' }: { children: ReactNode; label?: string }) {
   return (
     <p className="rx-sageline">
-      <Sparkles aria-hidden />
+      <SageMark size={22} />
       <span style={{ minWidth: 0 }}>
         <span className="sgl">{label}</span>
         <span className="tx">{children}</span>

@@ -7,6 +7,8 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Megaphone, Mail } from 'lucide-react';
 import { markAllAnnouncementsRead } from '@/app/(app)/announcements/actions';
+import SageMark from '@/components/rx/SageMark';
+import { openSage } from '@/components/rx/sage-bus';
 
 export interface BellItem { id: string; title: string; posted: string; isNew: boolean }
 
@@ -69,6 +71,17 @@ export function MessagesLink({ requests }: { requests: number }) {
         <Mail aria-hidden />
         {requests > 0 && <span className="rx-dot" style={{ position: 'absolute', top: 10, right: 10 }} />}
       </Link>
+    </div>
+  );
+}
+
+/** Desktop top-bar entry to Sage. On phones Sage is the floating button on Today and Learn. */
+export function SageHeaderButton() {
+  return (
+    <div className="rx rx-dsk" style={{ alignItems: 'center' }}>
+      <button type="button" className="rx-btn secondary" style={{ minHeight: 40, padding: '0 14px', gap: 8 }} onClick={() => openSage({ topic: 'plan' })}>
+        <SageMark size={20} still />Sage
+      </button>
     </div>
   );
 }

@@ -329,3 +329,12 @@ a.rx-opt { text-decoration: none; }
 @media (min-width: 1100px) { .rx-annadmin { grid-template-columns: 260px minmax(0, 1fr) 320px; } }
 .rx-anitem { display: flex; align-items: center; width: 100%; min-height: 56px; padding: 8px 14px; border: 1.5px solid var(--rx-border); border-radius: 12px; background: var(--rx-card); color: var(--rx-ink); cursor: pointer; text-align: left; font-family: inherit; }
 .rx-anitem[aria-pressed='true'] { border-color: var(--rx-accent); background: var(--rx-soft); }
+
+/* ── Sage mark: an S that breathes ────────────────────────────────────────── */
+.rx-smark { display: inline-flex; align-items: center; justify-content: center; flex: none; border-radius: 50%; background: #0F0F0E; color: var(--rx-accent, #C8A96E); font-family: Metropolis, sans-serif; font-weight: 800; line-height: 1; letter-spacing: -0.02em; animation: rx-breathe 4.2s ease-in-out infinite; }
+@keyframes rx-breathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(200, 169, 110, 0.0); }
+  50% { transform: scale(1.09); box-shadow: 0 0 0 5px rgba(200, 169, 110, 0.20); }
+}
+.rx-smark.still { animation: none; }
+@media (prefers-reduced-motion: reduce) { .rx-smark { animation: none !important; } }

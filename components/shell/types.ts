@@ -5,6 +5,8 @@ export interface ShellNavItem {
   label: string;
   icon: ReactNode;
   badge?: string | number;
+  /** A small unread dot. Never a number. */
+  dot?: boolean;
 }
 
 export interface ShellNavGroup {

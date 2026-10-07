@@ -6,7 +6,8 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
-import { ArrowRight, Mic, Send, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Mic, Send, X } from 'lucide-react';
+import SageMark from '@/components/rx/SageMark';
 import { SAGE_TOPICS } from '@/lib/rx/constants';
 import type { SageOpenDetail, SageTopic } from '@/components/rx/sage-bus';
 import { buildReportDraft, openFacilitatorThread } from '@/app/(app)/sage/actions';
@@ -126,10 +127,10 @@ export default function SagePanel() {
   return (
     <>
       <div className="rx-scrim rx-sage-scrim" onClick={() => setOpen(false)} />
-      <aside className="rx rx-sage" aria-label="Sage, AI coach" role="dialog">
+      <aside className="rx rx-sage" aria-label="Sage" role="dialog">
         <div className="rx-sage-head">
-          <span className="rx-dimdot"><Sparkles aria-hidden /></span>
-          <div style={{ flex: 1, minWidth: 0 }}><p className="rx-p rx-strong">Sage · AI coach</p><p className="rx-sm rx-dsk" style={{ display: undefined }}>Looking at {pathname === '/dashboard' ? 'Today' : pathname?.split('/')[1] || 'Ascentor'}</p></div>
+          <SageMark size={34} />
+          <div style={{ flex: 1, minWidth: 0 }}><p className="rx-p rx-strong">Sage</p><p className="rx-sm rx-dsk" style={{ display: undefined }}>Looking at {pathname === '/dashboard' ? 'Today' : pathname?.split('/')[1] || 'Ascentor'}</p></div>
           <button type="button" className="rx-ib" aria-label="Close Sage" onClick={() => setOpen(false)}><X aria-hidden /></button>
         </div>
 
@@ -140,7 +141,7 @@ export default function SagePanel() {
         <div className="rx-sage-body" ref={bodyRef} aria-live="polite">
           {msgs.map((m, i) => (
             <div key={i} className={`rx-bub ${m.role === 'sage' ? 'sage' : 'me'}`}>
-              {m.role === 'sage' && <div className="rx-who"><Sparkles aria-hidden style={{ width: 14, height: 14 }} />Sage · AI coach</div>}
+              {m.role === 'sage' && <div className="rx-who"><SageMark size={16} still />Sage</div>}
               {m.text}
             </div>
           ))}
@@ -188,6 +189,7 @@ export default function SagePanel() {
               <button type="button" className="rx-ib" aria-label="Send" disabled={busy || !input.trim()} onClick={() => void send(input)}><Send aria-hidden /></button>
             </div>
           )}
+          <p className="rx-sm" style={{ fontSize: 12 }}>Sage is an AI. It can get things wrong, and it is not a substitute for a professional.</p>
           <div className="rx-row" style={{ gap: 16 }}>
             <Link href="/sage/memory" className="rx-link" style={{ minHeight: 32, fontSize: 13 }} onClick={() => setOpen(false)}>What Sage knows<ArrowRight aria-hidden /></Link>
             <Link href="/sage/reminders" className="rx-link" style={{ minHeight: 32, fontSize: 13 }} onClick={() => setOpen(false)}>Reminders<ArrowRight aria-hidden /></Link>

@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, ArrowRight, Bell, Brain, Briefcase, CalendarDays, Check, Clock, Coins, Flag, Globe, Heart, Languages,
-  MapPin, MessageSquare, Search, ShieldCheck, Sparkles, Sprout, User, Users, HeartHandshake,
+  MapPin, MessageSquare, Search, ShieldCheck, Sprout, User, Users, HeartHandshake,
 } from 'lucide-react';
 import {
   AGREE, INTEREST_GROUPS, LANGUAGES, LEAD_OPTIONS, OB_NEXT, OB_SAGE, OB_SEG, PROJ_OPTIONS, REASSURE,
@@ -17,6 +17,7 @@ import {
 import { detectedZone, searchZones, type TzInfo } from '@/lib/rx/timezones';
 import { answerOpenHouse, finishOnboarding, saveOnboardingStep, type FinishResult, type OnboardingInput } from '@/app/onboarding/actions';
 import { useToast } from '@/components/rx/Toast';
+import SageMark from '@/components/rx/SageMark';
 
 export interface OnboardingInitial {
   step: ObStep;
@@ -173,7 +174,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
               </svg>
             </div>
             <div className="rx-welcome-body">
-              <p className="rx-sageline"><Sparkles aria-hidden /><span><span className="sgl">Sage · AI coach</span><span className="tx">Setup takes about two minutes.</span></span></p>
+              <p className="rx-sageline"><SageMark size={22} /><span><span className="sgl">Sage</span><span className="tx">Setup takes about two minutes.</span></span></p>
               <h1 className="rx-hero">Stop drifting.<br />Start becoming.</h1>
               <p className="rx-p" style={{ color: 'var(--rx-muted)', maxWidth: 440 }}>
                 Small practices, a Circle that knows you, and mentors who show up. The daily home of The Elevation Summit.
@@ -209,7 +210,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
             </svg>
           </div>
           <div className="rx-stage-body">
-            <p className="rx-sageline"><Sparkles aria-hidden /><span><span className="sgl">Sage · AI coach</span><span className="tx">Here’s where your path begins.</span></span></p>
+            <p className="rx-sageline"><SageMark size={22} /><span><span className="sgl">Sage</span><span className="tx">Here’s where your path begins.</span></span></p>
             <p className="rx-label">Your starting point</p>
             <h1 className="rx-hero">{stage}</h1>
             <span className="rx-rule" style={{ margin: 0 }} />
@@ -238,7 +239,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
             </svg>
           </div>
           <div className="rx-stage-body">
-            <p className="rx-sageline"><Sparkles aria-hidden /><span><span className="sgl">Sage · AI coach</span><span className="tx">You’re in. Say hello when you’re ready.</span></span></p>
+            <p className="rx-sageline"><SageMark size={22} /><span><span className="sgl">Sage</span><span className="tx">You’re in. Say hello when you’re ready.</span></span></p>
             <h1 className="rx-title">Meet your Circle</h1><span className="rx-rule" style={{ margin: 0 }} />
             {c ? (
               <>
@@ -301,7 +302,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
 
         <div className="rx-ob-content">
           {OB_SAGE[step as ObStep] && (
-            <p className="rx-sageline rx-rise"><Sparkles aria-hidden /><span><span className="sgl">Sage · AI coach</span><span className="tx">{OB_SAGE[step as ObStep]}</span></span></p>
+            <p className="rx-sageline rx-rise"><SageMark size={22} /><span><span className="sgl">Sage</span><span className="tx">{OB_SAGE[step as ObStep]}</span></span></p>
           )}
 
           {step === 'notify' && (

@@ -38,7 +38,7 @@ function greetingFor(firstName: string): string {
   return `Good evening, ${firstName}. Let's take two minutes to reflect on your day.`;
 }
 
-const STATIC_MESSAGE = "I'm Sage, your AI coach. Bring me a challenge, a conversation to prepare for, or your weekly reflection.";
+const STATIC_MESSAGE = "I'm Sage. Bring me a challenge, a conversation to prepare for, or your weekly reflection.";
 
 /** Plays a soft three-note chime. Returns false if the browser blocked audio. */
 async function playChime(): Promise<boolean> {
@@ -201,13 +201,15 @@ export default function SageFloat({ userName }: { userName: string }) {
     openSage({ topic: 'plan' });
   };
 
+  // On phones the button lives on Today and Learn only; on desktop Sage is also in the top bar.
+  const mobileAllowed = pathname === '/dashboard' || !!pathname?.startsWith('/learn');
   return (
-    <div className="sage-root">
+    <div className={`sage-root${mobileAllowed ? '' : ' sage-mobile-hide'}`}>
       {open && (
         <div
           className="sage-bubble"
           role="dialog"
-          aria-label="Sage, your AI coach"
+          aria-label="Sage"
           onMouseEnter={() => { hovering.current = true; clearDismiss(); }}
           onMouseLeave={() => { hovering.current = false; if (phase === 'done') armDismiss(); }}
           onFocus={() => { hovering.current = true; clearDismiss(); }}
@@ -255,11 +257,10 @@ export default function SageFloat({ userName }: { userName: string }) {
         type="button"
         className="sage-orb"
         onClick={onOrbClick}
-        aria-label={open ? 'Close Sage' : 'Open Sage, your AI coach'}
+        aria-label={open ? 'Close Sage' : 'Open Sage'}
         aria-expanded={open}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="sage-orb-mark" src="/ascentor-LM-gold.svg" alt="" />
+        <span className="sage-orb-s" aria-hidden="true">S</span>
         <span className="sage-status" aria-hidden="true" />
       </button>
     </div>

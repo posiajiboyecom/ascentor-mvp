@@ -249,6 +249,7 @@ function ShellInner({
                     <span className="sh-item-icon" aria-hidden="true">{item.icon}</span>
                     <span className="sh-item-label">{item.label}</span>
                     {item.badge != null && <span className="sh-badge">{item.badge}</span>}
+                    {item.dot && <span className="sh-dot" role="img" aria-label="Unread" />}
                   </Link>
                 );
               })}

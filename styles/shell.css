@@ -432,9 +432,11 @@ body[data-sh-lock='true'] { overflow: hidden; }
   pointer-events: none;
 }
 .sage-orb-mark { width: 30px; height: auto; filter: brightness(0); opacity: 0.86; display: block; }
+.sage-orb-s { font-family: Metropolis, sans-serif; font-weight: 800; font-size: 27px; line-height: 1; color: #0C0B08; display: block; animation: sage-breathe 4.2s ease-in-out infinite; }
+@keyframes sage-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
 .sage-status {
   position: absolute; right: 2px; bottom: 2px; width: 13px; height: 13px; border-radius: 50%;
-  background: #22C55E; border: 2px solid #fff;
+  background: #C8A96E; border: 2px solid #fff;
 }
 
 .sage-bubble {
@@ -487,7 +489,7 @@ body[data-sh-lock='true'] { overflow: hidden; }
 @keyframes sage-blink { 50% { opacity: 0; } }
 @keyframes sage-bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5; } 30% { transform: translateY(-5px); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .sage-orb::after, .sage-bubble, .sage-typing > i, .sage-caret { animation: none; }
+  .sage-orb::after, .sage-bubble, .sage-typing > i, .sage-caret, .sage-orb-s { animation: none; }
   .sage-orb, .sage-orb:hover { transition: none; transform: none; }
 }
 
@@ -495,3 +497,6 @@ body[data-sh-lock='true'] { overflow: hidden; }
 @media (max-width: 1023.98px) {
   .sh-root[data-variant='app'] .sh-main { padding-bottom: 58px; }
 }
+
+@media (max-width: 1023.98px) { .sage-mobile-hide { display: none; } }
+.sh-dot { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: #C8A96E; flex: none; }

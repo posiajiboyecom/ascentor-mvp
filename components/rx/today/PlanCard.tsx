@@ -4,7 +4,8 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Check, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Check, X } from 'lucide-react';
+import SageMark from '@/components/rx/SageMark';
 import { savePractice } from '@/app/(app)/dashboard/practice-actions';
 import { useToast } from '@/components/rx/Toast';
 import { openSage } from '@/components/rx/sage-bus';
@@ -106,7 +107,7 @@ export default function PlanCard({ goal, plan }: { goal: string | null; plan: Pl
           <div className="rx rx-sheet" role="dialog" aria-modal="true" aria-label="This week’s plan">
             <div className="grab" />
             <div className="rx-between"><h2 className="rx-h2">This week’s plan</h2><button type="button" className="rx-ib" aria-label="Close" onClick={() => setOpen(false)}><X aria-hidden /></button></div>
-            <p className="rx-sageline" style={{ margin: '6px 0 14px' }}><Sparkles aria-hidden /><span><span className="sgl">Sage · AI coach</span><span className="tx">Tie it to something you already do.</span></span></p>
+            <p className="rx-sageline" style={{ margin: '6px 0 14px' }}><SageMark size={22} /><span><span className="sgl">Sage</span><span className="tx">Tie it to something you already do.</span></span></p>
             <div className="rx-stack">
               <div className="rx-fld"><label htmlFor="pob">What might get in the way?</label><input id="pob" className="rx-in" value={draft.obstacle} maxLength={240} onChange={(e) => setDraft({ ...draft, obstacle: e.target.value })} /></div>
               <div className="rx-fld"><span className="rx-fld-label">Your if-then</span><IfThenFields value={draft} onChange={setDraft} /></div>
