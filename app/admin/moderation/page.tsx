@@ -41,7 +41,7 @@ export default async function ModerationPage() {
   }
   for (const r of (reports ?? []) as { id: string; kind: string; ref_id: string | null; reporter_id: string; reason: string | null; created_at: string }[]) {
     // A report on a direct conversation shows its latest messages so the reviewer can see the context.
-    let lines: Line[] = [];
+    const lines: Line[] = [];
     let other: { id: string; name: string } | null = null;
     if (r.kind === 'dm' && r.ref_id) {
       const { data: t } = await supabaseAdmin.from('dm_threads').select('user_a, user_b').eq('id', r.ref_id).maybeSingle();

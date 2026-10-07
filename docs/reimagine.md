@@ -50,3 +50,57 @@ npx tsx scripts/apply-migration.ts   database/migrations/20261008_reimagine.sql 
 - A **verified mental-health helpline** for the "Hard topics" card. It currently shows the emergency number 112 only.
 - At least one **facilitator** and one **mentor** (admin pages above), otherwise Circles have no facilitator and
   Sessions shows "no mentors yet".
+
+
+## Second pass (handoff v0.2 and the founder's decisions)
+
+Apply `database/migrations/20261008c_member_profile_upsert_fix.sql` if you have not, then
+`database/migrations/20261009_reimagine_v2.sql`. Both are additive and idempotent. The second one also moves the
+survey tables to private storage and drops `growth_scores` (copied first).
+
+```bash
+npx tsx scripts/apply-migration.ts database/migrations/20261009_reimagine_v2.sql --yes
+```
+
+### What changed
+
+- **Circle size and matching:** 8 members. Placement needs the same language and a shared stage or time slot, then prefers
+  both, then the nearest time zone. Otherwise a new Circle opens. Meetings and the 90-day cycle start at 6.
+- **Mentorship is Model A:** the Circle is recommended up to three mentors (fit to the Circle as a group), members vote
+  within 5 days, the highest vote becomes the Circle's mentor (a tie goes to the facilitator for 2 days, then best fit).
+  The mentor accepts or declines (a decline reopens the vote). The Circle marks the times it can attend from the mentor's
+  open slots, and the facilitator or mentor confirms a time that 6 or more can attend. Sessions are 20 minutes, every two
+  weeks, audio only. A session runs only if 6 or more are going the day before, otherwise the series moves and the Circle
+  picks again. Each member can send one question per session. The Circle keeps one agreement (up to 3 goals, tasks with an
+  owner), and a task is done only when its owner and the mentor both confirm. One free swap after the first session.
+  Mentors see the agreement, questions, first names and aggregated Circle facts, never the chat, reports or survey answers.
+- **Audio calls on Daily:** `lib/rx/calls.ts`, `/api/rx/call/*`, `/call/[circleId]`, `/call/[circleId]/mentor`. Weekly Circle
+  call is 15 minutes. Set `DAILY_API_KEY` in Vercel. Without it members see "The call isn't working right now" and the
+  admin Circles page says so. Rooms are private, audio only, nothing is recorded, and tokens end at the scheduled time.
+  Minutes per room are logged, with a notice on the admin page at 80% of Daily's 10,000 free minutes.
+  **Test before launch:** the room-level `permissions` property (the code falls back safely if Daily rejects it), latency
+  from Lagos, and microphone access inside WhatsApp and Instagram browsers.
+- **Chat access for admins:** `/admin/chats` (admins only) lists Circle chats, group rooms, direct messages, Sage
+  conversations and a per-member view, with a date range, and downloads any of them as a PDF or text file. Every view and
+  download is written to `chat_access_log` and shown at `/admin/chats/log`. Members consent at signup (a required checkbox)
+  and existing members see a one-time notice on Today. The privacy policy, the Circle pledge and the signup text say so.
+  Sage conversations are now stored (`sage_conversations`, `sage_messages`).
+- **Survey answers are private:** they live in `private_survey_responses` and `private_growth_scores`, which no client and
+  no admin screen can read. Only server code reads them, always for one member. The survey is now 10 questions.
+- **Messaging safety:** new accounts cannot message outside their Circle until onboarding is done and 7 days have passed.
+  A first message from an account under 30 days old cannot contain links, phone numbers or a hand-off to another app.
+  Anyone may send at most 5 new requests a day. Payment, investment, romance and security-code patterns are flagged to the
+  moderation queue (`/admin/moderation`) wherever they appear. Staff can turn messaging off for one member.
+- **Sage:** named just "Sage", with an S mark that breathes (stops for reduced motion). The panel keeps a one-line note
+  that Sage is an AI. On phones the floating button shows on Today and Learn only; on desktop Sage is also in the top bar.
+- **Smaller:** all four plan blanks are required (3 to 140 characters), check-ins take an optional note, the missed-day
+  message offers a Sage question, Announcements shows a dot not a number, the mobile menu has "This week", Settings has a
+  time zone and a blocked-members list with unblock, onboarding follows the handoff order, 12 lessons (one per week),
+  group suggestions need about 20 interested members (`GROUP_SUGGESTION_MIN`), new admin screens say "desktop only" on phones.
+
+### Not done yet
+
+- Dark mode (deliberately postponed).
+- The Google and Apple welcome screen (sign-in stays on the existing login page).
+- An on-call person and alert for the Sage crisis protocol. The card shows 112 only.
+- Real Daily test (needs your Daily account), and a verified mental-health helpline for the safety card.
