@@ -669,6 +669,7 @@ SELECT pg_temp.rx_policy('mentor_goals','mg_all','ALL','public.rx_in_match(match
 SELECT pg_temp.rx_policy('mentor_tasks','mt_all','ALL','public.rx_in_match(match_id)','public.rx_in_match(match_id)');
 SELECT pg_temp.rx_policy('mentor_confirmations','mc_read','SELECT','public.rx_in_match(match_id)');
 SELECT pg_temp.rx_policy('mentor_confirmations','mc_insert','INSERT',NULL,'(party = ''member'' AND public.rx_is_match_member(match_id)) OR (party = ''mentor'' AND public.rx_is_match_mentor(match_id))');
+SELECT pg_temp.rx_policy('mentor_confirmations','mc_delete','DELETE','public.rx_in_match(match_id)');
 SELECT pg_temp.rx_policy('mentor_messages','mmsg_read','SELECT','public.rx_in_match(match_id)');
 SELECT pg_temp.rx_policy('mentor_messages','mmsg_insert','INSERT',NULL,'sender_id = auth.uid() AND public.rx_in_match(match_id)');
 
