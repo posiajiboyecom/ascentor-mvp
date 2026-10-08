@@ -43,6 +43,8 @@
     "prisma.config.ts",
     "scripts/db.ts",
     "scripts/backfill-paystack-fees.ts",
-    "scripts/apply-migration.ts"
+    "scripts/apply-migration.ts",
+    "scripts/dry-run-migration.ts",
+    "scripts/export-schema.ts"
   ]
 }
