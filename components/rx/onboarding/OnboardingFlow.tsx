@@ -167,9 +167,9 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
             <div className="rx-welcome-art" aria-hidden>
               <Image src="/ascentor-LM-gold.svg" alt="" width={44} height={44} className="rx-welcome-logo" priority />
               <svg viewBox="0 0 390 420" preserveAspectRatio="xMidYMax slice" style={{ width: '100%', height: '100%' }}>
-                <defs><radialGradient id="hz" cx="72%" cy="36%" r="62%"><stop offset="0" stopColor="#C8A96E" stopOpacity=".42" /><stop offset=".5" stopColor="#C8A96E" stopOpacity=".12" /><stop offset="1" stopColor="#C8A96E" stopOpacity="0" /></radialGradient></defs>
+                <defs><radialGradient id="hz" cx="72%" cy="36%" r="62%"><stop offset="0" stopColor="#8A4B35" stopOpacity=".42" /><stop offset=".5" stopColor="#8A4B35" stopOpacity=".12" /><stop offset="1" stopColor="#8A4B35" stopOpacity="0" /></radialGradient></defs>
                 <rect width="390" height="420" fill="url(#hz)" />
-                <circle cx="290" cy="150" r="46" fill="#C8A96E" opacity=".75" />
+                <circle cx="290" cy="150" r="46" fill="#8A4B35" opacity=".75" />
                 <path d="M0 196H390" stroke="#D6D3CB" strokeWidth="1.5" /><path d="M0 214H390" stroke="#D6D3CB" strokeWidth="1.5" opacity=".5" />
                 {[[-10, 360, 100, 70], [90, 318, 100, 112], [190, 276, 100, 154], [290, 234, 110, 196]].map(([x, y, w, h], i) => (
                   <rect key={i} x={x} y={y} width={w} height={h} rx="6" fill="#FFFFFF" stroke="#D6D3CB" strokeWidth="1.5" />
@@ -214,9 +214,9 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
               <path d="M0 260 Q120 210 220 228 T360 200 V260Z" fill="#E8E0CC" />
               <path d="M232 146 C262 124 296 100 330 72" stroke="#D6D3CB" strokeWidth="2" strokeDasharray="4 7" strokeLinecap="round" fill="none" />
               <path d="M28 252 C88 236 108 206 150 194 S206 168 232 146" stroke="#0F0F0E" strokeWidth="3" strokeLinecap="round" fill="none" strokeDasharray="420" style={{ animation: 'rx-draw 1.6s ease-out both' }} />
-              <circle cx="232" cy="132" r="34" fill="#C8A96E" opacity=".2" /><circle cx="232" cy="132" r="18" fill="#C8A96E" opacity=".28" />
+              <circle cx="232" cy="132" r="34" fill="#8A4B35" opacity=".2" /><circle cx="232" cy="132" r="18" fill="#8A4B35" opacity=".28" />
               <rect x="222" y="112" width="20" height="26" rx="5" fill="#fff" stroke="#8A6A2B" strokeWidth="1.5" />
-              <ellipse cx="232" cy="126" rx="4" ry="6" fill="#C8A96E" />
+              <ellipse cx="232" cy="126" rx="4" ry="6" fill="#8A4B35" />
               <circle cx="330" cy="72" r="4" fill="#B8B3A6" />
             </svg>
           </div>
@@ -244,7 +244,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
           <div className="rx-stage-art" aria-hidden>
             <svg viewBox="0 0 300 230" style={{ width: '100%', maxWidth: 340 }}>
               <ellipse cx="150" cy="118" rx="78" ry="48" fill="#fff" stroke="#D6D3CB" strokeWidth="1.5" />
-              <circle cx="150" cy="118" r="10" fill="#C8A96E" opacity=".7" />
+              <circle cx="150" cy="118" r="10" fill="#8A4B35" opacity=".7" />
               {[[150, 46, '#8A4B35'], [222, 66, '#3D6B7A'], [250, 118, '#4E6B52'], [222, 170, '#6A5688']].map(([x, y, col], i) => <circle key={i} cx={x as number} cy={y as number} r="15" fill={col as string} />)}
               {[[150, 190], [78, 170], [50, 118], [78, 66]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="15" fill="none" stroke="#B8B3A6" strokeWidth="1.5" strokeDasharray="4 4" />)}
             </svg>
@@ -498,7 +498,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
           <path d="M0 240 Q90 150 180 170 T360 70 V240Z" fill="#F1EBDD" />
           <path d="M30 230 C90 210 110 185 150 176 S220 150 250 128 S300 96 330 72" stroke="#D6D3CB" strokeWidth="2" strokeDasharray="4 7" strokeLinecap="round" fill="none" />
           {(() => { const pts = [[30, 230], [90, 212], [150, 176], [200, 158], [250, 128], [300, 96]]; const p = pts[seg ?? 0]; return <circle cx={p[0]} cy={p[1]} r="8" fill="#0F0F0E" />; })()}
-          <circle cx="330" cy="72" r="5" fill="#C8A96E" />
+          <circle cx="330" cy="72" r="5" fill="#8A4B35" />
         </svg>
         <div className="rx-stack-sm">
           <p className="rx-label">Your setup</p>
