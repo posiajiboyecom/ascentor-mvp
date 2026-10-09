@@ -21,7 +21,8 @@ export default async function SageMemoryPage() {
         <Aside>
           <p className="rx-label">Privacy</p>
           <p className="rx-p">Sage never shares what you say with your Circle, mentor or facilitator.</p>
-          <p className="rx-sm">One exception: after 5 quiet days, your facilitator is told you’ve been quiet, never what you said.</p>
+          <p className="rx-sm">After 5 quiet days, your facilitator is told you’ve been quiet, never what you said.</p>
+          <p className="rx-sm">Ascentor’s safety team can review conversations, including Sage, to keep members safe. Every review is logged.</p>
           <GoLink href="/sage/reminders">Reminder settings</GoLink>
         </Aside>
       </div>
