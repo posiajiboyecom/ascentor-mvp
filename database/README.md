@@ -17,6 +17,7 @@ Source of truth: the Supabase project. This folder makes it reproducible.
 
 9. `migrations/20261008b_member_profile_grant_fix.sql` and `20261008c_member_profile_upsert_fix.sql` (column grants so members can save their own `member_profile`)
 10. `migrations/20261009_reimagine_v2.sql` (stage and slot Circle matching, Sage conversation storage, admin chat access log, moderation flags, private survey tables, Circle mentorship tables, call attendance, 12 pathway lessons)
+11. `migrations/20261010_community_circles.sql` (Community categories, rich text, media, reactions, comments, shares; several Circle seats per member, interest and demo Circles, join function; notification columns; starter posts)
 
 Older dated migrations (2026-07 to 2026-09) are already reflected in the baseline. They are idempotent and may
 still be run on an existing database, but they are not needed on a new one.
