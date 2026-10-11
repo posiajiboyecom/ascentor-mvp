@@ -7,15 +7,16 @@ import { ReportForm } from '@/components/rx/circle/CircleClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ReportsPage() {
+export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
+  const { c } = await searchParams;
   const me = await getMe();
   if (!me) redirect('/login');
-  const circle = await getMyCircle();
+  const circle = await getMyCircle('member', c);
   if (!circle || !circle.pledged) redirect('/circle');
   if (!circle.week) {
     return (
       <Page>
-        <BackLink href="/circle">Circle</BackLink>
+        <BackLink href={circle ? `/circle?c=${circle.circle.id}` : '/circle'}>Circle</BackLink>
         <Title>Weekly reports</Title>
         <div className="rx-card rx-empty"><p className="rx-p">Reports open when your first meeting is set, once 6 members have joined.</p></div>
       </Page>
@@ -27,10 +28,10 @@ export default async function ReportsPage() {
 
   return (
     <Page>
-      <BackLink href="/circle">Circle</BackLink>
+      <BackLink href={circle ? `/circle?c=${circle.circle.id}` : '/circle'}>Circle</BackLink>
       <Title>Weekly reports</Title>
       <div className="rx-two">
-        <ReportForm week={circle.week} shared={!!mine} initial={{ kept: mine?.kept ?? '', obstacle: mine?.obstacle ?? '', next: mine?.next ?? '' }} />
+        <ReportForm circleId={circle.circle.id} week={circle.week} shared={!!mine} initial={{ kept: mine?.kept ?? '', obstacle: mine?.obstacle ?? '', next: mine?.next ?? '' }} />
         <Aside>
           <p className="rx-label">From your Circle</p>
           {reports.length === 0 && <p className="rx-sm">No reports shared yet this week.</p>}

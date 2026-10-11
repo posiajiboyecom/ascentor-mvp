@@ -8,10 +8,11 @@ import { Aside, BackLink, Page, Title } from '@/components/rx/ui';
 
 export const dynamic = 'force-dynamic';
 
-export default async function MeetingPage() {
+export default async function MeetingPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
+  const { c } = await searchParams;
   const me = await getMe();
   if (!me) redirect('/login');
-  const circle = await getMyCircle();
+  const circle = await getMyCircle('member', c);
   if (!circle || !circle.pledged) redirect('/circle');
 
   const next = nextWeekdayAt(circle.circle.meeting_dow, circle.circle.meeting_time.slice(0, 5), circle.circle.timezone);
@@ -20,7 +21,7 @@ export default async function MeetingPage() {
 
   return (
     <Page>
-      <BackLink href="/circle">Circle</BackLink>
+      <BackLink href={`/circle?c=${circle.circle.id}`}>Circle</BackLink>
       <Title>Circle meeting</Title>
       <div className="rx-two">
         <div className="rx-stack">
@@ -42,7 +43,7 @@ export default async function MeetingPage() {
           {MEETING_AGENDA.map(([item, min]) => (
             <div key={item} className="rx-between" style={{ minHeight: 40, borderBottom: '1px solid var(--rx-border)' }}><span>{item}</span><span className="rx-sm" style={{ whiteSpace: 'nowrap' }}>{min}</span></div>
           ))}
-          <p className="rx-sm">{circle.facilitatorName ?? 'Your facilitator'} keeps time. Reports are shared before the meeting. <Link href="/circle/reports" className="rx-link" style={{ minHeight: 0 }}>Share yours</Link></p>
+          <p className="rx-sm">{circle.facilitatorName ?? 'Your facilitator'} keeps time. Reports are shared before the meeting. <Link href={`/circle/reports?c=${circle.circle.id}`} className="rx-link" style={{ minHeight: 0 }}>Share yours</Link></p>
         </Aside>
       </div>
     </Page>

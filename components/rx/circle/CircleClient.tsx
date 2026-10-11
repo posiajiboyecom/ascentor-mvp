@@ -12,7 +12,7 @@ import { pledge, pollCircleMessages, placeMeInCircle, saveReport, saveReview, se
 import { useToast } from '@/components/rx/Toast';
 import { openSage } from '@/components/rx/sage-bus';
 
-export function PledgeButtons() {
+export function PledgeButtons({ circleId }: { circleId?: string }) {
   const router = useRouter();
   const toast = useToast();
   const [pending, start] = useTransition();
@@ -21,7 +21,7 @@ export function PledgeButtons() {
     <>
       <div className="rx-row">
         <button type="button" className="rx-btn primary" disabled={pending} onClick={() => start(async () => {
-          const r = await pledge();
+          const r = await pledge(circleId);
           if (!r.ok) { setError(r.error); return; }
           toast('Welcome to your Circle.');
           router.refresh();
@@ -69,7 +69,7 @@ export function CircleChat({ circleId, meId, initial }: { circleId: string; meId
   );
 }
 
-export function ReportForm({ week, initial, shared }: { week: number; initial: { kept: string; obstacle: string; next: string }; shared: boolean }) {
+export function ReportForm({ circleId, week, initial, shared }: { circleId?: string; week: number; initial: { kept: string; obstacle: string; next: string }; shared: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const [kept, setKept] = useState(initial.kept);
@@ -104,7 +104,7 @@ export function ReportForm({ week, initial, shared }: { week: number; initial: {
       <div className="rx-row">
         <button type="button" className="rx-btn primary" disabled={pending} onClick={() => start(async () => {
           setError('');
-          const r = await saveReport(week, kept, obstacle, next);
+          const r = await saveReport(week, kept, obstacle, next, circleId);
           if (!r.ok) { setError(r.error); return; }
           setDone(true); toast('Report shared with your Circle.'); router.refresh();
         })}>{done ? 'Update report' : 'Share with Circle'}</button>
@@ -114,7 +114,7 @@ export function ReportForm({ week, initial, shared }: { week: number; initial: {
   );
 }
 
-export function ReviewForm({ initialCarry, initialChoice, open }: { initialCarry: string; initialChoice: 'join' | 'break' | null; open: boolean }) {
+export function ReviewForm({ circleId, initialCarry, initialChoice, open }: { circleId?: string; initialCarry: string; initialChoice: 'join' | 'break' | null; open: boolean }) {
   const toast = useToast();
   const [carry, setCarry] = useState(initialCarry);
   const [choice, setChoice] = useState<'join' | 'break' | null>(initialChoice);
@@ -122,7 +122,7 @@ export function ReviewForm({ initialCarry, initialChoice, open }: { initialCarry
   const [pending, start] = useTransition();
   const save = (c: 'join' | 'break') => start(async () => {
     setError('');
-    const r = await saveReview(carry, c);
+    const r = await saveReview(carry, c, circleId);
     if (!r.ok) { setError(r.error); return; }
     setChoice(c);
     toast(c === 'join' ? 'You’re in the next Circle. We’ll place you before Monday.' : 'Enjoy the break. Your seat is waiting when you’re ready.');

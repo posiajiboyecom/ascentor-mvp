@@ -8,10 +8,11 @@ import { ReachOutButton } from '@/components/rx/messages/MessagesClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function FacilitatorPage() {
+export default async function FacilitatorPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
+  const { c } = await searchParams;
   const me = await getMe();
   if (!me) redirect('/login');
-  const circle = await getMyCircle('facilitator');
+  const circle = await getMyCircle('facilitator', c);
   if (!circle) redirect('/circle');
   const members = await facilitatorView(circle.circle.id, circle.week, me.tz, me.userId);
   const quiet = members.filter((m) => (m.quietDays ?? 0) >= 5 && !m.isYou);

@@ -7,10 +7,11 @@ import { ReviewForm } from '@/components/rx/circle/CircleClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ReviewPage() {
+export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
+  const { c } = await searchParams;
   const me = await getMe();
   if (!me) redirect('/login');
-  const circle = await getMyCircle();
+  const circle = await getMyCircle('member', c);
   if (!circle || !circle.pledged) redirect('/circle');
   const db = await createClient();
   const [sum, { data: review }] = await Promise.all([
@@ -21,7 +22,7 @@ export default async function ReviewPage() {
 
   return (
     <Page>
-      <BackLink href="/circle">Circle</BackLink>
+      <BackLink href={circle ? `/circle?c=${circle.circle.id}` : '/circle'}>Circle</BackLink>
       <Title tag={<Tag>Week {Math.max(week, 1)} of 12</Tag>}>{week >= 12 ? 'Cycle complete' : 'Your cycle so far'}</Title>
       <div className="rx-two">
         <div className="rx-stack-lg">
@@ -31,7 +32,7 @@ export default async function ReviewPage() {
             <div className="rx-between"><span>Goals met</span><span className="rx-strong">{sum.goalsMet} of {sum.goalsTotal || 3}</span></div>
             <div className="rx-between"><span>Reports shared</span><span className="rx-strong">{sum.reports} of 12</span></div>
           </div>
-          <ReviewForm open={week >= 12} initialCarry={(review?.carry_forward as string) ?? ''} initialChoice={(review?.next_choice as 'join' | 'break' | null) ?? null} />
+          <ReviewForm circleId={circle.circle.id} open={week >= 12} initialCarry={(review?.carry_forward as string) ?? ''} initialChoice={(review?.next_choice as 'join' | 'break' | null) ?? null} />
         </div>
         <Aside>
           <p className="rx-label">About the review</p>
