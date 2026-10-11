@@ -53,3 +53,8 @@ export function excerpt(text: string, max = 90): string {
   const one = text.replace(/\s+/g, ' ').trim();
   return one.length > max ? `${one.slice(0, max - 1).trimEnd()}…` : one;
 }
+
+/** Wraps plain text as safe HTML (used when a post is created from a chat message). */
+export function plainToHtml(text: string): string {
+  return `<p>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p>`;
+}

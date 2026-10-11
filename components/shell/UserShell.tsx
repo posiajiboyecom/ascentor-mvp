@@ -63,7 +63,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         items: [
           { href: '/community',                  label: 'Monday prompt',     icon: <CalendarClock />, badge: 'Mon 8:00 AM' },
           { href: '/community/groups/open-house', label: 'Live conversation', icon: <CalendarClock />, badge: 'Wed 7:00 PM' },
-          { href: '/community?tab=wins',          label: 'Friday wins',       icon: <CalendarClock />, badge: 'Fri 5:00 PM' },
+          { href: '/community?category=Wins',      label: 'Friday wins',       icon: <CalendarClock />, badge: 'Fri 5:00 PM' },
         ],
       },
       {

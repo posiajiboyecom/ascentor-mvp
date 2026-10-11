@@ -83,6 +83,7 @@ const NAV_GROUPS: Group[] = [
     items: [
       { href: '/admin/community-intel', label: 'Community',     icon: <MessagesSquare /> },
       { href: '/admin/groups',          label: 'Groups',        icon: <Users /> },
+      { href: '/admin/categories',      label: 'Post categories', icon: <Tag /> },
       { href: '/admin/circles',         label: 'Circles',       icon: <Workflow /> },
       { href: '/admin/human-mentors',   label: 'Mentors (people)', icon: <HeartHandshake /> },
       { href: '/admin/announcements',   label: 'Announcements', icon: <Megaphone /> },

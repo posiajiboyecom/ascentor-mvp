@@ -6,9 +6,10 @@ import type { ActionResult } from '@/lib/rx/types';
 import type { ChatMsg } from '@/lib/rx/chat-types';
 import { circleMessages } from '@/lib/rx/circle';
 import { cleanText } from '@/lib/rx/safety';
+import { plainToHtml } from '@/lib/rx/richtext';
 import { flagIfRisky } from '@/lib/rx/moderation';
 import { isOwnMediaUrl, parseBody } from '@/lib/rx/media';
-import { dimensionOf } from '@/lib/rx/constants';
+
 
 /** Agrees to the confidentiality pledge. */
 export async function pledge(): Promise<ActionResult> {
@@ -67,9 +68,11 @@ export async function shareWin(messageId: string): Promise<ActionResult> {
     const me = await getMe();
     const { data: m } = await db.from('circle_messages').select('body, user_id').eq('id', messageId).maybeSingle();
     if (!m || m.user_id !== userId) throw new Error('You can only share your own wins.');
-    const first = me?.profile?.interests?.[0];
-    const dim = (first && dimensionOf(first)) || 'Character';
-    const { error } = await db.from('feed_posts').insert({ user_id: userId, type: 'Win', dimension: dim, body: cleanText(m.body, 1000) });
+
+
+    const winText = cleanText(m.body, 1000);
+    const winHtml = plainToHtml(winText);
+    const { error } = await db.from('feed_posts').insert({ user_id: userId, type: 'Win', category: 'Wins', body: winText, body_html: winHtml });
     if (error) throw error;
     await db.from('circle_messages').update({ is_win: true }).eq('id', messageId);
     revalidatePath('/community');
