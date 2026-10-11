@@ -9,6 +9,8 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getMe, getMyCircle, namesFor, type MyCircle } from './server';
 import { MENTOR_CALL_MINUTES } from './calls';
+import { circleAudience, rxNotify } from './notifications';
+import { circleTitle } from './circles';
 
 export const VOTE_DAYS = 5;
 export const TIE_FALLBACK_DAYS = 2;
@@ -79,6 +81,31 @@ export async function openRound(circleId: string, isSwap: boolean, exclude: stri
 async function startRequest(circleId: string, mentorId: string, roundId: string, swapUsed: boolean) {
   await supabaseAdmin.from('circle_mentor_rounds').update({ status: 'closed', winner_mentor_id: mentorId }).eq('id', roundId);
   await supabaseAdmin.from('circle_mentors').insert({ circle_id: circleId, mentor_id: mentorId, round_id: roundId, status: 'requested', swap_used: swapUsed });
+  await announceWinner(circleId, mentorId);
+}
+
+/** Tells the Circle who won (with congratulations) and tells the mentor their Circle chose them. */
+export async function announceWinner(circleId: string, mentorId: string): Promise<void> {
+  try {
+    const [{ data: mentor }, { data: circle }] = await Promise.all([
+      supabaseAdmin.from('human_mentors').select('name, user_id').eq('id', mentorId).maybeSingle(),
+      supabaseAdmin.from('circles').select('name, number, interest').eq('id', circleId).maybeSingle(),
+    ]);
+    if (!mentor || !circle) return;
+    const title = circleTitle(circle as { name: string; number: number; interest: string | null });
+    await rxNotify(await circleAudience(circleId), {
+      kind: 'vote_won', entityId: circleId, url: `/sessions?c=${circleId}`,
+      title: `Congratulations. ${mentor.name as string} is your mentor`,
+      body: `${title} chose ${mentor.name as string} by vote. They’ll confirm shortly, then you can pick session times together.`,
+    });
+    if (mentor.user_id) {
+      await rxNotify(mentor.user_id as string, {
+        kind: 'mentor_chosen', entityId: circleId, url: '/sessions/mentoring',
+        title: `${title} chose you as their mentor`,
+        body: 'Your Circle voted for you. Open your mentor view to say yes or no. Most Circles hear back within two days.',
+      });
+    }
+  } catch (e) { console.error('[announceWinner] failed', e instanceof Error ? e.message : e); }
 }
 
 /** Closes a round when everyone has voted or the window ended. Ties wait for the facilitator, then fall back to best fit. */
@@ -132,12 +159,12 @@ export type MentorshipState =
 
 export interface Mentorship { circle: MyCircle; isFacilitator: boolean; state: MentorshipState }
 
-export async function getMentorship(): Promise<Mentorship | null> {
+export async function getMentorship(circleId?: string | null): Promise<Mentorship | null> {
   const me = await getMe();
   if (!me) return null;
-  let circle = await getMyCircle();
+  let circle = await getMyCircle('member', circleId);
   let isFacilitator = false;
-  if (!circle) { circle = await getMyCircle('facilitator'); isFacilitator = !!circle; }
+  if (!circle) { circle = await getMyCircle('facilitator', circleId); isFacilitator = !!circle; }
   if (!circle) return { circle: null as unknown as MyCircle, isFacilitator: false, state: { kind: 'none', reason: 'nocircle' } };
   if (circle.memberCount < READY_MEMBERS) return { circle, isFacilitator, state: { kind: 'none', reason: 'notready' } };
 

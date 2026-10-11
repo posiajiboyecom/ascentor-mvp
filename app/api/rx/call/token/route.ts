@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   if (!UUID.test(circleId)) return NextResponse.json({ state: 'error', error: 'Unknown Circle.' }, { status: 400 });
   if (!callsConfigured()) return NextResponse.json({ state: 'unavailable' });
 
-  const { data: circle } = await supabaseAdmin.from('circles').select('id, name, number, status, cycle_start, meeting_dow, meeting_time, timezone, facilitator_id').eq('id', circleId).maybeSingle();
+  const { data: circle } = await supabaseAdmin.from('circles').select('id, name, number, status, cycle_start, meeting_dow, meeting_time, timezone, facilitator_id, demo_call_until').eq('id', circleId).maybeSingle();
   if (!circle) return NextResponse.json({ state: 'error', error: 'Unknown Circle.' }, { status: 404 });
 
   // Membership: a seat in the Circle, or (for mentor sessions) being its mentor.
@@ -43,8 +43,15 @@ export async function POST(req: Request) {
 
   if (kind === 'circle') {
     if (!seat) return NextResponse.json({ state: 'error', error: 'This call is for the members of this Circle.' }, { status: 403 });
-    if (circle.status !== 'active' || !circle.cycle_start) return NextResponse.json({ state: 'notstarted' });
-    win = circleWindow(circle as { name: string; number: number; meeting_dow: number; meeting_time: string; timezone: string | null });
+    // A demo Circle can have its call opened by staff for a while, so the call can be tried any time.
+    const demoUntil = circle.demo_call_until ? new Date(circle.demo_call_until as string) : null;
+    if (demoUntil && demoUntil.getTime() > Date.now()) {
+      const now = Date.now();
+      win = { kind: 'circle', title: `${circle.name} · Circle ${circle.number} call (demo)`, startsAt: new Date(now - 60000), opensAt: new Date(now - 300000), endsAt: demoUntil, state: 'open' };
+    } else {
+      if (circle.status !== 'active' || !circle.cycle_start) return NextResponse.json({ state: 'notstarted' });
+      win = circleWindow(circle as { name: string; number: number; meeting_dow: number; meeting_time: string; timezone: string | null });
+    }
     roomName = `circle-${circleId}`;
     isOwner = seat.role === 'facilitator';
   } else {
