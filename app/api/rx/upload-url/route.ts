@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { POST_BUCKET, POST_BUCKET_LIMIT_MB, POST_MEDIA_TYPES } from '@/lib/rx/media';
+import { rateLimit } from '@/lib/auth/rate-limit-shared';
 
 export const runtime = 'nodejs';
 
@@ -29,6 +30,9 @@ export async function POST(req: Request) {
   const db = await createClient();
   const { data: { user } } = await db.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Please sign in again.' }, { status: 401 });
+
+  const limit = await rateLimit(user.id, { scope: 'rx-upload:user', max: 30, windowSeconds: 3600 });
+  if (!limit.allowed) return NextResponse.json({ error: 'You’ve uploaded a lot in the last hour. Try again a little later.' }, { status: 429 });
 
   let body: { contentType?: string; size?: number };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }

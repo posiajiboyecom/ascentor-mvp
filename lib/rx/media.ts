@@ -54,6 +54,11 @@ function postPrefix(): string {
   return `${base}/storage/v1/object/public/${POST_BUCKET}/`;
 }
 
+/** Any file in the posts bucket. Used when reading, so a member who writes the row directly cannot point a post at another site. */
+export function isPostBucketUrl(url: string): boolean {
+  return typeof url === 'string' && url.startsWith(postPrefix()) && !url.includes('..') && url.length < 400;
+}
+
 /** A post attachment is accepted only if it sits in our bucket under the author's own folder. */
 export function isOwnPostMedia(url: string, userId: string): boolean {
   return typeof url === 'string' && url.startsWith(`${postPrefix()}${userId}/`) && !url.includes('..') && url.length < 400;

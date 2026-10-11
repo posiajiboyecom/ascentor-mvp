@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getMe, namesFor, type Db } from './server';
 import { relTime } from './dates';
+import { cleanHtml } from './richtext';
+import { isPostBucketUrl } from './media';
 import type { CategoryView, CommentView, MediaItem, PostView, ReactionKind } from './feed-types';
 import { FALLBACK_CATEGORIES, FEED_PAGE, nestComments } from './feed-types';
 
@@ -24,7 +26,7 @@ const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 function toMedia(raw: unknown): MediaItem[] {
   if (!Array.isArray(raw)) return [];
   return raw
-    .filter((m): m is MediaItem => !!m && typeof m === 'object' && typeof (m as MediaItem).url === 'string' && ((m as MediaItem).kind === 'image' || (m as MediaItem).kind === 'video'))
+    .filter((m): m is MediaItem => !!m && typeof m === 'object' && typeof (m as MediaItem).url === 'string' && isPostBucketUrl((m as MediaItem).url) && ((m as MediaItem).kind === 'image' || (m as MediaItem).kind === 'video'))
     .slice(0, 4);
 }
 
@@ -53,7 +55,8 @@ async function enrich(db: Db, rows: PostRow[], meId: string): Promise<PostView[]
     }));
     return {
       id: r.id, userId: r.user_id, name: nm(r.user_id), avatarUrl: r.user_id ? names.get(r.user_id)?.avatarUrl ?? null : null, isTeam: !r.user_id,
-      category: r.category, html: r.body_html || `<p>${esc(r.body)}</p>`, text: r.body, media: toMedia(r.media), time: relTime(r.created_at), createdAt: r.created_at,
+      category: r.category, // Cleaned again on every read: members can write this column directly, so the stored value is never trusted.
+      html: cleanHtml(r.body_html) || `<p>${esc(r.body)}</p>`, text: r.body, media: toMedia(r.media), time: relTime(r.created_at), createdAt: r.created_at,
       mine: r.user_id === meId, pinned: r.pinned,
       reactions: { ...tally, mine: myKind }, comments: nestComments(flat), commentCount: flat.length,
       shares: ((shares ?? []) as { post_id: string }[]).filter((s) => s.post_id === r.id).length,

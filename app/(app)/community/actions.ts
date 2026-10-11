@@ -218,6 +218,8 @@ export async function sharePost(postId: string, target: 'link' | 'circle' | 'per
 export async function reportContent(kind: 'post' | 'comment', refId: string, reason?: string): Promise<ActionResult> {
   try {
     const { db, userId } = await requireMember();
+    if (kind !== 'post' && kind !== 'comment') throw new Error('That can’t be reported here.');
+    if (!/^[0-9a-f-]{36}$/i.test(refId)) throw new Error('That can’t be reported here.');
     const { error } = await db.from('rx_reports').insert({ reporter_id: userId, kind, ref_id: refId, reason: cleanText(reason, 500) || null });
     if (error) throw error;
     return { ok: true };
