@@ -32,3 +32,33 @@ export function previewOf(body: string): string {
   if (p.kind === 'img') return 'Photo';
   return p.kind === 'text' ? p.text : '';
 }
+
+// ── Community post media (photos and short videos) ──────────────────────────
+// These go straight from the browser to storage through a short-lived signed upload link, so large videos never pass
+// through the app server. The bucket itself enforces the allowed file types and the size limit.
+
+export const POST_BUCKET = 'rx-posts';
+export const POST_MEDIA_TYPES: Record<string, { ext: string; kind: 'image' | 'video'; maxMB: number }> = {
+  'image/jpeg': { ext: 'jpg', kind: 'image', maxMB: 8 },
+  'image/png': { ext: 'png', kind: 'image', maxMB: 8 },
+  'image/webp': { ext: 'webp', kind: 'image', maxMB: 8 },
+  'image/gif': { ext: 'gif', kind: 'image', maxMB: 8 },
+  'video/mp4': { ext: 'mp4', kind: 'video', maxMB: 30 },
+  'video/webm': { ext: 'webm', kind: 'video', maxMB: 30 },
+  'video/quicktime': { ext: 'mov', kind: 'video', maxMB: 30 },
+};
+export const POST_BUCKET_LIMIT_MB = 30;
+
+function postPrefix(): string {
+  const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '');
+  return `${base}/storage/v1/object/public/${POST_BUCKET}/`;
+}
+
+/** A post attachment is accepted only if it sits in our bucket under the author's own folder. */
+export function isOwnPostMedia(url: string, userId: string): boolean {
+  return typeof url === 'string' && url.startsWith(`${postPrefix()}${userId}/`) && !url.includes('..') && url.length < 400;
+}
+
+export function postMediaKind(url: string): 'image' | 'video' {
+  return /\.(mp4|webm|mov)$/i.test(url) ? 'video' : 'image';
+}

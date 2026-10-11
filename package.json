@@ -25,7 +25,8 @@
     "test:auth:unit": "tsx --test scripts/auth-tests/unit.test.ts",
     "test:auth:otp": "tsx --conditions=react-server --test scripts/auth-tests/signup-otp.test.ts",
     "test:auth:http": "tsx --test scripts/auth-tests/http.test.ts",
-    "test:auth": "npm run test:auth:unit && npm run test:auth:http"
+    "test:auth": "npm run test:auth:unit && npm run test:auth:http",
+    "test:rx": "tsx --test scripts/rx-tests/*.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
@@ -55,6 +56,10 @@
     "@remotion/renderer": "^4.0.448",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
+    "@tiptap/extension-placeholder": "^3.31.4",
+    "@tiptap/pm": "^3.31.4",
+    "@tiptap/react": "^3.31.4",
+    "@tiptap/starter-kit": "^3.31.4",
     "@trigger.dev/python": "4.4.4",
     "@trigger.dev/sdk": "4.4.4",
     "@types/nodemailer": "^8.0.1",
