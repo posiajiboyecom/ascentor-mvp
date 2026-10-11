@@ -73,6 +73,7 @@ ALTER TABLE public.circles ADD COLUMN IF NOT EXISTS interest        text;
 ALTER TABLE public.circles ADD COLUMN IF NOT EXISTS is_demo         boolean NOT NULL DEFAULT false;
 ALTER TABLE public.circles ADD COLUMN IF NOT EXISTS demo_call_until timestamptz;
 ALTER TABLE public.member_profile ADD COLUMN IF NOT EXISTS is_demo  boolean NOT NULL DEFAULT false;
+ALTER TABLE public.human_mentors  ADD COLUMN IF NOT EXISTS is_demo  boolean NOT NULL DEFAULT false;
 
 -- A member may now sit in several Circles (the application caps it at three).
 DROP INDEX IF EXISTS public.circle_seats_one_member_seat;

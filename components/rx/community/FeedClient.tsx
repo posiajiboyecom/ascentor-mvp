@@ -3,7 +3,7 @@
 // The Community feed: composer, category filter, posts, and "Load more".
 
 import Link from 'next/link';
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check } from 'lucide-react';
 import { loadMorePosts } from '@/app/(app)/community/actions';
@@ -22,8 +22,9 @@ export default function FeedClient({ initialPosts, initialNext, categories, cate
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
 
-  // A refresh from the server (after posting) or a new category replaces the list.
-  useEffect(() => { setPosts(initialPosts); setNext(initialNext); }, [initialPosts, initialNext]);
+  // A refresh from the server (after posting) replaces the list. Done while rendering, as React recommends.
+  const [seen, setSeen] = useState(initialPosts);
+  if (seen !== initialPosts) { setSeen(initialPosts); setPosts(initialPosts); setNext(initialNext); }
 
   const href = (name: string | null) => (name ? `/community?category=${encodeURIComponent(name)}` : '/community');
 

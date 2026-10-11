@@ -89,6 +89,7 @@ const NAV_GROUPS: Group[] = [
       { href: '/admin/announcements',   label: 'Announcements', icon: <Megaphone /> },
       { href: '/admin/chats',           label: 'Chats',         icon: <MessageCircle /> },
       { href: '/admin/moderation',      label: 'Moderation',    icon: <ShieldCheck /> },
+      { href: '/admin/demo',            label: 'Demo lab',      icon: <Radar /> },
     ],
   },
   {

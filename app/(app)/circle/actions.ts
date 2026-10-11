@@ -69,7 +69,6 @@ export async function pollCircleMessages(circleId: string, afterISO: string | nu
 export async function shareWin(messageId: string): Promise<ActionResult> {
   try {
     const { db, userId } = await requireMember();
-    const me = await getMe();
     const { data: m } = await db.from('circle_messages').select('body, user_id').eq('id', messageId).maybeSingle();
     if (!m || m.user_id !== userId) throw new Error('You can only share your own wins.');
 

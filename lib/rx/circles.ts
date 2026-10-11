@@ -127,5 +127,5 @@ export async function findCircles(): Promise<OpenCircle[]> {
       score: (match ? 10 : 0) + (sameLang ? 2 : 0) + (n >= 3 ? 1 : 0),
     });
   }
-  return out.sort((a, b) => b.score - a.score || a.number - b.number).map(({ score: _s, ...rest }) => rest);
+  return out.sort((a, b) => b.score - a.score || a.number - b.number).map((c) => ({ id: c.id, name: c.name, number: c.number, interest: c.interest, members: c.members, seatsLeft: c.seatsLeft, language: c.language, isDemo: c.isDemo, reason: c.reason, facilitatorName: c.facilitatorName, ready: c.ready }));
 }

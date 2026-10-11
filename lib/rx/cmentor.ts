@@ -37,9 +37,9 @@ export async function recommendForCircle(circleId: string, exclude: string[] = [
   const [{ data: profiles }, { data: goals }, { data: mentors }, { data: load }, { data: circle }] = await Promise.all([
     ids.length ? supabaseAdmin.from('member_profile').select('interests, language').in('user_id', ids) : Promise.resolve({ data: [] }),
     ids.length ? supabaseAdmin.from('user_goals').select('goal_text').in('user_id', ids) : Promise.resolve({ data: [] }),
-    supabaseAdmin.from('human_mentors').select(MENTOR_COLS).eq('active', true).eq('accepting', true),
+    supabaseAdmin.from('human_mentors').select(`${MENTOR_COLS}, is_demo`).eq('active', true).eq('accepting', true),
     supabaseAdmin.from('circle_mentors').select('mentor_id').in('status', CURRENT),
-    supabaseAdmin.from('circles').select('language').eq('id', circleId).maybeSingle(),
+    supabaseAdmin.from('circles').select('language, is_demo').eq('id', circleId).maybeSingle(),
   ]);
 
   const count = new Map<string, number>(); // interest -> number of members who chose it
@@ -51,7 +51,9 @@ export async function recommendForCircle(circleId: string, exclude: string[] = [
   const total = ids.length || 1;
 
   const out: Recommendation[] = [];
-  for (const m of (mentors ?? []) as MentorLite[]) {
+  for (const m of (mentors ?? []) as unknown as (MentorLite & { is_demo: boolean })[]) {
+    // Demo mentors are only ever offered to demo Circles, and real mentors only to real ones.
+    if (!!m.is_demo !== !!circle?.is_demo) continue;
     if (exclude.includes(m.id) || (busy.get(m.id) ?? 0) >= m.capacity) continue;
     const hits = m.tags.map((t) => ({ t, n: count.get(norm(t)) ?? 0 })).filter((x) => x.n > 0).sort((a, b) => b.n - a.n);
     const goalHits = m.tags.filter((t) => [...goalWords].some((w) => norm(t).includes(w) || w.includes(norm(t))));

@@ -143,7 +143,8 @@ export default function PostCard({ post: initial, canModerate, startOpen, onRemo
   const shareRef = useOutside(shareOpen, () => setShareOpen(false));
   const moreRef = useOutside(moreOpen, () => setMoreOpen(false));
 
-  useEffect(() => setPost(initial), [initial]);
+  const [seen, setSeen] = useState(initial);
+  if (seen !== initial) { setSeen(initial); setPost(initial); }
   if (gone) return null;
 
   function react(kind: ReactionKind) {

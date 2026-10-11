@@ -8,7 +8,6 @@ import type { GroupView } from '@/lib/rx/community';
 import type { ChatMsg } from '@/lib/rx/chat-types';
 import { declineOpenHouse, joinGroup, leaveGroup, pollGroupMessages, requestGroup, sendGroupMessage } from '@/app/(app)/community/actions';
 import ChatThread from '@/components/rx/ChatThread';
-import { Avatar, Tag } from '@/components/rx/ui';
 import { useToast } from '@/components/rx/Toast';
 
 // ── groups ──────────────────────────────────────────────────────────────────
