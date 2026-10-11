@@ -26,7 +26,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
 
   // The selected conversation, if it is a direct message.
   let convo: null | { id: string; otherId: string; name: string; avatarUrl: string | null; status: string; iRequested: boolean; msgs: Awaited<ReturnType<typeof dmMessages>>; flagged: boolean } = null;
-  if (selected && !selected.startsWith('g:') && selected !== 'circle') {
+  if (selected && !selected.startsWith('g:') && !selected.startsWith('c:') && selected !== 'circle') {
     const { data: t } = await db.from('dm_threads').select('id, user_a, user_b, requested_by, status').eq('id', selected).maybeSingle();
     if (t) {
       const otherId = t.user_a === me.userId ? t.user_b : t.user_a;
@@ -53,7 +53,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
           ) : (
             <div className="rx-stack-sm" style={{ gap: 2 }}>
               {threads.map((t) => {
-                const href = t.kind === 'circle' ? '/circle/chat' : t.kind === 'group' ? `/community/groups/${t.key.slice(2)}` : `/messages?t=${t.key}`;
+                const href = t.kind === 'circle' ? `/circle/chat?c=${t.seed}` : t.kind === 'group' ? `/community/groups/${t.key.slice(2)}` : `/messages?t=${t.key}`;
                 return (
                   <Link key={t.key} href={href} className="rx-li" aria-current={selected === t.key ? 'true' : undefined}>
                     <Avatar name={t.name} url={t.avatarUrl} seed={t.seed} />

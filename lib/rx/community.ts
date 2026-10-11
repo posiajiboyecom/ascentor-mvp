@@ -1,53 +1,10 @@
 import 'server-only';
 // lib/rx/community.ts
-// Reads for Community: the feed and Wins board, the weekly prompt, the Groups directory and group rooms.
+// Reads for Groups: the directory and group rooms. (The Community feed lives in feed.ts.)
 
 import { createClient } from '@/lib/supabase/server';
 import { getMe, namesFor, type Db } from './server';
-import { relTime } from './dates';
 import type { ChatMsg } from './chat-types';
-
-export interface ReplyView { id: string; userId: string | null; name: string; body: string; at: string }
-export interface PostView {
-  id: string; userId: string | null; name: string; avatarUrl: string | null; type: string; dimension: string | null; sub: string | null;
-  body: string; time: string; replies: ReplyView[]; mine: boolean;
-}
-
-async function withReplies(db: Db, rows: { id: string; user_id: string | null; type: string; dimension: string | null; sub: string | null; body: string; created_at: string }[], meId: string): Promise<PostView[]> {
-  if (!rows.length) return [];
-  const ids = rows.map((r) => r.id);
-  const { data: reps } = await db.from('feed_replies').select('id, post_id, user_id, body, created_at').in('post_id', ids).order('created_at');
-  const replies = (reps ?? []) as { id: string; post_id: string; user_id: string | null; body: string; created_at: string }[];
-  const names = await namesFor(db, [...rows.map((r) => r.user_id), ...replies.map((r) => r.user_id)]);
-  const nm = (id: string | null) => (id ? names.get(id)?.name ?? 'Member' : 'Ascentor team');
-  return rows.map((r) => ({
-    id: r.id, userId: r.user_id, name: nm(r.user_id), avatarUrl: r.user_id ? names.get(r.user_id)?.avatarUrl ?? null : null,
-    type: r.type, dimension: r.dimension, sub: r.sub, body: r.body, time: relTime(r.created_at), mine: r.user_id === meId,
-    replies: replies.filter((x) => x.post_id === r.id).map((x) => ({ id: x.id, userId: x.user_id, name: x.user_id === meId ? 'You' : nm(x.user_id), body: x.body, at: x.created_at })),
-  }));
-}
-
-export async function getFeed(opts: { dimension?: string; winsOnly?: boolean }): Promise<PostView[]> {
-  const me = await getMe();
-  if (!me) return [];
-  const db = await createClient();
-  let q = db.from('feed_posts').select('id, user_id, type, dimension, sub, body, created_at').eq('deleted', false).neq('type', 'Prompt').order('created_at', { ascending: false }).limit(60);
-  if (opts.winsOnly) q = q.eq('type', 'Win');
-  if (opts.dimension && opts.dimension !== 'All') q = q.eq('dimension', opts.dimension);
-  const { data } = await q;
-  return withReplies(db, (data ?? []) as never, me.userId);
-}
-
-export async function getPrompt(): Promise<{ id: string; body: string; replies: ReplyView[]; count: number } | null> {
-  const me = await getMe();
-  if (!me) return null;
-  const db = await createClient();
-  const { data } = await db.from('feed_posts').select('id, user_id, type, dimension, sub, body, created_at').eq('type', 'Prompt').eq('pinned', true).eq('deleted', false).order('created_at', { ascending: false }).limit(1);
-  const row = (data ?? [])[0];
-  if (!row) return null;
-  const [post] = await withReplies(db, [row as never], me.userId);
-  return { id: post.id, body: post.body, replies: post.replies, count: post.replies.length };
-}
 
 // ── groups ──────────────────────────────────────────────────────────────────
 

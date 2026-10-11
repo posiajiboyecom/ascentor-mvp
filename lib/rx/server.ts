@@ -57,6 +57,9 @@ export interface CircleRow {
   meeting_time: string;
   meeting_url: string | null;
   focus: string | null;
+  interest: string | null;
+  is_demo: boolean;
+  demo_call_until: string | null;
 }
 
 export interface Me {
@@ -127,12 +130,15 @@ export interface MyCircle {
   seats: { userId: string; name: string; avatarUrl: string | null; role: string; isMe: boolean }[];
 }
 
-/** The member's Circle (member seat), with seats and the cycle week, or null when none has been assigned. */
-export const getMyCircle = cache(async (kind: 'member' | 'facilitator' = 'member'): Promise<MyCircle | null> => {
+/** One of the member's Circles (their home Circle by default, or the one named), with seats and the cycle week, or null. */
+export const getMyCircle = cache(async (kind: 'member' | 'facilitator' = 'member', circleId?: string | null): Promise<MyCircle | null> => {
   const me = await getMe();
   if (!me) return null;
   const db = await createClient();
-  const { data: mySeat } = await db.from('circle_seats').select('circle_id, role, pledged_at').eq('user_id', me.userId).eq('role', kind).limit(1).maybeSingle();
+  // A member can sit in several Circles. Without an id, the first one they joined (their home Circle) is used.
+  let seatQ = db.from('circle_seats').select('circle_id, role, pledged_at').eq('user_id', me.userId).eq('role', kind).order('joined_at', { ascending: true });
+  if (circleId && /^[0-9a-f-]{36}$/i.test(circleId)) seatQ = seatQ.eq('circle_id', circleId);
+  const { data: mySeat } = await seatQ.limit(1).maybeSingle();
   if (!mySeat) return null;
   const [{ data: circle }, { data: seatRows }] = await Promise.all([
     db.from('circles').select('*').eq('id', mySeat.circle_id).maybeSingle(),

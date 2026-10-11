@@ -11,8 +11,7 @@ import {
   CalendarClock, Compass, Gift, LayoutDashboard, Megaphone, MapPin, Settings, ShieldCheck, TrendingUp, UserRound, Users,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { NotificationBell } from '@/components/Notifications';
-import { AnnouncementsBell, MessagesLink, SageHeaderButton, type BellItem } from '@/components/rx/HeaderActions';
+import { AnnouncementsBell, MessagesLink, NotificationsBell, SageHeaderButton, type BellItem } from '@/components/rx/HeaderActions';
 import { ToastProvider } from '@/components/rx/Toast';
 import SummitModal from './SummitModal';
 import { NAV_ITEMS } from '@/lib/nav-items';
@@ -64,7 +63,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         items: [
           { href: '/community',                  label: 'Monday prompt',     icon: <CalendarClock />, badge: 'Mon 8:00 AM' },
           { href: '/community/groups/open-house', label: 'Live conversation', icon: <CalendarClock />, badge: 'Wed 7:00 PM' },
-          { href: '/community?tab=wins',          label: 'Friday wins',       icon: <CalendarClock />, badge: 'Fri 5:00 PM' },
+          { href: '/community?category=Wins',      label: 'Friday wins',       icon: <CalendarClock />, badge: 'Fri 5:00 PM' },
         ],
       },
       {
@@ -114,7 +113,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
             <SageHeaderButton />
             <AnnouncementsBell items={counts?.latest ?? []} unread={unread} />
             <MessagesLink requests={counts?.messageRequests ?? 0} />
-            <NotificationBell />
+            <NotificationsBell />
           </>
         }
       >

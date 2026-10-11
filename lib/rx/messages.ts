@@ -3,7 +3,7 @@ import 'server-only';
 // Reads for the inbox: conversations (Circle chat, direct messages, joined groups) and message requests.
 
 import { createClient } from '@/lib/supabase/server';
-import { getMe, getMyCircle, namesFor, type Db } from './server';
+import { getMe, namesFor, type Db } from './server';
 import { previewOf } from './media';
 import { relTime } from './dates';
 import { looksLikeScam } from './safety';
@@ -48,12 +48,15 @@ export async function listThreads(): Promise<ThreadItem[]> {
   const db = await createClient();
   const out: ThreadItem[] = [];
 
-  const circle = await getMyCircle();
-  if (circle && circle.pledged) {
-    const { data } = await db.from('circle_messages').select('body, created_at, user_id').eq('circle_id', circle.circle.id).order('created_at', { ascending: false }).limit(1);
+  // One chat per Circle the member sits in (and has pledged to).
+  const { data: seatRows } = await db.from('circle_seats').select('circle_id, pledged_at, circles(name, number, interest)').eq('user_id', me.userId).eq('role', 'member').order('joined_at', { ascending: true });
+  for (const seat of (seatRows ?? []) as unknown as { circle_id: string; pledged_at: string | null; circles: { name: string; number: number; interest: string | null } | null }[]) {
+    if (!seat.pledged_at || !seat.circles) continue;
+    const { data } = await db.from('circle_messages').select('body, created_at, user_id').eq('circle_id', seat.circle_id).order('created_at', { ascending: false }).limit(1);
     const m = (data ?? [])[0] as { body: string; created_at: string; user_id: string | null } | undefined;
     const who = m?.user_id ? (await namesFor(db, [m.user_id])).get(m.user_id)?.name.split(' ')[0] : 'Ascentor';
-    out.push({ key: 'circle', kind: 'circle', name: `${circle.circle.name} · Circle`, avatarUrl: null, seed: circle.circle.id, last: m ? `${who}: ${previewOf(m.body)}` : 'Say hello to your Circle', time: m ? relTime(m.created_at) : '', at: m?.created_at ?? circle.circle.id });
+    const title = seat.circles.interest ? `${seat.circles.interest} · Circle ${seat.circles.number}` : `${seat.circles.name} · Circle ${seat.circles.number}`;
+    out.push({ key: `c:${seat.circle_id}`, kind: 'circle', name: title, avatarUrl: null, seed: seat.circle_id, last: m ? `${who}: ${previewOf(m.body)}` : 'Say hello to your Circle', time: m ? relTime(m.created_at) : '', at: m?.created_at ?? seat.circle_id });
   }
 
   const [{ data: threads }, { data: memberships }] = await Promise.all([

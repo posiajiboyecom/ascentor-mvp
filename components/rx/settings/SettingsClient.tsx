@@ -9,7 +9,7 @@ import { useToast } from '@/components/rx/Toast';
 
 export function NotificationsCard({ notif, annMuted, quiet }: { notif: Record<string, boolean>; annMuted: boolean; quiet: boolean }) {
   const toast = useToast();
-  const [n, setN] = useState<Record<string, boolean>>(() => Object.fromEntries(NOTIF_TYPES.map((k) => [k, notif[k] ?? false])));
+  const [n, setN] = useState<Record<string, boolean>>(() => Object.fromEntries(NOTIF_TYPES.map((k) => [k, notif[k] ?? true])));
   const [mute, setMute] = useState(annMuted);
   const [q, setQ] = useState(quiet);
   const [, start] = useTransition();

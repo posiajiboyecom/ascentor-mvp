@@ -24,7 +24,7 @@ const MIN_SIGNAL = Math.max(1, Number(process.env.GROUP_SUGGESTION_MIN ?? 20));
 const sizeFor = (n: number) => (n < 15 ? '10 to 30' : n < 40 ? '30 to 60' : n < 80 ? '40 to 80' : '50 to 100');
 
 /**
- * Groups worth opening, from member signals only: interests chosen in onboarding, dimension/sub tags on posts,
+ * Groups worth opening, from member signals only: interests chosen in onboarding, category/sub tags on posts,
  * and group requests. Never from Sage conversations or survey answers. An interest that no active group covers
  * and that someone has chosen becomes a suggestion until an admin creates it or dismisses it.
  */
@@ -32,14 +32,14 @@ export async function computeSuggestions(): Promise<Suggestion[]> {
   const [{ data: groups }, { data: members }, { data: posts }, { data: reqs }, { data: state }] = await Promise.all([
     supabaseAdmin.from('rx_groups').select('fit, status'),
     supabaseAdmin.from('member_profile').select('interests'),
-    supabaseAdmin.from('feed_posts').select('sub, dimension').eq('deleted', false).gte('created_at', new Date(Date.now() - 90 * 86400000).toISOString()),
+    supabaseAdmin.from('feed_posts').select('sub, category').eq('deleted', false).gte('created_at', new Date(Date.now() - 90 * 86400000).toISOString()),
     supabaseAdmin.from('rx_group_requests').select('text'),
     supabaseAdmin.from('rx_group_suggestion_state').select('key'),
   ]);
   const covered = new Set(((groups ?? []) as { fit: string[]; status: string }[]).filter((g) => g.status === 'active').flatMap((g) => g.fit.map((x) => x.toLowerCase())));
   const decided = new Set(((state ?? []) as { key: string }[]).map((s) => s.key.toLowerCase()));
   const interests = ((members ?? []) as { interests: string[] }[]).flatMap((m) => m.interests);
-  const subs = ((posts ?? []) as { sub: string | null }[]).map((p) => (p.sub ?? '').toLowerCase()).filter(Boolean);
+  const subs = ((posts ?? []) as { sub: string | null; category: string | null }[]).flatMap((p) => [p.sub, p.category]).map((s) => (s ?? '').toLowerCase()).filter(Boolean);
   const requests = ((reqs ?? []) as { text: string }[]).map((r) => r.text.toLowerCase());
 
   const out: Suggestion[] = [];

@@ -1,12 +1,12 @@
 import 'server-only';
 // lib/rx/moderation.ts
-// Automatic flags for risky messages anywhere (Circle, group, direct). Flags feed the moderation queue; nothing is
+// Automatic flags for risky messages and posts anywhere (Circle, group, direct, Community). Flags feed the moderation queue; nothing is
 // blocked here. A failure to flag never stops a message from sending.
 
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { assessMessage } from './safety';
 
-export async function flagIfRisky(kind: 'dm' | 'circle' | 'group', messageId: string, userId: string, text: string): Promise<boolean> {
+export async function flagIfRisky(kind: 'dm' | 'circle' | 'group' | 'post' | 'comment', messageId: string, userId: string, text: string): Promise<boolean> {
   try {
     const a = assessMessage(text);
     if (!a.flagged) return false;

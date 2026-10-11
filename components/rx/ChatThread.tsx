@@ -3,6 +3,7 @@
 // One chat surface for the whole app: messages, photos, voice notes, realtime updates with a polling safety net.
 // The page decides who can post and where messages go through the `send` and `poll` actions it passes in.
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ImageIcon, Mic, Send, Square, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -12,6 +13,13 @@ import { relTime } from '@/lib/rx/dates';
 import type { ChatMsg, RealtimeSpec } from '@/lib/rx/chat-types';
 import type { ActionResult } from '@/lib/rx/types';
 import { Avatar } from '@/components/rx/ui';
+
+// A shared Community post arrives as a plain path. Show it as a link a member can open.
+const POST_PATH = /(\/community\/post\/[0-9a-f-]{36})/i;
+function Linked({ text }: { text: string }) {
+  const parts = text.split(POST_PATH);
+  return <span>{parts.map((part, i) => (POST_PATH.test(part) ? <Link key={i} href={part} style={{ textDecoration: 'underline' }}>View the post</Link> : part))}</span>;
+}
 
 export interface ChatThreadProps {
   initial: ChatMsg[];
@@ -125,7 +133,7 @@ export default function ChatThread({ initial, meId, send, poll, realtime, placeh
         {rendered.map(({ m, p, mine }) => (
           <div key={m.id} className={`rx-bub ${mine ? 'me' : 'oth'}`} title={new Date(m.createdAt).toLocaleString()}>
             {!mine && showNames && <div className="rx-who"><Avatar name={m.name} url={m.avatarUrl} size="sm" seed={m.userId} />{m.name}<span style={{ fontWeight: 400 }}>· {relTime(m.createdAt)}</span></div>}
-            {p.kind === 'text' && <span>{p.text}</span>}
+            {p.kind === 'text' && <Linked text={p.text} />}
             {p.kind === 'img' && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={p.url} alt="Shared photo" style={{ maxWidth: 240, maxHeight: 240, borderRadius: 10, display: 'block' }} />

@@ -125,6 +125,8 @@ export const CRISIS_PATTERN =
 // ── circles ──────────────────────────────────────────────────────────────────
 export const CIRCLE_MIN_TO_START = 6;
 export const CIRCLE_MAX = 8;
+/** A member can sit in up to three Circles: a home Circle and interest Circles. */
+export const CIRCLES_PER_MEMBER = 3;
 export const CYCLE_WEEKS = 12;
 export const MEETING_AGENDA: [string, string][] = [
   ['Opening', '1 min'],
@@ -164,7 +166,11 @@ export const MENTOR_FORMAT = ['Video', 'Voice', 'In person'];
 export const MENTOR_TIMES = ['Weekday evenings', 'Saturday mornings'];
 
 // ── settings ─────────────────────────────────────────────────────────────────
-export const NOTIF_TYPES = ['Practice reminders', 'Circle meetings', 'Messages', 'Mentor sessions', 'Community prompts'];
+export const NOTIF_TYPES = [
+  'Practice reminders', 'Circle meetings', 'Messages', 'Mentor sessions', 'Community prompts',
+  'Circle updates', 'Community comments, replies and shares', 'Community reactions',
+  'Email: Circle updates', 'Email: Community comments and shares',
+];
 export const DM_POLICIES: { value: string; label: string }[] = [
   { value: 'circle_and_requests', label: 'My Circle, and requests from others' },
   { value: 'circle_and_mentor',   label: 'My Circle and mentor only' },

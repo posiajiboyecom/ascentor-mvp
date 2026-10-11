@@ -17,6 +17,11 @@ async function nameOf(id: string | null): Promise<string> {
 }
 
 async function bodyOf(kind: string, id: string): Promise<Line[]> {
+  if (kind === 'post' || kind === 'comment') {
+    const t = kind === 'post' ? 'feed_posts' : 'feed_replies';
+    const { data: row } = await supabaseAdmin.from(t).select('body, user_id').eq('id', id).maybeSingle();
+    return row ? [{ who: await nameOf((row.user_id as string | null) ?? null), text: (row.body as string) ?? '' }] : [];
+  }
   const table = kind === 'dm' ? 'dm_messages' : kind === 'circle' ? 'circle_messages' : 'rx_group_messages';
   const col = kind === 'dm' ? 'sender_id' : 'user_id';
   const { data } = await supabaseAdmin.from(table).select(`body, ${col}`).eq('id', id).maybeSingle();
@@ -43,6 +48,12 @@ export default async function ModerationPage() {
     // A report on a direct conversation shows its latest messages so the reviewer can see the context.
     const lines: Line[] = [];
     let other: { id: string; name: string } | null = null;
+    if ((r.kind === 'post' || r.kind === 'comment') && r.ref_id) {
+      lines.push(...(await bodyOf(r.kind, r.ref_id)));
+      const { data: row } = await supabaseAdmin.from(r.kind === 'post' ? 'feed_posts' : 'feed_replies').select('user_id').eq('id', r.ref_id).maybeSingle();
+      const authorId = (row?.user_id as string | null | undefined) ?? null;
+      if (authorId) other = { id: authorId, name: await nameOf(authorId) };
+    }
     if (r.kind === 'dm' && r.ref_id) {
       const { data: t } = await supabaseAdmin.from('dm_threads').select('user_a, user_b').eq('id', r.ref_id).maybeSingle();
       const { data: msgs } = await supabaseAdmin.from('dm_messages').select('sender_id, body, created_at').eq('thread_id', r.ref_id).order('created_at', { ascending: false }).limit(8);

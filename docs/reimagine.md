@@ -104,3 +104,87 @@ npx tsx scripts/apply-migration.ts database/migrations/20261009_reimagine_v2.sql
 - The Google and Apple welcome screen (sign-in stays on the existing login page).
 - An on-call person and alert for the Sage crisis protocol. The card shows 112 only.
 - Real Daily test (needs your Daily account), and a verified mental-health helpline for the safety card.
+
+
+## Third pass: Community feed, many Circles, notifications, demo Circles
+
+Migration: `database/migrations/20261010_community_circles.sql` (additive and idempotent). Apply it **before** merging this branch.
+
+```bash
+npx tsx scripts/apply-migration.ts database/migrations/20261010_community_circles.sql --yes
+```
+
+Then create the demo Circles (optional, for testing) and deploy:
+
+```bash
+npx tsx scripts/seed-demo.ts            # create demo Circles, mentors and members
+npx tsx scripts/seed-demo.ts --again    # rebuild them
+npx tsx scripts/seed-demo.ts --reset    # remove all demo data
+```
+
+### The bug behind "Circle shows Community"
+
+`next.config.ts` had a legacy redirect `/circle -> /community`. It sent every tap on the Circle tab to Community. It is removed.
+That one line is the only change needed to make the existing Circle screens reachable on `main`.
+
+### Community
+
+- One living feed at `/community`. No tabs, no side panel. Groups stay in the menu.
+- **Categories replace dimensions.** A member picks one category when posting. Admins manage the list at `/admin/categories`
+  (add, rename, hide). Renaming moves existing posts with it.
+- **Rich text** (Tiptap) with bold, italic, underline, heading, lists, quote and links. The server never trusts the HTML:
+  `lib/rx/richtext.ts` cleans it to an allow-list before it is stored, and a plain-text copy is kept for search and previews.
+- **Photos and video** (up to 4 per post). Files go straight from the browser to the `rx-posts` bucket through a signed upload link
+  (`/api/rx/upload-url`), so large videos do not pass through the app server. Photos up to 8 MB, video up to 30 MB. The bucket
+  enforces the types and size.
+- **Reactions** (Like, Support, Insightful), **threaded comments** (one level of replies), **sharing** (copy link, send to one of your
+  Circles, send to someone you already talk to, or the phone's share sheet). Share links open `/community/post/<id>`.
+- **Safety:** the same scam filters apply to posts and comments and feed the moderation queue. In an account's first 7 days posts
+  and comments cannot contain links, phone numbers or hand-offs to other apps. Limits: 10 posts and 30 comments an hour. Members
+  can report a post or comment. Staff can delete either.
+- Seven starter posts from the Ascentor team are created by the migration so the feed is never empty.
+
+### Circles
+
+- A member can sit in up to **three Circles**: a **home Circle** (placed automatically on language, stage and time slot, as before)
+  and **interest Circles** (joined on purpose). The database rule "one member seat per person" is gone. Seats are capped at 8 with
+  a row lock, so two people cannot take the last seat together (`rx_join_circle`).
+- `/circle` lists your Circles with plain-language state ("5 of 8 joined, meetings start at 6", "Vote open, closes in 4 days",
+  "Your mentor is Adaeze") and **Find a Circle** (open seats, ranked by your interests). `/circle?c=<id>` is one Circle.
+- Every Circle has its own chat, reports, review, call, mentor vote, times and agreement. Anything that used to assume "your Circle"
+  now takes the Circle from `?c=` and falls back to the home Circle. Messages lists one chat per Circle.
+- `lib/rx/circle-state.ts` writes the state in words and is unit tested.
+
+### Notifications
+
+- `rxNotify()` in `lib/rx/notifications.ts` is the one way to notify: an in-app row (the bell in the header), push, and email.
+  Settings has switches for Circle updates, comments, replies and shares, reactions, and one email switch each for Circle and Community.
+- Events: you joined a Circle, a new member joined (and "your Circle now has 6"), a vote opened, your vote is in, a winner was chosen
+  (with congratulations), a mentor was chosen (the mentor is emailed), a mentor said yes or no, sessions were booked, a call is
+  tomorrow, a session was moved, and Community comments, replies, reactions and shares.
+- Reactions never email. Repeats fold into one row. Email limits: ten minutes between emails about the same thing, eight a day.
+- Demo members never receive anything.
+- **Emails may land in spam until the joinascentor.com sender domain is verified** with the email provider. `DEFAULT_FROM` in
+  `lib/nodemailer.ts` still defaults to the old domain unless `EMAIL_FROM` is set. Set `EMAIL_FROM` in Vercel.
+
+### Demo Circles and the Demo lab
+
+`scripts/seed-demo.ts` (or the button at `/admin/demo`) creates five interest Circles at different stages with seats held open:
+
+| Circle | Seats | State |
+|---|---|---|
+| Cybersecurity | 5 of 8 | Not started. Joining makes 6 and starts the cycle. |
+| AI and technology | 6 of 8 | A mentor vote is open, 4 of 6 have voted. |
+| Money and business | 6 of 8 | A mentor said yes. Times are being picked. |
+| Faith and purpose | 7 of 8 | A mentor is active, sessions booked, an agreement, and a call window open. |
+| Careers | 3 of 8 | Just forming. |
+
+`/admin/demo` has buttons to move each Circle forward: open a vote, have demo members vote, close it (announces the winner), mentor
+says yes, book the best time, open the call for 30 minutes, add a demo member. Demo Circles and mentors are flagged `is_demo`: they
+are shown to staff only, never recommended to real Circles, ignored by the RSVP rule and reminders, and removed by `--reset`.
+
+### Still to do
+
+- Video toggle on calls (audio stays the default).
+- Real calls need `DAILY_API_KEY`.
+- Cron-driven vote reminders and a "vote closes tomorrow" nudge.

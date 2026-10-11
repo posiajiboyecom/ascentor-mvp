@@ -1,148 +1,101 @@
 // app/(app)/circle/page.tsx
-// Circle: the confidentiality pledge on first entry, then home (seats, next meeting, welcome thread, reports).
+// Circles: every Circle you belong to, where each one stands, and the Circles you can still join. A member can sit in up to
+// three. Open one to see its seats, chat, calls, reports and mentor vote.
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Check, FileText, TrendingUp, ChevronRight, Clock } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
-import { getMe, getMyCircle } from '@/lib/rx/server';
-import { circleMessages } from '@/lib/rx/circle';
-import { CIRCLE_FOCUS, CIRCLE_MAX, CIRCLE_MIN_TO_START } from '@/lib/rx/constants';
-import { nextWeekdayAt, whenLabel } from '@/lib/rx/dates';
-import { Aside, Avatar, Bar, Page, Title, Tag } from '@/components/rx/ui';
-import { PlaceMeButton, PledgeButtons } from '@/components/rx/circle/CircleClient';
+import { Users } from 'lucide-react';
+import { getMe } from '@/lib/rx/server';
+import { circleTitle, findCircles, getMyCircles } from '@/lib/rx/circles';
+import { CIRCLES_PER_MEMBER, CIRCLE_MAX } from '@/lib/rx/constants';
+import { Aside, Avatar, Page, Tag, Title } from '@/components/rx/ui';
+import { JoinCircleButton, LeaveCircleButton, PlaceMeCard } from '@/components/rx/circle/CircleList';
+import { CircleDetail } from './detail';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CirclePage() {
+export default async function CirclesPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
+  const sp = await searchParams;
   const me = await getMe();
   if (!me) redirect('/login');
-  const circle = await getMyCircle();
-  const db = await createClient();
-  const { data: facil } = await db.from('circle_seats').select('circle_id').eq('user_id', me.userId).eq('role', 'facilitator').limit(1).maybeSingle();
+  if (sp.c && /^[0-9a-f-]{36}$/i.test(sp.c)) return <CircleDetail circleId={sp.c} />;
 
-  if (!circle) {
-    return (
-      <Page>
-        <Title>Circle</Title>
-        <div className="rx-two">
-          <div className="rx-card rx-empty">
-            <p className="rx-h2">Your Circle is being set up</p>
-            <p className="rx-p" style={{ color: 'var(--rx-muted)', maxWidth: 420 }}>A Circle is 6 to 8 people with a facilitator, meeting weekly for 90 days. We place you with members who share your language and time zone.</p>
-            <PlaceMeButton />
-          </div>
-          <Aside>
-            <p className="rx-label">How a Circle works</p>
-            <p className="rx-p">You join a small group and open your chat on day one.</p>
-            <p className="rx-p">Meetings start once 6 members have joined.</p>
-            <p className="rx-p">Each week you share a short report with your Circle.</p>
-            {facil && <Link href="/circle/facilitator" className="rx-link">Facilitator view</Link>}
-          </Aside>
-        </div>
-      </Page>
-    );
-  }
-
-  // Confidentiality pledge comes first.
-  if (!circle.pledged) {
-    return (
-      <Page>
-        <Title>Before you enter</Title>
-        <div className="rx-two">
-          <div className="rx-card rx-stack">
-            <p className="rx-label">Confidentiality pledge</p>
-            <p className="rx-big" style={{ fontSize: 20 }}>What’s shared in this Circle stays among its members.</p>
-            <div className="rx-stack-sm">
-              {['I won’t share others’ stories, names or screenshots.', 'I’ll listen first and advise only when asked.', 'I’ll tell the facilitator if I can’t make it.'].map((t) => (
-                <p key={t} className="rx-row rx-nw rx-p" style={{ gap: 10, alignItems: 'flex-start' }}><Check aria-hidden style={{ width: 18, height: 18, marginTop: 3, flex: 'none', color: 'var(--rx-gold)' }} />{t}</p>
-              ))}
-            </div>
-            <PledgeButtons />
-          </div>
-          <Aside><p className="rx-label">Why this matters</p><p className="rx-p">People share more when they feel safe. Wins you choose to post publicly are the one exception, and only your own.</p><p className="rx-sm">The Ascentor team can review chats for safety and to improve Ascentor, as you agreed when you joined. Other members outside your Circle cannot read them.</p></Aside>
-        </div>
-      </Page>
-    );
-  }
-
-  const ready = circle.memberCount >= CIRCLE_MIN_TO_START && !!circle.circle.cycle_start;
-  const msgs = (await circleMessages(db, circle.circle.id, null, 3)).slice(-3);
-  const pinned = msgs.find((m) => m.pinned) ?? null;
-  const rest = msgs.filter((m) => !m.pinned).slice(-2);
-  const week = circle.week ?? 1;
-  const focus = CIRCLE_FOCUS[week - 1];
-  const next = ready ? nextWeekdayAt(circle.circle.meeting_dow, circle.circle.meeting_time.slice(0, 5), circle.circle.timezone) : null;
-  const members = circle.seats.filter((s) => s.role === 'member');
-  const open = Math.max(0, CIRCLE_MAX - members.length);
-  const pct = Math.round((Math.min(members.length, CIRCLE_MIN_TO_START) / CIRCLE_MIN_TO_START) * 100);
-
-  const nextList: [string, 'done' | 'cur' | ''][] = ready
-    ? [['Your Circle has 6 or more members.', 'done'], ['Weekly meetings are on.', 'done'], ['Share your report before Thursday.', 'cur'], ['Review together in week 12.', '']]
-    : [['You joined and your group chat opened.', 'done'], ['Say hello in the welcome thread.', 'cur'], ['Your first meeting is set once 6 have joined.', ''], ['Your 90-day cycle starts at that meeting.', '']];
+  const [mine, open] = await Promise.all([getMyCircles(), findCircles()]);
+  const memberOf = mine.filter((c) => c.role === 'member').length;
+  const canJoin = memberOf < CIRCLES_PER_MEMBER;
 
   return (
     <Page>
-      <p className="rx-sm">{circle.circle.name} · Circle {circle.circle.number}{circle.facilitatorName ? ` · with ${circle.facilitatorName}` : ''}</p>
-      <Title tag={<Tag>{ready ? `Week ${week} of 12` : 'Meetings start at 6'}</Tag>}>Circle</Title>
+      <Title tag={mine.length > 0 ? <Tag>{memberOf} of {CIRCLES_PER_MEMBER} Circles</Tag> : undefined}>Circles</Title>
       <div className="rx-two">
         <div className="rx-stack-lg">
-          <div className="rx-card rx-stack">
-            <div className="rx-between"><p className="rx-label">Your Circle</p><span className="rx-sm">{members.length} of {CIRCLE_MAX} seats filled</span></div>
-            <div className="rx-seats">
-              {members.map((m) => (
-                <div key={m.userId} className="rx-seat"><Avatar name={m.name} url={m.avatarUrl} size="md" seed={m.userId} /><span className="rx-sm" style={{ whiteSpace: 'nowrap' }}>{m.isMe ? 'You' : m.name.split(' ')[0]}</span></div>
-              ))}
-              {Array.from({ length: open }).map((_, i) => (
-                <div key={`o${i}`} className="rx-seat"><span className="rx-avatar md empty" aria-hidden /><span className="rx-sm" style={{ whiteSpace: 'nowrap' }}>Open seat</span></div>
-              ))}
+          {mine.length === 0 && (
+            <div className="rx-card rx-empty">
+              <span className="rx-dimdot" aria-hidden><Users /></span>
+              <p className="rx-h2">You’re not in a Circle yet</p>
+              <p className="rx-p" style={{ color: 'var(--rx-muted)', maxWidth: 440 }}>A Circle is up to {CIRCLE_MAX} people who meet weekly for 90 days. We can place you with members who share your language and time, or you can pick one by interest below.</p>
+              <PlaceMeCard />
             </div>
-          </div>
+          )}
 
-          {!ready && (
-            <div className="rx-soft rx-stack-sm">
-              <div className="rx-row rx-nw" style={{ gap: 12 }}>
-                <Clock aria-hidden style={{ width: 20, height: 20, color: 'var(--rx-muted)', flex: 'none' }} />
-                <div><p className="rx-p rx-strong">Your meetings start when 6 members have joined.</p><p className="rx-sm">{members.length} of 6 so far.</p></div>
+          {mine.map((c) => (
+            <section key={c.id} className="rx-card rx-stack-sm" aria-label={circleTitle(c)}>
+              <div className="rx-between" style={{ alignItems: 'flex-start', gap: 12 }}>
+                <div style={{ minWidth: 0 }}>
+                  <h2 className="rx-h2" style={{ margin: 0 }}>{circleTitle(c)}</h2>
+                  <p className="rx-sm">{c.isHome ? 'Your home Circle' : 'Interest Circle'}{c.facilitatorName ? ` · with ${c.facilitatorName}` : ''}{c.language && c.language !== 'English' ? ` · ${c.language}` : ''}</p>
+                </div>
+                <div className="rx-row" style={{ gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  {c.isDemo && <Tag>Demo</Tag>}
+                  {c.role === 'facilitator' && <Tag gold>Facilitator</Tag>}
+                </div>
               </div>
-              <Bar pct={pct} label={`${members.length} of 6 so far`} />
-            </div>
-          )}
 
-          {ready && next && (
-            <div className="rx-card rx-stack-sm">
-              <p className="rx-label">Next meeting</p>
-              <p className="rx-h2">{whenLabel(next, me.tz)}</p>
-              <p className="rx-sm">Audio · 15 minutes · focus: {focus}</p>
-              <div className="rx-row" style={{ marginTop: 6 }}>
-                <Link href={`/call/${circle.circle.id}`} className="rx-btn primary">Join</Link>
-                <Link href="/circle/meeting" className="rx-link">See agenda</Link>
+              <div className="rx-row" style={{ gap: 4, flexWrap: 'wrap' }} aria-label={`${c.members} of ${CIRCLE_MAX} seats filled`}>
+                {c.seats.map((s) => <Avatar key={s.userId} name={s.name} url={s.avatarUrl} size="sm" seed={s.userId} />)}
+                {Array.from({ length: Math.max(0, CIRCLE_MAX - c.members) }).map((_, i) => <span key={i} className="rx-avatar sm empty" aria-hidden />)}
+                <span className="rx-sm" style={{ marginLeft: 6 }}>{c.members} of {CIRCLE_MAX}</span>
               </div>
+
+              <p className="rx-p rx-strong" style={{ margin: 0 }}>{c.state.headline}</p>
+              {c.state.detail && <p className="rx-sm">{c.state.detail}</p>}
+
+              <div className="rx-row" style={{ gap: 12, flexWrap: 'wrap', marginTop: 4 }}>
+                <Link href={c.role === 'facilitator' ? `/circle/facilitator?c=${c.id}` : `/circle?c=${c.id}`} className="rx-btn primary">Open Circle</Link>
+                {c.role === 'member' && c.state.action && c.state.action.to === 'sessions' && <Link href={`/sessions?c=${c.id}`} className="rx-btn secondary">{c.state.action.label}</Link>}
+                {c.role === 'member' && c.ready && <Link href={`/call/${c.id}`} className="rx-btn secondary">{c.callOpenNow ? 'Join the call now' : 'Call'}</Link>}
+                {c.role === 'member' && !c.isHome && <LeaveCircleButton circleId={c.id} name={circleTitle(c)} />}
+              </div>
+            </section>
+          ))}
+
+          {open.length > 0 && (
+            <div className="rx-stack">
+              <div>
+                <h2 className="rx-h2" style={{ margin: 0 }}>Find a Circle</h2>
+                <p className="rx-sm">{canJoin ? `Pick one that fits what you want to grow. You can be in up to ${CIRCLES_PER_MEMBER}.` : `You’re in ${CIRCLES_PER_MEMBER} Circles. Leave one to join another.`}</p>
+              </div>
+              {open.map((c) => (
+                <div key={c.id} className="rx-card" style={{ display: 'flex', gap: 14, alignItems: 'center', padding: 16 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p className="rx-h3" style={{ margin: 0 }}>{circleTitle(c)}{c.isDemo && <span style={{ marginLeft: 8 }}><Tag>Demo</Tag></span>}</p>
+                    <p className="rx-sm">{c.members} of {CIRCLE_MAX} joined · {c.seatsLeft} {c.seatsLeft === 1 ? 'seat' : 'seats'} left{c.ready ? ' · meetings running' : ' · meetings start at 6'}</p>
+                    {c.reason && <p className="rx-p" style={{ fontSize: 14, marginTop: 4 }}>{c.reason}</p>}
+                  </div>
+                  {canJoin ? <JoinCircleButton circleId={c.id} /> : <span className="rx-sm">Full</span>}
+                </div>
+              ))}
             </div>
           )}
-
-          <div className="rx-card rx-stack-sm">
-            <div className="rx-between"><p className="rx-label">Welcome thread</p><span className="rx-sm">Pinned</span></div>
-            {pinned && <div className="rx-bub oth" style={{ maxWidth: '100%' }}><div className="rx-who">{pinned.name}</div>{pinned.body}</div>}
-            {rest.map((m) => <div key={m.id} className="rx-bub oth" style={{ maxWidth: '100%' }}><div className="rx-who">{m.userId === me.userId ? 'You' : m.name}</div>{m.body.startsWith('[') ? 'Shared a file' : m.body}</div>)}
-            <div style={{ marginTop: 4 }}><Link href="/circle/chat" className={`rx-btn ${ready ? 'secondary' : 'primary'}`}>Open group chat</Link></div>
-          </div>
-
-          {ready && (
-            <div className="rx-card" style={{ padding: '4px 16px' }}>
-              <Link href="/circle/reports" className="rx-rowlink"><span className="ri"><FileText aria-hidden /></span><span className="rt"><span className="t">Weekly reports</span><span className="m">Yours is open</span></span><ChevronRight aria-hidden /></Link>
-              <Link href="/circle/review" className="rx-rowlink"><span className="ri"><TrendingUp aria-hidden /></span><span className="rt"><span className="t">End-of-cycle review</span><span className="m">Opens in week 12</span></span><ChevronRight aria-hidden /></Link>
-            </div>
-          )}
+          {open.length === 0 && mine.length > 0 && <p className="rx-sm">No other Circles have open seats right now. New ones open as members join.</p>}
         </div>
 
         <Aside>
-          <p className="rx-label">What happens next</p>
-          {nextList.map(([t, st]) => (
-            <p key={t} className="rx-row rx-nw rx-p" style={{ gap: 10, alignItems: 'flex-start' }}>
-              <span className={`rx-pd${st === 'done' ? ' done' : st === 'cur' ? ' cur' : ''}`} style={{ marginTop: 2 }}>{st === 'done' && <Check aria-hidden />}</span>{t}
-            </p>
-          ))}
-          {facil && <div><Link href="/circle/facilitator" className="rx-link">Facilitator view</Link></div>}
+          <p className="rx-label">How Circles work</p>
+          <p className="rx-p">A Circle is up to {CIRCLE_MAX} people who share an interest and meet each week for 90 days.</p>
+          <p className="rx-p">Meetings start once 6 have joined. Calls are 15 minutes, audio only.</p>
+          <p className="rx-p">Each Circle chooses its own mentor by vote. The highest vote wins.</p>
+          <p className="rx-sm">You can be in up to {CIRCLES_PER_MEMBER} Circles. Your first is your home Circle and stays.</p>
         </Aside>
       </div>
     </Page>

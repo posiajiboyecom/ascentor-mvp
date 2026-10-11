@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Headphones, Users2 } from 'lucide-react';
 import { getMe } from '@/lib/rx/server';
+import { circleTitle, getMyCircles } from '@/lib/rx/circles';
 import { getMentorship, MAX_AGREEMENT_GOALS, MIN_GOING, READY_MEMBERS } from '@/lib/rx/cmentor';
 import { myMentorProfile } from '@/lib/rx/mentors';
 import { whenLabel } from '@/lib/rx/dates';
@@ -14,10 +15,35 @@ import { AgreementWorkspace, PauseButton, QuestionBox, RsvpButtons, ScheduleGrid
 
 export const dynamic = 'force-dynamic';
 
-export default async function SessionsPage() {
+export default async function SessionsPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
+  const sp = await searchParams;
   const me = await getMe();
   if (!me) redirect('/login');
-  const [ms, mentorProfile] = await Promise.all([getMentorship(), myMentorProfile()]);
+
+  // Mentorship belongs to a Circle. With several Circles and none chosen, pick one first.
+  let circleId = sp.c && /^[0-9a-f-]{36}$/i.test(sp.c) ? sp.c : null;
+  const mine = await getMyCircles();
+  if (!circleId && mine.length > 1) {
+    return (
+      <Page><Title>Sessions</Title>
+        <div className="rx-two">
+          <div className="rx-stack">
+            <p className="rx-p">Each Circle chooses its own mentor. Pick a Circle to see its vote, times and sessions.</p>
+            {mine.map((c) => (
+              <Link key={c.id} href={`/sessions?c=${c.id}`} className="rx-card rx-stack-sm" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <p className="rx-h3" style={{ margin: 0 }}>{circleTitle(c)}</p>
+                <p className="rx-p rx-strong" style={{ margin: 0 }}>{c.state.headline}</p>
+                {c.state.detail && <p className="rx-sm">{c.state.detail}</p>}
+              </Link>
+            ))}
+          </div>
+          <Aside><p className="rx-label">How it works</p><p className="rx-p">Your Circle is recommended a few mentors.</p><p className="rx-p">Members vote. The highest vote wins.</p><GoLink href="/circle">All my Circles</GoLink></Aside>
+        </div>
+      </Page>
+    );
+  }
+  if (!circleId && mine.length === 1) circleId = mine[0].id;
+  const [ms, mentorProfile] = await Promise.all([getMentorship(circleId), myMentorProfile()]);
   if (!ms) redirect('/login');
   const { state, circle, isFacilitator } = ms;
   const side = (
@@ -26,6 +52,7 @@ export default async function SessionsPage() {
       <p className="rx-p">Your Circle is recommended a few mentors.</p><p className="rx-p">Members vote. The highest vote wins.</p>
       <p className="rx-p">Your Circle picks a time that works for {MIN_GOING} or more.</p><p className="rx-p">Sessions are 20 minutes, every two weeks, audio only.</p>
       <GoLink href="/experts">Live expert sessions</GoLink>
+      {mine.length > 1 && <GoLink href="/sessions">All my Circles</GoLink>}
       {mentorProfile && <GoLink href="/sessions/mentoring">Mentor view</GoLink>}
     </Aside>
   );
@@ -55,7 +82,7 @@ export default async function SessionsPage() {
             <span className="rx-dimdot" aria-hidden><Users2 /></span>
             <p className="rx-h2">A mentor for your whole Circle</p>
             <p className="rx-p" style={{ color: 'var(--rx-muted)', maxWidth: 440 }}>People further along your road. We recommend up to three who fit your Circle. You vote together, and nobody is assigned.</p>
-            <StartVoteButton />
+            <StartVoteButton circleId={circle.circle.id} />
           </div>
           {side}
         </div>
@@ -73,7 +100,7 @@ export default async function SessionsPage() {
               <div className="rx-soft rx-stack-sm"><p className="rx-p rx-strong">{state.voted} of {state.total} have voted</p><Bar pct={(state.voted / Math.max(1, state.total)) * 100} label={`${state.voted} of ${state.total} voted`} /><p className="rx-sm">The vote closes on {new Date(state.closesAt).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: me.tz })}, or as soon as everyone has voted. You can change your vote until then. The mentor with the most votes is asked first.</p></div>
             )}
             {tie && <div className="rx-soft"><p className="rx-p rx-strong">It’s a tie.</p><p className="rx-sm">Your facilitator chooses between the top mentors.</p></div>}
-            <VoteCards roundId={state.roundId} candidates={state.candidates} tie={tie} canBreak={tie ? state.canBreak : false} tied={tie ? state.tied : []} isMember={!isFacilitator} nameOfCircle={circle.circle.name} />
+            <VoteCards roundId={state.roundId} candidates={state.candidates} tie={tie} canBreak={tie ? state.canBreak : false} tied={tie ? state.tied : []} isMember={!isFacilitator} nameOfCircle={circleTitle(circle.circle)} />
           </div>
           {side}
         </div>
@@ -124,7 +151,7 @@ export default async function SessionsPage() {
 
   return (
     <Page>
-      <p className="rx-sm">With {mentor.name} · {circle.circle.name} · Circle {circle.circle.number}{state.kind === 'paused' ? ' · paused' : ''}</p>
+      <p className="rx-sm">With {mentor.name} · {circleTitle(circle.circle)}{state.kind === 'paused' ? ' · paused' : ''}</p>
       <Title>Sessions</Title>
       <div className="rx-two">
         <div className="rx-stack-lg">

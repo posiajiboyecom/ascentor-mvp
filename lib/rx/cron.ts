@@ -7,6 +7,7 @@ import 'server-only';
 
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { notify } from '@/lib/notify';
+import { rxNotify } from './notifications';
 import { diffDays, localISODate, mondayOfISO, whenLabel } from './dates';
 import { circleWindow, MENTOR_CALL_MINUTES } from './calls';
 import { MIN_GOING } from './cmentor';
@@ -86,11 +87,13 @@ export async function sendCallReminders(): Promise<{ circle: number; mentor: num
   const now = new Date();
   const horizon = new Date(now.getTime() + 24 * 3600000);
 
-  const { data: circles } = await supabaseAdmin.from('circles').select('id, name, number, meeting_dow, meeting_time, timezone').eq('status', 'active');
-  for (const c of (circles ?? []) as { id: string; name: string; number: number; meeting_dow: number; meeting_time: string; timezone: string | null }[]) {
+  const { data: circles } = await supabaseAdmin.from('circles').select('id, name, number, meeting_dow, meeting_time, timezone, interest').eq('status', 'active').eq('is_demo', false);
+  for (const c of (circles ?? []) as { id: string; name: string; number: number; meeting_dow: number; meeting_time: string; timezone: string | null; interest: string | null }[]) {
     const w = circleWindow(c, now);
     if (w.startsAt > now && w.startsAt <= horizon) {
-      for (const uid of await circleAudience(c.id)) { await notify(uid, { title: 'Circle call tomorrow', body: `${c.name}, ${whenLabel(w.startsAt, c.timezone)}. Audio only, 15 minutes.`, url: `/circle`, tag: `call-${c.id}` }); circleN++; }
+      const aud = await circleAudience(c.id);
+      await rxNotify(aud, { kind: 'call_tomorrow', entityId: c.id, url: `/circle?c=${c.id}`, title: 'Circle call tomorrow', body: `${c.interest ?? c.name} · Circle ${c.number}, ${whenLabel(w.startsAt, c.timezone)}. Audio only, 15 minutes.` });
+      circleN += aud.length;
     }
   }
 
@@ -99,7 +102,8 @@ export async function sendCallReminders(): Promise<{ circle: number; mentor: num
     const ids = await circleAudience(s.circle_id);
     const { data: m } = await supabaseAdmin.from('human_mentors').select('user_id').eq('id', s.mentor_id).maybeSingle();
     if (m?.user_id) ids.push(m.user_id as string);
-    for (const uid of ids) { await notify(uid, { title: 'Mentor session tomorrow', body: `${whenLabel(s.starts_at, 'Africa/Lagos')} (WAT). ${MENTOR_CALL_MINUTES} minutes, audio only. Say whether you are going.`, url: '/sessions', tag: `mentor-${s.id}` }); mentorN++; }
+    await rxNotify(ids, { kind: 'call_tomorrow', entityId: s.id, url: `/sessions?c=${s.circle_id}`, title: 'Mentor session tomorrow', body: `${whenLabel(s.starts_at, 'Africa/Lagos')} (WAT). ${MENTOR_CALL_MINUTES} minutes, audio only. Say whether you are going.` });
+    mentorN += ids.length;
   }
   return { circle: circleN, mentor: mentorN };
 }
@@ -121,6 +125,8 @@ export async function enforceMentorSessionRules(): Promise<{ cancelled: number; 
 
   const { data: soon } = await supabaseAdmin.from('circle_mentor_sessions').select('id, circle_id, circle_mentor_id, mentor_id, starts_at').eq('status', 'scheduled').gt('starts_at', now.toISOString()).lte('starts_at', horizon.toISOString());
   for (const s of (soon ?? []) as { id: string; circle_id: string; circle_mentor_id: string; mentor_id: string; starts_at: string }[]) {
+    const { data: dc } = await supabaseAdmin.from('circles').select('is_demo').eq('id', s.circle_id).maybeSingle();
+    if (dc?.is_demo) continue; // demo Circles are never moved by the RSVP rule
     const { count } = await supabaseAdmin.from('session_rsvps').select('user_id', { count: 'exact', head: true }).eq('session_id', s.id).eq('status', 'going');
     if ((count ?? 0) >= MIN_GOING) continue;
     await supabaseAdmin.from('circle_mentor_sessions').update({ status: 'cancelled', cancel_reason: 'low_rsvp' }).eq('circle_mentor_id', s.circle_mentor_id).eq('status', 'scheduled').gte('starts_at', now.toISOString());
@@ -129,7 +135,7 @@ export async function enforceMentorSessionRules(): Promise<{ cancelled: number; 
     const ids = await circleAudience(s.circle_id);
     const { data: m } = await supabaseAdmin.from('human_mentors').select('user_id').eq('id', s.mentor_id).maybeSingle();
     if (m?.user_id) ids.push(m.user_id as string);
-    for (const uid of ids) await notify(uid, { title: 'Tomorrow’s mentor session is moved', body: `Fewer than ${MIN_GOING} members were going. Mark the times you can attend and your Circle will pick a new one.`, url: '/sessions', tag: `mentor-low-${s.circle_mentor_id}` });
+    await rxNotify(ids, { kind: 'session_moved', entityId: s.circle_mentor_id, url: `/sessions?c=${s.circle_id}`, title: 'Tomorrow’s mentor session is moved', body: `Fewer than ${MIN_GOING} members were going. Mark the times you can attend and your Circle will pick a new one.` });
     cancelled++;
   }
   return { cancelled, held };

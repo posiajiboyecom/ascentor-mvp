@@ -11,9 +11,9 @@ export const dynamic = 'force-dynamic';
 export default async function AdminCirclesPage() {
   try { await requireAdmin(); } catch { return <div className="rx rx-page"><div className="rx-card rx-empty"><p className="rx-p">Circles are managed by admins.</p></div></div>; }
   const [{ data: circles }, { data: seats }, { data: facs }] = await Promise.all([
-    supabaseAdmin.from('circles').select('*').order('number'),
+    supabaseAdmin.from('circles').select('*').eq('is_demo', false).order('number'),
     supabaseAdmin.from('circle_seats').select('circle_id, role'),
-    supabaseAdmin.from('member_profile').select('user_id').eq('is_facilitator', true),
+    supabaseAdmin.from('member_profile').select('user_id').eq('is_facilitator', true).eq('is_demo', false),
   ]);
   const ids = ((facs ?? []) as { user_id: string }[]).map((f) => f.user_id);
   const { data: names } = ids.length ? await supabaseAdmin.from('member_directory').select('id, full_name').in('id', ids) : { data: [] };

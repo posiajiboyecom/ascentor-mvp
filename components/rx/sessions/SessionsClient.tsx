@@ -31,9 +31,9 @@ function useRun() {
 }
 
 // ── starting and casting the vote ───────────────────────────────────────────
-export function StartVoteButton() {
+export function StartVoteButton({ circleId }: { circleId?: string }) {
   const { run, pending, error } = useRun();
-  return (<><button type="button" className="rx-btn primary" disabled={pending} onClick={() => run(() => startVote(), 'The vote is open.')}>{pending ? 'Finding mentors…' : 'Find mentors for our Circle'}</button>{error && err(error)}</>);
+  return (<><button type="button" className="rx-btn primary" disabled={pending} onClick={() => run(() => startVote(circleId), 'The vote is open.')}>{pending ? 'Finding mentors…' : 'Find mentors for our Circle'}</button>{error && err(error)}</>);
 }
 
 export function VoteCards({ roundId, candidates, tie, canBreak, tied, isMember, nameOfCircle }: { roundId: string; candidates: CandidateView[]; tie: boolean; canBreak: boolean; tied: string[]; isMember: boolean; nameOfCircle: string }) {
