@@ -252,3 +252,17 @@ Before this, nothing in the member app registered the service worker or saved a 
   receive the real in-app notification, email and push, so you can check all three.
 - Adding a demo member to a Circle you are in now notifies you, like a real join.
 - `--reset` removes demo posts, comments and reactions before deleting the demo accounts, so nothing is left as "Ascentor team".
+
+### Reminders, weekly summary, moderation, speed
+
+- **A second job runs every hour** (`/api/cron/hourly`, in `vercel.json`). The daily job at 06:00 UTC cannot reach members in every time
+  zone at a sensible moment, so the practice nudge moved here: it is sent in each member's own morning (8 AM), and again at 7 PM for
+  members who chose two reminders a day. It skips paused reminders, members with no plan, and anyone who already checked in. A member
+  whose "Practice reminders" switch is off gets nothing. Needs the Vercel Pro plan (hourly crons) and `CRON_SECRET`, as the daily job does.
+- **Weekly summary** (new setting "Weekly summary", with its own email switch): Monday 8 AM where each member is. It reports last week as
+  "kept 3 of 5 days you checked in" with no streaks or comparisons, this week's lesson, where each of their Circles stands, new comments
+  on their posts, and unread notifications. Sent once a week at most. `lib/rx/digest.ts` builds the text and is unit tested.
+- **Moderation:** flagged or reported posts and comments can be removed from the queue (a post is hidden, a comment is deleted). Turning a
+  member's messaging off now also stops them posting and commenting in Community.
+- **Speed:** the rich-text editor (about 400 KB) now loads only when someone opens the composer, not on every Community visit.
+- **Accessibility:** post menus move focus into the menu, support the arrow keys, and Escape returns focus to the button.

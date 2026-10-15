@@ -5,12 +5,16 @@
 export type NotifKind =
   | 'circle_joined' | 'circle_new_member' | 'vote_opened' | 'vote_cast' | 'vote_won' | 'mentor_chosen'
   | 'mentor_accepted' | 'mentor_declined' | 'sessions_booked' | 'call_tomorrow' | 'session_moved'
-  | 'post_comment' | 'comment_reply' | 'post_reaction' | 'post_share';
+  | 'post_comment' | 'comment_reply' | 'post_reaction' | 'post_share'
+  | 'practice_reminder' | 'weekly_digest';
 
 export const PREF = {
   circle: 'Circle updates',
   community: 'Community comments, replies and shares',
   reactions: 'Community reactions',
+  practice: 'Practice reminders',
+  digest: 'Weekly summary',
+  emailDigest: 'Email: Weekly summary',
   emailCircle: 'Email: Circle updates',
   emailCommunity: 'Email: Community comments and shares',
 } as const;
@@ -42,6 +46,9 @@ export const KINDS: Record<NotifKind, KindSpec> = {
   comment_reply:     { pref: PREF.community, emailPref: PREF.emailCommunity, legacyType: 'community', coalesce: true },
   post_reaction:     { pref: PREF.reactions, emailPref: null,                legacyType: 'community', coalesce: true },
   post_share:        { pref: PREF.community, emailPref: PREF.emailCommunity, legacyType: 'community', coalesce: false },
+  // one unread reminder at a time: today's replaces yesterday's if it was never opened
+  practice_reminder: { pref: PREF.practice, emailPref: null, legacyType: 'info', coalesce: true },
+  weekly_digest:     { pref: PREF.digest, emailPref: PREF.emailDigest, legacyType: 'info', coalesce: false },
 };
 
 export const EMAIL_MIN_GAP_MINUTES = 10;

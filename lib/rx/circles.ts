@@ -3,6 +3,7 @@ import 'server-only';
 // All of a member's Circles at a glance, and the Circles they can still join. Reads use the member's own session to find
 // their seats, then the service role for the facts about those Circles (counts, votes, mentor), after membership is known.
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getMe } from './server';
@@ -30,7 +31,15 @@ export const circleTitle = (c: { name: string; number: number; interest: string 
 export async function getMyCircles(): Promise<CircleCard[]> {
   const me = await getMe();
   if (!me) return [];
-  const db = await createClient();
+  return circleCardsFor(me.userId, me.tz, await createClient());
+}
+
+/**
+ * The same cards for any member. Jobs that run without a signed-in session (the weekly summary) pass the service-role
+ * client as `db`, and the member's own time zone for the dates.
+ */
+export async function circleCardsFor(userId: string, tz: string, db: SupabaseClient): Promise<CircleCard[]> {
+  const me = { userId, tz };
   const { data: mine } = await db.from('circle_seats').select('circle_id, role, joined_at').eq('user_id', me.userId).order('joined_at', { ascending: true });
   const seatsOf = (mine ?? []) as { circle_id: string; role: 'member' | 'facilitator'; joined_at: string }[];
   if (!seatsOf.length) return [];

@@ -27,6 +27,12 @@ export async function accountGate(userId: string): Promise<{ ok: true } | { ok: 
   return { ok: true };
 }
 
+/** Whether staff have switched this member's messaging and posting off. */
+export async function communityGate(userId: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const { data } = await supabaseAdmin.from('member_profile').select('messaging_blocked').eq('user_id', userId).maybeSingle();
+  return data?.messaging_blocked ? { ok: false, reason: 'Posting and messaging are turned off for your account. Contact the Ascentor team if you think that is a mistake.' } : { ok: true };
+}
+
 export async function accountAgeDays(userId: string): Promise<number> {
   const { data } = await supabaseAdmin.from('profiles').select('created_at').eq('id', userId).maybeSingle();
   return data?.created_at ? (Date.now() - new Date(data.created_at as string).getTime()) / 86400000 : 0;

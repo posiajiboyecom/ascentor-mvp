@@ -9,7 +9,7 @@ import { groupMessages } from '@/lib/rx/community';
 import { getFeed } from '@/lib/rx/feed';
 import { COMMENT_MAX, POST_MEDIA_MAX, REACTION_KINDS, type CommentView, type MediaItem, type PostView, type ReactionKind } from '@/lib/rx/feed-types';
 import { cleanText, assessMessage, holdForNewAccount } from '@/lib/rx/safety';
-import { flagIfRisky, accountAgeDays } from '@/lib/rx/moderation';
+import { flagIfRisky, accountAgeDays, communityGate } from '@/lib/rx/moderation';
 import { isOwnMediaUrl, isOwnPostMedia, parseBody, postMediaKind } from '@/lib/rx/media';
 import { excerpt, preparePostBody } from '@/lib/rx/richtext';
 import { rxNotify } from '@/lib/rx/notifications';
@@ -35,6 +35,8 @@ async function recent(table: 'feed_posts' | 'feed_replies', userId: string, minu
 export async function createPost(input: { html: string; text?: string; category: string; media?: MediaItem[] }): Promise<ActionResult<{ id: string }>> {
   try {
     const { db, userId } = await requireMember();
+    const gate = await communityGate(userId);
+    if (!gate.ok) throw new Error(gate.reason);
     const body = preparePostBody(input.html, input.text);
     if (!body.ok) throw new Error(body.error);
 
@@ -119,6 +121,8 @@ export async function setReaction(postId: string, kind: ReactionKind | null): Pr
 export async function addComment(postId: string, raw: string, parentId?: string | null): Promise<ActionResult<{ comment: CommentView }>> {
   try {
     const { db, userId } = await requireMember();
+    const gate = await communityGate(userId);
+    if (!gate.ok) throw new Error(gate.reason);
     const text = cleanText(raw, COMMENT_MAX);
     if (!text) throw new Error('Write a comment first.');
     const { data: post } = await db.from('feed_posts').select('id, user_id, body').eq('id', postId).eq('deleted', false).maybeSingle();

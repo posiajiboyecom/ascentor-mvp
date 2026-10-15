@@ -170,6 +170,7 @@ export const NOTIF_TYPES = [
   'Practice reminders', 'Circle meetings', 'Messages', 'Mentor sessions', 'Community prompts',
   'Circle updates', 'Community comments, replies and shares', 'Community reactions',
   'Email: Circle updates', 'Email: Community comments and shares',
+  'Weekly summary', 'Email: Weekly summary',
 ];
 export const DM_POLICIES: { value: string; label: string }[] = [
   { value: 'circle_and_requests', label: 'My Circle, and requests from others' },

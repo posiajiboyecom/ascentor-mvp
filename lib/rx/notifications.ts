@@ -28,6 +28,8 @@ export interface RxNotice {
   actorId?: string | null;
   /** The post, Circle or session this is about. Used to fold repeats together and to space out emails. */
   entityId?: string | null;
+  /** Optional short lines, shown as a list in the email (the weekly summary uses it). */
+  lines?: string[];
 }
 
 const SITE = 'https://joinascentor.com';
@@ -36,11 +38,12 @@ const DAY = 24 * 3600000;
 function emailHtml(n: RxNotice, to: string): string {
   return brandedEmailLayout({
     preheader: n.body,
-    eyebrow: KINDS[n.kind].legacyType === 'community' ? 'Community' : 'Your Circle',
+    eyebrow: n.kind === 'weekly_digest' ? 'Your week' : KINDS[n.kind].legacyType === 'community' ? 'Community' : 'Your Circle',
     heading: n.title,
     recipient: to,
     content:
       p(esc(n.body)) +
+      (n.lines?.length ? `<ul style="margin:0 0 16px;padding-left:20px;">${n.lines.map((l) => `<li style="margin:0 0 8px;">${esc(l)}</li>`).join('')}</ul>` : '') +
       goldButton('Open in Ascentor', `${SITE}${n.url.startsWith('/') ? '' : '/'}${n.url}`) +
       p(`<span style="color:#9CA3AF;font-size:13px;">You can turn these emails off any time in <a href="${SITE}/settings" style="color:#C8A96E;text-decoration:none;">Settings</a>.</span>`),
   });

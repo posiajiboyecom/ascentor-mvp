@@ -22,6 +22,23 @@ export async function resolveItem(source: 'flag' | 'report', id: string, status:
   } catch (e) { return fail(e); }
 }
 
+/** Removes a flagged or reported post or comment from the feed. A post is hidden (kept for the record), a comment is deleted. */
+export async function removeContent(kind: string, refId: string): Promise<ActionResult> {
+  try {
+    await requireStaffMember();
+    if (!/^[0-9a-f-]{36}$/i.test(refId)) throw new Error('That item is no longer available.');
+    if (kind === 'post') {
+      const { error } = await supabaseAdmin.from('feed_posts').update({ deleted: true }).eq('id', refId);
+      if (error) throw error;
+    } else if (kind === 'comment') {
+      const { error } = await supabaseAdmin.from('feed_replies').delete().eq('id', refId);
+      if (error) throw error;
+    } else throw new Error('Only posts and comments can be removed here.');
+    revalidatePath('/admin/moderation'); revalidatePath('/community');
+    return { ok: true };
+  } catch (e) { return fail(e); }
+}
+
 /** Turns messaging off (or back on) for one member. They can still use their Circle and the rest of the app. */
 export async function setMessagingBlocked(userId: string, blocked: boolean): Promise<ActionResult> {
   try {

@@ -42,7 +42,7 @@ export default async function ModerationPage() {
   const items: ModItem[] = [];
   for (const f of (flags ?? []) as { id: string; kind: string; ref_id: string | null; user_id: string | null; reason: string; created_at: string }[]) {
     const { data: mp } = f.user_id ? await supabaseAdmin.from('member_profile').select('messaging_blocked').eq('user_id', f.user_id).maybeSingle() : { data: null };
-    items.push({ source: 'flag', id: f.id, kind: f.kind, reason: f.reason, when: relTime(f.created_at), person: f.user_id ? { id: f.user_id, name: await nameOf(f.user_id) } : null, blocked: !!mp?.messaging_blocked, lines: f.ref_id ? await bodyOf(f.kind, f.ref_id) : [] });
+    items.push({ source: 'flag', id: f.id, kind: f.kind, refId: f.ref_id, reason: f.reason, when: relTime(f.created_at), person: f.user_id ? { id: f.user_id, name: await nameOf(f.user_id) } : null, blocked: !!mp?.messaging_blocked, lines: f.ref_id ? await bodyOf(f.kind, f.ref_id) : [] });
   }
   for (const r of (reports ?? []) as { id: string; kind: string; ref_id: string | null; reporter_id: string; reason: string | null; created_at: string }[]) {
     // A report on a direct conversation shows its latest messages so the reviewer can see the context.
@@ -61,7 +61,7 @@ export default async function ModerationPage() {
       if (t) { const otherId = (t.user_a as string) === r.reporter_id ? (t.user_b as string) : (t.user_a as string); other = { id: otherId, name: await nameOf(otherId) }; }
     }
     const { data: mp } = other ? await supabaseAdmin.from('member_profile').select('messaging_blocked').eq('user_id', other.id).maybeSingle() : { data: null };
-    items.push({ source: 'report', id: r.id, kind: r.kind, reason: `${r.reason ?? 'Reported'} (reported by ${await nameOf(r.reporter_id)})`, when: relTime(r.created_at), person: other, blocked: !!mp?.messaging_blocked, lines });
+    items.push({ source: 'report', id: r.id, kind: r.kind, refId: r.ref_id, reason: `${r.reason ?? 'Reported'} (reported by ${await nameOf(r.reporter_id)})`, when: relTime(r.created_at), person: other, blocked: !!mp?.messaging_blocked, lines });
   }
 
   return (
@@ -74,7 +74,8 @@ export default async function ModerationPage() {
           <Aside>
             <p className="rx-label">What lands here</p>
             <p className="rx-p">Messages the filters flag (payment or investment pitches with a link or phone number, security-code requests) and conversations members report.</p>
-            <p className="rx-sm">Turning messaging off stops a member starting or sending direct messages. They keep their Circle and the rest of the app.</p>
+            <p className="rx-sm">Turning messaging off stops a member sending direct messages and posting or commenting in Community. They keep their Circle and the rest of the app.</p>
+            <p className="rx-sm">Removing a post hides it from the feed. A removed comment is deleted. Both are recorded as handled.</p>
           </Aside>
         </div>
       </div>
