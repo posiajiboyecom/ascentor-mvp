@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  addDemoMemberTo, bookBestTime, castDemoVotes, closeDemoVote, mentorSaysYes, openDemoCall, openDemoVote, resetDemoData, seedDemoData,
+  addDemoMemberTo, bookBestTime, castDemoVotes, closeDemoVote, demoEngageMyPost, mentorSaysYes, openDemoCall, openDemoVote, resetDemoData, seedDemoData, seedDemoPosts,
 } from '@/app/admin/demo/actions';
 import type { ActionResult } from '@/lib/rx/types';
 import { useToast } from '@/components/rx/Toast';
@@ -48,6 +48,21 @@ export function SeedControls({ hasDemo }: { hasDemo: boolean }) {
                 <button type="button" className="rx-link muted" onClick={() => setConfirm(false)}>Keep it</button></div>}
         </>
       )}
+    </div>
+  );
+}
+
+export function CommunityControls({ hasPosts }: { hasPosts: boolean }) {
+  const { run, pending } = useDo();
+  return (
+    <div className="rx-card rx-stack-sm">
+      <p className="rx-label">Community</p>
+      <p className="rx-p">Demo members can fill the feed and respond to you, so you can see notifications arrive.</p>
+      <div className="rx-row" style={{ gap: 8, flexWrap: 'wrap' }}>
+        {!hasPosts && <button type="button" className="rx-btn primary" disabled={pending} onClick={() => run(() => seedDemoPosts(), 'Demo posts added to the feed.')}>Add demo posts to the feed</button>}
+        <button type="button" className={`rx-btn ${hasPosts ? 'primary' : 'secondary'}`} disabled={pending} onClick={() => run(() => demoEngageMyPost(), 'Demo members reacted and commented. Check your bell, email and phone.')}>Make demo members react to my latest post</button>
+      </div>
+      <p className="rx-sm">To use the second button, first write a post of your own in Community. The reactions and comments then reach you as real notifications, by email too, and as a push if you turned it on in Settings.</p>
     </div>
   );
 }

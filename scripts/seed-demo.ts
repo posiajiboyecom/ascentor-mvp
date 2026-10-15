@@ -4,9 +4,11 @@
 //   npx tsx scripts/seed-demo.ts            create the demo Circles, mentors and members
 //   npx tsx scripts/seed-demo.ts --reset    remove all demo data
 //   npx tsx scripts/seed-demo.ts --again    remove, then create fresh
+//   npx tsx scripts/seed-demo.ts --community  add demo posts, comments and reactions to the Community feed (demo Circles must exist)
 import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { demoExists, resetDemo, seedDemo } from '../lib/rx/demo-seed';
+import { seedDemoCommunity } from '../lib/rx/demo-community';
 
 config({ path: '.env.local' });
 
@@ -16,6 +18,12 @@ async function main() {
   if (!url || !key) throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local');
   const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   const args = process.argv.slice(2);
+
+  if (args.includes('--community')) {
+    const c = await seedDemoCommunity(admin);
+    console.log(`created ${c.posts} demo posts, ${c.comments} comments and ${c.reactions} reactions`);
+    return;
+  }
 
   if (args.includes('--reset') || args.includes('--again')) {
     const r = await resetDemo(admin);
