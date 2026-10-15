@@ -281,3 +281,11 @@ layout (`styles/rust.css`) so it reaches the landing page, The Elevation Summit,
 - the last gold glows on older pages (waitlist, careers, Summit home, Sage loader, partner coach) are rust now.
 
 Rust is never a button fill and never body text. To tune the strength, change the two alphas in the `body::before` rule in `styles/rust.css`.
+
+## Prototype colours, notice card and broadcasts
+
+**Colours.** The member app now uses the exact values from the Ascentor App Prototype (background `#F6F5F2`, cards `#FFFFFF`, border `#E6E3DD`, ink `#161616`, muted `#5F6672`, rust `#B6502A`, gold `#CAA228`). In the member app rust is also the primary button, the active tab and selected pills, as in the prototype. The sidebar and phone tab bar are light. The admin shell and public pages are unchanged.
+
+**NoticeCard** (`components/rx/NoticeCard.tsx`). One reusable inline card, used on Today, in the desktop sidebar and in the phone menu. Dismissal is remembered per notice in the browser.
+
+**Broadcasts** (`/admin/broadcasts`, migration `20261011_broadcasts.sql`). Admins write a message, send it in the app, by email or both, to everyone or one stage, city, language or Circle. Sending a test to yourself first is built in. A per-member delivery row makes sending safe to repeat, and the hourly job finishes any send that ran out of time. Muted members are not pushed or emailed; members who turn off "Email: Announcements" in Settings are not emailed. "Show as a card" pins the message in the sidebar until a chosen date. Apply the migration before deploying.

@@ -377,3 +377,12 @@ a.rx-opt { text-decoration: none; }
 /* Calls: a member's camera, shown in place of their picture */
 .rx-call-video { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; background: #0F0F0E; display: block; }
 @media (min-width: 1024px) { .rx-call-video { width: 112px; height: 112px; } }
+
+/* ── notice card, compact (sidebar and menu drawer) ───────────────────────── */
+.rx-annbar.compact { padding: 12px 4px 8px 12px; gap: 10px; }
+.rx-annbar.compact .rx-dimdot { width: 32px; height: 32px; }
+.rx-annbar.compact .rx-dimdot svg { width: 18px; height: 18px; }
+.rx-annbar.compact .rx-annbar-x { width: 32px; height: 32px; }
+.rx-annbar.compact .rx-annbar-x svg { width: 18px; height: 18px; }
+.rx-annbar.compact .rx-strong { font-size: 14px; line-height: 1.3; }
+.rx-annbar.compact .rx-sm { font-size: 13px; }

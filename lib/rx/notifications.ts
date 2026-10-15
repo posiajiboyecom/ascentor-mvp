@@ -35,17 +35,26 @@ export interface RxNotice {
 const SITE = 'https://joinascentor.com';
 const DAY = 24 * 3600000;
 
-function emailHtml(n: RxNotice, to: string): string {
+/** The one email layout for notices: a heading, a short message, optional bullet lines and one button. */
+export function buildNoticeEmail(o: { eyebrow: string; title: string; body: string; url: string; label?: string; lines?: string[]; recipient: string }): string {
+  const href = /^https?:\/\//i.test(o.url) ? o.url : `${SITE}${o.url.startsWith('/') ? '' : '/'}${o.url}`;
   return brandedEmailLayout({
-    preheader: n.body,
-    eyebrow: n.kind === 'weekly_digest' ? 'Your week' : KINDS[n.kind].legacyType === 'community' ? 'Community' : 'Your Circle',
-    heading: n.title,
-    recipient: to,
+    preheader: o.body,
+    eyebrow: o.eyebrow,
+    heading: o.title,
+    recipient: o.recipient,
     content:
-      p(esc(n.body)) +
-      (n.lines?.length ? `<ul style="margin:0 0 16px;padding-left:20px;">${n.lines.map((l) => `<li style="margin:0 0 8px;">${esc(l)}</li>`).join('')}</ul>` : '') +
-      goldButton('Open in Ascentor', `${SITE}${n.url.startsWith('/') ? '' : '/'}${n.url}`) +
+      p(esc(o.body).replace(/\n/g, '<br>')) +
+      (o.lines?.length ? `<ul style="margin:0 0 16px;padding-left:20px;">${o.lines.map((l) => `<li style="margin:0 0 8px;">${esc(l)}</li>`).join('')}</ul>` : '') +
+      goldButton(o.label ?? 'Open in Ascentor', href) +
       p(`<span style="color:#9CA3AF;font-size:13px;">You can turn these emails off any time in <a href="${SITE}/settings" style="color:#C8A96E;text-decoration:none;">Settings</a>.</span>`),
+  });
+}
+
+function emailHtml(n: RxNotice, to: string): string {
+  return buildNoticeEmail({
+    eyebrow: n.kind === 'weekly_digest' ? 'Your week' : KINDS[n.kind].legacyType === 'community' ? 'Community' : 'Your Circle',
+    title: n.title, body: n.body, url: n.url, lines: n.lines, recipient: to,
   });
 }
 

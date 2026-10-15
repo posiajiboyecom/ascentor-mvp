@@ -5,7 +5,7 @@
 // announcements, messages, notifications, and Sage, the floating AI coach.
 // Light theme only.
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import {
   CalendarClock, Compass, Gift, LayoutDashboard, Megaphone, MapPin, Settings, ShieldCheck, TrendingUp, UserRound, Users,
@@ -18,6 +18,8 @@ import { NAV_ITEMS } from '@/lib/nav-items';
 import ShellLayout from './ShellLayout';
 import SageFloat, { clearSageGreeting } from './SageFloat';
 import PushBootstrap from '@/components/rx/PushBootstrap';
+import NoticeCard from '@/components/rx/NoticeCard';
+import type { NoticeData } from '@/lib/rx/notice-types';
 import SagePanel from '@/components/rx/sage/SagePanel';
 import { MobileTabBar } from '@/components/nav/MobileTabBar';
 import type { ShellNavGroup } from './types';
@@ -28,6 +30,7 @@ export interface ShellCountsProp {
   cityGroupSlug: string | null;
   cityName: string | null;
   latest: BellItem[];
+  notice?: NoticeData | null;
 }
 
 interface UserShellProps {
@@ -43,6 +46,9 @@ interface UserShellProps {
 
 export default function UserShell({ userId, userName, email, avatarUrl, role, summitRegistered, counts, children }: UserShellProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  // On Today the announcement already sits at the top of the page, so the sidebar does not repeat it.
+  const sidebarNotice = counts?.notice && !(pathname === '/dashboard' && counts.notice.source === 'announcement') ? counts.notice : null;
   const supabase = useMemo(() => createClient(), []);
   const isStaff = role === 'admin' || role === 'moderator';
   const unread = counts?.unreadAnnouncements ?? 0;
@@ -102,6 +108,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         searchEndpoint="/api/search"
         searchPlaceholder="Search lessons, rooms and people"
         onSignOut={handleSignOut}
+        sidebarExtra={sidebarNotice ? <NoticeCard notice={sidebarNotice} compact /> : undefined}
         menuLinks={[
           { href: '/dashboard', label: 'Today',    icon: <LayoutDashboard /> },
           { href: '/profile',   label: 'Profile',  icon: <UserRound /> },
