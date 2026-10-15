@@ -17,6 +17,7 @@ import {
 import { detectedZone, searchZones, type TzInfo } from '@/lib/rx/timezones';
 import { answerOpenHouse, finishOnboarding, recordChatConsent, saveOnboardingStep, type FinishResult, type OnboardingInput } from '@/app/onboarding/actions';
 import { useToast } from '@/components/rx/Toast';
+import { usePush } from '@/components/PushPermission';
 import SageMark from '@/components/rx/SageMark';
 
 export interface OnboardingInitial {
@@ -50,6 +51,7 @@ const FLOW: ObStep[] = ['welcome', 'notify', 'interests', 'timezone', 'slots', '
 export default function OnboardingFlow({ initial }: { initial: OnboardingInitial }) {
   const router = useRouter();
   const toast = useToast();
+  const push = usePush();
   const [pending, start] = useTransition();
   const [step, setStep] = useState<Step>(initial.step === 'forming' ? 'stage' : initial.step);
   const [error, setError] = useState('');
@@ -128,9 +130,9 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
         return;
       }
       case 'notify': {
-        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-          Notification.requestPermission().catch(() => undefined).finally(() => save('notify', {}, () => setStep('interests')));
-        } else save('notify', {}, () => setStep('interests'));
+        // Asks permission and saves this device's push subscription. Where push is not available (an iPhone that has not
+        // added the app to its Home Screen) it simply moves on, and Settings explains how to turn it on later.
+        void push.subscribe().catch(() => false).finally(() => save('notify', {}, () => setStep('interests')));
         return;
       }
       case 'interests': return save('interests', { interests }, () => setStep('timezone'));

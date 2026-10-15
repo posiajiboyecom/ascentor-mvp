@@ -126,20 +126,26 @@ export default function TermsPage() {
               <p>Content you create (community posts, coaching conversations) remains yours, but you grant us a non-exclusive license to store and display it within the Platform.</p>
             </Section>
 
-            <Section title="9. Limitation of Liability">
+            <Section title="9. Chat Review and Safety">
+              <p>I understand that the Ascentor team can read chats on the platform, including conversations with Sage, to keep members safe and to improve Ascentor. Other members cannot read my chats.</p>
+              <p>This covers Circle chats, group rooms, direct messages and conversations with Sage. Every time a member of our team opens or exports a conversation, we record it. Your answers to the private growth survey are stored separately and are not readable by our team or by other members.</p>
+              <p>You agree to this when you create your account. If you do not agree, please do not use the chat features, and contact us to close your account.</p>
+            </Section>
+
+            <Section title="10. Limitation of Liability">
               <p>To the maximum extent permitted by law, Ascentor Inc. shall not be liable for indirect, incidental, special, or consequential damages arising from your use of the Platform, including but not limited to lost profits, data loss, or career decisions made based on AI coaching outputs.</p>
               <p>Our total liability shall not exceed the amount paid by you in the 12 months preceding the claim.</p>
             </Section>
 
-            <Section title="10. Changes to Terms">
+            <Section title="11. Changes to Terms">
               <p>We may update these Terms from time to time. Material changes will be communicated via email or in-app notification at least 14 days before they take effect. Continued use after changes constitutes acceptance.</p>
             </Section>
 
-            <Section title="11. Governing Law">
+            <Section title="12. Governing Law">
               <p>These Terms are governed by the laws of the jurisdiction in which you reside. Disputes shall first be attempted to be resolved through good-faith negotiation, followed by binding arbitration if necessary.</p>
             </Section>
 
-            <Section title="12. Contact">
+            <Section title="13. Contact">
               <p>For questions about these Terms, your data, or to exercise your data rights:</p>
               <p><strong>Email:</strong> contact@joinascentor.com</p>
               <p><strong>Data Protection Officer:</strong> contact@joinascentor.com</p>

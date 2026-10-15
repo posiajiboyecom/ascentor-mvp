@@ -203,8 +203,10 @@ export default function SageFloat({ userName }: { userName: string }) {
 
   // On phones the button lives on Today and Learn only; on desktop Sage is also in the top bar.
   const mobileAllowed = pathname === '/dashboard' || !!pathname?.startsWith('/learn');
+  // Screens with a message box at the bottom: the floating button would sit on the send button.
+  const hasComposer = !!pathname && (pathname.startsWith('/circle/chat') || pathname.startsWith('/messages') || pathname.startsWith('/community/groups/') || pathname.startsWith('/call'));
   return (
-    <div className={`sage-root${mobileAllowed ? '' : ' sage-mobile-hide'}`}>
+    <div className={`sage-root${mobileAllowed ? '' : ' sage-mobile-hide'}${hasComposer ? ' sage-hide' : ''}`}>
       {open && (
         <div
           className="sage-bubble"
