@@ -17,15 +17,32 @@ const ICON: Record<ReactionKind, React.ReactNode> = {
   like: <ThumbsUp aria-hidden />, support: <Heart aria-hidden />, insight: <Lightbulb aria-hidden />,
 };
 
+/**
+ * Behaviour for a button that opens a menu: click outside closes it, Escape closes it and puts focus back on the button,
+ * focus moves into the menu when it opens, and the arrow keys move between its items.
+ */
 function useOutside(open: boolean, close: () => void) {
   const ref = useRef<HTMLDivElement>(null);
+  // The latest close callback, so the effect below runs only when the menu opens or closes, not on every render.
+  const closeRef = useRef(close);
+  useEffect(() => { closeRef.current = close; });
   useEffect(() => {
     if (!open) return;
-    const down = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) close(); };
-    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    const items = () => Array.from(ref.current?.querySelectorAll<HTMLElement>('.rx-menu button:not([disabled]), .rx-menu a') ?? []);
+    const focusFirst = setTimeout(() => items()[0]?.focus(), 0);
+    const down = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) closeRef.current(); };
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { closeRef.current(); ref.current?.querySelector<HTMLElement>('[aria-expanded]')?.focus(); return; }
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      const list = items();
+      if (!list.length) return;
+      e.preventDefault();
+      const i = list.indexOf(document.activeElement as HTMLElement);
+      list[e.key === 'ArrowDown' ? (i + 1) % list.length : i <= 0 ? list.length - 1 : i - 1].focus();
+    };
     document.addEventListener('mousedown', down); document.addEventListener('keydown', key);
-    return () => { document.removeEventListener('mousedown', down); document.removeEventListener('keydown', key); };
-  }, [open, close]);
+    return () => { clearTimeout(focusFirst); document.removeEventListener('mousedown', down); document.removeEventListener('keydown', key); };
+  }, [open]);
   return ref;
 }
 

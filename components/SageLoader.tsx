@@ -58,7 +58,7 @@ export default function SageLoader({
       <div style={{
         position: 'absolute', inset: inset,
         borderRadius: '50%',
-        background: 'radial-gradient(circle at 38% 36%, rgba(245,197,90,0.22), rgba(232,160,32,0.09) 60%, transparent)',
+        background: 'radial-gradient(circle at 38% 36%, rgba(217,113,74,0.24), rgba(182,80,42,0.1) 60%, transparent)',
         border: '1.5px solid rgba(232,160,32,0.4)',
         animation: 'sage-pulse 2s ease-in-out infinite',
         display: 'flex', alignItems: 'center', justifyContent: 'center',

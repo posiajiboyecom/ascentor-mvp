@@ -10,9 +10,15 @@ import { createPost } from '@/app/(app)/community/actions';
 import { POST_MEDIA_MAX, type CategoryView, type MediaItem } from '@/lib/rx/feed-types';
 import { Avatar } from '@/components/rx/ui';
 import { useToast } from '@/components/rx/Toast';
-import RichEditor from './RichEditor';
+import dynamic from 'next/dynamic';
 import { ACCEPT, uploadPostMedia } from './upload';
 import '@/styles/rx-community.css';
+
+// The editor is a large library and most visits only read the feed, so it is fetched when someone opens the composer.
+const RichEditor = dynamic(() => import('./RichEditor'), {
+  ssr: false,
+  loading: () => <div className="rx-editor" aria-busy="true"><div className="rx-editor-body" /></div>,
+});
 
 interface Attachment { id: string; name: string; local: string; kind: 'image' | 'video'; item: MediaItem | null; error?: string }
 

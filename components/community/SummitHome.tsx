@@ -74,7 +74,7 @@ export function SummitHome({
       >
         <div
           className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(200,169,110,0.18), transparent 70%)' }}
+          style={{ background: 'radial-gradient(circle, rgba(182,80,42,0.16), transparent 70%)' }}
         />
         <div className="relative">
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#C8A96E] mb-3">

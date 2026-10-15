@@ -183,7 +183,7 @@ export default function CareersPage() {
           position: absolute;
           top: -100px; left: 50%; transform: translateX(-50%);
           width: 600px; height: 600px;
-          background: radial-gradient(circle, rgba(232,160,32,0.07) 0%, transparent 65%);
+          background: radial-gradient(circle, rgba(182,80,42,0.08) 0%, transparent 65%);
           pointer-events: none;
         }
         .cr-hero::after {

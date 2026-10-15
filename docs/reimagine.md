@@ -252,3 +252,40 @@ Before this, nothing in the member app registered the service worker or saved a 
   receive the real in-app notification, email and push, so you can check all three.
 - Adding a demo member to a Circle you are in now notifies you, like a real join.
 - `--reset` removes demo posts, comments and reactions before deleting the demo accounts, so nothing is left as "Ascentor team".
+
+### Reminders, weekly summary, moderation, speed
+
+- **A second job runs every hour** (`/api/cron/hourly`, in `vercel.json`). The daily job at 06:00 UTC cannot reach members in every time
+  zone at a sensible moment, so the practice nudge moved here: it is sent in each member's own morning (8 AM), and again at 7 PM for
+  members who chose two reminders a day. It skips paused reminders, members with no plan, and anyone who already checked in. A member
+  whose "Practice reminders" switch is off gets nothing. Needs the Vercel Pro plan (hourly crons) and `CRON_SECRET`, as the daily job does.
+- **Weekly summary** (new setting "Weekly summary", with its own email switch): Monday 8 AM where each member is. It reports last week as
+  "kept 3 of 5 days you checked in" with no streaks or comparisons, this week's lesson, where each of their Circles stands, new comments
+  on their posts, and unread notifications. Sent once a week at most. `lib/rx/digest.ts` builds the text and is unit tested.
+- **Moderation:** flagged or reported posts and comments can be removed from the queue (a post is hidden, a comment is deleted). Turning a
+  member's messaging off now also stops them posting and commenting in Community.
+- **Speed:** the rich-text editor (about 400 KB) now loads only when someone opens the composer, not on every Community visit.
+- **Accessibility:** post menus move focus into the menu, support the arrow keys, and Escape returns focus to the button.
+
+### Rust, site-wide
+
+Gold and black are still the brand. Rust (`#B6502A`) is the warm second colour for glows and small signals, loaded once from the root
+layout (`styles/rust.css`) so it reaches the landing page, The Elevation Summit, every public page and the signed-in app:
+
+- a soft warm wash across the top of public pages (laid over the page with `multiply`, scrolls away, sits under the navigation);
+- a small rust dot before each eyebrow label, a rust glow under buttons on hover, a thin rust underline on navigation links;
+- rust focus ring (zero specificity, so the member app's own gold ring still wins there) and rust text selection;
+- the landing page's hero photo sits in a rust glow;
+- in the signed-in app: rust unread dots, a rust bar on the active sidebar item, a rust glow from the sidebar's bottom corner, a rust wash
+  on pages outside the member screens, and a rust halo on Sage's button;
+- the last gold glows on older pages (waitlist, careers, Summit home, Sage loader, partner coach) are rust now.
+
+Rust is never a button fill and never body text. To tune the strength, change the two alphas in the `body::before` rule in `styles/rust.css`.
+
+## Prototype colours, notice card and broadcasts
+
+**Colours.** The member app now uses the exact values from the Ascentor App Prototype (background `#F6F5F2`, cards `#FFFFFF`, border `#E6E3DD`, ink `#161616`, muted `#5F6672`, rust `#B6502A`, gold `#CAA228`). In the member app rust is also the primary button, the active tab and selected pills, as in the prototype. The sidebar and phone tab bar are light. The admin shell and public pages are unchanged.
+
+**NoticeCard** (`components/rx/NoticeCard.tsx`). One reusable inline card, used on Today, in the desktop sidebar and in the phone menu. Dismissal is remembered per notice in the browser.
+
+**Broadcasts** (`/admin/broadcasts`, migration `20261011_broadcasts.sql`). Admins write a message, send it in the app, by email or both, to everyone or one stage, city, language or Circle. Sending a test to yourself first is built in. A per-member delivery row makes sending safe to repeat, and the hourly job finishes any send that ran out of time. Muted members are not pushed or emailed; members who turn off "Email: Announcements" in Settings are not emailed. "Show as a card" pins the message in the sidebar until a chosen date. Apply the migration before deploying.

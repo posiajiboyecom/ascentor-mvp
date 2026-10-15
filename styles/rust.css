@@ -1,0 +1,100 @@
+/* Rust, site-wide.
+ *
+ * Gold and black stay the brand. Rust (#B6502A) is the warm second colour, used for glows and small signals only: the soft
+ * wash at the top of a page, the dot before an eyebrow, a glow under a button, unread dots, the focus ring, text selection.
+ * It is never a button fill and never body text.
+ *
+ * Loaded once from the root layout, so the landing page, The Elevation Summit, every public page and the signed-in app share it.
+ * The member app's own screens (styles/rx.css) read the same tokens.
+ */
+
+:root {
+  --rust:        #B6502A;
+  --rust-ink:    #B6502A;                 /* rust used as a small mark on a light page (4.6:1 on #FAFAF8) */
+  --rust-light:  #D9714A;                 /* rust used as a small mark on a dark page */
+  --rust-glow:        rgba(182, 80, 42, 0.10);
+  --rust-glow-strong: rgba(182, 80, 42, 0.20);
+}
+
+::selection { background: rgba(182, 80, 42, 0.24); }
+
+/* Keyboard focus: rust. Zero specificity, so any component that sets its own ring (the member app uses gold) still wins. */
+:where(a, button, [role='button'], input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--rust);
+  outline-offset: 2px;
+}
+
+/* ── Public pages: a warm wash across the top ─────────────────────────────────
+ * Laid over the page with multiply so it tints whatever sits underneath. It scrolls away with the page, sits under the sticky
+ * navigation, and ignores the pointer. The signed-in app, onboarding and calls have their own glows.
+ */
+html body:not(:has(.sh-root)):not(:has(.rx-ob)):not(:has(.rx-welcome)):not(:has(.rx-stage)):not(:has(.rx-call))::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 560px;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  background:
+    radial-gradient(50% 90% at 4% 0%, rgba(182, 80, 42, 0.14), transparent 70%),
+    radial-gradient(40% 80% at 99% 4%, rgba(182, 80, 42, 0.07), transparent 70%);
+}
+@media (max-width: 640px) {
+  html body:not(:has(.sh-root))::before { height: 460px; }
+}
+
+/* Small signals ------------------------------------------------------------- */
+
+/* The dot before a page's eyebrow label */
+.mkt-eyebrow::before,
+.eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--rust);
+  margin-right: 10px;
+  vertical-align: 1px;
+  box-shadow: 0 0 0 4px var(--rust-glow-strong);
+}
+
+/* Buttons glow on hover, never change colour */
+.btn-gold, .btn-primary, .ph-cta-btn { transition: box-shadow 0.2s ease, transform 0.2s ease; }
+.btn-gold:hover, .btn-primary:hover, .ph-cta-btn:hover {
+  box-shadow: 0 12px 32px -10px rgba(182, 80, 42, 0.55);
+  transform: translateY(-1px);
+}
+
+/* Navigation links: a thin rust underline on hover */
+nav a:not([class*='btn']):not([class*='cta']):hover {
+  text-decoration: underline;
+  text-decoration-color: var(--rust);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 7px;
+}
+
+/* The landing page's hero picture sits in a rust glow */
+.hero-carousel > div { box-shadow: 0 40px 90px -40px rgba(182, 80, 42, 0.45); }
+
+/* ── Signed-in app shell ──────────────────────────────────────────────────── */
+
+html .sh-dot { background: var(--rust); }
+html .sh-root:not([data-variant='app']) .sh-item[aria-current='page']::before { background: var(--rust-light); }
+
+/* The black sidebar glows from the bottom corner */
+html .sh-sidebar {
+  background-image: radial-gradient(120% 38% at 0% 100%, rgba(182, 80, 42, 0.22), transparent 70%);
+  background-repeat: no-repeat;
+}
+html .sh-root[data-variant='app'] .sh-sidebar { background-image: radial-gradient(120% 34% at 0% 100%, rgba(182, 80, 42, 0.09), transparent 70%); }
+
+/* Pages that are not built from the member app's own screens get the same top wash */
+html .sh-main:not(:has(.rx-page)) {
+  background-image: radial-gradient(60% 320px at 20% 0%, var(--rust-glow), transparent 72%);
+  background-repeat: no-repeat;
+}
+
+/* Sage's floating button: a rust halo around the gold orb */
+html .sage-orb { box-shadow: 0 10px 28px rgba(182, 80, 42, 0.38), 0 0 0 4px rgba(182, 80, 42, 0.14); }
+html .sage-orb:hover { box-shadow: 0 14px 34px rgba(182, 80, 42, 0.46), 0 0 0 5px rgba(182, 80, 42, 0.22); }

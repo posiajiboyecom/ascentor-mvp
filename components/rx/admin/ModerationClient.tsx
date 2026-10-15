@@ -2,13 +2,15 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { resolveItem, setMessagingBlocked } from '@/app/admin/moderation/actions';
+import { removeContent, resolveItem, setMessagingBlocked } from '@/app/admin/moderation/actions';
 import { useToast } from '@/components/rx/Toast';
 
 export interface ModItem {
   source: 'flag' | 'report';
   id: string;
   kind: string;
+  /** The post, comment or message this is about, when it is still there. */
+  refId: string | null;
   reason: string;
   when: string;
   person: { id: string; name: string } | null;
@@ -44,8 +46,11 @@ export default function ModerationClient({ items }: { items: ModItem[] }) {
           <div className="rx-row">
             <button type="button" className="rx-btn secondary" disabled={pending} onClick={() => run(() => resolveItem(it.source, it.id, 'dismissed'), 'Dismissed.')}>Dismiss</button>
             <button type="button" className="rx-btn secondary" disabled={pending} onClick={() => run(() => resolveItem(it.source, it.id, 'actioned'), 'Marked as handled.')}>Mark handled</button>
+            {(it.kind === 'post' || it.kind === 'comment') && it.refId && (
+              <button type="button" className="rx-btn primary" disabled={pending} onClick={() => run(async () => { const r = await removeContent(it.kind, it.refId!); if (r.ok) await resolveItem(it.source, it.id, 'actioned'); return r; }, it.kind === 'post' ? 'Post removed from the feed.' : 'Comment removed.')}>{it.kind === 'post' ? 'Remove post' : 'Remove comment'}</button>
+            )}
             {it.person && (
-              <button type="button" className="rx-btn primary" disabled={pending} onClick={() => run(async () => { const r = await setMessagingBlocked(it.person!.id, !it.blocked); if (r.ok) await resolveItem(it.source, it.id, 'actioned'); return r; }, it.blocked ? 'Messaging turned back on.' : 'Messaging turned off for this member.')}>{it.blocked ? 'Turn messaging back on' : 'Turn off messaging'}</button>
+              <button type="button" className="rx-btn secondary" disabled={pending} onClick={() => run(async () => { const r = await setMessagingBlocked(it.person!.id, !it.blocked); if (r.ok) await resolveItem(it.source, it.id, 'actioned'); return r; }, it.blocked ? 'Messaging and posting turned back on.' : 'Messaging and posting turned off for this member.')}>{it.blocked ? 'Turn messaging and posting back on' : 'Turn off messaging and posting'}</button>
             )}
           </div>
         </div>

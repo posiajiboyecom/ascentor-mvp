@@ -415,7 +415,7 @@ export default function CoachPage() {
                 <div style={{
                   position: 'absolute', inset: 8,
                   borderRadius: '50%',
-                  background: 'radial-gradient(circle at 38% 36%, rgba(245,197,90,0.2), rgba(232,160,32,0.08) 60%, transparent)',
+                  background: 'radial-gradient(circle at 38% 36%, rgba(217,113,74,0.22), rgba(182,80,42,0.1) 60%, transparent)',
                   border: '1.5px solid rgba(232,160,32,0.4)',
                   animation: 'sage-orb-pulse 2.4s ease-in-out infinite',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -456,7 +456,7 @@ export default function CoachPage() {
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
                   style={{
-                    background: 'radial-gradient(circle at 38% 36%, rgba(245,197,90,0.18), rgba(232,160,32,0.08) 60%, transparent)',
+                    background: 'radial-gradient(circle at 38% 36%, rgba(217,113,74,0.2), rgba(182,80,42,0.1) 60%, transparent)',
                     border: msg.streaming ? '1.5px solid rgba(232,160,32,0.6)' : '1.5px solid rgba(232,160,32,0.38)',
                     animation: msg.streaming ? 'sage-orb-pulse 1.6s ease-in-out infinite' : 'none',
                   }}

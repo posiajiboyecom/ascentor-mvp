@@ -8,7 +8,9 @@ import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { notify } from '@/lib/notify';
 import { rxNotify } from './notifications';
-import { diffDays, localISODate, mondayOfISO, whenLabel } from './dates';
+import { buildDigest, isDigestMoment, isEveningNudge, isMorningNudge } from './digest';
+import { circleCardsFor, circleTitle } from './circles';
+import { addDays, cycleWeek, diffDays, localISODate, mondayOfISO, whenLabel } from './dates';
 import { circleWindow, MENTOR_CALL_MINUTES } from './calls';
 import { MIN_GOING } from './cmentor';
 
@@ -19,31 +21,94 @@ export async function syncAnnouncementStatus(): Promise<{ started: number; ended
   return { started: start?.length ?? 0, ended: end?.length ?? 0 };
 }
 
-function localHour(tz: string): number {
-  try { return Number(new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', hourCycle: 'h23' }).format(new Date())); } catch { return 12; }
-}
-
-export async function sendPracticeReminders(): Promise<{ checked: number; sent: number }> {
-  const { data: members } = await supabaseAdmin.from('member_profile').select('user_id, timezone, notif, quiet_hours, reminders_paused_until').not('onboarded_at', 'is', null);
-  let sent = 0;
-  const rows = (members ?? []) as { user_id: string; timezone: string | null; notif: Record<string, boolean> | null; quiet_hours: boolean; reminders_paused_until: string | null }[];
+/**
+ * The daily practice nudge, sent in each member's own morning (and evening for those who chose two a day). Runs every hour, so
+ * each member matches once. It is skipped when reminders are paused, when no plan is set, or when they already checked in.
+ */
+export async function sendPracticeReminders(now: Date = new Date()): Promise<{ checked: number; sent: number }> {
+  const { data: members } = await supabaseAdmin.from('member_profile').select('user_id, timezone, max_per_day, reminders_paused_until').not('onboarded_at', 'is', null).eq('is_demo', false);
+  const rows = (members ?? []) as { user_id: string; timezone: string | null; max_per_day: number | null; reminders_paused_until: string | null }[];
+  let sent = 0; let checked = 0;
   for (const m of rows) {
     try {
-      if (m.notif && m.notif['Practice reminders'] === false) continue;
-      if (m.reminders_paused_until && new Date(m.reminders_paused_until) > new Date()) continue;
       const tz = m.timezone || 'Africa/Lagos';
-      const h = localHour(tz);
-      if (m.quiet_hours && (h < 7 || h >= 22)) continue;
-      const today = localISODate(tz);
+      const morning = isMorningNudge(tz, now);
+      const evening = isEveningNudge(tz, now) && (m.max_per_day ?? 1) >= 2;
+      if (!morning && !evening) continue;
+      checked++;
+      if (m.reminders_paused_until && new Date(m.reminders_paused_until) > now) continue;
+      const today = localISODate(tz, now);
       const { data: plan } = await supabaseAdmin.from('practices').select('id, cue, action').eq('user_id', m.user_id).eq('week_start', mondayOfISO(today)).maybeSingle();
       if (!plan) continue;
       const { data: done } = await supabaseAdmin.from('practice_checkins').select('id').eq('user_id', m.user_id).eq('day', today).maybeSingle();
       if (done) continue;
-      await notify(m.user_id, { title: 'Today’s practice', body: `After I ${plan.cue}, I will ${plan.action}.`, url: '/dashboard', tag: 'practice' });
+      // Never twice in the same hour, even if the job is retried.
+      const { data: recent } = await supabaseAdmin.from('notifications').select('id').eq('user_id', m.user_id).eq('kind', 'practice_reminder').gte('created_at', new Date(now.getTime() - 3 * 3600000).toISOString()).limit(1).maybeSingle();
+      if (recent) continue;
+      await rxNotify(m.user_id, {
+        kind: 'practice_reminder', entityId: plan.id as string, url: '/dashboard',
+        title: evening ? 'There is still time today' : 'Today’s practice',
+        body: `After I ${plan.cue}, I will ${plan.action}.`,
+      });
       sent++;
     } catch (e) { console.error('[rx/cron] practice reminder failed', e instanceof Error ? e.message : e); }
   }
-  return { checked: rows.length, sent };
+  return { checked, sent };
+}
+
+async function digestFor(m: { user_id: string; timezone: string | null }, now: Date): Promise<boolean> {
+  const tz = m.timezone || 'Africa/Lagos';
+  const uid = m.user_id;
+  const today = localISODate(tz, now);
+  const monday = mondayOfISO(today);
+  const lastMonday = addDays(monday, -7);
+  const sixDaysAgo = new Date(now.getTime() - 6 * 86400000).toISOString();
+
+  const { data: already } = await supabaseAdmin.from('notifications').select('id').eq('user_id', uid).eq('kind', 'weekly_digest').gte('created_at', sixDaysAgo).limit(1).maybeSingle();
+  if (already) return false;
+
+  const [{ data: lastPlan }, { data: thisPlan }, { data: checks }, { data: home }, { data: myPosts }, { data: prof }, { count: unread }, cards] = await Promise.all([
+    supabaseAdmin.from('practices').select('id').eq('user_id', uid).eq('week_start', lastMonday).maybeSingle(),
+    supabaseAdmin.from('practices').select('id').eq('user_id', uid).eq('week_start', monday).maybeSingle(),
+    supabaseAdmin.from('practice_checkins').select('status').eq('user_id', uid).gte('day', lastMonday).lt('day', monday),
+    supabaseAdmin.from('circle_seats').select('circles(cycle_start)').eq('user_id', uid).eq('role', 'member').order('joined_at', { ascending: true }).limit(1).maybeSingle(),
+    supabaseAdmin.from('feed_posts').select('id').eq('user_id', uid).eq('deleted', false).order('created_at', { ascending: false }).limit(50),
+    supabaseAdmin.from('profiles').select('full_name').eq('id', uid).maybeSingle(),
+    supabaseAdmin.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', uid).eq('read', false),
+    circleCardsFor(uid, tz, supabaseAdmin),
+  ]);
+
+  const rowsC = (checks ?? []) as { status: string }[];
+  const cycleStart = ((home as unknown as { circles: { cycle_start: string | null } | null } | null)?.circles?.cycle_start) ?? null;
+  const week = cycleWeek(cycleStart, today);
+  const { data: lesson } = week ? await supabaseAdmin.from('rx_lessons').select('title').eq('week_no', week).eq('published', true).maybeSingle() : { data: null };
+  const postIds = ((myPosts ?? []) as { id: string }[]).map((p) => p.id);
+  const { count: newComments } = postIds.length
+    ? await supabaseAdmin.from('feed_replies').select('id', { count: 'exact', head: true }).in('post_id', postIds).neq('user_id', uid).gte('created_at', new Date(now.getTime() - 7 * 86400000).toISOString())
+    : { count: 0 };
+
+  const d = buildDigest({
+    firstName: (((prof?.full_name as string | undefined) ?? '').split(/\s+/)[0]) || 'there',
+    lastWeek: lastPlan ? { kept: rowsC.filter((r) => r.status === 'kept').length, checkedIn: rowsC.length } : null,
+    lessonTitle: (lesson?.title as string | undefined) ?? null, lessonWeek: week,
+    circleLines: cards.filter((c) => c.role === 'member').map((c) => `${circleTitle(c)}: ${c.state.headline}.`),
+    newComments: newComments ?? 0, unread: unread ?? 0, practiceSetThisWeek: !!thisPlan,
+  });
+  await rxNotify(uid, { kind: 'weekly_digest', url: '/dashboard', title: d.title, body: d.body, lines: d.lines });
+  return true;
+}
+
+/** The Monday summary, sent at 8 in the morning where each member is. Runs every hour and is safe to repeat. */
+export async function sendWeeklyDigests(now: Date = new Date()): Promise<{ checked: number; sent: number }> {
+  const { data: members } = await supabaseAdmin.from('member_profile').select('user_id, timezone').not('onboarded_at', 'is', null).eq('is_demo', false);
+  const due = ((members ?? []) as { user_id: string; timezone: string | null }[]).filter((m) => isDigestMoment(m.timezone || 'Africa/Lagos', now));
+  let sent = 0;
+  // A handful at a time, so a big Monday morning still finishes inside the job's time limit.
+  for (let i = 0; i < due.length; i += 8) {
+    const results = await Promise.allSettled(due.slice(i, i + 8).map((m) => digestFor(m, now)));
+    for (const r of results) { if (r.status === 'fulfilled' && r.value) sent++; else if (r.status === 'rejected') console.error('[rx/cron] weekly digest failed', r.reason instanceof Error ? r.reason.message : r.reason); }
+  }
+  return { checked: due.length, sent };
 }
 
 export async function notifyFacilitatorsOfQuietMembers(): Promise<{ notices: number }> {

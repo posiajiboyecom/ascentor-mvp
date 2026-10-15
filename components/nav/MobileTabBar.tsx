@@ -1,14 +1,9 @@
 'use client';
 
 // components/nav/MobileTabBar.tsx
-// Bottom tab bar for < lg viewports. Matches the prototype's .bn/.bi
-// structure: dark chrome, 5 icons, gold active state.
-//
-// FIX: Icons now sourced from shared NAV_ITEMS constant defined in
-// @/lib/nav-items - same array consumed by DesktopRail, guaranteeing
-// identical icons at every breakpoint. Previously used MessageCircle +
-// CalendarDays while DesktopRail used MessageSquare + User for the
-// same routes.
+// Bottom tab bar for < lg viewports, as the Ascentor App Prototype draws it: the page colour with a 1px top border, four
+// tabs with a 22px outline icon over an 11px uppercase label. Inactive tabs are muted grey, the active tab is rust.
+// Icons come from the shared NAV_ITEMS constant (same array as DesktopRail), so they match at every breakpoint.
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -19,13 +14,9 @@ export function MobileTabBar() {
 
   return (
     <nav
-      className="
-        lg:hidden fixed bottom-0 inset-x-0 z-40
-        flex justify-around
-        bg-[#0F0F0E] border-t border-white/[0.06]
-        pt-[7px] pb-[14px]
-      "
-      style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}
+      aria-label="Main"
+      className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex bg-[#F6F5F2] border-t border-[#E6E3DD] px-1 pt-1"
+      style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
     >
       {NAV_ITEMS.map(({ icon: Icon, label, href }) => {
         const active = pathname === href || pathname?.startsWith(href + '/');
@@ -33,20 +24,11 @@ export function MobileTabBar() {
           <Link
             key={href}
             href={href}
-            className="flex flex-col items-center gap-[3px] px-[5px]"
             aria-current={active ? 'page' : undefined}
+            className="flex flex-1 flex-col items-center justify-center gap-[3px] min-h-[52px] rounded-[10px] transition-colors"
           >
-            <Icon
-              className={`w-5 h-5 ${active ? 'text-[#C8A96E]' : 'text-[#4B5563]'}`}
-              aria-hidden="true"
-            />
-            <span
-              className={`text-[9px] tracking-[.03em] ${
-                active ? 'text-[#C8A96E]' : 'text-[#4B5563]'
-              }`}
-            >
-              {label}
-            </span>
+            <Icon className={`w-[22px] h-[22px] ${active ? 'text-[#B6502A]' : 'text-[#5F6672]'}`} strokeWidth={1.6} aria-hidden="true" />
+            <span className={`text-[11px] font-semibold uppercase tracking-[.1em] ${active ? 'text-[#B6502A]' : 'text-[#5F6672]'}`}>{label}</span>
           </Link>
         );
       })}
