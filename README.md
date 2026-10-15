@@ -610,7 +610,8 @@ Set values in `.env.local` locally and in Vercel project settings for deployed e
 | `OTP_HMAC_SECRET` | Optional | Key for reset-code hashing (falls back to the service-role key) |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Optional | Cloudflare Turnstile. Enforced only when the secret is set |
 | `ADMIN_MFA_REQUIRED` | Optional | `true` requires a TOTP second factor for staff pages and `/api/admin` |
-| `SUMMIT_GMAIL_USER`, `SUMMIT_GMAIL_APP_PASSWORD`, `SUMMIT_MAIL_FROM` | Yes | SMTP for Summit and fallback mail |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | Yes | The one mailbox that sends all email (Hostinger: `smtp.hostinger.com`, port `465`) |
+| `EMAIL_FROM`, `SUMMIT_MAIL_FROM` | Yes | Sender lines, for example `Ascentor <hello@joinascentor.com>` |
 | `ADMIN_EMAIL`, `SUMMIT_ADMIN_EMAIL` | Recommended | Operational alert recipients |
 | `MAILERLITE_API_KEY` and group ids | Optional | CRM sync |
 | `FREE_MODE` | Optional | `true` disables paid gating (emergency override) |

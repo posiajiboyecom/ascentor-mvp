@@ -199,7 +199,7 @@ No new migration. Deploy and set the environment below.
 - Default sender is `Ascentor <hello@joinascentor.com>`. Replies go to `contact@joinascentor.com`. Both are aliases of the one Hostinger
   mailbox (`lib/contact.ts`). `summit@` is not created yet, so Summit falls back to `contact@`.
 - One mailbox sends everything, including Summit tickets. `lib/nodemailer.ts` reads `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`.
-  The old `SUMMIT_GMAIL_*` values are only used when `SMTP_*` is not set. The Summit mailer used to be hard-wired to Gmail's server.
+  There is no Gmail fallback any more: the old `SUMMIT_GMAIL_*` values are ignored, and the host defaults to `smtp.hostinger.com`.
 - If the mail server refuses the From address (some hosts only let a mailbox send as itself), the send is retried as the mailbox with the
   intended address as Reply-To, so mail still goes out.
 - Every old `@ascentorbi.com` sender and `joinascentor@gmail.com` contact in the code now uses the new addresses.

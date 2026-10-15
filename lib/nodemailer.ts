@@ -7,21 +7,21 @@ type Mailer = ReturnType<typeof nodemailer.createTransport>;
 
 // ---------------------------------------------------------------------------
 // One mailbox sends everything. Set these in Vercel:
-//   SMTP_HOST   smtp.hostinger.com        (defaults to smtp.gmail.com)
+//   SMTP_HOST   smtp.hostinger.com        (this is the default)
 //   SMTP_PORT   465                       (defaults to 465)
 //   SMTP_USER   the mailbox address
 //   SMTP_PASS   the mailbox password
 //   EMAIL_FROM  Ascentor <hello@joinascentor.com>   (defaults to this)
 //
-// The Summit mailer follows the same settings, so there is no second mailbox to keep in step. Old Gmail settings
-// (SUMMIT_GMAIL_USER and SUMMIT_GMAIL_APP_PASSWORD) are only used when SMTP_USER and SMTP_PASS are not set.
+// Summit mail uses the same mailbox and settings, so there is nothing else to keep in step. Hostinger: smtp.hostinger.com,
+// port 465 with SSL (port 587 with STARTTLS also works if a network blocks 465). There is no Gmail fallback.
 // ---------------------------------------------------------------------------
 
 function smtpSettings() {
-  const user = process.env.SMTP_USER || process.env.SUMMIT_GMAIL_USER;
-  const pass = process.env.SMTP_PASS || process.env.SUMMIT_GMAIL_APP_PASSWORD;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
   const port = Number(process.env.SMTP_PORT || 465);
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const host = process.env.SMTP_HOST || 'smtp.hostinger.com';
   return { user, pass, port, host };
 }
 
@@ -31,7 +31,7 @@ function makeTransport(): Mailer | null {
   return nodemailer.createTransport({
     host,
     port,
-    // 465 (implicit TLS) rather than 587 (STARTTLS): many home and office networks block 587.
+    // Port 465 is implicit SSL (Hostinger's recommended setting). Any other port, such as 587, upgrades with STARTTLS.
     secure: port === 465,
     auth: { user, pass },
     connectionTimeout: 10_000,
@@ -51,16 +51,6 @@ export function mailerInfo(): { configured: boolean; host: string; port: number;
   const s = smtpSettings();
   return { configured: !!(s.user && s.pass), host: s.host, port: s.port, user: s.user ?? null, from: DEFAULT_FROM };
 }
-
-/**
- * The Summit mailer. It now shares the main mailbox and server, so Summit tickets and notifications leave from the same
- * place. Kept as its own export because the Summit code imports it by name.
- */
-const fallbackSettings = smtpSettings();
-export const summitMailer: Mailer = getMailer() ?? nodemailer.createTransport({
-  host: fallbackSettings.host, port: fallbackSettings.port, secure: fallbackSettings.port === 465,
-  auth: { user: fallbackSettings.user, pass: fallbackSettings.pass },
-});
 
 export const DEFAULT_FROM = process.env.EMAIL_FROM || FROM_DEFAULT;
 
