@@ -1,4 +1,5 @@
-import { summitMailer, getMailer } from './nodemailer';
+import { getMailer, sendEmail } from './nodemailer';
+import { CONTACT_EMAIL, FROM_DEFAULT, SUMMIT_EMAIL } from './contact';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from './emailTemplate';
 import { generateSummitTicket, type TicketData } from './summitTicket';
 import { supabaseAdmin } from '@/lib/supabase/admin';
@@ -9,7 +10,7 @@ const SUMMIT_WATCH_URL = `${SUMMIT_URL}/watch`;
 const DONATE_URL = 'https://joinascentor.com/donate';
 
 /** Where every Summit admin alert goes. Deliberately NOT ADMIN_EMAIL, which may point elsewhere. */
-export const SUMMIT_ADMIN_EMAIL = process.env.SUMMIT_ADMIN_EMAIL || 'joinascentor@gmail.com';
+export const SUMMIT_ADMIN_EMAIL = process.env.SUMMIT_ADMIN_EMAIL || CONTACT_EMAIL;
 
 type MailOpts = {
   to: string;
@@ -25,20 +26,9 @@ type MailOpts = {
  * Uses the dedicated Summit Gmail account, falling back to the shared SMTP one.
  */
 async function sendSummitMail(opts: MailOpts): Promise<void> {
-  const from =
-    process.env.SUMMIT_MAIL_FROM ||
-    process.env.SUMMIT_GMAIL_USER ||
-    process.env.SMTP_USER ||
-    'Ascentor <no-reply@ascentorbi.com>';
-
-  const transport = process.env.SUMMIT_GMAIL_USER && process.env.SUMMIT_GMAIL_APP_PASSWORD
-    ? summitMailer
-    : getMailer();
-  if (!transport) {
-    throw new Error('No SMTP credentials configured (SUMMIT_GMAIL_USER/SUMMIT_GMAIL_APP_PASSWORD or SMTP_USER/SMTP_PASS)');
-  }
-
-  await transport.sendMail({ from, ...opts });
+  if (!getMailer()) throw new Error('No SMTP credentials configured (set SMTP_USER and SMTP_PASS)');
+  // The Summit shares the main mailbox. sendEmail retries as the mailbox itself if the host refuses the From address.
+  await sendEmail({ from: process.env.SUMMIT_MAIL_FROM || FROM_DEFAULT, replyTo: SUMMIT_EMAIL, ...opts });
 }
 
 const naira = (n: number) => `₦${Number(n).toLocaleString('en-NG')}`;

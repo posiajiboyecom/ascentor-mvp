@@ -93,7 +93,7 @@ export function getOrganizationSchema() {
     ],
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'joinascentor@gmail.com',
+      email: 'contact@joinascentor.com',
       contactType: 'customer service',
     },
   };

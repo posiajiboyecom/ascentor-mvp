@@ -60,7 +60,7 @@ async function getUserEmail(userId: string): Promise<string | null> {
 // ── Send email via shared SMTP mailer ───────────────────────────────────────
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   try {
-    await sendMail({ from: 'Ascentor <notifications@ascentorbi.com>', to, subject, html });
+    await sendMail({ from: 'Ascentor <hello@joinascentor.com>', to, subject, html });
     return true;
   } catch (err: any) {
     console.error('[notify] email send error:', err.message);

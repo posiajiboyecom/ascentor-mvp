@@ -84,7 +84,7 @@ export async function POST(req: Request) {
   try {
     const firstName = (full_name as string).trim().split(/\s+/)[0];
     await sendEmail({
-      from:    'Ascentor <notifications@ascentorbi.com>',
+      from:    'Ascentor <hello@joinascentor.com>',
       to:      (email as string).trim().toLowerCase(),
       subject: event.confirmation_subject || `You're registered, ${event.title}`,
       html:    confirmationHtml({

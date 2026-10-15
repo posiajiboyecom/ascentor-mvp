@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     const personalised = (message as string).replace(/\{name\}/gi, firstName);
     try {
       await sendEmail({
-        from: 'Ascentor <notifications@ascentorbi.com>',
+        from: 'Ascentor <hello@joinascentor.com>',
         to: r.email,
         subject: subject.trim(),
         html: buildHtml({ firstName, eventTitle: event.title, message: personalised, recipient: r.email }),

@@ -500,7 +500,7 @@ function TrustBar() {
       </div>
       <p className="co-trust-note">
         Prices in NGN · Questions?{' '}
-        <a href="mailto:joinascentor@gmail.com" className="co-trust-link">joinascentor@gmail.com</a>
+        <a href="mailto:contact@joinascentor.com" className="co-trust-link">contact@joinascentor.com</a>
       </p>
     </div>
   )

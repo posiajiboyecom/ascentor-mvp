@@ -18,7 +18,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'joinascentor@gmail.com';
+const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'contact@joinascentor.com';
 
 function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       const adminApproveUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://joinascentor.com'}/admin/partners?action=approve&id=${partner.id}`;
 
       await sendEmail({
-        from:    'Ascentor Partners <noreply@ascentorbi.com>',
+        from:    'Ascentor Partners <hello@joinascentor.com>',
         to:      FOUNDER_EMAIL,
         subject: `New Partner Application: ${platform_name}`,
         html: brandedEmailLayout({
