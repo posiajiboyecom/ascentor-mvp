@@ -34,6 +34,16 @@ async function main() {
   const token = await tk.json().catch(() => ({}));
   console.log(tk.ok && token.token ? 'OK  created a meeting token that can send audio only' : `FAILED to create a token (${tk.status}): ${JSON.stringify(token).slice(0, 200)}`);
 
+  // The camera option needs a token that may send video as well as audio, and a room that allows it.
+  const tv = await daily('/meeting-tokens', {
+    method: 'POST',
+    body: JSON.stringify({ properties: { room_name: name, user_name: 'Test', is_owner: false, exp: Math.floor(Date.now() / 1000) + 300, permissions: { canSend: ['audio', 'video'] } } }),
+  });
+  const tvj = await tv.json().catch(() => ({}));
+  console.log(tv.ok && tvj.token ? 'OK  created a meeting token that can send audio and video (camera option)' : `FAILED to create an audio and video token (${tv.status}): ${JSON.stringify(tvj).slice(0, 200)}`);
+  const up = await daily(`/rooms/${name}`, { method: 'POST', body: JSON.stringify({ properties: { permissions: { canSend: ['audio', 'video'] } } }) });
+  console.log(up.ok ? 'OK  updated the room to allow audio and video' : `WARN room permission update returned ${up.status}`);
+
   const del = await daily(`/rooms/${name}`, { method: 'DELETE' });
   console.log(del.ok ? 'OK  deleted the test room' : `WARN could not delete the test room (${del.status}). It expires on its own in 10 minutes.`);
 
