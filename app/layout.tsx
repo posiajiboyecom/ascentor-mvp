@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import '@/styles/rust.css';
 import CommunityGateModal from '@/components/CommunityGateModal';
 
 import RoutePreloader from '@/components/RoutePreloader';

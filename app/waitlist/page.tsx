@@ -175,8 +175,8 @@ export default function WaitlistPage() {
     .page{position:relative;z-index:2;min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
     .left{display:flex;flex-direction:column;justify-content:space-between;padding:52px 56px;border-right:1px solid rgba(245,240,232,.07);min-height:100vh}
     .right{display:flex;flex-direction:column;justify-content:center;padding:52px 56px;background:#141310;position:relative;overflow:hidden}
-    .right::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(232,160,32,.06) 0%,transparent 70%);top:-100px;right:-100px;pointer-events:none}
-    .right::after{content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(232,160,32,.04) 0%,transparent 70%);bottom:-50px;left:-50px;pointer-events:none}
+    .right::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(182,80,42,.07) 0%,transparent 70%);top:-100px;right:-100px;pointer-events:none}
+    .right::after{content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(182,80,42,.05) 0%,transparent 70%);bottom:-50px;left:-50px;pointer-events:none}
     .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
     .logo-mark{width:36px;height:36px;background:#C8A96E;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Metropolis',serif;font-size:20px;font-weight:700;color:#0F0F0E}
     .logo-text{font-size:18px;font-weight:700;color:#F5F0E8;letter-spacing:-.01em}

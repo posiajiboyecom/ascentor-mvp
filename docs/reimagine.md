@@ -266,3 +266,18 @@ Before this, nothing in the member app registered the service worker or saved a 
   member's messaging off now also stops them posting and commenting in Community.
 - **Speed:** the rich-text editor (about 400 KB) now loads only when someone opens the composer, not on every Community visit.
 - **Accessibility:** post menus move focus into the menu, support the arrow keys, and Escape returns focus to the button.
+
+### Rust, site-wide
+
+Gold and black are still the brand. Rust (`#B6502A`) is the warm second colour for glows and small signals, loaded once from the root
+layout (`styles/rust.css`) so it reaches the landing page, The Elevation Summit, every public page and the signed-in app:
+
+- a soft warm wash across the top of public pages (laid over the page with `multiply`, scrolls away, sits under the navigation);
+- a small rust dot before each eyebrow label, a rust glow under buttons on hover, a thin rust underline on navigation links;
+- rust focus ring (zero specificity, so the member app's own gold ring still wins there) and rust text selection;
+- the landing page's hero photo sits in a rust glow;
+- in the signed-in app: rust unread dots, a rust bar on the active sidebar item, a rust glow from the sidebar's bottom corner, a rust wash
+  on pages outside the member screens, and a rust halo on Sage's button;
+- the last gold glows on older pages (waitlist, careers, Summit home, Sage loader, partner coach) are rust now.
+
+Rust is never a button fill and never body text. To tune the strength, change the two alphas in the `body::before` rule in `styles/rust.css`.
