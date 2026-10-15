@@ -224,14 +224,14 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             />
           </div>
           <div className="summit-hero-text">
-            <p className="mkt-eyebrow" style={{ marginBottom: '1.5rem' }}>{heroEyebrow}</p>
+            <p className="mkt-eyebrow rust" style={{ marginBottom: '1.5rem' }}>{heroEyebrow}</p>
             <h1 className="mkt-hero-headline" style={{ marginBottom: '1.5rem', maxWidth: '840px', color: '#0F0F0E' }}
               dangerouslySetInnerHTML={{ __html: h(heroHeadline) }} />
             <p style={{ fontSize: '1.0625rem', color: '#4B5563', lineHeight: 1.75, maxWidth: '720px', marginBottom: '3rem' }}>
               {heroSubhead}
             </p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <a href="#register" className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>{heroCtaLabel}</a>
+              <a href="#register" className="btn-rust" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>{heroCtaLabel}</a>
               <a href="#what-it-is" className="btn-secondary" style={{ fontSize: '1rem', padding: '0.875rem 2rem', borderColor: '#0F0F0E', color: '#0F0F0E' }}>{heroCta2Label}</a>
               <a
                 href="/donate"
@@ -296,7 +296,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       <section id="what-it-is" style={{ background: '#0F0F0E', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ maxWidth: '760px', marginBottom: '4rem' }}>
-            <p className="mkt-eyebrow" style={{ marginBottom: '1.5rem' }}>{whatEyebrow}</p>
+            <p className="mkt-eyebrow rust" style={{ marginBottom: '1.5rem' }}>{whatEyebrow}</p>
             <h2 className="mkt-section-headline" style={{ color: '#FAFAF8', marginBottom: '1.5rem' }}
               dangerouslySetInnerHTML={{ __html: h(whatHeadline) }} />
             <p style={{ fontSize: '1.0625rem', color: '#9CA3AF', lineHeight: 1.8 }}>{whatBody}</p>
@@ -368,7 +368,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       <section style={{ background: '#F4F3EF', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ marginBottom: '3.5rem', maxWidth: '640px' }}>
-          <p className="mkt-eyebrow" style={{ marginBottom: '1rem' }}>Who Attends</p>
+          <p className="mkt-eyebrow rust" style={{ marginBottom: '1rem' }}>Who Attends</p>
           <h2 className="mkt-section-headline" style={{ color: '#0F0F0E', marginBottom: '1rem' }}>Purposeful individuals at every stage of ascent.</h2>
           <p style={{ color: '#6B7280', fontSize: '1rem', lineHeight: 1.75 }}>The Summit is not defined by industry, age, geography, or title. It is defined by one decision: to live with intention and build with purpose.</p>
         </div>
@@ -453,7 +453,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
               A landmark room for a landmark decision. Set on Iba Road, Lagos, the Hall hosts the inaugural Elevation Summit on 19 November, 2026. Come physically, or join from anywhere in the world.
             </p>
             <div>
-              <a href="#register" className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>Secure your place →</a>
+              <a href="#register" className="btn-rust" style={{ fontSize: '1rem', padding: '0.875rem 2rem' }}>Secure your place →</a>
             </div>
           </div>
         </div>

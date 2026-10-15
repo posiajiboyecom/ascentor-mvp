@@ -19,6 +19,22 @@ interface TokenWait { state: 'waiting' | 'ended'; title: string; endsAt: string;
 type TokenResponse = TokenOpen | TokenWait | { state: 'unavailable' | 'notstarted' } | { state: 'error'; error: string };
 
 const mmss = (ms: number) => { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+/** "2 days", "3 hours", "12 minutes": the way a person says how long is left, rounded to the unit that matters. */
+const away = (ms: number) => {
+  const m = Math.max(0, Math.ceil(ms / 60000));
+  if (m < 1) return 'less than a minute';
+  if (m < 60) return `${m} ${m === 1 ? 'minute' : 'minutes'}`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h} ${h === 1 ? 'hour' : 'hours'}`;
+  const d = Math.round(h / 24);
+  return `${d} ${d === 1 ? 'day' : 'days'}`;
+};
+/** "Thursdays at 7:00 PM WAT" for a weekly Circle call, "Thu 15 Oct at 7:00 PM WAT" for a one-off session, in the member's own time zone. */
+const scheduled = (startsAt: string, weekly: boolean) => {
+  const d = new Date(startsAt);
+  const time = d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' }).replace(/(am|pm)/, (x) => x.toUpperCase());
+  return weekly ? `${d.toLocaleDateString('en-GB', { weekday: 'long' })}s at ${time}` : `${d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} at ${time}`;
+};
 const IN_APP = /(FBAN|FBAV|Instagram|Line\/|MicroMessenger|; wv\))/i;
 
 function RemoteAudio({ p }: { p: DailyParticipant }) {
@@ -211,7 +227,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
         )}
 
         {phase === 'notstarted' && (
-          <div className="rx-stack"><p className="rx-p">Your Circle’s weekly calls begin when 6 members have joined. Say hello in the chat meanwhile.</p><Link href={backHref} className="rx-btn secondary">Back to Circle</Link></div>
+          <div className="rx-stack"><p className="rx-p">Your Circle’s weekly calls begin when 4 members have joined. Say hello in the chat meanwhile.</p><Link href={backHref} className="rx-btn secondary">Back to Circle</Link></div>
         )}
 
         {phase === 'unavailable' && (
@@ -225,7 +241,8 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
 
         {phase === 'waiting' && info && (
           <div className="rx-stack">
-            <p className="rx-big">Opens in {mmss(new Date(info.opensAt).getTime() - now)}</p>
+            <p className="rx-big">Opens in {away(new Date(info.opensAt).getTime() - now)}</p>
+            <p className="rx-sm">Scheduled: {scheduled(info.startsAt, kind === 'circle')}</p>
             <p className="rx-sm">The room opens 5 minutes before the start, and the call lasts {kind === 'circle' ? 15 : 20} minutes. Audio by default, camera optional.</p>
             <Link href={backHref} className="rx-btn secondary">Back</Link>
           </div>

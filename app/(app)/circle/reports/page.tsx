@@ -18,7 +18,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       <Page>
         <BackLink href={circle ? `/circle?c=${circle.circle.id}` : '/circle'}>Circle</BackLink>
         <Title>Weekly reports</Title>
-        <div className="rx-card rx-empty"><p className="rx-p">Reports open when your first meeting is set, once 6 members have joined.</p></div>
+        <div className="rx-card rx-empty"><p className="rx-p">Reports open when your first meeting is set, once 4 members have joined.</p></div>
       </Page>
     );
   }

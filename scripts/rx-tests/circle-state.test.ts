@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { circleState, daysLeft } from '../../lib/rx/circle-state';
 
-const base = { members: 5, started: false, round: null, mentorPhase: null } as const;
+const base = { members: 3, started: false, round: null, mentorPhase: null } as const;
 const now = new Date('2026-10-12T10:00:00Z');
 
-test('before 6 members, it says how many more are needed', () => {
+test('before 4 members, it says how many more are needed', () => {
   const s = circleState({ ...base });
-  assert.equal(s.headline, '5 of 8 joined, meetings start at 6');
+  assert.equal(s.headline, '3 of 8 joined, meetings start at 4');
   assert.match(s.detail ?? '', /1 more member to go/);
   assert.equal(s.steps[0].status, 'current');
 });

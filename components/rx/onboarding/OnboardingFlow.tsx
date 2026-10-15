@@ -257,7 +257,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
             {c ? (
               <>
                 <p className="rx-p" style={{ maxWidth: 460 }}>You’ve joined {c.name}. Your group chat is open now.</p>
-                <p className="rx-sm">{need > 0 ? `Meetings start when 6 members have joined. ${c.members} of 6 so far.` : 'Your Circle has 6 or more members, so meetings begin this week.'}</p>
+                <p className="rx-sm">{need > 0 ? `Meetings start when 4 members have joined. ${c.members} of 4 so far.` : 'Your Circle has 4 or more members, so meetings begin this week.'}</p>
               </>
             ) : (
               <p className="rx-p" style={{ maxWidth: 460 }}>We’re setting up your Circle. It will appear on the Circle tab as soon as it’s ready.</p>

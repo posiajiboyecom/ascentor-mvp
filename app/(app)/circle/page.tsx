@@ -79,7 +79,7 @@ export default async function CirclesPage({ searchParams }: { searchParams: Prom
                 <div key={c.id} className="rx-card" style={{ display: 'flex', gap: 14, alignItems: 'center', padding: 16 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p className="rx-h3" style={{ margin: 0 }}>{circleTitle(c)}{c.isDemo && <span style={{ marginLeft: 8 }}><Tag>Demo</Tag></span>}</p>
-                    <p className="rx-sm">{c.members} of {CIRCLE_MAX} joined · {c.seatsLeft} {c.seatsLeft === 1 ? 'seat' : 'seats'} left{c.ready ? ' · meetings running' : ' · meetings start at 6'}</p>
+                    <p className="rx-sm">{c.members} of {CIRCLE_MAX} joined · {c.seatsLeft} {c.seatsLeft === 1 ? 'seat' : 'seats'} left{c.ready ? ' · meetings running' : ' · meetings start at 4'}</p>
                     {c.reason && <p className="rx-p" style={{ fontSize: 14, marginTop: 4 }}>{c.reason}</p>}
                   </div>
                   {canJoin ? <JoinCircleButton circleId={c.id} /> : <span className="rx-sm">Full</span>}
@@ -93,7 +93,7 @@ export default async function CirclesPage({ searchParams }: { searchParams: Prom
         <Aside>
           <p className="rx-label">How Circles work</p>
           <p className="rx-p">A Circle is up to {CIRCLE_MAX} people who share an interest and meet each week for 90 days.</p>
-          <p className="rx-p">Meetings start once 6 have joined. Calls are 15 minutes, audio by default.</p>
+          <p className="rx-p">Meetings start once 4 have joined. Calls are 15 minutes, audio by default.</p>
           <p className="rx-p">Each Circle chooses its own mentor by vote. The highest vote wins.</p>
           <p className="rx-sm">You can be in up to {CIRCLES_PER_MEMBER} Circles. Your first is your home Circle and stays.</p>
         </Aside>

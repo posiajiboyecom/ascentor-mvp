@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import AsideNotice from '@/components/rx/AsideNotice';
 import { ArrowLeft, ArrowRight, Sparkles, TriangleAlert, Check } from 'lucide-react';
 import SageMark from './SageMark';
 import { avatarTone, initials } from '@/lib/rx/dates';
@@ -98,7 +99,7 @@ export function Tick({ className = '' }: { className?: string }) {
 }
 
 export function Aside({ children }: { children: ReactNode }) {
-  return <aside className="rx-aside">{children}</aside>;
+  return <aside className="rx-aside">{children}<AsideNotice /></aside>;
 }
 
 export function Skel({ w = '100%', h = 14 }: { w?: string | number; h?: number }) {

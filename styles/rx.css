@@ -386,3 +386,10 @@ a.rx-opt { text-decoration: none; }
 .rx-annbar.compact .rx-annbar-x svg { width: 18px; height: 18px; }
 .rx-annbar.compact .rx-strong { font-size: 14px; line-height: 1.3; }
 .rx-annbar.compact .rx-sm { font-size: 13px; }
+
+/* ── Right-hand column (desktop): stays in view while the page scrolls, with the notice card under its content ── */
+.rx-aside-notice { display: none; }
+@media (min-width: 1024px) {
+  .rx-aside { position: sticky; top: 12px; align-self: start; max-height: calc(100dvh - 124px); overflow-y: auto; overscroll-behavior: contain; }
+  .rx-aside-notice { display: block; margin-top: 8px; }
+}

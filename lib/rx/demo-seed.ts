@@ -98,7 +98,7 @@ export async function addDemoMember(admin: Admin, circleId: string): Promise<str
   const id = await createDemoUser(admin, `${NAMES[n % NAMES.length]}`, 100 + n, { interests: [(c?.interest as string | undefined) ?? 'Focus'] });
   await admin.from('circle_seats').insert({ circle_id: circleId, user_id: id, role: 'member', pledged_at: new Date().toISOString() });
   const { count } = await admin.from('circle_seats').select('user_id', { count: 'exact', head: true }).eq('circle_id', circleId).eq('role', 'member');
-  if ((count ?? 0) >= 6) await admin.from('circles').update({ status: 'active', cycle_start: new Date().toISOString().slice(0, 10) }).eq('id', circleId).is('cycle_start', null);
+  if ((count ?? 0) >= 4) await admin.from('circles').update({ status: 'active', cycle_start: new Date().toISOString().slice(0, 10) }).eq('id', circleId).is('cycle_start', null);
   return id;
 }
 

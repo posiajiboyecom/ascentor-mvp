@@ -202,7 +202,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
               <p style={{ fontSize: '0.875rem', color: '#6B7280', lineHeight: 1.6, marginBottom: '1rem' }}>
                 A global gathering for purposeful individuals building lives of meaning, leadership, and lasting impact.
               </p>
-              <Link href="/elevation-summit#register" className="btn-gold">
+              <Link href="/elevation-summit#register" className="btn-rust">
                 Register Now
               </Link>
             </div>

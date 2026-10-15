@@ -8,10 +8,10 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import {
-  CalendarClock, Compass, Gift, LayoutDashboard, Megaphone, MapPin, Settings, ShieldCheck, TrendingUp, UserRound, Users,
+  CalendarClock, Compass, Gift, LayoutDashboard, Megaphone, MapPin, Settings, ShieldCheck, TrendingUp, UserRound,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { AnnouncementsBell, MessagesLink, NotificationsBell, SageHeaderButton, type BellItem } from '@/components/rx/HeaderActions';
+import { AnnouncementsBell, MessagesLink, NotificationsBell, type BellItem } from '@/components/rx/HeaderActions';
 import { ToastProvider } from '@/components/rx/Toast';
 import SummitModal from './SummitModal';
 import { NAV_ITEMS } from '@/lib/nav-items';
@@ -19,6 +19,7 @@ import ShellLayout from './ShellLayout';
 import SageFloat, { clearSageGreeting } from './SageFloat';
 import PushBootstrap from '@/components/rx/PushBootstrap';
 import NoticeCard from '@/components/rx/NoticeCard';
+import { NoticeProvider } from '@/components/rx/AsideNotice';
 import type { NoticeData } from '@/lib/rx/notice-types';
 import SagePanel from '@/components/rx/sage/SagePanel';
 import { MobileTabBar } from '@/components/nav/MobileTabBar';
@@ -61,16 +62,15 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         label: 'Explore',
         items: [
           { href: '/community',         label: 'Community',  icon: <Compass /> },
-          { href: '/community/groups',  label: 'Groups',     icon: <Users /> },
           ...(citySlug ? [{ href: `/community/groups/${citySlug}`, label: 'City groups', icon: <MapPin />, badge: counts?.cityName ?? undefined }] : []),
         ],
       },
       {
         label: 'This week',
         items: [
-          { href: '/community',                  label: 'Monday prompt',     icon: <CalendarClock />, badge: 'Mon 8:00 AM' },
-          { href: '/community/groups/open-house', label: 'Live conversation', icon: <CalendarClock />, badge: 'Wed 7:00 PM' },
-          { href: '/community?category=Wins',      label: 'Friday wins',       icon: <CalendarClock />, badge: 'Fri 5:00 PM' },
+          { href: '/community',                  label: 'Monday prompt',     icon: <CalendarClock />, badge: 'Mon 8am' },
+          { href: '/community/groups/open-house', label: 'Live conversation', icon: <CalendarClock />, badge: 'Wed 7pm' },
+          { href: '/community?category=Wins',      label: 'Friday wins',       icon: <CalendarClock />, badge: 'Fri 5pm' },
         ],
       },
       {
@@ -83,11 +83,8 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         ],
       },
     ];
-    if (isStaff) {
-      g.push({ label: 'Staff', items: [{ href: '/admin', label: 'Admin dashboard', icon: <ShieldCheck /> }] });
-    }
     return g;
-  }, [isStaff, unread, citySlug, counts?.cityName]);
+  }, [unread, citySlug, counts?.cityName]);
 
   // The shell has already asked "Sign out?" by the time this runs.
   const handleSignOut = async () => {
@@ -99,6 +96,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
 
   return (
     <ToastProvider>
+      <NoticeProvider value={sidebarNotice}>
       <ShellLayout
         variant="app"
         groups={groups}
@@ -118,7 +116,6 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         ]}
         headerActions={
           <>
-            <SageHeaderButton />
             <AnnouncementsBell items={counts?.latest ?? []} unread={unread} />
             <MessagesLink requests={counts?.messageRequests ?? 0} />
             <NotificationsBell />
@@ -127,6 +124,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
       >
         {children}
       </ShellLayout>
+      </NoticeProvider>
 
       <PushBootstrap />
       <SageFloat userName={userName} />

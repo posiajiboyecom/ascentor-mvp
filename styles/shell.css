@@ -543,3 +543,6 @@ html[data-sage-open] .sage-root, .sage-root.sage-hide { display: none; }
 .sh-root[data-variant='app'] .sh-group:first-child .sh-item:hover { color: var(--sb-fg); }
 .sh-root[data-variant='app'] .sh-group:first-child .sh-item[aria-current='page'] { color: var(--sb-active-fg); }
 .sh-root[data-variant='app'] .sh-group:first-child .sh-item[aria-current='page'] .sh-item-icon > svg { color: var(--sb-active-fg); }
+
+/* On desktop the notice card lives in the right-hand column of each page, not in the sidebar. The drawer on phones keeps it. */
+@media (min-width: 1024px) { .sh-root[data-variant='app'] .sh-sidebar-extra { display: none; } }

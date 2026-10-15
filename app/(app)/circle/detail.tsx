@@ -63,7 +63,7 @@ export async function CircleDetail({ circleId }: { circleId: string }) {
     <Page>
       <BackLink href="/circle">All my Circles</BackLink>
       <p className="rx-sm">{circleTitle(circle.circle)}{circle.facilitatorName ? ` · with ${circle.facilitatorName}` : ''}{card?.isDemo ? ' · Demo' : ''}</p>
-      <Title tag={<Tag>{ready ? `Week ${week} of 12` : 'Meetings start at 6'}</Tag>}>Circle</Title>
+      <Title tag={<Tag>{ready ? `Week ${week} of 12` : 'Meetings start at 4'}</Tag>}>Circle</Title>
       <div className="rx-two">
         <div className="rx-stack-lg">
           {card && (
@@ -90,9 +90,9 @@ export async function CircleDetail({ circleId }: { circleId: string }) {
             <div className="rx-soft rx-stack-sm">
               <div className="rx-row rx-nw" style={{ gap: 12 }}>
                 <Clock aria-hidden style={{ width: 20, height: 20, color: 'var(--rx-muted)', flex: 'none' }} />
-                <div><p className="rx-p rx-strong">Your meetings start when 6 members have joined.</p><p className="rx-sm">{members.length} of 6 so far.</p></div>
+                <div><p className="rx-p rx-strong">Your meetings start when 4 members have joined.</p><p className="rx-sm">{members.length} of 4 so far.</p></div>
               </div>
-              <Bar pct={pct} label={`${members.length} of 6 so far`} />
+              <Bar pct={pct} label={`${members.length} of 4 so far`} />
             </div>
           )}
 

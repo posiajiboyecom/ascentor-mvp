@@ -577,7 +577,7 @@ display: flex; align-items: center; justify-content: center; }
             </p>
 
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-              <Link href={heroCtaHref} className="btn-primary">{heroCtaLabel}</Link>
+              <Link href={heroCtaHref} className="btn-rust">{heroCtaLabel}</Link>
               <Link href={heroCta2Href} className="btn-secondary">{heroCta2Label}</Link>
             </div>
 
@@ -621,7 +621,7 @@ display: flex; align-items: center; justify-content: center; }
       {/* ── Who It's For ── */}
       <section style={{ padding: 'clamp(4rem, 8vw, 7rem) 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ marginBottom: '3.5rem' }}>
-          <p className="eyebrow" style={{ marginBottom: '1rem' }}>{whoEyebrow}</p>
+          <p className="eyebrow rust" style={{ marginBottom: '1rem' }}>{whoEyebrow}</p>
           <h2 className="section-headline" dangerouslySetInnerHTML={{ __html: sanitizeHeroHeadline(whoHeadline) }} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
@@ -671,7 +671,7 @@ display: flex; align-items: center; justify-content: center; }
       {/* ── The Total Person ── */}
       <section style={{ padding: 'clamp(4rem, 8vw, 7rem) 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ marginBottom: '3.5rem', maxWidth: '640px' }}>
-          <p className="eyebrow" style={{ marginBottom: '1rem' }}>{totalEyebrow}</p>
+          <p className="eyebrow rust" style={{ marginBottom: '1rem' }}>{totalEyebrow}</p>
           <h2 className="section-headline" dangerouslySetInnerHTML={{ __html: sanitizeHeroHeadline(totalHeadline) }} />
           <p style={{ color: '#6B7280', lineHeight: 1.7, marginTop: '1rem', fontSize: '1rem' }}>{totalBody}</p>
         </div>

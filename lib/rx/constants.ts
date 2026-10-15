@@ -123,7 +123,7 @@ export const CRISIS_PATTERN =
   /\b(kill myself|end my life|suicid|don'?t want to (live|be here)|no point (in|to) (any|living|life)|hurt myself|self[- ]harm|want to die|better off dead|can'?t go on|don'?t see the point of any of this)\b/i;
 
 // ── circles ──────────────────────────────────────────────────────────────────
-export const CIRCLE_MIN_TO_START = 6;
+export const CIRCLE_MIN_TO_START = 4;
 export const CIRCLE_MAX = 8;
 /** A member can sit in up to three Circles: a home Circle and interest Circles. */
 export const CIRCLES_PER_MEMBER = 3;

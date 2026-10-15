@@ -1,40 +1,28 @@
 'use client';
 
 // The Ascentor notice card: one inline card for an announcement or a message from the team, such as The Elevation Summit.
-// It is the same card everywhere: at the top of Today, in the sidebar on desktop, and in the menu drawer on phones.
-// Styling is the prototype's announcement card (rust at 7% over white, a 1px border, the soft shadow), in styles/rx.css.
+// It is the same card everywhere: at the top of Today, at the bottom of the right-hand column on desktop, and in the menu
+// drawer on phones. Styling is the prototype's announcement card (rust at 7% over white, a 1px border, the soft shadow),
+// in styles/rx.css.
 //
 //   <NoticeCard notice={{ id, source, title, line, href, actionLabel }} />
 //
-// A member can dismiss it. That is remembered in their own browser, per notice, so it does not nag. Pass `preview` to show it
-// as a picture only (the admin broadcast screen does), and `compact` for the narrow sidebar.
+// Members cannot dismiss it. It is a marketing surface: only an admin takes it down, from Broadcasts, and that removes it
+// for everyone. Pass `preview` to show it as a picture only (the admin broadcast screen does), and `compact` for narrow
+// places.
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { ArrowRight, Megaphone, X } from 'lucide-react';
+import { ArrowRight, Megaphone } from 'lucide-react';
 import type { NoticeData } from '@/lib/rx/notice-types';
 
 export interface NoticeCardProps {
   notice: NoticeData;
   compact?: boolean;
-  /** A picture of the card for the admin screen: no links, no dismiss, nothing remembered. */
+  /** A picture of the card for the admin screen: no links. */
   preview?: boolean;
-  /** Where the dismissal is remembered. Defaults to one key per notice. */
-  storageKey?: string;
-  onDismiss?: () => void;
 }
 
-export default function NoticeCard({ notice, compact, preview, storageKey, onDismiss }: NoticeCardProps) {
-  const key = storageKey ?? `rx:notice-hidden:${notice.id}`;
-  const [hidden, setHidden] = useState(false);
-
-  useEffect(() => {
-    if (preview) return;
-    try { if (localStorage.getItem(key)) setHidden(true); } catch { /* storage unavailable: show the card */ }
-  }, [key, preview]);
-
-  if (hidden) return null;
-
+export default function NoticeCard({ notice, compact, preview }: NoticeCardProps) {
   const body = (
     <>
       <span className="rx-strong" style={{ display: 'block', overflowWrap: 'anywhere' }}>{notice.title}</span>
@@ -56,12 +44,6 @@ export default function NoticeCard({ notice, compact, preview, storageKey, onDis
               : <Link href={notice.href} className="rx-link" style={{ minHeight: compact ? 32 : 36 }}>{notice.actionLabel}<ArrowRight aria-hidden /></Link>
           )}
         </div>
-        {!preview && (
-          <button type="button" className="rx-ib rx-annbar-x" aria-label={`Dismiss: ${notice.title}`}
-            onClick={() => { try { localStorage.setItem(key, '1'); } catch { /* ignore */ } setHidden(true); onDismiss?.(); }}>
-            <X aria-hidden />
-          </button>
-        )}
       </div>
     </div>
   );

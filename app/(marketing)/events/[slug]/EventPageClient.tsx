@@ -105,7 +105,7 @@ export default function EventPageClient({ event }: { event: any }) {
               {event.tagline}
             </p>
           )}
-          <a href="#register" className="btn-gold" style={{ fontSize: '1rem', padding: '0.875rem 2rem', display: 'inline-block' }}>
+          <a href="#register" className="btn-rust" style={{ fontSize: '1rem', padding: '0.875rem 2rem', display: 'inline-block' }}>
             Register Now →
           </a>
         </div>

@@ -65,7 +65,7 @@ npx tsx scripts/apply-migration.ts database/migrations/20261009_reimagine_v2.sql
 ### What changed
 
 - **Circle size and matching:** 8 members. Placement needs the same language and a shared stage or time slot, then prefers
-  both, then the nearest time zone. Otherwise a new Circle opens. Meetings and the 90-day cycle start at 6.
+  both, then the nearest time zone. Otherwise a new Circle opens. Meetings and the 90-day cycle start at 4.
 - **Mentorship is Model A:** the Circle is recommended up to three mentors (fit to the Circle as a group), members vote
   within 5 days, the highest vote becomes the Circle's mentor (a tie goes to the facilitator for 2 days, then best fit).
   The mentor accepts or declines (a decline reopens the vote). The Circle marks the times it can attend from the mentor's
@@ -149,7 +149,7 @@ That one line is the only change needed to make the existing Circle screens reac
 - A member can sit in up to **three Circles**: a **home Circle** (placed automatically on language, stage and time slot, as before)
   and **interest Circles** (joined on purpose). The database rule "one member seat per person" is gone. Seats are capped at 8 with
   a row lock, so two people cannot take the last seat together (`rx_join_circle`).
-- `/circle` lists your Circles with plain-language state ("5 of 8 joined, meetings start at 6", "Vote open, closes in 4 days",
+- `/circle` lists your Circles with plain-language state ("5 of 8 joined, meetings start at 4", "Vote open, closes in 4 days",
   "Your mentor is Adaeze") and **Find a Circle** (open seats, ranked by your interests). `/circle?c=<id>` is one Circle.
 - Every Circle has its own chat, reports, review, call, mentor vote, times and agreement. Anything that used to assume "your Circle"
   now takes the Circle from `?c=` and falls back to the home Circle. Messages lists one chat per Circle.

@@ -33,7 +33,7 @@ export default async function DemoLabPage() {
       votesCast: round ? ((votes ?? []) as { round_id: string }[]).filter((v) => v.round_id === round.id).length : 0,
       mentorPhase: (mentor?.status as MentorPhase) ?? null, mentorName: mentor?.human_mentors?.name ?? null,
     });
-    const ready = !!c.cycle_start && members >= 6;
+    const ready = !!c.cycle_start && members >= 4;
     const phase: LabCircle['phase'] = !ready ? 'forming' : round ? 'voting' : mentor?.status === 'requested' ? 'requested' : mentor?.status === 'scheduling' ? 'scheduling' : mentor ? 'active' : 'ready';
     return { id: c.id, title: circleTitle(c), members, headline: state.headline, detail: state.detail, phase, callOpen: !!c.demo_call_until && new Date(c.demo_call_until).getTime() > Date.now() };
   });
