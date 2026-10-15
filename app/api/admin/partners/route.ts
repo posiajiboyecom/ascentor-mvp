@@ -263,7 +263,7 @@ export async function PATCH(req: NextRequest) {
       const msg = messages[action];
       if (msg) {
         await sendEmail({
-          from:    'Ascentor Partners <noreply@ascentorbi.com>',
+          from:    'Ascentor Partners <hello@joinascentor.com>',
           to:      ownerProfile.email,
           subject: msg.subject,
           html:    msg.body,

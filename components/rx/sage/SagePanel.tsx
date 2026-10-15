@@ -33,6 +33,12 @@ export default function SagePanel() {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  // While the panel is open the floating Sage button hides, so it never covers the panel's send button.
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-sage-open', open);
+    return () => document.documentElement.removeAttribute('data-sage-open');
+  }, [open]);
   const [topic, setTopic] = useState<SageTopic>('plan');
   const [msgs, setMsgs] = useState<Msg[]>(OPENERS.plan);
   const [draft, setDraft] = useState<PlanDraft | null>(null);

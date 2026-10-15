@@ -173,7 +173,7 @@ const SECTIONS: Section[] = [
       },
       {
         type: "para",
-        text: "To exercise any right, email joinascentor@gmail.com or joinascentor@gmail.com. We respond within 30 days.",
+        text: "To exercise any right, email contact@joinascentor.com. We respond within 30 days.",
       },
     ],
   },
@@ -236,8 +236,8 @@ const SECTIONS: Section[] = [
       {
         type: "contact",
         items: [
-          { label: "General & Data Rights", value: "joinascentor@gmail.com" },
-          { label: "Data Protection Officer", value: "joinascentor@gmail.com" },
+          { label: "General & Data Rights", value: "contact@joinascentor.com" },
+          { label: "Data Protection Officer", value: "contact@joinascentor.com" },
           { label: "Postal Address", value: "Lekki, Lagos, Nigeria" },
         ],
       },

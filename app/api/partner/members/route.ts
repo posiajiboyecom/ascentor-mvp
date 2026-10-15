@@ -264,7 +264,7 @@ export async function POST(req: NextRequest) {
             const inviteUrl = `https://${partner.subdomain}.joinascentor.com/join?token=${encodeURIComponent(token)}`;
 
             await sendEmail({
-              from:    `${partner.name} <noreply@ascentorbi.com>`,
+              from:    `${partner.name} <hello@joinascentor.com>`,
               to:      email,
               subject: `You've been invited to ${partner.name}`,
               html: brandedEmailLayout({
@@ -356,7 +356,7 @@ export async function PATCH(req: NextRequest) {
       const inviteUrl = `https://${partner.subdomain}.joinascentor.com/join?token=${encodeURIComponent(token)}`;
       try {
         await sendEmail({
-          from:    `${partner.name} <noreply@ascentorbi.com>`,
+          from:    `${partner.name} <hello@joinascentor.com>`,
           to:      member.email,
           subject: `Reminder: Your invite to ${partner.name}`,
           html: brandedEmailLayout({

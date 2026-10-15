@@ -36,8 +36,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-const ADMIN_EMAIL     = process.env.FOUNDER_EMAIL || 'joinascentor@gmail.com';
-const FROM_ADDRESS    = 'Ascentor <notifications@ascentorbi.com>';
+const ADMIN_EMAIL     = process.env.FOUNDER_EMAIL || 'contact@joinascentor.com';
+const FROM_ADDRESS    = 'Ascentor <hello@joinascentor.com>';
 
 const SUBJECT_LABELS: Record<string, string> = {
   general:     'General inquiry',

@@ -17,6 +17,7 @@ import SummitModal from './SummitModal';
 import { NAV_ITEMS } from '@/lib/nav-items';
 import ShellLayout from './ShellLayout';
 import SageFloat, { clearSageGreeting } from './SageFloat';
+import PushBootstrap from '@/components/rx/PushBootstrap';
 import SagePanel from '@/components/rx/sage/SagePanel';
 import { MobileTabBar } from '@/components/nav/MobileTabBar';
 import type { ShellNavGroup } from './types';
@@ -120,6 +121,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         {children}
       </ShellLayout>
 
+      <PushBootstrap />
       <SageFloat userName={userName} />
       <SagePanel />
       <MobileTabBar />

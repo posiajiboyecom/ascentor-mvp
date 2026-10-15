@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     // Send confirmation email - non-blocking (failure does not break the response)
     try {
       await sendEmail({
-        from:    'Ascentor <hello@ascentorbi.com>',
+        from:    'Ascentor <hello@joinascentor.com>',
         to:      body.email,
         subject: `You're on the Ascentor waitlist, position #${data.position}`,
         html:    buildConfirmationEmailHtml({

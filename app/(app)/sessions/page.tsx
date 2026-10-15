@@ -50,7 +50,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
     <Aside>
       <p className="rx-label">How it works</p>
       <p className="rx-p">Your Circle is recommended a few mentors.</p><p className="rx-p">Members vote. The highest vote wins.</p>
-      <p className="rx-p">Your Circle picks a time that works for {MIN_GOING} or more.</p><p className="rx-p">Sessions are 20 minutes, every two weeks, audio only.</p>
+      <p className="rx-p">Your Circle picks a time that works for {MIN_GOING} or more.</p><p className="rx-p">Sessions are 20 minutes, every two weeks, audio by default.</p>
       <GoLink href="/experts">Live expert sessions</GoLink>
       {mine.length > 1 && <GoLink href="/sessions">All my Circles</GoLink>}
       {mentorProfile && <GoLink href="/sessions/mentoring">Mentor view</GoLink>}
@@ -159,7 +159,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
             <p className="rx-label">Next session</p>
             {next ? (<>
               <p className="rx-h2">{whenLabel(next.startsAt, me.tz)}</p>
-              <p className="rx-sm">Audio only · {next.durationMin} minutes · every two weeks</p>
+              <p className="rx-sm">Audio by default · {next.durationMin} minutes · every two weeks</p>
               <div className="rx-row" style={{ marginTop: 6 }}>
                 {joinOpen ? <Link href={`/call/${circle.circle.id}/mentor`} className="rx-btn primary"><Headphones aria-hidden style={{ width: 18, height: 18 }} />Join</Link> : <span className="rx-btn secondary" aria-disabled="true">Opens 5 minutes before</span>}
               </div>

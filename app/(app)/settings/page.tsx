@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getMe, namesFor } from '@/lib/rx/server';
 import { Aside, BackLink, GoLink, Page, Title } from '@/components/rx/ui';
 import { LanguageSelect, MessagingCard, NotificationsCard, ResearchToggle, TimezoneSelect } from '@/components/rx/settings/SettingsClient';
+import DeviceCard from '@/components/rx/settings/DeviceCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ export default async function SettingsPage() {
       <div className="rx-two">
         <div className="rx-stack-lg">
           <NotificationsCard notif={p?.notif ?? {}} annMuted={p?.ann_muted ?? false} quiet={p?.quiet_hours ?? true} />
+          <DeviceCard />
           <MessagingCard policy={p?.dm_policy ?? 'circle_and_requests'} blocked={blocked} />
           <div className="rx-card rx-stack">
             <p className="rx-label">Privacy and data</p>

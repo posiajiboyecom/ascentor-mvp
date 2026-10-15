@@ -63,7 +63,7 @@ export async function POST(req: Request) {
 
     try {
       await sendEmail({
-        from: 'Ascentor <notifications@ascentorbi.com>',
+        from: 'Ascentor <hello@joinascentor.com>',
         to: r.email,
         subject: (subject as string).trim(),
         html: buildHtml({ firstName, message: personalised, recipient: r.email }),

@@ -850,10 +850,10 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             The Elevation Summit is built by people who have built something real - and by organisations that serve them. If you have a story worth telling to purposeful people, or you want to bring your organisation into the conversation, we would love to hear from you.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <a className="summit-cta-link" href="mailto:joinascentor@gmail.com?subject=Elevation Summit - Speaker Interest">
+            <a className="summit-cta-link" href="mailto:contact@joinascentor.com?subject=Elevation Summit - Speaker Interest">
               Express speaker interest →
             </a>
-            <a className="summit-cta-link" href="mailto:joinascentor@gmail.com?subject=Elevation Summit - Partnership Interest">
+            <a className="summit-cta-link" href="mailto:contact@joinascentor.com?subject=Elevation Summit - Partnership Interest">
               Explore partnership →
             </a>
           </div>

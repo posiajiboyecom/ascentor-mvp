@@ -93,7 +93,7 @@ export default async function CirclesPage({ searchParams }: { searchParams: Prom
         <Aside>
           <p className="rx-label">How Circles work</p>
           <p className="rx-p">A Circle is up to {CIRCLE_MAX} people who share an interest and meet each week for 90 days.</p>
-          <p className="rx-p">Meetings start once 6 have joined. Calls are 15 minutes, audio only.</p>
+          <p className="rx-p">Meetings start once 6 have joined. Calls are 15 minutes, audio by default.</p>
           <p className="rx-p">Each Circle chooses its own mentor by vote. The highest vote wins.</p>
           <p className="rx-sm">You can be in up to {CIRCLES_PER_MEMBER} Circles. Your first is your home Circle and stays.</p>
         </Aside>

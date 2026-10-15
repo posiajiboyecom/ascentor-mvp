@@ -500,3 +500,6 @@ body[data-sh-lock='true'] { overflow: hidden; }
 
 @media (max-width: 1023.98px) { .sage-mobile-hide { display: none; } }
 .sh-dot { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: #C8A96E; flex: none; }
+
+/* The floating Sage button steps aside when the Sage panel is open or the screen has a message box */
+html[data-sage-open] .sage-root, .sage-root.sage-hide { display: none; }

@@ -139,7 +139,7 @@ export async function bookBestTime(circleId: string): Promise<ActionResult> {
     if (error) throw error;
     await supabaseAdmin.from('mentor_slots').update({ taken: true }).eq('id', slotId);
     await supabaseAdmin.from('circle_mentors').update({ status: 'active', started_at: new Date().toISOString() }).eq('id', cm.id);
-    void rxNotify(await circleAudience(circleId), { kind: 'sessions_booked', entityId: cm.id as string, url: `/sessions?c=${circleId}`, title: 'Mentor sessions are booked', body: 'Every two weeks, 20 minutes, audio only. Say whether you’re going.' });
+    void rxNotify(await circleAudience(circleId), { kind: 'sessions_booked', entityId: cm.id as string, url: `/sessions?c=${circleId}`, title: 'Mentor sessions are booked', body: 'Every two weeks, 20 minutes, audio by default. Say whether you’re going.' });
     return done();
   } catch (e) { return fail(e); }
 }

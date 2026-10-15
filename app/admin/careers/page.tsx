@@ -311,7 +311,7 @@ function JobForm({ form, setForm, onSave, onCancel, saving, msg }: {
           <input
             value={form.apply_email}
             onChange={e => set('apply_email', e.target.value)}
-            placeholder="careers@ascentorbi.com"
+            placeholder="contact@joinascentor.com"
             style={INPUT_BASE}
           />
         </div>

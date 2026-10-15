@@ -41,7 +41,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'joinascentor@gmail.com'
+const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'contact@joinascentor.com'
 
 function acknowledgementEmail(name: string, org: string, recipient: string) {
   const firstName = name.split(' ')[0] || name
@@ -91,7 +91,7 @@ function founderNotificationEmail(name: string, email: string, org: string, mess
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
-  await sendMail({ from: 'Ascentor Partners <noreply@ascentorbi.com>', to, subject, html })
+  await sendMail({ from: 'Ascentor Partners <hello@joinascentor.com>', to, subject, html })
 }
 
 export async function POST(req: NextRequest) {

@@ -262,8 +262,8 @@ export default function DemoPricingPage() {
                   <a
                     href={
                       plan.id === 'enterprise'
-                        ? 'mailto:joinascentor@gmail.com?subject=Enterprise Partner Enquiry'
-                        : `mailto:joinascentor@gmail.com?subject=Activate ${plan.name} Plan&body=Hi Team Ascentor,%0A%0AI would like to activate the ${plan.name} partner plan (${billing} billing).%0A%0AOrganisation name:%0AExpected member count:%0A%0AThank you.`
+                        ? 'mailto:contact@joinascentor.com?subject=Enterprise Partner Enquiry'
+                        : `mailto:contact@joinascentor.com?subject=Activate ${plan.name} Plan&body=Hi Team Ascentor,%0A%0AI would like to activate the ${plan.name} partner plan (${billing} billing).%0A%0AOrganisation name:%0AExpected member count:%0A%0AThank you.`
                     }
                     className={`dp-cta ${plan.hot ? 'primary' : 'secondary'}`}
                   >
@@ -277,7 +277,7 @@ export default function DemoPricingPage() {
           <p className="dp-footer-note">
             Prices in Nigerian Naira (₦) · Seat charges apply to active members (logged in within 90 days)<br />
             Annual billing gives 15% off the flat fee only · Seat rates stay the same<br />
-            To activate or ask questions: <a href="mailto:joinascentor@gmail.com">joinascentor@gmail.com</a>
+            To activate or ask questions: <a href="mailto:contact@joinascentor.com">contact@joinascentor.com</a>
           </p>
 
         </div>
