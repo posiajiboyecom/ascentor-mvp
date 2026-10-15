@@ -36,7 +36,8 @@ import {
 } from './types';
 
 // Brand assets (public/): the sidebar is black, so use the versions made for dark backgrounds.
-const LOGO_FULL = '/ascentor-color-for-dark-pages.svg'; // gold mark + white wordmark
+const LOGO_FULL = '/ascentor-color-for-dark-pages.svg'; // gold mark + white wordmark (admin: black sidebar)
+const LOGO_FULL_LIGHT = '/ascentor-color-for-light-pages.svg'; // gold mark + dark wordmark (member app: light sidebar)
 const LOGO_MARK = '/ascentor-LM-gold.svg';              // logo mark only
 
 export interface ShellLayoutProps {
@@ -203,7 +204,7 @@ function ShellInner({
       {/* ── Drawer backdrop (mobile) ── */}
       {drawerOpen && <div className="sh-backdrop" onClick={() => setDrawerOpen(false)} aria-hidden="true" />}
 
-      {/* ── Sidebar (black) ── */}
+      {/* ── Sidebar (light in the member app, black in admin) ── */}
       <aside
         className="sh-sidebar"
         data-collapsed={collapsed}
@@ -214,7 +215,7 @@ function ShellInner({
           <Link href={homeHref} className="sh-brand-link" onClick={() => setDrawerOpen(false)} aria-label="Ascentor home">
             {/* Full logo when open, logo mark only when collapsed (CSS swaps them) */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="sh-logo-full" src={LOGO_FULL} alt="Ascentor" />
+            <img className="sh-logo-full" src={variant === 'app' ? LOGO_FULL_LIGHT : LOGO_FULL} alt="Ascentor" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="sh-logo-mark" src={LOGO_MARK} alt="" aria-hidden="true" />
           </Link>
@@ -222,7 +223,7 @@ function ShellInner({
           <button
             type="button"
             className="sh-icon-btn sh-drawer-only"
-            style={{ color: '#A8A29A' }}
+            style={{ color: variant === 'app' ? '#5F6672' : '#A8A29A' }}
             onClick={() => setDrawerOpen(false)}
             aria-label="Close menu"
           >

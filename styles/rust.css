@@ -80,13 +80,14 @@ nav a:not([class*='btn']):not([class*='cta']):hover {
 /* ── Signed-in app shell ──────────────────────────────────────────────────── */
 
 html .sh-dot { background: var(--rust); }
-html .sh-item[aria-current='page']::before { background: var(--rust-light); }
+html .sh-root:not([data-variant='app']) .sh-item[aria-current='page']::before { background: var(--rust-light); }
 
 /* The black sidebar glows from the bottom corner */
 html .sh-sidebar {
   background-image: radial-gradient(120% 38% at 0% 100%, rgba(182, 80, 42, 0.22), transparent 70%);
   background-repeat: no-repeat;
 }
+html .sh-root[data-variant='app'] .sh-sidebar { background-image: radial-gradient(120% 34% at 0% 100%, rgba(182, 80, 42, 0.09), transparent 70%); }
 
 /* Pages that are not built from the member app's own screens get the same top wash */
 html .sh-main:not(:has(.rx-page)) {

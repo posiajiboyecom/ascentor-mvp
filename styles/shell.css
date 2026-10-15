@@ -41,20 +41,21 @@
 }
 
 .sh-root[data-variant='app'] {
-  --sh-bg:         var(--app-bg-card);
-  --sh-bg-2:       var(--app-bg);
-  --sh-fg:         var(--app-text);
-  --sh-muted:      var(--app-text-dim);
-  --sh-faint:      var(--app-text-dim);
-  --sh-border:     var(--app-border);
-  --sh-border-2:   var(--app-border);
-  --sh-hover:      var(--app-bg-hover);
-  --sh-input:      var(--app-bg-input);
-  --sh-active-bg:  var(--app-accent-glow);
-  --sh-active-fg:  var(--app-accent);
-  --sh-accent:     var(--app-accent);
-  --sh-danger:     #d9534f;
-  --sh-shadow:     0 18px 48px rgba(0, 0, 0, 0.28);
+  /* Exact values from the Ascentor App Prototype, light theme */
+  --sh-bg:         #F6F5F2;
+  --sh-bg-2:       #F6F5F2;
+  --sh-fg:         #161616;
+  --sh-muted:      #5F6672;
+  --sh-faint:      #5F6672;
+  --sh-border:     #E6E3DD;
+  --sh-border-2:   #CFCAC2;
+  --sh-hover:      #FFFFFF;
+  --sh-input:      #FFFFFF;
+  --sh-active-bg:  #FFFFFF;
+  --sh-active-fg:  #B6502A;
+  --sh-accent:     #B6502A;
+  --sh-danger:     #9B1C31;
+  --sh-shadow:     0 1px 2px rgba(20, 20, 20, 0.05), 0 6px 18px rgba(20, 20, 20, 0.06);
 }
 
 .sh-root {
@@ -503,3 +504,42 @@ body[data-sh-lock='true'] { overflow: hidden; }
 
 /* The floating Sage button steps aside when the Sage panel is open or the screen has a message box */
 html[data-sage-open] .sage-root, .sage-root.sage-hide { display: none; }
+
+/* ── The member app's sidebar, exactly as the prototype draws it ─────────────
+ * Light, on the page colour, with a 1px right border. The four tabs are 48px rows with a 12px uppercase label; the active
+ * tab is white with rust text. The other groups are quiet 14px rows (36px) with a white active row. No black, no gold bar.
+ */
+.sh-root[data-variant='app'] .sh-sidebar {
+  --sb-bg:         #F6F5F2;
+  --sb-fg:         #161616;
+  --sb-muted:      #5F6672;
+  --sb-faint:      #5F6672;
+  --sb-border:     #E6E3DD;
+  --sb-hover:      #FFFFFF;
+  --sb-active-bg:  #FFFFFF;
+  --sb-active-fg:  #B6502A;
+  --sb-accent:     #B6502A;
+}
+.sh-root[data-variant='app'] .sh-brand { border-bottom: 0; padding: 20px 22px 12px; height: auto; min-height: 60px; }
+.sh-root[data-variant='app'] .sh-nav { padding: 8px 12px 14px; }
+.sh-root[data-variant='app'] .sh-group:first-child .sh-item {
+  height: 48px; min-height: 48px; padding: 0 14px; gap: 12px; border-radius: 10px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sb-muted);
+}
+.sh-root[data-variant='app'] .sh-group:first-child .sh-item .sh-item-icon > svg { width: 22px; height: 22px; stroke-width: 1.6; }
+.sh-root[data-variant='app'] .sh-group + .sh-group { margin-top: 18px; }
+.sh-root[data-variant='app'] .sh-group + .sh-group .sh-item {
+  min-height: 36px; padding: 4px 14px; border-radius: 8px; font-size: 14px; font-weight: 400; color: var(--sb-fg);
+}
+.sh-root[data-variant='app'] .sh-group + .sh-group .sh-item .sh-item-icon > svg { color: var(--sb-muted); }
+.sh-root[data-variant='app'] .sh-group + .sh-group .sh-item[aria-current='page'] { color: var(--sb-fg); font-weight: 600; }
+.sh-root[data-variant='app'] .sh-item[aria-current='page']::before { display: none; }
+.sh-root[data-variant='app'] .sh-group-label { margin: 0 0 4px; padding: 0 14px; font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--sb-muted); }
+.sh-root[data-variant='app'] .sh-badge { background: none; color: var(--sb-muted); font-size: 12px; font-weight: 400; padding: 0; }
+.sh-root[data-variant='app'] .sh-sidebar-foot { border-top: 1px solid var(--sb-border); }
+.sh-root[data-variant='app'] .sh-user { background: #FFFFFF; border: 1px solid var(--sb-border); }
+.sh-root[data-variant='app'] .sh-logout:hover { background: rgba(155, 28, 49, 0.1); color: #9B1C31; }
+.sh-root[data-variant='app'] .sh-backdrop, .sh-backdrop { background: rgba(20, 20, 20, 0.35); backdrop-filter: none; }
+.sh-root[data-variant='app'] .sh-group:first-child .sh-item:hover { color: var(--sb-fg); }
+.sh-root[data-variant='app'] .sh-group:first-child .sh-item[aria-current='page'] { color: var(--sb-active-fg); }
+.sh-root[data-variant='app'] .sh-group:first-child .sh-item[aria-current='page'] .sh-item-icon > svg { color: var(--sb-active-fg); }
