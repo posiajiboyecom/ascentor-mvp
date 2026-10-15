@@ -6,7 +6,8 @@ import { Aside, Banner, Title } from '@/components/rx/ui';
 import { circleState, type MentorPhase, type RoundPhase } from '@/lib/rx/circle-state';
 import { circleTitle } from '@/lib/rx/circles';
 import { callsConfigured } from '@/lib/rx/calls';
-import { LabCard, SeedControls, type LabCircle } from '@/components/rx/admin/DemoLab';
+import { CommunityControls, LabCard, SeedControls, type LabCircle } from '@/components/rx/admin/DemoLab';
+import { demoPostsExist } from '@/lib/rx/demo-community';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -37,6 +38,8 @@ export default async function DemoLabPage() {
     return { id: c.id, title: circleTitle(c), members, headline: state.headline, detail: state.detail, phase, callOpen: !!c.demo_call_until && new Date(c.demo_call_until).getTime() > Date.now() };
   });
 
+  const hasPosts = lab.length > 0 ? await demoPostsExist(supabaseAdmin) : false;
+
   return (
     <ToastProvider>
       <div className="rx rx-admin-desktop" style={{ padding: 4 }}>
@@ -46,6 +49,7 @@ export default async function DemoLabPage() {
         <div className="rx-two">
           <div className="rx-stack">
             <SeedControls hasDemo={lab.length > 0} />
+            {lab.length > 0 && <CommunityControls hasPosts={hasPosts} />}
             {lab.map((c) => <LabCard key={c.id} c={c} />)}
           </div>
           <Aside>

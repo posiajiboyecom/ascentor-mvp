@@ -243,3 +243,12 @@ Before this, nothing in the member app registered the service worker or saved a 
 - Onboarding's picture panel stays centred in the window while the other side scrolls (also on the welcome and stage screens).
 - The floating Sage button hides while the Sage panel is open and on chat screens, so it never covers a send button.
 - Glows, unread dots and "New" markers use rust. Gold and black stay the brand.
+
+### Demo Community content (for testing)
+
+- `npx tsx scripts/seed-demo.ts --community` (or the button at `/admin/demo`) adds 9 demo posts across categories, with comments,
+  one threaded reply and reactions, written by demo members and spread over the last week. A fresh `seed-demo.ts` includes it.
+- `/admin/demo` has "Make demo members react to my latest post". Write a post first. Demo members then react and comment, and you
+  receive the real in-app notification, email and push, so you can check all three.
+- Adding a demo member to a Circle you are in now notifies you, like a real join.
+- `--reset` removes demo posts, comments and reactions before deleting the demo accounts, so nothing is left as "Ascentor team".

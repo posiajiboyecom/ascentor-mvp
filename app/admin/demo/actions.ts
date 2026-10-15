@@ -12,6 +12,8 @@ import { addDemoMember, resetDemo, seedDemo } from '@/lib/rx/demo-seed';
 import { MIN_GOING, SESSIONS_PLANNED, SESSION_GAP_DAYS, openRound, settleRound } from '@/lib/rx/cmentor';
 import { MENTOR_CALL_MINUTES } from '@/lib/rx/calls';
 import { rxNotify, circleAudience } from '@/lib/rx/notifications';
+import { seedDemoCommunity } from '@/lib/rx/demo-community';
+import { excerpt } from '@/lib/rx/richtext';
 
 async function demoCircle(circleId: string) {
   await requireAdmin();
@@ -44,7 +46,16 @@ export async function addDemoMemberTo(circleId: string): Promise<ActionResult> {
     await demoCircle(circleId);
     const { count } = await supabaseAdmin.from('circle_seats').select('user_id', { count: 'exact', head: true }).eq('circle_id', circleId).eq('role', 'member');
     if ((count ?? 0) >= 8) throw new Error('This Circle is full.');
-    await addDemoMember(supabaseAdmin, circleId);
+    const joiner = await addDemoMember(supabaseAdmin, circleId);
+    const c = await demoCircle(circleId);
+    const { count: now } = await supabaseAdmin.from('circle_seats').select('user_id', { count: 'exact', head: true }).eq('circle_id', circleId).eq('role', 'member');
+    const { data: who } = await supabaseAdmin.from('profiles').select('full_name').eq('id', joiner).maybeSingle();
+    const title = c.interest ? `${c.interest} · Circle ${c.number}` : `${c.name} · Circle ${c.number}`;
+    void rxNotify(await circleAudience(circleId, { except: joiner }), {
+      kind: 'circle_new_member', actorId: joiner, entityId: circleId, url: `/circle?c=${circleId}`,
+      title: (now ?? 0) === 6 ? `${title} now has 6 members` : `${((who?.full_name as string | undefined) ?? 'Someone').split(' ')[0]} joined ${title}`,
+      body: (now ?? 0) === 6 ? 'Weekly calls and the 90-day cycle begin. You can now choose a mentor together.' : `${now ?? 0} of 8 seats are filled.`,
+    });
     return done();
   } catch (e) { return fail(e); }
 }
@@ -150,4 +161,48 @@ export async function openDemoCall(circleId: string): Promise<ActionResult> {
     await supabaseAdmin.from('circles').update({ demo_call_until: new Date(Date.now() + 30 * 60000).toISOString() }).eq('id', circleId);
     return done();
   } catch (e) { return fail(e); }
+}
+
+// ── Community ───────────────────────────────────────────────────────────────
+
+export async function seedDemoPosts(): Promise<ActionResult<{ posts: number; comments: number; reactions: number }>> {
+  try {
+    await requireAdmin();
+    const r = await seedDemoCommunity(supabaseAdmin);
+    revalidatePath('/community'); done();
+    return { ok: true, ...r };
+  } catch (e) { return fail(e, 'We couldn’t add the demo posts.'); }
+}
+
+/** Demo members react to and comment on the admin's latest post, and the real notification, email and push go out to the admin. */
+export async function demoEngageMyPost(): Promise<ActionResult<{ reactions: number; comments: number }>> {
+  try {
+    const me = await requireAdmin();
+    const { data: post } = await supabaseAdmin.from('feed_posts').select('id, body').eq('user_id', me.userId).eq('deleted', false).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (!post) throw new Error('Write a post in Community first, then come back. Demo members respond to your latest post.');
+
+    const { data: demo } = await supabaseAdmin.from('member_profile').select('user_id').eq('is_demo', true).eq('is_facilitator', false);
+    const ids = ((demo ?? []) as { user_id: string }[]).map((d) => d.user_id);
+    if (ids.length < 3) throw new Error('Create the demo Circles first. They provide the demo members.');
+    const [{ data: prior }, { data: names }] = await Promise.all([
+      supabaseAdmin.from('feed_reactions').select('user_id').eq('post_id', post.id),
+      supabaseAdmin.from('profiles').select('id, full_name').in('id', ids),
+    ]);
+    const done0 = new Set(((prior ?? []) as { user_id: string }[]).map((r) => r.user_id));
+    const first = (id: string) => (((names ?? []) as { id: string; full_name: string | null }[]).find((n) => n.id === id)?.full_name ?? 'A member').split(' ')[0];
+
+    const reactors = ids.filter((id) => !done0.has(id)).slice(0, 3);
+    const kinds = ['like', 'support', 'insight'] as const;
+    if (reactors.length) await supabaseAdmin.from('feed_reactions').insert(reactors.map((user_id, i) => ({ post_id: post.id, user_id, kind: kinds[i % 3] })));
+    const lines = ['Thank you for sharing this.', 'This is helpful. How did you get started?'];
+    const commenters = ids.slice(3, 5).length === 2 ? ids.slice(3, 5) : ids.slice(0, 2);
+    for (let i = 0; i < commenters.length; i++) await supabaseAdmin.from('feed_replies').insert({ post_id: post.id, user_id: commenters[i], body: lines[i] });
+
+    const url = `/community/post/${post.id}`;
+    const body = excerpt(post.body as string);
+    if (reactors.length) void rxNotify(me.userId, { kind: 'post_reaction', actorId: reactors[0], entityId: post.id as string, url, title: reactors.length === 1 ? `${first(reactors[0])} reacted to your post` : `${reactors.length} people reacted to your post`, body });
+    for (let i = 0; i < commenters.length; i++) void rxNotify(me.userId, { kind: 'post_comment', actorId: commenters[i], entityId: post.id as string, url, title: `${first(commenters[i])} commented on your post`, body: lines[i] });
+    revalidatePath('/community');
+    return { ok: true, reactions: reactors.length, comments: commenters.length };
+  } catch (e) { return fail(e, 'We couldn’t add demo activity.'); }
 }

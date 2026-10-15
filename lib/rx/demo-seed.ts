@@ -15,6 +15,7 @@
 // service-role client.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { removeDemoCommunity, seedDemoCommunity } from './demo-community';
 
 type Admin = SupabaseClient;
 
@@ -208,6 +209,10 @@ export async function seedDemo(admin: Admin, log: (m: string) => void = () => un
     await admin.from('circles').update({ demo_call_until: new Date(Date.now() + 8 * 3600000).toISOString() }).eq('id', cid);
   }
 
+  // Demo members also write in Community, so the feed is alive. A failure here never undoes the Circles.
+  try { const c = await seedDemoCommunity(admin); log(`community: ${c.posts} posts, ${c.comments} comments, ${c.reactions} reactions`); }
+  catch (e) { log(`community skipped: ${e instanceof Error ? e.message : e}`); }
+
   return { circles: made };
 }
 
@@ -215,6 +220,7 @@ export async function seedDemo(admin: Admin, log: (m: string) => void = () => un
 export async function resetDemo(admin: Admin): Promise<{ users: number; circles: number }> {
   const { data: users } = await admin.from('member_profile').select('user_id').eq('is_demo', true);
   const ids = ((users ?? []) as { user_id: string }[]).map((u) => u.user_id);
+  await removeDemoCommunity(admin, ids);
   const { data: circles } = await admin.from('circles').select('id').eq('is_demo', true);
   await admin.from('circles').delete().eq('is_demo', true);
   await admin.from('human_mentors').delete().eq('is_demo', true);
