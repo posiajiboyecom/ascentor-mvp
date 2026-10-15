@@ -39,6 +39,7 @@ export default async function AdminCirclesPage() {
           <Aside>
             <FacilitatorManager facilitators={facilitators} />
             <p className="rx-sm">Call minutes this month: {usage.used.toLocaleString()} of {MONTHLY_FREE_MINUTES.toLocaleString()} free.</p>
+            <p className="rx-sm">Calls are audio by default. If anyone turns on a camera, Daily bills that call at the video rate, about four times the audio rate. The free minutes count the same either way.</p>
             <p className="rx-sm">New Circles are given a free facilitator when one exists. A Circle’s 90-day cycle starts when its 6th member joins.</p>
           </Aside>
         </div>

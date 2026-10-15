@@ -29,7 +29,7 @@ export default async function MeetingPage({ searchParams }: { searchParams: Prom
             <div className="rx-stack-sm" style={{ alignItems: 'center', position: 'relative', textAlign: 'center', padding: 16 }}>
               <Headphones aria-hidden style={{ width: 32, height: 32 }} />
               <p className="rx-p rx-strong" style={{ color: '#fff' }}>{started ? `Starts ${whenLabel(next, me.tz)}` : 'Calls start when 6 members have joined'}</p>
-              <p className="rx-sm" style={{ color: '#D6D3CB' }}>{started ? 'Audio only · 15 minutes · the room opens 5 minutes early.' : 'Your group chat is open in the meantime.'}</p>
+              <p className="rx-sm" style={{ color: '#D6D3CB' }}>{started ? 'Audio by default · 15 minutes · the room opens 5 minutes early.' : 'Your group chat is open in the meantime.'}</p>
             </div>
           </div>
           <div className="rx-row">

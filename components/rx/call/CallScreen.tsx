@@ -1,14 +1,14 @@
 'use client';
 
-// Audio-only call (Daily). Weekly Circle call: 15 minutes. Mentor session: 20 minutes. No camera, no screen sharing,
-// no recording. States: waiting, microphone check, joining, in call, reconnecting, poor connection, ended, unsupported
+// Call (Daily). Weekly Circle call: 15 minutes. Mentor session: 20 minutes. Audio by default, with an optional camera that
+// stays off until a member turns it on. No screen sharing, no recording. States: waiting, microphone check, joining, in call, reconnecting, poor connection, ended, unsupported
 // in-app browser, call unavailable, Circle not started.
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Daily, { type DailyCall, type DailyParticipant } from '@daily-co/daily-js';
-import { Hand, LogOut, Mic, MicOff, TriangleAlert, UserX, VolumeX } from 'lucide-react';
+import { Hand, LogOut, Mic, MicOff, TriangleAlert, UserX, Video, VideoOff, VolumeX } from 'lucide-react';
 import { Avatar } from '@/components/rx/ui';
 import { useToast } from '@/components/rx/Toast';
 
@@ -33,6 +33,18 @@ function RemoteAudio({ p }: { p: DailyParticipant }) {
   return <audio ref={ref} autoPlay playsInline />;
 }
 
+function PersonVideo({ p }: { p: DailyParticipant }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const track = p.tracks?.video?.persistentTrack;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !track) return;
+    el.srcObject = new MediaStream([track]);
+    void el.play().catch(() => undefined);
+  }, [track]);
+  return <video ref={ref} className="rx-call-video" style={p.local ? { transform: 'scaleX(-1)' } : undefined} autoPlay playsInline muted aria-label={`${p.user_name || 'Member'}'s camera`} />;
+}
+
 export default function CallScreen({ circleId, kind, sessionId, backHref, firstName }: { circleId: string; kind: 'circle' | 'mentor'; sessionId?: string; backHref: string; firstName: string }) {
   const router = useRouter();
   const toast = useToast();
@@ -45,6 +57,8 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const [parts, setParts] = useState<DailyParticipant[]>([]);
   const [speaker, setSpeaker] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
+  const [camOn, setCamOn] = useState(false);
+  const [camBusy, setCamBusy] = useState(false);
   const [hands, setHands] = useState<string[]>([]);
   const [handUp, setHandUp] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
@@ -53,6 +67,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const attendanceRef = useRef<string | null>(null);
   const warnedRef = useRef(false);
   const meterStop = useRef<() => void>(() => undefined);
+  const camTrack = useRef<MediaStreamTrack | null>(null);
 
   const fetchToken = useCallback(async () => {
     try {
@@ -141,11 +156,33 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
 
   async function leave(auto = false) {
     try { await callRef.current?.leave(); } catch { /* already gone */ }
+    camTrack.current?.stop(); camTrack.current = null; setCamOn(false);
     endAttendance(); setPhase('ended');
     if (auto) toast('The call has ended.');
   }
 
   function toggleMute() { const c = callRef.current; if (!c) return; const next = !muted; c.setLocalAudio(!next); setMuted(next); }
+  async function toggleCamera() {
+    const c = callRef.current; if (!c || camBusy) return;
+    setCamBusy(true);
+    try {
+      if (camOn) {
+        c.setLocalVideo(false);
+        await c.setInputDevicesAsync({ videoSource: false });
+        camTrack.current?.stop(); camTrack.current = null;
+        setCamOn(false);
+      } else {
+        // The camera is only opened now, when the member asks for it, so joining never prompts for it.
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 480 } } });
+        const track = stream.getVideoTracks()[0];
+        camTrack.current = track;
+        await c.setInputDevicesAsync({ videoSource: track });
+        c.setLocalVideo(true);
+        setCamOn(true);
+      }
+    } catch { toast('We couldn’t turn on your camera. Check that your browser can use it.'); setCamOn(false); }
+    finally { setCamBusy(false); }
+  }
   function toggleHand() { const c = callRef.current; if (!c) return; const up = !handUp; setHandUp(up); c.sendAppMessage({ type: 'hand', up }, '*'); }
   async function endForAll() {
     if (!window.confirm('End the call for everyone?')) return;
@@ -189,14 +226,14 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
         {phase === 'waiting' && info && (
           <div className="rx-stack">
             <p className="rx-big">Opens in {mmss(new Date(info.opensAt).getTime() - now)}</p>
-            <p className="rx-sm">The room opens 5 minutes before the start, and the call lasts {kind === 'circle' ? 15 : 20} minutes. Audio only.</p>
+            <p className="rx-sm">The room opens 5 minutes before the start, and the call lasts {kind === 'circle' ? 15 : 20} minutes. Audio by default, camera optional.</p>
             <Link href={backHref} className="rx-btn secondary">Back</Link>
           </div>
         )}
 
         {phase === 'prejoin' && info && (
           <div className="rx-stack">
-            <p className="rx-p">Audio only. No camera, no screen sharing and no recording. The call ends automatically at {new Date(info.endsAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}.</p>
+            <p className="rx-p">Audio by default. Your camera stays off unless you turn it on. No screen sharing and no recording. The call ends automatically at {new Date(info.endsAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}.</p>
             {micOk === 'unknown' && <div><button type="button" className="rx-btn secondary" onClick={() => void checkMic()}><Mic aria-hidden style={{ width: 18, height: 18 }} />Allow microphone</button><p className="rx-sm" style={{ marginTop: 8 }}>Your browser will ask for permission next, so others can hear you.</p></div>}
             {micOk === 'granted' && (<div className="rx-stack-sm"><p className="rx-sm">Say something. The bar moves when your microphone hears you.</p><div className="rx-bar" role="img" aria-label="Microphone level"><span style={{ width: `${Math.round(level * 100)}%`, transition: 'width .08s linear' }} /></div></div>)}
             {micOk === 'blocked' && <div className="rx-banner" role="alert"><TriangleAlert aria-hidden style={{ width: 20, height: 20, flex: 'none' }} /><div><b>The microphone is blocked.</b> Open your browser’s site settings, allow the microphone for this site, then reload this page. You can still listen without it.</div></div>}
@@ -216,13 +253,16 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
                 const name = p.user_name || 'Member';
                 return (
                   <li key={p.session_id} className="rx-call-person">
-                    <span className={`rx-call-ring${speaking ? ' on' : ''}`}><Avatar name={name} size="lg" seed={p.user_id} /></span>
+                    {p.video && p.tracks?.video?.persistentTrack
+                      ? <span className={`rx-call-ring${speaking ? ' on' : ''}`}><PersonVideo p={p} /></span>
+                      : <span className={`rx-call-ring${speaking ? ' on' : ''}`}><Avatar name={name} size="lg" seed={p.user_id} /></span>}
                     <span className="rx-sm" style={{ color: 'var(--rx-ink)', fontWeight: 600 }}>{p.local ? `${firstName} (you)` : name}</span>
                     <span className="rx-sm">{p.owner ? (kind === 'circle' ? 'Facilitator' : 'Mentor') : ''}{!p.audio ? ' · muted' : ''}{hands.includes(p.session_id) ? ` · hand ${handOrder(p.session_id)}` : ''}</span>
                     {speaking && <span className="sr-only" style={{ position: 'absolute', left: -9999 }}>Speaking</span>}
                     {!p.local && <RemoteAudio p={p} />}
                     {isOwner && !p.local && (
                       <span className="rx-row rx-nw" style={{ gap: 2 }}>
+                        {p.video && <button type="button" className="rx-ib" style={{ width: 36, height: 36 }} aria-label={`Turn off ${name}'s camera`} onClick={() => callRef.current?.updateParticipant(p.session_id, { setVideo: false })}><VideoOff aria-hidden style={{ width: 18, height: 18 }} /></button>}
                         <button type="button" className="rx-ib" style={{ width: 36, height: 36 }} aria-label={`Mute ${name}`} onClick={() => callRef.current?.updateParticipant(p.session_id, { setAudio: false })}><VolumeX aria-hidden style={{ width: 18, height: 18 }} /></button>
                         <button type="button" className="rx-ib" style={{ width: 36, height: 36 }} aria-label={`Remove ${name}`} onClick={() => { if (window.confirm(`Remove ${name} from the call?`)) callRef.current?.updateParticipant(p.session_id, { eject: true }); }}><UserX aria-hidden style={{ width: 18, height: 18 }} /></button>
                       </span>
@@ -233,6 +273,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
             </ul>
             <div className="rx-call-controls">
               <button type="button" className="rx-call-btn" aria-pressed={muted} aria-label={muted ? 'Unmute' : 'Mute'} onClick={toggleMute}>{muted ? <MicOff aria-hidden /> : <Mic aria-hidden />}<span>{muted ? 'Unmute' : 'Mute'}</span></button>
+              <button type="button" className="rx-call-btn" aria-pressed={camOn} aria-label={camOn ? 'Turn camera off' : 'Turn camera on'} disabled={camBusy} onClick={() => void toggleCamera()}>{camOn ? <Video aria-hidden /> : <VideoOff aria-hidden />}<span>{camOn ? 'Camera on' : 'Camera off'}</span></button>
               <button type="button" className="rx-call-btn" aria-pressed={handUp} aria-label={handUp ? 'Lower hand' : 'Raise hand'} onClick={toggleHand}><Hand aria-hidden /><span>{handUp ? 'Lower' : 'Raise hand'}</span></button>
               <button type="button" className="rx-call-btn leave" aria-label="Leave the call" onClick={() => void leave()}><LogOut aria-hidden /><span>Leave</span></button>
             </div>

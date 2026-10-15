@@ -160,7 +160,7 @@ export async function confirmSlot(cmId: string, slotId: string): Promise<ActionR
     if (error) throw error;
     await supabaseAdmin.from('mentor_slots').update({ taken: true }).eq('id', slotId);
     await supabaseAdmin.from('circle_mentors').update({ status: 'active', started_at: new Date().toISOString() }).eq('id', cmId);
-    void rxNotify([...(await circleAudience(cm.circleId)), ...(cm.mentorUserId ? [cm.mentorUserId] : [])], { kind: 'sessions_booked', entityId: cmId, url: `/sessions?c=${cm.circleId}`, title: 'Mentor sessions are booked', body: `Every two weeks, 20 minutes, audio only. First session ${new Date(first).toUTCString().slice(0, 22)} UTC. Say whether you’re going.` });
+    void rxNotify([...(await circleAudience(cm.circleId)), ...(cm.mentorUserId ? [cm.mentorUserId] : [])], { kind: 'sessions_booked', entityId: cmId, url: `/sessions?c=${cm.circleId}`, title: 'Mentor sessions are booked', body: `Every two weeks, 20 minutes, audio by default. First session ${new Date(first).toUTCString().slice(0, 22)} UTC. Say whether you’re going.` });
     revalidatePath('/sessions'); revalidatePath('/sessions/mentoring');
     return { ok: true };
   } catch (e) { return fail(e); }

@@ -368,3 +368,7 @@ a.rx-opt { text-decoration: none; }
 
 /* Sage: a faint rust halo around the mark */
 .rx-smark { box-shadow: 0 0 0 4px var(--rx-glow), 0 0 16px var(--rx-glow-strong); }
+
+/* Calls: a member's camera, shown in place of their picture */
+.rx-call-video { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; background: #0F0F0E; display: block; }
+@media (min-width: 1024px) { .rx-call-video { width: 112px; height: 112px; } }

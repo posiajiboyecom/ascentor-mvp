@@ -188,3 +188,58 @@ are shown to staff only, never recommended to real Circles, ignored by the RSVP 
 - Video toggle on calls (audio stays the default).
 - Real calls need `DAILY_API_KEY`.
 - Cron-driven vote reminders and a "vote closes tomorrow" nudge.
+
+
+## Round 3: email, push, camera, posting order, polish
+
+No new migration. Deploy and set the environment below.
+
+### Email now sends from joinascentor.com
+
+- Default sender is `Ascentor <hello@joinascentor.com>`. Replies go to `contact@joinascentor.com`. Both are aliases of the one Hostinger
+  mailbox (`lib/contact.ts`). `summit@` is not created yet, so Summit falls back to `contact@`.
+- One mailbox sends everything, including Summit tickets. `lib/nodemailer.ts` reads `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`.
+  The old `SUMMIT_GMAIL_*` values are only used when `SMTP_*` is not set. The Summit mailer used to be hard-wired to Gmail's server.
+- If the mail server refuses the From address (some hosts only let a mailbox send as itself), the send is retried as the mailbox with the
+  intended address as Reply-To, so mail still goes out.
+- Every old `@ascentorbi.com` sender and `joinascentor@gmail.com` contact in the code now uses the new addresses.
+- Check it from your machine: `npx tsx scripts/test-email.ts --verify` (logs in, sends nothing), then `npx tsx scripts/test-email.ts you@example.com`.
+
+Vercel (Production):
+
+| Variable | Value |
+|---|---|
+| `SMTP_HOST` | `smtp.hostinger.com` |
+| `SMTP_PORT` | `465` |
+| `SMTP_USER` | the Hostinger mailbox address |
+| `SMTP_PASS` | its password |
+| `EMAIL_FROM` | `Ascentor <hello@joinascentor.com>` |
+| `SUMMIT_MAIL_FROM` | `Ascentor Summit <hello@joinascentor.com>` (still holds the old Gmail address) |
+| `FOUNDER_EMAIL`, `ADMIN_EMAIL`, `SUMMIT_ADMIN_EMAIL` | `contact@joinascentor.com`, where admin alerts should land |
+
+### Push notifications on the PWA
+
+Before this, nothing in the member app registered the service worker or saved a push subscription, so no phone could receive a push.
+- `PushBootstrap` registers `/sw.js` in production.
+- Onboarding's "Turn on reminders" now asks permission and saves the device's subscription.
+- Settings has an "On this phone" card: install the app (a button on Android and desktop Chrome, steps on iPhone) and a push switch.
+- iPhone works as a PWA only after Ascentor is added to the Home Screen from Safari and opened from there. The card says so.
+- The VAPID keys already exist in Vercel. Pushes and emails come from the same `rxNotify` call.
+
+### Camera on calls (audio stays the default)
+
+- Members can turn a camera on during a call. It is off until they do, and joining never asks for it. Screen sharing and recording stay off.
+- The facilitator or mentor can turn a participant's camera off.
+- If anyone sends video, Daily bills that call at the video rate (about four times audio). The free minutes count the same.
+- Existing audio-only rooms are opened up automatically the next time someone joins.
+- Test it with a real key: `npx tsx scripts/test-daily.ts` (creates a private test room and a token, deletes the room).
+
+### Posting order, consent and polish
+
+- Posting is two steps: write (with photos or video), then choose a category as the last step before Post.
+- The signup tick box and Terms now carry the spelled-out sentence: "I understand that the Ascentor team can read chats on the platform,
+  including conversations with Sage, to keep members safe and to improve Ascentor. Other members cannot read my chats." Terms has a new
+  "Chat Review and Safety" section.
+- Onboarding's picture panel stays centred in the window while the other side scrolls (also on the welcome and stage screens).
+- The floating Sage button hides while the Sage panel is open and on chat screens, so it never covers a send button.
+- Glows, unread dots and "New" markers use rust. Gold and black stay the brand.

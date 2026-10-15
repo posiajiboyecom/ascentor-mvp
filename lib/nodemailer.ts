@@ -64,18 +64,18 @@ export const summitMailer: Mailer = getMailer() ?? nodemailer.createTransport({
 
 export const DEFAULT_FROM = process.env.EMAIL_FROM || FROM_DEFAULT;
 
-function addressOf(from: string): string {
+export function addressOf(from: string): string {
   const m = from.match(/<([^>]+)>/);
   return (m ? m[1] : from).trim().toLowerCase();
 }
 
-function nameOf(from: string): string {
+export function nameOf(from: string): string {
   const m = from.match(/^\s*"?([^"<]+?)"?\s*</);
   return m ? m[1].trim() : 'Ascentor';
 }
 
 /** A 5xx refusal that is about the sender address, not the recipient or the content. */
-function refusedSender(err: unknown): boolean {
+export function refusedSender(err: unknown): boolean {
   const e = err as { responseCode?: number; response?: string; message?: string } | null;
   const code = e?.responseCode ?? 0;
   const text = `${e?.response ?? ''} ${e?.message ?? ''}`.toLowerCase();

@@ -92,7 +92,7 @@ export async function sendCallReminders(): Promise<{ circle: number; mentor: num
     const w = circleWindow(c, now);
     if (w.startsAt > now && w.startsAt <= horizon) {
       const aud = await circleAudience(c.id);
-      await rxNotify(aud, { kind: 'call_tomorrow', entityId: c.id, url: `/circle?c=${c.id}`, title: 'Circle call tomorrow', body: `${c.interest ?? c.name} · Circle ${c.number}, ${whenLabel(w.startsAt, c.timezone)}. Audio only, 15 minutes.` });
+      await rxNotify(aud, { kind: 'call_tomorrow', entityId: c.id, url: `/circle?c=${c.id}`, title: 'Circle call tomorrow', body: `${c.interest ?? c.name} · Circle ${c.number}, ${whenLabel(w.startsAt, c.timezone)}. Audio by default, 15 minutes.` });
       circleN += aud.length;
     }
   }
@@ -102,7 +102,7 @@ export async function sendCallReminders(): Promise<{ circle: number; mentor: num
     const ids = await circleAudience(s.circle_id);
     const { data: m } = await supabaseAdmin.from('human_mentors').select('user_id').eq('id', s.mentor_id).maybeSingle();
     if (m?.user_id) ids.push(m.user_id as string);
-    await rxNotify(ids, { kind: 'call_tomorrow', entityId: s.id, url: `/sessions?c=${s.circle_id}`, title: 'Mentor session tomorrow', body: `${whenLabel(s.starts_at, 'Africa/Lagos')} (WAT). ${MENTOR_CALL_MINUTES} minutes, audio only. Say whether you are going.` });
+    await rxNotify(ids, { kind: 'call_tomorrow', entityId: s.id, url: `/sessions?c=${s.circle_id}`, title: 'Mentor session tomorrow', body: `${whenLabel(s.starts_at, 'Africa/Lagos')} (WAT). ${MENTOR_CALL_MINUTES} minutes, audio by default. Say whether you are going.` });
     mentorN += ids.length;
   }
   return { circle: circleN, mentor: mentorN };
