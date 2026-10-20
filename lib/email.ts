@@ -25,6 +25,7 @@ export async function sendPasswordResetOTP({ to, otpCode, firstName }: SendPassw
     to,
     subject: 'Reset your Ascentor password',
     html,
+    required: true,
   });
 }
 
@@ -68,7 +69,7 @@ export async function sendSignupOTP({ to, otpCode }: SendSignupOTPParams) {
       p('The Ascentor Team'),
   });
 
-  await sendEmail({ to, subject: `${otpCode} is your Ascentor verification code`, html });
+  await sendEmail({ to, subject: `${otpCode} is your Ascentor verification code`, html, required: true });
 }
 
 type SendAccountDeletedParams = {

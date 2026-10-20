@@ -79,9 +79,12 @@ export async function sendEmail(opts: {
   from?: string;
   replyTo?: string;
   attachments?: { filename: string; content: Buffer; contentType: string }[];
+  /** Codes the member cannot continue without (sign-up, password reset): throw instead of skipping when mail is not configured. */
+  required?: boolean;
 }): Promise<void> {
   const mailer = getMailer();
   if (!mailer) {
+    if (opts.required) throw new Error('SMTP is not configured (SMTP_USER / SMTP_PASS missing)');
     console.warn('[email] SMTP credentials not configured, skipping send to', opts.to);
     return;
   }
