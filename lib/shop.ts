@@ -81,8 +81,9 @@ export async function priceCart(items: CartLineInput[], shippingKey: ShopShippin
 // ── Signed download links (for guests and emailed links) ─────────────────────
 
 function secret(): string {
-  const key = process.env.APP_SECRET_KEY;
-  if (!key) throw new Error('APP_SECRET_KEY env var is not set');
+  // APP_SECRET_KEY is not set in every environment; the service-role key is server-only and always present.
+  const key = process.env.APP_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error('No signing secret available (APP_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY)');
   return key;
 }
 
