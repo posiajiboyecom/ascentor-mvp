@@ -16,11 +16,23 @@ import { LIMITS, rateLimitAll } from '@/lib/auth/rate-limit-shared';
 import { verifyTurnstile } from '@/lib/auth/turnstile';
 import { assessLogin } from '@/lib/auth/login-security';
 import { findAccountByEmail, oauthOnlyProvider, PROVIDER_LABEL } from '@/lib/auth/account-lookup';
+import { issueSignupOtp } from '@/lib/auth/signup-otp';
 import { parseJson } from '@/lib/validation/http';
 import * as authSchemas from '@/lib/validation/schemas/auth';
 
 const STAFF_ROLES = ['admin', 'moderator'];
 const GENERIC_FAIL = 'Incorrect email or password.';
+
+/** Sign-up was never finished: send a fresh code from here, where the CAPTCHA token has just been verified.
+ *  (A browser cannot reuse that single-use token to call /api/auth/resend-signup itself.) */
+async function resendSignupCode(email: string) {
+  try {
+    const issued = await issueSignupOtp(email);
+    if (!issued.ok) console.error('[login] could not resend sign-up code:', issued.reason);
+  } catch (err) {
+    console.error('[login] resend sign-up code failed:', err);
+  }
+}
 
 export async function POST(req: NextRequest) {
   const parsed = await parseJson(req, authSchemas.login);
@@ -51,6 +63,7 @@ export async function POST(req: NextRequest) {
 
   if (error || !data.user) {
     if (error && /not confirmed/i.test(error.message)) {
+      await resendSignupCode(normalizedEmail);
       return NextResponse.json({ error: 'Please confirm your email address first.', code: 'email_not_confirmed' }, { status: 403 });
     }
     // A password sign-in against an account that only ever used Google or LinkedIn cannot work:
@@ -70,6 +83,7 @@ export async function POST(req: NextRequest) {
   // enforce it here: an unconfirmed address never gets a session.
   if (!data.user.email_confirmed_at) {
     await supabase.auth.signOut();
+    await resendSignupCode(normalizedEmail);
     return NextResponse.json({ error: 'Please confirm your email address first.', code: 'email_not_confirmed' }, { status: 403 });
   }
 

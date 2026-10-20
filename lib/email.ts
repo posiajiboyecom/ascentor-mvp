@@ -1,5 +1,7 @@
 import { sendEmail } from './nodemailer';
-import { brandedEmailLayout, esc, p, codeBox } from './emailTemplate';
+import { brandedEmailLayout, esc, p, codeBox, goldButton } from './emailTemplate';
+
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://joinascentor.com').replace(/\/+$/, '');
 
 type SendPasswordResetOTPParams = {
   to: string;
@@ -8,14 +10,19 @@ type SendPasswordResetOTPParams = {
 };
 
 export async function sendPasswordResetOTP({ to, otpCode, firstName }: SendPasswordResetOTPParams) {
+  // The button carries the same one-time code the member could type: it is verified (hashed, attempt-limited,
+  // single use) when they choose a new password, never by opening the link.
+  const resetUrl = `${APP_URL}/reset-password?email=${encodeURIComponent(to)}&code=${encodeURIComponent(otpCode)}`;
   const html = brandedEmailLayout({
-    preheader: `Your Ascentor password reset code is ${otpCode}`,
+    preheader: 'Use this link to set a new Ascentor password. It works once, for 1 hour.',
     eyebrow: 'Account Security',
     heading: 'Reset your password.',
     recipient: to,
     content:
       p(`Hi ${esc(firstName || 'there')},`) +
-      p('Use the code below to reset your Ascentor password. This code expires in <strong>15 minutes</strong>.') +
+      p('Use the button below to set a new Ascentor password. The link works once, for <strong>1 hour</strong>.') +
+      goldButton('Set a new password', resetUrl) +
+      p('<span style="color:#6B7280;font-size:13px;">Button not working? Go to the reset page and enter this code instead:</span>') +
       codeBox(esc(otpCode)) +
       p('<span style="color:#9CA3AF;font-size:13px;">If you did not request a password reset, you can safely ignore this email. Your account remains secure.</span>') +
       p('The Ascentor Team'),

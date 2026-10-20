@@ -10,7 +10,7 @@ import { revokeAllSessions } from '@/lib/auth/revoke-sessions';
 import { sendPasswordChangedEmail } from '@/lib/email';
 
 const invalid = () =>
-  NextResponse.json({ error: 'Invalid or expired reset code' }, { status: 400 });
+  NextResponse.json({ error: 'Invalid or expired reset code', code: 'invalid_code' }, { status: 400 });
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
       .from('password_reset_otps')
       .select('id, otp_code, attempts')
       .eq('email', normalizedEmail)
+      .eq('purpose', 'password_reset')
       .eq('used', false)
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
