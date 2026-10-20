@@ -42,7 +42,7 @@ export default async function ProfilePage() {
             {row('/growth', <TrendingUp aria-hidden />, 'My Growth', 'Private results over time')}
             {row('/circle', <Users aria-hidden />, 'My Circle', circle ? `${circle.circle.name} · Circle ${circle.circle.number}` : 'Not placed yet')}
             {row('/sessions', <UserRound aria-hidden />, 'My mentor', mentorLine)}
-            {row('/settings', <SettingsIcon aria-hidden />, 'Settings', 'Notifications, privacy, language')}
+            {row('/settings', <SettingsIcon aria-hidden />, 'Settings', 'Account, profile, security, plan, alerts')}
             {row('/account', <UserRound aria-hidden />, 'Account and billing', 'Name, email, sign-in and plan')}
           </div>
         </div>

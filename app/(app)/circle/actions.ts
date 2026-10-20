@@ -133,6 +133,28 @@ export async function saveReview(carry: string, choice: 'join' | 'break', circle
   } catch (e) { return fail(e); }
 }
 
+export type NextChoice = 'stay' | 'new' | 'lead' | 'break';
+
+/** Saves the member's choice for cycle 2. Needs migration 20261020 for stay/lead; 'new' falls back to the older 'join' value. */
+export async function saveNextChoice(choice: NextChoice, circleId?: string): Promise<ActionResult> {
+  try {
+    if (!['stay', 'new', 'lead', 'break'].includes(choice)) throw new Error('Choose an option first.');
+    const { db, userId } = await requireMember();
+    const c = await getMyCircle('member', circleId);
+    if (!c) throw new Error('Your Circle isn’t ready yet.');
+    const row = (v: string) => ({ circle_id: c.circle.id, user_id: userId, next_choice: v });
+    let { error } = await db.from('circle_reviews').upsert(row(choice), { onConflict: 'circle_id,user_id' });
+    if (error && (error as { code?: string }).code === '23514') {
+      // Constraint not widened yet: keep what we can.
+      const legacy = choice === 'new' ? 'join' : choice === 'break' ? 'break' : null;
+      if (legacy) ({ error } = await db.from('circle_reviews').upsert(row(legacy), { onConflict: 'circle_id,user_id' }));
+      else error = null;
+    }
+    if (error) throw error;
+    return { ok: true };
+  } catch (e) { return fail(e); }
+}
+
 // ── joining and leaving Circles ─────────────────────────────────────────────
 
 /** Joins a Circle the member chose. Up to three per member, eight seats per Circle, never two people on the last seat. */

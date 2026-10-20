@@ -142,6 +142,9 @@ export async function settleRound(roundId: string): Promise<void> {
 
 // ── the member-facing state ─────────────────────────────────────────────────
 
+/** A mentor call needs an agenda: at least this many member questions. */
+export const AGENDA_MIN_QUESTIONS = 3;
+
 export interface CandidateView { mentor: MentorLite; why: string; votes: number; mine: boolean }
 export interface SlotView { id: string; startsAt: string; marks: number; mine: boolean }
 export interface SessionView { id: string; startsAt: string; durationMin: number; status: string; going: number; myRsvp: 'going' | 'cannot' | null; myQuestion: string | null; questions: { name: string; text: string }[] }

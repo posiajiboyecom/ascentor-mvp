@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getMe, getMyCircle } from '@/lib/rx/server';
@@ -24,6 +25,12 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     <Page>
       <BackLink href={circle ? `/circle?c=${circle.circle.id}` : '/circle'}>Circle</BackLink>
       <Title tag={<Tag>Week {Math.max(week, 1)} of 12</Tag>}>{week >= 12 ? 'Cycle complete' : 'Your cycle so far'}</Title>
+      {week >= 12 && (
+        <div className="rx-row" style={{ gap: 12, marginBottom: 20 }}>
+          <p className="rx-p" style={{ flex: 1, minWidth: 200 }}>After your review, choose what happens in cycle 2.</p>
+          <Link href={`/circle/next?c=${circle.circle.id}`} className="rx-btn primary">What’s next</Link>
+        </div>
+      )}
       <div className="rx-two">
         <div className="rx-stack-lg">
           <div className="rx-card rx-stack">
