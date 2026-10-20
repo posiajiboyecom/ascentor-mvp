@@ -265,7 +265,19 @@ export default async function proxy(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Session check. Client-side page changes (Next's RSC fetches, including prefetches) to member pages verify
+  // the signed token LOCALLY (Supabase signs with ES256, so no network call): one fewer round trip on every tap.
+  // Full page loads, /api and /admin keep the strict server check (getUser), so revoked or deleted sessions
+  // are still caught on every hard load, and the (app) layout re-checks with getUser on those.
+  const softNav = request.method === 'GET' && request.headers.get('rsc') === '1'
+    && !pathname.startsWith('/api/') && !pathname.startsWith('/admin');
+  let user: { id: string } | null;
+  if (softNav) {
+    const { data: claimsData } = await supabase.auth.getClaims();
+    user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
+  } else {
+    user = (await supabase.auth.getUser()).data.user;
+  }
 
   // ── 24-hour inactivity guard ──────────────────────────────────────
   // If the user is authenticated but has been inactive for 24+ hours,
