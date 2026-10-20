@@ -354,6 +354,43 @@ async function fulfilDonation(attempt: PaymentAttempt, tx: PaystackTransaction):
   return 'fulfilled';
 }
 
+const REFERRAL_BONUS_DAYS = 7;
+
+/**
+ * When a referred member's first payment goes through, both people get 7 extra days
+ * (shown under Plan, added to the next renewal). The conditional UPDATE claims the reward
+ * exactly once even if the callback, webhook and reconciliation all run.
+ */
+async function rewardReferral(referredId: string): Promise<void> {
+  const { data: claimed } = await supabaseAdmin
+    .from('referrals')
+    .update({ status: 'rewarded', rewarded_at: new Date().toISOString(),
+              referrer_reward: `${REFERRAL_BONUS_DAYS} days`, referred_reward: `${REFERRAL_BONUS_DAYS} days` })
+    .eq('referred_id', referredId)
+    .is('rewarded_at', null)
+    .select('referrer_id, referred_id');
+  const ref = claimed?.[0];
+  if (!ref || ref.referrer_id === ref.referred_id) return;
+
+  for (const userId of [ref.referrer_id, ref.referred_id]) {
+    const { data: prof } = await supabaseAdmin.from('profiles')
+      .select('referral_bonus_days, subscription_end').eq('id', userId).maybeSingle();
+    if (!prof) continue;
+    const patch: Record<string, unknown> = { referral_bonus_days: (prof.referral_bonus_days ?? 0) + REFERRAL_BONUS_DAYS };
+    if (prof.subscription_end) {
+      const end = new Date(prof.subscription_end);
+      end.setDate(end.getDate() + REFERRAL_BONUS_DAYS);
+      patch.subscription_end = end.toISOString();
+    }
+    await supabaseAdmin.from('profiles').update(patch).eq('id', userId);
+    await supabaseAdmin.from('notifications').insert({
+      user_id: userId, type: 'referral_reward', title: `${REFERRAL_BONUS_DAYS} extra days added`,
+      message: userId === ref.referrer_id ? 'A friend you invited subscribed, so you both got 7 extra days.' : 'Thanks for joining with a friend’s link: you both got 7 extra days.',
+      link: '/referral',
+    }).then(undefined, () => undefined);
+  }
+}
+
 async function fulfilSubscription(attempt: PaymentAttempt, tx: PaystackTransaction): Promise<FulfilOutcome> {
   if (!attempt.user_id) throw new Error('Subscription attempt has no user_id');
 
@@ -407,6 +444,8 @@ async function fulfilSubscription(attempt: PaymentAttempt, tx: PaystackTransacti
   });
   // 23505 = already recorded by an earlier partial run; anything else must retry.
   if (payErr && payErr.code !== '23505') throw new Error(`payments insert failed: ${payErr.message}`);
+
+  await rewardReferral(attempt.user_id).catch((e) => console.error('[referral] reward failed:', e));
 
   try {
     await supabaseAdmin.from('notifications').insert({
