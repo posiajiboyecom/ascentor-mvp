@@ -1,30 +1,21 @@
 'use client'
 
 import { WifiOff } from 'lucide-react';
+import '@/styles/rx.css';
+import '@/styles/rx-entry.css';
 
 export default function OfflinePage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-6"
-      style={{ background: '#0C0B08' }}>
-      <div className="max-w-sm text-center">
-        <div className="mb-5 flex justify-center"><WifiOff size={44} color="#8B8A85" aria-hidden="true" /></div>
-        <h1 className="text-2xl font-semibold mb-2"
-          style={{ fontFamily: "'Metropolis', sans-serif", color: '#F1F0EB' }}>
-          You're Offline
-        </h1>
-        <p className="text-sm mb-6" style={{ color: '#8B8A85', lineHeight: 1.7 }}>
-          It looks like you've lost your internet connection. 
-          Your coaching progress is safe, reconnect to continue.
+    <div className="rx rx-entry rx-entry-center">
+      <div className="rx-card rx-entry-card-empty">
+        <span className="rx-dimdot" style={{ width: 72, height: 72, borderRadius: 20 }}>
+          <WifiOff aria-hidden style={{ width: 34, height: 34 }} />
+        </span>
+        <p className="rx-h2">This page isn’t saved yet</p>
+        <p className="rx-p" style={{ color: 'var(--rx-muted)', maxWidth: 420 }}>
+          You’re offline, and you haven’t opened this page before, so there’s no saved copy. Pages you’ve already opened still work, and anything you write sends when you’re back.
         </p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-6 py-3 rounded-lg text-sm font-semibold transition-all"
-          style={{ background: '#E8A020', color: '#000' }}>
-          Try Again
-        </button>
-        <p className="text-xs mt-4" style={{ color: '#5A5955' }}>
-          Tip: Add Ascentor to your home screen for the best experience.
-        </p>
+        <button type="button" className="rx-btn primary" onClick={() => window.location.reload()}>Try again</button>
       </div>
     </div>
   );

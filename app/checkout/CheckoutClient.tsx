@@ -25,6 +25,8 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Lock, Undo2, CreditCard, Gift, Check } from 'lucide-react';
 import { PLAN_PRICING, MAX_YEARLY_SAVINGS } from '@/lib/pricing'
+import '@/styles/rx.css'
+import '@/styles/rx-entry.css'
 
 type BillingCycle = 'monthly' | 'annual'
 
@@ -126,6 +128,7 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
   const [paying,        setPaying]        = useState(false)
   const [error,         setError]         = useState('')
   const [goingFree,     setGoingFree]     = useState(false)
+  const [showAllPlans,  setShowAllPlans]  = useState(false)
 
   // Auth + profile
   useEffect(() => {
@@ -317,6 +320,36 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
           <TrustBar />
         </div>
       </>
+    )
+  }
+
+  // ── Trial card (prototype: "Start your 7-day free trial") ──────
+  // Shown when a plan is chosen up front (?plan=...), e.g. straight after sign-up. "See all plans" shows the picker.
+  const trialPlan = PLANS.find(p => p.id === searchParams.get('plan'))
+  if (!loading && trialPlan && !showAllPlans) {
+    const trialPrice = billing === 'monthly'
+      ? `₦${trialPlan.monthlyPrice.toLocaleString()} a month`
+      : `₦${trialPlan.yearlyPrice.toLocaleString()} a year`
+    return (
+      <div className="rx rx-entry" style={embedded ? { minHeight: 0, background: 'transparent' } : undefined}>
+        <div className="rx-entry-in rx-rise">
+          <span className="rx-tag gold" style={{ alignSelf: 'flex-start' }}>{trialPlan.name}</span>
+          <h1 className="rx-h2" style={{ fontSize: 28 }}>Start your 7-day free trial</h1>
+          <p className="rx-p" style={{ color: 'var(--rx-muted)' }}>Full access for 7 days. Add a card now. Nothing is charged today.</p>
+          <div className="rx-card rx-stack-sm">
+            <div className="rx-tline"><span className="rx-pd cur" /><div><p className="rx-p" style={{ fontWeight: 700 }}>Today</p><p className="rx-sm">Full access starts. No charge.</p></div></div>
+            <div className="rx-tline"><span className="rx-pd" /><div><p className="rx-p" style={{ fontWeight: 700 }}>Day 5</p><p className="rx-sm">We remind you by email and in the app.</p></div></div>
+            <div className="rx-tline"><span className="rx-pd" /><div><p className="rx-p" style={{ fontWeight: 700 }}>Day 7</p><p className="rx-sm">{trialPrice} starts. Cancel any time before.</p></div></div>
+          </div>
+          {error && <div className="rx-banner err" role="alert">{error}</div>}
+          <button type="button" className="rx-btn primary block" disabled={paying} onClick={() => handleSelectPlan(trialPlan.id)}>
+            {paying ? 'Redirecting...' : 'Add card with Paystack'}
+          </button>
+          <p className="rx-sm rx-row rx-nw" style={{ gap: 8 }}><Lock aria-hidden size={16} style={{ flex: 'none' }} />Card details go to Paystack. Ascentor never sees them.</p>
+          <p className="rx-sm">Facilitating a Circle? Leaders don’t pay.</p>
+          <button type="button" className="rx-link muted" style={{ alignSelf: 'flex-start' }} onClick={() => setShowAllPlans(true)}>See all plans</button>
+        </div>
+      </div>
     )
   }
 
