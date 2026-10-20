@@ -323,7 +323,9 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
     )
   }
 
-  // ── Trial card (prototype: "Start your 7-day free trial") ──────
+  // ── Plan card (prototype: "Start your 7-day free trial"). Copy follows what checkout really does: you pay now,
+  // access starts now, and the first period includes 7 extra days. A true free trial needs a saved Paystack
+  // authorization (see docs/trial-and-billing.md). ──────
   // Shown when a plan is chosen up front (?plan=...), e.g. straight after sign-up. "See all plans" shows the picker.
   const trialPlan = PLANS.find(p => p.id === searchParams.get('plan'))
   if (!loading && trialPlan && !showAllPlans) {
@@ -334,16 +336,16 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
       <div className="rx rx-entry" style={embedded ? { minHeight: 0, background: 'transparent' } : undefined}>
         <div className="rx-entry-in rx-rise">
           <span className="rx-tag gold" style={{ alignSelf: 'flex-start' }}>{trialPlan.name}</span>
-          <h1 className="rx-h2" style={{ fontSize: 28 }}>Start your 7-day free trial</h1>
-          <p className="rx-p" style={{ color: 'var(--rx-muted)' }}>Full access for 7 days. Add a card now. Nothing is charged today.</p>
+          <h1 className="rx-h2" style={{ fontSize: 28 }}>Start your {trialPlan.name} plan</h1>
+          <p className="rx-p" style={{ color: 'var(--rx-muted)' }}>Pay with Paystack and get full access straight away. Your first payment includes 7 extra days.</p>
           <div className="rx-card rx-stack-sm">
-            <div className="rx-tline"><span className="rx-pd cur" /><div><p className="rx-p" style={{ fontWeight: 700 }}>Today</p><p className="rx-sm">Full access starts. No charge.</p></div></div>
-            <div className="rx-tline"><span className="rx-pd" /><div><p className="rx-p" style={{ fontWeight: 700 }}>Day 5</p><p className="rx-sm">We remind you by email and in the app.</p></div></div>
-            <div className="rx-tline"><span className="rx-pd" /><div><p className="rx-p" style={{ fontWeight: 700 }}>Day 7</p><p className="rx-sm">{trialPrice} starts. Cancel any time before.</p></div></div>
+            <div className="rx-tline"><span className="rx-pd cur" /><div><p className="rx-p" style={{ fontWeight: 700 }}>Today</p><p className="rx-sm">You pay {trialPrice}. Full access starts.</p></div></div>
+            <div className="rx-tline"><span className="rx-pd" /><div><p className="rx-p" style={{ fontWeight: 700 }}>First period</p><p className="rx-sm">Includes 7 extra days on top of what you paid for.</p></div></div>
+            <div className="rx-tline"><span className="rx-pd" /><div><p className="rx-p" style={{ fontWeight: 700 }}>Cancel any time</p><p className="rx-sm">You keep access until your paid period ends.</p></div></div>
           </div>
           {error && <div className="rx-banner err" role="alert">{error}</div>}
           <button type="button" className="rx-btn primary block" disabled={paying} onClick={() => handleSelectPlan(trialPlan.id)}>
-            {paying ? 'Redirecting...' : 'Add card with Paystack'}
+            {paying ? 'Redirecting...' : 'Pay with Paystack'}
           </button>
           <p className="rx-sm rx-row rx-nw" style={{ gap: 8 }}><Lock aria-hidden size={16} style={{ flex: 'none' }} />Card details go to Paystack. Ascentor never sees them.</p>
           <p className="rx-sm">Facilitating a Circle? Leaders don’t pay.</p>
@@ -448,7 +450,7 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
                 </ul>
 
                 <div className="co-trial-box">
-                  <strong>.</strong> No charge until Day 8.<br/>Cancel before then and pay nothing.
+                  Pay today and start straight away.<br/>Your first payment includes 7 extra days.
                 </div>
 
                 <button
@@ -461,9 +463,9 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
                       : { background: `${plan.stageColor}14`, color: plan.stageColor, border: `1px solid ${plan.stageColor}25` }
                   }
                 >
-                  {spinning ? 'Redirecting to payment…' : 'Start 7-day trial'}
+                  {spinning ? 'Redirecting to payment…' : 'Get started'}
                 </button>
-                <p className="co-cta-note">7-DAY FREE TRIAL · CANCEL ANYTIME</p>
+                <p className="co-cta-note">7 EXTRA DAYS ON YOUR FIRST PAYMENT · CANCEL ANYTIME</p>
               </div>
             )
           })}
@@ -523,7 +525,7 @@ function TrustBar() {
           { Icon: Lock, text: 'PAYSTACK SECURED' },
           { Icon: Undo2, text: 'CANCEL ANYTIME' },
           { Icon: CreditCard, text: 'CARD · BANK · USSD' },
-          { Icon: Gift, text: '7-DAY FREE TRIAL' },
+          { Icon: Gift, text: '7 EXTRA DAYS TO START' },
         ].map((t, i) => (
           <div key={i} className="co-trust-item">
             <t.Icon size={13} aria-hidden="true" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} />
