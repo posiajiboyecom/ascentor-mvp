@@ -5,6 +5,7 @@
 // announcements, messages, notifications, and Sage, the floating AI coach.
 // Light theme only.
 
+import { clearUserCache } from '@/lib/sw-cache';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import { useCart } from '@/lib/shop-cart';
@@ -19,6 +20,7 @@ import { NAV_ITEMS } from '@/lib/nav-items';
 import ShellLayout from './ShellLayout';
 import SageFloat, { clearSageGreeting } from './SageFloat';
 import PushBootstrap from '@/components/rx/PushBootstrap';
+import NetworkPill from '@/components/rx/NetworkPill';
 import NoticeCard from '@/components/rx/NoticeCard';
 import { NoticeProvider } from '@/components/rx/AsideNotice';
 import type { NoticeData } from '@/lib/rx/notice-types';
@@ -92,6 +94,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
   // The shell has already asked "Sign out?" by the time this runs.
   const handleSignOut = async () => {
     clearSageGreeting(); // so the next login is greeted again
+    void clearUserCache(); // saved pages belong to this account
     await supabase.auth.signOut();
     router.push('/');
     router.refresh();
@@ -99,6 +102,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
 
   return (
     <ToastProvider>
+      <NetworkPill />
       <NoticeProvider value={sidebarNotice}>
       <ShellLayout
         variant="app"

@@ -100,7 +100,7 @@ const AUTH_ROUTES = [
   '/dashboard', '/coach', '/community', '/account',
   '/learn', '/courses', '/experts', '/onboarding',
   '/referral', '/admin',
-  '/circle', '/sessions', '/messages', '/growth', '/profile', '/settings', '/announcements', '/sage', '/call', '/store',
+  '/circle', '/sessions', '/messages', '/growth', '/profile', '/settings', '/announcements', '/sage', '/call', '/store', '/notifications', '/search', '/help',
 ];
 
 // API routes that are explicitly public - checked BEFORE the protected
@@ -109,6 +109,8 @@ const AUTH_ROUTES = [
 // ORDER MATTERS: this list is checked before PROTECTED_API_PREFIXES.
 // Any path that matches here is passed through immediately.
 const PUBLIC_API_ROUTES = [
+  // Connection check used by the weak-network banner: 204, no data, no session needed
+  '/api/health',
   '/api/waitlist',
   '/api/newsletter',
   // Free-resource capture on public landing pages (no account exists yet)

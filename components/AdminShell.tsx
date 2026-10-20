@@ -1,5 +1,6 @@
 'use client';
 
+import { clearUserCache } from '@/lib/sw-cache';
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import {
@@ -151,6 +152,7 @@ export default function AdminShell({
   );
 
   const handleSignOut = async () => {
+    void clearUserCache(); // saved pages belong to this account
     await supabase.auth.signOut();
     router.push('/admin-login');
     router.refresh();

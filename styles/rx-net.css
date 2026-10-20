@@ -1,0 +1,16 @@
+/* Connection pill: weak and offline. Mirrors .netpill in the prototype. */
+.rx-netpill {
+  position: fixed; left: 50%; transform: translateX(-50%); top: 64px; z-index: 65;
+  display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 999px;
+  background: var(--rx-input, #fff); border: 1px solid var(--rx-border, #E6E3DD);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .18);
+  font: 600 12px Metropolis, system-ui, sans-serif; color: var(--rx-ink, #161616);
+  white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis;
+  pointer-events: none; animation: rx-fade .2s ease-out both;
+}
+@media (min-width: 1024px) { .rx-netpill { top: 80px; left: calc(50% + 120px); } }
+.rx-netpill.off { border-color: color-mix(in srgb, var(--rx-accent, #CAA228) 55%, var(--rx-border, #E6E3DD)); }
+.rx-netpill svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; flex: none; }
+.rx-netdot { width: 8px; height: 8px; border-radius: 50%; background: var(--rx-accent, #CAA228); flex: none; animation: rx-netpulse 1.2s ease-in-out infinite; }
+@keyframes rx-netpulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .rx-netpill, .rx-netdot { animation: none; } }

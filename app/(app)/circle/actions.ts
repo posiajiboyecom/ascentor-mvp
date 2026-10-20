@@ -13,6 +13,7 @@ import { cleanText } from '@/lib/rx/safety';
 import { plainToHtml } from '@/lib/rx/richtext';
 import { flagIfRisky } from '@/lib/rx/moderation';
 import { isOwnMediaUrl, parseBody } from '@/lib/rx/media';
+import { cleanClientId, findByClientId, isMissingColumn, isUniqueViolation } from '@/lib/rx/client-id';
 
 
 /** Agrees to the confidentiality pledge. */
@@ -48,15 +49,33 @@ function checkBody(raw: string): string {
   return body;
 }
 
-export async function sendCircleMessage(circleId: string, raw: string): Promise<ActionResult<{ message: ChatMsg }>> {
+/** `clientId` is the outbox's idempotency key: sending the same id twice posts one message. */
+export async function sendCircleMessage(circleId: string, raw: string, clientId?: string): Promise<ActionResult<{ message: ChatMsg }>> {
   try {
     const { db, userId } = await requireMember();
     const body = checkBody(raw);
-    const { data, error } = await db.from('circle_messages').insert({ circle_id: circleId, user_id: userId, body, kind: 'text' }).select('id, created_at').single();
-    if (error) throw error;
-    void flagIfRisky('circle', data.id as string, userId, body);
+    const cid = cleanClientId(clientId);
     const me = await getMe();
-    return { ok: true, message: { id: data.id as string, userId, name: me?.fullName ?? 'You', avatarUrl: me?.avatarUrl ?? null, body, createdAt: data.created_at as string } };
+    const asMsg = (id: string, createdAt: string): ChatMsg => ({ id, userId, name: me?.fullName ?? 'You', avatarUrl: me?.avatarUrl ?? null, body, createdAt });
+
+    const prior = await findByClientId(db, 'circle_messages', 'user_id', userId, cid);
+    if (prior) return { ok: true, message: asMsg(prior.id, prior.created_at) };
+
+    const row = { circle_id: circleId, user_id: userId, body, kind: 'text' };
+    const insert = (r: Record<string, unknown>) => db.from('circle_messages').insert(r).select('id, created_at').single();
+    let res = await insert(cid ? { ...row, client_id: cid } : row);
+    if (res.error && cid) {
+      if (isUniqueViolation(res.error)) {
+        const again = await findByClientId(db, 'circle_messages', 'user_id', userId, cid);
+        if (again) return { ok: true, message: asMsg(again.id, again.created_at) };
+      } else if (isMissingColumn(res.error)) {
+        res = await insert(row);   // column not migrated yet: post without dedupe
+      }
+    }
+    if (res.error) throw res.error;
+    const data = res.data;
+    void flagIfRisky('circle', data.id as string, userId, body);
+    return { ok: true, message: asMsg(data.id as string, data.created_at as string) };
   } catch (e) { return fail(e, 'We couldn’t send that. Please try again.'); }
 }
 

@@ -21,6 +21,7 @@
 // catches cases where the token expires WHILE the user is already on a page.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { clearUserCache } from '@/lib/sw-cache';
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -77,6 +78,7 @@ export default function AuthErrorHandler() {
 
       if (isAuthError) {
         event.preventDefault(); // suppress the console error
+        void clearUserCache();
         supabase.auth.signOut().catch(() => {}).finally(() => {
           if (!isPublicPath(pathname)) {
             router.push('/login?reason=session_expired');

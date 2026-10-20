@@ -13,6 +13,7 @@ import { relTime } from '@/lib/rx/dates';
 import type { ChatMsg, RealtimeSpec } from '@/lib/rx/chat-types';
 import type { ActionResult } from '@/lib/rx/types';
 import { Avatar } from '@/components/rx/ui';
+import { enqueue, newClientId, outboxOn, subscribeOutbox, type OutboxKind } from '@/lib/outbox';
 
 // A shared Community post arrives as a plain path. Show it as a link a member can open.
 const POST_PATH = /(\/community\/post\/[0-9a-f-]{36})/i;
@@ -24,7 +25,10 @@ function Linked({ text }: { text: string }) {
 export interface ChatThreadProps {
   initial: ChatMsg[];
   meId: string;
-  send: (body: string) => Promise<ActionResult<{ message: ChatMsg }>>;
+  /** `clientId` is the idempotency key when the outbox is used. */
+  send: (body: string, clientId?: string) => Promise<ActionResult<{ message: ChatMsg }>>;
+  /** Opt in to "Waiting to send". Only takes effect when that kind is switched on in lib/outbox.ts. */
+  outbox?: { kind: Extract<OutboxKind, 'circle_message'>; payload: (body: string) => unknown };
   poll: (afterISO: string | null) => Promise<ChatMsg[]>;
   realtime?: RealtimeSpec;
   placeholder?: string;
@@ -49,11 +53,13 @@ async function upload(blob: Blob, kind: 'voice' | 'img'): Promise<string> {
   return json.url;
 }
 
-export default function ChatThread({ initial, meId, send, poll, realtime, placeholder = 'Write a message', canSend = true, notice, extra, top, empty, showNames = true }: ChatThreadProps) {
+export default function ChatThread({ initial, meId, send, outbox, poll, realtime, placeholder = 'Write a message', canSend = true, notice, extra, top, empty, showNames = true }: ChatThreadProps) {
   const [msgs, setMsgs] = useState<ChatMsg[]>(initial);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // Messages not yet confirmed by the server (outbox only).
+  const [pending, setPending] = useState<{ cid: string; body: string; status: 'waiting' | 'sending' }[]>([]);
   const bodyRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const lastRef = useRef<string | null>(initial.length ? initial[initial.length - 1].createdAt : null);
@@ -90,9 +96,47 @@ export default function ChatThread({ initial, meId, send, poll, realtime, placeh
     return () => { clearInterval(timer); cleanup(); document.removeEventListener('visibilitychange', onVis); };
   }, [realtime, refresh]);
 
-  useEffect(() => { bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight }); }, [msgs.length]);
+  useEffect(() => { bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight }); }, [msgs.length, pending.length]);
+
+  // Outbox: show the message at once as "Sending…", and as "Waiting to send" if the connection fails or is gone.
+  useEffect(() => subscribeOutbox((e) => {
+    if (e.item.id === '*') { setPending([]); return; }   // outbox cleared (sign-out)
+    if (e.type === 'sending') setPending((p) => p.map((x) => (x.cid === e.item.id ? { ...x, status: 'sending' } : x)));
+    else if (e.type === 'queued') setPending((p) => p.map((x) => (x.cid === e.item.id ? { ...x, status: 'waiting' } : x)));
+    else if (e.type === 'sent') {
+      setPending((p) => p.filter((x) => x.cid !== e.item.id));
+      const m = e.data as ChatMsg | undefined;
+      if (m && m.id) merge([m]);
+    } else if (e.type === 'dropped') {
+      setPending((p) => p.filter((x) => x.cid !== e.item.id));
+      setError(e.error || 'We couldn’t send that message.');
+    }
+  }), [merge]);
+
+  async function sendViaOutbox(body: string, ob: NonNullable<ChatThreadProps['outbox']>) {
+    const cid = newClientId();
+    setError('');
+    const queue = async () => {
+      await enqueue({ id: cid, userId: meId, kind: ob.kind, payload: ob.payload(body) });
+      setPending((p) => (p.some((x) => x.cid === cid) ? p.map((x) => (x.cid === cid ? { ...x, status: 'waiting' } : x)) : [...p, { cid, body, status: 'waiting' }]));
+    };
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) { await queue(); return true; }
+    setPending((p) => [...p, { cid, body, status: 'sending' }]);
+    try {
+      const r = await send(body, cid);
+      if (!r.ok) { setPending((p) => p.filter((x) => x.cid !== cid)); setError(r.error); return false; }
+      setPending((p) => p.filter((x) => x.cid !== cid));
+      merge([r.message]);
+      return true;
+    } catch {
+      // No answer: it may or may not have arrived. The same id goes to the outbox, so a repeat is recognised.
+      await queue();
+      return true;
+    }
+  }
 
   async function sendBody(body: string) {
+    if (outbox && outboxOn(outbox.kind)) return sendViaOutbox(body, outbox);
     setError(''); setBusy(true);
     try {
       const r = await send(body);
@@ -140,6 +184,12 @@ export default function ChatThread({ initial, meId, send, poll, realtime, placeh
             )}
             {p.kind === 'voice' && <audio controls preload="none" src={p.url} style={{ maxWidth: 240, height: 36 }} />}
             {extra?.(m, mine)}
+          </div>
+        ))}
+        {pending.map((x) => (
+          <div key={x.cid} className="rx-bub me" style={{ opacity: 0.75 }}>
+            <Linked text={x.body} />
+            <div className="rx-sm" role="status" style={{ marginTop: 4 }}>{x.status === 'waiting' ? 'Waiting to send' : 'Sending…'}</div>
           </div>
         ))}
       </div>

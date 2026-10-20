@@ -55,7 +55,8 @@ export function CircleChat({ circleId, meId, initial }: { circleId: string; meId
     <ChatThread
       initial={initial}
       meId={meId}
-      send={(body) => sendCircleMessage(circleId, body)}
+      send={(body, clientId) => sendCircleMessage(circleId, body, clientId)}
+      outbox={{ kind: 'circle_message', payload: (body) => ({ circleId, body }) }}
       poll={(after) => pollCircleMessages(circleId, after)}
       realtime={{ table: 'circle_messages', column: 'circle_id', value: circleId }}
       placeholder="Message your Circle"
