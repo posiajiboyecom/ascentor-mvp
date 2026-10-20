@@ -45,7 +45,7 @@ export async function runSearch(raw: string, perSection = 20): Promise<SearchSec
 
   const ppl: SearchItem[] = ((people.data ?? []) as { id: string; full_name: string | null }[])
     .filter((p) => p.full_name)
-    .map((p) => ({ title: p.full_name as string, meta: 'Member', mark: ini(p.full_name as string), href: '/messages' }));
+    .map((p) => ({ title: p.full_name as string, meta: 'Member', mark: ini(p.full_name as string), href: `/messages?to=${p.id}` }));
   if (ppl.length) out.push({ key: 'people', label: 'People', items: ppl });
 
   const pst: SearchItem[] = ((posts.data ?? []) as { id: string; body: string; created_at: string }[])

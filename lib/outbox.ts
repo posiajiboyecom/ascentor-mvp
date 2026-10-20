@@ -11,10 +11,9 @@
 //    server can recognise a repeat of that id and answer "already done".
 //  - Writes are not given a hard timeout. The outbox only retries items, with a growing wait between tries.
 
-// dm_message is not wired yet (the messages files were off limits in this round).
-export type OutboxKind = 'checkin' | 'circle_message';
+export type OutboxKind = 'checkin' | 'circle_message' | 'dm_message';
 
-export const OUTBOX_KINDS: readonly OutboxKind[] = ['checkin', 'circle_message'];
+export const OUTBOX_KINDS: readonly OutboxKind[] = ['checkin', 'circle_message', 'dm_message'];
 
 /**
  * Which kinds are switched on.
@@ -26,6 +25,7 @@ export const OUTBOX_KINDS: readonly OutboxKind[] = ['checkin', 'circle_message']
 export const OUTBOX_ENABLED: Record<OutboxKind, boolean> = {
   checkin: true,
   circle_message: false,
+  dm_message: false,     // same migration as circle_message
 };
 
 export type OutboxStatus = 'waiting' | 'sending';

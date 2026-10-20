@@ -49,6 +49,8 @@ export interface ShellLayoutProps {
   settingsHref: string;
   searchEndpoint: string;
   searchPlaceholder: string;
+  /** A full search page. The command palette then ends with "See all results" for the typed query. */
+  searchPageHref?: string;
   /** Runs after the user confirms the sign-out dialog. */
   onSignOut: () => void;
   /** Links shown in the header avatar menu, above sign out. */
@@ -79,7 +81,7 @@ export default function ShellLayout(props: ShellLayoutProps) {
 }
 
 function ShellInner({
-  variant, groups, user, homeHref, settingsHref, searchEndpoint, searchPlaceholder,
+  variant, groups, user, homeHref, settingsHref, searchEndpoint, searchPlaceholder, searchPageHref,
   onSignOut, menuLinks = [], headerActions, sidebarExtra,
   padded = false, children,
 }: ShellLayoutProps) {
@@ -403,6 +405,7 @@ function ShellInner({
         groups={groups}
         endpoint={searchEndpoint}
         placeholder={searchPlaceholder}
+        searchPageHref={searchPageHref}
       />
 
       <Tooltip

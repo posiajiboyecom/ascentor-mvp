@@ -4,7 +4,7 @@
 // The page decides who can post and where messages go through the `send` and `poll` actions it passes in.
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ImageIcon, Mic, Send, Square, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useVoiceRecorder, formatRecordingTime } from '@/hooks/useVoiceRecorder';
@@ -28,7 +28,7 @@ export interface ChatThreadProps {
   /** `clientId` is the idempotency key when the outbox is used. */
   send: (body: string, clientId?: string) => Promise<ActionResult<{ message: ChatMsg }>>;
   /** Opt in to "Waiting to send". Only takes effect when that kind is switched on in lib/outbox.ts. */
-  outbox?: { kind: Extract<OutboxKind, 'circle_message'>; payload: (body: string) => unknown };
+  outbox?: { kind: Extract<OutboxKind, 'circle_message' | 'dm_message'>; payload: (body: string) => unknown };
   poll: (afterISO: string | null) => Promise<ChatMsg[]>;
   realtime?: RealtimeSpec;
   placeholder?: string;
@@ -41,6 +41,16 @@ export interface ChatThreadProps {
   top?: ReactNode;
   empty?: ReactNode;
   showNames?: boolean;
+  /** 'linkedin' is the direct-message layout: intro, day dividers, grouped messages, "Seen". Default is the bubble layout. */
+  layout?: 'bubbles' | 'linkedin';
+  /** linkedin layout: shown at the top of the conversation (large avatar, name, View profile). */
+  intro?: ReactNode;
+  /** linkedin layout: 'area' is the full composer, 'mini' the docked one. */
+  composer?: 'bar' | 'area' | 'mini';
+  /** linkedin layout: the member's own name and photo, for messages waiting to send. */
+  meInfo?: { name: string; avatarUrl: string | null };
+  /** linkedin layout: when the other person last opened the conversation. Shows "Seen" or "Sent" after my last message. */
+  peerReadAt?: string | null;
 }
 
 async function upload(blob: Blob, kind: 'voice' | 'img'): Promise<string> {
@@ -53,7 +63,7 @@ async function upload(blob: Blob, kind: 'voice' | 'img'): Promise<string> {
   return json.url;
 }
 
-export default function ChatThread({ initial, meId, send, outbox, poll, realtime, placeholder = 'Write a message', canSend = true, notice, extra, top, empty, showNames = true }: ChatThreadProps) {
+export default function ChatThread({ initial, meId, send, outbox, poll, realtime, placeholder = 'Write a message', canSend = true, notice, extra, top, empty, showNames = true, layout = 'bubbles', intro, composer = 'bar', meInfo, peerReadAt }: ChatThreadProps) {
   const [msgs, setMsgs] = useState<ChatMsg[]>(initial);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
@@ -169,6 +179,122 @@ export default function ChatThread({ initial, meId, send, outbox, poll, realtime
 
   const rendered = useMemo(() => msgs.map((m) => ({ m, p: parseBody(m.body), mine: m.userId === meId })), [msgs, meId]);
 
+  const content = (p: ReturnType<typeof parseBody>) => (
+    <>
+      {p.kind === 'text' && <Linked text={p.text} />}
+      {p.kind === 'img' && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={p.url} alt="Shared photo" style={{ maxWidth: 240, maxHeight: 240, borderRadius: 10, display: 'block' }} />
+      )}
+      {p.kind === 'voice' && <audio controls preload="none" src={p.url} style={{ maxWidth: 240, height: 36 }} />}
+    </>
+  );
+
+  const recording = (
+    <>
+      <button type="button" className="rx-ib" aria-label="Cancel recording" onClick={() => rec.stop(false)}><X aria-hidden /></button>
+      <div className="rx-row rx-nw" style={{ flex: 1, gap: 3, height: 28 }} aria-hidden>
+        {rec.levels.map((l, i) => <i key={i} style={{ display: 'block', width: 3, height: `${6 + l * 22}px`, borderRadius: 2, background: 'var(--rx-gold)' }} />)}
+      </div>
+      <span className="rx-sm">{formatRecordingTime(rec.seconds)}</span>
+      <button type="button" className="rx-ib" aria-label="Send voice note" onClick={() => rec.stop(true)}><Square aria-hidden /></button>
+    </>
+  );
+  const fileInput = <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onChange={onPhoto} />;
+  const onEnter = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void submitText(); } };
+  const errorLine = (error || rec.error) && <p className="rx-sm" role="alert" style={{ color: 'var(--rx-danger)', padding: '0 14px 10px' }}>{error || rec.error}</p>;
+
+  // Direct-message layout (design prototype: .lmsgs, .lm, .dday, .seen, .lcomp).
+  if (layout === 'linkedin') {
+    const dayKey = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+    const dayLabel = (iso: string) => {
+      const d = new Date(iso); const now = new Date();
+      const yest = new Date(now); yest.setDate(now.getDate() - 1);
+      if (dayKey(iso) === dayKey(now.toISOString())) return 'Today';
+      if (dayKey(iso) === dayKey(yest.toISOString())) return 'Yesterday';
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric' });
+    };
+    const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    let prevWho: string | null = null; let prevDay = '';
+    const rows = rendered.map(({ m, p, mine }) => {
+      const dk = dayKey(m.createdAt);
+      const newDay = dk !== prevDay;
+      const head = newDay || m.userId !== prevWho;
+      prevDay = dk; prevWho = m.userId;
+      return (
+        <Fragment key={m.id}>
+          {newDay && <p className="rxm-dday" suppressHydrationWarning>{dayLabel(m.createdAt)}</p>}
+          <div className={`rxm-lm${head ? ' first' : ''}`}>
+            {head ? <Avatar name={m.name} url={m.avatarUrl} seed={m.userId} /> : <span className="gap" />}
+            <div className="lmb">
+              {head && <div className="lmh"><b>{mine ? (meInfo?.name ?? m.name) : m.name}</b><span suppressHydrationWarning>{clock(m.createdAt)}</span></div>}
+              <p>{content(p)}</p>
+              {extra?.(m, mine)}
+            </div>
+          </div>
+        </Fragment>
+      );
+    });
+    const lastMine = msgs.length > 0 && msgs[msgs.length - 1].userId === meId && pending.length === 0;
+    const seen = lastMine ? (peerReadAt && peerReadAt >= msgs[msgs.length - 1].createdAt ? 'Seen' : 'Sent') : null;
+    const pendRows = pending.map((x, i) => {
+      const head = i === 0 && !(msgs.length > 0 && msgs[msgs.length - 1].userId === meId);
+      const label = x.status === 'waiting' ? 'Waiting to send' : 'Sending…';
+      return (
+        <div key={x.cid} className={`rxm-lm pending${head ? ' first' : ''}`}>
+          {head ? <Avatar name={meInfo?.name ?? 'You'} url={meInfo?.avatarUrl ?? null} seed={meId} /> : <span className="gap" />}
+          <div className="lmb">
+            {head && <div className="lmh"><b>{meInfo?.name ?? 'You'}</b><span role="status">{label}</span></div>}
+            <p><Linked text={x.body} /></p>
+            {!head && <div className="rxm-state" role="status">{label}</div>}
+          </div>
+        </div>
+      );
+    });
+
+    return (
+      <div className="rx-chat">
+        {top}
+        <div className="rxm-lmsgs" ref={bodyRef} aria-live="polite">
+          {intro}
+          {rendered.length === 0 && pending.length === 0 && (empty ?? <p className="rx-sm" style={{ padding: '16px 0' }}>No messages yet. Say hello.</p>)}
+          {rows}
+          {pendRows}
+          {seen && <p className="rxm-seen">{seen}</p>}
+        </div>
+        {canSend ? (
+          composer === 'mini' ? (
+            <div className="rxm-dfoot">
+              {rec.isRecording ? recording : (
+                <>
+                  <input className="rx-in" placeholder={placeholder} aria-label={placeholder} value={draft} maxLength={2000} onChange={(e) => setDraft(e.target.value)} onKeyDown={onEnter} />
+                  <button type="button" className="rx-ib" aria-label="Send" disabled={busy || !draft.trim()} onClick={() => void submitText()}><Send aria-hidden /></button>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="rxm-lcomp">
+              {rec.isRecording ? <div className="rx-row rx-nw" style={{ gap: 6 }}>{recording}</div> : (
+                <>
+                  <textarea className="rx-in" placeholder={placeholder} aria-label={placeholder} value={draft} maxLength={2000} onChange={(e) => setDraft(e.target.value)} onKeyDown={onEnter} />
+                  <div className="tools">
+                    {fileInput}
+                    <button type="button" className="rx-ib" aria-label="Add image" disabled={busy} onClick={() => fileRef.current?.click()}><ImageIcon aria-hidden /></button>
+                    <button type="button" className="rx-ib" aria-label="Record voice note" disabled={busy} onClick={() => { void rec.start(); }}><Mic aria-hidden /></button>
+                    <button type="button" className="rx-btn primary" disabled={busy || !draft.trim()} onClick={() => void submitText()}>Send</button>
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        ) : (
+          <div className="rxm-lcomp">{notice}</div>
+        )}
+        {errorLine}
+      </div>
+    );
+  }
+
   return (
     <div className="rx-chat">
       {top}
@@ -177,12 +303,7 @@ export default function ChatThread({ initial, meId, send, outbox, poll, realtime
         {rendered.map(({ m, p, mine }) => (
           <div key={m.id} className={`rx-bub ${mine ? 'me' : 'oth'}`} title={new Date(m.createdAt).toLocaleString()}>
             {!mine && showNames && <div className="rx-who"><Avatar name={m.name} url={m.avatarUrl} size="sm" seed={m.userId} />{m.name}<span style={{ fontWeight: 400 }}>· {relTime(m.createdAt)}</span></div>}
-            {p.kind === 'text' && <Linked text={p.text} />}
-            {p.kind === 'img' && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={p.url} alt="Shared photo" style={{ maxWidth: 240, maxHeight: 240, borderRadius: 10, display: 'block' }} />
-            )}
-            {p.kind === 'voice' && <audio controls preload="none" src={p.url} style={{ maxWidth: 240, height: 36 }} />}
+            {content(p)}
             {extra?.(m, mine)}
           </div>
         ))}
@@ -196,21 +317,11 @@ export default function ChatThread({ initial, meId, send, outbox, poll, realtime
 
       {canSend ? (
         <div className="rx-chat-foot">
-          {rec.isRecording ? (
+          {rec.isRecording ? recording : (
             <>
-              <button type="button" className="rx-ib" aria-label="Cancel recording" onClick={() => rec.stop(false)}><X aria-hidden /></button>
-              <div className="rx-row rx-nw" style={{ flex: 1, gap: 3, height: 28 }} aria-hidden>
-                {rec.levels.map((l, i) => <i key={i} style={{ display: 'block', width: 3, height: `${6 + l * 22}px`, borderRadius: 2, background: 'var(--rx-gold)' }} />)}
-              </div>
-              <span className="rx-sm">{formatRecordingTime(rec.seconds)}</span>
-              <button type="button" className="rx-ib" aria-label="Send voice note" onClick={() => rec.stop(true)}><Square aria-hidden /></button>
-            </>
-          ) : (
-            <>
-              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onChange={onPhoto} />
+              {fileInput}
               <button type="button" className="rx-ib" aria-label="Add photo" disabled={busy} onClick={() => fileRef.current?.click()}><ImageIcon aria-hidden /></button>
-              <input className="rx-in" placeholder={placeholder} aria-label={placeholder} value={draft} maxLength={2000}
-                onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void submitText(); } }} />
+              <input className="rx-in" placeholder={placeholder} aria-label={placeholder} value={draft} maxLength={2000} onChange={(e) => setDraft(e.target.value)} onKeyDown={onEnter} />
               <button type="button" className="rx-ib" aria-label="Record voice note" disabled={busy} onClick={() => { void rec.start(); }}><Mic aria-hidden /></button>
               <button type="button" className="rx-ib" aria-label="Send" disabled={busy || !draft.trim()} onClick={() => void submitText()}><Send aria-hidden /></button>
             </>
@@ -219,7 +330,7 @@ export default function ChatThread({ initial, meId, send, outbox, poll, realtime
       ) : (
         <div className="rx-chat-foot" style={{ justifyContent: 'space-between' }}>{notice}</div>
       )}
-      {(error || rec.error) && <p className="rx-sm" role="alert" style={{ color: 'var(--rx-danger)', padding: '0 14px 10px' }}>{error || rec.error}</p>}
+      {errorLine}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { registerHandler, type HandlerResult, type OutboxItem } from '@/lib/outb
 
 export interface CheckinPayload { content: string; dimensionTag: string | null }
 export interface CircleMessagePayload { circleId: string; body: string }
+export interface DmMessagePayload { threadId: string; body: string }
 
 /** The check-in route allows one per member per week. A repeat comes back 409, which means "already there". */
 export async function sendCheckin(p: CheckinPayload): Promise<HandlerResult> {
@@ -36,6 +37,12 @@ export function registerOutboxHandlers(): void {
     const p = item.payload as CircleMessagePayload;
     const { sendCircleMessage } = await import('@/app/(app)/circle/actions');
     const r = await sendCircleMessage(p.circleId, p.body, item.id);
+    return r.ok ? { result: 'sent', data: r.message } : { result: 'drop', error: r.error };
+  });
+  registerHandler('dm_message', async (item) => {
+    const p = item.payload as DmMessagePayload;
+    const { sendDm } = await import('@/app/(app)/messages/actions');
+    const r = await sendDm(p.threadId, p.body, item.id);
     return r.ok ? { result: 'sent', data: r.message } : { result: 'drop', error: r.error };
   });
 }

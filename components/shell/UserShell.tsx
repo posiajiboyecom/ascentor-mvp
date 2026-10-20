@@ -10,12 +10,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import { useCart } from '@/lib/shop-cart';
 import {
-  CalendarClock, Compass, Gift, LayoutDashboard, Megaphone, MapPin, Settings, ShieldCheck, ShoppingBag, TrendingUp, UserRound,
+  Bell, Brain, CalendarClock, CircleHelp, Compass, Gift, LayoutDashboard, Mail, Megaphone, MapPin, Package, Settings, ShieldCheck, ShoppingBag, TrendingUp, UserRound,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { AnnouncementsBell, MessagesLink, NotificationsBell, type BellItem } from '@/components/rx/HeaderActions';
 import { ToastProvider } from '@/components/rx/Toast';
 import SummitModal from './SummitModal';
+import { PresenceProvider } from '@/components/rx/messages/Presence';
+import MessagingDock from '@/components/rx/messages/MessagingDock';
 import { NAV_ITEMS } from '@/lib/nav-items';
 import ShellLayout from './ShellLayout';
 import SageFloat, { clearSageGreeting } from './SageFloat';
@@ -31,6 +33,7 @@ import type { ShellNavGroup } from './types';
 export interface ShellCountsProp {
   unreadAnnouncements: number;
   messageRequests: number;
+  unreadMessages?: number;
   cityGroupSlug: string | null;
   cityName: string | null;
   latest: BellItem[];
@@ -56,7 +59,8 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
   const supabase = useMemo(() => createClient(), []);
   const isStaff = role === 'admin' || role === 'moderator';
   const unread = counts?.unreadAnnouncements ?? 0;
-  const citySlug = counts?.cityGroupSlug ?? null;
+  const unreadMessages = counts?.unreadMessages ?? 0;
+  const requests = counts?.messageRequests ?? 0;
   const { count: cartCount } = useCart();
 
   const groups: ShellNavGroup[] = useMemo(() => {
@@ -66,30 +70,34 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         label: 'Explore',
         items: [
           { href: '/community',         label: 'Community',  icon: <Compass /> },
-          ...(citySlug ? [{ href: `/community/groups/${citySlug}`, label: 'City groups', icon: <MapPin />, badge: counts?.cityName ?? undefined }] : []),
+          { href: '/community/cities', label: 'City groups', icon: <MapPin />, badge: counts?.cityName ?? undefined },
           { href: '/store',             label: 'Shop',       icon: <ShoppingBag />, badge: cartCount > 0 ? cartCount : undefined },
         ],
       },
       {
         label: 'This week',
         items: [
-          { href: '/community',                  label: 'Monday prompt',     icon: <CalendarClock />, badge: 'Mon 8am' },
-          { href: '/community/groups/open-house', label: 'Live conversation', icon: <CalendarClock />, badge: 'Wed 7pm' },
-          { href: '/community?category=Wins',      label: 'Friday wins',       icon: <CalendarClock />, badge: 'Fri 5pm' },
+          { href: '/community',                  label: 'Monday prompt',     icon: <CalendarClock />, badge: 'Mon 8:00 AM' },
+          { href: '/community/groups/open-house', label: 'Live conversation', icon: <CalendarClock />, badge: 'Wed 7:00 PM' },
+          { href: '/community?category=Wins',      label: 'Friday wins',       icon: <CalendarClock />, badge: 'Fri 5:00 PM' },
         ],
       },
       {
         label: 'You',
         items: [
           { href: '/announcements', label: 'Announcements', icon: <Megaphone />, dot: unread > 0 },
+          { href: '/messages',      label: 'Messages',      icon: <Mail />, dot: unreadMessages > 0 || requests > 0 },
+          { href: '/notifications', label: 'Notifications', icon: <Bell /> },
           { href: '/growth',        label: 'My Growth',     icon: <TrendingUp /> },
           { href: '/referral',      label: 'Refer & earn',  icon: <Gift /> },
           { href: '/settings',      label: 'Settings',      icon: <Settings /> },
+          { href: '/store/orders',  label: 'My orders',     icon: <Package /> },
+          { href: '/help',          label: 'Help',          icon: <CircleHelp /> },
         ],
       },
     ];
     return g;
-  }, [unread, citySlug, counts?.cityName, cartCount]);
+  }, [unread, unreadMessages, requests, counts?.cityName, cartCount]);
 
   // The shell has already asked "Sign out?" by the time this runs.
   const handleSignOut = async () => {
@@ -102,6 +110,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
 
   return (
     <ToastProvider>
+      <PresenceProvider userId={userId}>
       <NetworkPill />
       <NoticeProvider value={sidebarNotice}>
       <ShellLayout
@@ -112,19 +121,23 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         settingsHref="/profile"
         searchEndpoint="/api/search"
         searchPlaceholder="Search lessons, rooms and people"
+        searchPageHref="/search"
         onSignOut={handleSignOut}
         sidebarExtra={sidebarNotice ? <NoticeCard notice={sidebarNotice} compact /> : undefined}
         menuLinks={[
           { href: '/dashboard', label: 'Today',    icon: <LayoutDashboard /> },
           { href: '/profile',   label: 'Profile',  icon: <UserRound /> },
           { href: '/settings',  label: 'Settings', icon: <Settings /> },
+          { href: '/sage/memory',    label: 'What Sage knows', icon: <Brain /> },
+          { href: '/sage/reminders', label: 'Reminders',       icon: <Bell /> },
+          { href: '/help',      label: 'Help',     icon: <CircleHelp /> },
           { href: '/account',   label: 'Account and billing', icon: <Gift /> },
           ...(isStaff ? [{ href: '/admin', label: 'Admin dashboard', icon: <ShieldCheck /> }] : []),
         ]}
         headerActions={
           <>
             <AnnouncementsBell items={counts?.latest ?? []} unread={unread} />
-            <MessagesLink requests={counts?.messageRequests ?? 0} />
+            <MessagesLink requests={requests} unread={unreadMessages} />
             <NotificationsBell />
           </>
         }
@@ -138,6 +151,8 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
       <SagePanel />
       <MobileTabBar />
       <SummitModal registered={summitRegistered} userId={userId} />
+      <MessagingDock meId={userId} meName={userName} meAvatarUrl={avatarUrl ?? null} initialUnread={unreadMessages} />
+      </PresenceProvider>
     </ToastProvider>
   );
 }

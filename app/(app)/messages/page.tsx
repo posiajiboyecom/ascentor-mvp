@@ -4,17 +4,17 @@
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowLeft, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, ArrowRight, TriangleAlert } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getMe } from '@/lib/rx/server';
-import { dmMessages, listRequests, listThreads, memberCard } from '@/lib/rx/messages';
+import { getMe, getMyCircle } from '@/lib/rx/server';
+import { dmMessages, listRequests, listThreads, memberCard, peerReadAt, suggestedPeople, type PersonItem } from '@/lib/rx/messages';
 import { looksLikeScam } from '@/lib/rx/safety';
 import { Avatar, Tag } from '@/components/rx/ui';
-import { DmChat, RequestActions, ThreadActions } from '@/components/rx/messages/MessagesClient';
+import { DmChat, DmHeader, InboxPane, NewMessagePane, RequestActions } from '@/components/rx/messages/MessagesClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function MessagesPage({ searchParams }: { searchParams: Promise<{ tab?: string; t?: string; view?: string }> }) {
+export default async function MessagesPage({ searchParams }: { searchParams: Promise<{ tab?: string; t?: string; view?: string; new?: string; to?: string }> }) {
   const sp = await searchParams;
   const me = await getMe();
   if (!me) redirect('/login');
@@ -24,92 +24,90 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
   const tab = sp.tab === 'requests' ? 'requests' : 'inbox';
   const selected = sp.t ?? null;
 
+  // Deep link from People search: /messages?to=<member id>. An existing conversation opens; otherwise New message with that person ready.
+  let preselect: PersonItem | null = null;
+  const toId = sp.to && /^[0-9a-f-]{36}$/i.test(sp.to) && sp.to !== me.userId ? sp.to : null;
+  if (toId && !selected) {
+    const { data: existing } = await db.from('dm_threads').select('id, status').or(`and(user_a.eq.${me.userId},user_b.eq.${toId}),and(user_a.eq.${toId},user_b.eq.${me.userId})`).maybeSingle();
+    if (existing && (existing.status === 'accepted' || existing.status === 'request')) redirect(`/messages?t=${existing.id}`);
+    const { data: person } = await db.from('member_directory').select('id, full_name, avatar_url').eq('id', toId).maybeSingle();
+    if (person && (person as { full_name: string | null }).full_name) {
+      const pp = person as { id: string; full_name: string; avatar_url: string | null };
+      const circle = await getMyCircle().catch(() => null);
+      const inCircle = !!circle?.seats.some((x) => x.userId === pp.id);
+      preselect = { id: pp.id, name: pp.full_name.trim(), avatarUrl: pp.avatar_url, inCircle, meta: inCircle ? 'Your Circle' : 'Member · sends a message request' };
+    }
+  }
+  const showNew = !selected && (sp.new === '1' || !!toId);
+  const suggested = showNew ? await suggestedPeople() : [];
+
   // The selected conversation, if it is a direct message.
-  let convo: null | { id: string; otherId: string; name: string; avatarUrl: string | null; status: string; iRequested: boolean; msgs: Awaited<ReturnType<typeof dmMessages>>; flagged: boolean } = null;
+  let convo: null | { id: string; otherId: string; name: string; avatarUrl: string | null; status: string; iRequested: boolean; msgs: Awaited<ReturnType<typeof dmMessages>>; flagged: boolean; seenAt: string | null } = null;
   if (selected && !selected.startsWith('g:') && !selected.startsWith('c:') && selected !== 'circle') {
     const { data: t } = await db.from('dm_threads').select('id, user_a, user_b, requested_by, status').eq('id', selected).maybeSingle();
     if (t) {
       const otherId = t.user_a === me.userId ? t.user_b : t.user_a;
-      const [card, msgs] = await Promise.all([memberCard(otherId), dmMessages(db, t.id)]);
-      convo = { id: t.id, otherId, name: card?.name ?? 'Member', avatarUrl: card?.avatarUrl ?? null, status: t.status, iRequested: t.requested_by === me.userId, msgs, flagged: msgs.some((m) => m.userId !== me.userId && looksLikeScam(m.body)) };
+      const [card, msgs, seenAt] = await Promise.all([memberCard(otherId), dmMessages(db, t.id), peerReadAt(db, t.id, otherId)]);
+      convo = { id: t.id, otherId, name: card?.name ?? 'Member', avatarUrl: card?.avatarUrl ?? null, status: t.status, iRequested: t.requested_by === me.userId, msgs, seenAt, flagged: msgs.some((m) => m.userId !== me.userId && looksLikeScam(m.body)) };
     }
   }
   const card = convo ? await memberCard(convo.otherId) : null;
-  const pane: 'list' | 'convo' | 'card' = convo && sp.view === 'card' ? 'card' : convo ? 'convo' : 'list';
+  const pane: 'list' | 'convo' | 'card' = convo && sp.view === 'card' ? 'card' : convo || showNew ? 'convo' : 'list';
+  const canMsg = !!convo && (convo.status === 'accepted' || (convo.status === 'request' && convo.iRequested && convo.msgs.length === 0));
+  const wasUnread = !!convo && threads.some((x) => x.key === convo!.id && x.unread);
+  const meta = card ? [card.stage, card.city].filter(Boolean).join(' · ') || 'Member' : 'Member';
+
+  const requestsNode = (
+    <div className="rx-stack">
+      <p className="rx-sm">First messages from outside your Circle wait here.</p>
+      {requests.length === 0 && <p className="rx-sm">No requests right now.</p>}
+      {requests.map((r, i) => (
+        <div key={r.threadId} className="rx-card rx-stack-sm">
+          <div className="rx-row rx-nw"><Avatar name={r.name} url={r.avatarUrl} seed={r.fromId} /><div style={{ flex: 1, minWidth: 0 }}><p className="rx-p rx-strong">{r.name}</p><p className="rx-sm">{[r.stage, r.city].filter(Boolean).join(' · ') || 'Not in your Circle'} · not in your Circle</p></div></div>
+          {r.flagged && <div className="rx-banner" role="note"><TriangleAlert aria-hidden style={{ width: 20, height: 20, flex: 'none' }} /><div><b>Be careful.</b> This asks for payment and has an unknown link.</div></div>}
+          <p className="rx-p" style={{ fontSize: 15 }}>{r.text}</p>
+          <div className="rx-row">
+            <RequestActions threadId={r.threadId} primary={!r.flagged && requests.findIndex((x) => !x.flagged) === i} />
+            <Link href={`/messages?t=${r.threadId}&view=card`} className="rx-link">Profile<ArrowRight aria-hidden /></Link>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="rx rx-panes" data-pane={pane}>
       {/* ── list pane ── */}
       <div className="rx-pane rx-pane-list">
-        <div className="rx-page" style={{ paddingBottom: 24, paddingTop: 24 }}>
-          <h1 className="rx-title">Messages</h1><span className="rx-rule" />
-          <div className="rx-opts" style={{ marginBottom: 12 }}>
-            <Link href="/messages" className={`rx-opt${tab === 'inbox' ? ' on' : ''}`}>Inbox</Link>
-            <Link href="/messages?tab=requests" className={`rx-opt${tab === 'requests' ? ' on' : ''}`}>Requests · {requests.length}</Link>
-          </div>
-
-          {tab === 'inbox' && (threads.length === 0 ? (
-            <div className="rx-empty"><p className="rx-p">No messages yet.</p><Link href="/community" className="rx-btn secondary">Visit Community</Link></div>
-          ) : (
-            <div className="rx-stack-sm" style={{ gap: 2 }}>
-              {threads.map((t) => {
-                const href = t.kind === 'circle' ? `/circle/chat?c=${t.seed}` : t.kind === 'group' ? `/community/groups/${t.key.slice(2)}` : `/messages?t=${t.key}`;
-                return (
-                  <Link key={t.key} href={href} className="rx-li" aria-current={selected === t.key ? 'true' : undefined}>
-                    <Avatar name={t.name} url={t.avatarUrl} seed={t.seed} />
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      <span className="rx-between"><span className="rx-strong" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span><span className="rx-sm">{t.time}</span></span>
-                      <span className="rx-sm" style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.last}</span>
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-
-          {tab === 'requests' && (
-            <div className="rx-stack">
-              <p className="rx-sm">First messages from outside your Circle wait here.</p>
-              {requests.length === 0 && <p className="rx-sm">No requests right now.</p>}
-              {requests.map((r, i) => (
-                <div key={r.threadId} className="rx-card rx-stack-sm">
-                  <div className="rx-row rx-nw"><Avatar name={r.name} url={r.avatarUrl} seed={r.fromId} /><div style={{ flex: 1, minWidth: 0 }}><p className="rx-p rx-strong">{r.name}</p><p className="rx-sm">{[r.stage, r.city].filter(Boolean).join(' · ') || 'Not in your Circle'} · not in your Circle</p></div></div>
-                  {r.flagged && <div className="rx-banner" role="note"><TriangleAlert aria-hidden style={{ width: 20, height: 20, flex: 'none' }} /><div><b>Be careful.</b> This asks for payment and has an unknown link.</div></div>}
-                  <p className="rx-p" style={{ fontSize: 15 }}>{r.text}</p>
-                  <div className="rx-row">
-                    <RequestActions threadId={r.threadId} primary={!r.flagged && requests.findIndex((x) => !x.flagged) === i} />
-                    <Link href={`/messages?t=${r.threadId}&view=card`} className="rx-link">Profile</Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <InboxPane threads={threads} selected={selected} tab={tab} requestCount={requests.length} requests={requestsNode} />
       </div>
 
       {/* ── conversation pane ── */}
       <div className="rx-pane rx-pane-convo">
-        {convo ? (
-          <div className="rx-chat" style={{ height: '100%' }}>
-            <div className="rx-chat-head">
-              <Link href="/messages" className="rx-ib rx-mob" aria-label="Back to inbox"><ArrowLeft aria-hidden /></Link>
-              <Link href={`/messages?t=${convo.id}&view=card`} aria-label="View profile"><Avatar name={convo.name} url={convo.avatarUrl} seed={convo.otherId} /></Link>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="rx-h3" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{convo.name}</p>
-                <p className="rx-sm">{convo.status === 'request' ? 'Message request' : 'Direct message'}</p>
-              </div>
-              <ThreadActions threadId={convo.id} />
-            </div>
+        {showNew ? (
+          <NewMessagePane suggested={suggested} preselect={preselect} />
+        ) : convo ? (
+          <div className="rxm-cv">
+            <DmHeader presence={convo.status === 'accepted'} threadId={convo.id} otherId={convo.otherId} name={convo.name} avatarUrl={convo.avatarUrl} meta={convo.status === 'request' ? 'Message request' : meta} />
             {convo.flagged && (
               <div style={{ padding: '12px 16px 0' }}><div className="rx-banner" role="note"><TriangleAlert aria-hidden style={{ width: 20, height: 20, flex: 'none' }} /><div><b>This asks for payment and has an unknown link.</b> Don’t send money or codes. Ascentor never asks for payment in chat.</div></div></div>
             )}
             <div style={{ flex: 1, minHeight: 0 }}>
               <DmChat
-                threadId={convo.id} meId={me.userId} initial={convo.msgs}
-                canSend={convo.status === 'accepted' || (convo.status === 'request' && convo.iRequested && convo.msgs.length === 0)}
+                key={convo.id}
+                threadId={convo.id} meId={me.userId} meName={me.fullName ?? 'You'} meAvatarUrl={me.avatarUrl ?? null} initial={convo.msgs}
+                canSend={canMsg} wasUnread={wasUnread} peerReadAt={convo.seenAt}
+                intro={(
+                  <div className="rxm-intro">
+                    <Avatar name={convo.name} url={convo.avatarUrl} size="md" seed={convo.otherId} />
+                    <p className="rx-h3" style={{ marginTop: 6 }}>{convo.name}</p>
+                    <p className="rx-sm">{meta}</p>
+                    <Link href={`/messages?t=${convo.id}&view=card`} className="rx-link" style={{ minHeight: 36, fontSize: 14 }}>View profile<ArrowRight aria-hidden /></Link>
+                  </div>
+                )}
                 notice={convo.status === 'request' && !convo.iRequested
-                  ? <span className="rx-sm">Accept this request from the Requests tab to reply.</span>
-                  : <span className="rx-sm">{convo.status === 'request' ? 'Waiting for them to accept your request.' : 'This conversation is closed.'}</span>}
+                  ? <p className="rx-sm">You can’t reply to this message. Accept or decline it under Requests.</p>
+                  : <p className="rx-sm">{convo.status === 'request' ? 'Waiting for them to accept your request.' : 'This conversation is closed.'}</p>}
               />
             </div>
           </div>
@@ -131,7 +129,9 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
                 <p className="rx-label" style={{ marginTop: 8 }}>Interests</p>
                 <div className="rx-row" style={{ gap: 6 }}>{card.interests.length ? card.interests.map((t) => <Tag key={t}>{t}</Tag>) : <span className="rx-sm">Not shared</span>}</div>
               </>}
-              <div style={{ marginTop: 12 }}><Link href={`/messages?t=${convo.id}`} className="rx-btn secondary">Message</Link></div>
+              {canMsg
+                ? <div style={{ marginTop: 12 }}><Link href={`/messages?t=${convo.id}`} className="rx-btn secondary">Message</Link></div>
+                : <p className="rx-sm" style={{ marginTop: 12 }}>Messaging isn’t available with this member.</p>}
             </div>
           </div>
         )}

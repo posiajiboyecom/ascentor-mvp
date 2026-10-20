@@ -12,6 +12,7 @@ import UserShell from '@/components/shell/UserShell';
 import { getShellCounts } from '@/lib/rx/shell-counts';
 import ReferralRedeem from '@/components/ReferralRedeem';
 import '@/styles/rx.css';
+import '@/styles/rx-messaging.css';
 
 export default async function AppLayout({
   children,

@@ -25,12 +25,14 @@ export default function CommandPalette({
   groups,
   endpoint,
   placeholder,
+  searchPageHref,
 }: {
   open: boolean;
   onClose: () => void;
   groups: ShellNavGroup[];
   endpoint: string;
   placeholder: string;
+  searchPageHref?: string;
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -102,8 +104,15 @@ export default function CommandPalette({
       })),
     );
     // Live results first once the user is searching; pages first otherwise.
-    return q ? [...found, ...pages.slice(0, 8)] : pages.slice(0, 10);
-  }, [query, groups, remote]);
+    const base = q ? [...found, ...pages.slice(0, 8)] : pages.slice(0, 10);
+    if (searchPageHref) {
+      const raw = query.trim();
+      base.push(raw.length >= 2
+        ? { key: 'see-all', group: 'Search', title: `See all results for “${raw}”`, href: `${searchPageHref}?q=${encodeURIComponent(raw)}`, icon: <Search /> }
+        : { key: 'see-all', group: 'Search', title: 'Open search', subtitle: 'Lessons, rooms, people, posts and sessions', href: searchPageHref, icon: <Search /> });
+    }
+    return base;
+  }, [query, groups, remote, searchPageHref]);
 
   useEffect(() => { setActive(0); }, [rows.length, query]);
 
