@@ -32,7 +32,7 @@ import { deliverPaidEmails, deliverDonationEmails } from '@/lib/summitEmails';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type AttemptKind = 'subscription' | 'summit' | 'donation';
+export type AttemptKind = 'subscription' | 'summit' | 'donation' | 'shop';
 export type AttemptStatus = 'pending' | 'success' | 'failed' | 'abandoned' | 'duplicate';
 
 export interface PaymentAttempt {
@@ -45,6 +45,7 @@ export interface PaymentAttempt {
   billing:         string | null;
   registration_id: string | null;
   donation_id:     string | null;
+  order_id:        string | null;
   email:           string | null;
   amount_kobo:     number | null;
   currency:        string | null;
@@ -132,7 +133,7 @@ export async function fetchPaystackTransaction(reference: string): Promise<Payst
 // ── Attempts ─────────────────────────────────────────────────────────────────
 
 const ATTEMPT_COLUMNS =
-  'id, reference, kind, status, user_id, plan_id, billing, registration_id, donation_id, email, amount_kobo, currency, created_at, recovery_sent_at, admin_notified_at';
+  'id, reference, kind, status, user_id, plan_id, billing, registration_id, donation_id, order_id, email, amount_kobo, currency, created_at, recovery_sent_at, admin_notified_at';
 
 export async function getAttemptByReference(reference: string): Promise<PaymentAttempt | null> {
   const { data, error } = await supabaseAdmin
@@ -154,6 +155,7 @@ export async function createAttempt(input: {
   billing?:        string | null;
   registrationId?: string | null;
   donationId?:     string | null;
+  orderId?:        string | null;
 }): Promise<void> {
   const { error } = await supabaseAdmin.from('payment_attempts').insert({
     reference:       input.reference,
@@ -164,6 +166,7 @@ export async function createAttempt(input: {
     billing:         input.billing ?? null,
     registration_id: input.registrationId ?? null,
     donation_id:     input.donationId ?? null,
+    order_id:        input.orderId ?? null,
     email:           input.email,
     amount_kobo:     input.amountKobo,
     currency:        'NGN',
@@ -285,6 +288,32 @@ async function fulfilSummit(attempt: PaymentAttempt, tx: PaystackTransaction): P
   // Claim winner only. Customer + admin emails are independent and tracked;
   // failures never undo a paid ticket and are retried by reconciliation / admin Resend.
   await deliverPaidEmails(registration, tx.amount / 100, tx.currency ?? 'NGN', attempt.reference);
+  return 'fulfilled';
+}
+
+async function fulfilShop(attempt: PaymentAttempt): Promise<FulfilOutcome> {
+  if (!attempt.order_id) throw new Error('Shop attempt has no order_id');
+  const { data: order } = await supabaseAdmin
+    .from('shop_orders').select('id, status').eq('id', attempt.order_id).maybeSingle();
+  if (!order) return 'duplicate';
+  if (order.status !== 'pending') return 'duplicate';
+
+  const { data: items } = await supabaseAdmin
+    .from('shop_order_items').select('product_id, qty, fulfilment').eq('order_id', attempt.order_id);
+  const hasShip = (items ?? []).some((i: { fulfilment: string }) => i.fulfilment === 'ship');
+
+  // Claim winner only: pending -> paid (physical) or ready (digital / course only).
+  const { data: claimed } = await supabaseAdmin.from('shop_orders')
+    .update({ status: hasShip ? 'paid' : 'ready', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq('id', attempt.order_id).eq('status', 'pending').select('id');
+  if (!claimed?.length) return 'duplicate';
+
+  for (const it of items ?? []) {
+    if (it.product_id) await supabaseAdmin.rpc('shop_after_sale', { p_product: it.product_id, p_qty: it.qty });
+  }
+  // Receipt and admin alert never undo a paid order; failures are logged and the admin can resend.
+  const { deliverShopEmails } = await import('@/lib/shopEmails');
+  await deliverShopEmails(attempt.order_id).catch((e) => console.error('[shop] receipt email failed:', e));
   return 'fulfilled';
 }
 
@@ -480,6 +509,8 @@ export async function settleReference(reference: string): Promise<SettleResult> 
       ? await fulfilSummit(attempt, tx)
       : attempt.kind === 'donation'
       ? await fulfilDonation(attempt, tx)
+      : attempt.kind === 'shop'
+      ? await fulfilShop(attempt)
       : await fulfilSubscription(attempt, tx);
 
     if (outcome === 'duplicate') {
@@ -488,8 +519,10 @@ export async function settleReference(reference: string): Promise<SettleResult> 
         title:   'Duplicate payment - refund needed',
         message: attempt.kind === 'donation'
           ? `${attempt.email ?? 'A donor'} was charged twice for the same donation (ref ${reference}). Please refund one payment in Paystack.`
+          : attempt.kind === 'shop'
+          ? `${attempt.email ?? 'A customer'} paid for a shop order that was already settled (ref ${reference}). Please check it and refund the extra payment in Paystack.`
           : `${attempt.email ?? 'A customer'} paid twice for the same Summit registration (ref ${reference}). Please refund one payment in Paystack.`,
-        link:    attempt.kind === 'donation' ? '/admin/summit-donations' : '/admin/elevation-summit/registrations',
+        link:    attempt.kind === 'donation' ? '/admin/summit-donations' : attempt.kind === 'shop' ? '/admin/shop/orders' : '/admin/elevation-summit/registrations',
         type:    'payment_alert',
       });
     }

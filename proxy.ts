@@ -113,6 +113,9 @@ const PUBLIC_API_ROUTES = [
   '/api/newsletter',
   // Free-resource capture on public landing pages (no account exists yet)
   '/api/lead-magnet',
+  // Shop: guests can buy and download. Each route validates its own input, signs its own links
+  // and prices the cart server-side; Paystack settlement does the rest.
+  '/api/shop',
   '/api/welcome',
   '/api/auth',
   // Paystack webhook - verified internally via HMAC signature
