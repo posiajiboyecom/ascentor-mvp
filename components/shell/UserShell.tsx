@@ -7,8 +7,9 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
+import { useCart } from '@/lib/shop-cart';
 import {
-  CalendarClock, Compass, Gift, LayoutDashboard, Megaphone, MapPin, Settings, ShieldCheck, TrendingUp, UserRound,
+  CalendarClock, Compass, Gift, LayoutDashboard, Megaphone, MapPin, Settings, ShieldCheck, ShoppingBag, TrendingUp, UserRound,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { AnnouncementsBell, MessagesLink, NotificationsBell, type BellItem } from '@/components/rx/HeaderActions';
@@ -54,6 +55,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
   const isStaff = role === 'admin' || role === 'moderator';
   const unread = counts?.unreadAnnouncements ?? 0;
   const citySlug = counts?.cityGroupSlug ?? null;
+  const { count: cartCount } = useCart();
 
   const groups: ShellNavGroup[] = useMemo(() => {
     const g: ShellNavGroup[] = [
@@ -63,6 +65,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         items: [
           { href: '/community',         label: 'Community',  icon: <Compass /> },
           ...(citySlug ? [{ href: `/community/groups/${citySlug}`, label: 'City groups', icon: <MapPin />, badge: counts?.cityName ?? undefined }] : []),
+          { href: '/store',             label: 'Shop',       icon: <ShoppingBag />, badge: cartCount > 0 ? cartCount : undefined },
         ],
       },
       {
@@ -84,7 +87,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
       },
     ];
     return g;
-  }, [unread, citySlug, counts?.cityName]);
+  }, [unread, citySlug, counts?.cityName, cartCount]);
 
   // The shell has already asked "Sign out?" by the time this runs.
   const handleSignOut = async () => {

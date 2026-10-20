@@ -95,12 +95,16 @@ export const BODY_SCHEMAS: Record<string, z.ZodType> = {
   '/api/admin/summit-stream': admin.summitStream,
   '/api/admin/surveys': admin.surveyCreate,
   '/api/admin/promo-codes': admin.promoCreate,
+  '/api/admin/shop/products': admin.shopProductCreate,
   '/api/admin/personal-brand': admin.personalBrandGenerate,
   '/api/admin/personal-brand/image': admin.personalBrandImage,
 
   // Secondary handlers on the same path (other HTTP methods / modes): "<path>#<label>"
   '/api/admin/payments#DELETE': admin.paymentsDelete,
   '/api/admin/users#FIND': admin.findUser,
+  '/api/admin/shop/products#PATCH': admin.shopProductUpdate,
+  '/api/admin/shop/products#DELETE': admin.shopProductDelete,
+  '/api/admin/shop/orders#PATCH': admin.shopOrderUpdate,
   '/api/admin/promo-codes#PATCH': admin.promoUpdate,
   '/api/admin/promo-codes#DELETE': admin.promoDelete,
   '/api/admin/summit-registrations#PATCH': admin.summitRegistrationPatch,

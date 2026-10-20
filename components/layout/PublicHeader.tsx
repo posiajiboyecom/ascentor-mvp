@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import FloatingSocials from '@/components/layout/FloatingSocials';
 import { openGateOrSignup } from '@/lib/gate-client';
+import { useCart } from '@/lib/shop-cart';
 
 const openGate = () => openGateOrSignup();
 
@@ -14,6 +15,10 @@ type PublicHeaderProps = {
 export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { count: cartCount } = useCart();
+  const cartBadge = cartCount > 0 ? (
+    <span style={{ marginLeft: 6, background: '#B6502A', color: '#fff', borderRadius: 999, fontSize: 11, fontWeight: 700, padding: '1px 7px' }}>{cartCount}</span>
+  ) : null;
 
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -47,6 +52,7 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
       <Link href="/about" className="ph-nav-link">About</Link>
       <Link href="/elevation-summit" className="ph-nav-link">The Elevation Summit</Link>
       {hasBlogPosts && <Link href="/blog" className="ph-nav-link">Resources</Link>}
+      <Link href="/shop" className="ph-nav-link">Shop{cartBadge}</Link>
       <Link href="/contact" className="ph-nav-link">Contact</Link>
     </>
   );
@@ -314,6 +320,9 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
             Resources
           </Link>
         )}
+        <Link href="/shop" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+          Shop{cartBadge}
+        </Link>
         <Link href="/contact" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
           Contact
         </Link>

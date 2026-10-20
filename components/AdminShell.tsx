@@ -6,7 +6,7 @@ import {
   BarChart3, Briefcase, CalendarDays, ClipboardList, CreditCard, Database,
   GraduationCap, HeartHandshake, Inbox, LayoutDashboard, LayoutTemplate,
   Mail, Megaphone, MessageCircle, MessagesSquare, Package, PenLine, Radar, Radio,
-  ScrollText, ShieldCheck, Tag, Ticket, Users, Workflow, ArrowLeftRight, UserRound,
+  ScrollText, ShieldCheck, ShoppingBag, Tag, Ticket, Users, Workflow, ArrowLeftRight, UserRound,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
@@ -63,7 +63,9 @@ const NAV_GROUPS: Group[] = [
     items: [
       { href: '/admin/payments',    label: 'Subscription Payments', icon: <CreditCard />, permission: 'payments.view' },
       { href: '/admin/promo-codes', label: 'Promo Codes',   icon: <Tag /> },
-      { href: '/admin/products',    label: 'Products',      icon: <Package /> },
+      { href: '/admin/shop/products', label: 'Shop products', icon: <Package /> },
+      { href: '/admin/shop/orders',   label: 'Shop orders',   icon: <ShoppingBag /> },
+      { href: '/admin/shop/leads',    label: 'Shop leads',    icon: <Inbox /> },
       { href: '/admin/billboards',  label: 'Rail Billboards', icon: <Megaphone /> },
     ],
   },

@@ -100,7 +100,7 @@ const AUTH_ROUTES = [
   '/dashboard', '/coach', '/community', '/account',
   '/learn', '/courses', '/experts', '/onboarding',
   '/referral', '/admin',
-  '/circle', '/sessions', '/messages', '/growth', '/profile', '/settings', '/announcements', '/sage', '/call',
+  '/circle', '/sessions', '/messages', '/growth', '/profile', '/settings', '/announcements', '/sage', '/call', '/store',
 ];
 
 // API routes that are explicitly public - checked BEFORE the protected
