@@ -115,7 +115,7 @@ export default function ReferralClient({ code, daysEarned, invites }: { code: st
         <Aside>
           <p className="rx-label">Rewards</p>
           <p style={{ margin: 0 }}>Extra days are added to your next renewal. You can see them under Plan.</p>
-          <div><Link href="/settings" className="rx-link">See my plan<ArrowRight aria-hidden /></Link></div>
+          <div><Link href="/settings?tab=plan" className="rx-link">See my plan<ArrowRight aria-hidden /></Link></div>
           <p className="rx-label">Fair use</p>
           <p className="rx-sm">Rewards count when a friend’s first payment goes through. Self-referrals and duplicate accounts don’t count.</p>
         </Aside>

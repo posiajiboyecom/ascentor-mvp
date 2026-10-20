@@ -1,0 +1,32 @@
+/* rx-settings: Settings tabs and the Plan screen. Values mirror the prototype classes
+   (.tabs, .ifo, .sb, .sl, .plan, .danger, .bdanger, .bmuted, .sessrow, .tag.rust, .tag.gold). */
+.rx-tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; margin-bottom: 24px; scrollbar-width: none; }
+.rx-tabs::-webkit-scrollbar { display: none; }
+.rx-tabs .rx-opt { flex: none; text-decoration: none; }
+.rx-sb { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rx-sb.top { align-items: flex-start; }
+.rx-sl { margin: 0; font-weight: 600; font-size: 14px; line-height: 1.35; color: var(--rx-muted); }
+.rx-card.st { display: flex; flex-direction: column; gap: 16px; }
+.rx-ifo { display: flex; gap: 14px; align-items: flex-start; padding: 16px; background: var(--rx-card); border: 1px solid var(--rx-border); border-radius: var(--rx-r); box-shadow: var(--rx-shadow); min-width: 0; }
+.rx-ifo > svg { width: 20px; height: 20px; color: var(--rx-muted); margin-top: 2px; flex: none; }
+.rx-ifo .k { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--rx-muted); }
+.rx-ifo .v { margin: 0; font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rx-tag.rust { color: var(--rx-rustt); border-color: color-mix(in srgb, var(--rx-rust) 50%, transparent); }
+.rx-tag.goldt { color: var(--rx-gold); border-color: color-mix(in srgb, var(--rx-accent) 50%, transparent); }
+.rx-card.danger { border-color: color-mix(in srgb, var(--rx-danger) 45%, var(--rx-border)); }
+.rx-btn.bdanger { background: transparent; color: var(--rx-danger); border-color: color-mix(in srgb, var(--rx-danger) 60%, transparent); }
+.rx-btn.bdanger:hover { background: color-mix(in srgb, var(--rx-danger) 10%, transparent); }
+.rx-btn.bmuted { background: #EFEDE9; color: #8E8E8E; border-color: transparent; cursor: not-allowed; }
+.rx-plan { display: flex; flex-direction: column; gap: 10px; background: var(--rx-card); border: 1px solid var(--rx-border); border-radius: var(--rx-r); padding: 20px; box-shadow: var(--rx-shadow); min-width: 0; }
+.rx-plan.cur { border-color: color-mix(in srgb, var(--rx-rust) 65%, var(--rx-card)); }
+.rx-plan ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; flex: 1; }
+.rx-price { margin: 0; font-weight: 700; font-size: 16px; }
+.rx-sessrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; border-bottom: 1px solid var(--rx-border); }
+.rx-sessrow:last-of-type { border-bottom: 0; }
+.rx-hero-glow { position: relative; }
+.rx-hero-glow > * { position: relative; z-index: 1; }
+.rx-btn.lkb { background: none; border: 0; padding: 0; min-height: 44px; color: var(--rx-ink); font-weight: 600; font-size: 14px; gap: 6px; }
+.rx-btn.lkb.muted { color: var(--rx-muted); font-weight: 500; }
+.rx-btn.lkb svg { width: 16px; height: 16px; }
+.rx-tbl-wrap { overflow-x: auto; }
+.rx-delay-note { font-size: 14px; color: var(--rx-muted); margin: 0; }

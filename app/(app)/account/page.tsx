@@ -2,7 +2,15 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AccountClient from './AccountClient';
 
-export default async function AccountPage() {
+// Members: the old Account page is now Settings, so /account?section=plan keeps working by redirecting to /settings?tab=plan.
+// The partner sub-site (app/p/[subdomain]) still renders this page directly, with no search params, and keeps the old screen.
+const TAB: Record<string, string> = { account: 'account', profile: 'profile', security: 'security', plan: 'plan', notifications: 'alerts', alerts: 'alerts' };
+
+export default async function AccountPage({ searchParams }: { searchParams?: Promise<{ section?: string }> }) {
+  if (searchParams) {
+    const { section } = await searchParams;
+    redirect(`/settings?tab=${TAB[section ?? ''] ?? 'account'}`);
+  }
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
