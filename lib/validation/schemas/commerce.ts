@@ -15,11 +15,6 @@ export const payActivateFree = z.strictObject({
   promoCode: z.string({ error: 'Promo code is required.' }).trim().min(1, 'Promo code is required.').max(40).toUpperCase(),
 });
 
-export const productVerify = z.strictObject({
-  reference: paymentReference,
-  productId: uuid,
-});
-
 export const donateInitiate = donateFormSchema.strict();
 
 export const donateVerify = z.strictObject({
