@@ -9,6 +9,7 @@ import { getClientIp } from '@/lib/rate-limit';
 import { LIMITS, rateLimit } from '@/lib/auth/rate-limit-shared';
 import { findAccountByEmail } from '@/lib/auth/account-lookup';
 import { verifySignupOtp } from '@/lib/auth/signup-otp';
+import { alertNewMember } from '@/lib/adminAlerts';
 import { parseJson } from '@/lib/validation/http';
 import * as authSchemas from '@/lib/validation/schemas/auth';
 
@@ -45,5 +46,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Your code was right but we could not finish confirming your account. Please try again.', code: 'server_error' }, { status: 500 });
   }
 
+  await alertNewMember({ email });
   return NextResponse.json({ ok: true });
 }
