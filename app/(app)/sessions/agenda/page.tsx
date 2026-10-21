@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getMe } from '@/lib/rx/server';
 import { circleTitle } from '@/lib/rx/circles';
-import { AGENDA_MIN_QUESTIONS, getMentorship } from '@/lib/rx/cmentor';
+import { getMentorship } from '@/lib/rx/cmentor';
 import { whenLabel } from '@/lib/rx/dates';
+import { asInt, getSetting } from '@/lib/admin/settings';
 import { Aside, Avatar, BackLink, Page, Tag, Title } from '@/components/rx/ui';
 import { QuestionBox } from '@/components/rx/sessions/SessionsClient';
 import { SageSuggest } from '@/components/rx/sessions/SageSuggest';
@@ -29,6 +30,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
   const { mentor, next, agreement } = state;
   const first = mentor.name.split(' ')[0];
   const questions = next?.questions ?? [];
+  const AGENDA_MIN_QUESTIONS = asInt(await getSetting('mentor.agenda_questions'), 3, 1, 50);
   const ready = questions.length >= AGENDA_MIN_QUESTIONS;
   const startMs = next ? new Date(next.startsAt).getTime() : 0;
   const locked = !next || (startMs - Date.now() < 24 * 3600000 && !next.myQuestion);

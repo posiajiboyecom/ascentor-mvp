@@ -33,7 +33,7 @@ export interface Lesson {
   sort: number;
 }
 
-export interface LessonProgress { lesson_id: string; practice_id: string | null; reflection: string | null; completed_at: string | null }
+export interface LessonProgress { lesson_id: string; practice_id: string | null; reflection: string | null; completed_at: string | null; watch_percent?: number | null; last_position_sec?: number | null }
 
 export const getLessons = cache(async (): Promise<Lesson[]> => {
   const db = await createClient();
@@ -46,8 +46,10 @@ export const getLessonProgress = cache(async (): Promise<Map<string, LessonProgr
   const out = new Map<string, LessonProgress>();
   if (!me) return out;
   const db = await createClient();
-  const { data } = await db.from('rx_lesson_progress').select('lesson_id, practice_id, reflection, completed_at').eq('user_id', me.userId);
-  for (const r of (data ?? []) as LessonProgress[]) out.set(r.lesson_id, r);
+  const full = await db.from('rx_lesson_progress').select('lesson_id, practice_id, reflection, completed_at, watch_percent, last_position_sec').eq('user_id', me.userId);
+  // watch columns not applied yet: fall back to the core columns
+  const rows = full.error ? (await db.from('rx_lesson_progress').select('lesson_id, practice_id, reflection, completed_at').eq('user_id', me.userId)).data : full.data;
+  for (const r of (rows ?? []) as LessonProgress[]) out.set(r.lesson_id, r);
   return out;
 });
 

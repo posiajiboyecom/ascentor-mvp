@@ -63,13 +63,13 @@ export default async function StoreOrdersPage({ searchParams }: { searchParams: 
   return (
     <Page>
       {(confirmed || processing) && <ClearCart />}
-      <BackLink href="/store">Shop</BackLink>
+      <BackLink href="/store">Store</BackLink>
       <Title>My orders</Title>
       {confirmed && <div style={{ marginBottom: 16 }}><Banner>Payment received. Thank you. Your order is below and a receipt is on its way to your email.</Banner></div>}
       {processing && <div style={{ marginBottom: 16 }}><Banner>We are confirming your payment. This usually takes a minute. Refresh this page shortly and your order will appear.</Banner></div>}
       <div className="rx-two">
         <div className="rx-stack">
-          {orders.length === 0 && <Empty action={<Link href="/store" className="rx-btn secondary">Browse the shop</Link>}>No orders yet.</Empty>}
+          {orders.length === 0 && <Empty action={<Link href="/store" className="rx-btn secondary">Browse the store</Link>}>No orders yet.</Empty>}
           {orders.map((o) => {
             const shipLabel = o.shipping_key && o.shipping_key in SHOP_SHIPPING ? SHOP_SHIPPING[o.shipping_key as ShopShippingKey].label : null;
             const hasShip = o.items.some((i) => i.fulfilment === 'ship');

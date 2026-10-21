@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getShellData } from '@/lib/shell-data';
 import UserShell from '@/components/shell/UserShell';
 import { getShellCounts } from '@/lib/rx/shell-counts';
+import { asBool, getSettings } from '@/lib/admin/settings';
 import ReferralRedeem from '@/components/ReferralRedeem';
 import '@/styles/rx.css';
 import '@/styles/rx-messaging.css';
@@ -43,6 +44,14 @@ export default async function AppLayout({
   }
 
   const counts = await getShellCounts().catch(() => undefined);
+  const settings = await getSettings();
+  const features = {
+    shop: asBool(settings['feature.shop']),
+    cities: asBool(settings['feature.cities']),
+    refer: asBool(settings['feature.refer']),
+    dock: asBool(settings['feature.dock']),
+    offline: asBool(settings['feature.offline']),
+  };
 
   return (
     <UserShell
@@ -53,6 +62,7 @@ export default async function AppLayout({
       role={shell.role}
       summitRegistered={shell.summitRegistered}
       counts={counts}
+      features={features}
     >
       <ReferralRedeem />
       {children}

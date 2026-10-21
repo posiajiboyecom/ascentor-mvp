@@ -28,6 +28,7 @@
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getPlanPricingMap } from '@/lib/plans-config';
+import { getSetting, asInt } from '@/lib/admin/settings';
 import { deliverPaidEmails, deliverDonationEmails } from '@/lib/summitEmails';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -361,13 +362,14 @@ const REFERRAL_BONUS_DAYS = 7;
  * (shown under Plan, added to the next renewal). The conditional UPDATE claims the reward
  * exactly once even if the callback, webhook and reconciliation all run.
  */
-async function rewardReferral(referredId: string): Promise<void> {
+export async function rewardReferral(referredId: string): Promise<void> {
   const { data: claimed } = await supabaseAdmin
     .from('referrals')
     .update({ status: 'rewarded', rewarded_at: new Date().toISOString(),
               referrer_reward: `${REFERRAL_BONUS_DAYS} days`, referred_reward: `${REFERRAL_BONUS_DAYS} days` })
     .eq('referred_id', referredId)
     .is('rewarded_at', null)
+    .is('flagged_at', null)
     .select('referrer_id, referred_id');
   const ref = claimed?.[0];
   if (!ref || ref.referrer_id === ref.referred_id) return;
@@ -398,9 +400,11 @@ async function fulfilSubscription(attempt: PaymentAttempt, tx: PaystackTransacti
   const billing = attempt.billing === 'annual' ? 'annual' : 'monthly';
   const now     = new Date();
 
-  // Preserved product behaviour: 7-day grace on top of the paid period.
+  // Pay now, get extra days on top of the paid period (admin setting billing.extra_days, default 7).
+  let extraDays = 7;
+  try { extraDays = asInt(await getSetting('billing.extra_days'), 7, 0, 60); } catch { /* keep 7 */ }
   const end = new Date(now);
-  end.setDate(end.getDate() + 7);
+  end.setDate(end.getDate() + extraDays);
   if (billing === 'annual') end.setFullYear(end.getFullYear() + 1);
   else end.setMonth(end.getMonth() + 1);
 

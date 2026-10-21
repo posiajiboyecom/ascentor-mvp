@@ -37,6 +37,8 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
         body={lesson.body ?? ''}
         minutes={lesson.minutes}
         reflection={pr?.reflection ?? ''}
+        watchPercent={pr?.watch_percent ?? 0}
+        watchPosition={pr?.last_position_sec ?? 0}
         practiceSet={!!pr?.practice_id}
         startRead={sp.mode === 'read'}
         draft={draft}

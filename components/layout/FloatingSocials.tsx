@@ -41,20 +41,18 @@ const SOCIALS = [
  * Floating social rail - fixed on the left edge, bottom aligned.
  * Rendered by PublicHeader, so it only ever appears on public pages.
  *
- * Entrance animation is staggered per icon and timed to lift after the
- * route preloader: the first load of a session waits longer (preloader
- * holds ~1.2s), soft navigations use a shorter lead-in.
+ * Entrance animation is staggered per icon.
  */
 export default function FloatingSocials() {
   const [mounted, setMounted] = useState(false);
-  const [baseDelay, setBaseDelay] = useState(1400);
+  const [baseDelay, setBaseDelay] = useState(300);
 
   useEffect(() => {
     try {
-      if (sessionStorage.getItem('asc-fs-seen')) setBaseDelay(500);
+      if (sessionStorage.getItem('asc-fs-seen')) setBaseDelay(300);
       sessionStorage.setItem('asc-fs-seen', '1');
     } catch {
-      setBaseDelay(500);
+      setBaseDelay(300);
     }
     setMounted(true);
   }, []);

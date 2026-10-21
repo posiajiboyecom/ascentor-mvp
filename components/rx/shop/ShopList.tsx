@@ -81,7 +81,7 @@ export default function ShopList({ products, member }: { products: ShopCard[]; m
           </div>
         )}
         {shown.length === 0
-          ? <Empty>Nothing in the shop yet. Check back soon.</Empty>
+          ? <Empty>Nothing in the store yet. Check back soon.</Empty>
           : <div className="rx-grid3">{shown.map((p) => <ProductCard key={p.id} p={p} member={member} />)}</div>}
       </div>
       <CartSummaryAside products={products} />

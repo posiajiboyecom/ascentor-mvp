@@ -27,6 +27,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
 import { createAttempt, subscriptionAmountKobo } from '@/lib/paymentSettlement'
+import { closedPlanIds } from '@/lib/admin/plans-open'
+import { canChooseLeader } from '@/lib/leader-access'
 import { paymentLimiter, getClientIp } from '@/lib/rate-limit'
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as commerceSchemas from '@/lib/validation/schemas/commerce';
@@ -64,6 +66,20 @@ export async function POST(req: NextRequest) {
     const parsed = await parseJson(req, commerceSchemas.payStart)
     if (!parsed.ok) return parsed.response
     const { planId, billing } = parsed.data
+
+    if ((await closedPlanIds()).includes(planId)) {
+      return NextResponse.json(
+        { error: 'This plan is not open for new sign-ups right now. Please choose another plan.' },
+        { status: 400 }
+      )
+    }
+
+    if (planId === 'leader' && !(await canChooseLeader(user.id))) {
+      return NextResponse.json(
+        { error: 'The Leader plan is by invitation. Choose Seeker or Builder, or wait for your invite from the Ascentor team.' },
+        { status: 403 }
+      )
+    }
 
     // ── 3. Resolve plan amount ────────────────────────────────────────────────
     // Plan codes (PLN_xxx) are no longer passed to Paystack - they lock channels.

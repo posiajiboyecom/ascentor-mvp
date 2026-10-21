@@ -3,9 +3,13 @@ export const dynamic = 'force-dynamic';
 import AdminShell from '@/components/AdminShell';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import type { Permission } from '@/lib/permissions';
+import { getStaff } from '@/lib/admin/access';
+import { getBadges } from '@/lib/admin/badges';
+import { listStaff } from '@/lib/admin/staff';
+import { AREA_KEYS, can } from '@/lib/admin/areas';
 import { adminMfaRequired, sessionIsAal2 } from '@/lib/auth/admin-mfa';
 import '@/styles/admin-ledger.css';
+import '@/styles/admin-console.css';
 
 // ═══════════════════════════════════════════════════════════
 // Admin layout
@@ -41,57 +45,36 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/admin-login');
 
-  // Try the full query first (includes permissions).
-  let profile: { full_name: string | null; role: string; permissions: Permission[] | null } | null = null;
-
-  const fullQuery = await supabase
-    .from('profiles')
-    .select('full_name, role, permissions')
-    .eq('id', user.id)
-    .single();
-
-  if (fullQuery.error) {
-    // Most likely: permissions column doesn't exist yet in this env.
-    // Retry with the core columns only so the app still renders.
-    const fallback = await supabase
-      .from('profiles')
-      .select('full_name, role')
-      .eq('id', user.id)
-      .single();
-
-    if (fallback.data) {
-      profile = { ...fallback.data, permissions: null };
-    }
-  } else {
-    profile = fullQuery.data;
-  }
-
-  if (!profile || !['admin', 'moderator'].includes(profile.role)) {
-    redirect('/dashboard');
-  }
+  // Who is this teammate and what may their role open? (lib/admin/access.ts: the role is data, the server enforces it.)
+  const staff = await getStaff();
+  if (!staff) redirect('/dashboard');
 
   // Second factor: when ADMIN_MFA_REQUIRED=true, a password-only session is not enough.
   if (adminMfaRequired() && !(await sessionIsAal2(supabase))) {
     redirect('/admin-login?mfa=1&redirect=/admin');
   }
 
-  // Avatar is fetched separately so a missing column can never break the
-  // permissions fallback above.
-  const { data: avatarRow } = await supabase
-    .from('profiles')
-    .select('avatar_url')
-    .eq('id', user.id)
-    .maybeSingle();
+  // The menu shows what the PREVIEW role can open (an admin may be viewing as a teammate); pages and actions check the real role.
+  const visibleAreas = AREA_KEYS.filter((k) => can(staff.uiLevel(k), 'view'));
+  const [badges, team] = await Promise.all([
+    getBadges(visibleAreas),
+    staff.isAdmin ? listStaff(staff.userId) : Promise.resolve([]),
+  ]);
 
   return (
     <>
       <div data-ledger data-ledger-theme="light" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <AdminShell
-          name={profile.full_name || user.email || 'Admin'}
-          role={profile.role}
-          userPermissions={profile.permissions}
-          email={user.email}
-          avatarUrl={(avatarRow as { avatar_url?: string | null } | null)?.avatar_url ?? null}
+          name={staff.name}
+          role={staff.roleId}
+          email={staff.email}
+          avatarUrl={staff.avatarUrl}
+          roleName={staff.roleName}
+          visibleAreas={visibleAreas}
+          badges={badges}
+          isAdmin={staff.isAdmin}
+          viewAsOptions={team.filter((m) => !m.isSelf).map((m) => ({ id: m.id, label: `${m.name} · ${m.roleName}` }))}
+          viewingAsId={staff.viewingAs?.id ?? null}
         >
           <div className="admin-wrapper">
             <style>{`

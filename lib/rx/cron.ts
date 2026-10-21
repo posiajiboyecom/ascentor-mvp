@@ -205,3 +205,31 @@ export async function enforceMentorSessionRules(): Promise<{ cancelled: number; 
   }
   return { cancelled, held };
 }
+
+/**
+ * Learn: a member who started a lesson video and stopped part way (some progress, not finished, quiet for 2 days) gets one
+ * nudge, then no more until they watch again. Does nothing until the watch columns exist.
+ */
+export async function sendLessonReminders(): Promise<{ sent: number }> {
+  const cutoff = new Date(Date.now() - 2 * 24 * 3600000).toISOString();
+  const { data, error } = await supabaseAdmin
+    .from('rx_lesson_progress')
+    .select('user_id, lesson_id, watch_percent')
+    .gt('watch_percent', 0).lt('watch_percent', 90)
+    .is('completed_at', null).is('reminded_at', null)
+    .lt('updated_at', cutoff)
+    .limit(200);
+  if (error || !data?.length) return { sent: 0 };
+  const rows = data as { user_id: string; lesson_id: string; watch_percent: number }[];
+  const { data: lessons } = await supabaseAdmin.from('rx_lessons').select('id, slug, title').in('id', [...new Set(rows.map((r) => r.lesson_id))]);
+  const byId = new Map(((lessons ?? []) as { id: string; slug: string; title: string }[]).map((l) => [l.id, l]));
+  let sent = 0;
+  for (const r of rows) {
+    const l = byId.get(r.lesson_id);
+    if (!l) continue;
+    await rxNotify(r.user_id, { kind: 'lesson_reminder', entityId: r.lesson_id, url: `/learn/lesson/${l.slug}`, title: 'Pick up where you left off', body: `You are ${r.watch_percent}% through “${l.title}”. Finish it when you have a few minutes.` });
+    await supabaseAdmin.from('rx_lesson_progress').update({ reminded_at: new Date().toISOString() }).eq('user_id', r.user_id).eq('lesson_id', r.lesson_id);
+    sent += 1;
+  }
+  return { sent };
+}

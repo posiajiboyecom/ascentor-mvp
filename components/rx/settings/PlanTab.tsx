@@ -18,10 +18,12 @@ export interface HistoryRow { id: string; date: string; desc: string; amount: st
 
 export interface PlanPrices { explorer: { monthly: number; yearly: number }; builder: { monthly: number; yearly: number }; leader: { monthly: number; yearly: number } }
 
-export default function PlanTab({ state, plan, planName, tag, line, daysLeft, untilShort, cardLine, referralDays, history, prices, legacy }: {
+export default function PlanTab({ state, plan, planName, tag, line, daysLeft, untilShort, cardLine, referralDays, history, prices, legacy, showLeader }: {
   state: BillState; plan: string; planName: string; tag: { label: string; cls: string }; line: string; daysLeft: number | null;
   untilShort: string; cardLine: string | null; referralDays: number; history: HistoryRow[];
   prices: PlanPrices;
+  /** Leader is by invitation: shown only to people the team made Leaders, or who already hold it. */
+  showLeader: boolean;
   /** Set for members on a plan that is no longer sold, or held at an older price: they keep it. */
   legacy: { name: string; line: string } | null;
 }) {
@@ -120,8 +122,8 @@ export default function PlanTab({ state, plan, planName, tag, line, daysLeft, un
           <p className="rx-sm">You keep this plan and its price. It is not offered to new members, so if you cancel you can’t return to it.</p>
         </div>
       )}
-      <div className="rx-grid3">
-        {FEATURED_PLANS.map(planCard)}
+      <div className={showLeader ? 'rx-grid3' : 'rx-grid2'}>
+        {FEATURED_PLANS.filter((id) => id !== 'leader' || showLeader).map(planCard)}
       </div>
 
       <div className="rx-card">

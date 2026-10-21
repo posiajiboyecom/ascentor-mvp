@@ -32,7 +32,7 @@ export default function ProductDetail({ product: p, related, member }: { product
 
   return (
     <Page>
-      <BackLink href="/store">Shop</BackLink>
+      <BackLink href="/store">Store</BackLink>
       <div className="rx-grid2" style={{ marginTop: 8, gap: 24, alignItems: 'start' }}>
         <div className="rx-stack">
           <Thumb p={{ ...p, badge: null }} height={340} />

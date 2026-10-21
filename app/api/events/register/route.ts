@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from '@/lib/emailTemplate';
 import { sendEmail } from '@/lib/nodemailer';
+import { alertEventRegistration } from '@/lib/adminAlerts';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
 
@@ -97,6 +98,8 @@ export async function POST(req: Request) {
       }),
     });
   } catch (err: any) { console.warn('[events/register] email non-fatal:', err.message); }
+
+  await alertEventRegistration({ eventTitle: event.title, name: (full_name as string).trim(), email: (email as string).trim().toLowerCase(), whatsapp: body.whatsapp, country: body.country });
 
   return NextResponse.json({ ok: true });
 }

@@ -48,10 +48,15 @@ interface UserShellProps {
   userId: string;
   summitRegistered: boolean;
   counts?: ShellCountsProp;
+  /** Platform feature switches (Admin > Platform settings). Anything missing is on. */
+  features?: Partial<Record<'shop' | 'cities' | 'refer' | 'dock' | 'offline', boolean>>;
   children: React.ReactNode;
 }
 
-export default function UserShell({ userId, userName, email, avatarUrl, role, summitRegistered, counts, children }: UserShellProps) {
+export default function UserShell({ userId, userName, email, avatarUrl, role, summitRegistered, counts, features, children }: UserShellProps) {
+  const showShop = features?.shop !== false;
+  const showCities = features?.cities !== false;
+  const showRefer = features?.refer !== false;
   const router = useRouter();
   const pathname = usePathname();
   // On Today the announcement already sits at the top of the page, so the sidebar does not repeat it.
@@ -70,8 +75,8 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         label: 'Explore',
         items: [
           { href: '/community',         label: 'Community',  icon: <Compass /> },
-          { href: '/community/cities', label: 'City groups', icon: <MapPin />, badge: counts?.cityName ?? undefined },
-          { href: '/store',             label: 'Shop',       icon: <ShoppingBag />, badge: cartCount > 0 ? cartCount : undefined },
+          ...(showCities ? [{ href: '/community/cities', label: 'City groups', icon: <MapPin />, badge: counts?.cityName ?? undefined }] : []),
+          ...(showShop ? [{ href: '/store',             label: 'Store',      icon: <ShoppingBag />, badge: cartCount > 0 ? cartCount : undefined }] : []),
         ],
       },
       {
@@ -89,15 +94,15 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
           { href: '/messages',      label: 'Messages',      icon: <Mail />, dot: unreadMessages > 0 || requests > 0 },
           { href: '/notifications', label: 'Notifications', icon: <Bell /> },
           { href: '/growth',        label: 'My Growth',     icon: <TrendingUp /> },
-          { href: '/referral',      label: 'Refer & earn',  icon: <Gift /> },
+          ...(showRefer ? [{ href: '/referral',      label: 'Refer & earn',  icon: <Gift /> }] : []),
           { href: '/settings',      label: 'Settings',      icon: <Settings /> },
-          { href: '/store/orders',  label: 'My orders',     icon: <Package /> },
+          ...(showShop ? [{ href: '/store/orders',  label: 'My orders',     icon: <Package /> }] : []),
           { href: '/help',          label: 'Help',          icon: <CircleHelp /> },
         ],
       },
     ];
     return g;
-  }, [unread, unreadMessages, requests, counts?.cityName, cartCount]);
+  }, [unread, unreadMessages, requests, counts?.cityName, cartCount, showShop, showCities, showRefer]);
 
   // The shell has already asked "Sign out?" by the time this runs.
   const handleSignOut = async () => {
@@ -111,7 +116,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
   return (
     <ToastProvider>
       <PresenceProvider userId={userId}>
-      <NetworkPill />
+      {features?.offline !== false && <NetworkPill />}
       <NoticeProvider value={sidebarNotice}>
       <ShellLayout
         variant="app"
@@ -151,7 +156,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
       <SagePanel />
       <MobileTabBar />
       <SummitModal registered={summitRegistered} userId={userId} />
-      <MessagingDock meId={userId} meName={userName} meAvatarUrl={avatarUrl ?? null} initialUnread={unreadMessages} />
+      {features?.dock !== false && <MessagingDock meId={userId} meName={userName} meAvatarUrl={avatarUrl ?? null} initialUnread={unreadMessages} />}
       </PresenceProvider>
     </ToastProvider>
   );

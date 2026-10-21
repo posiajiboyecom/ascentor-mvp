@@ -222,7 +222,7 @@ export async function searchKnowledge(
     return [];
   }
 
-  return (data ?? []).map((row: {
+  return (data ?? []).filter((row: { metadata?: Record<string, unknown> | null }) => row.metadata?.removed !== true).map((row: {
     id: string;
     text: string;
     similarity: number;

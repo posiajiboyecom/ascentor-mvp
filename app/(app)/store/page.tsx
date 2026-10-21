@@ -4,7 +4,7 @@ import { Page, Title } from '@/components/rx/ui';
 import ShopList from '@/components/rx/shop/ShopList';
 import { CartPill } from '@/components/rx/shop/parts';
 
-export const metadata = { title: 'Shop' };
+export const metadata = { title: 'Store' };
 
 export default async function StorePage() {
   const shell = await getShellData();
@@ -13,7 +13,7 @@ export default async function StorePage() {
 
   return (
     <Page>
-      <Title tag={<CartPill />}>Shop</Title>
+      <Title tag={<CartPill />}>Store</Title>
       <ShopList products={products} member={{ name: shell?.userName ?? '', email: shell?.email ?? '' }} />
     </Page>
   );

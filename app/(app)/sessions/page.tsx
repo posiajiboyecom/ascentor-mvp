@@ -7,8 +7,9 @@ import { redirect } from 'next/navigation';
 import { Headphones, Users2 } from 'lucide-react';
 import { getMe } from '@/lib/rx/server';
 import { circleTitle, getMyCircles } from '@/lib/rx/circles';
-import { AGENDA_MIN_QUESTIONS, getMentorship, MAX_AGREEMENT_GOALS, MIN_GOING, READY_MEMBERS } from '@/lib/rx/cmentor';
+import { getMentorship, MAX_AGREEMENT_GOALS, MIN_GOING, READY_MEMBERS } from '@/lib/rx/cmentor';
 import { myMentorProfile } from '@/lib/rx/mentors';
+import { asBool, asInt, getSettings } from '@/lib/admin/settings';
 import { whenLabel } from '@/lib/rx/dates';
 import '@/styles/rx-circle.css';
 import { Aside, Avatar, Banner, Bar, GoLink, Page, SageLine, Tick, Title } from '@/components/rx/ui';
@@ -48,7 +49,9 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
   if (!ms) redirect('/login');
   const { state, circle, isFacilitator } = ms;
   const agendaCount = state.kind === 'active' || state.kind === 'paused' ? (state.next?.questions.length ?? 0) : 0;
-  const agendaReady = agendaCount >= AGENDA_MIN_QUESTIONS;
+  const adminSettings = await getSettings();
+  const AGENDA_MIN_QUESTIONS = asInt(adminSettings['mentor.agenda_questions'], 3, 1, 50);
+  const agendaReady = !asBool(adminSettings['mentor.needs_agenda']) || agendaCount >= AGENDA_MIN_QUESTIONS;
   const stepsDone = [
     state.kind !== 'idle' && state.kind !== 'none' && state.kind !== 'voting' && state.kind !== 'tie',
     state.kind === 'scheduling' || state.kind === 'active' || state.kind === 'paused',
