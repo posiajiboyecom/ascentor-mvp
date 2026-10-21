@@ -754,6 +754,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
               <a key={`r1-px-${i}`}    href="https://www.projectx.ng/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/projectx-logo.png"         alt="Project X"     className="pm-logo" /></a>,
               <a key={`r1-olem-${i}`}  href="https://wa.me/2348118466555" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/olem-studio-logo.png"       alt="Olem Studio"   className="pm-logo" /></a>,
               <a key={`r1-fp-${i}`}    href="https://tinyurl.com/2k54hf7v" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/fountain-print-logo.png"      alt="Fountain Print" className="pm-logo" /></a>,
+              <div key={`r1-tor-${i}`} className="pm-item"><img src="/logos/tor-studio-logo.png"      alt="Tor Studio"   className="pm-logo" /></div>,
             ])}
           </div>
         </div>
@@ -764,6 +765,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             {[1, 2, 3, 4].flatMap((_, i) => [
               <a key={`r2-olem-${i}`}  href="https://wa.me/2348118466555" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/olem-studio-logo.png"       alt="Olem Studio"   className="pm-logo" /></a>,
               <a key={`r2-fp-${i}`}    href="https://tinyurl.com/2k54hf7v" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/fountain-print-logo.png"      alt="Fountain Print" className="pm-logo" /></a>,
+              <div key={`r2-tor-${i}`} className="pm-item"><img src="/logos/tor-studio-logo.png"      alt="Tor Studio"   className="pm-logo" /></div>,
               <a key={`r2-px-${i}`}    href="https://www.projectx.ng/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/projectx-logo.png"         alt="Project X"     className="pm-logo" /></a>,
               <a key={`r2-dtb-${i}`}   href="https://deartechbro.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/dear-tech-bro-logo.png"   alt="Dear Tech Bro" className="pm-logo" /></a>,
               <a key={`r2-rexta-${i}`} href="https://rextatech.com/" target="_blank" rel="noopener noreferrer" className="pm-item"><img src="/logos/rexta-header.png"         alt="Rexta"         className="pm-logo" /></a>,
