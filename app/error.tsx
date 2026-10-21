@@ -20,7 +20,7 @@ export default function ErrorPage({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'var(--bg, #0C0B08)',
+      background: 'var(--bg, #FAFAF8)',
       fontFamily: "var(--font-body, Metropolis, system-ui, sans-serif)",
       padding: '24px',
     }}>
@@ -45,14 +45,14 @@ export default function ErrorPage({
         <h1 style={{
           fontFamily: "var(--font-display, Metropolis, sans-serif)",
           fontSize: 28, fontWeight: 700,
-          color: '#F1F0EB',
+          color: '#161616',
           marginBottom: 10,
         }}>
           Something went wrong
         </h1>
 
         <p style={{
-          fontSize: 14, color: '#7A7260',
+          fontSize: 14, color: '#5F6672',
           lineHeight: 1.7, marginBottom: 28,
         }}>
           An unexpected error occurred. Your data is safe. Please try again
@@ -76,8 +76,8 @@ export default function ErrorPage({
             href="/dashboard"
             style={{
               padding: '12px 24px', borderRadius: 10,
-              border: '1px solid #2E2A22',
-              color: '#D4CFC3', background: 'transparent',
+              border: '1px solid #161616',
+              color: '#161616', background: 'transparent',
               fontFamily: "var(--font-body, Metropolis, sans-serif)",
               fontSize: 14, fontWeight: 600,
               textDecoration: 'none',
@@ -93,7 +93,7 @@ export default function ErrorPage({
           <p style={{
             marginTop: 24,
             fontFamily: "Metropolis, 'Inter', sans-serif",
-            fontSize: 10, color: '#4A4438',
+            fontSize: 10, color: '#8A8578',
             letterSpacing: '0.08em',
           }}>
             REF: {error.digest}

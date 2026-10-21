@@ -3,7 +3,6 @@ import './globals.css';
 import '@/styles/rust.css';
 import CommunityGateModal from '@/components/CommunityGateModal';
 
-import RoutePreloader from '@/components/RoutePreloader';
 import { ModalProvider } from '@/components/Modal';
 import { NotificationProvider } from '@/components/Notifications';
 import { MobileInit } from '@/components/MobileInit';
@@ -106,7 +105,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body suppressHydrationWarning>
-        <RoutePreloader />
         <AuthErrorHandler />
         <AuthRedirectError />
         <ModalProvider>
