@@ -1,7 +1,11 @@
 // lib/admin/screens/registrations.ts
 // Spec copied from the admin prototype (Elevation Summit · Registrations). The loader below is a placeholder until it reads real data.
 // Prototype KPI tiles to compute for real: Registered (sample "[COUNT]"); Confirmed (sample "[COUNT]"); Physical (sample "[COUNT]"); Virtual (sample "[COUNT]")
-import type { ScreenModule, ScreenSpec } from '@/lib/admin/types';
+import 'server-only';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { deliverPaidEmails, deliverCompTicket } from '@/lib/summitEmails';
+import { count } from '@/lib/admin/revenue-util';
+import type { ScreenModule, ScreenSpec, ActionResult } from '@/lib/admin/types';
 
 export const spec: ScreenSpec = {
   area: "registrations",
@@ -46,10 +50,69 @@ export const spec: ScreenSpec = {
   ]
 };
 
+const lagos = (iso: string | null | undefined) => {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '-' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Africa/Lagos' });
+};
+// attendance_type is a single choice (onsite | virtual), so there is no combined ticket.
+const ticketOf = (t: string | null) => (t === 'virtual' ? 'Virtual' : 'Physical only');
+const cellsOf = (r: any) => [r.full_name || '-', r.email || '-', ticketOf(r.attendance_type), lagos(r.created_at), r.payment_status === 'paid' ? 'Confirmed' : 'Not confirmed'];
+
 const screen: ScreenModule = {
   spec,
   async load() {
-    return { rows: [], note: 'This screen is not connected to data yet.' };
+    const { data, error } = await supabaseAdmin
+      .from('summit_registrations')
+      .select('id, full_name, email, attendance_type, payment_status, created_at')
+      .order('created_at', { ascending: false })
+      .limit(1000);
+    if (error) throw new Error(error.message);
+    const all = data ?? [];
+    const confirmed = all.filter((r) => r.payment_status === 'paid');
+    const physical = all.filter((r) => r.attendance_type !== 'virtual').length;
+    return {
+      rows: all.slice(0, 200).map((r) => ({ id: r.id, cells: cellsOf(r) })),
+      kpis: [
+        { label: 'Registered', value: count(all.length) },
+        { label: 'Confirmed', value: count(confirmed.length) },
+        { label: 'Physical', value: count(physical) },
+        { label: 'Virtual', value: count(all.length - physical) },
+      ],
+      note: all.length > 200 ? 'Showing the 200 newest. The tiles count everyone.' : undefined,
+    };
+  },
+
+  async act(_ctx, actionId, rowId): Promise<ActionResult> {
+    const { data: reg } = await supabaseAdmin.from('summit_registrations').select('*').eq('id', rowId).maybeSingle();
+    if (!reg) return { ok: false, error: 'Registration not found.' };
+
+    if (actionId === 'confirm-registration') {
+      if (reg.payment_status === 'paid') return { ok: false, error: 'Already confirmed.' };
+      const nowIso = new Date().toISOString();
+      const { data: updated, error } = await supabaseAdmin
+        .from('summit_registrations')
+        .update({
+          payment_status: 'paid', status: 'confirmed', amount_paid: 0, currency: reg.currency || 'NGN',
+          paid_at: nowIso, confirmed_at: nowIso, ticket_type: reg.ticket_type || 'complimentary', updated_at: nowIso,
+        })
+        .eq('id', rowId)
+        .neq('payment_status', 'paid')
+        .select('*')
+        .maybeSingle();
+      if (error || !updated) return { ok: false, error: 'Could not confirm this registration.' };
+      const sent = await deliverCompTicket(updated);
+      if (!sent) return { ok: false, error: 'Confirmed, but the ticket email failed to send. Use Resend ticket.' };
+      return { ok: true, message: `Confirmed. Ticket sent to ${updated.email}.`, cells: cellsOf(updated) };
+    }
+
+    if (actionId === 'resend-ticket') {
+      if (reg.payment_status !== 'paid') return { ok: false, error: 'Only confirmed registrations can be sent a ticket.' };
+      const out = await deliverPaidEmails(reg, Number(reg.amount_paid ?? 0), reg.currency ?? 'NGN', reg.payment_reference ?? '', { customer: true });
+      if (!out.customer) return { ok: false, error: 'Email failed to send. Check SMTP settings.' };
+      return { ok: true, message: `Ticket sent to ${reg.email}.` };
+    }
+    return { ok: false, error: 'Unknown action.' };
   },
 };
 
