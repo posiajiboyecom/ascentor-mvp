@@ -9,6 +9,7 @@ import { listStaff } from '@/lib/admin/staff';
 import { AREA_KEYS, can } from '@/lib/admin/areas';
 import { adminMfaRequired, sessionIsAal2 } from '@/lib/auth/admin-mfa';
 import '@/styles/admin-ledger.css';
+import '@/styles/admin-console.css';
 
 // ═══════════════════════════════════════════════════════════
 // Admin layout
