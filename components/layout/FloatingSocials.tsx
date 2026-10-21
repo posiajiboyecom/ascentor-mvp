@@ -155,12 +155,8 @@ export default function FloatingSocials() {
           transform: translate(0, -50%);
         }
         @media (max-width: 640px) {
-          .fs-rail {
-            left: 0.6rem;
-            bottom: 0.75rem;
-            padding: 0.625rem 0.25rem;
-            gap: 0.625rem;
-          }
+          /* On phones the rail sat on top of page content (labels, prices). The footer carries the same links. */
+          .fs-rail { display: none; }
           .fs-link { width: 36px; height: 36px; }
           .fs-link svg { width: 15px; height: 15px; }
           .fs-label {
