@@ -146,7 +146,7 @@ function Nav() {
           <Link href="/?gate=1"
             className="px-5 py-2 rounded-lg text-sm font-semibold"
             style={{ background: '#E8A020', color: '#000' }}>
-            Join Ascentor Trial
+            Join Ascentor
           </Link>
         </div>
       </div>
@@ -313,7 +313,7 @@ export default async function WhoItsForPage() {
                 <Link href={p.href}
                   className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-transform hover:scale-105"
                   style={{ background: p.color, color: '#000' }}>
-                  Join Ascentor Trial →
+                  Join Ascentor →
                 </Link>
               </div>
             </div>

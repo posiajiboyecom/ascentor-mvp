@@ -10,7 +10,7 @@ export const FAQ: [string, string, string][] = [
   ['Circle', 'What happens in my Circle?', 'You join a small Circle for a 90-day cycle. You meet every week, share a short report and help each other keep your practices.'],
   ['Circle', 'Are Circle calls audio or video?', 'Every call starts as audio. Anyone can turn their camera on during the call. A call starts when 60% of the Circle has joined.'],
   ['Mentorship', 'How does Circle mentorship work?', 'Your Circle votes for a mentor and your facilitator confirms. You book sessions from the mentor’s free times. A session only starts once your Circle’s agenda is ready.'],
-  ['Billing', 'When will I be charged?', 'Every plan starts with a 7-day free trial. We remind you before your first payment. Cancel before then and you won’t be charged.'],
+  ['Billing', 'When will I be charged?', 'You pay when you choose a plan, and full access starts straight away. Your first payment includes 7 extra days. You can cancel any time and keep access until your paid period ends.'],
   ['Billing', 'What is light access?', 'If a payment fails and isn’t fixed, you keep Today, your Circle chat and Sage. Learn pathways, mentor sessions and joining new groups pause until you update your card.'],
   ['Sage', 'Who can see what I tell Sage?', 'Your Circle, facilitator and mentor never see your Sage conversations. The Ascentor team can read and analyse conversations on Ascentor, including Sage, to improve the service and keep members safe, as our privacy policy explains. You can see and delete what Sage remembers in Settings.'],
   ['Safety', 'How do I report someone?', 'Open the conversation, post or meetup and choose Report. Our safety team reviews every report.'],

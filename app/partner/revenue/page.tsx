@@ -99,7 +99,7 @@ export default async function PartnerRevenuePage() {
       {/* Key stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '28px' }}>
         {statCard('Active subscribers', active.length, 'Paying members', 'var(--success)')}
-        {statCard('Trialing', trialing.length, 'In free trial')}
+        {statCard('First period', trialing.length, 'Includes bonus days')}
         {statCard('Cancelled', cancelled.length, 'Churned', '#f87171')}
         {statCard('Free / no plan', free.length)}
       </div>

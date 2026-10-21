@@ -21,7 +21,7 @@ export default async function ChatAccessLogPage() {
         <table className="rx-tbl"><thead><tr><th>When (UTC)</th><th>Admin</th><th>Action</th><th>Chat type</th><th>Format</th><th>Messages</th></tr></thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id}><td style={{ whiteSpace: 'nowrap' }}>{new Date(r.created_at).toISOString().replace('T', ' ').slice(0, 16)}</td><td>{nm.get(r.admin_id)}</td><td>{r.action === 'export' ? 'Downloaded' : 'Viewed'}</td><td>{r.scope}</td><td>{r.format ?? '—'}</td><td>{String(r.detail?.messages ?? '—')}</td></tr>
+              <tr key={r.id}><td style={{ whiteSpace: 'nowrap' }}>{new Date(r.created_at).toISOString().replace('T', ' ').slice(0, 16)}</td><td>{nm.get(r.admin_id)}</td><td>{r.action === 'export' ? 'Downloaded' : 'Viewed'}</td><td>{r.scope}</td><td>{r.format ?? '-'}</td><td>{String(r.detail?.messages ?? '-')}</td></tr>
             ))}
             {rows.length === 0 && <tr><td colSpan={6} className="rx-sm">Nothing recorded yet.</td></tr>}
           </tbody></table>

@@ -120,10 +120,10 @@ export default function UpgradePrompt({ feature, message, compact, onDismiss }: 
             marginBottom: '12px',
           }}
         >
-          Start 7-Day Free Trial
+          Get started
         </button>
         <p style={{ fontSize: '12px', color: 'var(--text-dim, #6B6A65)' }}>
-          No charge for 7 days · 
+          Your first payment includes 7 extra days
         </p>
         {onDismiss && (
           <button

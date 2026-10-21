@@ -82,7 +82,7 @@ export default function ReferralClient({ code, daysEarned, invites }: { code: st
             {[
               ['Share your link', 'Send it to friends and colleagues, or post it.'],
               ['They sign up', 'When someone joins with your link, they appear below.'],
-              [`You both get rewarded`, `When they subscribe after their trial, you both get ${REWARD_DAYS} extra days. No limit.`],
+              [`You both get rewarded`, `When they subscribe, you both get ${REWARD_DAYS} extra days. No limit.`],
             ].map(([t, d], i) => (
               <div key={t} className="rx-row rx-nw" style={{ gap: 14, alignItems: 'flex-start' }}>
                 <span className="rx-pd cur" style={{ width: 28, height: 28, fontSize: 13, fontWeight: 700 }}>{i + 1}</span>
@@ -104,7 +104,7 @@ export default function ReferralClient({ code, daysEarned, invites }: { code: st
                       <span style={{ display: 'block', fontWeight: 600 }}>{r.name}</span>
                       <span className="rx-sm">Joined {when(r.joined)}</span>
                     </span>
-                    {r.rewarded ? <Tag gold>+{REWARD_DAYS} days</Tag> : <Tag>On trial</Tag>}
+                    {r.rewarded ? <Tag gold>+{REWARD_DAYS} days</Tag> : <Tag>Joined</Tag>}
                   </div>
                 ))}
               </div>

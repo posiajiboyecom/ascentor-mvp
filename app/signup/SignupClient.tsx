@@ -299,7 +299,7 @@ export default function SignupClient({ inviter }: { inviter?: { firstName: strin
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#FFFFFF', border: '1px solid #E6E3DD', borderRadius: 12, padding: '14px 16px' }}>
                   <Gift aria-hidden style={{ width: 24, height: 24, color: '#8A6D12', flex: 'none' }} />
-                  <p style={{ margin: 0, fontSize: 16, lineHeight: 1.55 }}><b>7 extra days free</b> for both of you when you subscribe after your trial.</p>
+                  <p style={{ margin: 0, fontSize: 16, lineHeight: 1.55 }}><b>7 extra days free</b> for both of you when you subscribe.</p>
                 </div>
               </div>
             ) : (

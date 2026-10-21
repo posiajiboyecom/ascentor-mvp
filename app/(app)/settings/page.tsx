@@ -99,7 +99,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       receipt: true,
     }));
     if (prof?.subscription_status === 'trialing' && prof.subscription_start) {
-      history.push({ id: 'first-period', date: dateShort(prof.subscription_start as string, tz), desc: 'First period started · includes 7 extra days', amount: '', status: '—', receipt: false });
+      history.push({ id: 'first-period', date: dateShort(prof.subscription_start as string, tz), desc: 'First period started · includes 7 extra days', amount: '', status: '-', receipt: false });
     }
     const card = prof?.card_details as { last4?: string } | null;
     const cardLine = card?.last4 ? `Card ending ${card.last4} · via Paystack` : prof?.payment_method ? 'Card on file · via Paystack' : null;
