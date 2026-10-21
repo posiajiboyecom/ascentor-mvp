@@ -10,6 +10,10 @@ import { getMe, getMyCircle } from '@/lib/rx/server';
 import { dmMessages, listRequests, listThreads, memberCard, peerReadAt, suggestedPeople, type PersonItem } from '@/lib/rx/messages';
 import { looksLikeScam } from '@/lib/rx/safety';
 import { Avatar, Tag } from '@/components/rx/ui';
+import { circleMessages } from '@/lib/rx/circle';
+import { groupMessages } from '@/lib/rx/community';
+import { CircleChat } from '@/components/rx/circle/CircleClient';
+import { GroupRoomChat } from '@/components/rx/community/CommunityClient';
 import { DmChat, DmHeader, InboxPane, NewMessagePane, RequestActions } from '@/components/rx/messages/MessagesClient';
 
 export const dynamic = 'force-dynamic';
@@ -51,8 +55,23 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
       convo = { id: t.id, otherId, name: card?.name ?? 'Member', avatarUrl: card?.avatarUrl ?? null, status: t.status, iRequested: t.requested_by === me.userId, msgs, seenAt, flagged: msgs.some((m) => m.userId !== me.userId && looksLikeScam(m.body)) };
     }
   }
+  // Circle and group chats open in this pane too, so the inbox works like WhatsApp Web: no page change.
+  let room: null | { kind: 'circle'; id: string; title: string; sub: string; msgs: Awaited<ReturnType<typeof circleMessages>> } | { kind: 'group'; id: string; title: string; sub: string; msgs: Awaited<ReturnType<typeof groupMessages>>; joined: boolean } = null;
+  if (selected?.startsWith('c:')) {
+    const circle = await getMyCircle('member', selected.slice(2)).catch(() => null);
+    if (circle && circle.pledged) room = { kind: 'circle', id: circle.circle.id, title: threads.find((x) => x.key === selected)?.name ?? 'Circle chat', sub: `${circle.memberCount} members · private`, msgs: await circleMessages(db, circle.circle.id) };
+  } else if (selected?.startsWith('g:')) {
+    const { data: g } = await db.from('rx_groups').select('id, name, description').eq('slug', selected.slice(2)).eq('status', 'active').maybeSingle();
+    if (g) {
+      const [{ data: mine }, msgs] = await Promise.all([
+        db.from('rx_group_members').select('group_id').eq('group_id', g.id).eq('user_id', me.userId).maybeSingle(),
+        groupMessages(db, g.id),
+      ]);
+      room = { kind: 'group', id: g.id as string, title: g.name as string, sub: (g.description as string | null) ?? 'Group chat', msgs, joined: !!mine };
+    }
+  }
   const card = convo ? await memberCard(convo.otherId) : null;
-  const pane: 'list' | 'convo' | 'card' = convo && sp.view === 'card' ? 'card' : convo || showNew ? 'convo' : 'list';
+  const pane: 'list' | 'convo' | 'card' = convo && sp.view === 'card' ? 'card' : convo || room || showNew ? 'convo' : 'list';
   const canMsg = !!convo && (convo.status === 'accepted' || (convo.status === 'request' && convo.iRequested && convo.msgs.length === 0));
   const wasUnread = !!convo && threads.some((x) => x.key === convo!.id && x.unread);
   const meta = card ? [card.stage, card.city].filter(Boolean).join(' · ') || 'Member' : 'Member';
@@ -109,6 +128,21 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
                   ? <p className="rx-sm">You can’t reply to this message. Accept or decline it under Requests.</p>
                   : <p className="rx-sm">{convo.status === 'request' ? 'Waiting for them to accept your request.' : 'This conversation is closed.'}</p>}
               />
+            </div>
+          </div>
+        ) : room ? (
+          <div className="rxm-cv">
+            <div className="rx-chat-head">
+              <Link href="/messages" className="rx-ib rx-mob" aria-label="Back to inbox"><ArrowLeft aria-hidden /></Link>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p className="rx-h3" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{room.title}</p>
+                <p className="rx-sm" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{room.sub}</p>
+              </div>
+            </div>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              {room.kind === 'circle'
+                ? <CircleChat key={room.id} circleId={room.id} meId={me.userId} initial={room.msgs} />
+                : <GroupRoomChat key={room.id} groupId={room.id} meId={me.userId} initial={room.msgs} joined={room.joined} name={room.title} />}
             </div>
           </div>
         ) : (

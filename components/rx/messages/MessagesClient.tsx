@@ -129,7 +129,7 @@ export function InboxPane({ threads, selected, tab, requestCount, requests }: { 
   const shown = threads
     .filter((t) => filter === 'all' || t.unread)
     .filter((t) => !needle || t.name.toLowerCase().includes(needle) || t.last.toLowerCase().includes(needle));
-  const hrefOf = (t: ThreadItem) => (t.kind === 'circle' ? `/circle/chat?c=${t.seed}` : t.kind === 'group' ? `/community/groups/${t.key.slice(2)}` : `/messages?t=${t.key}`);
+  const hrefOf = (t: ThreadItem) => `/messages?t=${t.key}`;
 
   return (
     <div className="rx-page rxm-mpg" style={{ paddingBottom: 24 }}>
