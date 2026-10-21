@@ -11,9 +11,9 @@ export default function OfflinePage() {
         <span className="rx-dimdot" style={{ width: 72, height: 72, borderRadius: 20 }}>
           <WifiOff aria-hidden style={{ width: 34, height: 34 }} />
         </span>
-        <p className="rx-h2">This page isn’t saved yet</p>
+        <p className="rx-h2">You’re offline</p>
         <p className="rx-p" style={{ color: 'var(--rx-muted)', maxWidth: 420 }}>
-          You’re offline, and you haven’t opened this page before, so there’s no saved copy. Pages you’ve already opened still work, and anything you write sends when you’re back.
+          This page needs a connection, and Ascentor doesn’t keep your pages on this device. Check your signal and try again. Check-ins you write while offline send when you’re back.
         </p>
         <button type="button" className="rx-btn primary" onClick={() => window.location.reload()}>Try again</button>
       </div>

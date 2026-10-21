@@ -1,32 +1,26 @@
-// Ascentor Service Worker v5
+// Ascentor Service Worker v6
 //
-// v5 (weak network and offline):
-//  - Precaches only the static shell (/offline, manifest, icons). Never '/' or '/dashboard': that HTML is per user.
-//  - Member pages: network first with a 3 second timeout, then the last saved copy of that page, then /offline.
-//  - Saved member pages are private to the signed-in person. The app posts 'clear-user-cache' on sign-out and on
-//    account switch, which deletes them. They are also dropped on every version bump.
+// v6 (security hardening): the worker stores ONLY static assets and the offline page. It never saves a member page,
+// an API response or anything per-user, so there is nothing private on the device to leak or to clear.
+//  - Precaches the static shell (/offline, manifest, icons). Never '/' or '/dashboard': that HTML is per user.
+//  - Navigation (any page): straight to the network. If the network is down or fails, the /offline page is shown.
 //  - Static assets: cache first with a size cap. Hashed /_next/static files are immutable.
 //  - Never touches: non-GET, /api, /auth, sign-in and payment routes, RSC / prefetch requests, Range requests,
-//    third-party hosts, or any asset marked no-store. (Member pages are the one deliberate exception to no-store:
-//    Next marks every signed-in page no-store, and saving them is the point. See clear-user-cache.)
-//  - Writes are never timed out, retried or queued here. The 3 second limit applies to page navigation only.
+//    third-party hosts, or any asset marked no-store.
+//  - Activating v6 deletes every older cache, including member pages saved by v5.
+//  - 'clear-user-cache' (posted on sign-out and account switch) still deletes any page cache, as defence in depth.
+//  - Writes are never timed out, retried or queued here (the outbox lives in the page, see lib/outbox.ts).
 // v4 (kept): non-GET requests and js.paystack.co are never intercepted.
 
-const VERSION      = 'v5';
+const VERSION      = 'v6';
 const STATIC_CACHE = `ascentor-static-${VERSION}`;
-const PAGES_CACHE  = `ascentor-pages-${VERSION}`;
-const KEEP_CACHES  = [STATIC_CACHE, PAGES_CACHE];
+const KEEP_CACHES  = [STATIC_CACHE];
 const OFFLINE_URL  = '/offline';
 const APP_ICON     = '/icons/icon-192.png';
 const BADGE_ICON   = '/icons/icon-96.png';
 
 const PRECACHE = [OFFLINE_URL, '/manifest.json', APP_ICON, BADGE_ICON];
-const NAV_TIMEOUT_MS = 3000;
 const MAX_STATIC_ENTRIES = 150;
-const MAX_PAGE_ENTRIES = 30;
-
-// Per-user member pages that may be saved on the device (first path segment).
-const MEMBER_ROOTS = ['dashboard', 'circle', 'learn', 'sessions', 'community', 'store', 'growth', 'settings', 'announcements', 'messages'];
 
 // Never cached and never answered from cache.
 const NEVER_PREFIXES = [
@@ -44,10 +38,6 @@ const PAYMENT_PATH = /^\/(checkout|payment|pay|shop|settings\/billing)(\/|$)/;
 
 function underPrefix(path, prefix) { return path === prefix || path.startsWith(prefix + '/'); }
 function isNever(path) { return NEVER_PREFIXES.some((p) => underPrefix(path, p)); }
-function isMemberPage(path) {
-  const seg = path.split('/')[1] || '';
-  return MEMBER_ROOTS.includes(seg);
-}
 function isRscOrPrefetch(request, url) {
   const h = request.headers;
   return (
@@ -90,7 +80,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('message', (e) => {
   const type = e.data && e.data.type;
   if (type === 'clear-user-cache') {
-    e.waitUntil(caches.delete(PAGES_CACHE));
+    // v6 saves no pages; this removes any page cache an older worker left behind.
+    e.waitUntil(caches.keys().then((names) => Promise.all(names.filter((n) => n.startsWith('ascentor-pages-')).map((n) => caches.delete(n)))));
   } else if (type === 'skip-waiting') {
     self.skipWaiting();
   }
@@ -119,12 +110,7 @@ self.addEventListener('fetch', (e) => {
   const wantsHtml = request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html');
   if (!wantsHtml) return;
 
-  if (isMemberPage(url.pathname)) {
-    e.respondWith(memberPage(e, request));
-    return;
-  }
-
-  // Any other page (marketing, public): straight to the network, the offline page if there is none.
+  // Pages (member, marketing, public): straight to the network, the offline page if there is none. Never saved.
   e.respondWith(fetch(request).catch(async () => (await caches.match(OFFLINE_URL)) || Response.error()));
 });
 
@@ -137,29 +123,6 @@ async function staticAsset(request) {
     caches.open(STATIC_CACHE).then((c) => c.put(request, copy)).then(() => trim(STATIC_CACHE, MAX_STATIC_ENTRIES)).catch(() => undefined);
   }
   return res;
-}
-
-async function memberPage(e, request) {
-  const cache = await caches.open(PAGES_CACHE);
-  const cached = await cache.match(request);
-
-  const network = fetch(request).then((res) => {
-    // Save only a plain 200 HTML page for this exact URL. A redirect (for example to /login) is never saved.
-    const type = res.headers.get('content-type') || '';
-    if (res.ok && res.status === 200 && !res.redirected && type.includes('text/html')) {
-      const copy = res.clone();
-      cache.put(request, copy).then(() => trim(PAGES_CACHE, MAX_PAGE_ENTRIES)).catch(() => undefined);
-    }
-    return res;
-  });
-  // Let a slow request finish and refresh the saved copy even when we answered from the cache.
-  e.waitUntil(network.catch(() => undefined));
-
-  if (!cached) {
-    return network.catch(async () => (await caches.match(OFFLINE_URL)) || Response.error());
-  }
-  const timeout = new Promise((resolve) => setTimeout(() => resolve(cached), NAV_TIMEOUT_MS));
-  return Promise.race([network.then((r) => (r.status >= 500 ? cached : r)), timeout]).catch(() => cached);
 }
 
 // ── Push — show a native OS notification ──────────────────────

@@ -81,9 +81,11 @@ export async function priceCart(items: CartLineInput[], shippingKey: ShopShippin
 // ── Signed download links (for guests and emailed links) ─────────────────────
 
 function secret(): string {
-  // APP_SECRET_KEY is not set in every environment; the service-role key is server-only and always present.
-  const key = process.env.APP_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error('No signing secret available (APP_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY)');
+  // A dedicated signing secret, never the database service-role key. Throws loudly if it is missing or weak, so links are
+  // never signed with an empty or guessable key. Generate one with:
+  //   node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+  const key = process.env.APP_SECRET_KEY;
+  if (!key || key.length < 32) throw new Error('APP_SECRET_KEY must be set to a random value of at least 32 characters');
   return key;
 }
 

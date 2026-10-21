@@ -1,6 +1,6 @@
-// Privacy for saved pages. The service worker keeps a copy of the member pages a person opens, so that
-// they open on a weak connection. Those copies belong to one account: delete them on sign-out and when a
-// different account signs in on the same device.
+// Privacy on shared devices. The service worker (v6) saves only static assets and the offline page, never a member
+// page or API response. On sign-out, and when a different account signs in on the same device, we still ask it to
+// delete any page cache an older worker left behind, and we clear this account's unsent outbox items.
 
 export async function clearUserCache(): Promise<void> {
   try {
@@ -17,7 +17,7 @@ export async function clearUserCache(): Promise<void> {
 
 const LAST_USER_KEY = 'ascentor:last-user';
 
-/** Call when the signed-in user is known. Clears saved pages if it is a different account from last time. */
+/** Call when the signed-in user is known. Clears leftovers if it is a different account from last time. */
 export function noteSignedInUser(userId: string | null | undefined): void {
   try {
     if (!userId) return;
