@@ -5,7 +5,7 @@ import ShopStyles from '@/components/shop/ShopStyles';
 import ClearCart from '@/components/shop/ClearCart';
 
 export const metadata: Metadata = {
-  title: 'Thank you | Ascentor Shop',
+  title: 'Thank you | Shop',
   description: 'Your Ascentor shop order.',
   robots: { index: false },
 };

@@ -7,7 +7,7 @@ import { listShopProducts, type ShopCard } from '@/lib/shop-data';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Your cart | Ascentor Shop',
+  title: 'Your cart | Shop',
   description: 'Review your order and pay securely with Paystack.',
   robots: { index: false },
 };
