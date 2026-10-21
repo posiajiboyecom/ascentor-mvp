@@ -15,6 +15,7 @@ import { groupMessages } from '@/lib/rx/community';
 import { CircleChat } from '@/components/rx/circle/CircleClient';
 import { GroupRoomChat } from '@/components/rx/community/CommunityClient';
 import { DmChat, DmHeader, InboxPane, NewMessagePane, RequestActions } from '@/components/rx/messages/MessagesClient';
+import InboxLive from '@/components/rx/messages/InboxLive';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,6 +97,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="rx rx-panes" data-pane={pane}>
+      <InboxLive />
       {/* ── list pane ── */}
       <div className="rx-pane rx-pane-list">
         <InboxPane threads={threads} selected={selected} tab={tab} requestCount={requests.length} requests={requestsNode} />

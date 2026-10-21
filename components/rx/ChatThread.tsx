@@ -86,25 +86,30 @@ export default function ChatThread({ initial, meId, send, outbox, poll, realtime
     });
   }, []);
 
+  // `poll` and `realtime` are usually new objects on every parent render. Keeping them in refs means a re-render does not tear
+  // down the live connection (and reset the poll timer), which used to drop a reply that arrived in that gap.
+  const pollRef = useRef(poll);
+  pollRef.current = poll;
   const refresh = useCallback(async () => {
-    try { merge(await poll(lastRef.current)); } catch { /* the next poll will retry */ }
-  }, [poll, merge]);
+    try { merge(await pollRef.current(lastRef.current)); } catch { /* the next poll will retry */ }
+  }, [merge]);
+  const rtTable = realtime?.table, rtColumn = realtime?.column, rtValue = realtime?.value;
 
   // Realtime nudges a refresh; polling is the safety net if realtime is unavailable.
   useEffect(() => {
     const timer = setInterval(refresh, 20000);
     let cleanup = () => {};
-    if (realtime) {
+    if (rtTable && rtColumn && rtValue) {
       const sb = createClient();
-      const ch = sb.channel(`rx:${realtime.table}:${realtime.value}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: realtime.table, filter: `${realtime.column}=eq.${realtime.value}` }, () => { void refresh(); })
-        .subscribe();
+      const ch = sb.channel(`rx:${rtTable}:${rtValue}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: rtTable, filter: `${rtColumn}=eq.${rtValue}` }, () => { void refresh(); })
+        .subscribe((status) => { if (status === 'SUBSCRIBED') void refresh(); }); // catches anything sent while connecting
       cleanup = () => { void sb.removeChannel(ch); };
     }
     const onVis = () => { if (document.visibilityState === 'visible') void refresh(); };
     document.addEventListener('visibilitychange', onVis);
     return () => { clearInterval(timer); cleanup(); document.removeEventListener('visibilitychange', onVis); };
-  }, [realtime, refresh]);
+  }, [rtTable, rtColumn, rtValue, refresh]);
 
   useEffect(() => { bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight }); }, [msgs.length, pending.length]);
 
