@@ -43,7 +43,7 @@ export async function getShellCounts(): Promise<ShellCounts> {
   let notice: NoticeData | null = null;
   try {
     const { data: seats } = await db.from('circle_seats').select('circle_id').eq('user_id', me.userId);
-    notice = await getPinnedNotice({ stage: me.profile?.stage, city: me.profile?.city, language: me.profile?.language, circleIds: ((seats ?? []) as { circle_id: string }[]).map((s) => s.circle_id) });
+    notice = await getPinnedNotice({ id: me.userId, stage: me.profile?.stage, city: me.profile?.city, language: me.profile?.language, circleIds: ((seats ?? []) as { circle_id: string }[]).map((s) => s.circle_id) });
   } catch { notice = null; }
   if (!notice) {
     const featured = live.find((a) => a.featured) ?? null;
