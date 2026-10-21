@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const service = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +9,8 @@ const service = createServiceClient(
 );
 
 export async function GET(req: NextRequest) {
+  const _g = await guardApi('team', 'edit', req);
+  if ('error' in _g) return _g.res;
   // Auth + admin check
   const authClient = await createClient();
   const { data: { user } } = await authClient.auth.getUser();

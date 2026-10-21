@@ -8,6 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { ALL_PERMISSIONS, userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 async function getCaller(userId: string): Promise<{ role: UserRole; permissions: Permission[] | null } | null> {
   const { data } = await supabaseAdmin
@@ -31,6 +32,8 @@ function validatePermissions(perms: unknown): Permission[] {
 }
 
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('team', 'full', req);
+  if ('error' in _g) return _g.res;
   try {
     const authHeader = req.headers.get('authorization');
     const anonClient = createClient(

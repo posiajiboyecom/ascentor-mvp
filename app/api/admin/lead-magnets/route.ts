@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
+import { guardApi } from '@/lib/admin/api-guard';
 
 // ============================================================
 // GET /api/admin/lead-magnets
@@ -16,6 +17,8 @@ const MAGNET_DEFS = [
 ];
 
 export async function GET() {
+  const _g = await guardApi('newsletter', 'view');
+  if ('error' in _g) return _g.res;
   const supabaseAuth = await createServerClient();
   const { data: { user } } = await supabaseAuth.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

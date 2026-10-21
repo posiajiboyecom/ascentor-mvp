@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { tasks } from "@trigger.dev/sdk/v3";
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 // ── Agent registry - maps UI agent IDs to Trigger.dev task IDs ──
 const AGENT_REGISTRY = [
@@ -211,6 +212,8 @@ function deriveStatus(agent: typeof AGENT_REGISTRY[0], runData: {
 
 // ── GET - return all agent statuses ──────────────────────────
 export async function GET() {
+  const _g = await guardApi('platform', 'view');
+  if ('error' in _g) return _g.res;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -256,6 +259,8 @@ export async function GET() {
 
 // ── POST - manually trigger an agent ─────────────────────────
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('platform', 'full', req);
+  if ('error' in _g) return _g.res;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

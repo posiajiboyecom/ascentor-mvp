@@ -21,6 +21,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { deliverPaidEmails, deliverCompTicket, sendPaymentReminderEmail } from '@/lib/summitEmails';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -40,6 +41,8 @@ async function requireAdmin(req: NextRequest): Promise<{ id: string } | null> {
 const forbidden = () => NextResponse.json({ error: 'Forbidden: admin only' }, { status: 403 });
 
 export async function GET(req: NextRequest) {
+  const _g = await guardApi('registrations', 'view', req);
+  if ('error' in _g) return _g.res;
   try {
     if (!(await requireAdmin(req))) return forbidden();
 
@@ -98,6 +101,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('registrations', 'edit', req);
+  if ('error' in _g) return _g.res;
   try {
     if (!(await requireAdmin(req))) return forbidden();
 
@@ -181,6 +186,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const _g = await guardApi('registrations', 'edit', req);
+  if ('error' in _g) return _g.res;
   try {
     if (!(await requireAdmin(req))) return forbidden();
     const parsedPatch = await parseJson(req, adminSchemas.summitRegistrationPatch);

@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,6 +29,8 @@ const ALLOWED_MIME_TO_EXT: Record<string, string> = {
 const ALLOWED_FOLDERS = new Set(['social', 'blog', 'newsletter', 'courses', 'general']);
 
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('blog', 'edit', req);
+  if ('error' in _g) return _g.res;
   try {
     const authClient = await createAuthClient();
     const { data: { user }, error: authError } = await authClient.auth.getUser();

@@ -20,6 +20,7 @@ import { sendStreamAccessEmail } from '@/lib/summitEmails';
 import { sendEventDayEmails } from '@/lib/summitEventDay';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -56,6 +57,8 @@ function parseYouTubeId(input: string): string | null {
 }
 
 export async function GET(req: NextRequest) {
+  const _g = await guardApi('livestream', 'view', req);
+  if ('error' in _g) return _g.res;
   if (!(await requireAdmin(req))) return forbidden();
 
   const { data: settings } = await supabaseAdmin
@@ -82,6 +85,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('livestream', 'full', req);
+  if ('error' in _g) return _g.res;
   if (!(await requireAdmin(req))) return forbidden();
 
   const parsedStream = await parseJson(req, adminSchemas.summitStream);

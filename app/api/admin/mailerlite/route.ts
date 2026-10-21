@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 // ============================================================
 // API - /api/admin/mailerlite
@@ -26,6 +27,8 @@ async function mlFetch(path: string) {
 }
 
 export async function GET() {
+  const _g = await guardApi('newsletter', 'view');
+  if ('error' in _g) return _g.res;
   // ── Auth guard ────────────────────────────────────────────
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -116,6 +119,8 @@ export async function GET() {
 // action: "ensure-groups"- create missing groups, return IDs
 // ============================================================
 export async function POST(req: Request) {
+  const _g = await guardApi('newsletter', 'full', req);
+  if ('error' in _g) return _g.res;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

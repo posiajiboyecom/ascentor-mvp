@@ -8,6 +8,7 @@ import * as adminSchemas from '@/lib/validation/schemas/admin';
 import { sendEmail } from '@/lib/nodemailer';
 import { brandedEmailLayout, p, esc } from '@/lib/emailTemplate';
 import { shopAdmin, forbidden, migrationMissing, MIGRATION_NOTICE } from '../_auth';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const NEXT: Record<string, string[]> = {
   pending: ['paid', 'cancelled'],
@@ -20,6 +21,8 @@ const NEXT: Record<string, string[]> = {
 };
 
 export async function GET() {
+  const _g = await guardApi('orders', 'view');
+  if ('error' in _g) return _g.res;
   if (!(await shopAdmin())) return forbidden();
   const { data, error } = await supabaseAdmin
     .from('shop_orders')
@@ -35,6 +38,8 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  const _g = await guardApi('orders', 'edit', req);
+  if ('error' in _g) return _g.res;
   const admin = await shopAdmin();
   if (!admin) return forbidden();
   const parsed = await parseJson(req, adminSchemas.shopOrderUpdate);

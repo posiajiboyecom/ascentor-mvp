@@ -4,10 +4,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logAudit } from '@/lib/audit-log';
 import { shopAdmin, forbidden } from '../_auth';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const MAX_BYTES = 25 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('products', 'edit', req);
+  if ('error' in _g) return _g.res;
   const admin = await shopAdmin();
   if (!admin) return forbidden();
 

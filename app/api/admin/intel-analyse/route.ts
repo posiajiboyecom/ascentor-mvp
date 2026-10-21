@@ -29,11 +29,14 @@ import { createClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 const MODEL = 'claude-sonnet-4-6';
 
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('intel', 'edit', req);
+  if ('error' in _g) return _g.res;
   try {
     // ── Auth: admin only ───────────────────────────────────────
     const supabase = await createClient();

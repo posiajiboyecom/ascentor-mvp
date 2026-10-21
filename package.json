@@ -28,6 +28,7 @@
     "test:auth:http": "tsx --test scripts/auth-tests/http.test.ts",
     "test:auth": "npm run test:auth:unit && npm run test:auth:http",
     "test:rx": "tsx --test scripts/rx-tests/*.test.ts",
+    "test:admin": "tsx --test scripts/admin-tests/*.test.ts",
     "test:plans": "tsx --conditions=react-server --test scripts/plans-tests/*.test.ts"
   },
   "dependencies": {

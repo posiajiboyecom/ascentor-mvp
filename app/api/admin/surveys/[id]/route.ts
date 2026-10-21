@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -18,6 +19,8 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const _g = await guardApi('surveys', 'edit', req);
+  if ('error' in _g) return _g.res;
   const { id } = await params;
   const supabase = await createClient();
   if (!await requireAdmin(supabase)) {
@@ -41,6 +44,8 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const _g = await guardApi('surveys', 'full');
+  if ('error' in _g) return _g.res;
   const { id } = await params;
   const supabase = await createClient();
   if (!await requireAdmin(supabase)) {

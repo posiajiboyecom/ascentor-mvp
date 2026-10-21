@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,6 +38,8 @@ async function getAdminUser(authHeader: string | null) {
 // DELETE /api/admin/coaching-sessions
 // Body: { ids: string[] }  - one or many session IDs, hard-deleted.
 export async function DELETE(req: NextRequest) {
+  const _g = await guardApi('chats', 'full', req);
+  if ('error' in _g) return _g.res;
   try {
     const user = await getAdminUser(req.headers.get('authorization'));
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

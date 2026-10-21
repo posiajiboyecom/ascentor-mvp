@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
+import { guardApi } from '@/lib/admin/api-guard';
+import { can as can_ } from '@/lib/admin/areas';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +20,8 @@ const LIMIT = 5;
 const clean = (s: string) => s.replace(/[%*,()\\:"']/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
 
 export async function GET(req: NextRequest) {
+  const _g = await guardApi('overview', 'view', req);
+  if ('error' in _g) return _g.res;
   const auth = await createAuthClient();
   const { data: { user } } = await auth.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -30,24 +34,29 @@ export async function GET(req: NextRequest) {
   const can = (p: Permission) =>
     userHasPermission(me.role as UserRole, me.permissions as Permission[] | null, p);
 
+  // Each result group also needs View on its area, so search cannot reveal data the role cannot open.
+  const ok = (area: string) => can_(_g.staff.level(area), 'view');
+
   const q = clean(req.nextUrl.searchParams.get('q') ?? '');
   if (q.length < 2) return NextResponse.json({ groups: [] });
   const like = `%${q}%`;
 
   const [users, attempts, summit, courses, posts, sessions] = await Promise.all([
-    can('users.view')
+    can('users.view') && ok('members')
       ? supabaseAdmin.from('profiles').select('id, full_name, email, subscription_plan')
           .or(`full_name.ilike.${like},email.ilike.${like}`).limit(LIMIT)
       : Promise.resolve({ data: null }),
-    can('payments.view')
+    can('payments.view') && ok('payments')
       ? supabaseAdmin.from('payment_attempts').select('reference, email, status, kind, amount_kobo')
           .or(`email.ilike.${like},reference.ilike.${like}`).order('created_at', { ascending: false }).limit(LIMIT)
       : Promise.resolve({ data: null }),
-    supabaseAdmin.from('summit_registrations').select('id, full_name, email, payment_status')
-      .or(`full_name.ilike.${like},email.ilike.${like}`).limit(LIMIT),
-    supabaseAdmin.from('courses').select('id, title, category').ilike('title', like).limit(LIMIT),
-    supabaseAdmin.from('blog_posts').select('id, title, status').ilike('title', like).limit(LIMIT),
-    supabaseAdmin.from('expert_sessions').select('id, title, expert_name').ilike('title', like).limit(LIMIT),
+    ok('registrations')
+      ? supabaseAdmin.from('summit_registrations').select('id, full_name, email, payment_status')
+          .or(`full_name.ilike.${like},email.ilike.${like}`).limit(LIMIT)
+      : Promise.resolve({ data: null }),
+    ok('pathways') ? supabaseAdmin.from('courses').select('id, title, category').ilike('title', like).limit(LIMIT) : Promise.resolve({ data: null }),
+    ok('blog') ? supabaseAdmin.from('blog_posts').select('id, title, status').ilike('title', like).limit(LIMIT) : Promise.resolve({ data: null }),
+    ok('pathways') ? supabaseAdmin.from('expert_sessions').select('id, title, expert_name').ilike('title', like).limit(LIMIT) : Promise.resolve({ data: null }),
   ]);
 
   const groups: Group[] = [];

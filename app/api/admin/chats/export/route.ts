@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { getMe } from '@/lib/rx/server';
 import { getTranscripts, logAccess, type ChatScope } from '@/lib/rx/chats';
 import { toPdf, toText } from '@/lib/rx/chat-export';
+import { guardApi } from '@/lib/admin/api-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,8 @@ const UUID = /^[0-9a-f-]{36}$/i;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function GET(req: Request) {
+  const _g = await guardApi('chats', 'full', req);
+  if ('error' in _g) return _g.res;
   const me = await getMe();
   if (!me || me.role !== 'admin') return NextResponse.json({ error: 'Admins only.' }, { status: 403 });
 

@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,6 +30,8 @@ async function getAdminUser(authHeader: string | null) {
 
 // GET /api/admin/community-messages?channel=general&flagged=true&limit=100
 export async function GET(req: NextRequest) {
+  const _g = await guardApi('chats', 'view', req);
+  if ('error' in _g) return _g.res;
   try {
     const user = await getAdminUser(req.headers.get('authorization'));
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -85,6 +88,8 @@ export async function GET(req: NextRequest) {
 // Body: { id, action } for a single message, OR
 //       { ids: string[], action } for bulk (action must be 'delete' for bulk)
 export async function PATCH(req: NextRequest) {
+  const _g = await guardApi('chats', 'edit', req);
+  if ('error' in _g) return _g.res;
   try {
     const user = await getAdminUser(req.headers.get('authorization'));
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

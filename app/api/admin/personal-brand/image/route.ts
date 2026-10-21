@@ -19,6 +19,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 export const maxDuration = 90;
 
@@ -171,6 +172,8 @@ function toDataUrl(buffer: ArrayBuffer): string {
 
 // ── Main handler ──────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('blog', 'edit', req);
+  if ('error' in _g) return _g.res;
   const missing = ['NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ANTHROPIC_API_KEY']
     .filter(k => !process.env[k]);
   if (missing.length) {
