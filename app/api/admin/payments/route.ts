@@ -22,6 +22,7 @@ import { getAttemptByReference, settleReference } from '@/lib/paymentSettlement'
 import { deliverPaidEmails } from '@/lib/summitEmails';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -59,6 +60,8 @@ async function audit(userId: string, action: string, entityId: string, details: 
 }
 
 export async function GET(req: NextRequest) {
+  const _g = await guardApi('payments', 'view', req);
+  if ('error' in _g) return _g.res;
   const gate = await requirePaymentsAccess();
   if (gate.error) return gate.error;
   const sp = req.nextUrl.searchParams;
@@ -204,6 +207,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('payments', 'edit', req);
+  if ('error' in _g) return _g.res;
   const gate = await requirePaymentsAccess();
   if (gate.error) return gate.error;
 
@@ -260,6 +265,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const _g = await guardApi('payments', 'full', req);
+  if ('error' in _g) return _g.res;
   const gate = await requirePaymentsAccess();
   if (gate.error) return gate.error;
   if (!gate.isAdmin) return adminOnly();

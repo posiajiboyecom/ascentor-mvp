@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
@@ -98,6 +99,8 @@ Return ONLY the thread, numbered tweets separated by blank lines. No preamble.`;
 }
 
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('blog', 'edit', req);
+  if ('error' in _g) return _g.res;
   // Auth check
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

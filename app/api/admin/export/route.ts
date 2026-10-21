@@ -32,6 +32,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import PDFDocument from 'pdfkit';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -208,6 +209,8 @@ function summarizeCoachingForPdf(rows: CoachingRow[]): string[] {
 }
 
 export async function GET(req: NextRequest) {
+  const _g = await guardApi('chats', 'full', req);
+  if ('error' in _g) return _g.res;
   try {
     const admin = await getAdminUser(req.headers.get('authorization'));
     if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

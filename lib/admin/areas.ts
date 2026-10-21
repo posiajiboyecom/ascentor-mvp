@@ -78,6 +78,7 @@ const LEGACY: [string, string][] = [
   ['/admin/blog', 'blog'], ['/admin/marketing-pages', 'pages'], ['/admin/newsletter', 'newsletter'], ['/admin/billboards', 'billboards'],
   ['/admin/partners', 'partners'], ['/admin/careers', 'careers'], ['/admin/events', 'events'], ['/admin/intel', 'intel'], ['/admin/master', 'intel'],
   ['/admin/reports', 'reports'], ['/admin/surveys', 'surveys'], ['/admin/logs', 'audit'], ['/admin/demo', 'platform'], ['/admin/inbox', 'platform'],
+  ['/admin/about', 'pages'], ['/admin/community', 'chats'], ['/admin/experts', 'pathways'],
 ];
 /** The area an older admin URL belongs to, or null (console pages, Overview, unknown pages). */
 export function legacyAreaFor(pathname: string | null): string | null {

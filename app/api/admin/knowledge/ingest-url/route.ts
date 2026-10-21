@@ -22,6 +22,7 @@ import { addChunks, getMentorBySlug } from '@/lib/rag';
 import type { KnowledgeChunk } from '@/lib/rag';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 // ── Config ──
 const CHUNK_SIZE    = 400;
@@ -63,6 +64,8 @@ function chunkText(text: string, chunkSize: number, overlap: number): string[] {
 // ── Route ──
 
 export async function POST(req: Request) {
+  const _g = await guardApi('knowledge', 'edit', req);
+  if ('error' in _g) return _g.res;
   // Admin gate
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

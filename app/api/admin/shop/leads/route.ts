@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logAudit } from '@/lib/audit-log';
 import { shopAdmin, forbidden, migrationMissing, MIGRATION_NOTICE } from '../_auth';
+import { guardApi } from '@/lib/admin/api-guard';
 
 // Quote every cell and neutralise spreadsheet formulas.
 const cell = (v: unknown) => {
@@ -13,6 +14,8 @@ const cell = (v: unknown) => {
 };
 
 export async function GET(req: NextRequest) {
+  const _g = await guardApi('orders', 'view', req);
+  if ('error' in _g) return _g.res;
   const admin = await shopAdmin();
   if (!admin) return forbidden();
 

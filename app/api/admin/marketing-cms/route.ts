@@ -43,6 +43,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -66,6 +67,8 @@ async function getAdminUser(authHeader: string | null) {
 
 // ── GET ──────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
+  const _g = await guardApi('pages', 'view', req);
+  if ('error' in _g) return _g.res;
   try {
     const user = await getAdminUser(req.headers.get('authorization'));
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -141,6 +144,8 @@ export async function GET(req: NextRequest) {
 
 // ── PATCH ────────────────────────────────────────────────────
 export async function PATCH(req: NextRequest) {
+  const _g = await guardApi('pages', 'edit', req);
+  if ('error' in _g) return _g.res;
   try {
     const user = await getAdminUser(req.headers.get('authorization'));
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

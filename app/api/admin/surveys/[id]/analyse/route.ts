@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
 import type { SurveyQuestion, SurveyAnswers } from '@/types/survey';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
@@ -20,6 +21,8 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const _g = await guardApi('surveys', 'edit');
+  if ('error' in _g) return _g.res;
   const { id } = await params;
   const supabase = await createClient();
   if (!await requireAdmin(supabase)) {

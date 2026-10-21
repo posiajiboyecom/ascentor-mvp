@@ -22,6 +22,7 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const BUCKET       = 'knowledge-pdfs';
 const MAX_FILE_MB  = 20;
@@ -54,6 +55,8 @@ async function ensureBucket(supabase: ReturnType<typeof getServiceClient>) {
 }
 
 export async function POST(req: Request) {
+  const _g = await guardApi('knowledge', 'edit', req);
+  if ('error' in _g) return _g.res;
   // ── Auth + admin gate ──────────────────────────────────────
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

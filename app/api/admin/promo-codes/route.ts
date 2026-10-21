@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,6 +31,8 @@ async function isAdmin(req: NextRequest): Promise<string | null> {
 }
 
 export async function GET(req: NextRequest) {
+  const _g = await guardApi('promos', 'view', req);
+  if ('error' in _g) return _g.res;
   const adminId = await isAdmin(req);
   if (!adminId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
@@ -47,6 +50,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('promos', 'edit', req);
+  if ('error' in _g) return _g.res;
   const adminId = await isAdmin(req);
   if (!adminId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
@@ -128,6 +133,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const _g = await guardApi('promos', 'edit', req);
+  if ('error' in _g) return _g.res;
   const adminId = await isAdmin(req);
   if (!adminId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
@@ -152,6 +159,8 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const _g = await guardApi('promos', 'full', req);
+  if ('error' in _g) return _g.res;
   const adminId = await isAdmin(req);
   if (!adminId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 

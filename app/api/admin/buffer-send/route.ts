@@ -13,6 +13,7 @@ import {
   getProfileIdsForPlatform,
   scheduleBufferPost,
 } from '@/lib/buffer';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,6 +21,8 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('blog', 'edit', req);
+  if ('error' in _g) return _g.res;
   try {
     // Auth + admin check
     const authClient = await createAuthClient();

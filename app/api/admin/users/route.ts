@@ -17,6 +17,8 @@ import { createClient } from '@supabase/supabase-js';
 import { userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
+import { can } from '@/lib/admin/areas';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,6 +37,8 @@ function sanitizeSearch(s: string): string {
 }
 
 export async function GET(req: NextRequest) {
+  const _g = await guardApi('members', 'view', req);
+  if ('error' in _g) return _g.res;
   try {
     const authHeader = req.headers.get('authorization');
     const anonClient = createClient(
@@ -98,6 +102,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const _g = await guardApi('members', 'edit', req);
+  if ('error' in _g) return _g.res;
   try {
     const authHeader = req.headers.get('authorization');
     const anonClient = createClient(
@@ -115,6 +121,10 @@ export async function PATCH(req: NextRequest) {
     if (!parsed.ok) return parsed.response;
     const { targetUserId, action } = parsed.data;
     const value: string = 'value' in parsed.data ? (parsed.data.value ?? '') : '';
+
+    // Area levels: deleting an account needs Full on Members; changing a role is a Team and access change.
+    if (action === 'delete' && !can(_g.staff.level('members'), 'full')) return NextResponse.json({ error: 'Your role needs Full access to Members to delete an account.' }, { status: 403 });
+    if (action === 'change_role' && !can(_g.staff.level('team'), 'full')) return NextResponse.json({ error: 'Changing roles needs Full access to Team and access.' }, { status: 403 });
 
     const required: Permission = action === 'delete' ? 'users.delete' : 'users.edit_role';
     if (!userHasPermission(caller.role, caller.permissions, required)) {
@@ -299,6 +309,8 @@ export async function PATCH(req: NextRequest) {
 }
 // POST /api/admin/users - find a single user by email (for permissions page)
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('members', 'view', req);
+  if ('error' in _g) return _g.res;
   try {
     const authHeader = req.headers.get('authorization') || '';
     const { createClient: createAuthClient } = await import('@/lib/supabase/server');

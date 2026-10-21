@@ -3,10 +3,11 @@ export const dynamic = 'force-dynamic';
 import AdminShell from '@/components/AdminShell';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { getStaff } from '@/lib/admin/access';
 import { getBadges } from '@/lib/admin/badges';
 import { listStaff } from '@/lib/admin/staff';
-import { AREA_KEYS, can } from '@/lib/admin/areas';
+import { AREA_KEYS, can, legacyAreaFor, areaOf } from '@/lib/admin/areas';
 import { adminMfaRequired, sessionIsAal2 } from '@/lib/auth/admin-mfa';
 import '@/styles/admin-ledger.css';
 import '@/styles/admin-console.css';
@@ -53,6 +54,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (adminMfaRequired() && !(await sessionIsAal2(supabase))) {
     redirect('/admin-login?mfa=1&redirect=/admin');
   }
+
+  // Older pages (/admin/<legacy>) fetch their data on the server: refuse here, before the page is rendered, when the REAL role
+  // has no access to the matching area. Console pages (/admin/c/*) and Overview enforce their own level with requireArea.
+  const pathname = (await headers()).get('x-pathname');
+  const legacyArea = legacyAreaFor(pathname);
+  const blocked = !!legacyArea && !can(staff.level(legacyArea), 'view');
 
   // The menu shows what the PREVIEW role can open (an admin may be viewing as a teammate); pages and actions check the real role.
   const visibleAreas = AREA_KEYS.filter((k) => can(staff.uiLevel(k), 'view'));
@@ -195,7 +202,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 }
               }
             `}</style>
-            {children}
+            {blocked ? (
+              <div style={{ padding: '64px 24px', textAlign: 'center' }}>
+                <h1 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: 8 }}>No access</h1>
+                <p style={{ opacity: 0.7, maxWidth: 420, margin: '0 auto' }}>
+                  Your role does not include {areaOf(legacyArea!)?.label ?? 'this area'}. Ask an admin if you need it.
+                </p>
+              </div>
+            ) : children}
           </div>
         </AdminShell>
       </div>

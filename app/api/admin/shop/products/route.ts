@@ -6,6 +6,7 @@ import { logAudit } from '@/lib/audit-log';
 import { parseJson } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
 import { shopAdmin, forbidden, migrationMissing, MIGRATION_NOTICE } from '../_auth';
+import { guardApi } from '@/lib/admin/api-guard';
 
 const slugify = (s: string) =>
   s.toLowerCase().normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/[\s_]+/g, '-').replace(/-+/g, '-').slice(0, 60) || 'item';
@@ -27,6 +28,8 @@ function failure(tag: string, error: { code?: string; message?: string }) {
 }
 
 export async function GET() {
+  const _g = await guardApi('products', 'view');
+  if ('error' in _g) return _g.res;
   if (!(await shopAdmin())) return forbidden();
   const { data, error } = await supabaseAdmin.from('products').select('*').order('sort_order', { ascending: true });
   if (error) {
@@ -37,6 +40,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const _g = await guardApi('products', 'edit', req);
+  if ('error' in _g) return _g.res;
   const admin = await shopAdmin();
   if (!admin) return forbidden();
   const parsed = await parseJson(req, adminSchemas.shopProductCreate);
@@ -63,6 +68,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const _g = await guardApi('products', 'edit', req);
+  if ('error' in _g) return _g.res;
   const admin = await shopAdmin();
   if (!admin) return forbidden();
   const parsed = await parseJson(req, adminSchemas.shopProductUpdate);
@@ -90,6 +97,8 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const _g = await guardApi('products', 'full', req);
+  if ('error' in _g) return _g.res;
   const admin = await shopAdmin();
   if (!admin) return forbidden();
   if (admin.role !== 'admin') return NextResponse.json({ error: 'Only admins can delete products' }, { status: 403 });

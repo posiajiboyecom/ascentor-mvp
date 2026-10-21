@@ -246,6 +246,10 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Tell server components which URL this is (the admin layout uses it to enforce area levels on the older pages).
+  // Always overwritten here, so a client-supplied value is never trusted.
+  request.headers.set('x-pathname', pathname);
+
   // Build Supabase client
   const response = NextResponse.next({ request });
 

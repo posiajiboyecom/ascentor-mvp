@@ -8,6 +8,7 @@ import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
 import { getPlanPricingMap } from '@/lib/plans-config';
+import { guardApi } from '@/lib/admin/api-guard';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -18,6 +19,8 @@ const DAYS = 30;
 const dayKey = (iso: string | null | undefined) => (iso ? iso.slice(0, 10) : '');
 
 export async function GET() {
+  const _g = await guardApi('reports', 'view');
+  if ('error' in _g) return _g.res;
   const auth = await createAuthClient();
   const { data: { user } } = await auth.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

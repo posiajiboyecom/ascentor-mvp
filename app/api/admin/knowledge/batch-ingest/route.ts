@@ -26,8 +26,11 @@ import { createClient } from '@/lib/supabase/server';
 import { tasks } from '@trigger.dev/sdk/v3';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
+import { guardApi } from '@/lib/admin/api-guard';
 
 export async function POST(req: Request) {
+  const _g = await guardApi('knowledge', 'edit', req);
+  if ('error' in _g) return _g.res;
   // ── Auth + admin gate ──────────────────────────────────────
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
