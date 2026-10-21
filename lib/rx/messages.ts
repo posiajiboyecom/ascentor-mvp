@@ -3,7 +3,7 @@ import 'server-only';
 // Reads for the inbox: conversations (Circle chat, direct messages, joined groups) and message requests.
 
 import { createClient } from '@/lib/supabase/server';
-import { getMe, namesFor, type Db } from './server';
+import { getMe, getMyCircle, namesFor, type Db } from './server';
 import { previewOf } from './media';
 import { relTime } from './dates';
 import { looksLikeScam } from './safety';
@@ -19,6 +19,8 @@ export interface ThreadItem {
   time: string;
   at: string;
   otherId?: string;
+  /** Direct messages only: the latest message is from the other person and newer than when this member last opened it. */
+  unread?: boolean;
 }
 
 export interface RequestItem {
@@ -40,6 +42,49 @@ export async function dmMessages(db: Db, threadId: string, afterISO?: string | n
   if (!afterISO) rows.reverse();
   const names = await namesFor(db, rows.map((r) => r.sender_id));
   return rows.map((r) => ({ id: r.id, userId: r.sender_id, name: names.get(r.sender_id)?.name ?? 'Member', avatarUrl: names.get(r.sender_id)?.avatarUrl ?? null, body: r.body, createdAt: r.created_at }));
+}
+
+/**
+ * When this member last opened each direct conversation (dm_reads, see database/migrations/20261022_message_reads.sql).
+ * Returns null when the table is not there yet, so callers show no unread state instead of failing.
+ */
+export async function readsFor(db: Db, userId: string, threadIds?: string[]): Promise<Map<string, string> | null> {
+  try {
+    let q = db.from('dm_reads').select('thread_id, last_read_at').eq('user_id', userId);
+    if (threadIds) { if (!threadIds.length) return new Map(); q = q.in('thread_id', threadIds); }
+    const { data, error } = await q;
+    if (error) return null;
+    return new Map(((data ?? []) as { thread_id: string; last_read_at: string }[]).map((r) => [r.thread_id, r.last_read_at]));
+  } catch { return null; }
+}
+
+/** When the other person last opened this conversation (for "Seen"), or null if unknown or not tracked. */
+export async function peerReadAt(db: Db, threadId: string, otherId: string): Promise<string | null> {
+  try {
+    const { data, error } = await db.from('dm_reads').select('last_read_at').eq('thread_id', threadId).eq('user_id', otherId).maybeSingle();
+    if (error) return null;
+    return (data as { last_read_at: string } | null)?.last_read_at ?? null;
+  } catch { return null; }
+}
+
+/** How many accepted direct conversations have something new from the other person. 0 if read tracking is not available. */
+export async function countUnreadDms(db: Db, userId: string): Promise<number> {
+  try {
+    const { data: threads } = await db.from('dm_threads').select('id, last_message_at').eq('status', 'accepted').order('last_message_at', { ascending: false }).limit(60);
+    const rows = (threads ?? []) as { id: string; last_message_at: string }[];
+    if (!rows.length) return 0;
+    const reads = await readsFor(db, userId, rows.map((r) => r.id));
+    if (!reads) return 0;
+    const cand = rows.filter((r) => { const rd = reads.get(r.id); return !rd || r.last_message_at > rd; }).slice(0, 30);
+    const lasts = await Promise.all(cand.map((t) => db.from('dm_messages').select('sender_id, created_at').eq('thread_id', t.id).order('created_at', { ascending: false }).limit(1)));
+    let n = 0;
+    lasts.forEach((res, i) => {
+      const m = ((res.data ?? [])[0]) as { sender_id: string; created_at: string } | undefined;
+      const rd = reads.get(cand[i].id);
+      if (m && m.sender_id !== userId && (!rd || m.created_at > rd)) n++;
+    });
+    return n;
+  } catch { return 0; }
 }
 
 export async function listThreads(): Promise<ThreadItem[]> {
@@ -67,6 +112,7 @@ export async function listThreads(): Promise<ThreadItem[]> {
   const rows = (threads ?? []) as { id: string; user_a: string; user_b: string; last_message_at: string }[];
   const others = rows.map((t) => (t.user_a === me.userId ? t.user_b : t.user_a));
   const names = await namesFor(db, others);
+  const reads = await readsFor(db, me.userId, rows.map((r) => r.id));
   const { data: blocks } = await db.from('dm_blocks').select('blocked_id').eq('blocker_id', me.userId);
   const blocked = new Set(((blocks ?? []) as { blocked_id: string }[]).map((b) => b.blocked_id));
   for (const [i, t] of rows.entries()) {
@@ -74,7 +120,9 @@ export async function listThreads(): Promise<ThreadItem[]> {
     if (blocked.has(other)) continue;
     const { data: last } = await db.from('dm_messages').select('body, sender_id, created_at').eq('thread_id', t.id).order('created_at', { ascending: false }).limit(1);
     const m = (last ?? [])[0] as { body: string; sender_id: string; created_at: string } | undefined;
-    out.push({ key: t.id, kind: 'dm', name: names.get(other)?.name ?? 'Member', avatarUrl: names.get(other)?.avatarUrl ?? null, seed: other, otherId: other, last: m ? `${m.sender_id === me.userId ? 'You: ' : ''}${previewOf(m.body)}` : 'No messages yet', time: m ? relTime(m.created_at) : '', at: m?.created_at ?? t.last_message_at });
+    const readAt = reads?.get(t.id);
+    const unread = !!reads && !!m && m.sender_id !== me.userId && (!readAt || m.created_at > readAt);
+    out.push({ unread, key: t.id, kind: 'dm', name: names.get(other)?.name ?? 'Member', avatarUrl: names.get(other)?.avatarUrl ?? null, seed: other, otherId: other, last: m ? `${m.sender_id === me.userId ? 'You: ' : ''}${previewOf(m.body)}` : 'No messages yet', time: m ? relTime(m.created_at) : '', at: m?.created_at ?? t.last_message_at });
   }
 
   const gids = ((memberships ?? []) as { group_id: string }[]).map((g) => g.group_id);
@@ -120,4 +168,20 @@ export async function memberCard(userId: string): Promise<MemberCard | null> {
   if (!data) return null;
   const d = data as { user_id: string; full_name: string | null; avatar_url: string | null; stage: string | null; city: string | null; interests: string[] | null };
   return { userId: d.user_id, name: d.full_name?.trim() || 'Member', avatarUrl: d.avatar_url, stage: d.stage, city: d.city, interests: d.interests ?? [] };
+}
+
+export interface PersonItem { id: string; name: string; avatarUrl: string | null; meta: string; inCircle: boolean }
+
+/** People in the member's Circle (and its mentor): who they can message straight away. */
+export async function suggestedPeople(): Promise<PersonItem[]> {
+  const me = await getMe();
+  if (!me) return [];
+  const circle = await getMyCircle().catch(() => null);
+  if (!circle) return [];
+  const db = await createClient();
+  const { data: blocks } = await db.from('dm_blocks').select('blocked_id').eq('blocker_id', me.userId);
+  const blocked = new Set(((blocks ?? []) as { blocked_id: string }[]).map((b) => b.blocked_id));
+  return circle.seats
+    .filter((s) => !s.isMe && !blocked.has(s.userId))
+    .map((s) => ({ id: s.userId, name: s.name, avatarUrl: s.avatarUrl, meta: s.role === 'facilitator' ? 'Circle facilitator' : 'Your Circle', inCircle: true }));
 }

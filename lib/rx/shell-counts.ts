@@ -7,10 +7,13 @@ import { getMe } from './server';
 import { getMemberAnnouncements } from './announcements';
 import { getPinnedNotice } from './broadcasts';
 import type { NoticeData } from './notice-types';
+import { countUnreadDms } from './messages';
 
 export interface ShellCounts {
   unreadAnnouncements: number;
   messageRequests: number;
+  /** Direct conversations with something new from the other person (0 until dm_reads exists). */
+  unreadMessages: number;
   cityGroupSlug: string | null;
   cityName: string | null;
   latest: { id: string; title: string; posted: string; isNew: boolean }[];
@@ -24,11 +27,12 @@ export function slugify(s: string): string {
 
 export async function getShellCounts(): Promise<ShellCounts> {
   const me = await getMe();
-  if (!me) return { unreadAnnouncements: 0, messageRequests: 0, cityGroupSlug: null, cityName: null, latest: [], notice: null };
+  if (!me) return { unreadAnnouncements: 0, messageRequests: 0, unreadMessages: 0, cityGroupSlug: null, cityName: null, latest: [], notice: null };
   const db = await createClient();
-  const [anns, req, city] = await Promise.all([
+  const [anns, req, unreadMessages, city] = await Promise.all([
     getMemberAnnouncements().catch(() => []),
     db.from('dm_threads').select('id', { count: 'exact', head: true }).eq('status', 'request').neq('requested_by', me.userId),
+    countUnreadDms(db, me.userId),
     me.profile?.city
       ? db.from('rx_groups').select('slug, name').eq('slug', `city-${slugify(me.profile.city)}`).eq('is_city', true).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -49,6 +53,7 @@ export async function getShellCounts(): Promise<ShellCounts> {
   return {
     unreadAnnouncements: live.filter((a) => !a.isRead).length,
     messageRequests: req.count ?? 0,
+    unreadMessages,
     cityGroupSlug: (city.data as { slug: string } | null)?.slug ?? null,
     cityName: (city.data as { name: string } | null)?.name ?? me.profile?.city ?? null,
     latest: live.slice(0, 5).map((a) => ({ id: a.id, title: a.title, posted: a.posted, isNew: !a.isRead })),

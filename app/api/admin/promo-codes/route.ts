@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   const { code, discount, label, applies_to, max_uses, expires_at, bulk_count, bulk_prefix } = parsedCreate.data;
 
   const discountValue = Math.min(1, Math.max(0, discount));
-  const plansArr = applies_to || ['explorer', 'builder', 'climber'];
+  const plansArr = applies_to || ['explorer', 'builder', 'leader', 'climber'];
   const expiryVal = expires_at || null;
   const maxUsesVal = typeof max_uses === 'number' ? max_uses : null;
 

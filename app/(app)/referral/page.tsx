@@ -1,6 +1,11 @@
+// app/(app)/referral/page.tsx
+// Invite and earn: link, code, share buttons, who joined, and the extra days earned.
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { redirect } from 'next/navigation';
-import ReferralClient from './ReferralClient';
+import ReferralClient, { type Invite } from './ReferralClient';
+
+export const dynamic = 'force-dynamic';
 
 export default async function ReferralPage() {
   const supabase = await createClient();
@@ -9,7 +14,7 @@ export default async function ReferralPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, referral_code, referral_count, referred_by')
+    .select('full_name, referral_code, referral_bonus_days')
     .eq('id', user.id)
     .single();
 
@@ -19,31 +24,24 @@ export default async function ReferralPage() {
     .eq('referrer_id', user.id)
     .order('created_at', { ascending: false });
 
-  // Get names of referred users
-  let referralDetails: any[] = [];
-  if (referrals && referrals.length > 0) {
-    const ids = referrals.map((r) => r.referred_id);
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name')
-      .in('id', ids);
-
-    referralDetails = referrals.map((r) => ({
+  let invites: Invite[] = [];
+  if (referrals?.length) {
+    // Other members' names are a server-side lookup: members cannot read each other's profiles.
+    const { data: people } = await supabaseAdmin
+      .from('profiles').select('id, full_name').in('id', referrals.map((r) => r.referred_id));
+    invites = referrals.map((r) => ({
       id: r.id,
-      name: profiles?.find((p) => p.id === r.referred_id)?.full_name || 'Unknown',
-      status: r.status,
-      date: r.created_at,
-      rewarded: r.rewarded_at,
+      name: people?.find((p) => p.id === r.referred_id)?.full_name || 'A new member',
+      joined: r.created_at,
+      rewarded: !!r.rewarded_at,
     }));
   }
 
   return (
     <ReferralClient
-      firstName={profile?.full_name?.split(' ')[0] || 'there'}
-      referralCode={profile?.referral_code || ''}
-      referralCount={profile?.referral_count || 0}
-      referredBy={profile?.referred_by || null}
-      referrals={referralDetails}
+      code={profile?.referral_code || ''}
+      daysEarned={profile?.referral_bonus_days ?? 0}
+      invites={invites}
     />
   );
 }

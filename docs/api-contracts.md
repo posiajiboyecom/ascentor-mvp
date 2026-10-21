@@ -220,6 +220,62 @@ field-level `issues` array. Routes that share a path across HTTP methods list ea
 | `label` | string (0..120 chars) \| null | no |
 | `auto_apply` | boolean | no |
 
+### `/api/admin/shop/orders` (PATCH)
+
+| Field | Type | Required |
+|-------|------|----------|
+| `id` | string | yes |
+| `status` | "pending" \| "paid" \| "packing" \| "shipped" \| "delivered" \| "ready" \| "cancelled" | yes |
+
+### `/api/admin/shop/products`
+
+| Field | Type | Required |
+|-------|------|----------|
+| `name` | string (1..160 chars) | yes |
+| `shop_category` | "Apparel" \| "Accessories" \| "Books and journals" \| "Digital" \| "Courses" | yes |
+| `fulfilment` | "ship" \| "digital" \| "learn" | yes |
+| `price_ngn` | integer (0..100000000) | yes |
+| `tagline` | string (0..200 chars) \| null | no |
+| `description` | string (0..5000 chars) \| null | no |
+| `image_url` | string (0..2048 chars) \| null | no |
+| `badge` | string (0..40 chars) \| null | no |
+| `stock` | integer (0..1000000) \| null | no |
+| `sizes` | string (1..10 chars)[] \| null | no |
+| `file_path` | string (0..300 chars) \| null | no |
+| `lead_capture` | boolean | no |
+| `published` | boolean | no |
+| `is_featured` | boolean | no |
+| `sort_order` | integer (0..100000) | no |
+| `min_plan` | "seeker" \| "builder" \| null | no |
+
+### `/api/admin/shop/products` (DELETE)
+
+| Field | Type | Required |
+|-------|------|----------|
+| `id` | string | yes |
+
+### `/api/admin/shop/products` (PATCH)
+
+| Field | Type | Required |
+|-------|------|----------|
+| `id` | string | yes |
+| `name` | string (1..160 chars) | no |
+| `shop_category` | "Apparel" \| "Accessories" \| "Books and journals" \| "Digital" \| "Courses" | no |
+| `fulfilment` | "ship" \| "digital" \| "learn" | no |
+| `price_ngn` | integer (0..100000000) | no |
+| `tagline` | string (0..200 chars) \| null | no |
+| `description` | string (0..5000 chars) \| null | no |
+| `image_url` | string (0..2048 chars) \| null | no |
+| `badge` | string (0..40 chars) \| null | no |
+| `stock` | integer (0..1000000) \| null | no |
+| `sizes` | string (1..10 chars)[] \| null | no |
+| `file_path` | string (0..300 chars) \| null | no |
+| `lead_capture` | boolean | no |
+| `published` | boolean | no |
+| `is_featured` | boolean | no |
+| `sort_order` | integer (0..100000) | no |
+| `min_plan` | "seeker" \| "builder" \| null | no |
+
 ### `/api/admin/summit-donations`
 
 | Field | Type | Required |
@@ -698,15 +754,6 @@ field-level `issues` array. Routes that share a path across HTTP methods list ea
 | `planId` | "explorer" \| "builder" \| "climber" | yes |
 | `billing` | "monthly" \| "yearly" | yes |
 
-## payment
-
-### `/api/payment/product/verify`
-
-| Field | Type | Required |
-|-------|------|----------|
-| `reference` | string (6..100 chars) | yes |
-| `productId` | string | yes |
-
 ## push
 
 ### `/api/push/community`
@@ -761,6 +808,29 @@ field-level `issues` array. Routes that share a path across HTTP methods list ea
 | Field | Type | Required |
 |-------|------|----------|
 | `referralCode` | string (3..32 chars) | yes |
+
+## shop
+
+### `/api/shop/checkout`
+
+| Field | Type | Required |
+|-------|------|----------|
+| `items` | object[] | yes |
+| `shipping` | "lagos" \| "ng" \| "summit" | no |
+| `fullName` | string (1..120 chars) | yes |
+| `email` | string (0..254 chars) | yes |
+| `phone` | string (0..30 chars) | no |
+| `address` | string (0..300 chars) | no |
+| `city` | string (0..80 chars) | no |
+| `state` | string (0..80 chars) | no |
+
+### `/api/shop/free`
+
+| Field | Type | Required |
+|-------|------|----------|
+| `productId` | string | yes |
+| `fullName` | string (1..120 chars) | yes |
+| `email` | string (0..254 chars) | yes |
 
 ## subscription
 

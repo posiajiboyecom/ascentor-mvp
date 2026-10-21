@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
-import { PLAN_PRICING_MAP } from '@/lib/pricing';
+import { getPlanPricingMap } from '@/lib/plans-config';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -85,7 +85,7 @@ export async function GET() {
 
     // Admin-granted and promo access is not recurring revenue.
     if (p.billing_cycle === 'manual' || p.payment_method === 'promo') continue;
-    const pricing = PLAN_PRICING_MAP[plan];
+    const pricing = getPlanPricingMap()[plan];
     if (!pricing) continue;
     mrr += p.billing_cycle === 'annual' ? pricing.yearlyPrice / 12 : pricing.monthlyPrice;
   }

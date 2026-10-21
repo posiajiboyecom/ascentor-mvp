@@ -21,6 +21,7 @@
 // moving to the compact icon rail - it's all in the avatar dropdown now.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { clearUserCache } from '@/lib/sw-cache';
 import Link from 'next/link';
 import { confirmAction } from '@/components/Modal';
 import { usePathname, useRouter } from 'next/navigation';
@@ -101,6 +102,7 @@ export default function DesktopRail({ initials, fullName, isAdmin }: DesktopRail
 
   const handleSignOut = async () => {
     if (!(await confirmAction('Sign out of Ascentor on this device?', { title: 'Sign out?', confirmLabel: 'Sign out' }))) return;
+    void clearUserCache(); // saved pages belong to this account
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();

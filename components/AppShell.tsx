@@ -1,5 +1,6 @@
 'use client';
 
+import { clearUserCache } from '@/lib/sw-cache';
 import BottomNav from './BottomNav';
 import { confirmAction } from '@/components/Modal';
 import DesktopRail from './DesktopRail';
@@ -49,6 +50,7 @@ function Shell({
 
   const handleSignOut = async () => {
     if (!(await confirmAction('Sign out of Ascentor on this device?', { title: 'Sign out?', confirmLabel: 'Sign out' }))) return;
+    void clearUserCache(); // saved pages belong to this account
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();

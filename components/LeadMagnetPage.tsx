@@ -289,7 +289,7 @@ export default function LeadMagnetPage({
                   fontFamily: "'Metropolis', sans-serif", fontSize: 13, fontWeight: 600,
                   color: gold, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                 }}>
-                  Try Sage free for 7 days →
+                  Start with Sage: 7 extra days on your first payment →
                 </button>
               </div>
             </>

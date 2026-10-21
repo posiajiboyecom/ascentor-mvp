@@ -24,7 +24,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Lock, Undo2, CreditCard, Gift, Check } from 'lucide-react';
-import { PLAN_PRICING, MAX_YEARLY_SAVINGS } from '@/lib/pricing'
+import { maxYearlySavings, type PlanPricing } from '@/lib/pricing'
+import '@/styles/rx.css'
+import '@/styles/rx-entry.css'
 
 type BillingCycle = 'monthly' | 'annual'
 
@@ -41,16 +43,19 @@ interface Plan {
   highlighted?: boolean
 }
 
-const PLANS: Plan[] = [
+// Prices arrive as props from the server (lib/plans-config.ts): the browser never decides what a plan costs.
+function buildPlans(pricing: PlanPricing[]): Plan[] {
+  const P = (id: string) => pricing.find((x) => x.id === id) as PlanPricing
+  return [
   {
     id:            'explorer',
-    name:          'Explorer',
+    name:          'Seeker',
     description:   'For those just starting to find their path.',
-    stage:         'EXPLORER',
+    stage:         'SEEKER',
     stageColor:    '#14B8A6',
-    monthlyPrice:  PLAN_PRICING[0].monthlyPrice,
-    yearlyPrice:   PLAN_PRICING[0].yearlyPrice,
-    yearlyMonthly: PLAN_PRICING[0].yearlyPerMonth,
+    monthlyPrice:  P('explorer').monthlyPrice,
+    yearlyPrice:   P('explorer').yearlyPrice,
+    yearlyMonthly: P('explorer').yearlyPerMonth,
     features: [
       'Sage AI, 10 sessions/month',
       '1 mentorship circle',
@@ -66,9 +71,9 @@ const PLANS: Plan[] = [
     description:   'For professionals building their career edge.',
     stage:         'BUILDER',
     stageColor:    '#E8A020',
-    monthlyPrice:  PLAN_PRICING[1].monthlyPrice,
-    yearlyPrice:   PLAN_PRICING[1].yearlyPrice,
-    yearlyMonthly: PLAN_PRICING[1].yearlyPerMonth,
+    monthlyPrice:  P('builder').monthlyPrice,
+    yearlyPrice:   P('builder').yearlyPrice,
+    yearlyMonthly: P('builder').yearlyPerMonth,
     features: [
       'Sage AI, unlimited sessions',
       'Up to 3 mentorship circles',
@@ -82,14 +87,28 @@ const PLANS: Plan[] = [
     highlighted: true,
   },
   {
+    id:            'leader',
+    name:          'Leader',
+    description:   'For members who facilitate a Circle.',
+    stage:         'LEADER',
+    stageColor:    '#CAA228',
+    monthlyPrice:  P('leader').monthlyPrice,
+    yearlyPrice:   P('leader').yearlyPrice,
+    yearlyMonthly: P('leader').yearlyPerMonth,
+    features: [
+      'For members who facilitate a Circle',
+      'The Facilitators’ room, with other Leaders',
+    ],
+  },
+  {
     id:            'climber',
     name:          'Climber',
     description:   'For leaders scaling teams and building legacy.',
     stage:         'CLIMBER',
     stageColor:    '#8B5CF6',
-    monthlyPrice:  PLAN_PRICING[2].monthlyPrice,
-    yearlyPrice:   PLAN_PRICING[2].yearlyPrice,
-    yearlyMonthly: PLAN_PRICING[2].yearlyPerMonth,
+    monthlyPrice:  P('climber').monthlyPrice,
+    yearlyPrice:   P('climber').yearlyPrice,
+    yearlyMonthly: P('climber').yearlyPerMonth,
     features: [
       'Everything in Builder',
       'Unlimited mentorship circles',
@@ -101,16 +120,18 @@ const PLANS: Plan[] = [
       'Quarterly strategy reviews',
     ],
   },
-]
+  ]
+}
 
 // Plan rank for upgrade logic
-const PLAN_RANK: Record<string, number> = { free: 0, explorer: 1, builder: 2, climber: 3 }
+const PLAN_RANK: Record<string, number> = { free: 0, explorer: 1, builder: 2, leader: 3, climber: 3 }
 
 function yearlySavings(plan: Plan) {
   return Math.round(plan.monthlyPrice * 12 - plan.yearlyPrice)
 }
 
-export default function CheckoutClient({ embedded = false }: { embedded?: boolean }) {
+export default function CheckoutClient({ embedded = false, pricing }: { embedded?: boolean; pricing: PlanPricing[] }) {
+  const ALL_PLANS = useMemo(() => buildPlans(pricing), [pricing])
   const router       = useRouter()
   const searchParams = useSearchParams()
   const supabase     = useMemo(() => createClient(), [])
@@ -126,6 +147,7 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
   const [paying,        setPaying]        = useState(false)
   const [error,         setError]         = useState('')
   const [goingFree,     setGoingFree]     = useState(false)
+  const [showAllPlans,  setShowAllPlans]  = useState(false)
 
   // Auth + profile
   useEffect(() => {
@@ -148,13 +170,15 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
   }
   const rawPlan       = profile?.subscription_plan || 'free'
   const currentPlan   = PLAN_ALIAS[rawPlan] ?? rawPlan
+  // Climber is a legacy plan: shown only to the members who hold it, never sold to anyone else.
+  const PLANS         = ALL_PLANS.filter(p => p.id !== 'climber' || currentPlan === 'climber')
   const subStatus     = profile?.subscription_status
   const subEnd        = profile?.subscription_end
   const isActivePaid  = ['active', 'trialing'].includes(subStatus) &&
     (!subEnd || new Date(subEnd) > new Date()) &&
     currentPlan !== 'free'
   const currentRank   = PLAN_RANK[currentPlan] ?? 0
-  const isTopTier     = currentPlan === 'climber' && isActivePaid
+  const isTopTier     = (currentPlan === 'climber' || currentPlan === 'leader') && isActivePaid
 
   function getDisplayPrice(plan: Plan): number {
     return billing === 'monthly' ? plan.monthlyPrice : plan.yearlyMonthly
@@ -320,6 +344,37 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
     )
   }
 
+  // ── Plan card (prototype: "Start your 7-day free trial"). Copy follows what checkout really does: you pay now,
+  // access starts now, and the first period includes 7 extra days. A true free trial needs a saved Paystack
+  // authorization (see docs/trial-and-billing.md). ──────
+  // Shown when a plan is chosen up front (?plan=...), e.g. straight after sign-up. "See all plans" shows the picker.
+  const trialPlan = PLANS.find(p => p.id === searchParams.get('plan'))
+  if (!loading && trialPlan && !showAllPlans) {
+    const trialPrice = billing === 'monthly'
+      ? `₦${trialPlan.monthlyPrice.toLocaleString()} a month`
+      : `₦${trialPlan.yearlyPrice.toLocaleString()} a year`
+    return (
+      <div className="rx rx-entry" style={embedded ? { minHeight: 0, background: 'transparent' } : undefined}>
+        <div className="rx-entry-in rx-rise">
+          <span className="rx-tag gold" style={{ alignSelf: 'flex-start' }}>{trialPlan.name}</span>
+          <h1 className="rx-h2" style={{ fontSize: 28 }}>Start your {trialPlan.name} plan</h1>
+          <p className="rx-p" style={{ color: 'var(--rx-muted)' }}>Pay with Paystack and get full access straight away. Your first payment includes 7 extra days.</p>
+          <div className="rx-card rx-stack-sm">
+            <div className="rx-tline"><span className="rx-pd cur" /><div><p className="rx-p" style={{ fontWeight: 700 }}>Today</p><p className="rx-sm">You pay {trialPrice}. Full access starts.</p></div></div>
+            <div className="rx-tline"><span className="rx-pd" /><div><p className="rx-p" style={{ fontWeight: 700 }}>First period</p><p className="rx-sm">Includes 7 extra days on top of what you paid for.</p></div></div>
+            <div className="rx-tline"><span className="rx-pd" /><div><p className="rx-p" style={{ fontWeight: 700 }}>Cancel any time</p><p className="rx-sm">You keep access until your paid period ends.</p></div></div>
+          </div>
+          {error && <div className="rx-banner err" role="alert">{error}</div>}
+          <button type="button" className="rx-btn primary block" disabled={paying} onClick={() => handleSelectPlan(trialPlan.id)}>
+            {paying ? 'Redirecting...' : 'Pay with Paystack'}
+          </button>
+          <p className="rx-sm rx-row rx-nw" style={{ gap: 8 }}><Lock aria-hidden size={16} style={{ flex: 'none' }} />Card details go to Paystack. Ascentor never sees them.</p>
+          <button type="button" className="rx-link muted" style={{ alignSelf: 'flex-start' }} onClick={() => setShowAllPlans(true)}>See all plans</button>
+        </div>
+      </div>
+    )
+  }
+
   // ── Free / new user view ───────────────────────────────────────
   return (
     <>
@@ -361,7 +416,7 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
           {billing === 'monthly' && (
             <p style={{ fontSize: 12, color: '#7A7260', marginTop: 10 }}>
               Switch to annual and save up to{' '}
-              <span style={{ color: '#E8A020', fontWeight: 600 }}>&#8358;{MAX_YEARLY_SAVINGS.toLocaleString()}/year</span>
+              <span style={{ color: '#E8A020', fontWeight: 600 }}>&#8358;{maxYearlySavings(pricing.filter((x) => x.id !== 'climber')).toLocaleString()}/year</span>
             </p>
           )}
         </div>
@@ -415,7 +470,7 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
                 </ul>
 
                 <div className="co-trial-box">
-                  <strong>.</strong> No charge until Day 8.<br/>Cancel before then and pay nothing.
+                  Pay today and start straight away.<br/>Your first payment includes 7 extra days.
                 </div>
 
                 <button
@@ -428,9 +483,9 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
                       : { background: `${plan.stageColor}14`, color: plan.stageColor, border: `1px solid ${plan.stageColor}25` }
                   }
                 >
-                  {spinning ? 'Redirecting to payment…' : 'Start 7-day trial'}
+                  {spinning ? 'Redirecting to payment…' : 'Get started'}
                 </button>
-                <p className="co-cta-note">7-DAY FREE TRIAL · CANCEL ANYTIME</p>
+                <p className="co-cta-note">7 EXTRA DAYS ON YOUR FIRST PAYMENT · CANCEL ANYTIME</p>
               </div>
             )
           })}
@@ -490,7 +545,7 @@ function TrustBar() {
           { Icon: Lock, text: 'PAYSTACK SECURED' },
           { Icon: Undo2, text: 'CANCEL ANYTIME' },
           { Icon: CreditCard, text: 'CARD · BANK · USSD' },
-          { Icon: Gift, text: '7-DAY FREE TRIAL' },
+          { Icon: Gift, text: '7 EXTRA DAYS TO START' },
         ].map((t, i) => (
           <div key={i} className="co-trust-item">
             <t.Icon size={13} aria-hidden="true" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} />

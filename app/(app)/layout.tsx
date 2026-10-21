@@ -10,7 +10,9 @@ import { createClient } from '@/lib/supabase/server';
 import { getShellData } from '@/lib/shell-data';
 import UserShell from '@/components/shell/UserShell';
 import { getShellCounts } from '@/lib/rx/shell-counts';
+import ReferralRedeem from '@/components/ReferralRedeem';
 import '@/styles/rx.css';
+import '@/styles/rx-messaging.css';
 
 export default async function AppLayout({
   children,
@@ -52,6 +54,7 @@ export default async function AppLayout({
       summitRegistered={shell.summitRegistered}
       counts={counts}
     >
+      <ReferralRedeem />
       {children}
     </UserShell>
   );

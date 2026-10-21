@@ -10,7 +10,7 @@
 //   explorer/builder/climber_monthly_ngn / _yearly_ngn - displayed + charged amounts
 //   currency   - Paystack currency code (default NGN)
 //   ngn_rate   - USD→currency rate override (replaces hardcoded 1600)
-//   trial_days - free trial length in days
+//   trial_days - extra days added to a member's first paid period (they pay on day one; it is not a free trial)
 
 'use client';
 
@@ -221,12 +221,12 @@ export default function PartnerPricingPage() {
       </div>
 
       {/* Trial */}
-      <p style={SECTION}>Free trial</p>
+      <p style={SECTION}>Bonus days on the first payment</p>
       <div style={CARD}>
-        <label style={LABEL}>Trial length (days)</label>
+        <label style={LABEL}>Bonus days (first payment)</label>
         <input style={{ ...INPUT, maxWidth: '140px' }} type="number" min="0" max="30"
           value={form.trial_days} onChange={set('trial_days')} />
-        <p style={HINT}>Set to 0 to disable the free trial on your platform.</p>
+        <p style={HINT}>Members pay when they join; this many extra days are added to their first paid period. Set to 0 for none.</p>
       </div>
 
       {error && <p style={{ color: '#EF4444', fontSize: '13px', margin: '12px 0' }}>{error}</p>}

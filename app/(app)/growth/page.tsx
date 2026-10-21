@@ -95,7 +95,7 @@ export default async function GrowthPage() {
           <p className="rx-label">This cycle</p>
           <div className="rx-between"><span>Practices set and kept</span><span className="rx-strong">{keptLabel}</span></div>
           <Bar pct={keptPct} label={keptLabel} />
-          <div className="rx-between"><span>Goals met</span><span className="rx-strong">{sum ? `${sum.goalsMet} of ${sum.goalsTotal || 3}` : '—'}</span></div>
+          <div className="rx-between"><span>Goals met</span><span className="rx-strong">{sum ? `${sum.goalsMet} of ${sum.goalsTotal || 3}` : '-'}</span></div>
           <div className="rx-between"><span>Purposeful peers met this month</span><span className="rx-strong">{peers}</span></div>
           <p className="rx-label">Beyond-self project</p>
           <BeyondSelfEditor initial={me.profile?.beyond_self_project ?? ''} since={me.profile?.beyond_self_since ?? null} />

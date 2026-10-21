@@ -34,7 +34,10 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
       <div className="rx-two">
         <div className="rx-stack-lg">
           {!focus ? (
-            <div className="rx-card rx-empty"><p className="rx-h3">Nothing new right now.</p><Link href="/dashboard" className="rx-btn secondary">Back to Today</Link></div>
+            <>
+              <div className="rx-card rx-empty"><p className="rx-h3">Nothing new right now.</p><Link href="/dashboard" className="rx-btn secondary">Back to Today</Link></div>
+              <Earlier items={ended.map(toItem)} />
+            </>
           ) : (
             <>
               <FocusCard
@@ -51,7 +54,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
         <Aside>
           <p className="rx-label">From the Ascentor team</p>
           <p className="rx-p">News and events, in one place. Hiding the banner on Today doesn’t remove anything here.</p>
-          <GoLink href="/settings">Mute announcement notifications</GoLink>
+          <GoLink href="/settings?tab=alerts">Mute announcement notifications</GoLink>
         </Aside>
       </div>
     </Page>

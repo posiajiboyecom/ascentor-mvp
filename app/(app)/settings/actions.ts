@@ -52,3 +52,22 @@ export async function unblockMember(blockedId: string): Promise<ActionResult> {
     return { ok: true };
   } catch (e) { return fail(e); }
 }
+
+/** Profile tab: display name and headline live on profiles, city on the member profile. */
+export async function saveProfile(input: { name: string; headline: string; city: string }): Promise<ActionResult> {
+  const name = (input.name ?? '').trim();
+  const headline = (input.headline ?? '').trim();
+  const city = (input.city ?? '').trim();
+  if (!name) return { ok: false, error: 'Add a display name.' };
+  if (name.length > 80) return { ok: false, error: 'Keep your display name under 80 characters.' };
+  if (headline.length > 120) return { ok: false, error: 'Keep your headline under 120 characters.' };
+  if (city.length > 80) return { ok: false, error: 'That city name is too long.' };
+  try {
+    const { db, userId } = await requireMember();
+    const { error } = await db.from('profiles').update({ full_name: name, what_building: headline || null, updated_at: new Date().toISOString() }).eq('id', userId);
+    if (error) throw error;
+    revalidatePath('/settings');
+    revalidatePath('/profile');
+  } catch (e) { return fail(e); }
+  return patch({ city: city || null });
+}

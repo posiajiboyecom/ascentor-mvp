@@ -19,6 +19,7 @@
 
 'use client';
 
+import { clearUserCache } from '@/lib/sw-cache';
 import type { Partner } from '@/types/partner';
 import { confirmAction } from '@/components/Modal';
 import Link from 'next/link';
@@ -88,6 +89,7 @@ export default function PartnerMemberShell({
 
   async function handleSignOut() {
     if (!(await confirmAction('Sign out of Ascentor on this device?', { title: 'Sign out?', confirmLabel: 'Sign out' }))) return;
+    void clearUserCache(); // saved pages belong to this account
     await supabase.auth.signOut();
     router.push('/login');
   }

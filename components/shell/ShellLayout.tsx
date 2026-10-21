@@ -49,6 +49,8 @@ export interface ShellLayoutProps {
   settingsHref: string;
   searchEndpoint: string;
   searchPlaceholder: string;
+  /** A full search page. The command palette then ends with "See all results" for the typed query. */
+  searchPageHref?: string;
   /** Runs after the user confirms the sign-out dialog. */
   onSignOut: () => void;
   /** Links shown in the header avatar menu, above sign out. */
@@ -79,7 +81,7 @@ export default function ShellLayout(props: ShellLayoutProps) {
 }
 
 function ShellInner({
-  variant, groups, user, homeHref, settingsHref, searchEndpoint, searchPlaceholder,
+  variant, groups, user, homeHref, settingsHref, searchEndpoint, searchPlaceholder, searchPageHref,
   onSignOut, menuLinks = [], headerActions, sidebarExtra,
   padded = false, children,
 }: ShellLayoutProps) {
@@ -155,6 +157,12 @@ function ShellInner({
     });
     if (ok) onSignOut();
   }, [onSignOut]);
+
+  // Only the most specific match is highlighted: /community/cities lights City groups, not Community as well.
+  const bestActiveHref = useMemo(
+    () => groups.flatMap((g) => g.items.map((i) => i.href)).filter((h) => isActivePath(pathname, h)).sort((x, y) => y.length - x.length)[0],
+    [groups, pathname],
+  );
 
   // ── title = active nav label ──────────────────────────────────────────────
   const title = useMemo(() => {
@@ -237,7 +245,7 @@ function ShellInner({
               {group.label ? <p className="sh-group-label">{group.label}</p> : null}
               {gi > 0 && <div className="sh-divider" />}
               {group.items.map(item => {
-                const active = isActivePath(pathname, item.href);
+                const active = item.href === bestActiveHref;
                 return (
                   <Link
                     key={item.href}
@@ -403,6 +411,7 @@ function ShellInner({
         groups={groups}
         endpoint={searchEndpoint}
         placeholder={searchPlaceholder}
+        searchPageHref={searchPageHref}
       />
 
       <Tooltip

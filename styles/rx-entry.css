@@ -1,0 +1,26 @@
+/* rx-entry: standalone entry/result screens (trial card, invite landings, payment result, offline, 404).
+   Values mirror the prototype classes (.tline, .pd, .sso, .code, .okbadge, .failbadge, .sumrow, .bignum). */
+.rx-entry { min-height: 100dvh; background: var(--rx-bg); display: flex; justify-content: center; align-items: flex-start; padding: 32px 16px 48px; background-image: radial-gradient(60% 280px at 22% 0%, var(--rx-glow), transparent 72%); background-repeat: no-repeat; }
+.rx-entry-center { align-items: center; }
+.rx-entry-in { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 16px; }
+.rx-entry-wide .rx-entry-in { max-width: 1000px; }
+.rx-entry-logo { display: inline-flex; margin-bottom: 8px; }
+.rx-entry-logo img { height: 24px; width: auto; }
+.rx-tline { display: flex; gap: 12px; align-items: flex-start; }
+.rx-pd { width: 24px; height: 24px; margin-top: 2px; border-radius: 50%; background: var(--rx-seg); display: flex; align-items: center; justify-content: center; flex: none; }
+.rx-pd.cur { background: transparent; border: 2px solid var(--rx-rustt); }
+.rx-sso { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; width: 100%; border: 1px solid var(--rx-line); border-radius: 10px; background: var(--rx-card); color: var(--rx-ink); cursor: pointer; font-family: inherit; font-weight: 600; font-size: 16px; white-space: nowrap; text-decoration: none; }
+.rx-sso svg { width: 20px; height: 20px; }
+.rx-code { display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: 8px; border: 1px dashed var(--rx-accent); color: var(--rx-gold); font-weight: 700; letter-spacing: .06em; font-size: 12px; }
+.rx-okbadge, .rx-failbadge { width: 56px; height: 56px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.rx-okbadge { background: color-mix(in srgb, var(--rx-accent) 18%, transparent); color: var(--rx-gold); }
+.rx-okbadge svg { width: 28px; height: 28px; }
+.rx-failbadge { background: color-mix(in srgb, var(--rx-danger) 16%, transparent); color: var(--rx-danger); font-weight: 800; font-size: 26px; }
+.rx-sumrow { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
+.rx-sumrow.tot { font-weight: 700; font-size: 18px; border-top: 1px solid var(--rx-border); padding-top: 12px; }
+.rx-bignum { font-weight: 800; font-size: 96px; line-height: 1; letter-spacing: -.04em; color: var(--rx-rustt); }
+.rx-gc { width: 20px; height: 20px; color: var(--rx-gold); flex: none; margin-top: 2px; }
+.rx-entry-card-empty { padding: 56px 20px; max-width: 620px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; }
+.rx-entry-two { display: grid; gap: 24px; grid-template-columns: minmax(0, 1fr); width: 100%; }
+@media (min-width: 900px) { .rx-entry-two { grid-template-columns: minmax(0, 1fr) 320px; } }
+.rx-entry a.rx-btn { text-decoration: none; }

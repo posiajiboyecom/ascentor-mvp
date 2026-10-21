@@ -1,0 +1,89 @@
+/* styles/rx-messaging.css
+   Messaging (LinkedIn-style inbox) and the desktop dock, from the design prototype's .thr / .lm / .dock rules.
+   Prototype tokens map to the rx tokens: --border -> --rx-border, --raised -> --rx-hover, --muted -> --rx-muted,
+   --text -> --rx-ink, --rustt -> --rx-rustt, --surface -> --rx-card, --rust -> --rx-rust. */
+
+@keyframes rxm-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rxm-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.rx .rxm-mpg { padding: 24px 16px 24px; }
+@media (min-width: 1024px) { .rx .rxm-mpg { padding: 28px 20px 24px; } }
+.rxm-mhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rxm-mhead .rx-ib { margin-right: -8px; }
+.rxm-search { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border: 1px solid var(--rx-border); border-radius: 10px; background: var(--rx-card); color: var(--rx-muted); max-width: none; margin-bottom: 12px; }
+.rxm-search svg { width: 18px; height: 18px; flex: none; }
+.rxm-search input { border: 0; outline: 0; background: none; flex: 1; height: 40px; min-width: 0; color: var(--rx-ink); font: inherit; font-size: 16px; }
+.rxm-tlist { margin: 0 -16px; }
+@media (min-width: 1024px) { .rxm-tlist { margin: 0 -20px; } }
+.rxm-thr { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 0; border-left: 3px solid transparent; border-bottom: 1px solid var(--rx-border); background: none; width: 100%; text-align: left; cursor: pointer; color: var(--rx-ink); min-height: 76px; text-decoration: none; font-family: inherit; }
+.rxm-thr:hover { background: var(--rx-hover); }
+.rxm-thr.on { background: var(--rx-hover); border-left-color: var(--rx-rustt); }
+.rxm-thr:focus-visible { outline: 2px solid var(--rx-rustt); outline-offset: -2px; }
+.rxm-thr .tn { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.rxm-thr .tl { font-size: 14px; color: var(--rx-muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.rxm-thr.unread .tn, .rxm-thr.unread .tl { color: var(--rx-ink); font-weight: 700; }
+.rxm-thr .sb { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rxm-thr .sm { font-size: 14px; color: var(--rx-muted); }
+.rxm-thr .rx-avatar { width: 52px; height: 52px; font-size: 15px; }
+.rxm-udot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--rx-rustt); margin-left: 8px; vertical-align: middle; flex: none; }
+.rxm-avw { position: relative; flex: none; display: inline-flex; }
+.rxm-avw .rxm-ond, .rxm-ond { position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; border-radius: 50%; background: #3fa36b; border: 2px solid var(--rx-card); }
+button.rxm-avw { background: none; border: 0; padding: 0; cursor: pointer; }
+
+.rxm-cv { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.rxm-cvhead { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--rx-border); background: var(--rx-card); flex: none; }
+.rxm-lmsgs { flex: 1; padding: 4px 20px 16px; display: flex; flex-direction: column; overflow-y: auto; min-height: 0; }
+.rxm-intro { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 20px 0 16px; border-bottom: 1px solid var(--rx-border); }
+.rxm-dday { display: flex; align-items: center; gap: 12px; margin: 14px 0 2px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--rx-muted); }
+.rxm-dday::before, .rxm-dday::after { content: ""; flex: 1; height: 1px; background: var(--rx-border); }
+.rxm-lm { display: flex; gap: 12px; padding: 2px 0; animation: rxm-fade .45s ease-out both; }
+.rxm-lm.first { margin-top: 12px; }
+.rxm-lm .rx-avatar { width: 40px; height: 40px; font-size: 13px; }
+.rxm-lm .gap { width: 40px; flex: none; }
+.rxm-lm .lmb { min-width: 0; flex: 1; }
+.rxm-lm .lmh { display: flex; align-items: baseline; gap: 8px; }
+.rxm-lm .lmh b { font-weight: 600; font-size: 15px; }
+.rxm-lm .lmh span { font-size: 12px; color: var(--rx-muted); }
+.rxm-lm p { margin: 0; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+.rxm-lm .rxm-state { font-size: 12px; color: var(--rx-muted); margin-top: 2px; }
+.rxm-lm.pending { opacity: .75; }
+.rxm-seen { align-self: flex-end; font-size: 12px; color: var(--rx-muted); margin: 6px 0 0; }
+.rxm-lcomp { border-top: 1px solid var(--rx-border); padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--rx-card); flex: none; }
+.rxm-lcomp textarea.rx-in { min-height: 72px; resize: none; }
+.rxm-lcomp .tools { display: flex; align-items: center; gap: 2px; }
+.rxm-lcomp .tools .rx-btn { min-height: 36px; padding: 0 18px; margin-left: auto; border-radius: 999px; }
+.rxm-sl { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--rx-muted); }
+.rxm-li { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border: 0; border-radius: 10px; background: none; width: 100%; text-align: left; cursor: pointer; color: var(--rx-ink); min-height: 60px; font-family: inherit; }
+.rxm-li:hover { background: var(--rx-hover); }
+
+/* ---------- docked messaging (desktop only) ---------- */
+.rxm-dock { display: none; }
+@media (min-width: 1024px) {
+  /* right: 112px keeps the dock clear of the floating Sage button in the bottom-right corner */
+  .rxm-dock { position: fixed; right: 112px; bottom: 0; z-index: 30; display: flex; align-items: flex-end; gap: 12px; }
+}
+.rxm-dpanel { background: var(--rx-card); border: 1px solid var(--rx-border); border-bottom: 0; border-radius: 12px 12px 0 0; box-shadow: 0 -2px 18px rgba(20, 20, 20, .12); display: flex; flex-direction: column; overflow: hidden; animation: rxm-rise .25s ease-out both; color: var(--rx-ink); }
+.rxm-dlist { width: 300px; }
+.rxm-dlist.open { height: 470px; }
+.rxm-dwin { width: 340px; height: 450px; }
+.rxm-dwin.min { height: auto; }
+.rxm-dh { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 0 6px 0 12px; border: 0; border-bottom: 1px solid var(--rx-border); background: none; width: 100%; color: var(--rx-ink); text-align: left; flex: none; font-family: inherit; }
+button.rxm-dh { cursor: pointer; }
+button.rxm-dh:hover { background: var(--rx-hover); }
+.rxm-dh .rx-avatar { width: 32px; height: 32px; font-size: 11px; }
+.rxm-dh .rx-ib { width: 36px; height: 36px; }
+.rxm-dh .num { font-weight: 600; }
+.rxm-dbody { flex: 1; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; }
+.rxm-dbody .rxm-thr { min-height: 64px; padding: 10px 12px; }
+.rxm-dbody .rxm-thr .rx-avatar { width: 40px; height: 40px; font-size: 13px; }
+.rxm-dbody .rxm-lmsgs { padding: 4px 12px 12px; }
+.rxm-dbody .rxm-lm .rx-avatar { width: 32px; height: 32px; font-size: 11px; }
+.rxm-dbody .rxm-lm .gap { width: 32px; }
+.rxm-dbody .rxm-lm p { font-size: 14px; }
+.rxm-dfoot { border-top: 1px solid var(--rx-border); padding: 8px; display: flex; gap: 6px; align-items: center; flex: none; }
+.rxm-dfoot .rx-in { min-height: 40px; border-radius: 999px; font-size: 14px; }
+.rxm-dcount { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--rx-rust); color: #fff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+
+/* inbox filter chips: All, Unread and Requests fit on one row in the 300px list pane, as in the prototype */
+.rxm-list-opts { flex-wrap: nowrap; gap: 6px; }
+.rxm-list-opts .rx-opt { padding: 0 12px; min-height: 40px; white-space: nowrap; }

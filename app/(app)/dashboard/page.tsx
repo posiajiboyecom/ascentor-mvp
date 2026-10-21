@@ -2,15 +2,21 @@
 // Today: this week's plan, today's check-in, and the few things that matter next (lesson, Circle, mentor).
 // Server component: everything arrives in one parallel pass; the interactive cards are small client islands.
 
+import '@/styles/rx-circle.css';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { CalendarDays, Play } from 'lucide-react';
+import { ArrowRight, CalendarDays, Play } from 'lucide-react';
 import { getMe, getMyCircle } from '@/lib/rx/server';
 import { getLessonProgress, getLessons, getTodayState, pickWeekLesson } from '@/lib/rx/practice';
 import { getBannerAnnouncement } from '@/lib/rx/announcements';
 import { getMentorship } from '@/lib/rx/cmentor';
 import { CIRCLE_FOCUS, CIRCLE_MIN_TO_START } from '@/lib/rx/constants';
 import { longDate, nextWeekdayAt, whenLabel } from '@/lib/rx/dates';
+import { createClient } from '@/lib/supabase/server';
+import { Check, Lock } from 'lucide-react';
+import { deriveBilling } from '@/lib/billing-state';
+import { Banner } from '@/components/rx/ui';
+import DayOneCard from '@/components/rx/today/DayOneCard';
 import { Aside, Page, SageLine, Tag } from '@/components/rx/ui';
 import PlanCard from '@/components/rx/today/PlanCard';
 import CheckinCard from '@/components/rx/today/CheckinCard';
@@ -31,6 +37,15 @@ export default async function TodayPage() {
 
   const ms = await getMentorship().catch(() => null);
 
+  const billDb = await createClient();
+  const { data: billProf } = await billDb.from('profiles').select('subscription_plan, subscription_status, subscription_end').eq('id', me.userId).maybeSingle();
+  const bill = deriveBilling(billProf, me.tz);
+  let reportShared = false;
+  if (circle?.pledged && circle.week) {
+    const db = await createClient();
+    const { count } = await db.from('circle_reports').select('id', { count: 'exact', head: true }).eq('circle_id', circle.circle.id).eq('user_id', me.userId).eq('week_no', circle.week);
+    reportShared = (count ?? 0) > 0;
+  }
   const lesson = pickWeekLesson(lessons, state.week, progress);
   const lessonDone = !!(lesson && progress.get(lesson.id)?.practice_id);
   const plan = state.practice;
@@ -56,6 +71,9 @@ export default async function TodayPage() {
 
   const mobileRows = [circleRow, ...(lessonRow ? [lessonRow] : []), mentorRow];
   const kept = state.keptThisWeek;
+  const hasReportStep = !!circle?.pledged && !!circle.week;
+  const allDone = state.todayStatus === 'kept' && (!hasReportStep || reportShared) && (!lesson || lessonDone);
+  const dayOne = !plan && !state.todayStatus && state.week <= 1 && !!me.profile?.onboarded_at;
 
   return (
     <Page>
@@ -67,6 +85,19 @@ export default async function TodayPage() {
               <p className="rx-p rx-strong">Finish setting up</p>
               <p className="rx-sm">Two minutes: your interests, goals, time zone and language. It places you in a Circle and personalises Sage.</p>
               <div><Link href="/onboarding?redo=1" className="rx-btn primary">Continue setup</Link></div>
+            </div>
+          )}
+          {bill.state === 'trialEnding' && (bill.daysLeft ?? 99) <= 3 && (
+            <Banner><b>Your first period ends in {bill.daysLeft} {bill.daysLeft === 1 ? 'day' : 'days'}.</b> Renew before then to keep full access.<div><Link href="/settings?tab=plan" className="rx-link" style={{ color: 'inherit', minHeight: 36, fontSize: 14 }}>Manage plan<ArrowRight aria-hidden /></Link></div></Banner>
+          )}
+          {bill.state === 'failed' && (
+            <Banner error><b>We couldn’t take your payment.</b> Update your card within 7 days to keep full access.<div><Link href="/settings?tab=plan" className="rx-link" style={{ color: 'inherit', minHeight: 36, fontSize: 14 }}>Update card<ArrowRight aria-hidden /></Link></div></Banner>
+          )}
+          {bill.state === 'lapsed' && (
+            <div className="rx-card rx-stack-sm rx-rise">
+              <div className="rx-row rx-nw" style={{ gap: 10 }}><Lock aria-hidden style={{ width: 20, height: 20, color: 'var(--rx-gold)' }} /><p className="rx-h3">You’re on light access</p></div>
+              <p className="rx-p">Today, your Circle chat and Sage still work. Learn pathways, mentor sessions and joining new groups are paused.</p>
+              <div className="rx-row"><Link href="/settings?tab=plan" className="rx-btn primary">Reactivate {bill.planName}</Link><Link href="/settings?tab=plan" className="rx-link">See plans<ArrowRight aria-hidden /></Link></div>
             </div>
           )}
           {banner && <AnnouncementBanner id={banner.id} title={banner.title} line={banner.line} btn={banner.btn_label || 'Open'} />}
@@ -87,6 +118,18 @@ export default async function TodayPage() {
             </div>
           )}
 
+          {dayOne && <DayOneCard chatHref={circle?.pledged ? `/circle/chat?c=${circle.circle.id}` : null} lessonHref={lesson ? `/learn/lesson/${lesson.slug}` : null} lessonMeta={lesson ? `${lesson.title} · ${lesson.minutes} min` : ''} />}
+          {allDone && (
+            <div className="rx-card rx-stack rx-rise">
+              <div className="rx-row rx-nw" style={{ gap: 14 }}><span className="rx-okb"><Check aria-hidden /></span><div><p className="rx-h3">That’s today done.</p><p className="rx-sm">Rest well. See you tomorrow.</p></div></div>
+              <div className="rx-stack-sm">
+                <p className="rx-row rx-nw rx-p" style={{ gap: 10 }}><Check aria-hidden style={{ width: 18, height: 18, color: 'var(--rx-gold)' }} />Practice kept</p>
+                {hasReportStep && <p className="rx-row rx-nw rx-p" style={{ gap: 10 }}><Check aria-hidden style={{ width: 18, height: 18, color: 'var(--rx-gold)' }} />Circle report shared</p>}
+                {lesson && <p className="rx-row rx-nw rx-p" style={{ gap: 10 }}><Check aria-hidden style={{ width: 18, height: 18, color: 'var(--rx-gold)' }} />This week’s lesson watched</p>}
+              </div>
+              <div className="rx-row"><Link href="/circle/chat" className="rx-btn secondary">Share a win</Link><Link href="/growth" className="rx-link">See my growth<ArrowRight aria-hidden /></Link></div>
+            </div>
+          )}
           <PlanCard
             goal={state.goal?.goal_text ?? null}
             plan={plan ? { cue: plan.cue, action: plan.action, trigger: plan.trigger ?? '', fallback: plan.fallback ?? '', obstacle: plan.obstacle ?? '', source: plan.source ?? '' } : null}

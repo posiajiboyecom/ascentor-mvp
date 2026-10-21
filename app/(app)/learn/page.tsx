@@ -4,7 +4,10 @@
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Check, Play } from 'lucide-react';
+import { ArrowRight, Check, Lock, Play } from 'lucide-react';
+import '@/styles/rx-circle.css';
+import { createClient } from '@/lib/supabase/server';
+import { deriveBilling } from '@/lib/billing-state';
 import { getMe, getMyCircle } from '@/lib/rx/server';
 import { getLessonProgress, getLessons, getTodayState, pickWeekLesson } from '@/lib/rx/practice';
 import { CIRCLE_FOCUS, dimensionOf } from '@/lib/rx/constants';
@@ -17,6 +20,11 @@ export default async function LearnPage() {
   const me = await getMe();
   if (!me) redirect('/login');
   const [lessons, progress, state, circle] = await Promise.all([getLessons(), getLessonProgress(), getTodayState(), getMyCircle()]);
+  const db = await createClient();
+  const { data: billProf } = await db.from('profiles').select('subscription_plan, subscription_status, subscription_end').eq('id', me.userId).maybeSingle();
+  const bill = deriveBilling(billProf, me.tz);
+  const pathDone = !!state && state.pathway.length >= 12 && state.pathway.every((d) => d.state === 'done');
+  const behindCount = state?.pathway.filter((d) => d.state === 'behind').length ?? 0;
   const week = state?.week ?? 1;
   const lesson = pickWeekLesson(lessons, week, progress);
   const interests = new Set(me.profile?.interests ?? []);
@@ -34,9 +42,25 @@ export default async function LearnPage() {
       <Title>Learn</Title>
       <div className="rx-two">
         <div className="rx-stack-lg">
-          {state?.missed && (
-            <div className="rx-soft rx-rise"><p className="rx-p rx-strong">A few days slipped by, and that’s fine.</p><p className="rx-sm">Pick the lesson that matters most this week.</p></div>
+          {bill.state === 'lapsed' && (
+            <div className="rx-card rx-stack-sm rx-rise">
+              <div className="rx-row rx-nw" style={{ gap: 10 }}><Lock aria-hidden style={{ width: 20, height: 20, color: 'var(--rx-gold)' }} /><p className="rx-h3">Learn is paused on light access</p></div>
+              <p className="rx-p">Your finished lessons, practices and notes are safe. New lessons open again when you reactivate.</p>
+              <div><Link href="/settings?tab=plan" className="rx-btn primary">Reactivate {bill.planName}</Link></div>
+            </div>
           )}
+          {pathDone && (
+            <div className="rx-card rx-stack rx-rise">
+              <div className="rx-row rx-nw" style={{ gap: 14 }}><span className="rx-okb"><Check aria-hidden /></span><div><p className="rx-label">Pathway complete · 12 of 12 weeks</p><p className="rx-h2">You finished your first pathway.</p></div></div>
+              <p className="rx-p">Twelve lessons, each turned into a practice. That’s a habit now, not a phase.</p>
+              <div className="rx-row"><Link href="/growth" className="rx-link">See how you’ve grown<ArrowRight aria-hidden /></Link></div>
+            </div>
+          )}
+          {behindCount >= 2 ? (
+            <div className="rx-soft rx-rise"><p className="rx-p rx-strong">{behindCount === 2 ? 'Two' : behindCount} lessons behind, and that’s fine.</p><p className="rx-sm">Pick the one that matters most this week.</p></div>
+          ) : state?.missed ? (
+            <div className="rx-soft rx-rise"><p className="rx-p rx-strong">A few days slipped by, and that’s fine.</p><p className="rx-sm">Pick the lesson that matters most this week.</p></div>
+          ) : null}
 
           {lesson ? (
             <div className="rx-card" style={{ padding: 0, overflow: 'hidden' }}>

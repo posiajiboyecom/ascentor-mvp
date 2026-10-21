@@ -145,8 +145,8 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                     Resources
                   </Link>
                 )}
-                <Link href="/products" className="pf-link">
-                  Products
+                <Link href="/shop" className="pf-link">
+                  Shop
                 </Link>
                 <Link href="/newsletter" className="pf-link">
                   Newsletter

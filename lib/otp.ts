@@ -6,6 +6,8 @@ import 'server-only';
 import crypto from 'crypto';
 
 export const OTP_TTL_MS       = 15 * 60 * 1000;
+/** Password-reset links work once, for one hour. (Sign-up codes keep the shorter OTP_TTL_MS.) */
+export const RESET_TTL_MS     = 60 * 60 * 1000;
 export const OTP_MAX_ATTEMPTS = 5;
 export const OTP_MAX_PER_HOUR = 5;
 

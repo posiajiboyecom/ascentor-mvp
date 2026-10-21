@@ -1,0 +1,7 @@
+
+/* What's next (cycle choice) */
+.rx-optcol .rx-opt.tall { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; min-height: 76px; padding: 12px 18px; white-space: normal; text-align: left; }
+
+/* Today: "That's today done" badge */
+.rx-okb { width: 56px; height: 56px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex: none; background: color-mix(in srgb, var(--rx-accent) 18%, transparent); color: var(--rx-gold); }
+.rx-okb svg { width: 28px; height: 28px; }

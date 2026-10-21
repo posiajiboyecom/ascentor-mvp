@@ -65,12 +65,13 @@ export function AnnouncementsBell({ items, unread }: { items: BellItem[]; unread
   );
 }
 
-export function MessagesLink({ requests }: { requests: number }) {
+export function MessagesLink({ requests, unread = 0 }: { requests: number; unread?: number }) {
+  const parts = [unread ? `${unread} unread` : '', requests ? `${requests} message ${requests === 1 ? 'request' : 'requests'}` : ''].filter(Boolean);
   return (
     <div className="rx">
-      <Link href="/messages" className="rx-ib" aria-label={requests ? `Messages, ${requests} message ${requests === 1 ? 'request' : 'requests'}` : 'Messages'} style={{ position: 'relative' }}>
+      <Link href="/messages" className="rx-ib" aria-label={parts.length ? `Messages, ${parts.join(', ')}` : 'Messages'} style={{ position: 'relative' }}>
         <Mail aria-hidden />
-        {requests > 0 && <span className="rx-dot" style={{ position: 'absolute', top: 10, right: 10 }} />}
+        {(requests > 0 || unread > 0) && <span className="rx-dot" style={{ position: 'absolute', top: 10, right: 10 }} />}
       </Link>
     </div>
   );
@@ -124,7 +125,10 @@ export function NotificationsBell() {
             </button>
           ))}
           {notifications.length === 0 && <p className="rx-sm" style={{ padding: '12px 6px' }}>Nothing yet. Circle and Community activity shows up here.</p>}
-          <div style={{ padding: '4px 6px 0' }}><a href="/settings" className="rx-link" onClick={() => setOpen(false)}>Notification settings<ArrowRight aria-hidden /></a></div>
+          <div className="rx-between" style={{ padding: '4px 6px 0' }}>
+            <Link href="/notifications" className="rx-link" onClick={() => setOpen(false)}>See all<ArrowRight aria-hidden /></Link>
+            <Link href="/settings" className="rx-link muted" style={{ fontSize: 13 }} onClick={() => setOpen(false)}>Settings</Link>
+          </div>
         </div>
       )}
     </div>

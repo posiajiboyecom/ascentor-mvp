@@ -4,7 +4,7 @@ import { sendPasswordResetOTP } from '@/lib/email';
 import { getClientIp } from '@/lib/rate-limit';
 import { LIMITS, rateLimit } from '@/lib/auth/rate-limit-shared';
 import { verifyTurnstile } from '@/lib/auth/turnstile';
-import { generateOtp, hashOtp, OTP_TTL_MS, OTP_MAX_PER_HOUR } from '@/lib/otp';
+import { generateOtp, hashOtp, RESET_TTL_MS, OTP_MAX_PER_HOUR } from '@/lib/otp';
 import { parseJson } from '@/lib/validation/http';
 import * as authSchemas from '@/lib/validation/schemas/auth';
 
@@ -13,7 +13,7 @@ import * as authSchemas from '@/lib/validation/schemas/auth';
 const UNIFORM = {
   success: true,
   status: 'sent',
-  message: 'If an account exists, a reset code has been sent.',
+  message: 'If an account exists, a reset link has been sent.',
 } as const;
 
 export async function POST(req: NextRequest) {
@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       .from('password_reset_otps')
       .select('id', { count: 'exact', head: true })
       .eq('email', email)
+      .eq('purpose', 'password_reset')
       .gte('created_at', hourAgo);
     if ((count ?? 0) >= OTP_MAX_PER_HOUR) return NextResponse.json(UNIFORM);
 
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
       .from('password_reset_otps')
       .update({ used: true })
       .eq('email', email)
+      .eq('purpose', 'password_reset')
       .eq('used', false);
 
     const otp = generateOtp();
@@ -72,8 +74,9 @@ export async function POST(req: NextRequest) {
       .from('password_reset_otps')
       .insert({
         email,
+        purpose:    'password_reset',
         otp_code:   hashOtp(email, otp),
-        expires_at: new Date(Date.now() + OTP_TTL_MS).toISOString(),
+        expires_at: new Date(Date.now() + RESET_TTL_MS).toISOString(),
         used:       false,
         attempts:   0,
       });

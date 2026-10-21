@@ -8,6 +8,9 @@
 import { useState } from 'react';
 import { POSTABLE_DIMENSIONS, DIMENSION_META, type Message } from './types';
 import { X } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { enqueue, outboxOn, subscribeOutbox, flushOutbox } from '@/lib/outbox';
+import { useEffect } from 'react';
 
 export function CheckinComposer({
   prompt,
@@ -22,12 +25,39 @@ export function CheckinComposer({
   const [tag, setTag] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [queuedId, setQueuedId] = useState<string | null>(null);   // set while the check-in waits in the outbox
   const MAX = 2000;
 
+  // When a waiting check-in goes through (or the server says it already has one), finish as if it had been sent now.
+  useEffect(() => {
+    if (!queuedId) return;
+    return subscribeOutbox((e) => {
+      if (e.item.id !== queuedId) return;
+      if (e.type === 'sent') { const m = e.data as Message | undefined; if (m && m.id) onDone(m); else onClose(); }
+      else if (e.type === 'dropped') { setQueuedId(null); setError(e.error || 'Check-in failed. Try again.'); }
+    });
+  }, [queuedId, onDone]);
+
+  async function queueIt() {
+    try {
+      const { data } = await createClient().auth.getSession();
+      const uid = data.session?.user.id;
+      if (!uid) throw new Error('no session');
+      const item = await enqueue({ userId: uid, kind: 'checkin', payload: { content: draft.trim(), dimensionTag: tag } });
+      setQueuedId(item.id);
+      void flushOutbox();
+    } catch { setError('Check-in failed, check your connection.'); }
+  }
+
   async function submit() {
-    if (!draft.trim() || submitting) return;
+    if (!draft.trim() || submitting || queuedId) return;
     setSubmitting(true);
     setError(null);
+    if (outboxOn('checkin') && typeof navigator !== 'undefined' && navigator.onLine === false) {
+      await queueIt();
+      setSubmitting(false);
+      return;
+    }
     try {
       const res = await fetch('/api/community/checkin', {
         method: 'POST',
@@ -41,7 +71,8 @@ export function CheckinComposer({
       }
       onDone(data.message as Message);
     } catch {
-      setError('Check-in failed, check your connection.');
+      // No answer. The server allows one check-in a week, so sending it again later is safe.
+      if (outboxOn('checkin')) await queueIt(); else setError('Check-in failed, check your connection.');
     } finally {
       setSubmitting(false);
     }
@@ -107,10 +138,10 @@ export function CheckinComposer({
           <button
             type="button"
             onClick={submit}
-            disabled={!draft.trim() || submitting}
+            disabled={!draft.trim() || submitting || !!queuedId}
             className="rounded-full bg-[#C8A96E] px-6 py-2 text-sm font-semibold text-[#0F0F0E] disabled:opacity-40"
           >
-            {submitting ? 'Checking in…' : 'Check in →'}
+            {queuedId ? 'Waiting to send' : submitting ? 'Sending…' : 'Check in →'}
           </button>
         </div>
       </div>

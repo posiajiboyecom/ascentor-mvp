@@ -157,7 +157,7 @@ export function AgreementWorkspace({ cmId, agreement, role, members, meId, maxGo
             return (
               <tr key={t.id}>
                 <td style={done ? { textDecoration: 'line-through', color: 'var(--rx-muted)' } : undefined}>{t.task}</td><td>{t.ownerName}</td>
-                <td style={{ whiteSpace: 'nowrap' }}>{t.due ? new Date(t.due + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '—'}</td>
+                <td style={{ whiteSpace: 'nowrap' }}>{t.due ? new Date(t.due + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '-'}</td>
                 <td><button type="button" className="rx-box" aria-label="Owner confirms" aria-pressed={t.ownerConfirmed} disabled={!canOwner || pending} onClick={() => run(() => confirmAgreementTask(cmId, t.id, !t.ownerConfirmed))}>{t.ownerConfirmed && <Check aria-hidden />}</button></td>
                 <td><button type="button" className="rx-box" aria-label="Mentor confirms" aria-pressed={t.mentorConfirmed} disabled={!canMentor || pending} onClick={() => run(() => confirmAgreementTask(cmId, t.id, !t.mentorConfirmed))}>{t.mentorConfirmed && <Check aria-hidden />}</button></td>
                 <td>{role === 'member' && <button type="button" className="rx-ib" style={{ width: 32, height: 32 }} aria-label="Remove task" onClick={() => run(() => removeAgreementTask(cmId, t.id))}><Trash2 aria-hidden style={{ width: 14, height: 14 }} /></button>}</td>

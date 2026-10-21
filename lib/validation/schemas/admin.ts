@@ -118,7 +118,7 @@ export const userAdminAction = z.discriminatedUnion('action', [
   z.strictObject({ targetUserId: uuid, action: z.literal('change_role'), value: z.enum(['member', 'moderator', 'admin']) }),
   z.strictObject({ targetUserId: uuid, action: z.literal('ban'), value: z.string().trim().max(500).optional() }),
   z.strictObject({ targetUserId: uuid, action: z.literal('unban') }),
-  z.strictObject({ targetUserId: uuid, action: z.literal('change_plan'), value: z.enum(['free', 'explorer', 'builder', 'climber']) }),
+  z.strictObject({ targetUserId: uuid, action: z.literal('change_plan'), value: z.enum(['free', 'explorer', 'builder', 'leader', 'climber']) }),
   z.strictObject({ targetUserId: uuid, action: z.literal('delete') }),
 ]);
 
@@ -204,3 +204,65 @@ export const listQuery = z.object({
 
 /** POST /api/admin/payments: a per-attempt action, or an empty body meaning "reconcile now". */
 export const paymentsPost = z.union([paymentsAction, z.strictObject({})]);
+
+// ── Shop ──────────────────────────────────────────────────────────────────────
+const shopStr = (max: number) => z.string().trim().max(max).nullable();
+const shopFields = {
+  tagline: shopStr(200),
+  description: shopStr(5000),
+  image_url: shopStr(2048),
+  badge: shopStr(40),
+  shop_category: z.enum(['Apparel', 'Accessories', 'Books and journals', 'Digital', 'Courses']),
+  fulfilment: z.enum(['ship', 'digital', 'learn']),
+  price_ngn: z.number().int().min(0).max(100_000_000),
+  stock: z.number().int().min(0).max(1_000_000).nullable(),
+  sizes: z.array(z.string().trim().min(1).max(10)).max(12).nullable(),
+  file_path: shopStr(300),
+  lead_capture: z.boolean(),
+  published: z.boolean(),
+  is_featured: z.boolean(),
+  sort_order: z.number().int().min(0).max(100_000),
+  min_plan: z.enum(['seeker', 'builder']).nullable(),
+};
+export const shopProductCreate = z.strictObject({
+  name: text(160, 'Name'),
+  shop_category: shopFields.shop_category,
+  fulfilment: shopFields.fulfilment,
+  price_ngn: shopFields.price_ngn,
+  tagline: shopFields.tagline.optional(),
+  description: shopFields.description.optional(),
+  image_url: shopFields.image_url.optional(),
+  badge: shopFields.badge.optional(),
+  stock: shopFields.stock.optional(),
+  sizes: shopFields.sizes.optional(),
+  file_path: shopFields.file_path.optional(),
+  lead_capture: shopFields.lead_capture.optional(),
+  published: shopFields.published.optional(),
+  is_featured: shopFields.is_featured.optional(),
+  sort_order: shopFields.sort_order.optional(),
+  min_plan: shopFields.min_plan.optional(),
+});
+export const shopProductUpdate = z.strictObject({
+  id: uuid,
+  name: text(160, 'Name').optional(),
+  shop_category: shopFields.shop_category.optional(),
+  fulfilment: shopFields.fulfilment.optional(),
+  price_ngn: shopFields.price_ngn.optional(),
+  tagline: shopFields.tagline.optional(),
+  description: shopFields.description.optional(),
+  image_url: shopFields.image_url.optional(),
+  badge: shopFields.badge.optional(),
+  stock: shopFields.stock.optional(),
+  sizes: shopFields.sizes.optional(),
+  file_path: shopFields.file_path.optional(),
+  lead_capture: shopFields.lead_capture.optional(),
+  published: shopFields.published.optional(),
+  is_featured: shopFields.is_featured.optional(),
+  sort_order: shopFields.sort_order.optional(),
+  min_plan: shopFields.min_plan.optional(),
+});
+export const shopProductDelete = z.strictObject({ id: uuid });
+export const shopOrderUpdate = z.strictObject({
+  id: uuid,
+  status: z.enum(['pending', 'paid', 'packing', 'shipped', 'delivered', 'ready', 'cancelled']),
+});

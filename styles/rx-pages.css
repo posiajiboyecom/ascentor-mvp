@@ -1,0 +1,39 @@
+/* Member pages: Notifications, Search, Help, City groups, Meetup. Tokens and base classes come from rx.css. */
+
+.rx-search { display: flex; align-items: center; gap: 10px; width: 100%; height: 48px; padding: 0 14px; border: 1px solid var(--rx-line); border-radius: 12px; background: #fff; color: var(--rx-muted); }
+.rx-search:focus-within { border-color: var(--rx-rust); }
+.rx-search svg { width: 18px; height: 18px; flex: none; }
+.rx-search input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font-family: inherit; font-size: 16px; color: var(--rx-ink); }
+.rx-search input::placeholder { color: var(--rx-muted); }
+.rx-search.lg { height: 52px; }
+.rx-search button { border: 0; background: none; color: var(--rx-rustt); font: inherit; font-weight: 600; cursor: pointer; min-height: 36px; padding: 0 6px; }
+
+.rx-tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; scrollbar-width: none; }
+.rx-tabs::-webkit-scrollbar { display: none; }
+.rx-tabs .rx-opt { flex: none; }
+
+.rx-udot { width: 8px; height: 8px; border-radius: 50%; background: var(--rx-rustt); flex: none; }
+.rx-rowlink.unread .rt .t { color: var(--rx-ink); }
+.rx-rowlink .rt .t.wrap { white-space: normal; overflow: visible; }
+.rx-rowlink .ri.txt { font-weight: 700; font-size: 14px; color: var(--rx-ink); }
+.rx-rowlink .rt .t.wrap { font-weight: 600; }
+.rx-rowlink.unread .rt .t.wrap { font-weight: 700; }
+.rx-rowlink:not(.unread) .rt .t.wrap { font-weight: 500; }
+
+.rx-gcard { display: flex; align-items: flex-start; gap: 14px; padding: 16px; background: var(--rx-card); border: 1px solid var(--rx-border); border-radius: var(--rx-r); box-shadow: var(--rx-shadow); }
+.rx-gcard .gci { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rx-gcard .gname { padding: 0; border: 0; background: none; font: inherit; font-weight: 700; font-size: 16px; color: var(--rx-ink); text-align: left; text-decoration: none; }
+.rx-gcard .gname:hover { text-decoration: underline; }
+.rx-cityhero { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 20px; background: var(--rx-card); border: 1px solid var(--rx-border); border-radius: var(--rx-r); box-shadow: var(--rx-shadow); }
+.rx-cityhero .grow { flex: 1; min-width: 200px; }
+
+.rx-faq { border-bottom: 1px solid var(--rx-border); }
+.rx-faq:last-child { border-bottom: 0; }
+.rx-faq .rx-rowlink { border-bottom: 0; }
+.rx-faq .chev { transition: transform .2s ease; }
+.rx-faq .chev.up { transform: rotate(180deg); }
+.rx-faqA { margin: 0; padding: 0 4px 16px; font-size: 15px; line-height: 1.55; color: var(--rx-ink); }
+
+.rx-going { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.rx-meta-line { display: flex; align-items: flex-start; gap: 12px; margin: 0; }
+.rx-meta-line svg { width: 20px; height: 20px; color: var(--rx-muted); flex: none; }

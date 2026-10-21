@@ -165,7 +165,7 @@ function Nav() {
           <Link href="/?gate=1"
             className="px-5 py-2 rounded-lg text-sm font-semibold"
             style={{ background: '#E8A020', color: '#000' }}>
-            Join Ascentor Trial
+            Join Ascentor
           </Link>
         </div>
       </div>
@@ -198,7 +198,7 @@ export default async function HowItWorksPage() {
   const ctaEyebrow  = cta?.eyebrow   || 'READY TO START?';
   const ctaHeadline = cta?.headline  || "Your first session is free.\nYour first breakthrough won't be far behind.";
   const ctaBody     = cta?.body      || 'Join 247+ professionals already on the waitlist.';
-  const ctaLabel    = cta?.cta_label || 'Join Ascentor Trial →';
+  const ctaLabel    = cta?.cta_label || 'Join Ascentor →';
   const ctaHref     = cta?.cta_href  || '/signup';
   return (
     <PublicShell>

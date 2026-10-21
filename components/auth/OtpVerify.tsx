@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Mail, ShieldCheck, Loader2 } from 'lucide-react';
+import Turnstile from '@/components/auth/Turnstile';
 
 interface OtpVerifyProps {
   email: string;
@@ -15,6 +16,7 @@ interface OtpVerifyProps {
   password: string;
   /** Where /auth/continue should send them afterwards. */
   next?: string;
+  /** @deprecated Ignored: this step gets its own CAPTCHA token. */
   captchaToken?: string;
   /** Shown once on mount, for example "We sent a new code". */
   initialNotice?: string;
@@ -23,7 +25,11 @@ interface OtpVerifyProps {
 
 const COOLDOWN_S = 60;
 
-export default function OtpVerify({ email, password, next = '/onboarding', captchaToken = '', initialNotice, onBack }: OtpVerifyProps) {
+export default function OtpVerify({ email, password, next = '/onboarding', initialNotice, onBack }: OtpVerifyProps) {
+  // Turnstile tokens are single use and the sign-up / sign-in form has already spent its own, so this step
+  // runs its own widget: one token for the resend button and one for the sign-in that follows verification.
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaReset, setCaptchaReset] = useState(0);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
@@ -59,10 +65,13 @@ export default function OtpVerify({ email, password, next = '/onboarding', captc
       }
 
       // Confirmed: sign in with the password chosen a moment ago.
+      const loginToken = captchaToken;
+      setCaptchaToken('');
+      setCaptchaReset((n) => n + 1);
       const login = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, captchaToken }),
+        body: JSON.stringify({ email, password, captchaToken: loginToken }),
       });
       if (!login.ok) {
         const l = await login.json().catch(() => ({}));
@@ -96,6 +105,8 @@ export default function OtpVerify({ email, password, next = '/onboarding', captc
     } finally {
       setResending(false);
       setCooldown(COOLDOWN_S);
+      setCaptchaToken('');
+      setCaptchaReset((n) => n + 1);
     }
   }
 
@@ -134,6 +145,8 @@ export default function OtpVerify({ email, password, next = '/onboarding', captc
           padding: '0.9rem 1rem', borderRadius: 12, border: `1.5px solid ${error ? '#DC2626' : '#E8E6E1'}`, background: '#FFFFFF', color: '#0F0F0E', outline: 'none',
         }}
       />
+
+      <div style={{ display: 'flex', justifyContent: 'center' }}><Turnstile onToken={setCaptchaToken} resetKey={captchaReset} /></div>
 
       {error && <p role="alert" style={{ margin: '0.75rem 0 0', fontSize: '0.875rem', color: '#DC2626', lineHeight: 1.5 }}>{error}</p>}
       {notice && <p role="status" style={{ margin: '0.75rem 0 0', fontSize: '0.875rem', color: '#15803D', lineHeight: 1.5 }}>{notice}</p>}

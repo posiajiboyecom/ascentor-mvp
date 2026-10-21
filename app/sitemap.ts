@@ -18,7 +18,7 @@ const STATIC_ROUTES: { path: string; priority: number; changeFrequency: Metadata
   { path: '/about',            priority: 0.8, changeFrequency: 'monthly' },
   { path: '/how-it-works',     priority: 0.8, changeFrequency: 'monthly' },
   { path: '/who-its-for',      priority: 0.8, changeFrequency: 'monthly' },
-  { path: '/products',         priority: 0.7, changeFrequency: 'monthly' },
+  { path: '/shop',             priority: 0.8, changeFrequency: 'monthly' },
   { path: '/blog',             priority: 0.9, changeFrequency: 'daily' },
   { path: '/movement',         priority: 0.7, changeFrequency: 'monthly' },
   { path: '/manifesto',        priority: 0.8, changeFrequency: 'monthly' },
@@ -65,6 +65,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch {
     // Sitemap still serves static routes if the DB query fails.
+  }
+
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+    const { data: products } = await supabase.from('products').select('id, slug').eq('published', true).limit(1000);
+    for (const p of products ?? []) {
+      entries.push({ url: `${SITE_URL}/shop/${p.slug || p.id}`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 });
+    }
+  } catch {
+    // Shop tables may not exist yet.
   }
 
   return entries;

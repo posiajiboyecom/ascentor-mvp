@@ -36,7 +36,7 @@ export default function AdminPromoCodesPage() {
   const [newLabel, setNewLabel] = useState('');
   const [newMaxUses, setNewMaxUses] = useState('');
   const [newExpiry, setNewExpiry] = useState('');
-  const [newPlans, setNewPlans] = useState(['explorer', 'builder', 'climber']);
+  const [newPlans, setNewPlans] = useState(['explorer', 'builder', 'leader', 'climber']);
   const [creating, setCreating] = useState(false);
   const [mode, setMode] = useState<'single' | 'event'>('single');
   const [bulkCount, setBulkCount] = useState('50');
@@ -343,7 +343,7 @@ export default function AdminPromoCodesPage() {
             <div>
               <label style={{ ...fieldLabel }}>Applies to</label>
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
-                {['explorer', 'builder', 'climber'].map(p => (
+                {['explorer', 'builder', 'leader', 'climber'].map(p => (
                   <label key={p} style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
                     <input type="checkbox" checked={newPlans.includes(p)}
                       onChange={(e) => setNewPlans(e.target.checked ? [...newPlans, p] : newPlans.filter(x => x !== p))}

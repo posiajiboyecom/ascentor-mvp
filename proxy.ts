@@ -100,7 +100,7 @@ const AUTH_ROUTES = [
   '/dashboard', '/coach', '/community', '/account',
   '/learn', '/courses', '/experts', '/onboarding',
   '/referral', '/admin',
-  '/circle', '/sessions', '/messages', '/growth', '/profile', '/settings', '/announcements', '/sage', '/call',
+  '/circle', '/sessions', '/messages', '/growth', '/profile', '/settings', '/announcements', '/sage', '/call', '/store', '/notifications', '/search', '/help',
 ];
 
 // API routes that are explicitly public - checked BEFORE the protected
@@ -109,10 +109,15 @@ const AUTH_ROUTES = [
 // ORDER MATTERS: this list is checked before PROTECTED_API_PREFIXES.
 // Any path that matches here is passed through immediately.
 const PUBLIC_API_ROUTES = [
+  // Connection check used by the weak-network banner: 204, no data, no session needed
+  '/api/health',
   '/api/waitlist',
   '/api/newsletter',
   // Free-resource capture on public landing pages (no account exists yet)
   '/api/lead-magnet',
+  // Shop: guests can buy and download. Each route validates its own input, signs its own links
+  // and prices the cart server-side; Paystack settlement does the rest.
+  '/api/shop',
   '/api/welcome',
   '/api/auth',
   // Paystack webhook - verified internally via HMAC signature
@@ -163,7 +168,7 @@ const PUBLIC_ROUTES = [
   '/auth/callback',
   '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
   '/how-it-works', '/who-its-for', '/waitlist', '/newsletter',
-  '/mentor-apply', '/offline',
+  '/mentor-apply', '/offline', '/payment', '/leader-invite',
   // Dedicated staff sign-in. /login and /signup are closed to the public
   // (community gate), so admins need their own entry point. Same accounts,
   // same Supabase auth; the page verifies the admin/moderator role itself.
@@ -262,7 +267,19 @@ export default async function proxy(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Session check. Client-side page changes (Next's RSC fetches, including prefetches) to member pages verify
+  // the signed token LOCALLY (Supabase signs with ES256, so no network call): one fewer round trip on every tap.
+  // Full page loads, /api and /admin keep the strict server check (getUser), so revoked or deleted sessions
+  // are still caught on every hard load, and the (app) layout re-checks with getUser on those.
+  const softNav = request.method === 'GET' && request.headers.get('rsc') === '1'
+    && !pathname.startsWith('/api/') && !pathname.startsWith('/admin');
+  let user: { id: string } | null;
+  if (softNav) {
+    const { data: claimsData } = await supabase.auth.getClaims();
+    user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
+  } else {
+    user = (await supabase.auth.getUser()).data.user;
+  }
 
   // ── 24-hour inactivity guard ──────────────────────────────────────
   // If the user is authenticated but has been inactive for 24+ hours,

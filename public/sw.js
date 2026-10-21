@@ -1,106 +1,129 @@
-// Ascentor Service Worker v4
-// v4 changes: explicitly skip ALL non-GET requests (fixes POST /api/pay/start being swallowed)
-//             explicitly skip js.paystack.co (fixes CSP violation on SW fetch intercept)
-//             bumped CACHE_NAME so all v3 clients re-install immediately
+// Ascentor Service Worker v6
+//
+// v6 (security hardening): the worker stores ONLY static assets and the offline page. It never saves a member page,
+// an API response or anything per-user, so there is nothing private on the device to leak or to clear.
+//  - Precaches the static shell (/offline, manifest, icons). Never '/' or '/dashboard': that HTML is per user.
+//  - Navigation (any page): straight to the network. If the network is down or fails, the /offline page is shown.
+//  - Static assets: cache first with a size cap. Hashed /_next/static files are immutable.
+//  - Never touches: non-GET, /api, /auth, sign-in and payment routes, RSC / prefetch requests, Range requests,
+//    third-party hosts, or any asset marked no-store.
+//  - Activating v6 deletes every older cache, including member pages saved by v5.
+//  - 'clear-user-cache' (posted on sign-out and account switch) still deletes any page cache, as defence in depth.
+//  - Writes are never timed out, retried or queued here (the outbox lives in the page, see lib/outbox.ts).
+// v4 (kept): non-GET requests and js.paystack.co are never intercepted.
 
-const CACHE_NAME  = 'ascentor-v4';   // <-- bumped from v3 — forces old SW to die
-const OFFLINE_URL = '/offline';
-const APP_ICON    = '/icons/icon-192.png';
-const BADGE_ICON  = '/icons/icon-96.png';
+const VERSION      = 'v6';
+const STATIC_CACHE = `ascentor-static-${VERSION}`;
+const KEEP_CACHES  = [STATIC_CACHE];
+const OFFLINE_URL  = '/offline';
+const APP_ICON     = '/icons/icon-192.png';
+const BADGE_ICON   = '/icons/icon-96.png';
 
-const PRECACHE = ['/', '/dashboard', '/coach', '/offline', '/manifest.json'];
+const PRECACHE = [OFFLINE_URL, '/manifest.json', APP_ICON, BADGE_ICON];
+const MAX_STATIC_ENTRIES = 150;
+
+// Never cached and never answered from cache.
+const NEVER_PREFIXES = [
+  '/api', '/auth', '/admin', '/admin-login', '/login', '/signup', '/forgot-password', '/reset-password',
+  '/checkout', '/payment', '/shop/thanks', '/call',
+];
+
+const PASSTHROUGH_HOSTS = [
+  'supabase.co', 'anthropic.com', 'googleapis.com', 'gstatic.com', 'paystack.co',
+  'plausible.io', 'bufferapp.com', 'cloudflare.com',
+];
+
+// Pages where a member may be paying: do not swap the service worker under them.
+const PAYMENT_PATH = /^\/(checkout|payment|pay|shop|settings\/billing)(\/|$)/;
+
+function underPrefix(path, prefix) { return path === prefix || path.startsWith(prefix + '/'); }
+function isNever(path) { return NEVER_PREFIXES.some((p) => underPrefix(path, p)); }
+function isRscOrPrefetch(request, url) {
+  const h = request.headers;
+  return (
+    h.has('rsc') || h.has('next-router-prefetch') || h.has('next-router-state-tree') ||
+    (h.get('accept') || '').includes('text/x-component') ||
+    url.searchParams.has('_rsc') || h.get('purpose') === 'prefetch'
+  );
+}
+function noStore(res) { return /no-store/i.test(res.headers.get('cache-control') || ''); }
+
+async function trim(cacheName, max) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  for (let i = 0; i < keys.length - max; i++) await cache.delete(keys[i]);
+}
 
 // ── Install ───────────────────────────────────────────────────
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(PRECACHE)));
-  self.skipWaiting();   // activate immediately, replacing any v3 SW
+  e.waitUntil((async () => {
+    const cache = await caches.open(STATIC_CACHE);
+    // One bad asset must not fail the install.
+    await Promise.all(PRECACHE.map((u) => cache.add(u).catch(() => undefined)));
+    // Replace v4 straight away unless someone is on a checkout or payment page; then wait for them to finish.
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const paying = wins.some((w) => { try { return PAYMENT_PATH.test(new URL(w.url).pathname); } catch { return false; } });
+    if (!paying) await self.skipWaiting();
+  })());
 });
 
 // ── Activate ──────────────────────────────────────────────────
 self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((names) =>
-      Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)))
-    )
-  );
-  self.clients.claim();
+  e.waitUntil((async () => {
+    const names = await caches.keys();
+    await Promise.all(names.filter((n) => !KEEP_CACHES.includes(n)).map((n) => caches.delete(n)));
+    await self.clients.claim();
+  })());
 });
 
-// ── Fetch — network-first for HTML, cache-first for assets ────
+// ── Messages from the app ─────────────────────────────────────
+self.addEventListener('message', (e) => {
+  const type = e.data && e.data.type;
+  if (type === 'clear-user-cache') {
+    // v6 saves no pages; this removes any page cache an older worker left behind.
+    e.waitUntil(caches.keys().then((names) => Promise.all(names.filter((n) => n.startsWith('ascentor-pages-')).map((n) => caches.delete(n)))));
+  } else if (type === 'skip-waiting') {
+    self.skipWaiting();
+  }
+});
+
+// ── Fetch ─────────────────────────────────────────────────────
 self.addEventListener('fetch', (e) => {
   const { request } = e;
-  const url = new URL(request.url);
 
-  // ── CRITICAL: Never intercept non-GET requests ────────────────
-  // POST /api/pay/start (and any other mutations) must go straight
-  // to the network. If the SW intercepts them it either returns a
-  // cached GET response or a body-already-used error, which the
-  // server receives as an empty body → planCode undefined →
-  // Paystack returns "Invalid Amount Sent".
+  // CRITICAL: never intercept non-GET (POST /api/pay/start etc. must go straight to the network).
   if (request.method !== 'GET') return;
 
-  // ── Skip all API / auth routes ────────────────────────────────
-  if (
-    url.pathname.startsWith('/api/') ||
-    url.pathname.startsWith('/auth/')
-  ) return;
-
-  // ── Skip all external third-party origins ─────────────────────
-  // js.paystack.co must be fetched directly — the SW has no
-  // permission to cache cross-origin scripts and attempting to do
-  // so triggers a CSP violation that blocks the Paystack popup.
-  const PASSTHROUGH_HOSTS = [
-    'supabase.co',
-    'anthropic.com',
-    'googleapis.com',
-    'gstatic.com',
-    'paystack.co',     // <-- was missing in v3 — caused CSP violation
-    'plausible.io',
-    'bufferapp.com',
-    'cloudflare.com',
-  ];
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
   if (PASSTHROUGH_HOSTS.some((h) => url.hostname.includes(h))) return;
+  if (request.headers.has('range')) return;            // audio / video
+  if (isRscOrPrefetch(request, url)) return;            // Next.js client navigations and prefetches
+  if (isNever(url.pathname)) return;
 
-  // ── Static assets → cache-first ──────────────────────────────
-  if (/\.(js|css|png|jpg|jpeg|svg|gif|webp|woff2?|ttf|ico)$/.test(url.pathname)) {
-    e.respondWith(
-      caches.match(request).then((hit) => {
-        if (hit) return hit;
-        return fetch(request).then((res) => {
-          // Clone synchronously — once res is returned its body is consumed
-          // and a later clone() throws "Response body is already used".
-          if (res.ok) {
-            const resClone = res.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(request, resClone));
-          }
-          return res;
-        });
-      })
-    );
+  // Static assets: cache first.
+  if (url.pathname.startsWith('/_next/static/') || /\.(js|css|png|jpg|jpeg|svg|gif|webp|avif|woff2?|ttf|ico)$/.test(url.pathname)) {
+    e.respondWith(staticAsset(request));
     return;
   }
 
-  // ── HTML pages → network-first, fallback to cache / offline ──
-  if (request.headers.get('accept')?.includes('text/html')) {
-    e.respondWith(
-      fetch(request)
-        .then((res) => {
-          if (res.ok) {
-            const resClone = res.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(request, resClone));
-          }
-          return res;
-        })
-        .catch(() =>
-          caches.match(request).then((hit) => hit || caches.match(OFFLINE_URL))
-        )
-    );
-    return;
-  }
+  const wantsHtml = request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html');
+  if (!wantsHtml) return;
 
-  // ── Everything else → network, fallback to cache ──────────────
-  e.respondWith(fetch(request).catch(() => caches.match(request)));
+  // Pages (member, marketing, public): straight to the network, the offline page if there is none. Never saved.
+  e.respondWith(fetch(request).catch(async () => (await caches.match(OFFLINE_URL)) || Response.error()));
 });
+
+async function staticAsset(request) {
+  const hit = await caches.match(request, { cacheName: STATIC_CACHE });
+  if (hit) return hit;
+  const res = await fetch(request);
+  if (res.ok && res.type === 'basic' && !noStore(res)) {
+    const copy = res.clone();   // clone synchronously, before the body is consumed
+    caches.open(STATIC_CACHE).then((c) => c.put(request, copy)).then(() => trim(STATIC_CACHE, MAX_STATIC_ENTRIES)).catch(() => undefined);
+  }
+  return res;
+}
 
 // ── Push — show a native OS notification ──────────────────────
 // The server sends a JSON payload: { title, body, url, icon, tag }

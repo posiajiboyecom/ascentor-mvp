@@ -4,9 +4,9 @@
 // Plan IDs (canonical - what pay/start, pay/callback, and
 // pay/webhook now write to profiles.subscription_plan):
 //   free     → Free
-//   explorer → Explorer  (₦12,000/mo)
-//   builder  → Builder   (₦25,000/mo)
-//   climber  → Climber   (₦60,000/mo)
+//   explorer → Seeker    (price: lib/plans-config.ts)
+//   builder  → Builder   (price: lib/plans-config.ts)
+//   climber  → Climber   (legacy, fixed price in lib/pricing.ts)
 //
 // Legacy DB IDs that may still exist on old subscribers:
 //   builder (old) → was Explorer - aliased to explorer limits
