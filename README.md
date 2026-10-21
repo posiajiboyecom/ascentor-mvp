@@ -617,7 +617,7 @@ Set values in `.env.local` locally and in Vercel project settings for deployed e
 | `FREE_MODE` | Optional | `true` disables paid gating (emergency override) |
 | `DATABASE_URL` | Local only | Prisma tooling. Never set on Vercel |
 
-Plan prices are defined once in [`lib/pricing.ts`](lib/pricing.ts) and used by checkout and validation.
+Plan prices are set once, from the environment (`PLAN_SEEKER_PRICE_NGN`, `PLAN_BUILDER_PRICE_NGN`), in [`lib/plans-config.ts`](lib/plans-config.ts) and used by checkout, settlement and the plan screens.
 
 ### Supabase settings to verify
 

@@ -12,7 +12,9 @@ import ProfileTab from '@/components/rx/settings/ProfileTab';
 import SecurityTab from '@/components/rx/settings/SecurityTab';
 import PlanTab, { type HistoryRow } from '@/components/rx/settings/PlanTab';
 import { deriveBilling } from '@/lib/billing-state';
-import { PRICE_PLACEHOLDER, planDisplayName } from '@/lib/plans-display';
+import { planDisplayName } from '@/lib/plans-display';
+import { getFeaturedPricing, planPriceLabel } from '@/lib/plans-config';
+import { formatNaira } from '@/lib/pricing';
 import '@/styles/rx-settings.css';
 
 export const dynamic = 'force-dynamic';
@@ -68,31 +70,44 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     const blocked = blockedIds.map((id) => ({ id, name: (blockedNames.get(id) as { name: string } | undefined)?.name ?? 'Member' }));
     body = <SecurityTab email={email} methods={methods} hasPassword={hasPassword} dmPolicy={p?.dm_policy ?? 'circle_and_requests'} research={p?.research_opt_in ?? false} blocked={blocked} />;
   } else if (tab === 'plan') {
-    const bill = deriveBilling(prof, tz);
     // Own rows only, read on the server with the member's id from the session.
     const { data: pays } = await supabaseAdmin
       .from('payments')
-      .select('id, plan_id, billing, status, paid_at, created_at')
+      .select('id, plan_id, billing, amount, status, paid_at, created_at')
       .eq('user_id', user.id)
       .eq('status', 'success')
       .order('created_at', { ascending: false })
       .limit(24);
-    const history: HistoryRow[] = ((pays ?? []) as { id: string; plan_id: string | null; billing: string | null; paid_at: string | null; created_at: string }[]).map((x) => ({
+    const payRows = (pays ?? []) as { id: string; plan_id: string | null; billing: string | null; amount: number | null; paid_at: string | null; created_at: string }[];
+    const lastPaid = payRows[0];
+    const featured = getFeaturedPricing();
+    // What the member really pays (their last payment) wins over today's list price, so a price change never rewrites it.
+    const bill = deriveBilling(prof, tz, new Date(), planPriceLabel(prof?.subscription_plan as string | null, lastPaid?.billing, lastPaid?.amount));
+    const planNow = bill.plan as string;
+    const listed = planNow === 'explorer' ? featured.explorer : planNow === 'builder' ? featured.builder : null;
+    const paidOnList = !!lastPaid?.amount && !!listed && (lastPaid.amount === listed.monthlyPrice || lastPaid.amount === listed.yearlyPrice);
+    // Legacy: Climber, or a plan held at an older price. They keep their plan and price; shown as a labelled card.
+    const legacy = bill.state !== 'none' && (planNow === 'climber' || (!!listed && !!lastPaid?.amount && !paidOnList))
+      ? { name: bill.planName, line: planPriceLabel(prof?.subscription_plan as string | null, lastPaid?.billing, lastPaid?.amount) }
+      : null;
+    const history: HistoryRow[] = payRows.map((x) => ({
       id: x.id,
       date: dateShort(x.paid_at ?? x.created_at, tz),
       desc: `${planDisplayName(x.plan_id)} · ${x.billing === 'annual' || x.billing === 'yearly' ? 'yearly' : 'monthly'}`,
-      amount: PRICE_PLACEHOLDER,
+      amount: x.amount ? formatNaira(Number(x.amount)) : '',
       status: 'Paid',
       receipt: true,
     }));
     if (prof?.subscription_status === 'trialing' && prof.subscription_start) {
-      history.push({ id: 'trial', date: dateShort(prof.subscription_start as string, tz), desc: '7-day free trial started', amount: '₦0', status: '—', receipt: false });
+      history.push({ id: 'first-period', date: dateShort(prof.subscription_start as string, tz), desc: 'First period started · includes 7 extra days', amount: '', status: '—', receipt: false });
     }
     const card = prof?.card_details as { last4?: string } | null;
     const cardLine = card?.last4 ? `Card ending ${card.last4} · via Paystack` : prof?.payment_method ? 'Card on file · via Paystack' : null;
     body = (
       <PlanTab state={bill.state} plan={bill.plan} planName={bill.planName} tag={bill.tag} line={bill.line} daysLeft={bill.daysLeft}
-        untilShort={bill.untilShort} cardLine={cardLine} referralDays={(prof?.referral_bonus_days as number | null) ?? 0} history={history} />
+        untilShort={bill.untilShort} cardLine={cardLine} referralDays={(prof?.referral_bonus_days as number | null) ?? 0} history={history}
+        prices={{ explorer: { monthly: featured.explorer.monthlyPrice, yearly: featured.explorer.yearlyPrice }, builder: { monthly: featured.builder.monthlyPrice, yearly: featured.builder.yearlyPrice } }}
+        legacy={legacy} />
     );
   } else {
     const zone = new Intl.DateTimeFormat('en-NG', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date()).find((x) => x.type === 'timeZoneName')?.value ?? 'your time zone';

@@ -4,13 +4,10 @@
 //
 //   explorer -> Seeker      builder -> Builder      climber -> Climber (kept working, not featured in the plan UI)
 //
-// PRICES: the new plan screens render PRICE_PLACEHOLDER until the real amounts are decided. When they are,
-// change the one constant below (or swap the helper for a formatter). What /api/pay/start charges lives in
-// lib/pricing.ts and is untouched by this file.
+// PRICES are not here. They live in lib/plans-config.ts (env-driven, server only) and reach client components
+// as props, so what is displayed and what /api/pay/start charges can never disagree.
 
 import { normalisePlan, PLAN_RANK, type PlanTier } from '@/lib/planTier';
-
-export const PRICE_PLACEHOLDER = '₦[PRICE]';
 
 export const PLAN_DISPLAY_NAME: Record<PlanTier, string> = {
   free: 'Free',

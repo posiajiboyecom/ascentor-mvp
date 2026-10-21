@@ -502,7 +502,7 @@ Paystack → /api/pay/callback | /api/summit/pay/verify | /api/pay/webhook
    metadata, never grants anything.
 2. The transaction is verified with Paystack; amount (>= expected), currency and
    owner are compared to the **recorded attempt**, not to client data. Prices
-   come from `lib/pricing.ts` (plans) and the `SUMMIT_TICKET_PRICE_*_NGN`
+   come from `lib/plans-config.ts` (plans, env-driven) and the `SUMMIT_TICKET_PRICE_*_NGN`
    variables (tickets).
 3. The attempt is claimed with a conditional update (`pending → success`), so
    concurrent verify/webhook/cron runs fulfil exactly once and emails are sent

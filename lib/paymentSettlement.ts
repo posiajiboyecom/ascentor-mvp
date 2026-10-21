@@ -27,7 +27,7 @@
 
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { PLAN_PRICING_MAP } from '@/lib/pricing';
+import { getPlanPricingMap } from '@/lib/plans-config';
 import { deliverPaidEmails, deliverDonationEmails } from '@/lib/summitEmails';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -75,10 +75,10 @@ export interface PaystackTransaction {
   customer?: { email?: string } | null;
 }
 
-// ── Pricing (server-side, single source: lib/pricing.ts) ─────────────────────
+// ── Pricing (server-side, single source: lib/plans-config.ts) ────────────────
 
 export function subscriptionAmountKobo(planId: string, billing: string): number | null {
-  const plan = PLAN_PRICING_MAP[planId];
+  const plan = getPlanPricingMap()[planId];
   if (!plan) return null;
   if (billing === 'annual')  return plan.yearlyPrice  * 100;
   if (billing === 'monthly') return plan.monthlyPrice * 100;
@@ -415,20 +415,24 @@ async function fulfilSubscription(attempt: PaymentAttempt, tx: PaystackTransacti
     auth_code: auth.authorization_code || null,
   } : null;
 
-  const { error: profileErr } = await supabaseAdmin
-    .from('profiles')
-    .update({
-      subscription_plan:    planId,
-      subscription_status:  'trialing',
-      subscription_start:   now.toISOString(),
-      subscription_end:     end.toISOString(),
-      billing_cycle:        billing,
-      payment_method:       tx.channel || 'paystack',
-      ...(cardDetails ? { card_details: cardDetails } : {}),
-      onboarding_completed: true,
-      updated_at:           now.toISOString(),
-    })
-    .eq('id', attempt.user_id);
+  const profilePatch = {
+    subscription_plan:    planId,
+    subscription_status:  'trialing',
+    subscription_start:   now.toISOString(),
+    subscription_end:     end.toISOString(),
+    payment_method:       tx.channel || 'paystack',
+    ...(cardDetails ? { card_details: cardDetails } : {}),
+    onboarding_completed: true,
+    updated_at:           now.toISOString(),
+  };
+  let { error: profileErr } = await supabaseAdmin
+    .from('profiles').update({ ...profilePatch, billing_cycle: billing }).eq('id', attempt.user_id);
+  // profiles.billing_cycle is missing in databases that never ran database/migrations/20261023_profiles_billing_cycle.sql.
+  // A paid customer must never be left without access because of that: activate without it, and say so loudly.
+  if (profileErr && /billing_cycle/i.test(profileErr.message)) {
+    console.error('[paymentSettlement] profiles.billing_cycle is missing: activating without it. Apply 20261023_profiles_billing_cycle.sql.');
+    ({ error: profileErr } = await supabaseAdmin.from('profiles').update(profilePatch).eq('id', attempt.user_id));
+  }
   if (profileErr) throw new Error(`profiles update failed: ${profileErr.message}`);
 
   const { error: payErr } = await supabaseAdmin.from('payments').insert({

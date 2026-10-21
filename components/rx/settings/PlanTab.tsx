@@ -3,21 +3,27 @@
 // Settings > Plan: current plan and billing state, the plans, billing history.
 // Real: state (from the profile), cancel (/api/subscription/cancel), pay / reactivate (/checkout), history (payments table).
 // Toast only, as in the prototype (no backend yet): Update card, Receipt, Switch down to a lower plan, How Leaders are chosen.
-// Prices are placeholders on purpose: see lib/plans-display.ts.
+// Prices arrive as props from the server (lib/plans-config.ts); this component never decides a price.
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Clock, CreditCard, Gift, TriangleAlert } from 'lucide-react';
 import { useToast } from '@/components/rx/Toast';
-import { FEATURED_PLANS, LEADER_BULLETS, PLAN_BULLETS, PLAN_DISPLAY_NAME, PRICE_PLACEHOLDER, isUpgrade, type FeaturedPlan } from '@/lib/plans-display';
+import { FEATURED_PLANS, LEADER_BULLETS, PLAN_BULLETS, PLAN_DISPLAY_NAME, isUpgrade, type FeaturedPlan } from '@/lib/plans-display';
+import { formatNaira } from '@/lib/pricing';
 import type { BillState } from '@/lib/billing-state';
 
 export interface HistoryRow { id: string; date: string; desc: string; amount: string; status: string; receipt: boolean }
 
-export default function PlanTab({ state, plan, planName, tag, line, daysLeft, untilShort, cardLine, referralDays, history }: {
+export interface PlanPrices { explorer: { monthly: number; yearly: number }; builder: { monthly: number; yearly: number } }
+
+export default function PlanTab({ state, plan, planName, tag, line, daysLeft, untilShort, cardLine, referralDays, history, prices, legacy }: {
   state: BillState; plan: string; planName: string; tag: { label: string; cls: string }; line: string; daysLeft: number | null;
   untilShort: string; cardLine: string | null; referralDays: number; history: HistoryRow[];
+  prices: PlanPrices;
+  /** Set for members on a plan that is no longer sold, or held at an older price: they keep it. */
+  legacy: { name: string; line: string } | null;
 }) {
   const toast = useToast();
   const router = useRouter();
@@ -47,11 +53,11 @@ export default function PlanTab({ state, plan, planName, tag, line, daysLeft, un
 
   const planCard = (id: FeaturedPlan) => {
     const name = PLAN_DISPLAY_NAME[id];
-    const current = paid && state !== 'lapsed' && plan === id;
+    const current = !legacy && paid && state !== 'lapsed' && plan === id;
     return (
       <div key={id} className={`rx-plan${current ? ' cur' : ''}`}>
         {current ? <div className="rx-sb"><p className="rx-h3">{name}</p><span className="rx-tag rust">Your plan</span></div> : <p className="rx-h3">{name}</p>}
-        <p className="rx-price">{PRICE_PLACEHOLDER}<span className="rx-sm"> / month</span></p>
+        <p className="rx-price">{formatNaira(prices[id].monthly)}<span className="rx-sm"> / month</span></p>
         <ul>{PLAN_BULLETS[id].map((b) => <li key={b}>{b}</li>)}</ul>
         {current ? (
           <button type="button" className="rx-btn bmuted" aria-disabled="true">Current plan</button>
@@ -70,7 +76,7 @@ export default function PlanTab({ state, plan, planName, tag, line, daysLeft, un
         <div className="rx-sb top"><div><p className="rx-sl">Current plan</p><p className="rx-big">{planName}</p><p className="rx-sm">{line}</p></div><span className={tag.cls}>{tag.label}</span></div>
 
         {state === 'trialEnding' && (
-          <div className="rx-banner" role="note"><Clock aria-hidden style={{ width: 20, height: 20, flex: 'none' }} /><div>Your trial ends in {days} {days === 1 ? 'day' : 'days'}. We’ll email you the day before your first payment.</div></div>
+          <div className="rx-banner" role="note"><Clock aria-hidden style={{ width: 20, height: 20, flex: 'none' }} /><div>Your first period ends in {days} {days === 1 ? 'day' : 'days'}. It includes 7 extra days. Pay again before then to keep full access.</div></div>
         )}
         {state === 'failed' && (
           <div className="rx-banner err" role="alert"><TriangleAlert aria-hidden style={{ width: 20, height: 20, flex: 'none' }} />
@@ -82,7 +88,7 @@ export default function PlanTab({ state, plan, planName, tag, line, daysLeft, un
             <div><Link href={checkoutHref} className="rx-btn primary">Reactivate {planName}</Link></div></div>
         )}
         {state === 'none' && (
-          <div className="rx-soft rx-stack-sm"><p className="rx-p">You’re on the free version. Choose a plan below to start your 7-day free trial.</p></div>
+          <div className="rx-soft rx-stack-sm"><p className="rx-p">You’re on the free version. Choose a plan below to get full access. Your first payment includes 7 extra days.</p></div>
         )}
 
         {paid && cardLine && (
@@ -106,7 +112,14 @@ export default function PlanTab({ state, plan, planName, tag, line, daysLeft, un
         )}
       </div>
 
-      <div className="rx-stack-sm"><p className="rx-sl">Plans</p><p className="rx-sm">Every plan starts with a 7-day free trial. Your stage is set from onboarding, and any member can choose Builder.</p></div>
+      <div className="rx-stack-sm"><p className="rx-sl">Plans</p><p className="rx-sm">Pay with Paystack and your plan starts straight away. Your first payment includes 7 extra days. Your stage is set from onboarding, and any member can choose Builder.</p></div>
+      {legacy && (
+        <div className="rx-card st" role="note">
+          <div className="rx-sb"><p className="rx-h3">{legacy.name}</p><span className="rx-tag">Current plan · legacy</span></div>
+          {legacy.line && <p className="rx-p">{legacy.line}</p>}
+          <p className="rx-sm">You keep this plan and its price. It is not offered to new members, so if you cancel you can’t return to it.</p>
+        </div>
+      )}
       <div className="rx-grid3">
         {FEATURED_PLANS.map(planCard)}
         <div className="rx-plan">

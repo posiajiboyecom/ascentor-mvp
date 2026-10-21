@@ -8,7 +8,7 @@
 //   none         never subscribed
 
 import { normalisePlan, type PlanTier } from '@/lib/planTier';
-import { PRICE_PLACEHOLDER, planDisplayName } from '@/lib/plans-display';
+import { planDisplayName } from '@/lib/plans-display';
 
 export type BillState = 'active' | 'trialEnding' | 'failed' | 'cancelled' | 'lapsed' | 'none';
 
@@ -33,7 +33,11 @@ export interface BillingView {
 const fmt = (d: Date, tz: string, withYear: boolean) =>
   d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', ...(withYear ? { year: 'numeric' as const } : {}), timeZone: tz });
 
-export function deriveBilling(p: BillingProfile | null | undefined, tz = 'Africa/Lagos', now = new Date()): BillingView {
+/**
+ * `priceLabel` is what the member actually pays, already formatted by the server (for example "₦25,000 a month").
+ * It is optional: without it the price is simply left out of the line.
+ */
+export function deriveBilling(p: BillingProfile | null | undefined, tz = 'Africa/Lagos', now = new Date(), priceLabel = ''): BillingView {
   const plan = normalisePlan(p?.subscription_plan);
   const planName = planDisplayName(p?.subscription_plan);
   const status = p?.subscription_status ?? '';
@@ -55,19 +59,19 @@ export function deriveBilling(p: BillingProfile | null | undefined, tz = 'Africa
   const dayWord = days === 1 ? 'day' : 'days';
   const tag = {
     active: { label: 'Active', cls: 'rx-tag rust' },
-    trialEnding: { label: `Trial · ${days} ${dayWord} left`, cls: 'rx-tag goldt' },
+    trialEnding: { label: `First period · ${days} ${dayWord} left`, cls: 'rx-tag goldt' },
     failed: { label: 'Payment failed', cls: 'rx-tag rust' },
     lapsed: { label: 'Light access', cls: 'rx-tag' },
     cancelled: { label: 'Cancelled', cls: 'rx-tag' },
     none: { label: 'Free', cls: 'rx-tag' },
   }[state];
   const line = {
-    active: `${PRICE_PLACEHOLDER} a month${untilLong ? ` · renews ${untilLong}` : ''}`,
-    trialEnding: `Free trial · first payment of ${PRICE_PLACEHOLDER} in ${days} ${dayWord}`,
-    failed: `${PRICE_PLACEHOLDER} a month · last payment failed`,
+    active: `${priceLabel}${untilLong ? `${priceLabel ? ' · ' : ''}paid until ${untilLong}` : ''}`,
+    trialEnding: `Includes 7 extra days · first period ends in ${days} ${dayWord}`,
+    failed: `${priceLabel ? `${priceLabel} · ` : ''}last payment failed`,
     lapsed: 'Paused · reactivate any time',
     cancelled: `Cancelled · you keep ${planName} until ${untilLong}`,
-    none: 'Every plan starts with a 7-day free trial.',
+    none: 'Choose a plan to get full access.',
   }[state];
 
   return { state, plan, planName: state === 'none' ? 'No plan yet' : planName, daysLeft, tag, line, untilShort, untilLong };

@@ -24,7 +24,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Lock, Undo2, CreditCard, Gift, Check } from 'lucide-react';
-import { PLAN_PRICING, MAX_YEARLY_SAVINGS } from '@/lib/pricing'
+import { maxYearlySavings, type PlanPricing } from '@/lib/pricing'
 import '@/styles/rx.css'
 import '@/styles/rx-entry.css'
 
@@ -43,16 +43,19 @@ interface Plan {
   highlighted?: boolean
 }
 
-const PLANS: Plan[] = [
+// Prices arrive as props from the server (lib/plans-config.ts): the browser never decides what a plan costs.
+function buildPlans(pricing: PlanPricing[]): Plan[] {
+  const P = (id: string) => pricing.find((x) => x.id === id) as PlanPricing
+  return [
   {
     id:            'explorer',
-    name:          'Explorer',
+    name:          'Seeker',
     description:   'For those just starting to find their path.',
-    stage:         'EXPLORER',
+    stage:         'SEEKER',
     stageColor:    '#14B8A6',
-    monthlyPrice:  PLAN_PRICING[0].monthlyPrice,
-    yearlyPrice:   PLAN_PRICING[0].yearlyPrice,
-    yearlyMonthly: PLAN_PRICING[0].yearlyPerMonth,
+    monthlyPrice:  P('explorer').monthlyPrice,
+    yearlyPrice:   P('explorer').yearlyPrice,
+    yearlyMonthly: P('explorer').yearlyPerMonth,
     features: [
       'Sage AI, 10 sessions/month',
       '1 mentorship circle',
@@ -68,9 +71,9 @@ const PLANS: Plan[] = [
     description:   'For professionals building their career edge.',
     stage:         'BUILDER',
     stageColor:    '#E8A020',
-    monthlyPrice:  PLAN_PRICING[1].monthlyPrice,
-    yearlyPrice:   PLAN_PRICING[1].yearlyPrice,
-    yearlyMonthly: PLAN_PRICING[1].yearlyPerMonth,
+    monthlyPrice:  P('builder').monthlyPrice,
+    yearlyPrice:   P('builder').yearlyPrice,
+    yearlyMonthly: P('builder').yearlyPerMonth,
     features: [
       'Sage AI, unlimited sessions',
       'Up to 3 mentorship circles',
@@ -89,9 +92,9 @@ const PLANS: Plan[] = [
     description:   'For leaders scaling teams and building legacy.',
     stage:         'CLIMBER',
     stageColor:    '#8B5CF6',
-    monthlyPrice:  PLAN_PRICING[2].monthlyPrice,
-    yearlyPrice:   PLAN_PRICING[2].yearlyPrice,
-    yearlyMonthly: PLAN_PRICING[2].yearlyPerMonth,
+    monthlyPrice:  P('climber').monthlyPrice,
+    yearlyPrice:   P('climber').yearlyPrice,
+    yearlyMonthly: P('climber').yearlyPerMonth,
     features: [
       'Everything in Builder',
       'Unlimited mentorship circles',
@@ -103,7 +106,8 @@ const PLANS: Plan[] = [
       'Quarterly strategy reviews',
     ],
   },
-]
+  ]
+}
 
 // Plan rank for upgrade logic
 const PLAN_RANK: Record<string, number> = { free: 0, explorer: 1, builder: 2, climber: 3 }
@@ -112,7 +116,8 @@ function yearlySavings(plan: Plan) {
   return Math.round(plan.monthlyPrice * 12 - plan.yearlyPrice)
 }
 
-export default function CheckoutClient({ embedded = false }: { embedded?: boolean }) {
+export default function CheckoutClient({ embedded = false, pricing }: { embedded?: boolean; pricing: PlanPricing[] }) {
+  const ALL_PLANS = useMemo(() => buildPlans(pricing), [pricing])
   const router       = useRouter()
   const searchParams = useSearchParams()
   const supabase     = useMemo(() => createClient(), [])
@@ -151,6 +156,8 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
   }
   const rawPlan       = profile?.subscription_plan || 'free'
   const currentPlan   = PLAN_ALIAS[rawPlan] ?? rawPlan
+  // Climber is a legacy plan: shown only to the members who hold it, never sold to anyone else.
+  const PLANS         = ALL_PLANS.filter(p => p.id !== 'climber' || currentPlan === 'climber')
   const subStatus     = profile?.subscription_status
   const subEnd        = profile?.subscription_end
   const isActivePaid  = ['active', 'trialing'].includes(subStatus) &&
@@ -396,7 +403,7 @@ export default function CheckoutClient({ embedded = false }: { embedded?: boolea
           {billing === 'monthly' && (
             <p style={{ fontSize: 12, color: '#7A7260', marginTop: 10 }}>
               Switch to annual and save up to{' '}
-              <span style={{ color: '#E8A020', fontWeight: 600 }}>&#8358;{MAX_YEARLY_SAVINGS.toLocaleString()}/year</span>
+              <span style={{ color: '#E8A020', fontWeight: 600 }}>&#8358;{maxYearlySavings(pricing.filter((x) => x.id !== 'climber')).toLocaleString()}/year</span>
             </p>
           )}
         </div>

@@ -15,7 +15,6 @@ import { longDate, nextWeekdayAt, whenLabel } from '@/lib/rx/dates';
 import { createClient } from '@/lib/supabase/server';
 import { Check, Lock } from 'lucide-react';
 import { deriveBilling } from '@/lib/billing-state';
-import { PRICE_PLACEHOLDER } from '@/lib/plans-display';
 import { Banner } from '@/components/rx/ui';
 import DayOneCard from '@/components/rx/today/DayOneCard';
 import { Aside, Page, SageLine, Tag } from '@/components/rx/ui';
@@ -89,7 +88,7 @@ export default async function TodayPage() {
             </div>
           )}
           {bill.state === 'trialEnding' && (bill.daysLeft ?? 99) <= 3 && (
-            <Banner><b>Your free trial ends in {bill.daysLeft} {bill.daysLeft === 1 ? 'day' : 'days'}.</b> Then {PRICE_PLACEHOLDER} a month goes on your card. Cancel before then and you won’t be charged.<div><Link href="/settings?tab=plan" className="rx-link" style={{ color: 'inherit', minHeight: 36, fontSize: 14 }}>Manage plan<ArrowRight aria-hidden /></Link></div></Banner>
+            <Banner><b>Your first period ends in {bill.daysLeft} {bill.daysLeft === 1 ? 'day' : 'days'}.</b> Renew before then to keep full access.<div><Link href="/settings?tab=plan" className="rx-link" style={{ color: 'inherit', minHeight: 36, fontSize: 14 }}>Manage plan<ArrowRight aria-hidden /></Link></div></Banner>
           )}
           {bill.state === 'failed' && (
             <Banner error><b>We couldn’t take your payment.</b> Update your card within 7 days to keep full access.<div><Link href="/settings?tab=plan" className="rx-link" style={{ color: 'inherit', minHeight: 36, fontSize: 14 }}>Update card<ArrowRight aria-hidden /></Link></div></Banner>

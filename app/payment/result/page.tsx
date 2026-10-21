@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Check } from 'lucide-react';
-import { PLAN_PRICING_MAP } from '@/lib/pricing';
+import { getPlanPricingMap } from '@/lib/plans-config';
 import '@/styles/rx.css';
 import '@/styles/rx-entry.css';
 
@@ -17,7 +17,7 @@ export default async function PaymentResultPage({ searchParams }: { searchParams
   const isOrder = sp.kind === 'order';
   const ok = status === 'success';
   const processing = status === 'processing';
-  const plan = sp.plan ? PLAN_PRICING_MAP[sp.plan] : undefined;
+  const plan = sp.plan ? getPlanPricingMap()[sp.plan] : undefined;
   const yearly = sp.billing === 'annual';
   const price = plan ? (yearly ? `${naira(plan.yearlyPrice)} a year` : `${naira(plan.monthlyPrice)} a month`) : null;
   const orderNo = sp.order ? sp.order.slice(0, 8).toUpperCase() : null;

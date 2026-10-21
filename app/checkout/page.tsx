@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getShellData } from '@/lib/shell-data';
 import UserShell from '@/components/shell/UserShell';
 import CheckoutClient from './CheckoutClient';
+import { getPlanPricing } from '@/lib/plans-config';
 
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
   // Hard env override
@@ -42,9 +43,9 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   if (shell) {
     return (
       <UserShell userId={shell.userId} userName={shell.userName} email={shell.email} avatarUrl={shell.avatarUrl} role={shell.role} summitRegistered={shell.summitRegistered}>
-        <CheckoutClient embedded />
+        <CheckoutClient embedded pricing={getPlanPricing()} />
       </UserShell>
     );
   }
-  return <CheckoutClient />;
+  return <CheckoutClient pricing={getPlanPricing()} />;
 }
