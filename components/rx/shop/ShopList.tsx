@@ -1,5 +1,6 @@
 'use client';
 
+import { DELIVERY_NOTE_SHORT } from '@/lib/shop-policy';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ArrowRight, Lock } from 'lucide-react';
@@ -22,7 +23,7 @@ export function CartSummaryAside({ products }: { products: ShopCard[] }) {
       <p className="rx-label">Pick up at the Summit</p>
       <p className="rx-p">Order ahead and collect free at Aderemi Makanjuola Hall on 19 November.</p>
       <p className="rx-label">Delivery</p>
-      <p className="rx-p">Lagos in 2 to 4 working days. Rest of Nigeria in 5 to 7. Digital items arrive by email.</p>
+      <p className="rx-p">{DELIVERY_NOTE_SHORT}</p>
       <p className="rx-sm rx-row rx-nw" style={{ gap: 8 }}><Lock aria-hidden style={{ width: 16, height: 16, flex: 'none' }} />Card, bank transfer or USSD, through Paystack.</p>
     </Aside>
   );

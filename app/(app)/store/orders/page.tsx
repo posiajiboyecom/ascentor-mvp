@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { DELIVERY_NOTE, RETURNS_HEADING, RETURNS_POLICY } from '@/lib/shop-policy';
 import { redirect } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
@@ -100,9 +101,9 @@ export default async function StoreOrdersPage({ searchParams }: { searchParams: 
         </div>
         <Aside>
           <p className="rx-label">Delivery</p>
-          <p className="rx-p">Lagos in 2 to 4 working days. Rest of Nigeria in 5 to 7. Summit pickups are at the merch desk.</p>
-          <p className="rx-label">Returns and size swaps</p>
-          <p className="rx-p">[RETURNS POLICY]</p>
+          <p className="rx-p">{DELIVERY_NOTE}</p>
+          <p className="rx-label">{RETURNS_HEADING}</p>
+          <p className="rx-p">{RETURNS_POLICY}</p>
           <GoLink href="/contact">Help with an order</GoLink>
         </Aside>
       </div>
