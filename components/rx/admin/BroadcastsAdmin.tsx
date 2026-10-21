@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Smartphone } from 'lucide-react';
-import { audienceCount, cancelBroadcast, previewEmailHtml, removeCardNow, resumeBroadcast, sendBroadcast, sendTestBroadcast } from '@/app/admin/broadcasts/actions';
-import { AUDIENCE_KINDS, BODY_MAX, STAGES, TITLE_MAX, cleanLink, type Audience } from '@/lib/rx/audience';
+import { audienceCount, cancelBroadcast, previewEmailHtml, removeCardNow, resumeBroadcast, searchMembers, sendBroadcast, sendTestBroadcast, type MemberHit } from '@/app/admin/broadcasts/actions';
+import { AUDIENCE_KINDS, BODY_MAX, PEOPLE_MAX, STAGES, TITLE_MAX, cleanLink, type Audience } from '@/lib/rx/audience';
 import NoticeCard from '@/components/rx/NoticeCard';
 import { useToast } from '@/components/rx/Toast';
 
@@ -32,6 +32,10 @@ export default function BroadcastsAdmin({ circles, languages, history }: { circl
   const [channel, setChannel] = useState<'in_app' | 'email' | 'both'>('in_app');
   const [kind, setKind] = useState<Audience['kind']>('all');
   const [value, setValue] = useState('');
+  const [picked, setPicked] = useState<MemberHit[]>([]);
+  const [q, setQ] = useState('');
+  const [hits, setHits] = useState<MemberHit[]>([]);
+  const [searching, setSearching] = useState(false);
   const [pin, setPin] = useState(false);
   const [until, setUntil] = useState('');
   const [error, setError] = useState('');
@@ -40,10 +44,19 @@ export default function BroadcastsAdmin({ circles, languages, history }: { circl
   const [emailHtml, setEmailHtml] = useState('');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const audience = useMemo(() => ({ kind, value: kind === 'all' ? undefined : value }), [kind, value]);
-  const ready = kind === 'all' || value.trim().length > 0;
+  const audience = useMemo(() => (kind === 'people' ? { kind, ids: picked.map((p) => p.id) } : { kind, value: kind === 'all' ? undefined : value }), [kind, value, picked]);
+  const ready = kind === 'all' || (kind === 'people' ? picked.length > 0 : value.trim().length > 0);
   const input = { title, body, linkUrl: link, linkLabel: label, channel, audience, pinCard: pin && channel !== 'email', pinUntil: pin && until ? new Date(`${until}T23:59:00`).toISOString() : null };
   const linkBad = link.trim() !== '' && !cleanLink(link);
+
+  // member search for "Specific people"
+  useEffect(() => {
+    if (kind !== 'people' || q.trim().length < 2) { setHits([]); setSearching(false); return; }
+    setSearching(true);
+    const t = setTimeout(() => { void searchMembers(q).then((r) => { setHits(r.ok ? r.hits : []); setSearching(false); }); }, 300);
+    return () => clearTimeout(t);
+  }, [kind, q]);
+  const addPerson = (m: MemberHit) => setPicked((p) => (p.some((x) => x.id === m.id) || p.length >= PEOPLE_MAX ? p : [...p, m]));
 
   // who this would reach, refreshed shortly after any change
   useEffect(() => {
@@ -68,7 +81,7 @@ export default function BroadcastsAdmin({ circles, languages, history }: { circl
     if (title.trim().length < 3) return 'Give the message a title.';
     if (body.trim().length < 3) return 'Write the message.';
     if (linkBad) return 'The link must be a path inside the app, like /community, or a secure https address.';
-    if (!ready) return 'Say who it goes to.';
+    if (!ready) return kind === 'people' ? 'Choose at least one member.' : 'Say who it goes to.';
     if (pin && channel === 'email') return 'A sidebar card shows in the app. Choose “In the app” or “Both”.';
     if (pin && !until) return 'Choose the date the card should stay until.';
     return '';
@@ -78,7 +91,7 @@ export default function BroadcastsAdmin({ circles, languages, history }: { circl
     const r = await sendBroadcast(input);
     if (!r.ok) { setError(r.error); setConfirming(false); return; }
     toast(r.done ? 'Sent.' : 'Sending. The rest will finish in the background.');
-    setTitle(''); setBody(''); setLink(''); setLabel(''); setPin(false); setUntil(''); setConfirming(false);
+    setTitle(''); setBody(''); setLink(''); setLabel(''); setPin(false); setUntil(''); setConfirming(false); setPicked([]); setQ('');
     router.refresh();
   });
 
@@ -120,7 +133,39 @@ export default function BroadcastsAdmin({ circles, languages, history }: { circl
           {kind === 'language' && <select className="rx-in" aria-label="Language" value={value} onChange={(e) => setValue(e.target.value)}><option value="">Choose a language</option>{languages.map((l) => <option key={l} value={l}>{l}</option>)}</select>}
           {kind === 'city' && <input className="rx-in" aria-label="City" value={value} onChange={(e) => setValue(e.target.value)} placeholder="Lagos" />}
           {kind === 'circle' && <select className="rx-in" aria-label="Circle" value={value} onChange={(e) => setValue(e.target.value)}><option value="">Choose a Circle</option>{circles.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select>}
-          <p className="rx-sm" aria-live="polite">{!ready ? 'Choose who it goes to.' : count ? `Reaches ${count.total} ${count.total === 1 ? 'person' : 'people'}${channel !== 'in_app' ? `, ${count.email} by email` : ''}.` : 'Counting…'}</p>
+          {kind === 'people' && (
+            <div className="rx-stack-sm">
+              <label className="rx-sm" htmlFor="bc-find">Find a member by name or email</label>
+              <input id="bc-find" className="rx-in" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Start typing a name" autoComplete="off" />
+              {q.trim().length >= 2 && (
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, border: '1px solid var(--rx-border)', borderRadius: 12, overflow: 'hidden' }} aria-label="Matching members">
+                  {searching && <li className="rx-sm" style={{ padding: '10px 12px' }}>Searching…</li>}
+                  {!searching && hits.length === 0 && <li className="rx-sm" style={{ padding: '10px 12px' }}>No members found.</li>}
+                  {hits.map((m) => {
+                    const added = picked.some((x) => x.id === m.id);
+                    return (
+                      <li key={m.id} className="rx-between" style={{ padding: '8px 12px', borderTop: '1px solid var(--rx-border)' }}>
+                        <span style={{ minWidth: 0 }}><span className="rx-p rx-strong" style={{ display: 'block', margin: 0 }}>{m.name}</span><span className="rx-sm">{m.email}</span></span>
+                        <button type="button" className="rx-btn secondary" style={{ minHeight: 36, flex: 'none' }} disabled={added || picked.length >= PEOPLE_MAX} onClick={() => addPerson(m)}>{added ? 'Added' : 'Add'}</button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              {picked.length > 0 && (
+                <div className="rx-row" style={{ gap: 6, flexWrap: 'wrap' }} aria-label="Chosen members">
+                  {picked.map((m) => (
+                    <span key={m.id} className="rx-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      {m.name}
+                      <button type="button" className="rx-link muted" aria-label={`Remove ${m.name}`} onClick={() => setPicked((p) => p.filter((x) => x.id !== m.id))}>Remove</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <span className="rx-sm">Up to {PEOPLE_MAX} people. Members who muted announcements are skipped, as with any broadcast.</span>
+            </div>
+          )}
+          <p className="rx-sm" aria-live="polite">{!ready ? (kind === 'people' ? 'Choose at least one member.' : 'Choose who it goes to.') : count ? `Reaches ${count.total} ${count.total === 1 ? 'person' : 'people'}${channel !== 'in_app' ? `, ${count.email} by email` : ''}.` : 'Counting…'}</p>
         </div>
 
         <div className="rx-stack-sm">
@@ -133,7 +178,7 @@ export default function BroadcastsAdmin({ circles, languages, history }: { circl
 
         {!confirming ? (
           <div className="rx-row">
-            <button type="button" className="rx-btn secondary" disabled={pending} onClick={() => { const m = problem(); if (m && m !== 'Say who it goes to.') { setError(m); return; } start(async () => { const r = await sendTestBroadcast(input); toast(r.ok ? 'Test sent to you. Check your bell and your email.' : r.error); }); }}>Send me a test</button>
+            <button type="button" className="rx-btn secondary" disabled={pending} onClick={() => { const m = problem(); if (m && m !== 'Say who it goes to.' && m !== 'Choose at least one member.') { setError(m); return; } start(async () => { const r = await sendTestBroadcast(input); toast(r.ok ? 'Test sent to you. Check your bell and your email.' : r.error); }); }}>Send me a test</button>
             <button type="button" className="rx-btn primary" disabled={pending} onClick={() => { const m = problem(); if (m) { setError(m); return; } setError(''); setConfirming(true); }}>Review and send</button>
           </div>
         ) : (

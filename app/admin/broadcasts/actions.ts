@@ -11,6 +11,23 @@ import { parseAudience, validateBroadcast, type BroadcastInput } from '@/lib/rx/
 import { countAudience, createBroadcast, processBroadcast, sendTestTo, startSending } from '@/lib/rx/broadcasts';
 import { buildNoticeEmail } from '@/lib/rx/notifications';
 
+export interface MemberHit { id: string; name: string; email: string }
+
+/** Finds members by name or email so a message can go to named people. Admin only; demo accounts are left out. */
+export async function searchMembers(q: string): Promise<ActionResult<{ hits: MemberHit[] }>> {
+  try {
+    await requireAdmin();
+    const term = (q ?? '').trim().replace(/[%,()]/g, ' ').slice(0, 60);
+    if (term.length < 2) return { ok: true, hits: [] };
+    const { data, error } = await supabaseAdmin.from('profiles').select('id, full_name, email').or(`full_name.ilike.%${term}%,email.ilike.%${term}%`).order('full_name').limit(12);
+    if (error) throw error;
+    const rows = (data ?? []) as { id: string; full_name: string | null; email: string | null }[];
+    const { data: demo } = rows.length ? await supabaseAdmin.from('member_profile').select('user_id').in('user_id', rows.map((r) => r.id)).eq('is_demo', true) : { data: [] };
+    const skip = new Set(((demo ?? []) as { user_id: string }[]).map((d) => d.user_id));
+    return { ok: true, hits: rows.filter((r) => !skip.has(r.id)).map((r) => ({ id: r.id, name: r.full_name?.trim() || r.email || 'Member', email: r.email ?? '' })) };
+  } catch (e) { return fail(e, 'We couldn’t search members.'); }
+}
+
 export async function audienceCount(audienceRaw: unknown, channel: 'in_app' | 'email' | 'both'): Promise<ActionResult<{ total: number; inApp: number; email: number }>> {
   try {
     await requireAdmin();

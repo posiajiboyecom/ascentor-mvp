@@ -49,6 +49,10 @@ export async function recipientsFor(audience: Audience): Promise<string[]> {
       ids.push(...rows.map((r) => r.id));
       if (rows.length < 1000) break;
     }
+  } else if (audience.kind === 'people') {
+    // only ids that are real accounts
+    const { data } = await supabaseAdmin.from('profiles').select('id').in('id', audience.ids);
+    ids = ((data ?? []) as { id: string }[]).map((r) => r.id);
   } else if (audience.kind === 'circle') {
     const { data } = await supabaseAdmin.from('circle_seats').select('user_id').eq('circle_id', audience.value);
     ids = ((data ?? []) as { user_id: string }[]).map((r) => r.user_id);

@@ -11,6 +11,17 @@ test('audiences are validated', () => {
   assert.equal(parseAudience({ kind: 'stage', value: 'Wizard' }), null);
   assert.equal(parseAudience({ kind: 'city' }), null);
   assert.equal(parseAudience({ kind: 'circle', value: 'not-an-id' }), null);
+  const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222';
+  assert.deepEqual(parseAudience({ kind: 'people', ids: [A, B, A, 'nope'] }), { kind: 'people', ids: [A, B] });
+  assert.equal(parseAudience({ kind: 'people', ids: [] }), null);
+  assert.equal(parseAudience({ kind: 'people', ids: ['nope'] }), null);
+  assert.equal(parseAudience({ kind: 'people' }), null);
+  assert.equal(parseAudience({ kind: 'people', ids: Array.from({ length: 101 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`) }), null);
+  assert.equal(audienceLabel({ kind: 'people', ids: [A] }), '1 chosen member');
+  assert.equal(audienceLabel({ kind: 'people', ids: [A, B] }), '2 chosen members');
+  assert.equal(matches({ kind: 'people', ids: [A] }, { id: A.toUpperCase() }), true);
+  assert.equal(matches({ kind: 'people', ids: [A] }, { id: B }), false);
+  assert.equal(matches({ kind: 'people', ids: [A] }, {}), false);
   assert.deepEqual(parseAudience({ kind: 'circle', value: CIRCLE }), { kind: 'circle', value: CIRCLE });
   assert.equal(parseAudience(null), null);
   assert.equal(parseAudience({ kind: 'everyone-and-more' }), null);

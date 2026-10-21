@@ -1,6 +1,6 @@
 // lib/rx/audience.ts
 // Who a broadcast goes to. Pure, so the rules are tested without a database.
-// An audience is "everyone", or one group: a stage, a city, a language, or one Circle.
+// An audience is "everyone", one group (a stage, a city, a language, or one Circle), or specific people the admin picked.
 
 export const STAGES = ['Seeking', 'Building', 'Leading'] as const;
 
@@ -9,7 +9,8 @@ export type Audience =
   | { kind: 'stage'; value: string }
   | { kind: 'city'; value: string }
   | { kind: 'language'; value: string }
-  | { kind: 'circle'; value: string };
+  | { kind: 'circle'; value: string }
+  | { kind: 'people'; ids: string[] };
 
 export const AUDIENCE_KINDS: { kind: Audience['kind']; label: string; needsValue: boolean }[] = [
   { kind: 'all', label: 'Everyone', needsValue: false },
@@ -17,15 +18,25 @@ export const AUDIENCE_KINDS: { kind: Audience['kind']; label: string; needsValue
   { kind: 'city', label: 'A city', needsValue: true },
   { kind: 'language', label: 'A language', needsValue: true },
   { kind: 'circle', label: 'One Circle', needsValue: true },
+  { kind: 'people', label: 'Specific people', needsValue: true },
 ];
+
+/** The most people one message can be addressed to by name. */
+export const PEOPLE_MAX = 100;
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
 /** Turns whatever was stored or submitted into a valid audience, or null when it is not one. */
-export function parseAudience(raw: unknown): Audience | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const { kind, value } = raw as { kind?: unknown; value?: unknown };
+export function parseAudience(raw_: unknown): Audience | null {
+  if (!raw_ || typeof raw_ !== 'object') return null;
+  const { kind, value } = raw_ as { kind?: unknown; value?: unknown };
   if (kind === 'all') return { kind: 'all' };
+  if (kind === 'people') {
+    const raw = (raw_ as { ids?: unknown }).ids;
+    if (!Array.isArray(raw)) return null;
+    const ids = [...new Set(raw.filter((x): x is string => typeof x === 'string' && UUID.test(x)).map((x) => x.toLowerCase()))];
+    return ids.length > 0 && ids.length <= PEOPLE_MAX ? { kind: 'people', ids } : null;
+  }
   const v = typeof value === 'string' ? value.trim().slice(0, 80) : '';
   if (!v) return null;
   if (kind === 'stage') return (STAGES as readonly string[]).includes(v) ? { kind, value: v } : null;
@@ -41,10 +52,11 @@ export function audienceLabel(a: Audience, circleName?: string): string {
     case 'city': return `Members in ${a.value}`;
     case 'language': return `Members who use ${a.value}`;
     case 'circle': return circleName ? `Members of ${circleName}` : 'Members of one Circle';
+    case 'people': return a.ids.length === 1 ? '1 chosen member' : `${a.ids.length} chosen members`;
   }
 }
 
-export interface MemberFacts { stage?: string | null; city?: string | null; language?: string | null; circleIds?: string[] }
+export interface MemberFacts { id?: string | null; stage?: string | null; city?: string | null; language?: string | null; circleIds?: string[] }
 
 const norm = (s: string | null | undefined) => (s ?? '').trim().toLowerCase();
 
@@ -56,6 +68,7 @@ export function matches(a: Audience, m: MemberFacts): boolean {
     case 'city': return norm(m.city) === norm(a.value);
     case 'language': return norm(m.language) === norm(a.value);
     case 'circle': return (m.circleIds ?? []).includes(a.value);
+    case 'people': return !!m.id && a.ids.includes(m.id.toLowerCase());
   }
 }
 
