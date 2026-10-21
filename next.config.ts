@@ -65,7 +65,7 @@ const nextConfig: NextConfig = {
       { source: '/pricing',      destination: '/community',        permanent: false },
       { source: '/who-its-for',  destination: '/movement',         permanent: false },
       { source: '/how-it-works', destination: '/movement',         permanent: false },
-      { source: '/products',     destination: '/community',        permanent: false },
+      { source: '/products',     destination: '/shop',             permanent: false },
       { source: '/mentor-apply', destination: '/elevation-summit', permanent: false },
       { source: '/summit',       destination: '/elevation-summit', permanent: false },
     ];

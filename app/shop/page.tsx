@@ -7,7 +7,7 @@ import { listShopProducts, type ShopCard } from '@/lib/shop-data';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Shop | Ascentor',
+  title: 'Shop',
   description: 'Apparel, journals, digital guides and courses from Ascentor and The Elevation Summit. Pay in naira.',
   alternates: { canonical: '/shop' },
 };

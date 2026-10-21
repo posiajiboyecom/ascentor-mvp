@@ -16,10 +16,10 @@ async function load(slug: string): Promise<ShopCard | null> {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const p = await load((await params).slug);
-  if (!p) return { title: 'Shop | Ascentor' };
+  if (!p) return { title: 'Shop' };
   const description = p.tagline || p.description?.slice(0, 160) || 'From the Ascentor shop.';
   return {
-    title: `${p.name} | Ascentor Shop`,
+    title: `${p.name} | Shop`,
     description,
     alternates: { canonical: `/shop/${p.slug || p.id}` },
     openGraph: { title: p.name, description, ...(p.image_url ? { images: [{ url: p.image_url }] } : {}) },
