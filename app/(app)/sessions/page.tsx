@@ -56,7 +56,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
     (state.kind === 'active' || state.kind === 'paused') && !!state.next && agendaReady,
     false,
   ];
-  const stepLabels = ['Your Circle votes for a mentor', `${circle.facilitatorName ?? 'Your facilitator'} confirms the choice`, 'Book a time from the mentor’s schedule', 'Prepare the agenda together', 'Meet as a Circle'];
+  const stepLabels = ['Your Circle votes for a mentor', `${circle?.facilitatorName ?? 'Your facilitator'} confirms the choice`, 'Book a time from the mentor’s schedule', 'Prepare the agenda together', 'Meet as a Circle'];
   const side = (
     <Aside>
       <p className="rx-label">How Circle mentorship works</p>
@@ -120,7 +120,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
             )}
             {tie && <div className="rx-soft"><p className="rx-p rx-strong">It’s a tie.</p><p className="rx-sm">Your facilitator chooses between the top mentors.</p></div>}
             <VoteCards roundId={state.roundId} candidates={state.candidates} tie={tie} canBreak={tie ? state.canBreak : false} tied={tie ? state.tied : []} isMember={!isFacilitator} nameOfCircle={circleTitle(circle.circle)} />
-            {state.kind === 'voting' && <p className="rx-sm">{state.voted} of {state.total} voted · closes {new Date(state.closesAt).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: me.tz })} · {circle.facilitatorName ?? 'Your facilitator'} confirms the result.</p>}
+            {state.kind === 'voting' && <p className="rx-sm">{state.voted} of {state.total} voted · closes {new Date(state.closesAt).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: me.tz })} · {circle?.facilitatorName ?? 'Your facilitator'} confirms the result.</p>}
           </div>
           {side}
         </div>
@@ -155,7 +155,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
           </div>
           <Aside>
             <p className="rx-label">Who books</p>
-            <p className="rx-p">{circle.facilitatorName ? `${circle.facilitatorName}, your facilitator, books.` : 'Your facilitator books.'} Everyone sees the time on Today and gets a reminder an hour before.</p>
+            <p className="rx-p">{circle?.facilitatorName ? `${circle?.facilitatorName}, your facilitator, books.` : 'Your facilitator books.'} Everyone sees the time on Today and gets a reminder an hour before.</p>
             <p className="rx-label">After booking</p>
             <p className="rx-p">Prepare the agenda together. The call can’t start without it.</p>
           </Aside>

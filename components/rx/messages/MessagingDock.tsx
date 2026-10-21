@@ -5,6 +5,7 @@
 // hidden on /messages itself, and its open/minimised state is remembered for the browser tab.
 
 import Link from 'next/link';
+import '@/styles/rx-messaging.css'; // the dock is also mounted outside the (app) layout (for example /checkout)
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, ChevronUp, Maximize2, Minus, X } from 'lucide-react';

@@ -141,7 +141,7 @@ export function InboxPane({ threads, selected, tab, requestCount, requests }: { 
       </div>
       <span className="rx-rule" />
       <label className="rxm-search"><Search aria-hidden /><input placeholder="Search messages" aria-label="Search messages" value={q} onChange={(e) => setQ(e.target.value)} /></label>
-      <div className="rx-opts" style={{ marginBottom: 8 }}>
+      <div className="rx-opts rxm-list-opts" style={{ marginBottom: 8 }}>
         {tab === 'inbox' ? (
           <>
             <button type="button" onClick={() => setFilter('all')} className={`rx-opt${filter === 'all' ? ' on' : ''}`}>All</button>

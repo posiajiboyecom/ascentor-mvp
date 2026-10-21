@@ -52,9 +52,11 @@ export default function ShopStyles() {
       .sp-err { color:#B91C1C; font-size:.85rem; margin:.5rem 0; }
       .sp-ok { color:#166534; font-size:.9rem; margin:.5rem 0; }
       .sp-related h2 { font-size:1.25rem; margin:0 0 1rem; }
-      .sp-cart { display:grid; gap:1.5rem; grid-template-columns:1fr; padding-bottom:4rem; }
-      @media(min-width:900px){ .sp-cart { grid-template-columns:1.4fr 1fr; align-items:start; } }
-      .sp-line { display:flex; gap:1rem; padding:1rem 0; border-bottom:1px solid #E8E6E1; align-items:center; }
+      .sp-cart { display:grid; gap:1.5rem; grid-template-columns:minmax(0,1fr); padding-bottom:4rem; }
+      .sp-cart > * { min-width:0; }
+      @media(min-width:900px){ .sp-cart { grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); align-items:start; } }
+      .sp-line { display:flex; flex-wrap:wrap; gap:.75rem 1rem; padding:1rem 0; border-bottom:1px solid #E8E6E1; align-items:center; }
+      .sp-line > * { min-width:0; }
       .sp-line:last-child { border-bottom:none; }
       .sp-thumb { width:64px; height:64px; border-radius:8px; background:#F1EFEA; overflow:hidden; flex-shrink:0; }
       .sp-thumb img { width:100%; height:100%; object-fit:cover; display:block; }

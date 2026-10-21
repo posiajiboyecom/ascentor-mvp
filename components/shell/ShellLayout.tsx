@@ -158,6 +158,12 @@ function ShellInner({
     if (ok) onSignOut();
   }, [onSignOut]);
 
+  // Only the most specific match is highlighted: /community/cities lights City groups, not Community as well.
+  const bestActiveHref = useMemo(
+    () => groups.flatMap((g) => g.items.map((i) => i.href)).filter((h) => isActivePath(pathname, h)).sort((x, y) => y.length - x.length)[0],
+    [groups, pathname],
+  );
+
   // ── title = active nav label ──────────────────────────────────────────────
   const title = useMemo(() => {
     let best: { label: string; len: number } | null = null;
@@ -239,7 +245,7 @@ function ShellInner({
               {group.label ? <p className="sh-group-label">{group.label}</p> : null}
               {gi > 0 && <div className="sh-divider" />}
               {group.items.map(item => {
-                const active = isActivePath(pathname, item.href);
+                const active = item.href === bestActiveHref;
                 return (
                   <Link
                     key={item.href}

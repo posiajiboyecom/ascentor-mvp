@@ -61,7 +61,7 @@ export default function CartView({ products }: { products: ShopCard[] }) {
           {lines.map((l) => (
             <div className="sp-line" key={`${l.productId}-${l.size}`}>
               <div className="sp-thumb">{l.p.image_url && <img src={l.p.image_url} alt="" />}</div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: '1 1 140px', minWidth: 0 }}>
                 <Link href={`/shop/${l.p.slug || l.p.id}`} style={{ fontWeight: 700, color: 'inherit', textDecoration: 'none' }}>{l.p.name}</Link>
                 <div style={{ fontSize: '.8rem', color: '#6B7280' }}>{l.size ? `Size ${l.size} · ` : ''}{naira(l.p.price_ngn)}</div>
                 <button type="button" className="sp-link" onClick={() => remove(l.productId, l.size)}>Remove</button>

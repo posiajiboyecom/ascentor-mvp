@@ -41,11 +41,11 @@ export function ProductCard({ p, member, compact }: { p: ShopCard; member: Membe
 
   let action: React.ReactNode = null;
   if (!compact) {
-    if (out) action = <button type="button" className="rx-btn secondary" disabled style={{ minHeight: 40 }}>Out of stock</button>;
-    else if (free) action = <button type="button" className="rx-btn primary" style={{ minHeight: 40 }} disabled={busy === p.id} onClick={() => get(p)}>{busy === p.id ? 'Getting…' : 'Get'}</button>;
-    else if (sized) action = <Link href={href} className="rx-btn primary" style={{ minHeight: 40 }}>Choose size</Link>;
+    if (out) action = <button type="button" className="rx-btn secondary" disabled style={{ minHeight: 40, padding: '0 14px' }}>Out of stock</button>;
+    else if (free) action = <button type="button" className="rx-btn primary" style={{ minHeight: 40, padding: '0 14px' }} disabled={busy === p.id} onClick={() => get(p)}>{busy === p.id ? 'Getting…' : 'Get'}</button>;
+    else if (sized) action = <Link href={href} className="rx-btn primary" style={{ minHeight: 40, padding: '0 14px' }}>Choose size</Link>;
     else action = (
-      <button type="button" className={`rx-btn ${inCart ? 'secondary' : 'primary'}`} style={{ minHeight: 40 }} onClick={() => { add(p.id, null, 1); toast(`${p.name} added to your cart.`); }}>
+      <button type="button" className={`rx-btn ${inCart ? 'secondary' : 'primary'}`} style={{ minHeight: 40, padding: '0 14px' }} onClick={() => { add(p.id, null, 1); toast(`${p.name} added to your cart.`); }}>
         {inCart ? 'Add another' : 'Add to cart'}
       </button>
     );
@@ -58,7 +58,7 @@ export function ProductCard({ p, member, compact }: { p: ShopCard; member: Membe
         <Link href={href} className="rx-h3" style={{ textDecoration: 'none', color: 'inherit' }}>{p.name}</Link>
         {!compact && <p className="rx-sm">{p.shop_category}</p>}
       </div>
-      <div className="rx-between" style={{ padding: '0 4px 4px', marginTop: 'auto' }}>
+      <div className="rx-between" style={{ padding: '0 4px 4px', marginTop: 'auto', flexWrap: 'wrap' }}>
         <span className="rx-strong">{priceLabel(p)}</span>
         {action}
       </div>

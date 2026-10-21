@@ -112,6 +112,7 @@
     "docx": "^9.13.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "playwright": "^1.64.1",
     "prisma": "^7.10.0",
     "server-only": "^0.0.1",
     "shadcn": "^3.8.4",
