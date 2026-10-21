@@ -24,8 +24,8 @@ export const OUTBOX_KINDS: readonly OutboxKind[] = ['checkin', 'circle_message',
  */
 export const OUTBOX_ENABLED: Record<OutboxKind, boolean> = {
   checkin: true,
-  circle_message: false,
-  dm_message: false,     // same migration as circle_message
+  circle_message: true,
+  dm_message: true,      // same migration as circle_message
 };
 
 export type OutboxStatus = 'waiting' | 'sending';
@@ -144,6 +144,9 @@ export async function enqueue<P>(input: { id?: string; userId: string; kind: Out
   const item: OutboxItem<P> = { id: input.id ?? newClientId(), userId: input.userId, kind: input.kind, payload: input.payload, createdAt: Date.now(), tries: 0, nextAt: 0 };
   await putItem(item);
   emit({ type: 'queued', item });
+  // A lost or failed send must retry on its own: when the connection never dropped, no 'online' event will ever fire.
+  // flushOutbox is safe to call at any time (one flush at a time, only due items, never while offline).
+  if (typeof window !== 'undefined') window.setTimeout(() => { void flushOutbox(); }, 2000);
   return item;
 }
 
