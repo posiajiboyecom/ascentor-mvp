@@ -16,6 +16,7 @@ export const PLAN_RANK: Record<string, number> = {
   explorer: 1, basic:    1,   // legacy alias
   builder:  2, standard: 2,   // legacy alias
   climber:  3, premium:  3,   // legacy alias
+  leader:   3,                // Leader is a paid plan with full access (same rank as the top tier)
 }
 
 // Normalise legacy DB values to canonical names
@@ -23,6 +24,7 @@ const PLAN_ALIAS: Record<string, PlanTier> = {
   basic:    'explorer',
   standard: 'builder',
   premium:  'climber',
+  leader:   'climber',        // gating treats Leader as top tier; display keeps the name "Leader" (see lib/plans-display.ts)
 }
 
 export function normalisePlan(raw: string | null | undefined): PlanTier {

@@ -84,7 +84,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     // What the member really pays (their last payment) wins over today's list price, so a price change never rewrites it.
     const bill = deriveBilling(prof, tz, new Date(), planPriceLabel(prof?.subscription_plan as string | null, lastPaid?.billing, lastPaid?.amount));
     const planNow = bill.plan as string;
-    const listed = planNow === 'explorer' ? featured.explorer : planNow === 'builder' ? featured.builder : null;
+    const listed = planNow === 'explorer' ? featured.explorer : planNow === 'builder' ? featured.builder : planNow === 'leader' ? featured.leader : null;
     const paidOnList = !!lastPaid?.amount && !!listed && (lastPaid.amount === listed.monthlyPrice || lastPaid.amount === listed.yearlyPrice);
     // Legacy: Climber, or a plan held at an older price. They keep their plan and price; shown as a labelled card.
     const legacy = bill.state !== 'none' && (planNow === 'climber' || (!!listed && !!lastPaid?.amount && !paidOnList))
@@ -106,7 +106,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     body = (
       <PlanTab state={bill.state} plan={bill.plan} planName={bill.planName} tag={bill.tag} line={bill.line} daysLeft={bill.daysLeft}
         untilShort={bill.untilShort} cardLine={cardLine} referralDays={(prof?.referral_bonus_days as number | null) ?? 0} history={history}
-        prices={{ explorer: { monthly: featured.explorer.monthlyPrice, yearly: featured.explorer.yearlyPrice }, builder: { monthly: featured.builder.monthlyPrice, yearly: featured.builder.yearlyPrice } }}
+        prices={{ explorer: { monthly: featured.explorer.monthlyPrice, yearly: featured.explorer.yearlyPrice }, builder: { monthly: featured.builder.monthlyPrice, yearly: featured.builder.yearlyPrice }, leader: { monthly: featured.leader.monthlyPrice, yearly: featured.leader.yearlyPrice } }}
         legacy={legacy} />
     );
   } else {

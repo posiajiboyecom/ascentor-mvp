@@ -21,6 +21,7 @@ config({ path: '.env.local' });
 const P = getPlanPricingMap();
 const seeker = P.explorer;
 const builder = P.builder;
+const leader = P.leader;
 
 const INK = '161616';
 const MUTED = '5F6672';
@@ -55,10 +56,10 @@ const summary = new Table({
   width: { size: 9026, type: WidthType.DXA }, columnWidths: W,
   rows: [
     header,
-    row('Price, monthly', `${formatNaira(seeker.monthlyPrice)} per month`, `${formatNaira(builder.monthlyPrice)} per month`, 'Free'),
-    row('Price, annual (see note 2)', `${formatNaira(seeker.yearlyPrice)} per year (${formatNaira(seeker.yearlyPerMonth)} a month, saves ${formatNaira(seeker.yearlySavings)})`, `${formatNaira(builder.yearlyPrice)} per year (${formatNaira(builder.yearlyPerMonth)} a month, saves ${formatNaira(builder.yearlySavings)})`, 'Not applicable'),
+    row('Price, monthly', `${formatNaira(seeker.monthlyPrice)} per month`, `${formatNaira(builder.monthlyPrice)} per month`, `${formatNaira(leader.monthlyPrice)} per month`),
+    row('Price, annual (see note 2)', `${formatNaira(seeker.yearlyPrice)} per year (${formatNaira(seeker.yearlyPerMonth)} a month, saves ${formatNaira(seeker.yearlySavings)})`, `${formatNaira(builder.yearlyPrice)} per year (${formatNaira(builder.yearlyPerMonth)} a month, saves ${formatNaira(builder.yearlySavings)})`, `${formatNaira(leader.yearlyPrice)} per year (${formatNaira(leader.yearlyPerMonth)} a month, saves ${formatNaira(leader.yearlySavings)})`),
     row('Who it is for', 'Members finding their direction.', 'Members building a career or business. Any member can choose it.', 'Members who facilitate a Circle.'),
-    row('How you get it', 'Choose it and pay with Paystack. First payment includes 7 extra days.', 'Choose it and pay with Paystack. First payment includes 7 extra days. Any member can choose Builder.', 'Given automatically when you meet the Leader criteria, or through a facilitator invite.'),
+    row('How you get it', 'Choose it and pay with Paystack. First payment includes 7 extra days.', 'Choose it and pay with Paystack. First payment includes 7 extra days. Any member can choose Builder.', 'Choose it and pay with Paystack. First payment includes 7 extra days. Eligibility is not enforced yet (see note 4).'),
   ],
 });
 
@@ -100,8 +101,7 @@ const doc = new Document({
       bullet('Remote internships and work experience'),
       bullet('Opportunities for business owners'),
       h2('Leader'),
-      para('Free for members who facilitate a Circle.'),
-      bullet('Ascentor free while you facilitate'),
+      para(`For members who facilitate a Circle. ${formatNaira(leader.monthlyPrice)} per month.`),
       bullet('The Facilitators’ room, with other Leaders'),
       bullet('What a Leader does: hosts the weekly Circle call and keeps time, checks in on members who go quiet, and helps the Circle choose a mentor and prepare session agendas'),
 
@@ -119,7 +119,7 @@ const doc = new Document({
       flag('Free trial wording in the prototypes. Packages are paid when chosen: full access starts straight away and the first payment includes 7 extra days. There is no free trial. The design prototypes still use “free trial” wording (a card added up front, nothing charged today), and the Terms page still describes a free trial. Both should be updated to say “pay now, get 7 extra days”. A real free trial would need a saved Paystack authorisation and Paystack’s confirmation first.'),
       flag('Annual billing. The prototypes show monthly prices only. The live checkout also offers annual billing at 12 months less 20%. The annual figures above come from that, not from the prototypes. Decision needed: keep, change or remove annual billing.'),
       flag('Plan limits. The prototypes list features but no limits. The earlier checkout screens carried limits (for example Sage sessions per month and number of Circles) that do not appear in the prototypes, so they are left out here. Decision needed: which limits, if any, apply to Seeker and Builder.'),
-      flag('Leader criteria. The prototype says Leader is "given automatically when you meet the Leader criteria, or through a facilitator invite" but does not define the criteria or the invite process. The live app has no facilitator invite tokens yet.'),
+      flag('Leader price and eligibility. Leader is now a paid package (price set after the prototypes, which showed Leader as free). The prototypes say Leader is “given automatically when you meet the Leader criteria, or through a facilitator invite” and the invite page said “Ascentor free while you facilitate”; that wording has been removed. No eligibility rule is defined or enforced yet, so today any member can choose Leader, and no facilitator discount exists. Decision needed: who may choose Leader, and whether facilitators pay.'),
       flag('Courses in the shop. Courses sold in the shop are delivered in the Learn page, with no separate course system. It was stated that what a member pays for a course will include at least a Seeker or Builder package, but the prototypes do not show how that is priced or whether it creates a subscription. Decision needed before courses are sold.'),
       flag('Older plans. Two members hold the older Climber plan and one member holds Seeker (formerly Explorer). None of them has a payment on record, so they look manually granted, and the earlier Explorer price (₦12,000 a month) cannot be confirmed from payments. They keep their current plan and are shown a "Current plan, legacy" card. Decision needed: whether to move them to Seeker or Builder, and when.'),
       flag('Promo codes. The admin prototype lists sample codes (for example SUMMIT26: 30% off 3 months; LASU100: first month free). These are sample data, not an agreed offer.'),

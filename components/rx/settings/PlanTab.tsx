@@ -10,13 +10,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Clock, CreditCard, Gift, TriangleAlert } from 'lucide-react';
 import { useToast } from '@/components/rx/Toast';
-import { FEATURED_PLANS, LEADER_BULLETS, PLAN_BULLETS, PLAN_DISPLAY_NAME, isUpgrade, type FeaturedPlan } from '@/lib/plans-display';
+import { FEATURED_PLANS, PLAN_BULLETS, isUpgrade, planDisplayName, type FeaturedPlan } from '@/lib/plans-display';
 import { formatNaira } from '@/lib/pricing';
 import type { BillState } from '@/lib/billing-state';
 
 export interface HistoryRow { id: string; date: string; desc: string; amount: string; status: string; receipt: boolean }
 
-export interface PlanPrices { explorer: { monthly: number; yearly: number }; builder: { monthly: number; yearly: number } }
+export interface PlanPrices { explorer: { monthly: number; yearly: number }; builder: { monthly: number; yearly: number }; leader: { monthly: number; yearly: number } }
 
 export default function PlanTab({ state, plan, planName, tag, line, daysLeft, untilShort, cardLine, referralDays, history, prices, legacy }: {
   state: BillState; plan: string; planName: string; tag: { label: string; cls: string }; line: string; daysLeft: number | null;
@@ -31,7 +31,7 @@ export default function PlanTab({ state, plan, planName, tag, line, daysLeft, un
   const [busy, setBusy] = useState(false);
 
   const paid = state !== 'none';
-  const checkoutHref = `/checkout${plan === 'explorer' || plan === 'builder' ? `?plan=${plan}` : ''}`;
+  const checkoutHref = `/checkout${plan === 'explorer' || plan === 'builder' || plan === 'leader' ? `?plan=${plan}` : ''}`;
   const canCancel = state === 'active' || state === 'trialEnding';
   const days = daysLeft ?? 0;
 
@@ -52,7 +52,7 @@ export default function PlanTab({ state, plan, planName, tag, line, daysLeft, un
   };
 
   const planCard = (id: FeaturedPlan) => {
-    const name = PLAN_DISPLAY_NAME[id];
+    const name = planDisplayName(id);
     const current = !legacy && paid && state !== 'lapsed' && plan === id;
     return (
       <div key={id} className={`rx-plan${current ? ' cur' : ''}`}>
@@ -122,12 +122,6 @@ export default function PlanTab({ state, plan, planName, tag, line, daysLeft, un
       )}
       <div className="rx-grid3">
         {FEATURED_PLANS.map(planCard)}
-        <div className="rx-plan">
-          <p className="rx-h3">Leader</p>
-          <p className="rx-price">Free</p>
-          <ul>{LEADER_BULLETS.map((b) => <li key={b}>{b}</li>)}</ul>
-          <div><button type="button" className="rx-btn lkb" onClick={() => toast('Leaders are set from onboarding answers, or invited as facilitators.')}>How Leaders are chosen<ArrowRight aria-hidden /></button></div>
-        </div>
       </div>
 
       <div className="rx-card">

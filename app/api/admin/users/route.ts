@@ -194,9 +194,9 @@ export async function PATCH(req: NextRequest) {
       }
 
       case 'change_plan': {
-        const validPlans = ['free', 'explorer', 'builder', 'climber'];
+        const validPlans = ['free', 'explorer', 'builder', 'leader', 'climber'];
         if (!validPlans.includes(value)) {
-          return NextResponse.json({ error: 'Invalid plan. Must be: free, explorer, builder, or climber' }, { status: 400 });
+          return NextResponse.json({ error: 'Invalid plan. Must be: free, explorer, builder, leader, or climber' }, { status: 400 });
         }
 
         if (value === 'free') {

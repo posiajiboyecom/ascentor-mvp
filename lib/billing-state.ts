@@ -7,8 +7,8 @@
 //   lapsed       had a paid plan, no longer covered: "light access"
 //   none         never subscribed
 
-import { normalisePlan, type PlanTier } from '@/lib/planTier';
-import { planDisplayName } from '@/lib/plans-display';
+import type { PlanTier } from '@/lib/planTier';
+import { planDisplayName, planKey } from '@/lib/plans-display';
 
 export type BillState = 'active' | 'trialEnding' | 'failed' | 'cancelled' | 'lapsed' | 'none';
 
@@ -20,7 +20,7 @@ export interface BillingProfile {
 
 export interface BillingView {
   state: BillState;
-  plan: PlanTier;
+  plan: PlanTier | 'leader';
   planName: string;
   daysLeft: number | null;
   tag: { label: string; cls: string };
@@ -38,7 +38,7 @@ const fmt = (d: Date, tz: string, withYear: boolean) =>
  * It is optional: without it the price is simply left out of the line.
  */
 export function deriveBilling(p: BillingProfile | null | undefined, tz = 'Africa/Lagos', now = new Date(), priceLabel = ''): BillingView {
-  const plan = normalisePlan(p?.subscription_plan);
+  const plan = planKey(p?.subscription_plan);
   const planName = planDisplayName(p?.subscription_plan);
   const status = p?.subscription_status ?? '';
   const end = p?.subscription_end ? new Date(p.subscription_end) : null;

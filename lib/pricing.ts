@@ -9,7 +9,7 @@
 //   explorer → shown to members as "Seeker"
 //   builder  → "Builder"
 //   climber  → "Climber" (legacy: kept working for the members who hold it, not sold in the new plan UI)
-//   Leader is free and has no plan id (it is a role, see lib/plans-display.ts).
+//   leader   → "Leader" (paid, for members who facilitate a Circle; priced like the others from lib/plans-config.ts)
 //
 // Billing: members pay monthly or annually. The annual price is 12 months less 20%.
 // Old ids used in earlier code (pro / elite) remain valid via PLAN_ID_ALIASES.

@@ -87,6 +87,20 @@ function buildPlans(pricing: PlanPricing[]): Plan[] {
     highlighted: true,
   },
   {
+    id:            'leader',
+    name:          'Leader',
+    description:   'For members who facilitate a Circle.',
+    stage:         'LEADER',
+    stageColor:    '#CAA228',
+    monthlyPrice:  P('leader').monthlyPrice,
+    yearlyPrice:   P('leader').yearlyPrice,
+    yearlyMonthly: P('leader').yearlyPerMonth,
+    features: [
+      'For members who facilitate a Circle',
+      'The Facilitators’ room, with other Leaders',
+    ],
+  },
+  {
     id:            'climber',
     name:          'Climber',
     description:   'For leaders scaling teams and building legacy.',
@@ -110,7 +124,7 @@ function buildPlans(pricing: PlanPricing[]): Plan[] {
 }
 
 // Plan rank for upgrade logic
-const PLAN_RANK: Record<string, number> = { free: 0, explorer: 1, builder: 2, climber: 3 }
+const PLAN_RANK: Record<string, number> = { free: 0, explorer: 1, builder: 2, leader: 3, climber: 3 }
 
 function yearlySavings(plan: Plan) {
   return Math.round(plan.monthlyPrice * 12 - plan.yearlyPrice)
@@ -164,7 +178,7 @@ export default function CheckoutClient({ embedded = false, pricing }: { embedded
     (!subEnd || new Date(subEnd) > new Date()) &&
     currentPlan !== 'free'
   const currentRank   = PLAN_RANK[currentPlan] ?? 0
-  const isTopTier     = currentPlan === 'climber' && isActivePaid
+  const isTopTier     = (currentPlan === 'climber' || currentPlan === 'leader') && isActivePaid
 
   function getDisplayPrice(plan: Plan): number {
     return billing === 'monthly' ? plan.monthlyPrice : plan.yearlyMonthly
@@ -355,7 +369,6 @@ export default function CheckoutClient({ embedded = false, pricing }: { embedded
             {paying ? 'Redirecting...' : 'Pay with Paystack'}
           </button>
           <p className="rx-sm rx-row rx-nw" style={{ gap: 8 }}><Lock aria-hidden size={16} style={{ flex: 'none' }} />Card details go to Paystack. Ascentor never sees them.</p>
-          <p className="rx-sm">Facilitating a Circle? Leaders don’t pay.</p>
           <button type="button" className="rx-link muted" style={{ alignSelf: 'flex-start' }} onClick={() => setShowAllPlans(true)}>See all plans</button>
         </div>
       </div>

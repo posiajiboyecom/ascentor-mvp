@@ -64,7 +64,7 @@ export const paymentReference = z
   .max(100)
   .regex(/^[A-Za-z0-9_.=-]+$/, 'Invalid payment reference.');
 
-export const planId = z.enum(['explorer', 'builder', 'climber']);
+export const planId = z.enum(['explorer', 'builder', 'leader', 'climber']);
 export const billingCycle = z.enum(['monthly', 'yearly']);
 
 /** Boolean that also accepts "true"/"false" strings (query strings). */

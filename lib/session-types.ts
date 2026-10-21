@@ -156,7 +156,7 @@ export const SESSION_TYPE_MAP: Record<string, SessionType> = Object.fromEntries(
 /** Any paid plan - canonical + legacy */
 const PAID_PLANS = new Set([
   // canonical
-  'explorer', 'builder', 'climber',
+  'explorer', 'builder', 'climber', 'leader',
   // legacy
   'pro', 'elite', 'standard', 'tester', 'basic', 'premium', 'pro_legacy',
   // edge case: trialing users with a plan get paid access
@@ -166,7 +166,7 @@ const PAID_PLANS = new Set([
 /** Builder-tier and above - canonical + legacy */
 const BUILDER_PLANS = new Set([
   // canonical
-  'builder', 'climber',
+  'builder', 'climber', 'leader',
   // legacy: old "Builder" DB ID was 'pro', old "Climber" DB ID was 'elite'
   'pro', 'elite', 'standard', 'pro_legacy',
 ]);
@@ -174,7 +174,7 @@ const BUILDER_PLANS = new Set([
 /** Climber-tier only - canonical + legacy */
 const CLIMBER_PLANS = new Set([
   // canonical
-  'climber',
+  'climber', 'leader',
   // legacy: old Climber DB ID was 'elite'
   'elite', 'pro_legacy',
 ]);

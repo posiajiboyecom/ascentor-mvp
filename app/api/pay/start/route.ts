@@ -35,7 +35,7 @@ import * as commerceSchemas from '@/lib/validation/schemas/commerce';
 // subscriptionAmountKobo(); the same value is stored on the payment attempt and
 // re-checked when the payment settles.
 
-const VALID_PLANS   = ['explorer', 'builder', 'climber'] as const
+const VALID_PLANS   = ['explorer', 'builder', 'leader', 'climber'] as const
 const VALID_BILLING = ['monthly', 'annual'] as const
 
 const APP_URL = process.env.NEXT_PUBLIC_URL || 'https://joinascentor.com'

@@ -3,8 +3,9 @@
 //
 //   PLAN_SEEKER_PRICE_NGN    monthly price of Seeker  (plan id "explorer"), whole naira, default 15000
 //   PLAN_BUILDER_PRICE_NGN   monthly price of Builder (plan id "builder"),  whole naira, default 25000
+//   PLAN_LEADER_PRICE_NGN    monthly price of Leader  (plan id "leader"),   whole naira, default 40000
 //
-// Annual billing is 12 months less 20% (see lib/pricing.ts). Leader is free and has no price.
+// Annual billing is 12 months less 20% (see lib/pricing.ts).
 // Checkout (/api/pay/start), settlement (lib/paymentSettlement.ts), the plan screens, the payment result page and
 // analytics all read from here. Client components never import this file: they receive prices as props from the
 // server, so what is shown and what Paystack charges can never disagree.
@@ -15,7 +16,7 @@
 import 'server-only';
 import { buildPlanPricing, formatNaira, LEGACY_CLIMBER_MONTHLY_NGN, type PlanPricing } from '@/lib/pricing';
 
-export const PLAN_PRICE_DEFAULTS = { seeker: 15000, builder: 25000 } as const;
+export const PLAN_PRICE_DEFAULTS = { seeker: 15000, builder: 25000, leader: 40000 } as const;
 
 /** Parses one price variable. Exported for tests. */
 export function parsePlanPrice(name: string, raw: string | undefined, fallback: number): number {
@@ -33,18 +34,20 @@ export function readPlanPrices(env: Record<string, string | undefined> = process
   return {
     seeker:  parsePlanPrice('PLAN_SEEKER_PRICE_NGN',  env.PLAN_SEEKER_PRICE_NGN,  PLAN_PRICE_DEFAULTS.seeker),
     builder: parsePlanPrice('PLAN_BUILDER_PRICE_NGN', env.PLAN_BUILDER_PRICE_NGN, PLAN_PRICE_DEFAULTS.builder),
+    leader:  parsePlanPrice('PLAN_LEADER_PRICE_NGN',  env.PLAN_LEADER_PRICE_NGN,  PLAN_PRICE_DEFAULTS.leader),
   };
 }
 
 let cached: PlanPricing[] | null = null;
 
-/** Seeker, Builder, then legacy Climber (kept so existing Climber members can still be charged and settled). */
+/** Seeker, Builder, Leader, then legacy Climber (kept so existing Climber members can still be charged and settled). */
 export function getPlanPricing(): PlanPricing[] {
   if (!cached) {
     const p = readPlanPrices();
     cached = [
       buildPlanPricing('explorer', 'Seeker', p.seeker),
       buildPlanPricing('builder', 'Builder', p.builder),
+      buildPlanPricing('leader', 'Leader', p.leader),
       buildPlanPricing('climber', 'Climber', LEGACY_CLIMBER_MONTHLY_NGN),
     ];
   }
@@ -55,10 +58,10 @@ export function getPlanPricingMap(): Record<string, PlanPricing> {
   return Object.fromEntries(getPlanPricing().map((p) => [p.id, p]));
 }
 
-/** The two plans sold today, for client props. */
-export function getFeaturedPricing(): { explorer: PlanPricing; builder: PlanPricing } {
+/** The three plans sold today, for client props. */
+export function getFeaturedPricing(): { explorer: PlanPricing; builder: PlanPricing; leader: PlanPricing } {
   const m = getPlanPricingMap();
-  return { explorer: m.explorer, builder: m.builder };
+  return { explorer: m.explorer, builder: m.builder, leader: m.leader };
 }
 
 /**
