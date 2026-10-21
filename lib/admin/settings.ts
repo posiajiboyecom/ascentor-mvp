@@ -21,9 +21,9 @@ export const SETTING_DEFAULTS = {
   // What a member keeps on light access
   'light.today': 'true', 'light.chat': 'true', 'light.sage': 'true', 'light.learn': 'false', 'light.mentor': 'false', 'light.groups': 'false',
   // Circles
-  'circle.size_min': '4', 'circle.size_max': '10', 'circle.cycle_days': '84', 'circle.call_start_share': '60', 'circle.call_minutes': '60',
+  'circle.size_min': '4', 'circle.size_max': '8', 'circle.cycle_days': '84', 'circle.call_start_share': '60', 'circle.call_minutes': '15',
   // Calls and mentorship
-  'call.audio_first': 'true', 'call.video_allowed': 'true', 'mentor.needs_agenda': 'true', 'mentor.agenda_questions': '3', 'mentor.session_minutes': '60',
+  'call.audio_first': 'true', 'call.video_allowed': 'true', 'mentor.needs_agenda': 'true', 'mentor.agenda_questions': '3', 'mentor.session_minutes': '20',
   // Features
   'feature.shop': 'true', 'feature.cities': 'true', 'feature.refer': 'true', 'feature.dock': 'true', 'feature.offline': 'true',
 } as const;

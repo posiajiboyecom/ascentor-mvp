@@ -35,6 +35,7 @@ const loaders: Record<string, () => Promise<{ default: ScreenModule }>> = {
   promos: () => import('./promos'),
   referrals: () => import('./referrals'),
   registrations: () => import('./registrations'),
+  recs: () => import('./recs'),
   reports: () => import('./reports'),
   surveys: () => import('./surveys'),
 };
