@@ -10,16 +10,13 @@ import { saveReflection, setLessonPractice } from '@/app/(app)/learn/lesson/acti
 import { IfThenFields, EMPTY_PLAN, type PlanData } from '@/components/rx/today/PlanCard';
 import { openSage } from '@/components/rx/sage-bus';
 import { useToast } from '@/components/rx/Toast';
+import LessonVideo from '@/components/rx/learn/LessonVideo';
+import { parseVideo } from '@/lib/rx/video';
 
 export interface LessonViewProps {
   id: string; title: string; format: 'Video' | 'Reading'; videoUrl: string | null; body: string; minutes: number;
+  watchPercent: number; watchPosition: number;
   reflection: string; practiceSet: boolean; startRead: boolean; draft: PlanData | null;
-}
-
-function youtubeId(url: string | null): string | null {
-  if (!url) return null;
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/);
-  return m ? m[1] : null;
 }
 
 export default function LessonView(p: LessonViewProps) {
@@ -31,7 +28,7 @@ export default function LessonView(p: LessonViewProps) {
   const [done, setDone] = useState(p.practiceSet);
   const [error, setError] = useState('');
   const [pending, start] = useTransition();
-  const yt = youtubeId(p.videoUrl);
+  const video = parseVideo(p.videoUrl);
 
   // Sage can hand a drafted practice to this lesson.
   useEffect(() => {
@@ -63,12 +60,8 @@ export default function LessonView(p: LessonViewProps) {
         )}
 
         {!read && p.format === 'Video' && (
-          yt ? (
-            <div className="rx-video rx-rise">
-              <iframe title={p.title} src={`https://www.youtube-nocookie.com/embed/${yt}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }} allow="encrypted-media; picture-in-picture" allowFullScreen />
-            </div>
-          ) : p.videoUrl && /\.(mp4|webm)(\?|$)/i.test(p.videoUrl) ? (
-            <video className="rx-video rx-rise" src={p.videoUrl} controls preload="metadata" style={{ width: '100%' }} />
+          video ? (
+            <LessonVideo key={p.id} lessonId={p.id} title={p.title} source={video} startSec={p.watchPosition} startPercent={p.watchPercent} />
           ) : (
             <div className="rx-video rx-rise"><div className="rx-stack-sm" style={{ alignItems: 'center', position: 'relative', padding: 16, textAlign: 'center' }}>
               <Play aria-hidden style={{ width: 36, height: 36 }} /><p className="rx-p rx-strong" style={{ color: '#fff' }}>The video for this lesson is coming soon.</p>
