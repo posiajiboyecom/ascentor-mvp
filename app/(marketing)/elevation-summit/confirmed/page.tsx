@@ -1,5 +1,6 @@
 import '@/styles/marketing.css';
 import { HeartHandshake } from 'lucide-react';
+import FlyerCta from '../FlyerCta';
 
 export default function SummitConfirmedPage() {
   return (
@@ -17,6 +18,11 @@ export default function SummitConfirmedPage() {
         <p style={{ color: '#6B7280', fontSize: '1rem', lineHeight: 1.7, marginBottom: '2.5rem' }}>
           We look forward to seeing you there.
         </p>
+        <div style={{ margin: '0 0 2rem', padding: '1.5rem', background: '#fff', border: '1px solid #E8E6E1', borderRadius: '1rem' }}>
+          <p style={{ color: '#0F0F0E', fontWeight: 700, margin: '0 0 0.5rem' }}>Tell people you are coming</p>
+          <p style={{ color: '#6B7280', fontSize: '0.9375rem', lineHeight: 1.6, margin: '0 0 1rem' }}>Make your own &quot;I will be attending&quot; flyer with your name and photo, download it and share it.</p>
+          <FlyerCta solid />
+        </div>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
           <a href="/elevation-summit" className="btn-gold" style={{ display: 'inline-flex' }}>
             Return to the Summit page

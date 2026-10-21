@@ -12,6 +12,7 @@ import PhoneInput from 'react-phone-number-input';
 // external CDN which fails in production. This renders flags locally.
 import flags from 'react-phone-number-input/flags';
 import { useModal } from '@/components/Modal';
+import FlyerCta, { SUMMIT_NAME_KEY } from './FlyerCta';
 import { useRouter } from 'next/navigation';
 import { Compass, Hammer, Crown, Sparkles, Network, Monitor, CalendarDays, MapPin, Clock, TicketCheck, Check, ArrowRight, HeartHandshake } from 'lucide-react';
 import SummitCountdown from '@/components/SummitCountdown';
@@ -183,10 +184,11 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         throw new Error('Registration failed');
       }
 
+      try { sessionStorage.setItem(SUMMIT_NAME_KEY, String(data.full_name ?? '').trim().slice(0, 40)); } catch { /* optional */ }
       reset();
       // Branded success overlay auto-redirects - no click required.
       setRegistrationSuccess(activeTab);
-      successRedirectTimer.current = setTimeout(() => router.push('/elevation-summit/confirmed'), 3200);
+      successRedirectTimer.current = setTimeout(() => router.push('/elevation-summit/confirmed'), 8000);
     } catch (err) {
       await alert(
         "We couldn't process your registration. Please check your details and try again. If this keeps happening, reach out to us for help.",
@@ -927,7 +929,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             }}>
               <div style={{
                 height: '100%', background: '#C8A96E', width: '0',
-                animation: 'summitBarFill 3s linear forwards',
+                animation: 'summitBarFill 8s linear forwards',
               }} />
             </div>
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -956,6 +958,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
               >
                 <HeartHandshake size={16} /> Support with a Donation
               </button>
+              <FlyerCta onClick={() => { if (successRedirectTimer.current) clearTimeout(successRedirectTimer.current); }} />
             </div>
             <p style={{ color: '#9CA3AF', fontSize: '0.8125rem', marginTop: '1.25rem', marginBottom: 0 }}>
               Registration is free. If you would like to support the Summit, donations are always welcome.

@@ -8,6 +8,7 @@ import AttendClient from './AttendClient';
 export const metadata: Metadata = {
   title: 'I will be attending | The Elevation Summit 2026',
   description: 'Make your own "I will be attending" flyer for The Elevation Summit, 19 November 2026 in Lagos. Add your name and photo, download it as a PNG and share it.',
+  robots: { index: false, follow: false }, // reached from the registration success screens, not from search or the footer
   alternates: { canonical: `${SITE_URL}/elevation-summit/attend` },
   openGraph: {
     title: 'I will be attending The Elevation Summit 2026',
