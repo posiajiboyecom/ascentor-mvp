@@ -12,6 +12,7 @@ import { getShellData } from '@/lib/shell-data';
 import UserShell from '@/components/shell/UserShell';
 import CheckoutClient from './CheckoutClient';
 import { getPlanPricing } from '@/lib/plans-config';
+import { closedPlanIds } from '@/lib/admin/plans-open';
 
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
   // Hard env override
@@ -38,14 +39,16 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
 
   // A signed-in member checks out inside their own shell (sidebar and header). Guests, and members who
   // are mid-onboarding, get the standalone page.
+  const closed = await closedPlanIds();
+  const pricing = getPlanPricing().filter((p) => !closed.includes(p.id));
   const { from } = await searchParams;
   const shell = from === 'onboarding' ? null : await getShellData();
   if (shell) {
     return (
       <UserShell userId={shell.userId} userName={shell.userName} email={shell.email} avatarUrl={shell.avatarUrl} role={shell.role} summitRegistered={shell.summitRegistered}>
-        <CheckoutClient embedded pricing={getPlanPricing()} />
+        <CheckoutClient embedded pricing={pricing} />
       </UserShell>
     );
   }
-  return <CheckoutClient pricing={getPlanPricing()} />;
+  return <CheckoutClient pricing={pricing} />;
 }
