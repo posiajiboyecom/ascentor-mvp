@@ -1,26 +1,29 @@
-# Trial and billing: what checkout does today
+# Billing: pay now, get 7 extra days
 
-**Today, checkout charges the full plan price immediately.** `POST /api/pay/start` initialises a Paystack
-transaction for the plan amount; once it settles (`lib/paymentSettlement.ts`, `fulfilSubscription`) the member
-gets full access, `subscription_status = 'trialing'`, and `subscription_end` = one month (or one year) plus
-**7 extra days**. Nothing is charged later by us: renewal is not an automatic card charge today.
+**This is how Ascentor works today: you pay when you choose a plan, full access starts straight away, and your first
+payment includes 7 extra days.** There is no free trial.
 
-So the checkout copy says: *you pay now, access starts now, your first payment includes 7 extra days, cancel
-any time and keep access until the paid period ends.* It must not say "free trial", "nothing is charged today"
-or "no charge until Day 8".
+`POST /api/pay/start` initialises a Paystack transaction for the plan amount; once it settles
+(`lib/paymentSettlement.ts`, `fulfilSubscription`) the member gets full access, `subscription_status = 'trialing'`
+(the internal name for "first paid period"), and `subscription_end` = one month (or one year) plus **7 extra days**.
+Nothing is charged later by us: renewal is not an automatic card charge today. Members can cancel any time and keep access
+until the paid period ends. Prices come from `lib/plans-config.ts` (`PLAN_SEEKER_PRICE_NGN`, `PLAN_BUILDER_PRICE_NGN`).
 
-## Copy that still promises a free trial (not changed yet)
+All member-facing wording says exactly that: *you pay now, access starts now, your first payment includes 7 extra days.*
+It must not say "free trial", "nothing is charged today" or "no charge until Day 8".
 
-These say or imply a no-charge trial and will contradict checkout until they are reworded or a real trial exists:
+**Wording kept as is:** the Terms page (`app/terms/page.tsx`, "Free Trial" clause) was deliberately not edited; the wording is
+for the legal officer to review and still describes a free trial.
 
-- `app/terms/page.tsx`, "Free Trial" clause (legal text: decide the wording with whoever owns the terms).
-- `components/UpgradePrompt.tsx` ("Start 7-Day Free Trial", "No charge for 7 days").
-- `components/LeadMagnetPage.tsx` and `app/free/*/download/page.tsx` ("Try Sage free for 7 days").
-- Partner checkout (`app/p/[subdomain]/checkout/PartnerCheckoutClient.tsx`) uses a partner-set `trialDays`.
+## Where the wording was updated, and what is left
 
-## What a real free trial needs
+Updated to "pay now, 7 extra days": the checkout and plan cards, the upgrade prompt, the help FAQ, the lead-magnet pages, partner checkout and partner admin labels, marketing buttons, referral and signup copy. Left on purpose, only:
 
-A real "add a card now, pay on day 7" trial is **not** a copy change. It needs:
+- `app/terms/page.tsx`, "Free Trial" clause. Legal text: the wording is for the legal officer to review, so it was not edited and still describes a free trial that checkout does not give.
+
+## Optional later: a real free trial
+
+If a real "add a card now, pay on day 7" trial is wanted one day, it is **not** a copy change. It needs:
 
 1. **A saved Paystack authorization.** Paystack can only charge later with a reusable `authorization_code`
    from a successful transaction. A card-capture step therefore means a small real charge (Paystack's minimum,

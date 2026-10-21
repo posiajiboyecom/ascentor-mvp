@@ -58,7 +58,7 @@ const summary = new Table({
     row('Price, monthly', `${formatNaira(seeker.monthlyPrice)} per month`, `${formatNaira(builder.monthlyPrice)} per month`, 'Free'),
     row('Price, annual (see note 2)', `${formatNaira(seeker.yearlyPrice)} per year (${formatNaira(seeker.yearlyPerMonth)} a month, saves ${formatNaira(seeker.yearlySavings)})`, `${formatNaira(builder.yearlyPrice)} per year (${formatNaira(builder.yearlyPerMonth)} a month, saves ${formatNaira(builder.yearlySavings)})`, 'Not applicable'),
     row('Who it is for', 'Members finding their direction.', 'Members building a career or business. Any member can choose it.', 'Members who facilitate a Circle.'),
-    row('How you get it', 'Choose it and pay with Paystack.', 'Choose it and pay with Paystack. Any member can choose Builder.', 'Given automatically when you meet the Leader criteria, or through a facilitator invite.'),
+    row('How you get it', 'Choose it and pay with Paystack. First payment includes 7 extra days.', 'Choose it and pay with Paystack. First payment includes 7 extra days. Any member can choose Builder.', 'Given automatically when you meet the Leader criteria, or through a facilitator invite.'),
   ],
 });
 
@@ -107,6 +107,7 @@ const doc = new Document({
 
       h1('How packages work'),
       bullet('Your stage is set from onboarding, and any member can choose Builder.'),
+      bullet('You pay when you choose a package and your access starts straight away. Your first payment includes 7 extra days.'),
       bullet('Payment is through Paystack. Card details go to Paystack and Ascentor never sees them.'),
       bullet('You can cancel any time and keep access until your paid period ends.'),
       bullet('If a payment fails, you keep light access (about 7 days of grace first). With light access, Today, your Circle chat and Sage still work. Learn pathways, mentor sessions and joining new groups are paused until you update your card.'),
@@ -115,7 +116,7 @@ const doc = new Document({
 
       h1('Unclear / needs a decision'),
       para('These are points the design prototypes do not settle, or where the prototypes and the live app disagree. Nothing here has been invented.', { color: MUTED }),
-      flag('Free trial or not. Both prototypes describe a 7-day free trial (card added up front, nothing charged today, first payment on day 7). The live checkout does not do this: it charges the full price immediately and adds 7 extra days to the first period, and the app’s wording now says exactly that. A real free trial needs a saved Paystack authorisation and should be confirmed with Paystack first. Decision needed: build the trial, or change the prototypes and admin settings to match checkout.'),
+      flag('Free trial wording in the prototypes. Packages are paid when chosen: full access starts straight away and the first payment includes 7 extra days. There is no free trial. The design prototypes still use “free trial” wording (a card added up front, nothing charged today), and the Terms page still describes a free trial. Both should be updated to say “pay now, get 7 extra days”. A real free trial would need a saved Paystack authorisation and Paystack’s confirmation first.'),
       flag('Annual billing. The prototypes show monthly prices only. The live checkout also offers annual billing at 12 months less 20%. The annual figures above come from that, not from the prototypes. Decision needed: keep, change or remove annual billing.'),
       flag('Plan limits. The prototypes list features but no limits. The earlier checkout screens carried limits (for example Sage sessions per month and number of Circles) that do not appear in the prototypes, so they are left out here. Decision needed: which limits, if any, apply to Seeker and Builder.'),
       flag('Leader criteria. The prototype says Leader is "given automatically when you meet the Leader criteria, or through a facilitator invite" but does not define the criteria or the invite process. The live app has no facilitator invite tokens yet.'),
