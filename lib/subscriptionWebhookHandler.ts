@@ -169,10 +169,13 @@ async function handleRenewalSuccess(data: any) {
     updated_at:          new Date().toISOString(),
   }).eq('id', profile.id);
 
+  const renewalRef: string = data.transaction?.reference ?? `renewal-${Date.now()}`;
   try {
     await supabaseAdmin.from('payments').insert({
       user_id:    profile.id,
-      reference:  data.transaction?.reference ?? `renewal-${Date.now()}`,
+      reference:  renewalRef,
+      provider_reference: renewalRef,
+      amount_cents:       data.amount ?? 0,
       plan_id:    normalisePlanId(profile.subscription_plan),
       amount:     data.amount ? data.amount / 100 : 0,
       currency:   data.currency ?? 'NGN',

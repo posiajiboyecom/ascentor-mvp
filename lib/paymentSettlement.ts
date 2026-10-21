@@ -435,9 +435,13 @@ async function fulfilSubscription(attempt: PaymentAttempt, tx: PaystackTransacti
   }
   if (profileErr) throw new Error(`profiles update failed: ${profileErr.message}`);
 
+  // payments.provider_reference and payments.amount_cents are NOT NULL in the live schema (amount_cents holds kobo for NGN);
+  // without them every subscription payment would activate the plan and then fail here, leaving Paystack retrying.
   const { error: payErr } = await supabaseAdmin.from('payments').insert({
     user_id:   attempt.user_id,
     reference: attempt.reference,
+    provider_reference: attempt.reference,
+    amount_cents:       tx.amount,
     plan_id:   planId,
     billing,
     amount:    tx.amount / 100,
