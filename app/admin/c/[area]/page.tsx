@@ -7,6 +7,8 @@ import { getScreen } from '@/lib/admin/screens';
 import { areaOf } from '@/lib/admin/areas';
 
 export const dynamic = 'force-dynamic';
+// Row actions run under this page's limit; Broadcasts "Send now" can take up to 45 seconds.
+export const maxDuration = 60;
 
 export async function generateMetadata({ params }: { params: Promise<{ area: string }> }) {
   const { area } = await params;
