@@ -8,7 +8,7 @@ import { ORDER_STATUSES, SHOP_SHIPPING, naira } from '@/lib/shop-shared';
 
 const brand = {
   font: "'Metropolis', system-ui, sans-serif",
-  gold: '#E8A020', goldMuted: 'rgba(232,160,32,0.08)', goldBorder: 'rgba(232,160,32,0.22)',
+  gold: '#b6502a', goldMuted: 'rgba(182,80,42,0.08)', goldBorder: 'rgba(182,80,42,0.22)',
   teal: '#14B8A6', red: '#EF4444', blue: '#60A5FA',
   card: 'var(--admin-bg-deep)', panel: 'var(--admin-bg-card)', border: 'var(--admin-border)',
   text: 'var(--admin-text)', heading: 'var(--admin-text-heading)', muted: 'var(--admin-text-muted)', faint: 'var(--admin-text-faint)',
@@ -179,7 +179,7 @@ export default function AdminShopOrdersPage() {
 
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', padding: '14px 24px', borderTop: `1px solid ${brand.border}`, background: brand.panel }}>
                 {(NEXT[sel.status] || []).map(n => (
-                  <button key={n.to} disabled={busy} onClick={() => move(sel, n.to)} style={{ fontFamily: brand.font, fontSize: 12, fontWeight: 700, padding: '10px 20px', borderRadius: 9, cursor: busy ? 'not-allowed' : 'pointer', background: brand.gold, color: 'var(--admin-bg)', border: 'none', opacity: busy ? 0.6 : 1 }}>
+                  <button key={n.to} disabled={busy} onClick={() => move(sel, n.to)} style={{ fontFamily: brand.font, fontSize: 12, fontWeight: 700, padding: '10px 20px', borderRadius: 9, cursor: busy ? 'not-allowed' : 'pointer', background: brand.gold, color: '#fff', border: 'none', opacity: busy ? 0.6 : 1 }}>
                     Mark {n.label}
                   </button>
                 ))}

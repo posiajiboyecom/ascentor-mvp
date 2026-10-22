@@ -8,7 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { PublicShopProduct, ShopProduct } from '@/lib/shop-shared';
 
 const COLUMNS =
-  'id, slug, name, tagline, description, image_url, badge, shop_category, fulfilment, price_ngn, stock, sizes, file_path, lead_capture, published, min_plan, sort_order, is_featured';
+  'id, slug, name, tagline, description, image_url, hover_image_url, gallery_urls, badge, shop_category, fulfilment, price_ngn, stock, sizes, file_path, lead_capture, published, min_plan, sort_order, is_featured';
 
 export type ShopCard = PublicShopProduct & { hasFile: boolean };
 

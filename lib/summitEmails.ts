@@ -8,6 +8,21 @@ import { SUMMIT_DATE_LABEL, SUMMIT_DATETIME_LABEL } from '@/lib/elevationSummit'
 const SUMMIT_URL = 'https://joinascentor.com/elevation-summit';
 const SUMMIT_WATCH_URL = `${SUMMIT_URL}/watch`;
 const DONATE_URL = 'https://joinascentor.com/donate';
+const ATTEND_URL = `${SUMMIT_URL}/attend`;
+
+/** "Make your I will be attending flyer" block for the confirmation emails. The name is passed so the flyer page starts filled in. */
+const flyerBlock = (fullName: string) => `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;background-color:#FAFAF8;border:1px solid #F0EDE6;border-radius:10px;">
+    <tr><td style="padding:18px 20px;">
+      <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#0F0F0E;">Tell people you are coming</p>
+      <p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#6B7280;">Make your own &quot;I will be attending&quot; flyer with your name and photo, download it and share it.</p>
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+        <td style="background-color:#0F0F0E;border-radius:8px;">
+          <a href="${ATTEND_URL}?n=${encodeURIComponent(fullName.trim().slice(0, 40))}" target="_blank" style="display:inline-block;padding:12px 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#FFFFFF;text-decoration:none;">Make my flyer</a>
+        </td>
+      </tr></table>
+    </td></tr>
+  </table>`;
 
 /** Where every Summit admin alert goes. Deliberately NOT ADMIN_EMAIL, which may point elsewhere. */
 export const SUMMIT_ADMIN_EMAIL = process.env.SUMMIT_ADMIN_EMAIL || CONTACT_EMAIL;
@@ -97,6 +112,7 @@ export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
         ) +
         attendanceBlock +
         p('Please keep your ticket safe and present it on the day of the event. We look forward to seeing you there.') +
+        flyerBlock(fullName) +
         goldButton('View Event Details →', SUMMIT_URL) +
         p(`Registration is free. If the Summit has been valuable to you, you can <a href="${DONATE_URL}" style="color:#C8A96E;font-weight:600;text-decoration:underline;">support it with a donation</a>.`),
     }),
@@ -125,6 +141,7 @@ export async function sendStreamAccessEmail(to: string, fullName: string) {
         p(`Hi ${esc(fullName)},`) +
         p(`Your virtual place at the Elevation Summit is confirmed. Save this link now, and use it on ${esc(SUMMIT_DATETIME_LABEL)} to watch the livestream.`) +
         goldButton('Open the livestream page →', SUMMIT_WATCH_URL) +
+        flyerBlock(fullName) +
         p(`You'll be asked for the email address you registered with (<strong>${esc(to)}</strong>). That's how we confirm your ticket, no password needed.`) +
         p(`<span style="color:#9CA3AF;font-size:13px;">The page will show a countdown until the programme starts, then open the stream automatically. On the morning of the event we'll also send you a reminder with this same link.</span>`),
     }),
@@ -312,6 +329,7 @@ export async function sendComplimentaryTicketEmail(ticketData: TicketData) {
           ? p('Your Zoom link for the virtual session will be shared with you separately closer to the event date. Keep an eye on your inbox.')
           : p('Venue details will follow closer to the event date.')) +
         p('Please keep your ticket safe and present it on the day of the event. We look forward to seeing you there.') +
+        flyerBlock(fullName) +
         goldButton('View Event Details →', SUMMIT_URL) +
         p(`Registration is free. If the Summit has been valuable to you, you can <a href="${DONATE_URL}" style="color:#C8A96E;font-weight:600;text-decoration:underline;">support it with a donation</a>.`),
     }),

@@ -18,7 +18,7 @@ const ICONS: Record<ShopCategory, typeof ShoppingBag> = {
   Courses: GraduationCap,
 };
 
-export function Thumb({ p, height }: { p: Pick<ShopCard, 'name' | 'image_url' | 'shop_category' | 'badge'>; height?: number }) {
+export function Thumb({ p, height }: { p: Pick<ShopCard, 'name' | 'image_url' | 'shop_category' | 'badge'> & Partial<Pick<ShopCard, 'hover_image_url' | 'gallery_urls'>>; height?: number }) {
   const Icon = ICONS[p.shop_category] ?? ShoppingBag;
   return (
     <div
@@ -31,6 +31,9 @@ export function Thumb({ p, height }: { p: Pick<ShopCard, 'name' | 'image_url' | 
         // eslint-disable-next-line @next/next/no-img-element
         ? <img src={p.image_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
         : <Icon aria-hidden style={{ width: 40, height: 40 }} />}
+      {p.image_url && (p.hover_image_url || p.gallery_urls?.[0])
+        // eslint-disable-next-line @next/next/no-img-element
+        && <img className="rx-thumb-hover" src={(p.hover_image_url || p.gallery_urls?.[0]) as string} alt="" aria-hidden />}
       {p.badge && <span className="rx-tag" style={{ position: 'absolute', top: 10, left: 10 }}>{p.badge}</span>}
     </div>
   );

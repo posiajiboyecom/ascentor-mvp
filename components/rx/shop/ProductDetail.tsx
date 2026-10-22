@@ -8,6 +8,8 @@ import { useToast } from '@/components/rx/Toast';
 import { useCart } from '@/lib/shop-cart';
 import { isFree, SHOP_SIZES } from '@/lib/shop-shared';
 import type { ShopCard } from '@/lib/shop-data';
+import ProductGallery from '@/components/shop/ProductGallery';
+import { productMedia } from '@/lib/shop-shared';
 import { ProductCard } from './ShopList';
 import { inStock, priceLabel, Thumb, useFreeGet, type Member } from './parts';
 
@@ -35,7 +37,7 @@ export default function ProductDetail({ product: p, related, member }: { product
       <BackLink href="/store">Store</BackLink>
       <div className="rx-grid2" style={{ marginTop: 8, gap: 24, alignItems: 'start' }}>
         <div className="rx-stack">
-          <Thumb p={{ ...p, badge: null }} height={340} />
+          <ProductGallery name={p.name} urls={productMedia(p)} height={340} fallback={<Thumb p={{ ...p, badge: null }} height={340} />} />
           <p className="rx-label">About this item</p>
           {desc && <p className="rx-p">{desc}</p>}
           {p.fulfilment === 'ship' && <p className="rx-sm">Ships from Lagos, or collect it at the Summit.</p>}

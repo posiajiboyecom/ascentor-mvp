@@ -17,6 +17,9 @@ export default function ShopStyles() {
       .sp-card:hover { transform:translateY(-2px); box-shadow:0 12px 28px -14px rgba(0,0,0,.2); }
       .sp-img { position:relative; aspect-ratio:4/3; background:#F1EFEA; display:flex; align-items:center; justify-content:center; color:#9CA3AF; font-size:.8rem; }
       .sp-img img { width:100%; height:100%; object-fit:cover; display:block; }
+      .sp-img .sp-hover { position:absolute; inset:0; opacity:0; transition:opacity .25s; }
+      .sp-card:hover .sp-hover, .sp-card:focus-visible .sp-hover { opacity:1; }
+      @media(hover:none){ .sp-img .sp-hover { display:none; } }
       .sp-tag { position:absolute; top:.6rem; left:.6rem; background:#B6502A; color:#fff; font-size:.65rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:.25rem .55rem; border-radius:999px; }
       .sp-tag.out { background:#0F0F0E; left:auto; right:.6rem; }
       .sp-body { padding:1rem 1.1rem 1.2rem; display:flex; flex-direction:column; gap:.3rem; flex:1; }

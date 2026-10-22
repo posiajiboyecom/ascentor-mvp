@@ -8,6 +8,7 @@ export default function ProductCard({ p }: { p: ShopCard }) {
     <Link href={`/shop/${p.slug || p.id}`} className="sp-card">
       <div className="sp-img">
         {p.image_url ? <img src={p.image_url} alt={p.name} loading="lazy" /> : <span>{p.shop_category}</span>}
+        {p.image_url && (p.hover_image_url || p.gallery_urls?.[0]) && <img className="sp-hover" src={(p.hover_image_url || p.gallery_urls?.[0]) as string} alt="" loading="lazy" aria-hidden />}
         {p.badge && <span className="sp-tag">{p.badge}</span>}
         {out && <span className="sp-tag out">Out of stock</span>}
       </div>
