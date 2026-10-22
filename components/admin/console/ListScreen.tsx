@@ -7,7 +7,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Search, X } from 'lucide-react';
+import { Check, Mail, MessageCircle, Phone, Search, X } from 'lucide-react';
+import { contactLinks } from '@/lib/admin/contact';
 import { RANK, toneOf, type Level } from '@/lib/admin/areas';
 import type { ActionSpec, Kpi, RowData, ScreenSpec } from '@/lib/admin/types';
 import type { AuditRow } from '@/lib/admin/audit';
@@ -238,6 +239,21 @@ export default function ListScreen({ spec, rows: serverRows, kpis, note, level, 
               <button type="button" className="ib" aria-label="Close" onClick={() => setSel(null)} style={{ background: 'none', border: 0, cursor: 'pointer', width: 40, height: 40 }}><X className="ic" aria-hidden /></button>
             </div>
             <div className="dbody">
+              {selected.contact && (() => {
+                const l = contactLinks(selected.contact);
+                const none = !l.call && !l.whatsapp && !l.email;
+                return (
+                  <div className="st8">
+                    <p className="sl">Reach out</p>
+                    <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                      {l.call && <a className="btn bs" href={l.call}><Phone className="ic" aria-hidden /> Call</a>}
+                      {l.whatsapp && <a className="btn bs" href={l.whatsapp} target="_blank" rel="noopener noreferrer"><MessageCircle className="ic" aria-hidden /> WhatsApp</a>}
+                      {l.email && <a className="btn bs" href={l.email}><Mail className="ic" aria-hidden /> Email</a>}
+                      {none && <p className="sm">No phone number or email on this registration.</p>}
+                    </div>
+                  </div>
+                );
+              })()}
               {!selected.details && <dl className="kv">
                 {spec.cols.slice(1).map((k, j) => (<div key={k} style={{ display: 'contents' }}><dt>{k}</dt><dd>{selected.cells[j + 1]}</dd></div>))}
               </dl>}
