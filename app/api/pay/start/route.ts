@@ -28,7 +28,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
 import { createAttempt, subscriptionAmountKobo } from '@/lib/paymentSettlement'
 import { closedPlanIds } from '@/lib/admin/plans-open'
-import { canChooseLeader } from '@/lib/leader-access'
 import { paymentLimiter, getClientIp } from '@/lib/rate-limit'
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as commerceSchemas from '@/lib/validation/schemas/commerce';
@@ -74,9 +73,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (planId === 'leader' && !(await canChooseLeader(user.id))) {
+    if (planId === 'leader') {
       return NextResponse.json(
-        { error: 'The Leader plan is not open to your account yet. Choose Seeker or Builder, or wait for an invite from the Ascentor team.' },
+        { error: 'Leaders lead for free and the Leader plan cannot be bought. Choose Seeker or Builder, or wait for an invite from the Ascentor team.' },
         { status: 403 }
       )
     }

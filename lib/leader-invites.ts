@@ -5,8 +5,6 @@ import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/nodemailer';
 import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
-import { getPlanPricingMap } from '@/lib/plans-config';
-import { formatNaira } from '@/lib/pricing';
 import {
   effectiveStatus, emailsMatch, hashInviteToken, inviteEmailContent, inviteExpiry, inviteLink, looksLikeInviteToken,
   newInviteToken, normEmail, type InviteStatus,
@@ -23,12 +21,10 @@ export interface InviteRow {
 const missingTable = (e: { message?: string; code?: string } | null | undefined) =>
   !!e && (e.code === '42P01' || e.code === 'PGRST205' || /leader_invites/.test(e.message ?? '') && /does not exist|schema cache/i.test(e.message ?? ''));
 
-const leaderPrice = () => formatNaira(getPlanPricingMap().leader.monthlyPrice);
-
 async function sendInviteEmail(o: { to: string; name: string | null; inviterName: string; token: string; expires: Date }): Promise<boolean> {
   try {
     const link = inviteLink(o.token, SITE);
-    const c = inviteEmailContent({ inviterName: o.inviterName, link, expires: o.expires, recipientName: o.name, price: leaderPrice() });
+    const c = inviteEmailContent({ inviterName: o.inviterName, link, expires: o.expires, recipientName: o.name });
     const html = brandedEmailLayout({
       preheader: 'Your personal invitation to lead a Circle',
       eyebrow: 'Leader invitation',
@@ -51,7 +47,7 @@ async function notifyInApp(email: string, inviterName: string, token: string): P
     if (!prof) return false;
     const { error } = await supabaseAdmin.from('notifications').insert({
       user_id: prof.id, type: 'info', title: 'You are invited to lead with Ascentor',
-      message: `${inviterName} invited you to be a Leader. Open your invite to accept.`, link: `/leader-invite/${token}`,
+      message: `${inviterName} invited you to be a Leader. Open your invite to accept.`, link: `/facilitator/${token}`,
     });
     return !error;
   } catch { return false; }
@@ -139,11 +135,11 @@ export async function listLeaderInvites(): Promise<{ rows: InviteRow[]; setup: b
   };
 }
 
-export interface InviteView { email: string; name: string | null; status: InviteStatus; inviterName: string; expiresAt: string }
+export interface InviteView { email: string; name: string | null; status: InviteStatus; inviterName: string; expiresAt: string; usedBy: string | null }
 
 export async function getInviteByToken(token: string): Promise<{ invite: InviteView | null; setup: boolean }> {
   if (!looksLikeInviteToken(token)) return { invite: null, setup: false };
-  const { data, error } = await supabaseAdmin.from('leader_invites').select('email, name, status, expires_at, created_by').eq('token_hash', hashInviteToken(token)).maybeSingle();
+  const { data, error } = await supabaseAdmin.from('leader_invites').select('email, name, status, expires_at, created_by, used_by').eq('token_hash', hashInviteToken(token)).maybeSingle();
   if (error) return { invite: null, setup: missingTable(error) };
   if (!data) return { invite: null, setup: false };
   let inviterName = 'The Ascentor team';
@@ -151,7 +147,7 @@ export async function getInviteByToken(token: string): Promise<{ invite: InviteV
     const { data: a } = await supabaseAdmin.from('profiles').select('full_name').eq('id', data.created_by as string).maybeSingle();
     if ((a?.full_name as string | null)?.trim()) inviterName = `${(a!.full_name as string).trim()} from the Ascentor team`;
   }
-  return { invite: { email: data.email as string, name: data.name as string | null, status: effectiveStatus(data.status as string, data.expires_at as string), inviterName, expiresAt: data.expires_at as string }, setup: false };
+  return { invite: { email: data.email as string, name: data.name as string | null, status: effectiveStatus(data.status as string, data.expires_at as string), inviterName, expiresAt: data.expires_at as string, usedBy: (data.used_by as string | null) ?? null }, setup: false };
 }
 
 export type AcceptResult = { ok: true } | { ok: false; reason: 'invalid' | 'mismatch' | 'unavailable' | 'error' };
@@ -169,16 +165,17 @@ export async function acceptLeaderInvite(token: string, user: { id: string; emai
     .eq('token_hash', hash).eq('status', 'sent').gt('expires_at', now).select('id');
   if (error) return { ok: false, reason: 'error' };
   if (!claimed?.length) return { ok: false, reason: 'unavailable' };
-  // Same flag as Members > Make Leader, so every other check works unchanged.
+  // Same flag as Members > Make Leader, so every other check works unchanged, plus the free-Leader marker.
   const { error: mErr } = await supabaseAdmin.from('member_profile').upsert({ user_id: user.id, is_facilitator: true, updated_at: now }, { onConflict: 'user_id' });
-  if (mErr) {
+  const { error: pErr } = mErr ? { error: mErr } : await supabaseAdmin.from('profiles').update({ leader_free: true }).eq('id', user.id);
+  if (mErr || pErr) {
     await supabaseAdmin.from('leader_invites').update({ status: 'sent', used_at: null, used_by: null }).eq('token_hash', hash).eq('used_by', user.id);
     return { ok: false, reason: 'error' };
   }
   try {
     await supabaseAdmin.from('notifications').insert({
       user_id: user.id, type: 'success', title: 'You are a Leader',
-      message: 'Your invite is accepted. Choose the Leader plan to get started.', link: '/checkout?plan=leader',
+      message: 'Welcome, you now lead for free while you facilitate a Circle.', link: '/dashboard',
     });
   } catch { /* best effort */ }
   return { ok: true };

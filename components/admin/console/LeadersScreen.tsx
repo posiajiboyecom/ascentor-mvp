@@ -50,7 +50,7 @@ export default function LeadersScreen({ rows, setupMessage }: { rows: Row[]; set
           <div><p className="eyebrow">People</p><h1 className="pt">Invite a Leader</h1><span className="ul" /></div>
           <Link href="/admin/c/members" className="btn bs">Back to Members</Link>
         </div>
-        <p className="p" style={{ maxWidth: 820 }}>Each invite is a personal link tied to one email address. It works once and expires after 14 days. The person gets an email, and an alert in the app if they already have an account. Leader stays a paid plan: accepting the invite lets them choose it.</p>
+        <p className="p" style={{ maxWidth: 820 }}>Each invite is a personal link tied to one email address. It works once and expires after 14 days. The person gets an email, and an alert in the app if they already have an account. Accepting gives them free Leader access: no payment and no card.</p>
 
         {setupMessage && <div className="rz"><p className="sm" style={{ color: 'var(--text)' }}>{setupMessage}</p></div>}
 

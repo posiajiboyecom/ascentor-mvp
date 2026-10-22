@@ -16,3 +16,6 @@ create table if not exists public.leader_invites (
 );
 create index if not exists leader_invites_email_idx on public.leader_invites (lower(email));
 alter table public.leader_invites enable row level security;
+
+-- Leaders lead for free while they facilitate: set true when a Leader invite is accepted.
+alter table public.profiles add column if not exists leader_free boolean not null default false;

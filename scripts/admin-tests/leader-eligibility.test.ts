@@ -2,22 +2,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  INVITE_TTL_DAYS, canResend, canRevoke, effectiveStatus, emailsMatch, hashInviteToken, inviteEmailContent, inviteExpiry,
+  INVITE_TTL_DAYS, LEADER_PURCHASABLE, canResend, canRevoke, effectiveStatus, emailsMatch, hashInviteToken, inviteEmailContent, inviteExpiry,
   inviteLink, leaderEligible, looksLikeInviteToken, newInviteToken,
 } from '../../lib/leader-invite-core';
 
-test('eligibility: marked, Leading stage, or already on the plan', () => {
+test('eligibility: marked, accepted invite, or Leading stage', () => {
   assert.equal(leaderEligible({ isMarkedLeader: true }), true);
+  assert.equal(leaderEligible({ leaderFree: true }), true);
   assert.equal(leaderEligible({ stage: 'Leading' }), true);
-  assert.equal(leaderEligible({ plan: 'leader' }), true);
-  assert.equal(leaderEligible({ plan: 'climber' }), true);
+  assert.equal(LEADER_PURCHASABLE, false);
 });
 
 test('eligibility: everyone else is out', () => {
   assert.equal(leaderEligible({}), false);
-  assert.equal(leaderEligible({ isMarkedLeader: false, stage: 'Building', plan: 'builder' }), false);
-  assert.equal(leaderEligible({ stage: 'Seeking', plan: 'explorer' }), false);
-  assert.equal(leaderEligible({ isMarkedLeader: null, stage: null, plan: null }), false);
+  assert.equal(leaderEligible({ isMarkedLeader: false, leaderFree: false, stage: 'Building' }), false);
+  assert.equal(leaderEligible({ stage: 'Seeking' }), false);
+  assert.equal(leaderEligible({ isMarkedLeader: null, leaderFree: null, stage: null }), false);
 });
 
 test('tokens are 32 random bytes, hashed with SHA-256', () => {
@@ -56,12 +56,12 @@ test('emails compare case-insensitively', () => {
 
 test('invite email: copy, link and no em dashes', () => {
   const link = inviteLink('T'.repeat(43), 'https://joinascentor.com/');
-  assert.equal(link, `https://joinascentor.com/leader-invite/${'T'.repeat(43)}`);
-  const c = inviteEmailContent({ inviterName: 'Posi', link, expires: new Date('2026-11-08T10:00:00Z'), recipientName: 'Ada Obi', price: 'NGN 40,000' });
+  assert.equal(link, `https://joinascentor.com/facilitator/${'T'.repeat(43)}`);
+  const c = inviteEmailContent({ inviterName: 'Posi', link, expires: new Date('2026-11-08T10:00:00Z'), recipientName: 'Ada Obi' });
   assert.equal(c.subject, 'You are invited to lead with Ascentor');
   assert.ok(c.text.includes(link));
   assert.ok(c.text.startsWith('Hello Ada,'));
-  assert.ok(c.body.includes('NGN 40,000') && c.body.includes('8 November 2026'));
+  assert.ok(c.body.includes('8 November 2026') && !/NGN|₦|price/i.test(c.body));
   assert.ok(!new RegExp('[' + String.fromCharCode(0x2014, 0x2013) + ']').test(c.subject + c.body + c.text));
-  console.log('preview:', c.text.replace(/leader-invite\/\S+/, 'leader-invite/<token>'));
+  console.log('preview:', c.text.replace(/facilitator\/\S+/, 'facilitator/<token>'));
 });

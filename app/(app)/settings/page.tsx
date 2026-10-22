@@ -11,7 +11,6 @@ import AccountTab from '@/components/rx/settings/AccountTab';
 import ProfileTab from '@/components/rx/settings/ProfileTab';
 import SecurityTab from '@/components/rx/settings/SecurityTab';
 import PlanTab, { type HistoryRow } from '@/components/rx/settings/PlanTab';
-import { canChooseLeader } from '@/lib/leader-access';
 import { deriveBilling } from '@/lib/billing-state';
 import { planDisplayName } from '@/lib/plans-display';
 import { getFeaturedPricing, planPriceLabel } from '@/lib/plans-config';
@@ -108,7 +107,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <PlanTab state={bill.state} plan={bill.plan} planName={bill.planName} tag={bill.tag} line={bill.line} daysLeft={bill.daysLeft}
         untilShort={bill.untilShort} cardLine={cardLine} referralDays={(prof?.referral_bonus_days as number | null) ?? 0} history={history}
         prices={{ explorer: { monthly: featured.explorer.monthlyPrice, yearly: featured.explorer.yearlyPrice }, builder: { monthly: featured.builder.monthlyPrice, yearly: featured.builder.yearlyPrice }, leader: { monthly: featured.leader.monthlyPrice, yearly: featured.leader.yearlyPrice } }}
-        legacy={legacy} showLeader={await canChooseLeader(user.id)} />
+        legacy={legacy} showLeader={false} />
     );
   } else {
     const zone = new Intl.DateTimeFormat('en-NG', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date()).find((x) => x.type === 'timeZoneName')?.value ?? 'your time zone';

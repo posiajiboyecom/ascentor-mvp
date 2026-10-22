@@ -168,7 +168,7 @@ const PUBLIC_ROUTES = [
   '/auth/callback',
   '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
   '/how-it-works', '/who-its-for', '/waitlist', '/newsletter',
-  '/mentor-apply', '/offline', '/payment', '/leader-invite',
+  '/mentor-apply', '/offline', '/payment', '/leader-invite', '/facilitator',
   // Dedicated staff sign-in. /login and /signup are closed to the public
   // (community gate), so admins need their own entry point. Same accounts,
   // same Supabase auth; the page verifies the admin/moderator role itself.
