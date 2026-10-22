@@ -205,6 +205,15 @@ export async function completeCardVerification(
   const meta = txMetadata(tx);
   if (meta.purpose !== 'card_verify' || meta.user_id !== userId) return { ok: false, error: 'This is not a card check for your account.' };
   if (tx.amount !== VERIFY_AMOUNT_KOBO || tx.currency !== 'NGN') return { ok: false, error: 'Unexpected card check amount.' };
+
+  // Once refunded, Paystack may report the transaction as 'reversed'. The webhook and the browser callback can arrive in either
+  // order, so if this reference was already processed, answer with the saved card instead of an error.
+  const sig = tx.authorization?.signature;
+  if (sig && (await refundAlreadyRecorded(userId, reference))) {
+    const { data: saved } = await supabaseAdmin
+      .from('payment_methods').select(SAFE_COLUMNS).eq('user_id', userId).eq('signature', sig).is('removed_at', null).maybeSingle();
+    if (saved) return { ok: true, card: toSafe(saved as Row), added: false, refund: 'already_refunded' };
+  }
   if (tx.status !== 'success') return { ok: false, error: 'The card check did not go through.' };
 
   const added = await addFromVerifiedTransaction(userId, tx);
@@ -214,10 +223,14 @@ export async function completeCardVerification(
   return { ok: true, card: added.card, added: added.added, refund: refundState };
 }
 
+async function refundAlreadyRecorded(userId: string, reference: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from('billing_events').select('id').eq('user_id', userId).eq('type', 'card_verify_refunded').contains('data', { reference }).limit(1);
+  return !!(data && data.length);
+}
+
 async function refundVerification(userId: string, tx: PaystackTx): Promise<'refunded' | 'already_refunded' | 'failed'> {
-  const { data: done } = await supabaseAdmin
-    .from('billing_events').select('id').eq('user_id', userId).eq('type', 'card_verify_refunded').contains('data', { reference: tx.reference }).limit(1);
-  if (done && done.length) return 'already_refunded';
+  if (await refundAlreadyRecorded(userId, tx.reference)) return 'already_refunded';
   const r = await refund({ transaction: tx.reference, amountKobo: tx.amount });
   if (!r.ok) {
     console.error('[billing/cards] verification refund failed:', tx.reference, r.error);

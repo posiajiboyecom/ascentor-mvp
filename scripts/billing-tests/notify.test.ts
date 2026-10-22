@@ -20,7 +20,7 @@ test('every event builds html, text and a subject with no em dashes', () => {
     assert.ok(e.html.includes('/settings/billing'), ev);
     assert.ok(e.text.includes('/settings/billing'), ev);
     for (const s of [e.subject, e.html, e.text, e.title, e.body]) {
-      assert.ok(!s.includes(String.fromCharCode(0x2014)) && !s.includes('&mdash;'), `${ev} has an em dash`);
+      assert.ok(!s.includes(String.fromCharCode(0x2014)) && !s.includes('&' + 'mdash;'), `${ev} has an em dash`);
     }
   }
 });
