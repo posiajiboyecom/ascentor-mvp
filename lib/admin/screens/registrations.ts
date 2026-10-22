@@ -107,7 +107,7 @@ const screen: ScreenModule = {
     const confirmed = all.filter((r) => r.payment_status === 'paid');
     const physical = all.filter((r) => r.attendance_type !== 'virtual').length;
     return {
-      rows: all.slice(0, 200).map((r) => ({ id: r.id, cells: cellsOf(r), details: detailsOf(r) })),
+      rows: all.slice(0, 200).map((r) => ({ id: r.id, cells: cellsOf(r), details: detailsOf(r), contact: { name: r.full_name, phone: r.whatsapp, email: r.email } })),
       kpis: [
         { label: 'Registered', value: count(all.length) },
         { label: 'Confirmed', value: count(confirmed.length) },

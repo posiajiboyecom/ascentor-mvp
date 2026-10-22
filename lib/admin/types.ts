@@ -67,7 +67,8 @@ export interface ScreenSpec {
 
 /** Extra grouped facts shown in a row's detail drawer, under small headings. Optional: screens without it are unaffected. */
 export interface DetailGroup { heading: string; items: [string, string][] }
-export interface RowData { id: string; cells: string[]; details?: DetailGroup[] }
+export interface RowContact { name?: string | null; phone?: string | null; email?: string | null }
+export interface RowData { id: string; cells: string[]; details?: DetailGroup[]; contact?: RowContact }
 
 export interface ScreenData {
   rows: RowData[];
