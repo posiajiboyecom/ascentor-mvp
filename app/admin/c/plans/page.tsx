@@ -4,6 +4,9 @@ import { getPlanPricing } from '@/lib/plans-config';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { naira } from '@/lib/admin/revenue-util';
 import PlansScreen from '@/components/admin/console/PlansScreen';
+import { PLANS, tierLabel, formatNaira, perMonthKobo } from '@/lib/billing/catalog';
+import { billingV2Enabled } from '@/lib/billing/flags';
+import { priceTypeLabel, cycleLabel } from '@/lib/admin/billing-admin';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Plans and pricing' };
@@ -35,8 +38,15 @@ export default async function PlansPage() {
     { key: 'leader' as const, name: 'Leader', members: leader, who: WHO.leader, price: price('leader') != null ? naira(price('leader')) : '\-', open: asBool(s['plan.leader.open']) },
   ];
 
+  const catalog = PLANS.map((p) => ({
+    code: p.code, tier: tierLabel(p.tier), priceType: priceTypeLabel(p.priceType), cycle: cycleLabel(p.cycle),
+    price: formatNaira(p.amountKobo), perMonth: p.cycle === 'yearly' ? formatNaira(perMonthKobo(p)) : '-',
+  }));
+
   return (
     <PlansScreen
+      catalog={catalog}
+      v2On={billingV2Enabled()}
       canEdit={staff.uiLevel('plans') !== 'view' && staff.uiLevel('plans') !== 'none'}
       priceError={priceError}
       plans={plans}

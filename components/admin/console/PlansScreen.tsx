@@ -19,8 +19,10 @@ function Toggle({ on, locked, label, onClick }: { on: boolean; locked: boolean; 
   );
 }
 
-export default function PlansScreen({ canEdit, priceError, plans, extraDays, graceDays, light }: {
-  canEdit: boolean; priceError: boolean; plans: PlanCard[]; extraDays: number; graceDays: number; light: Light;
+interface CatalogRow { code: string; tier: string; priceType: string; cycle: string; price: string; perMonth: string }
+
+export default function PlansScreen({ canEdit, priceError, plans, extraDays, graceDays, light, catalog, v2On }: {
+  canEdit: boolean; priceError: boolean; plans: PlanCard[]; extraDays: number; graceDays: number; light: Light; catalog: CatalogRow[]; v2On: boolean;
 }) {
   const [open, setOpen] = useState<PlansInput['open']>({ seeker: plans[0].open, builder: plans[1].open, leader: plans[2].open });
   const [extra, setExtra] = useState(String(extraDays));
@@ -76,6 +78,25 @@ export default function PlansScreen({ canEdit, priceError, plans, extraDays, gra
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="card st8">
+          <div className="sb"><p className="h3">Billing v2 catalog</p><span className={`tag ${v2On ? 'good' : 'warn'}`}><i />{v2On ? 'Billing v2 is on' : 'Billing v2 is off'}</span></div>
+          <p className="sm p">{v2On ? 'Members see these prices at checkout.' : 'Billing v2 is off, so members still see the plans above. These are the prices that apply once it is switched on.'} Prices are read-only here: they are set in code (lib/billing/catalog.ts) from the payments handoff, and change with a release.</p>
+          <div className="tblwrap">
+            <table className="tbl">
+              <thead><tr>{['Plan', 'Tier', 'Price type', 'Billing', 'Price', 'Per month'].map((c) => <th key={c} scope="col">{c}</th>)}</tr></thead>
+              <tbody>
+                {catalog.map((c) => (
+                  <tr key={c.code}>
+                    <td><span className="num">{c.code}</span></td>
+                    <td>{c.tier}</td><td>{c.priceType}</td><td>{c.cycle}</td>
+                    <td><span className="num">{c.price}</span></td><td>{c.perMonth}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="g2">

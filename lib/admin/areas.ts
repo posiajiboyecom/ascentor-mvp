@@ -52,8 +52,8 @@ export const DEFAULT_ROLES: RoleDef[] = [
 
 // ── status colours (a dot plus the word, never colour alone) ────────────────
 const GOOD = ['Active', 'Paid', 'Published', 'Live', 'Confirmed', 'Indexed', 'Healthy', 'Approved', 'Delivered', 'Rewarded', 'Open', 'Sent', 'Held', 'Ready', 'Matched', 'Booked', 'Connected', 'Leader', 'Removed by admin', 'Resolved'];
-const WARN = ['Trial', 'Pending', 'Draft', 'Scheduled', 'Processing', 'Waiting', 'Voting', 'Packing', 'Forming', 'Needs facilitator', 'Low quorum', 'Quiet', 'Not confirmed', 'Past due', 'Requested', 'Agenda draft', 'Light access', 'Paused', 'Shipped', 'On trial', 'First period', 'Cancelled', 'Free', 'New', 'Not sent', 'Ended'];
-const BAD = ['Failed', 'Suspended', 'Messaging blocked', 'Abandoned', 'Reported', 'Flagged', 'Expired', 'Out of stock', 'No agenda', 'Refunded', 'Rejected', 'Duplicate'];
+const WARN = ['Trial', 'Grace', 'Pending', 'Draft', 'Scheduled', 'Processing', 'Waiting', 'Voting', 'Packing', 'Forming', 'Needs facilitator', 'Low quorum', 'Quiet', 'Not confirmed', 'Past due', 'Requested', 'Agenda draft', 'Light access', 'Paused', 'Shipped', 'On trial', 'First period', 'Cancelled', 'Free', 'New', 'Not sent', 'Ended'];
+const BAD = ['Failed', 'Lapsed', 'Broken', 'Suspended', 'Messaging blocked', 'Abandoned', 'Reported', 'Flagged', 'Expired', 'Out of stock', 'No agenda', 'Refunded', 'Rejected', 'Duplicate'];
 export const toneOf = (v: string): 'good' | 'warn' | 'bad' | 'plain' => (GOOD.includes(v) ? 'good' : WARN.includes(v) ? 'warn' : BAD.includes(v) ? 'bad' : 'plain');
 
 /** The level a role grants for an area ('admin' always has full). */

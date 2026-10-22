@@ -34,6 +34,9 @@ export const spec: ScreenSpec = {
       col: 5,
       to: "Flagged"
     }
+  ],
+  buttons: [
+    { id: "credits", label: "Credits", needs: "view", href: "/admin/c/referrals/credits" }
   ]
 };
 
