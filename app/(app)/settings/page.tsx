@@ -12,6 +12,7 @@ import ProfileTab from '@/components/rx/settings/ProfileTab';
 import SecurityTab from '@/components/rx/settings/SecurityTab';
 import PlanTab, { type HistoryRow } from '@/components/rx/settings/PlanTab';
 import { deriveBilling } from '@/lib/billing-state';
+import { billingV2Enabled } from '@/lib/billing/flags';
 import { planDisplayName } from '@/lib/plans-display';
 import { getFeaturedPricing, planPriceLabel } from '@/lib/plans-config';
 import { formatNaira } from '@/lib/pricing';
@@ -70,6 +71,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     const blocked = blockedIds.map((id) => ({ id, name: (blockedNames.get(id) as { name: string } | undefined)?.name ?? 'Member' }));
     body = <SecurityTab email={email} methods={methods} hasPassword={hasPassword} dmPolicy={p?.dm_policy ?? 'circle_and_requests'} research={p?.research_opt_in ?? false} blocked={blocked} />;
   } else if (tab === 'plan') {
+    // Billing v2 (BILLING_V2=on): members on the new billing, and members with no paid plan yet, manage it at /settings/billing.
+    // Members who still pay through the old flow keep today's Plan tab untouched.
+    if (billingV2Enabled()) {
+      const { data: v2 } = await supabaseAdmin.from('member_subscriptions').select('user_id').eq('user_id', user.id).maybeSingle();
+      const legacyPaid = !!prof?.subscription_plan && prof.subscription_plan !== 'free' && ['active', 'trialing', 'cancelled', 'past_due'].includes(String(prof.subscription_status));
+      if (v2 || !legacyPaid) redirect('/settings/billing');
+    }
     // Own rows only, read on the server with the member's id from the session.
     const { data: pays } = await supabaseAdmin
       .from('payments')

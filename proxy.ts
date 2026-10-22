@@ -169,7 +169,7 @@ const PUBLIC_ROUTES = [
   '/auth/callback',
   '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
   '/how-it-works', '/who-its-for', '/waitlist', '/newsletter',
-  '/mentor-apply', '/offline', '/payment', '/leader-invite', '/facilitator',
+  '/mentor-apply', '/offline', '/payment', '/leader-invite', '/facilitator', '/join',
   // Dedicated staff sign-in. /login and /signup are closed to the public
   // (community gate), so admins need their own entry point. Same accounts,
   // same Supabase auth; the page verifies the admin/moderator role itself.
@@ -210,8 +210,9 @@ export default async function proxy(request: NextRequest) {
   // Community gate: /login and /signup are not yet open.
   // Redirect back to the referrer page (so the modal appears there), or
   // fall back to the home page if there is no referrer.
-  // A personal Leader invite link may send its invitee to sign in or sign up even while the platform is closed.
-  const toInvite = (request.nextUrl.searchParams.get('redirect') ?? '').startsWith('/facilitator/');
+  // A personal Leader invite link, or a billing group link, may send its visitor to sign in or sign up even while the platform is closed.
+  const redirectTo = request.nextUrl.searchParams.get('redirect') ?? '';
+  const toInvite = redirectTo.startsWith('/facilitator/') || (redirectTo.startsWith('/join/') && process.env.BILLING_V2?.trim().toLowerCase() === 'on');
   if (!platformOpen() && !toInvite && (pathname === '/login' || pathname === '/signup')) {
     const referer = request.headers.get('referer');
     let dest: URL;
