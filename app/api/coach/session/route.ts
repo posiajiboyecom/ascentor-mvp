@@ -16,7 +16,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
 import { coachSessionLimiter, getClientIp } from '@/lib/rate-limit';
 import { SESSION_TYPE_MAP, getAvailableSessionTypes } from '@/lib/session-types';
-import { effectivePlan } from '@/lib/planTier';
+import { effectivePlanForUser } from '@/lib/access';
 import { PLAN_LIMITS, checkUsage } from '@/lib/session-limits';
 import { retrieveContext } from '@/lib/rag';
 import { parseJson, parseQuery } from '@/lib/validation/http';
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     .eq('id', user.id)
     .single();
 
-  const plan = effectivePlan(profile);
+  const plan = await effectivePlanForUser(user.id, profile);
   const allowedTypes = getAvailableSessionTypes(plan);
   if (!allowedTypes.some((t) => t.id === sessionTypeId)) {
     return NextResponse.json(

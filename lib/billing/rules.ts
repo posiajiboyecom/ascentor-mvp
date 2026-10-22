@@ -13,7 +13,9 @@
 //   Failures:   RETRY_OFFSET_DAYS, GRACE_DAYS, graceEndsAt, nextRetryAfterFailure, graceExpired
 //   Credit:     CREDIT_RATE, CREDIT_VALID_MONTHS, creditPerReferralKobo, computeCreditLots,
 //               availableCreditKobo, applyCredit, expiredLots
-//   Quorum:     quorumNeeded, offersMerge
+//   Quorum:     quorumNeeded, offersMerge, quorum
+//   Leaders:    LEADER_CYCLE_DAYS, leaderCycleEnded, groupAlertDue
+//   Placement:  pickGroupCircle (friends who join as a group share a Circle)
 //   Fees:       estimatePaystackFeeKobo
 //   Refs:       chargeReference
 // ─────────────────────────────────────────────────────────────────────────────
@@ -171,6 +173,29 @@ export function groupWarningDue(i: {
   return solo && within;
 }
 
+/**
+ * Friends who join as a group are placed in the same Circle for now (owner answer). The Circle to use is the one holding the
+ * group's earliest-placed ACTIVE member, when it still has a free seat; otherwise null and normal placement runs.
+ * `placed` is every other group member's seat (their earliest member seat), `active` the ids that are active members,
+ * `seatsTaken` the member seats used per Circle, `maxSeats` the Circle size limit, `usable` the Circles that may be joined
+ * (not finished, not a demo).
+ */
+export function pickGroupCircle(i: {
+  placed: { userId: string; circleId: string; joinedAt: Date }[];
+  active: ReadonlySet<string>;
+  seatsTaken: ReadonlyMap<string, number>;
+  usable: ReadonlySet<string>;
+  maxSeats: number;
+}): string | null {
+  const sorted = i.placed.filter((p) => i.active.has(p.userId)).sort((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime());
+  for (const p of sorted) {
+    if (!i.usable.has(p.circleId)) continue;
+    if ((i.seatsTaken.get(p.circleId) ?? 0) < i.maxSeats) return p.circleId;
+    return null; // the earliest-placed member's Circle is full: use normal placement rather than splitting the group at random
+  }
+  return null;
+}
+
 // ── Failed payments, retries, grace ──────────────────────────────────────────
 
 /** Retries happen this many days after the FIRST failure: +1, +3, +5 (all inside the 7-day grace window). */
@@ -298,6 +323,43 @@ export function quorumNeeded(activeMembers: number): number {
 /** A Circle with 4 or fewer active members is offered a merge. */
 export function offersMerge(activeMembers: number): boolean {
   return activeMembers <= 4;
+}
+
+export interface QuorumResult {
+  /** Confirmations needed for the call to hold (the mentor is always present on top of this). */
+  needed: number;
+  /** True when the Circle has 4 or fewer active members: offer a merge (flag only, never automatic). */
+  offerMerge: boolean;
+  active: number;
+}
+
+/**
+ * The handoff table in one call: 10 or 9 active -> 6, 8 or 7 -> 5, 6 -> 4, 5 -> 3, 4 or fewer -> 3 plus a merge offer.
+ * "Active" = trial, paying or inside grace; a lapsed member who has not reactivated is not counted (callers pass the count).
+ */
+export function quorum(activeMembers: number): QuorumResult {
+  const active = Math.max(0, Math.floor(activeMembers));
+  return { needed: quorumNeeded(active), offerMerge: offersMerge(active), active };
+}
+
+// ── Leaders ──────────────────────────────────────────────────────────────────
+
+/** A free Leader moves to the Builder price after a 90-day cycle with no Circle to facilitate. */
+export const LEADER_CYCLE_DAYS = 90;
+
+/**
+ * True when a free Leader has gone a full cycle without facilitating a Circle: they have not facilitated one for
+ * LEADER_CYCLE_DAYS. `lastFacilitatedAt` is when they last held a facilitator seat (or when they became a free Leader,
+ * whichever is later; null means we cannot tell, so nothing happens).
+ */
+export function leaderCycleEnded(i: { facilitatingNow: boolean; lastFacilitatedAt: Date | null; now: Date }): boolean {
+  if (i.facilitatingNow || !i.lastFacilitatedAt) return false;
+  return i.now.getTime() >= addDays(i.lastFacilitatedAt, LEADER_CYCLE_DAYS).getTime();
+}
+
+/** The admin is alerted when a group's active count is exactly the minimum of 3, so replacements can be invited. */
+export function groupAlertDue(activeCount: number): boolean {
+  return activeCount === GROUP_MIN;
 }
 
 // ── Paystack fee estimate ────────────────────────────────────────────────────

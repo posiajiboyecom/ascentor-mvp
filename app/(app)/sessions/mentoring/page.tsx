@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getMe } from '@/lib/rx/server';
 import { myMentorProfile } from '@/lib/rx/mentors';
-import { mentorCircles, MIN_GOING, MAX_AGREEMENT_GOALS } from '@/lib/rx/cmentor';
+import { mentorCircles, MAX_AGREEMENT_GOALS } from '@/lib/rx/cmentor';
 import { whenLabel } from '@/lib/rx/dates';
 import { Aside, BackLink, GoLink, Page, Tag, Title } from '@/components/rx/ui';
 import { AgreementWorkspace, CapacityStepper, CircleRequestActions, ScheduleGrid, SlotManager, type SlotGridItem } from '@/components/rx/sessions/SessionsClient';
@@ -51,7 +51,7 @@ export default async function MentoringPage() {
           {scheduling.map((c) => (
             <div key={c.cmId} className="rx-card rx-stack">
               <p className="rx-label">Choosing a time · {c.circleName}</p>
-              <ScheduleGrid cmId={c.cmId} slots={c.slots.map((s) => ({ ...s, ...fmt(s.startsAt) }))} total={c.members} canConfirm isMember={false} min={MIN_GOING} />
+              <ScheduleGrid cmId={c.cmId} slots={c.slots.map((s) => ({ ...s, ...fmt(s.startsAt) }))} total={c.members} canConfirm isMember={false} min={c.needed} />
             </div>
           ))}
 

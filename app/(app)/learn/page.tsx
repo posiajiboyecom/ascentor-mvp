@@ -8,6 +8,7 @@ import { ArrowRight, Check, Lock, Play } from 'lucide-react';
 import '@/styles/rx-circle.css';
 import { createClient } from '@/lib/supabase/server';
 import { deriveBilling } from '@/lib/billing-state';
+import { getBillingV2Input } from '@/lib/access';
 import { getMe, getMyCircle } from '@/lib/rx/server';
 import { getLessonProgress, getLessons, getTodayState, pickWeekLesson } from '@/lib/rx/practice';
 import { CIRCLE_FOCUS, dimensionOf } from '@/lib/rx/constants';
@@ -22,7 +23,7 @@ export default async function LearnPage() {
   const [lessons, progress, state, circle] = await Promise.all([getLessons(), getLessonProgress(), getTodayState(), getMyCircle()]);
   const db = await createClient();
   const { data: billProf } = await db.from('profiles').select('subscription_plan, subscription_status, subscription_end').eq('id', me.userId).maybeSingle();
-  const bill = deriveBilling(billProf, me.tz);
+  const bill = deriveBilling(billProf, me.tz, new Date(), '', await getBillingV2Input(me.userId));
   const pathDone = !!state && state.pathway.length >= 12 && state.pathway.every((d) => d.state === 'done');
   const behindCount = state?.pathway.filter((d) => d.state === 'behind').length ?? 0;
   const week = state?.week ?? 1;

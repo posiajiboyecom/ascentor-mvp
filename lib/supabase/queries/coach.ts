@@ -15,7 +15,7 @@
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server';
-import { effectivePlan } from '@/lib/planTier';
+import { effectivePlanForUser } from '@/lib/access';
 import { getAvailableSessionTypes, type SessionType } from '@/lib/session-types';
 import { PLAN_LIMITS } from '@/lib/session-limits';
 import type { CoachingSession } from '@/database/database';
@@ -82,7 +82,7 @@ export async function getCoachPageData(): Promise<CoachPageData | null> {
       .gte('created_at', startOfMonthUTC()),
   ]);
 
-  const plan = effectivePlan(profileRes.data);
+  const plan = await effectivePlanForUser(user.id, profileRes.data);
   const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
   const monthlyLimit = planLimits.coachingSessions; // -1 = unlimited
 

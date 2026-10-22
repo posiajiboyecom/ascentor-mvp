@@ -18,7 +18,8 @@
 
 import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { effectivePlan, canAccess, type PlanTier } from '@/lib/planTier';
+import { canAccess, type PlanTier } from '@/lib/planTier';
+import { effectivePlanForUser } from '@/lib/access';
 import { CourseDetailClient } from './CourseDetailClient';
 
 export const dynamic = 'force-dynamic';
@@ -57,7 +58,7 @@ export default async function CourseDetailPage({
   }
   if (!courseRes.data) notFound();
 
-  const userPlan: PlanTier = effectivePlan(profileRes.data);
+  const userPlan: PlanTier = await effectivePlanForUser(user.id, profileRes.data);
   const requiredTier = (courseRes.data.plan_tier || 'free') as PlanTier;
 
   // Gate at the route level - locked courses redirect back to the grid,

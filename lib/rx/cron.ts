@@ -12,7 +12,7 @@ import { buildDigest, isDigestMoment, isEveningNudge, isMorningNudge } from './d
 import { circleCardsFor, circleTitle } from './circles';
 import { addDays, cycleWeek, diffDays, localISODate, mondayOfISO, whenLabel } from './dates';
 import { circleWindow, MENTOR_CALL_MINUTES } from './calls';
-import { MIN_GOING } from './cmentor';
+import { circleQuorum } from './quorum';
 
 export async function syncAnnouncementStatus(): Promise<{ started: number; ended: number }> {
   const today = localISODate('Africa/Lagos');
@@ -174,7 +174,8 @@ export async function sendCallReminders(): Promise<{ circle: number; mentor: num
 }
 
 /**
- * The RSVP rule: a mentor session runs only if MIN_GOING or more members are going a day before. If not, the session and the
+ * The RSVP rule (billing v2 handoff): a mentor session runs only if the quorum is met a day before: 60% of the Circle's ACTIVE
+ * members (trial, paying, grace), rounded up, minimum 3. Members who lapsed and have not reactivated are not counted. If not, the session and the
  * rest of the series are cancelled, the Circle goes back to choosing a time from the mentor's open slots, and everyone is told.
  * Also marks finished sessions as held.
  */
@@ -192,15 +193,19 @@ export async function enforceMentorSessionRules(): Promise<{ cancelled: number; 
   for (const s of (soon ?? []) as { id: string; circle_id: string; circle_mentor_id: string; mentor_id: string; starts_at: string }[]) {
     const { data: dc } = await supabaseAdmin.from('circles').select('is_demo').eq('id', s.circle_id).maybeSingle();
     if (dc?.is_demo) continue; // demo Circles are never moved by the RSVP rule
-    const { count } = await supabaseAdmin.from('session_rsvps').select('user_id', { count: 'exact', head: true }).eq('session_id', s.id).eq('status', 'going');
-    if ((count ?? 0) >= MIN_GOING) continue;
+    const [{ data: going }, quo] = await Promise.all([
+      supabaseAdmin.from('session_rsvps').select('user_id').eq('session_id', s.id).eq('status', 'going'),
+      circleQuorum(s.circle_id, now),
+    ]);
+    const goingActive = ((going ?? []) as { user_id: string }[]).filter((g) => quo.ids.has(g.user_id)).length;
+    if (goingActive >= quo.needed) continue;
     await supabaseAdmin.from('circle_mentor_sessions').update({ status: 'cancelled', cancel_reason: 'low_rsvp' }).eq('circle_mentor_id', s.circle_mentor_id).eq('status', 'scheduled').gte('starts_at', now.toISOString());
     await supabaseAdmin.from('slot_marks').delete().eq('circle_mentor_id', s.circle_mentor_id);
     await supabaseAdmin.from('circle_mentors').update({ status: 'scheduling' }).eq('id', s.circle_mentor_id).eq('status', 'active');
     const ids = await circleAudience(s.circle_id);
     const { data: m } = await supabaseAdmin.from('human_mentors').select('user_id').eq('id', s.mentor_id).maybeSingle();
     if (m?.user_id) ids.push(m.user_id as string);
-    await rxNotify(ids, { kind: 'session_moved', entityId: s.circle_mentor_id, url: `/sessions?c=${s.circle_id}`, title: 'Tomorrow’s mentor session is moved', body: `Fewer than ${MIN_GOING} members were going. Mark the times you can attend and your Circle will pick a new one.` });
+    await rxNotify(ids, { kind: 'session_moved', entityId: s.circle_mentor_id, url: `/sessions?c=${s.circle_id}`, title: 'Tomorrow’s mentor session is moved', body: `Fewer than ${quo.needed} members were going. Mark the times you can attend and your Circle will pick a new one.` });
     cancelled++;
   }
   return { cancelled, held };
@@ -232,4 +237,43 @@ export async function sendLessonReminders(): Promise<{ sent: number }> {
     sent += 1;
   }
   return { sent };
+}
+
+/** "Early in its 90-day cycle" for the merge offer: the first four weeks. */
+export const SMALL_CIRCLE_WINDOW_DAYS = 28;
+
+/**
+ * Small Circles (handoff, call quorum): when a Circle falls to 4 or fewer ACTIVE members early in its cycle, offer a merge or
+ * new members. This only FLAGS it: an in-app notice to the facilitator and to the admins, once per Circle per 14 days. It never
+ * merges anything and never moves a member.
+ */
+export async function flagSmallCircles(now: Date = new Date()): Promise<{ checked: number; flagged: number }> {
+  const since = new Date(now.getTime() - SMALL_CIRCLE_WINDOW_DAYS * 86400000).toISOString().slice(0, 10);
+  const { data: circles } = await supabaseAdmin.from('circles').select('id, name, number, interest, facilitator_id, cycle_start')
+    .eq('status', 'active').eq('is_demo', false).gte('cycle_start', since);
+  const { data: admins } = await supabaseAdmin.from('profiles').select('id').eq('role', 'admin');
+  const adminIds = ((admins ?? []) as { id: string }[]).map((a) => a.id);
+  let flagged = 0; let checked = 0;
+  for (const c of (circles ?? []) as { id: string; name: string; number: number; interest: string | null; facilitator_id: string | null }[]) {
+    try {
+      checked++;
+      const q = await circleQuorum(c.id, now);
+      if (!q.offerMerge) continue;
+      const label = circleTitle(c);
+      const title = `${label} has ${q.active} active ${q.active === 1 ? 'member' : 'members'}`;
+      const recent = new Date(now.getTime() - 14 * 86400000).toISOString();
+      const targets: { id: string; link: string; message: string }[] = [];
+      if (c.facilitator_id) targets.push({ id: c.facilitator_id, link: `/circle/facilitator?c=${c.id}`, message: `Calls need ${q.needed} confirmations. The Ascentor team can merge this Circle with another or fill the empty seats. Nothing changes until you hear from us.` });
+      for (const a of adminIds) targets.push({ id: a, link: '/admin/circles', message: `A merge or new members are suggested. Calls need ${q.needed} confirmations. Nothing was changed automatically.` });
+      let sent = false;
+      for (const t of targets) {
+        const { data: dup } = await supabaseAdmin.from('notifications').select('id').eq('user_id', t.id).eq('title', title).gte('created_at', recent).limit(1).maybeSingle();
+        if (dup) continue;
+        await supabaseAdmin.from('notifications').insert({ user_id: t.id, type: 'community', title, message: t.message, link: t.link });
+        sent = true;
+      }
+      if (sent) flagged++;
+    } catch (e) { console.error('[rx/cron] small circle flag failed', e instanceof Error ? e.message : e); }
+  }
+  return { checked, flagged };
 }

@@ -15,6 +15,7 @@ import { longDate, nextWeekdayAt, whenLabel } from '@/lib/rx/dates';
 import { createClient } from '@/lib/supabase/server';
 import { Check, Lock } from 'lucide-react';
 import { deriveBilling } from '@/lib/billing-state';
+import { getBillingV2Input } from '@/lib/access';
 import { Banner } from '@/components/rx/ui';
 import DayOneCard from '@/components/rx/today/DayOneCard';
 import { Aside, Page, SageLine, Tag } from '@/components/rx/ui';
@@ -39,7 +40,7 @@ export default async function TodayPage() {
 
   const billDb = await createClient();
   const { data: billProf } = await billDb.from('profiles').select('subscription_plan, subscription_status, subscription_end').eq('id', me.userId).maybeSingle();
-  const bill = deriveBilling(billProf, me.tz);
+  const bill = deriveBilling(billProf, me.tz, new Date(), '', await getBillingV2Input(me.userId));
   let reportShared = false;
   if (circle?.pledged && circle.week) {
     const db = await createClient();

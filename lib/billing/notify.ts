@@ -12,7 +12,8 @@
 //   plainFailureReason(gatewayText)     -> member-friendly reason                                   PURE
 //   notifyCardAdded / notifyCardRemoved / notifyCardDefaultChanged / notifyPaymentSucceeded /
 //   notifyPaymentFailed / notifyTrialStarted / notifyTrialEnding / notifyGraceStarted / notifyLapsed /
-//   notifyReactivated / notifyGroupWarning / notifyCreditEarned     (userId, data) -> Promise<void>, never throws
+//   notifyReactivated / notifyGroupWarning / notifyCreditEarned / notifyLeaderCycleEnded   (userId, data) -> Promise<void>, never throws
+//   notifyAdminsGroupAtMinimum({ groupCode, activeCount })           in-app notice + email to every admin, never throws
 // The server-only modules (supabase, mailer) are imported lazily so buildEmail can be unit tested without them.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -24,7 +25,8 @@ export const BILLING_LINK = '/settings/billing';
 
 export type BillingNotifyEvent =
   | 'card_added' | 'card_removed' | 'card_default_changed' | 'payment_succeeded' | 'payment_failed'
-  | 'trial_started' | 'trial_ending' | 'grace_started' | 'lapsed' | 'reactivated' | 'group_warning' | 'credit_earned';
+  | 'trial_started' | 'trial_ending' | 'grace_started' | 'lapsed' | 'reactivated' | 'group_warning' | 'credit_earned'
+  | 'leader_cycle_ended' | 'group_admin_alert';
 
 export interface NotifyData {
   brand?: string | null;
@@ -43,6 +45,8 @@ export interface NotifyData {
   renewalDate?: Date | string | null;
   groupPriceKobo?: number;
   soloPriceKobo?: number;
+  /** Group code, for the admin alert (for example ASC-7K2Q). */
+  groupCode?: string;
 }
 
 export interface BuiltEmail {
@@ -89,6 +93,8 @@ interface Copy {
   label?: string;
   /** In-app notification message (short). */
   inApp?: string;
+  /** Path the button and the in-app notice open. Defaults to the member Billing screen. */
+  link?: string;
 }
 
 function copyFor(event: BillingNotifyEvent, d: NotifyData): Copy {
@@ -161,6 +167,21 @@ function copyFor(event: BillingNotifyEvent, d: NotifyData): Copy {
         body: `Your group has ${n} and the group price needs 3. At your next charge${when ? ` on ${when}` : ''} you will move to the solo price${d.soloPriceKobo ? ` of ${formatNaira(d.soloPriceKobo)}` : ''} unless someone joins your group before then.`,
         label: 'Open Billing', inApp: `Your group needs 3 active members to keep the group price${when ? ` at your ${when} charge` : ''}.` };
     }
+    case 'leader_cycle_ended': {
+      const solo = d.soloPriceKobo != null ? formatNaira(d.soloPriceKobo) : '';
+      const group = d.groupPriceKobo != null ? formatNaira(d.groupPriceKobo) : '';
+      const price = solo ? ` The Builder price is ${solo} a month${group ? `, or ${group} a month in a group of 3` : ''}.` : '';
+      return { subject: 'Your free Leader access has ended', eyebrow: 'Billing', title: 'Your Leader cycle has ended',
+        body: `It has been 90 days since you last facilitated a Circle, so free Leader access has ended and you move to the Builder plan.${price} Nothing has been charged. Add a card in Billing to continue on Builder, and any referral credit you earned while free is waiting for you.`,
+        label: 'Add a card to continue', inApp: 'Your free Leader access has ended. Add a card to continue on Builder. Nothing has been charged.' };
+    }
+    case 'group_admin_alert': {
+      const code = d.groupCode ?? 'A group';
+      const n = d.activeCount ?? 3;
+      return { subject: `Group ${code} is down to ${n} active members`, eyebrow: 'Admin', title: `Group ${code} is at the minimum`,
+        body: `Group ${code} now has exactly ${n} active members, which is the minimum for the group price. If one more member leaves or lapses, everyone moves to the solo price after the 14 day replacement window. Invite a replacement to keep the group price.`,
+        label: 'Open Groups', link: '/admin/c/members/groups', inApp: `Group ${code} is down to ${n} active members. Invite a replacement to keep the group price.` };
+    }
     case 'credit_earned': {
       const credit = d.creditKobo != null ? formatNaira(d.creditKobo) : 'credit';
       const bal = d.balanceKobo != null ? formatNaira(d.balanceKobo) : '';
@@ -174,7 +195,7 @@ function copyFor(event: BillingNotifyEvent, d: NotifyData): Copy {
 /** Builds subject, HTML and plain text for an event. Pure, so tests can assert on the output. */
 export function buildEmail(event: BillingNotifyEvent, data: NotifyData, recipient = 'member'): BuiltEmail {
   const c = copyFor(event, data);
-  const url = `${SITE}${BILLING_LINK}`;
+  const url = `${SITE}${c.link ?? BILLING_LINK}`;
   const label = c.label ?? 'Open Billing';
   const lines = c.lines ?? [];
   const html = brandedEmailLayout({
@@ -199,7 +220,7 @@ async function deliver(userId: string, event: BillingNotifyEvent, data: NotifyDa
   try {
     const { supabaseAdmin } = await import('@/lib/supabase/admin');
     const { error } = await supabaseAdmin.from('notifications').insert({
-      user_id: userId, type: 'billing', title: copy.title, message: copy.inApp ?? copy.body, link: BILLING_LINK,
+      user_id: userId, type: 'billing', title: copy.title, message: copy.inApp ?? copy.body, link: copy.link ?? BILLING_LINK,
     });
     if (error) console.error('[billing/notify] in-app insert failed:', event, error.message);
   } catch (e) {
@@ -232,3 +253,18 @@ export const notifyLapsed = make('lapsed');
 export const notifyReactivated = make('reactivated');
 export const notifyGroupWarning = make('group_warning');
 export const notifyCreditEarned = make('credit_earned');
+export const notifyLeaderCycleEnded = make('leader_cycle_ended');
+
+/** Tells every admin (in-app and by email) that a group is down to exactly 3 active members. Never throws. */
+export async function notifyAdminsGroupAtMinimum(data: { groupCode: string; activeCount: number }): Promise<number> {
+  try {
+    const { supabaseAdmin } = await import('@/lib/supabase/admin');
+    const { data: admins } = await supabaseAdmin.from('profiles').select('id').eq('role', 'admin');
+    const ids = ((admins ?? []) as { id: string }[]).map((a) => a.id);
+    for (const id of ids) await deliver(id, 'group_admin_alert', data);
+    return ids.length;
+  } catch (e) {
+    console.error('[billing/notify] admin group alert failed:', e instanceof Error ? e.message : 'unknown');
+    return 0;
+  }
+}

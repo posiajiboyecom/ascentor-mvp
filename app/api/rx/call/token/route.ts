@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { featureBlock } from '@/lib/access';
 import { callsConfigured, circleWindow, createToken, ensureRoom, mentorWindow, type CallWindow } from '@/lib/rx/calls';
 
 export const runtime = 'nodejs';
@@ -36,6 +37,11 @@ export async function POST(req: Request) {
     isMentor = !!cm;
   }
   if (!seat && !isMentor) return NextResponse.json({ state: 'error', error: 'This call is for the members of this Circle.' }, { status: 403 });
+  // Billing v2: a lapsed member (light access) drops out of Circle and mentor calls until they reactivate. Mentors are never blocked here.
+  if (!isMentor) {
+    const paused = await featureBlock(user.id, kind === 'mentor' ? 'mentorSessions' : 'circleChat');
+    if (paused) return NextResponse.json({ state: 'error', error: paused }, { status: 403 });
+  }
 
   let win: CallWindow;
   let roomName: string;

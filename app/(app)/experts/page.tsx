@@ -17,7 +17,7 @@
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { effectivePlan } from '@/lib/planTier';
+import { effectivePlanForUser } from '@/lib/access';
 import { ExpertsClient } from './ExpertsClient';
 
 export const dynamic = 'force-dynamic';
@@ -73,7 +73,7 @@ export default async function ExpertsPage() {
     <ExpertsClient
       sessions={(sessionsRes.data ?? []).map(normaliseSession)}
       registeredIds={regsRes.data?.map((r) => r.session_id) ?? []}
-      userPlan={effectivePlan(profileRes.data)}
+      userPlan={await effectivePlanForUser(user.id, profileRes.data)}
       userId={user.id}
     />
   );

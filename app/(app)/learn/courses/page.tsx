@@ -16,7 +16,7 @@
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { effectivePlan } from '@/lib/planTier';
+import { effectivePlanForUser } from '@/lib/access';
 import { LearnClient } from '../LearnClient';
 
 export const dynamic = 'force-dynamic';
@@ -104,5 +104,5 @@ export default async function LearnPage() {
     };
   });
 
-  return <LearnClient courses={courses} userPlan={effectivePlan(profileRes.data)} />;
+  return <LearnClient courses={courses} userPlan={await effectivePlanForUser(user.id, profileRes.data)} />;
 }

@@ -8,6 +8,7 @@ import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { cycleWeek, DEFAULT_TZ, localISODate, mondayOfISO } from './dates';
+import { CIRCLES_PER_MEMBER } from './constants';
 
 export type Db = Awaited<ReturnType<typeof createClient>>;
 
@@ -165,8 +166,31 @@ export const getMyCircle = cache(async (kind: 'member' | 'facilitator' = 'member
   };
 });
 
+/**
+ * Billing v2: a member who joined with a group is placed in the same Circle as the group's earliest-placed active member when
+ * that Circle has space (owner answer: friends who join as a group share a Circle for now). Returns the Circle id, or null for
+ * normal placement. Never throws; a member who already has a home Circle is left to rx_assign_circle (it returns that Circle).
+ */
+async function placeWithGroup(userId: string): Promise<string | null> {
+  try {
+    const { data: seat } = await supabaseAdmin.from('circle_seats').select('circle_id').eq('user_id', userId).eq('role', 'member').limit(1).maybeSingle();
+    if (seat) return null;
+    const { groupCircleHint } = await import('@/lib/billing/group-hint');
+    const hint = await groupCircleHint(userId);
+    if (!hint) return null;
+    const { data: res, error } = await supabaseAdmin.rpc('rx_join_circle', { p_user: userId, p_circle: hint, p_max: CIRCLES_PER_MEMBER });
+    if (error || (res !== 'ok' && res !== 'already')) return null; // full, finished or missing: fall back to normal placement
+    return hint;
+  } catch (e) {
+    console.error('[assignCircle] group placement skipped:', e instanceof Error ? e.message : 'unknown');
+    return null;
+  }
+}
+
 /** Places the member in a Circle (service role: members cannot write circles directly). */
 export async function assignCircle(userId: string): Promise<string | null> {
+  const withGroup = await placeWithGroup(userId);
+  if (withGroup) return withGroup;
   const { data, error } = await supabaseAdmin.rpc('rx_assign_circle', { p_user: userId });
   if (error) { console.error('rx_assign_circle failed', error.message); return null; }
   return (data as string | null) ?? null;

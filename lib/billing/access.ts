@@ -1,0 +1,85 @@
+// lib/billing/access.ts
+// ─────────────────────────────────────────────────────────────────────────────
+// Billing v2 ACCESS rules. PURE: no I/O, `now` is passed in. Tested in scripts/billing-tests/access.test.ts.
+// Applies ONLY to members that have a member_subscriptions row (v2). A member with no row is "legacy" and keeps
+// today's behaviour exactly (callers fall back to lib/planTier.ts effectivePlan).
+//
+// Exports
+//   Features, featuresFor(level, tier)           what a member may use
+//   accessFromSubscription(sub, leaderFree, now) -> MemberAccess
+//   LEGACY_ACCESS                                 what a member without a v2 row gets from this module (callers still apply the old rules)
+//   planForAccess(access)                         the plan id the old gating code understands ('free' | 'explorer' | 'builder' | 'climber')
+//
+// Handoff tables:
+//   full  (trial, active, grace, cancelled until period end): everything the tier includes
+//   light (lapsed after grace, cancelled after period end): Today, daily practices, own growth record, open house,
+//         direct messages. Sage, Circle chat, advanced Learn and mentor sessions are off.
+//   Direct messages are ON for every tier and every state (owner answer: Seekers get direct messages).
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { accessLevel, type SubState } from './rules';
+import type { Tier } from './catalog';
+
+export interface Features {
+  today: boolean;
+  growthRecord: boolean;
+  openHouse: boolean;
+  directMessages: boolean;
+  sage: boolean;
+  circleChat: boolean;
+  mentorSessions: boolean;
+  /** Core Learn tracks (every paid tier). */
+  coreLearn: boolean;
+  /** Advanced Learn tracks (Builder and Leader). */
+  advancedLearn: boolean;
+  facilitatorMaterial: boolean;
+}
+
+export type Level = 'full' | 'light';
+export type MemberTier = Tier | 'leader';
+
+export function featuresFor(level: Level, tier: MemberTier | null): Features {
+  const base = { today: true, growthRecord: true, openHouse: true, directMessages: true };
+  if (level === 'light') {
+    return { ...base, sage: false, circleChat: false, mentorSessions: false, coreLearn: false, advancedLearn: false, facilitatorMaterial: false };
+  }
+  return {
+    ...base, sage: true, circleChat: true, mentorSessions: true, coreLearn: true,
+    advancedLearn: tier === 'builder' || tier === 'leader',
+    facilitatorMaterial: tier === 'leader',
+  };
+}
+
+export interface AccessSub {
+  state: SubState;
+  tier: Tier;
+  periodEnd?: Date | null;
+  trialEndsAt?: Date | null;
+}
+
+export interface MemberAccess {
+  /** True when the member has a member_subscriptions row (billing v2). */
+  v2: boolean;
+  level: Level;
+  state: SubState | null;
+  tier: MemberTier | null;
+  features: Features;
+}
+
+export const LEGACY_ACCESS: MemberAccess = { v2: false, level: 'full', state: null, tier: null, features: featuresFor('full', 'leader') };
+
+export function accessFromSubscription(sub: AccessSub | null | undefined, leaderFree: boolean, now: Date): MemberAccess {
+  if (!sub) return LEGACY_ACCESS;
+  // A free Leader is never light: they do not pay, so a payment state cannot take their access away.
+  const level: Level = leaderFree ? 'full' : accessLevel(sub, now);
+  const tier: MemberTier = leaderFree ? 'leader' : sub.tier;
+  return { v2: true, level, state: sub.state, tier, features: featuresFor(level, tier) };
+}
+
+/** The plan id the existing gating code (canAccess, requireSubscription) understands. Light access is 'free'. */
+export function planForAccess(a: MemberAccess): 'free' | 'explorer' | 'builder' | 'climber' | null {
+  if (!a.v2) return null;
+  if (a.level === 'light') return 'free';
+  if (a.tier === 'leader') return 'climber';
+  return a.tier === 'builder' ? 'builder' : 'explorer';
+}
