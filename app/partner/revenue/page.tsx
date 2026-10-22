@@ -74,7 +74,7 @@ export default async function PartnerRevenuePage() {
 
   const maxSignups = Math.max(...monthlySignups.map((m) => m.count), 1);
 
-  const statCard = (label: string, value: string | number, sub?: string, color = '#f8fafc') => (
+  const statCard = (label: string, value: string | number, sub?: string, color = '#161616') => (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '16px 20px' }}>
       <div style={{ fontSize: '24px', fontWeight: 500, color, marginBottom: '2px' }}>{value}</div>
       <div style={{ fontSize: '12px', color: 'var(--text-dim)' }}>{label}</div>

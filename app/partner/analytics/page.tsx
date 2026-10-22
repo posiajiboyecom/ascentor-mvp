@@ -46,8 +46,8 @@ interface AnalyticsData {
 
 const C = {
   card: {
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'rgba(22,22,22,0.03)',
+    border: '1px solid #E6E3DD',
     borderRadius: '10px',
     padding: '20px',
   } as React.CSSProperties,
@@ -56,24 +56,24 @@ const C = {
     fontWeight: 700,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.07em',
-    color: 'rgba(255,255,255,0.35)',
+    color: '#5F6672',
     marginBottom: '6px',
   } as React.CSSProperties,
   value: {
     fontSize: '28px',
     fontWeight: 500,
-    color: '#f8fafc',
+    color: '#161616',
     lineHeight: 1.1,
   } as React.CSSProperties,
   sub: {
     fontSize: '11px',
-    color: 'rgba(255,255,255,0.35)',
+    color: '#5F6672',
     marginTop: '4px',
   } as React.CSSProperties,
   sectionTitle: {
     fontSize: '13px',
     fontWeight: 600,
-    color: '#f8fafc',
+    color: '#161616',
     marginBottom: '14px',
     marginTop: '28px',
   } as React.CSSProperties,
@@ -95,16 +95,16 @@ function BarChart({
         const h = Math.round((d[valueKey] / max) * maxHeight);
         return (
           <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: '10px', color: '#5F6672', whiteSpace: 'nowrap' }}>
               {d[valueKey] > 0 ? d[valueKey] : ''}
             </div>
             <div style={{
               width: '100%', height: Math.max(h, 2),
-              background: h > 0 ? color : 'rgba(255,255,255,0.06)',
+              background: h > 0 ? color : '#5F6672',
               borderRadius: '3px 3px 0 0',
               transition: 'height 0.4s ease',
             }} />
-            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: '10px', color: '#5F6672', whiteSpace: 'nowrap' }}>
               {d[labelKey]}
             </div>
           </div>
@@ -122,7 +122,7 @@ function StatCard({
   return (
     <div style={{ ...C.card, flex: 1 }}>
       <div style={C.label}>{label}</div>
-      <div style={{ ...C.value, color: accent ? '#E8A020' : '#f8fafc' }}>{value}</div>
+      <div style={{ ...C.value, color: accent ? '#E8A020' : '#161616' }}>{value}</div>
       {sub && <div style={C.sub}>{sub}</div>}
     </div>
   );
@@ -131,7 +131,7 @@ function StatCard({
 function ProgressBar({ value, max, color = '#E8A020' }: { value: number; max: number; color?: string }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
-    <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
+    <div style={{ background: 'rgba(22,22,22,0.07)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
       <div style={{
         height: '100%', width: `${pct}%`, background: color,
         borderRadius: '4px', transition: 'width 0.5s ease',
@@ -163,7 +163,7 @@ export default function PartnerAnalyticsPage() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {[1,2,3].map(i => (
-          <div key={i} style={{ ...C.card, height: '80px', background: 'rgba(255,255,255,0.02)' }} />
+          <div key={i} style={{ ...C.card, height: '80px', background: 'rgba(22,22,22,0.02)' }} />
         ))}
       </div>
     );
@@ -186,8 +186,8 @@ export default function PartnerAnalyticsPage() {
 
   return (
     <div style={{ maxWidth: '820px' }}>
-      <h1 style={{ fontSize: '20px', fontWeight: 500, color: '#f8fafc', marginBottom: '4px' }}>Analytics</h1>
-      <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginBottom: '24px' }}>
+      <h1 style={{ fontSize: '20px', fontWeight: 500, color: '#161616', marginBottom: '4px' }}>Analytics</h1>
+      <p style={{ fontSize: '13px', color: '#5F6672', marginBottom: '24px' }}>
         Coaching outcomes and member engagement for your platform.
       </p>
 
@@ -218,8 +218,8 @@ export default function PartnerAnalyticsPage() {
           <div style={C.sub}>coaching sessions ÷ active members (90 days)</div>
           <div style={{ marginTop: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Engagement rate</span>
-              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>{activePct}%</span>
+              <span style={{ fontSize: '11px', color: '#5F6672' }}>Engagement rate</span>
+              <span style={{ fontSize: '11px', color: '#5F6672' }}>{activePct}%</span>
             </div>
             <ProgressBar value={overview.activeMembers} max={overview.totalMembers} />
           </div>
@@ -239,8 +239,8 @@ export default function PartnerAnalyticsPage() {
           <div style={C.card}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 100px', gap: '8px',
               fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
-              color: 'rgba(255,255,255,0.3)', paddingBottom: '10px',
-              borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: '10px' }}>
+              color: '#5F6672', paddingBottom: '10px',
+              borderBottom: '1px solid #E6E3DD', marginBottom: '10px' }}>
               <div>Course</div>
               <div style={{ textAlign: 'right' }}>Enrolled</div>
               <div style={{ textAlign: 'right' }}>Completed</div>
@@ -250,14 +250,14 @@ export default function PartnerAnalyticsPage() {
               <div key={c.id} style={{
                 display: 'grid', gridTemplateColumns: '1fr 80px 80px 100px',
                 gap: '8px', alignItems: 'center', padding: '8px 0',
-                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                borderBottom: '1px solid #E6E3DD',
               }}>
-                <div style={{ fontSize: '13px', color: '#f8fafc' }}>{c.title}</div>
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', textAlign: 'right' }}>{c.enrollments}</div>
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', textAlign: 'right' }}>{c.completions}</div>
+                <div style={{ fontSize: '13px', color: '#161616' }}>{c.title}</div>
+                <div style={{ fontSize: '13px', color: '#5F6672', textAlign: 'right' }}>{c.enrollments}</div>
+                <div style={{ fontSize: '13px', color: '#5F6672', textAlign: 'right' }}>{c.completions}</div>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                    <span style={{ fontSize: '11px', color: c.rate >= 50 ? '#10B981' : 'rgba(255,255,255,0.4)' }}>
+                    <span style={{ fontSize: '11px', color: c.rate >= 50 ? '#10B981' : 'rgba(22,22,22,0.4)' }}>
                       {c.rate}%
                     </span>
                   </div>
@@ -275,7 +275,7 @@ export default function PartnerAnalyticsPage() {
       {courseStats.length === 0 && (
         <>
           <p style={C.sectionTitle}>Course performance</p>
-          <div style={{ ...C.card, textAlign: 'center', padding: '32px', color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>
+          <div style={{ ...C.card, textAlign: 'center', padding: '32px', color: '#5F6672', fontSize: '13px' }}>
             No published courses yet. Add courses in the Courses section to track completions here.
           </div>
         </>
@@ -285,7 +285,7 @@ export default function PartnerAnalyticsPage() {
       <p style={C.sectionTitle}>Revenue trend, your share (last 6 months)</p>
       <div style={C.card}>
         {revenueTrend.every(r => r.amount === 0) ? (
-          <div style={{ textAlign: 'center', padding: '24px', color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>
+          <div style={{ textAlign: 'center', padding: '24px', color: '#5F6672', fontSize: '13px' }}>
             No revenue recorded yet. Revenue will appear here once members start subscribing.
           </div>
         ) : (
@@ -299,7 +299,7 @@ export default function PartnerAnalyticsPage() {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={C.label}>Best month</div>
-                <div style={{ fontSize: '22px', fontWeight: 500, color: '#f8fafc' }}>
+                <div style={{ fontSize: '22px', fontWeight: 500, color: '#161616' }}>
                   ₦{Math.max(...revenueTrend.map(r => r.amount)).toLocaleString()}
                 </div>
               </div>
@@ -339,20 +339,20 @@ export default function PartnerAnalyticsPage() {
         ].map(({ label, value, target, hint, good }) => (
           <div key={label} style={{
             ...C.card,
-            borderColor: good ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.08)',
+            borderColor: good ? 'rgba(16,185,129,0.25)' : 'rgba(22,22,22,0.08)',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={C.label}>{label}</div>
               <div style={{
                 fontSize: '10px', padding: '2px 7px', borderRadius: '20px', fontWeight: 700,
-                background: good ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.06)',
-                color: good ? '#10B981' : 'rgba(255,255,255,0.35)',
-                border: `1px solid ${good ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.1)'}`,
+                background: good ? 'rgba(16,185,129,0.12)' : 'rgba(22,22,22,0.06)',
+                color: good ? '#10B981' : 'rgba(22,22,22,0.35)',
+                border: `1px solid ${good ? 'rgba(16,185,129,0.2)' : 'rgba(22,22,22,0.1)'}`,
               }}>
                 {good ? 'On track' : `Target: ${target}${label === 'Session frequency' ? '' : '%'}`}
               </div>
             </div>
-            <div style={{ ...C.value, fontSize: '30px', color: good ? '#10B981' : '#f8fafc' }}>
+            <div style={{ ...C.value, fontSize: '30px', color: good ? '#10B981' : '#161616' }}>
               {value}{label !== 'Session frequency' ? '%' : ''}
             </div>
             <div style={C.sub}>{hint}</div>
