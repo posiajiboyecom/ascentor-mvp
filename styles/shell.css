@@ -3,7 +3,7 @@
    Sidebar (collapsible on desktop, drawer on mobile) · sticky header ·
    command palette · avatar menu.
 
-   Light theme only (there is no dark mode). The sidebar is always black; the
+   Light theme only (there is no dark mode). The sidebar is light everywhere; the
    header, page area and dialogs use --sh-* tokens mapped per variant:
      admin -> THE LEDGER  (--ledger-*)
      app   -> app tokens  (--app-*)
@@ -24,20 +24,21 @@
    `transform` on it, which turns `fixed` into "fixed relative to the wrapper". */
 
 .sh-root[data-variant='admin'] {
-  --sh-bg:         var(--ledger-bg-deep);
-  --sh-bg-2:       var(--ledger-bg);
-  --sh-fg:         var(--ledger-ink);
-  --sh-muted:      var(--ledger-ink-soft);
-  --sh-faint:      var(--ledger-ink-faint);
-  --sh-border:     var(--ledger-line);
-  --sh-border-2:   var(--ledger-line-strong);
-  --sh-hover:      var(--ledger-bg-card-hover);
-  --sh-input:      var(--ledger-bg-input);
-  --sh-active-bg:  var(--ledger-gold-bg);
-  --sh-active-fg:  var(--ledger-gold-deep, var(--ledger-gold));
-  --sh-accent:     var(--ledger-gold);
-  --sh-danger:     var(--ledger-bad, #c84a38);
-  --sh-shadow:     0 18px 48px rgba(0, 0, 0, 0.28);
+  /* The admin shell uses the member app's palette */
+  --sh-bg:         #F6F5F2;
+  --sh-bg-2:       #F6F5F2;
+  --sh-fg:         #161616;
+  --sh-muted:      #5F6672;
+  --sh-faint:      #5F6672;
+  --sh-border:     #E6E3DD;
+  --sh-border-2:   #CFCAC2;
+  --sh-hover:      #FFFFFF;
+  --sh-input:      #FFFFFF;
+  --sh-active-bg:  #FFFFFF;
+  --sh-active-fg:  #B6502A;
+  --sh-accent:     #B6502A;
+  --sh-danger:     #9B1C31;
+  --sh-shadow:     0 1px 2px rgba(20, 20, 20, 0.05), 0 6px 18px rgba(20, 20, 20, 0.06);
 }
 
 .sh-root[data-variant='app'] {
@@ -68,18 +69,18 @@
   font-family: inherit;
 }
 
-/* ── Sidebar (always black; the rest of the app is light) ─────────────────── */
+/* ── Sidebar (light, the member app's own look in every variant) ─────────────────── */
 
 .sh-sidebar {
-  --sb-bg:         #0C0B08;
-  --sb-fg:         #FAFAF8;
-  --sb-muted:      #A8A29A;
-  --sb-faint:      #6F6A62;
-  --sb-border:     rgba(250, 250, 248, 0.08);
-  --sb-hover:      rgba(250, 250, 248, 0.07);
-  --sb-active-bg:  rgba(200, 169, 110, 0.16);
-  --sb-active-fg:  #E2C689;
-  --sb-accent:     #C8A96E;
+  --sb-bg:         #F6F5F2;
+  --sb-fg:         #161616;
+  --sb-muted:      #5F6672;
+  --sb-faint:      #5F6672;
+  --sb-border:     #E6E3DD;
+  --sb-hover:      #FFFFFF;
+  --sb-active-bg:  #FFFFFF;
+  --sb-active-fg:  #B6502A;
+  --sb-accent:     #B6502A;
 
   width: 264px;
   flex-shrink: 0;
@@ -119,9 +120,9 @@
   overflow-x: hidden;
   padding: 10px 10px 14px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(250, 250, 248, 0.18) transparent;
+  scrollbar-color: rgba(22, 22, 22, 0.18) transparent;
 }
-.sh-nav::-webkit-scrollbar-thumb { background: rgba(250, 250, 248, 0.18); }
+.sh-nav::-webkit-scrollbar-thumb { background: rgba(22, 22, 22, 0.18); }
 .sh-nav::-webkit-scrollbar-track { background: transparent; }
 .sh-group + .sh-group { margin-top: 6px; }
 .sh-group-label {
@@ -156,7 +157,7 @@
 .sh-item-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .sh-badge {
   font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
-  background: var(--sb-accent); color: #0f0f0e;
+  background: var(--sb-accent); color: #FFFFFF;
 }
 
 .sh-sidebar-extra { padding: 0 10px 10px; flex-shrink: 0; }
@@ -182,7 +183,7 @@
 .sh-user {
   display: flex; align-items: center; gap: 6px;
   padding: 6px; border-radius: 12px;
-  background: rgba(250, 250, 248, 0.05);
+  background: #FFFFFF;
   border: 1px solid var(--sb-border);
 }
 .sh-user-link {
@@ -200,7 +201,7 @@
   background: transparent; color: var(--sb-muted);
   transition: background 0.15s, color 0.15s;
 }
-.sh-logout:hover { background: rgba(217, 83, 79, 0.16); color: #ff8a84; }
+.sh-logout:hover { background: rgba(155, 28, 49, 0.1); color: #9B1C31; }
 .sh-logout:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
 .sh-logout > svg { width: 17px; height: 17px; }
 
@@ -241,8 +242,7 @@
 }
 .sh-backdrop {
   position: fixed; inset: 0; z-index: 55;
-  background: rgba(8, 8, 8, 0.55);
-  backdrop-filter: blur(2px);
+  background: rgba(20, 20, 20, 0.35);
   animation: sh-fade 0.18s ease;
 }
 @media (min-width: 1024px) { .sh-backdrop { display: none; } }
@@ -509,7 +509,7 @@ html[data-sage-open] .sage-root, .sage-root.sage-hide { display: none; }
  * Light, on the page colour, with a 1px right border. The four tabs are 48px rows with a 12px uppercase label; the active
  * tab is white with rust text. The other groups are quiet 14px rows (36px) with a white active row. No black, no gold bar.
  */
-.sh-root[data-variant='app'] .sh-sidebar {
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-sidebar {
   --sb-bg:         #F6F5F2;
   --sb-fg:         #161616;
   --sb-muted:      #5F6672;
@@ -520,29 +520,32 @@ html[data-sage-open] .sage-root, .sage-root.sage-hide { display: none; }
   --sb-active-fg:  #B6502A;
   --sb-accent:     #B6502A;
 }
-.sh-root[data-variant='app'] .sh-brand { border-bottom: 0; padding: 20px 22px 12px; height: auto; min-height: 60px; }
-.sh-root[data-variant='app'] .sh-nav { padding: 8px 12px 14px; }
-.sh-root[data-variant='app'] .sh-group:first-child .sh-item {
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-brand { border-bottom: 0; padding: 20px 22px 12px; height: auto; min-height: 60px; }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-nav { padding: 8px 12px 14px; }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-group:first-child .sh-item {
   height: 48px; min-height: 48px; padding: 0 14px; gap: 12px; border-radius: 10px;
   font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sb-muted);
 }
-.sh-root[data-variant='app'] .sh-group:first-child .sh-item .sh-item-icon > svg { width: 22px; height: 22px; stroke-width: 1.6; }
-.sh-root[data-variant='app'] .sh-group + .sh-group { margin-top: 18px; }
-.sh-root[data-variant='app'] .sh-group + .sh-group .sh-item {
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-group:first-child .sh-item .sh-item-icon > svg { width: 22px; height: 22px; stroke-width: 1.6; }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-group + .sh-group { margin-top: 18px; }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-group + .sh-group .sh-item {
   min-height: 36px; padding: 4px 14px; border-radius: 8px; font-size: 14px; font-weight: 400; color: var(--sb-fg);
 }
-.sh-root[data-variant='app'] .sh-group + .sh-group .sh-item .sh-item-icon > svg { color: var(--sb-muted); }
-.sh-root[data-variant='app'] .sh-group + .sh-group .sh-item[aria-current='page'] { color: var(--sb-fg); font-weight: 600; }
-.sh-root[data-variant='app'] .sh-item[aria-current='page']::before { display: none; }
-.sh-root[data-variant='app'] .sh-group-label { margin: 0 0 4px; padding: 0 14px; font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--sb-muted); }
-.sh-root[data-variant='app'] .sh-badge { background: none; color: var(--sb-muted); font-size: 12px; font-weight: 400; padding: 0; }
-.sh-root[data-variant='app'] .sh-sidebar-foot { border-top: 1px solid var(--sb-border); }
-.sh-root[data-variant='app'] .sh-user { background: #FFFFFF; border: 1px solid var(--sb-border); }
-.sh-root[data-variant='app'] .sh-logout:hover { background: rgba(155, 28, 49, 0.1); color: #9B1C31; }
-.sh-root[data-variant='app'] .sh-backdrop, .sh-backdrop { background: rgba(20, 20, 20, 0.35); backdrop-filter: none; }
-.sh-root[data-variant='app'] .sh-group:first-child .sh-item:hover { color: var(--sb-fg); }
-.sh-root[data-variant='app'] .sh-group:first-child .sh-item[aria-current='page'] { color: var(--sb-active-fg); }
-.sh-root[data-variant='app'] .sh-group:first-child .sh-item[aria-current='page'] .sh-item-icon > svg { color: var(--sb-active-fg); }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-group + .sh-group .sh-item .sh-item-icon > svg { color: var(--sb-muted); }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-group + .sh-group .sh-item[aria-current='page'] { color: var(--sb-fg); font-weight: 600; }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-item[aria-current='page']::before { display: none; }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-group-label { margin: 0 0 4px; padding: 0 14px; font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--sb-muted); }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-badge { background: none; color: var(--sb-muted); font-size: 12px; font-weight: 400; padding: 0; }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-sidebar-foot { border-top: 1px solid var(--sb-border); }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-user { background: #FFFFFF; border: 1px solid var(--sb-border); }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-logout:hover { background: rgba(155, 28, 49, 0.1); color: #9B1C31; }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-backdrop, .sh-backdrop { background: rgba(20, 20, 20, 0.35); backdrop-filter: none; }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-group:first-child .sh-item:hover { color: var(--sb-fg); }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-group:first-child .sh-item[aria-current='page'] { color: var(--sb-active-fg); }
+.sh-root:is([data-variant='app'], [data-variant='admin']) .sh-group:first-child .sh-item[aria-current='page'] .sh-item-icon > svg { color: var(--sb-active-fg); }
 
 /* On desktop the notice card lives in the right-hand column of each page, not in the sidebar. The drawer on phones keeps it. */
 @media (min-width: 1024px) { .sh-root[data-variant='app'] .sh-sidebar-extra { display: none; } }
+
+/* Keyboard focus inside the shell: a rust ring that reads on the light surfaces (the global gold ring is too faint on light) */
+.sh-root :is(a, button, [role='button'], [tabindex], input, select, textarea, summary):focus-visible { outline: 2px solid #B6502A; outline-offset: 2px; }

@@ -238,9 +238,17 @@ export default function ListScreen({ spec, rows: serverRows, kpis, note, level, 
               <button type="button" className="ib" aria-label="Close" onClick={() => setSel(null)} style={{ background: 'none', border: 0, cursor: 'pointer', width: 40, height: 40 }}><X className="ic" aria-hidden /></button>
             </div>
             <div className="dbody">
-              <dl className="kv">
+              {!selected.details && <dl className="kv">
                 {spec.cols.slice(1).map((k, j) => (<div key={k} style={{ display: 'contents' }}><dt>{k}</dt><dd>{selected.cells[j + 1]}</dd></div>))}
-              </dl>
+              </dl>}
+              {selected.details?.map((g) => (
+                <div key={g.heading} className="st8">
+                  <p className="sl">{g.heading}</p>
+                  <dl className="kv">
+                    {g.items.map(([k, v]) => (<div key={k} style={{ display: 'contents' }}><dt>{k}</dt><dd>{v || '-'}</dd></div>))}
+                  </dl>
+                </div>
+              ))}
               <div className="st8">
                 <p className="sl">Actions</p>
                 {(() => {

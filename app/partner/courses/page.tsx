@@ -9,9 +9,9 @@ const DIFF_OPTS = ['beginner','intermediate','advanced'];
 const CAT_OPTS  = ['Leadership','Purposeful Development','Tech Skills','Soft Skills','Finance','Entrepreneurship','Other'];
 
 const S: Record<string,React.CSSProperties> = {
-  card:  { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', padding:'20px' },
-  label: { fontSize:'11px', fontWeight:700, textTransform:'uppercase' as const, letterSpacing:'0.06em', color:'rgba(255,255,255,0.35)', marginBottom:'6px', display:'block' },
-  input: { width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'9px 12px', color:'#f8fafc', fontSize:'13px', outline:'none', boxSizing:'border-box' as const },
+  card:  { background:'rgba(22,22,22,0.03)', border:'1px solid #E6E3DD', borderRadius:'10px', padding:'20px' },
+  label: { fontSize:'11px', fontWeight:700, textTransform:'uppercase' as const, letterSpacing:'0.06em', color:'#5F6672', marginBottom:'6px', display:'block' },
+  input: { width:'100%', background:'rgba(22,22,22,0.04)', border:'1px solid #E6E3DD', borderRadius:'7px', padding:'9px 12px', color:'#161616', fontSize:'13px', outline:'none', boxSizing:'border-box' as const },
   btn:   { padding:'9px 20px', borderRadius:'7px', border:'none', fontSize:'13px', fontWeight:600, cursor:'pointer' },
 };
 
@@ -69,16 +69,16 @@ export default function PartnerCoursesPage() {
     await load();
   };
 
-  if (loading) return <div style={{ color:'rgba(255,255,255,0.4)', fontSize:'13px' }}>Loading…</div>;
+  if (loading) return <div style={{ color:'#5F6672', fontSize:'13px' }}>Loading…</div>;
 
   if (tier && !tier.featureEnabled) return (
     <div style={{ maxWidth:'560px' }}>
-      <h1 style={{ fontSize:'20px', fontWeight:500, color:'#f8fafc', marginBottom:'4px' }}>Courses</h1>
-      <p style={{ fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'28px' }}>Create and publish your own course library.</p>
+      <h1 style={{ fontSize:'20px', fontWeight:500, color:'#161616', marginBottom:'4px' }}>Courses</h1>
+      <p style={{ fontSize:'13px', color:'#5F6672', marginBottom:'28px' }}>Create and publish your own course library.</p>
       <div style={{ ...S.card, border:'1px solid rgba(232,160,32,0.2)', background:'rgba(232,160,32,0.04)', textAlign:'center', padding:'48px 32px' }}>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#E8A020" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin:'0 auto 12px', display:'block' }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <p style={{ fontSize:'16px', fontWeight:600, color:'#f8fafc', marginBottom:'8px' }}>Available on Growth &amp; Pro</p>
-        <p style={{ fontSize:'13px', color:'rgba(255,255,255,0.45)', marginBottom:'24px', lineHeight:1.6 }}>Create your own branded course library with YouTube videos, difficulty levels, and categories.</p>
+        <p style={{ fontSize:'16px', fontWeight:600, color:'#161616', marginBottom:'8px' }}>Available on Growth &amp; Pro</p>
+        <p style={{ fontSize:'13px', color:'#5F6672', marginBottom:'24px', lineHeight:1.6 }}>Create your own branded course library with YouTube videos, difficulty levels, and categories.</p>
         <a href="/admin/subscription" style={{ ...S.btn, background:'#E8A020', color:'#0C0B08', textDecoration:'none', display:'inline-block' }}>Upgrade to Growth →</a>
       </div>
     </div>
@@ -91,14 +91,14 @@ export default function PartnerCoursesPage() {
     <div style={{ maxWidth:'720px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'24px' }}>
         <div>
-          <h1 style={{ fontSize:'20px', fontWeight:500, color:'#f8fafc', marginBottom:'4px' }}>Courses</h1>
-          <p style={{ fontSize:'13px', color:'rgba(255,255,255,0.4)' }}>
-            {limitStr} used{tier?.maxCourses !== -1 && <span style={{ color: atLimit?'#EF4444':'rgba(255,255,255,0.25)' }}>, {tier?.name} plan</span>}
+          <h1 style={{ fontSize:'20px', fontWeight:500, color:'#161616', marginBottom:'4px' }}>Courses</h1>
+          <p style={{ fontSize:'13px', color:'#5F6672' }}>
+            {limitStr} used{tier?.maxCourses !== -1 && <span style={{ color: atLimit?'#EF4444':'rgba(22,22,22,0.25)' }}>, {tier?.name} plan</span>}
           </p>
         </div>
         {!atLimit && !showForm
           ? <button onClick={() => setShowForm(true)} style={{ ...S.btn, background:'#E8A020', color:'#0C0B08' }}>+ Add course</button>
-          : atLimit && <a href="/admin/subscription" style={{ ...S.btn, background:'rgba(255,255,255,0.05)', color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.1)', textDecoration:'none', display:'inline-block', fontSize:'12px' }}>Upgrade for more</a>
+          : atLimit && <a href="/admin/subscription" style={{ ...S.btn, background:'rgba(22,22,22,0.05)', color:'#5F6672', border:'1px solid #E6E3DD', textDecoration:'none', display:'inline-block', fontSize:'12px' }}>Upgrade for more</a>
         }
       </div>
 
@@ -106,7 +106,7 @@ export default function PartnerCoursesPage() {
 
       {showForm && (
         <div style={{ ...S.card, marginBottom:'20px', border:'1px solid rgba(232,160,32,0.2)' }}>
-          <p style={{ fontSize:'14px', fontWeight:600, color:'#f8fafc', marginBottom:'16px' }}>New course</p>
+          <p style={{ fontSize:'14px', fontWeight:600, color:'#161616', marginBottom:'16px' }}>New course</p>
           <div style={{ display:'grid', gap:'12px' }}>
             <div><label style={S.label}>Title *</label><input style={S.input} value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Mastering Product Strategy" /></div>
             <div><label style={S.label}>YouTube URL or video ID *</label><input style={S.input} value={form.youtube_id} onChange={e => setForm(f=>({...f,youtube_id:e.target.value}))} placeholder="https://youtube.com/watch?v=..." /></div>
@@ -126,28 +126,28 @@ export default function PartnerCoursesPage() {
           </div>
           <div style={{ display:'flex', gap:'10px', marginTop:'16px' }}>
             <button onClick={handleCreate} disabled={saving} style={{ ...S.btn, background:saving?'rgba(232,160,32,0.5)':'#E8A020', color:'#0C0B08' }}>{saving?'Saving…':'Create course'}</button>
-            <button onClick={() => { setShowForm(false); setError(''); }} style={{ ...S.btn, background:'transparent', color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.1)' }}>Cancel</button>
+            <button onClick={() => { setShowForm(false); setError(''); }} style={{ ...S.btn, background:'transparent', color:'#5F6672', border:'1px solid #E6E3DD' }}>Cancel</button>
           </div>
         </div>
       )}
 
       {courses.length === 0
-        ? <div style={{ ...S.card, textAlign:'center', padding:'40px' }}><p style={{ color:'rgba(255,255,255,0.35)', fontSize:'13px' }}>No courses yet. Add your first course above.</p></div>
+        ? <div style={{ ...S.card, textAlign:'center', padding:'40px' }}><p style={{ color:'#5F6672', fontSize:'13px' }}>No courses yet. Add your first course above.</p></div>
         : <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
             {courses.map(course => (
               <div key={course.id} style={{ ...S.card, display:'flex', gap:'14px', alignItems:'flex-start' }}>
-                <img src={course.thumbnail_url || `https://img.youtube.com/vi/${course.youtube_id}/mqdefault.jpg`} alt={course.title} style={{ width:'100px', height:'62px', objectFit:'cover', borderRadius:'6px', flexShrink:0, background:'rgba(255,255,255,0.06)' }} />
+                <img src={course.thumbnail_url || `https://img.youtube.com/vi/${course.youtube_id}/mqdefault.jpg`} alt={course.title} style={{ width:'100px', height:'62px', objectFit:'cover', borderRadius:'6px', flexShrink:0, background:'rgba(22,22,22,0.06)' }} />
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'3px' }}>
-                    <p style={{ fontSize:'14px', fontWeight:500, color:'#f8fafc', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{course.title}</p>
-                    <span style={{ fontSize:'10px', padding:'2px 7px', borderRadius:'20px', fontWeight:700, flexShrink:0, background:course.is_published?'rgba(16,185,129,0.12)':'rgba(255,255,255,0.06)', color:course.is_published?'#10B981':'rgba(255,255,255,0.3)', border:`1px solid ${course.is_published?'rgba(16,185,129,0.2)':'rgba(255,255,255,0.1)'}` }}>
+                    <p style={{ fontSize:'14px', fontWeight:500, color:'#161616', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{course.title}</p>
+                    <span style={{ fontSize:'10px', padding:'2px 7px', borderRadius:'20px', fontWeight:700, flexShrink:0, background:course.is_published?'rgba(16,185,129,0.12)':'rgba(22,22,22,0.06)', color:course.is_published?'#10B981':'rgba(22,22,22,0.3)', border:`1px solid ${course.is_published?'rgba(16,185,129,0.2)':'rgba(22,22,22,0.1)'}` }}>
                       {course.is_published?'Published':'Draft'}
                     </span>
                   </div>
-                  {(course.difficulty||course.category) && <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.35)', margin:0 }}>{[course.difficulty,course.category].filter(Boolean).join(' · ')}</p>}
+                  {(course.difficulty||course.category) && <p style={{ fontSize:'12px', color:'#5F6672', margin:0 }}>{[course.difficulty,course.category].filter(Boolean).join(' · ')}</p>}
                 </div>
                 <div style={{ display:'flex', gap:'8px', flexShrink:0, alignItems:'center' }}>
-                  <button onClick={() => togglePublish(course)} style={{ ...S.btn, padding:'6px 14px', fontSize:'12px', background:course.is_published?'rgba(255,255,255,0.06)':'rgba(16,185,129,0.1)', color:course.is_published?'rgba(255,255,255,0.4)':'#10B981', border:`1px solid ${course.is_published?'rgba(255,255,255,0.1)':'rgba(16,185,129,0.2)'}` }}>
+                  <button onClick={() => togglePublish(course)} style={{ ...S.btn, padding:'6px 14px', fontSize:'12px', background:course.is_published?'rgba(22,22,22,0.06)':'rgba(16,185,129,0.1)', color:course.is_published?'rgba(22,22,22,0.4)':'#10B981', border:`1px solid ${course.is_published?'rgba(22,22,22,0.1)':'rgba(16,185,129,0.2)'}` }}>
                     {course.is_published?'Unpublish':'Publish'}
                   </button>
                   {!course.is_published && <button onClick={() => deleteCourse(course.id)} style={{ ...S.btn, padding:'6px 10px', fontSize:'12px', background:'transparent', color:'#EF4444', border:'1px solid rgba(239,68,68,0.2)' }}>

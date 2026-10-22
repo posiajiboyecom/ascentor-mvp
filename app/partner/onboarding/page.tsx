@@ -72,24 +72,24 @@ export default async function PartnerOnboardingPage() {
 
   return (
     <div style={{ maxWidth: '600px' }}>
-      <h1 style={{ fontSize: '20px', fontWeight: 500, color: '#f8fafc', marginBottom: '6px' }}>Onboarding</h1>
-      <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>
+      <h1 style={{ fontSize: '20px', fontWeight: 500, color: '#161616', marginBottom: '6px' }}>Onboarding</h1>
+      <p style={{ fontSize: '13px', color: '#5F6672', marginBottom: '8px' }}>
         Complete these steps to launch your platform.
       </p>
 
       {/* Progress */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
-        <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+        <div style={{ flex: 1, height: '4px', background: 'rgba(22,22,22,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${(completedCount / steps.length) * 100}%`, background: '#14b8a6', borderRadius: '2px', transition: 'width 0.5s' }} />
         </div>
-        <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>{completedCount}/{steps.length} done</span>
+        <span style={{ fontSize: '12px', color: '#5F6672', whiteSpace: 'nowrap' }}>{completedCount}/{steps.length} done</span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {steps.map((step) => (
           <div key={step.num} style={{
-            background: step.done ? 'rgba(20,184,166,0.05)' : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${step.done ? 'rgba(20,184,166,0.2)' : 'rgba(255,255,255,0.08)'}`,
+            background: step.done ? 'rgba(20,184,166,0.05)' : 'rgba(22,22,22,0.04)',
+            border: `1px solid ${step.done ? 'rgba(20,184,166,0.2)' : 'rgba(22,22,22,0.08)'}`,
             borderRadius: '10px',
             padding: '16px 20px',
             display: 'flex',
@@ -99,8 +99,8 @@ export default async function PartnerOnboardingPage() {
             {/* Step indicator */}
             <div style={{
               width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-              background: step.done ? '#14b8a6' : 'rgba(255,255,255,0.08)',
-              color: step.done ? '#000' : 'rgba(255,255,255,0.5)',
+              background: step.done ? '#14b8a6' : 'rgba(22,22,22,0.08)',
+              color: step.done ? '#000' : 'rgba(22,22,22,0.5)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: step.done ? '13px' : '12px', fontWeight: 600,
             }}>
@@ -108,10 +108,10 @@ export default async function PartnerOnboardingPage() {
             </div>
 
             <div style={{ flex: 1 }}>
-              <p style={{ color: step.done ? 'rgba(255,255,255,0.5)' : '#f8fafc', fontSize: '14px', fontWeight: 500, marginBottom: '2px', textDecoration: step.done ? 'line-through' : 'none' }}>
+              <p style={{ color: step.done ? 'rgba(22,22,22,0.5)' : '#161616', fontSize: '14px', fontWeight: 500, marginBottom: '2px', textDecoration: step.done ? 'line-through' : 'none' }}>
                 {step.title}
               </p>
-              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>{step.description}</p>
+              <p style={{ color: '#5F6672', fontSize: '12px' }}>{step.description}</p>
             </div>
 
             {!step.done && (

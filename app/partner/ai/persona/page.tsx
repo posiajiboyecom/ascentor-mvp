@@ -84,7 +84,7 @@ export default function AIPersonaPage() {
 
   if (loading) {
     return (
-      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
+      <div style={{ color: '#5F6672', fontSize: '13px' }}>
         Loading...
       </div>
     );
@@ -92,17 +92,17 @@ export default function AIPersonaPage() {
 
   return (
     <div>
-      <h1 style={{ fontSize: '20px', fontWeight: 500, color: '#f8fafc', marginBottom: '6px' }}>
+      <h1 style={{ fontSize: '20px', fontWeight: 500, color: '#161616', marginBottom: '6px' }}>
         AI Coach Persona
       </h1>
-      <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '28px' }}>
+      <p style={{ fontSize: '13px', color: '#5F6672', marginBottom: '28px' }}>
         This system prompt defines how your AI coach thinks, speaks, and what it focuses on.
         Changes take effect immediately for all new sessions.
       </p>
 
       {/* Templates */}
       <div style={{ marginBottom: '20px' }}>
-        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '10px' }}>
+        <p style={{ fontSize: '12px', color: '#5F6672', marginBottom: '10px' }}>
           Quick-start templates
         </p>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -113,9 +113,9 @@ export default function AIPersonaPage() {
               style={{
                 padding: '6px 12px',
                 borderRadius: '6px',
-                border: '1px solid rgba(255,255,255,0.12)',
-                background: 'rgba(255,255,255,0.04)',
-                color: 'rgba(255,255,255,0.7)',
+                border: '1px solid #E6E3DD',
+                background: 'rgba(22,22,22,0.04)',
+                color: '#3A3F47',
                 fontSize: '12px',
                 cursor: 'pointer',
               }}
@@ -132,7 +132,7 @@ export default function AIPersonaPage() {
           style={{
             display: 'block',
             fontSize: '12px',
-            color: 'rgba(255,255,255,0.4)',
+            color: '#5F6672',
             marginBottom: '8px',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
@@ -146,11 +146,11 @@ export default function AIPersonaPage() {
           rows={12}
           style={{
             width: '100%',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'rgba(22,22,22,0.04)',
+            border: '1px solid #E6E3DD',
             borderRadius: '8px',
             padding: '14px 16px',
-            color: '#f8fafc',
+            color: '#161616',
             fontSize: '13px',
             lineHeight: 1.7,
             fontFamily: "Metropolis, 'Inter', sans-serif",
@@ -158,7 +158,7 @@ export default function AIPersonaPage() {
             outline: 'none',
           }}
         />
-        <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '6px' }}>
+        <p style={{ fontSize: '11px', color: '#5F6672', marginTop: '6px' }}>
           The output format instructions (reflection/question/action XML tags) are appended
           automatically, you only need to define the coach&apos;s role and context here.
         </p>

@@ -89,21 +89,21 @@ export default async function PartnerLayout({
     <div
       style={{
         minHeight: '100vh',
-        background: '#0f172a',
-        color: '#f8fafc',
+        background: '#F6F5F2',
+        color: '#161616',
         fontFamily: 'var(--font-sans)',
       }}
     >
       {/* Partner Portal Top Nav */}
       <header
         style={{
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          borderBottom: '1px solid #E6E3DD',
           padding: '0 24px',
           height: '56px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: '#0f172a',
+          background: '#F6F5F2',
           position: 'sticky',
           top: 0,
           zIndex: 10,
@@ -116,8 +116,8 @@ export default async function PartnerLayout({
           <span style={{ fontWeight: 600, fontSize: '15px' }}>Partner Portal</span>
           {tenant && (
             <>
-              <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 4px' }}>/</span>
-              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+              <span style={{ color: '#5F6672', margin: '0 4px' }}>/</span>
+              <span style={{ fontSize: '13px', color: '#5F6672' }}>
                 {tenant.name}
               </span>
             </>
@@ -132,14 +132,14 @@ export default async function PartnerLayout({
               rel="noopener noreferrer"
               style={{
                 fontSize: '12px',
-                color: 'rgba(255,255,255,0.5)',
+                color: '#5F6672',
                 textDecoration: 'none',
               }}
             >
               ↗ View site
             </a>
           )}
-          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+          <span style={{ fontSize: '13px', color: '#5F6672' }}>
             {profile?.full_name || user.email}
           </span>
         </div>
@@ -151,7 +151,7 @@ export default async function PartnerLayout({
         <nav
           style={{
             width: '200px',
-            borderRight: '1px solid rgba(255,255,255,0.08)',
+            borderRight: '1px solid #E6E3DD',
             padding: '24px 0',
             flexShrink: 0,
           }}
@@ -178,7 +178,7 @@ export default async function PartnerLayout({
                 gap: '10px',
                 padding: '10px 20px',
                 fontSize: '13px',
-                color: 'rgba(255,255,255,0.7)',
+                color: '#3A3F47',
                 textDecoration: 'none',
                 transition: 'background 0.15s',
               }}

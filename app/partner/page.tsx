@@ -77,11 +77,11 @@ export default async function PartnerOverviewPage() {
   return (
     <div>
       <h1
-        style={{ fontSize: '22px', fontWeight: 500, marginBottom: '6px', color: '#f8fafc' }}
+        style={{ fontSize: '22px', fontWeight: 500, marginBottom: '6px', color: '#161616' }}
       >
         Welcome back{tenant ? `, ${tenant.name}` : ''}
       </h1>
-      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '32px' }}>
+      <p style={{ color: '#5F6672', fontSize: '13px', marginBottom: '32px' }}>
         {tenant
           ? `Your platform is live at ${tenant.subdomain}.joinascentor.com`
           : 'Complete setup to launch your platform'}
@@ -91,8 +91,8 @@ export default async function PartnerOverviewPage() {
       {setupDone < checklist.length && (
         <div
           style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(22,22,22,0.04)',
+            border: '1px solid #E6E3DD',
             borderRadius: '12px',
             padding: '20px 24px',
             marginBottom: '28px',
@@ -109,7 +109,7 @@ export default async function PartnerOverviewPage() {
             <span style={{ fontWeight: 500, fontSize: '14px' }}>
               Setup checklist
             </span>
-            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
+            <span style={{ fontSize: '12px', color: '#5F6672' }}>
               {setupDone}/{checklist.length} done
             </span>
           </div>
@@ -118,7 +118,7 @@ export default async function PartnerOverviewPage() {
           <div
             style={{
               height: '4px',
-              background: 'rgba(255,255,255,0.1)',
+              background: 'rgba(22,22,22,0.1)',
               borderRadius: '2px',
               marginBottom: '16px',
               overflow: 'hidden',
@@ -145,7 +145,7 @@ export default async function PartnerOverviewPage() {
                   alignItems: 'center',
                   gap: '10px',
                   fontSize: '13px',
-                  color: done ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.8)',
+                  color: done ? 'rgba(22,22,22,0.3)' : 'rgba(22,22,22,0.8)',
                   textDecoration: 'none',
                   opacity: done ? 0.6 : 1,
                 }}
@@ -155,7 +155,7 @@ export default async function PartnerOverviewPage() {
                     width: '18px',
                     height: '18px',
                     borderRadius: '50%',
-                    border: done ? 'none' : '1.5px solid rgba(255,255,255,0.3)',
+                    border: done ? 'none' : '1.5px solid rgba(22,22,22,0.3)',
                     background: done ? '#14b8a6' : 'transparent',
                     display: 'flex',
                     alignItems: 'center',
@@ -195,16 +195,16 @@ export default async function PartnerOverviewPage() {
           <div
             key={label}
             style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(22,22,22,0.04)',
+              border: '1px solid #E6E3DD',
               borderRadius: '10px',
               padding: '16px 20px',
             }}
           >
-            <div style={{ fontSize: '24px', fontWeight: 500, color: '#f8fafc' }}>
+            <div style={{ fontSize: '24px', fontWeight: 500, color: '#161616' }}>
               {value.toLocaleString()}
             </div>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: '#5F6672', marginTop: '4px' }}>
               {label}
             </div>
           </div>
@@ -232,10 +232,10 @@ export default async function PartnerOverviewPage() {
           href="/partner/ai/persona"
           style={{
             padding: '10px 18px',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'rgba(22,22,22,0.04)',
+            border: '1px solid #E6E3DD',
             borderRadius: '8px',
-            color: 'rgba(255,255,255,0.7)',
+            color: '#3A3F47',
             fontSize: '13px',
             fontWeight: 500,
             textDecoration: 'none',
@@ -247,10 +247,10 @@ export default async function PartnerOverviewPage() {
           href="/partner/users"
           style={{
             padding: '10px 18px',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'rgba(22,22,22,0.04)',
+            border: '1px solid #E6E3DD',
             borderRadius: '8px',
-            color: 'rgba(255,255,255,0.7)',
+            color: '#3A3F47',
             fontSize: '13px',
             fontWeight: 500,
             textDecoration: 'none',

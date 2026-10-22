@@ -42,23 +42,23 @@ const DEFAULT: PricingState = {
 };
 
 const INPUT: React.CSSProperties = {
-  width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: '8px', padding: '10px 14px', color: '#f8fafc', fontSize: '13px',
+  width: '100%', background: 'rgba(22,22,22,0.04)', border: '1px solid #E6E3DD',
+  borderRadius: '8px', padding: '10px 14px', color: '#161616', fontSize: '13px',
   outline: 'none', boxSizing: 'border-box',
 };
 const LABEL: React.CSSProperties = {
-  display: 'block', fontSize: '11px', color: 'rgba(255,255,255,0.4)',
+  display: 'block', fontSize: '11px', color: '#5F6672',
   marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.06em',
 };
 const CARD: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+  background: 'rgba(22,22,22,0.03)', border: '1px solid #E6E3DD',
   borderRadius: '10px', padding: '18px 20px', marginBottom: '12px',
 };
-const HINT: React.CSSProperties = { fontSize: '11px', color: 'rgba(255,255,255,0.25)', marginTop: '5px' };
+const HINT: React.CSSProperties = { fontSize: '11px', color: '#5F6672', marginTop: '5px' };
 const GRID2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' };
 const SECTION: React.CSSProperties = {
   fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
-  letterSpacing: '0.08em', color: 'rgba(255,255,255,0.35)', marginBottom: '12px', marginTop: '24px',
+  letterSpacing: '0.08em', color: '#5F6672', marginBottom: '12px', marginTop: '24px',
 };
 
 export default function PartnerPricingPage() {
@@ -133,7 +133,7 @@ export default function PartnerPricingPage() {
     }
   };
 
-  if (loading) return <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>Loading...</div>;
+  if (loading) return <div style={{ color: '#5F6672', fontSize: '13px' }}>Loading...</div>;
 
   const ccy = form.currency || 'NGN';
   const planRows: Array<{ label: string; mk: keyof PricingState; yk: keyof PricingState }> = [
@@ -144,19 +144,19 @@ export default function PartnerPricingPage() {
 
   return (
     <div style={{ maxWidth: '580px' }}>
-      <h1 style={{ fontSize: '20px', fontWeight: 500, color: '#f8fafc', marginBottom: '6px' }}>Pricing</h1>
-      <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '24px' }}>
+      <h1 style={{ fontSize: '20px', fontWeight: 500, color: '#161616', marginBottom: '6px' }}>Pricing</h1>
+      <p style={{ fontSize: '13px', color: '#5F6672', marginBottom: '24px' }}>
         Set the prices your users see and pay. Connect Paystack plan codes for recurring billing.
       </p>
 
       {/* Plan prices */}
       <p style={SECTION}>Plan prices ({ccy})</p>
-      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginBottom: '14px', marginTop: '-8px' }}>
+      <p style={{ fontSize: '12px', color: '#5F6672', marginBottom: '14px', marginTop: '-8px' }}>
         Leave blank to use Ascentor defaults (converted at the rate below or system default).
       </p>
       {planRows.map(({ label, mk, yk }) => (
         <div key={label} style={CARD}>
-          <p style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '12px' }}>{label}</p>
+          <p style={{ fontSize: '13px', fontWeight: 600, color: '#161616', marginBottom: '12px' }}>{label}</p>
           <div style={GRID2}>
             <div>
               <label style={LABEL}>Monthly ({ccy})</label>
@@ -174,7 +174,7 @@ export default function PartnerPricingPage() {
 
       {/* Paystack plan codes */}
       <p style={SECTION}>Paystack plan codes</p>
-      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginBottom: '14px', marginTop: '-8px' }}>
+      <p style={{ fontSize: '12px', color: '#5F6672', marginBottom: '14px', marginTop: '-8px' }}>
         Required for recurring billing.{' '}
         <a href="https://dashboard.paystack.com/#/plans" target="_blank" rel="noopener noreferrer"
           style={{ color: '#E8A020', textDecoration: 'none' }}>Find codes in Paystack Dashboard ↗</a>

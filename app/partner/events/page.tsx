@@ -5,9 +5,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { confirmAction } from '@/components/Modal';
 import { useApiBase } from '@/lib/useApiBase';
 const S: Record<string,React.CSSProperties> = {
-  card:  { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'10px', padding:'20px' },
-  label: { fontSize:'11px', fontWeight:700, textTransform:'uppercase' as const, letterSpacing:'0.06em', color:'rgba(255,255,255,0.35)', marginBottom:'6px', display:'block' },
-  input: { width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'7px', padding:'9px 12px', color:'#f8fafc', fontSize:'13px', outline:'none', boxSizing:'border-box' as const },
+  card:  { background:'rgba(22,22,22,0.03)', border:'1px solid #E6E3DD', borderRadius:'10px', padding:'20px' },
+  label: { fontSize:'11px', fontWeight:700, textTransform:'uppercase' as const, letterSpacing:'0.06em', color:'#5F6672', marginBottom:'6px', display:'block' },
+  input: { width:'100%', background:'rgba(22,22,22,0.04)', border:'1px solid #E6E3DD', borderRadius:'7px', padding:'9px 12px', color:'#161616', fontSize:'13px', outline:'none', boxSizing:'border-box' as const },
   btn:   { padding:'9px 20px', borderRadius:'7px', border:'none', fontSize:'13px', fontWeight:600, cursor:'pointer' },
 };
 
@@ -15,7 +15,7 @@ interface Event { id:string; title:string; expert_name:string; expert_bio:string
 interface TierInfo { name:string; maxPerMonth:number; featureEnabled:boolean; eventsThisMonth:number; canCreate:boolean; }
 
 const STATUS_STYLE: Record<string,{ bg:string; color:string }> = {
-  draft:     { bg:'rgba(255,255,255,0.06)',  color:'rgba(255,255,255,0.4)' },
+  draft:     { bg:'rgba(22,22,22,0.06)',  color:'#5F6672' },
   published: { bg:'rgba(16,185,129,0.12)',   color:'#10B981' },
   cancelled: { bg:'rgba(239,68,68,0.1)',     color:'#EF4444' },
   completed: { bg:'rgba(139,92,246,0.12)',   color:'#8B5CF6' },
@@ -88,19 +88,19 @@ export default function PartnerEventsPage() {
     await load();
   };
 
-  if (loading) return <div style={{ color:'rgba(255,255,255,0.4)', fontSize:'13px' }}>Loading…</div>;
+  if (loading) return <div style={{ color:'#5F6672', fontSize:'13px' }}>Loading…</div>;
 
   // Locked state
   if (tier && !tier.featureEnabled) return (
     <div style={{ maxWidth:'560px' }}>
-      <h1 style={{ fontSize:'20px', fontWeight:500, color:'#f8fafc', marginBottom:'4px' }}>Expert Events</h1>
-      <p style={{ fontSize:'13px', color:'rgba(255,255,255,0.4)', marginBottom:'28px' }}>Schedule live sessions, masterclasses, and Q&amp;As for your members.</p>
+      <h1 style={{ fontSize:'20px', fontWeight:500, color:'#161616', marginBottom:'4px' }}>Expert Events</h1>
+      <p style={{ fontSize:'13px', color:'#5F6672', marginBottom:'28px' }}>Schedule live sessions, masterclasses, and Q&amp;As for your members.</p>
       <div style={{ ...S.card, border:'1px solid rgba(232,160,32,0.2)', background:'rgba(232,160,32,0.04)', textAlign:'center', padding:'48px 32px' }}>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#E8A020" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin:'0 auto 12px', display:'block' }}>
           <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
-        <p style={{ fontSize:'16px', fontWeight:600, color:'#f8fafc', marginBottom:'8px' }}>Available on Growth &amp; Pro</p>
-        <p style={{ fontSize:'13px', color:'rgba(255,255,255,0.45)', marginBottom:'24px', lineHeight:1.6 }}>
+        <p style={{ fontSize:'16px', fontWeight:600, color:'#161616', marginBottom:'8px' }}>Available on Growth &amp; Pro</p>
+        <p style={{ fontSize:'13px', color:'#5F6672', marginBottom:'24px', lineHeight:1.6 }}>
           Schedule your own live sessions and masterclasses. Growth partners get 10 events per month. Pro partners get unlimited.
         </p>
         <a href="/admin/subscription" style={{ ...S.btn, background:'#E8A020', color:'#0C0B08', textDecoration:'none', display:'inline-block' }}>Upgrade to Growth →</a>
@@ -115,12 +115,12 @@ export default function PartnerEventsPage() {
     <div style={{ maxWidth:'720px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'24px' }}>
         <div>
-          <h1 style={{ fontSize:'20px', fontWeight:500, color:'#f8fafc', marginBottom:'4px' }}>Expert Events</h1>
-          <p style={{ fontSize:'13px', color: atLimit?'#EF4444':'rgba(255,255,255,0.4)' }}>{monthStr}</p>
+          <h1 style={{ fontSize:'20px', fontWeight:500, color:'#161616', marginBottom:'4px' }}>Expert Events</h1>
+          <p style={{ fontSize:'13px', color: atLimit?'#EF4444':'rgba(22,22,22,0.4)' }}>{monthStr}</p>
         </div>
         {!atLimit && !showForm
           ? <button onClick={() => setShowForm(true)} style={{ ...S.btn, background:'#E8A020', color:'#0C0B08' }}>+ Schedule event</button>
-          : atLimit && <a href="/admin/subscription" style={{ ...S.btn, background:'rgba(255,255,255,0.05)', color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.1)', textDecoration:'none', display:'inline-block', fontSize:'12px' }}>Upgrade for unlimited</a>
+          : atLimit && <a href="/admin/subscription" style={{ ...S.btn, background:'rgba(22,22,22,0.05)', color:'#5F6672', border:'1px solid #E6E3DD', textDecoration:'none', display:'inline-block', fontSize:'12px' }}>Upgrade for unlimited</a>
         }
       </div>
 
@@ -129,7 +129,7 @@ export default function PartnerEventsPage() {
       {/* Create form */}
       {showForm && (
         <div style={{ ...S.card, marginBottom:'20px', border:'1px solid rgba(232,160,32,0.2)' }}>
-          <p style={{ fontSize:'14px', fontWeight:600, color:'#f8fafc', marginBottom:'16px' }}>Schedule new event</p>
+          <p style={{ fontSize:'14px', fontWeight:600, color:'#161616', marginBottom:'16px' }}>Schedule new event</p>
           <div style={{ display:'grid', gap:'12px' }}>
             <div><label style={S.label}>Event title *</label><input style={S.input} value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Breaking Into Product Management" /></div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>
@@ -147,7 +147,7 @@ export default function PartnerEventsPage() {
           </div>
           <div style={{ display:'flex', gap:'10px', marginTop:'16px' }}>
             <button onClick={handleCreate} disabled={saving} style={{ ...S.btn, background:saving?'rgba(232,160,32,0.5)':'#E8A020', color:'#0C0B08' }}>{saving?'Saving…':'Create event'}</button>
-            <button onClick={() => { setShowForm(false); setError(''); }} style={{ ...S.btn, background:'transparent', color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.1)' }}>Cancel</button>
+            <button onClick={() => { setShowForm(false); setError(''); }} style={{ ...S.btn, background:'transparent', color:'#5F6672', border:'1px solid #E6E3DD' }}>Cancel</button>
           </div>
         </div>
       )}
@@ -155,7 +155,7 @@ export default function PartnerEventsPage() {
       {/* View toggle */}
       <div style={{ display:'flex', gap:'8px', marginBottom:'16px' }}>
         {(['upcoming','past'] as const).map(v => (
-          <button key={v} onClick={() => setView(v)} style={{ ...S.btn, padding:'6px 16px', fontSize:'12px', background: view===v ? 'rgba(255,255,255,0.1)' : 'transparent', color: view===v ? '#f8fafc' : 'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.1)' }}>
+          <button key={v} onClick={() => setView(v)} style={{ ...S.btn, padding:'6px 16px', fontSize:'12px', background: view===v ? 'rgba(22,22,22,0.1)' : 'transparent', color: view===v ? '#161616' : 'rgba(22,22,22,0.4)', border:'1px solid #E6E3DD' }}>
             {v.charAt(0).toUpperCase()+v.slice(1)}
           </button>
         ))}
@@ -163,7 +163,7 @@ export default function PartnerEventsPage() {
 
       {/* Events list */}
       {events.length === 0
-        ? <div style={{ ...S.card, textAlign:'center', padding:'40px' }}><p style={{ color:'rgba(255,255,255,0.35)', fontSize:'13px' }}>No {view} events. {view==='upcoming' && 'Schedule your first event above.'}</p></div>
+        ? <div style={{ ...S.card, textAlign:'center', padding:'40px' }}><p style={{ color:'#5F6672', fontSize:'13px' }}>No {view} events. {view==='upcoming' && 'Schedule your first event above.'}</p></div>
         : <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
             {events.map(ev => {
               const ss = STATUS_STYLE[ev.status] || STATUS_STYLE.draft;
@@ -172,13 +172,13 @@ export default function PartnerEventsPage() {
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'12px' }}>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px' }}>
-                        <p style={{ fontSize:'14px', fontWeight:500, color:'#f8fafc', margin:0 }}>{ev.title}</p>
+                        <p style={{ fontSize:'14px', fontWeight:500, color:'#161616', margin:0 }}>{ev.title}</p>
                         <span style={{ fontSize:'10px', padding:'2px 7px', borderRadius:'20px', fontWeight:700, flexShrink:0, background:ss.bg, color:ss.color }}>{ev.status}</span>
                       </div>
-                      <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.5)', margin:'0 0 2px' }}>
+                      <p style={{ fontSize:'12px', color:'#5F6672', margin:'0 0 2px' }}>
                         {ev.expert_name}{ev.topic && ` · ${ev.topic}`}
                       </p>
-                      <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.35)', margin:0 }}>
+                      <p style={{ fontSize:'12px', color:'#5F6672', margin:0 }}>
                         {formatDate(ev.scheduled_at)} · {ev.duration_minutes}min
                         {ev.max_attendees && ` · ${ev.current_attendees}/${ev.max_attendees} registered`}
                         {!ev.max_attendees && ev.current_attendees > 0 && ` · ${ev.current_attendees} registered`}
@@ -195,7 +195,7 @@ export default function PartnerEventsPage() {
                       )}
                       {ev.status === 'published' && (
                         <>
-                          <button onClick={() => setStatus(ev.id,'draft')} style={{ ...S.btn, padding:'5px 12px', fontSize:'12px', background:'rgba(255,255,255,0.06)', color:'rgba(255,255,255,0.4)', border:'1px solid rgba(255,255,255,0.1)' }}>Unpublish</button>
+                          <button onClick={() => setStatus(ev.id,'draft')} style={{ ...S.btn, padding:'5px 12px', fontSize:'12px', background:'rgba(22,22,22,0.06)', color:'#5F6672', border:'1px solid #E6E3DD' }}>Unpublish</button>
                           <button onClick={() => setStatus(ev.id,'cancelled')} style={{ ...S.btn, padding:'5px 12px', fontSize:'12px', background:'transparent', color:'#EF4444', border:'1px solid rgba(239,68,68,0.2)' }}>Cancel</button>
                         </>
                       )}
