@@ -10,6 +10,7 @@ import * as pub from './schemas/public';
 import * as commerce from './schemas/commerce';
 import * as partner from './schemas/partner';
 import * as admin from './schemas/admin';
+import * as billing from './schemas/billing';
 
 export const BODY_SCHEMAS: Record<string, z.ZodType> = {
   '/api/auth/login': auth.login,
@@ -32,6 +33,10 @@ export const BODY_SCHEMAS: Record<string, z.ZodType> = {
   '/api/referral': member.referralRedeem,
   '/api/usage/check': member.usageFeature,
   '/api/subscription/cancel': member.subscriptionCancel,
+  '/api/billing/cards/verify': billing.billingCardVerify,
+  '/api/billing/cards/default': billing.billingCardDefault,
+  '/api/billing/subscription/start': billing.billingTrialStart,
+  '/api/billing/subscription/change': billing.billingPlanChange,
   '/api/push/community': member.pushCommunity,
   '/api/push/send': member.pushSend,
   '/api/push/subscribe': member.pushSubscribe,

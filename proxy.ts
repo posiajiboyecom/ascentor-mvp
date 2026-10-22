@@ -152,6 +152,7 @@ const PROTECTED_API_PREFIXES = [
   '/api/community',  // checkin, circle, read, voice-upload
   '/api/referral',
   '/api/subscription',
+  '/api/billing',    // billing v2 member API (each route also checks BILLING_V2 and the session)
   '/api/usage',
   '/api/push',
   '/api/admin',

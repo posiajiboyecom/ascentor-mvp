@@ -22,6 +22,10 @@ const ENCRYPTED_PREFIX = 'enc:v1:'; // version sentinel so we can detect & futur
 
 function getKey(): Buffer {
   const hex = process.env.ENCRYPTION_KEY;
+  if ((!hex || hex.length !== 64) && (process.env.APP_SECRET_KEY ?? '').length >= 32) {
+    // Billing v2 stores card authorizations with this module; deployments that only have APP_SECRET_KEY derive the key from it.
+    return crypto.createHash('sha256').update(process.env.APP_SECRET_KEY as string).digest();
+  }
   if (!hex || hex.length !== 64) {
     throw new Error(
       '[crypto] ENCRYPTION_KEY env var is missing or invalid. ' +
