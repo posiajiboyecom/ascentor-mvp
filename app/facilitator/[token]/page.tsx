@@ -103,7 +103,7 @@ export default async function LeaderInviteTokenPage({ params, searchParams }: { 
         <>
           <p className="rx-p">Use the email address this invite was sent to. If you do not have an account yet, create one with that address, then open this link again.</p>
           <Link href={`/login?redirect=${encodeURIComponent(here)}`} className="rx-btn primary block">Log in to accept</Link>
-          <Link href="/signup" className="rx-btn secondary block">Create an account</Link>
+          <Link href={`/signup?redirect=${encodeURIComponent(here)}`} className="rx-btn secondary block">Create an account</Link>
         </>
       )}
       <Link href="/" className="rx-btn secondary block">Not now</Link>
