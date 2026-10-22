@@ -36,7 +36,8 @@ const signupSchema = z.object({
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
-function callbackNextFor(isFree: boolean, plan: string | null, billing: string, currency: string): string {
+function callbackNextFor(isFree: boolean, plan: string | null, billing: string, currency: string, invite?: string | null): string {
+  if (invite && invite.startsWith('/facilitator/') && /^\/facilitator\/[A-Za-z0-9_-]+$/.test(invite)) return invite; // a personal Leader invite link
   if (isFree || !plan) return '/onboarding';
   return `/checkout?plan=${plan}&billing=${billing}&currency=${currency}`;
 }
@@ -113,7 +114,7 @@ export default function SignupClient({ inviter }: { inviter?: { firstName: strin
     setLoading(true);
     setError(null);
 
-    const callbackNext = callbackNextFor(isFree, planParam, billingParam, currencyParam);
+    const callbackNext = callbackNextFor(isFree, planParam, billingParam, currencyParam, searchParams.get('redirect'));
 
     // Server-side sign-up: password policy (incl. breached-password check),
     // rate limiting and CAPTCHA are enforced there, not in the browser.
@@ -264,7 +265,7 @@ export default function SignupClient({ inviter }: { inviter?: { firstName: strin
               <OtpVerify
                 email={pendingEmail}
                 password={pendingPassword}
-                next={callbackNextFor(isFree, planParam, billingParam, currencyParam)}
+                next={callbackNextFor(isFree, planParam, billingParam, currencyParam, searchParams.get('redirect'))}
                 captchaToken={captchaToken}
                 onBack={() => { setPendingEmail(null); setPendingPassword(''); }}
               />

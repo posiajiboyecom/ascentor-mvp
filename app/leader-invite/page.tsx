@@ -1,7 +1,5 @@
 import Link from 'next/link';
 import { Check } from 'lucide-react';
-import { getPlanPricingMap } from '@/lib/plans-config';
-import { formatNaira } from '@/lib/pricing';
 import '@/styles/rx.css';
 import '@/styles/rx-entry.css';
 
@@ -12,7 +10,7 @@ const DO = [
   'Check in on members who go quiet.',
   'Help your Circle choose a mentor and prepare session agendas.',
 ];
-const GET = (price: string) => [`The Leader plan, ${price} a month.`, 'The Facilitators’ room, with other Leaders.'];
+const GET = ['Leader access at no cost while you facilitate a Circle.', 'The Facilitators’ room, with other Leaders.'];
 
 function List({ title, items }: { title: string; items: string[] }) {
   return (
@@ -27,10 +25,8 @@ function List({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-// NOTE: there is no invite-token backend for facilitators yet, so this page is static. Accepting sends the
-// person to sign in and on to choosing the Leader plan (price from lib/plans-config.ts).
+// Static intro for older links. Personal invites live at /facilitator/<token>; Leaders are never bought at checkout.
 export default function LeaderInvitePage() {
-  const price = formatNaira(getPlanPricingMap().leader.monthlyPrice);
   return (
     <div className="rx rx-entry">
       <div className="rx-entry-in rx-rise">
@@ -39,8 +35,8 @@ export default function LeaderInvitePage() {
         <h1 className="rx-h2" style={{ fontSize: 28 }}>Lead a Circle on Ascentor</h1>
         <p className="rx-p">The Ascentor team has invited you to facilitate a Circle: a small group that meets every week for 90 days and helps each member keep their promises.</p>
         <List title="What you’d do" items={DO} />
-        <List title="What you get" items={GET(price)} />
-        <Link href="/login?redirect=%2Fcheckout%3Fplan%3Dleader" className="rx-btn primary block">Accept and set up</Link>
+        <List title="What you get" items={GET} />
+        <Link href="/login?redirect=%2Fdashboard" className="rx-btn primary block">Log in</Link>
         <Link href="/" className="rx-btn secondary block">Not now</Link>
       </div>
     </div>

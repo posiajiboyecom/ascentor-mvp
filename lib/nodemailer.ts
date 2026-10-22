@@ -76,6 +76,8 @@ export async function sendEmail(opts: {
   to: string;
   subject: string;
   html: string;
+  /** Optional plain-text alternative. */
+  text?: string;
   from?: string;
   replyTo?: string;
   attachments?: { filename: string; content: Buffer; contentType: string }[];
@@ -91,14 +93,14 @@ export async function sendEmail(opts: {
   const from = opts.from || DEFAULT_FROM;
   const replyTo = opts.replyTo || CONTACT_EMAIL;
   try {
-    await mailer.sendMail({ from, to: opts.to, subject: opts.subject, html: opts.html, replyTo, attachments: opts.attachments });
+    await mailer.sendMail({ from, to: opts.to, subject: opts.subject, html: opts.html, text: opts.text, replyTo, attachments: opts.attachments });
   } catch (err) {
     // Some hosts only let a mailbox send as itself. If the server refuses the From address, send as the mailbox and keep
     // the intended address as the reply-to, so the message still goes out and replies still reach the right inbox.
     const mailbox = smtpSettings().user;
     if (mailbox && refusedSender(err) && addressOf(from) !== mailbox.toLowerCase()) {
       console.warn('[email] sender refused, retrying as the mailbox:', addressOf(from), '->', mailbox);
-      await mailer.sendMail({ from: `${nameOf(from)} <${mailbox}>`, to: opts.to, subject: opts.subject, html: opts.html, replyTo: opts.replyTo || addressOf(from), attachments: opts.attachments });
+      await mailer.sendMail({ from: `${nameOf(from)} <${mailbox}>`, to: opts.to, subject: opts.subject, html: opts.html, text: opts.text, replyTo: opts.replyTo || addressOf(from), attachments: opts.attachments });
       return;
     }
     throw err;

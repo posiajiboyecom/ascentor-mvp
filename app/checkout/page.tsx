@@ -13,7 +13,6 @@ import UserShell from '@/components/shell/UserShell';
 import CheckoutClient from './CheckoutClient';
 import { getPlanPricing } from '@/lib/plans-config';
 import { closedPlanIds } from '@/lib/admin/plans-open';
-import { canChooseLeader } from '@/lib/leader-access';
 
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
   // Hard env override
@@ -43,11 +42,8 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const closed = await closedPlanIds();
   const { from } = await searchParams;
   const shell = from === 'onboarding' ? null : await getShellData();
-  // Leader is by invitation: only people the team made Leaders (or who already hold it) see it.
-  let leaderOk = false;
-  if (shell) leaderOk = await canChooseLeader(shell.userId);
-  else { try { const { data: { user } } = await (await createClient()).auth.getUser(); leaderOk = await canChooseLeader(user?.id); } catch { /* guest */ } }
-  const pricing = getPlanPricing().filter((p) => !closed.includes(p.id) && (p.id !== 'leader' || leaderOk));
+  // Leader is never bought here: Leaders lead for free (invite, Make Leader, or Leading stage).
+  const pricing = getPlanPricing().filter((p) => !closed.includes(p.id) && p.id !== 'leader');
   if (shell) {
     return (
       <UserShell userId={shell.userId} userName={shell.userName} email={shell.email} avatarUrl={shell.avatarUrl} role={shell.role} summitRegistered={shell.summitRegistered}>
