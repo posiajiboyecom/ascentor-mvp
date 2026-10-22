@@ -24,6 +24,8 @@ export interface ShopProduct {
   tagline: string | null;
   description: string | null;
   image_url: string | null;
+  hover_image_url?: string | null;
+  gallery_urls?: string[] | null;
   badge: string | null;
   shop_category: ShopCategory;
   fulfilment: Fulfilment;
@@ -48,3 +50,9 @@ export const inStock = (p: Pick<ShopProduct, 'stock'>) => p.stock == null || p.s
 
 export const ORDER_STATUSES = ['pending', 'paid', 'packing', 'shipped', 'delivered', 'ready', 'cancelled'] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+/** Cover first, then the hover picture, then the gallery. Pictures and GIFs are treated the same. */
+export function productMedia(p: { image_url: string | null; hover_image_url?: string | null; gallery_urls?: string[] | null }): string[] {
+  const all = [p.image_url, p.hover_image_url, ...(p.gallery_urls ?? [])].filter((u): u is string => !!u);
+  return Array.from(new Set(all));
+}

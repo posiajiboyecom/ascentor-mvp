@@ -30,7 +30,7 @@ export interface PricedCart {
 export type PriceResult = { ok: true; cart: PricedCart } | { ok: false; error: string };
 
 const PRODUCT_COLUMNS =
-  'id, slug, name, tagline, description, image_url, badge, shop_category, fulfilment, price_ngn, stock, sizes, file_path, lead_capture, published, min_plan, sort_order, is_featured';
+  'id, slug, name, tagline, description, image_url, hover_image_url, gallery_urls, badge, shop_category, fulfilment, price_ngn, stock, sizes, file_path, lead_capture, published, min_plan, sort_order, is_featured';
 
 export async function priceCart(items: CartLineInput[], shippingKey: ShopShippingKey | null): Promise<PriceResult> {
   if (!items.length) return { ok: false, error: 'Your cart is empty.' };

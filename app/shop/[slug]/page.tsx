@@ -1,3 +1,5 @@
+import ProductGallery from '@/components/shop/ProductGallery';
+import { productMedia } from '@/lib/shop-shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -39,11 +41,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div className="sp-wrap">
           <div className="sp-crumb"><Link href="/shop">Shop</Link> / {p.shop_category}</div>
           <div className="sp-detail">
-            <div className="sp-img">
-              {p.image_url ? <img src={p.image_url} alt={p.name} /> : <span>{p.shop_category}</span>}
+            <ProductGallery name={p.name} urls={productMedia(p)} className="sp-img" fallback={<span>{p.shop_category}</span>}>
               {p.badge && <span className="sp-tag">{p.badge}</span>}
               {!inStock(p) && <span className="sp-tag out">Out of stock</span>}
-            </div>
+            </ProductGallery>
             <div>
               <div className="sp-eyebrow">{p.shop_category}</div>
               <h1 style={{ fontSize: 'clamp(1.75rem,4vw,2.5rem)' }}>{p.name}</h1>

@@ -10,9 +10,9 @@ import { SHOP_CATEGORIES, SHOP_SIZES, naira, type ShopProduct } from '@/lib/shop
 
 const brand = {
   font: "'Metropolis', system-ui, sans-serif",
-  gold: '#E8A020',
-  goldMuted: 'rgba(232,160,32,0.08)',
-  goldBorder: 'rgba(232,160,32,0.22)',
+  gold: '#b6502a',
+  goldMuted: 'rgba(182,80,42,0.08)',
+  goldBorder: 'rgba(182,80,42,0.22)',
   teal: '#14B8A6',
   red: '#EF4444',
   card: 'var(--admin-bg-deep)',
@@ -25,7 +25,7 @@ const brand = {
 };
 
 type Form = {
-  name: string; tagline: string; description: string; image_url: string | null; badge: string;
+  name: string; tagline: string; description: string; image_url: string | null; hover_image_url: string | null; gallery_urls: string[]; badge: string;
   shop_category: ShopProduct['shop_category']; fulfilment: ShopProduct['fulfilment'];
   price_ngn: number; unlimited: boolean; stock: number; sizes: string[]; file_path: string | null;
   lead_capture: boolean; is_featured: boolean; published: boolean; sort_order: number;
@@ -33,7 +33,7 @@ type Form = {
 };
 
 const EMPTY: Form = {
-  name: '', tagline: '', description: '', image_url: null, badge: '',
+  name: '', tagline: '', description: '', image_url: null, hover_image_url: null, gallery_urls: [], badge: '',
   shop_category: 'Apparel', fulfilment: 'ship', price_ngn: 0, unlimited: true, stock: 0, sizes: [],
   file_path: null, lead_capture: false, is_featured: false, published: false, sort_order: 0, min_plan: 'seeker',
 };
@@ -51,9 +51,11 @@ export default function AdminShopProductsPage() {
   const [form, setForm] = useState<Form>(EMPTY);
   const [fileName, setFileName] = useState('');
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState<'' | 'image' | 'pdf'>('');
+  const [uploading, setUploading] = useState<'' | 'cover' | 'hover' | 'gallery' | 'pdf'>('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const imgRef = useRef<HTMLInputElement>(null);
+  const coverRef = useRef<HTMLInputElement>(null);
+  const hoverRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { load(); }, []);
@@ -79,7 +81,7 @@ export default function AdminShopProductsPage() {
   function openEdit(p: ShopProduct) {
     setEditId(p.id);
     setForm({
-      name: p.name, tagline: p.tagline || '', description: p.description || '', image_url: p.image_url, badge: p.badge || '',
+      name: p.name, tagline: p.tagline || '', description: p.description || '', image_url: p.image_url, hover_image_url: p.hover_image_url ?? null, gallery_urls: p.gallery_urls ?? [], badge: p.badge || '',
       shop_category: p.shop_category, fulfilment: p.fulfilment, price_ngn: p.price_ngn,
       unlimited: p.stock == null, stock: p.stock ?? 0, sizes: p.sizes || [], file_path: p.file_path,
       lead_capture: p.lead_capture, is_featured: p.is_featured, published: p.published, sort_order: p.sort_order,
@@ -91,14 +93,20 @@ export default function AdminShopProductsPage() {
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm(f => ({ ...f, [k]: v }));
 
-  async function uploadImage(file: File) {
-    setUploading('image'); setError('');
+  // Pictures and GIFs go straight to the public product-images bucket. A GIF keeps its animation because it is stored as uploaded.
+  async function uploadMedia(file: File, kind: 'cover' | 'hover' | 'gallery') {
+    if (!/^image\/(jpeg|png|webp|gif|avif)$/.test(file.type)) { setError('Use a JPG, PNG, WebP or GIF file'); return; }
+    if (file.size > 8 * 1024 * 1024) { setError('That file is over 8MB. Use a smaller one.'); return; }
+    setUploading(kind); setError('');
     try {
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-      const path = `shop/${Date.now()}.${ext}`;
+      const path = `shop/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const { error: err } = await supabase.storage.from('product-images').upload(path, file, { upsert: true });
       if (err) throw err;
-      set('image_url', supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl);
+      const url = supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+      if (kind === 'cover') set('image_url', url);
+      else if (kind === 'hover') set('hover_image_url', url);
+      else setForm(f => ({ ...f, gallery_urls: [...f.gallery_urls, url].slice(0, 6) }));
     } catch { setError('Image upload failed'); }
     setUploading('');
   }
@@ -122,9 +130,11 @@ export default function AdminShopProductsPage() {
     setSaving(true); setError('');
     const body = {
       name: form.name.trim(),
-      tagline: form.tagline.trim() || null,
-      description: form.description.trim() || null,
+      tagline: form.tagline.trim(), // tagline and description are NOT NULL columns, so empty is saved as ''
+      description: form.description.trim(),
       image_url: form.image_url?.trim() || null,
+      hover_image_url: form.hover_image_url?.trim() || null,
+      gallery_urls: form.gallery_urls.length ? form.gallery_urls : null,
       badge: form.badge.trim() || null,
       shop_category: form.shop_category,
       fulfilment: form.fulfilment,
@@ -181,7 +191,7 @@ export default function AdminShopProductsPage() {
       <style>{`
         .sp-input { font-family: 'Metropolis', sans-serif; font-size: 13px; padding: 10px 14px; border-radius: 9px; width: 100%;
           background: var(--admin-bg-card); color: var(--admin-text); border: 1px solid var(--admin-border); outline: none; }
-        .sp-input:focus { border-color: rgba(232,160,32,0.4); }
+        .sp-input:focus { border-color: rgba(182,80,42,0.45); }
         .sp-label { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--admin-text-muted); display: block; margin-bottom: 6px; }
         .sp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         @media (max-width: 600px) { .sp-row { grid-template-columns: 1fr; } }
@@ -203,7 +213,7 @@ export default function AdminShopProductsPage() {
                 {products.length} TOTAL · {products.filter(p => p.published).length} PUBLISHED · {products.filter(p => p.is_featured).length} FEATURED
               </p>
             </div>
-            <button onClick={openNew} style={{ fontFamily: brand.font, fontSize: 12, fontWeight: 700, padding: '9px 20px', borderRadius: 9, cursor: 'pointer', background: brand.gold, color: 'var(--admin-bg)', border: 'none' }}>
+            <button onClick={openNew} style={{ fontFamily: brand.font, fontSize: 12, fontWeight: 700, padding: '9px 20px', borderRadius: 9, cursor: 'pointer', background: brand.gold, color: '#fff', border: 'none' }}>
               + Add product
             </button>
           </div>
@@ -273,19 +283,56 @@ export default function AdminShopProductsPage() {
 
               <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18, overflowY: 'auto', flex: 1 }}>
                 <div>
-                  <label className="sp-label">Image</label>
+                  <label className="sp-label">Cover picture</label>
                   <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                     <div style={{ width: 96, height: 72, borderRadius: 10, background: brand.panel, border: `1px solid ${brand.border}`, overflow: 'hidden', flexShrink: 0 }}>
                       {form.image_url && <img src={form.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
-                      <input ref={imgRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.target.value = ''; }} />
-                      <button type="button" onClick={() => imgRef.current?.click()} disabled={uploading === 'image'} style={{ fontFamily: brand.font, fontSize: 12, fontWeight: 600, padding: '8px 16px', borderRadius: 8, cursor: 'pointer', background: brand.panel, color: brand.text, border: `1px solid ${brand.border}` }}>
-                        {uploading === 'image' ? 'Uploading…' : '↑ Upload image'}
+                      <input ref={coverRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadMedia(f, 'cover'); e.target.value = ''; }} />
+                      <button type="button" onClick={() => coverRef.current?.click()} disabled={uploading === 'cover'} style={{ fontFamily: brand.font, fontSize: 12, fontWeight: 600, padding: '8px 14px', borderRadius: 8, cursor: 'pointer', background: brand.panel, color: brand.text, border: `1px solid ${brand.border}` }}>
+                        {uploading === 'cover' ? 'Uploading…' : form.image_url ? '↑ Replace' : '↑ Upload'}
                       </button>
-                      {form.image_url && <button type="button" onClick={() => set('image_url', null)} style={{ fontSize: 11, color: brand.red, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Remove image</button>}
+                      {form.image_url && <button type="button" onClick={() => set('image_url', null)} style={{ fontSize: 11, color: brand.red, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Remove</button>}
+                      <span style={{ fontSize: 11, color: brand.faint }}>Shown on the shop grid. A GIF works here too.</span>
                     </div>
                   </div>
+                </div>
+
+                <div>
+                  <label className="sp-label">Hover picture</label>
+                  <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                    <div style={{ width: 96, height: 72, borderRadius: 10, background: brand.panel, border: `1px solid ${brand.border}`, overflow: 'hidden', flexShrink: 0 }}>
+                      {form.hover_image_url && <img src={form.hover_image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
+                      <input ref={hoverRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadMedia(f, 'hover'); e.target.value = ''; }} />
+                      <button type="button" onClick={() => hoverRef.current?.click()} disabled={uploading === 'hover'} style={{ fontFamily: brand.font, fontSize: 12, fontWeight: 600, padding: '8px 14px', borderRadius: 8, cursor: 'pointer', background: brand.panel, color: brand.text, border: `1px solid ${brand.border}` }}>
+                        {uploading === 'hover' ? 'Uploading…' : form.hover_image_url ? '↑ Replace' : '↑ Upload'}
+                      </button>
+                      {form.hover_image_url && <button type="button" onClick={() => set('hover_image_url', null)} style={{ fontSize: 11, color: brand.red, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Remove</button>}
+                      <span style={{ fontSize: 11, color: brand.faint }}>Shows when someone points at the product in the shop. Optional.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="sp-label">Gallery ({form.gallery_urls.length}/6)</label>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {form.gallery_urls.map((u, i) => (
+                      <div key={u} style={{ position: 'relative', width: 72, height: 72, borderRadius: 10, overflow: 'hidden', border: `1px solid ${brand.border}`, background: brand.panel }}>
+                        <img src={u} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button type="button" aria-label="Remove this picture" onClick={() => setForm(f => ({ ...f, gallery_urls: f.gallery_urls.filter((_, j) => j !== i) }))} style={{ position: 'absolute', top: 3, right: 3, width: 20, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 12, lineHeight: '20px', padding: 0 }}>×</button>
+                      </div>
+                    ))}
+                    {form.gallery_urls.length < 6 && (
+                      <>
+                        <input ref={galleryRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadMedia(f, 'gallery'); e.target.value = ''; }} />
+                        <button type="button" onClick={() => galleryRef.current?.click()} disabled={uploading === 'gallery'} style={{ ...({ fontFamily: brand.font, fontSize: 12, fontWeight: 600, padding: '8px 14px', borderRadius: 8, cursor: 'pointer', background: brand.panel, color: brand.text, border: `1px solid ${brand.border}` }), width: 72, height: 72, padding: 0, borderStyle: 'dashed' }}>{uploading === 'gallery' ? '…' : '+ Add'}</button>
+                      </>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 11, color: brand.faint, display: 'block', marginTop: 6 }}>Extra pictures or GIFs, shown on the product page. JPG, PNG, WebP or GIF, up to 8MB each.</span>
                 </div>
 
                 <div><label className="sp-label">Name *</label><input className="sp-input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Rise by Choice hoodie" /></div>
@@ -384,7 +431,7 @@ export default function AdminShopProductsPage() {
               </div>
 
               <div style={{ display: 'flex', gap: 10, padding: '14px 24px', borderTop: `1px solid ${brand.border}`, background: brand.panel }}>
-                <button onClick={save} disabled={saving || !form.name.trim()} style={{ fontFamily: brand.font, fontSize: 12, fontWeight: 700, padding: '10px 24px', borderRadius: 9, cursor: saving ? 'not-allowed' : 'pointer', background: brand.gold, color: 'var(--admin-bg)', border: 'none', opacity: saving || !form.name.trim() ? 0.5 : 1 }}>
+                <button onClick={save} disabled={saving || !form.name.trim()} style={{ fontFamily: brand.font, fontSize: 12, fontWeight: 700, padding: '10px 24px', borderRadius: 9, cursor: saving ? 'not-allowed' : 'pointer', background: brand.gold, color: '#fff', border: 'none', opacity: saving || !form.name.trim() ? 0.5 : 1 }}>
                   {saving ? 'Saving…' : editId ? 'Save changes' : 'Create product'}
                 </button>
                 <button onClick={() => setOpen(false)} style={{ fontFamily: brand.font, fontSize: 12, fontWeight: 600, padding: '10px 18px', borderRadius: 9, cursor: 'pointer', background: 'transparent', color: brand.muted, border: `1px solid ${brand.border}` }}>Cancel</button>

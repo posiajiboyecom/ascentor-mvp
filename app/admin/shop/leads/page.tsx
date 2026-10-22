@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 
 const brand = {
   font: "'Metropolis', system-ui, sans-serif",
-  gold: '#E8A020', goldMuted: 'rgba(232,160,32,0.08)', goldBorder: 'rgba(232,160,32,0.22)', red: '#EF4444',
+  gold: '#b6502a', goldMuted: 'rgba(182,80,42,0.08)', goldBorder: 'rgba(182,80,42,0.22)', red: '#EF4444',
   card: 'var(--admin-bg-deep)', border: 'var(--admin-border)',
   text: 'var(--admin-text)', heading: 'var(--admin-text-heading)', muted: 'var(--admin-text-muted)', faint: 'var(--admin-text-faint)',
 };
@@ -50,7 +50,7 @@ export default function AdminShopLeadsPage() {
               <h1 style={{ fontWeight: 700, fontSize: 'clamp(24px, 3vw, 32px)', color: brand.heading, margin: 0 }}>Shop leads</h1>
               <p style={{ fontSize: 11, color: brand.muted, marginTop: 6, letterSpacing: '0.04em' }}>{leads.length} SIGN-UPS FROM FREE ITEMS</p>
             </div>
-            <a href="/api/admin/shop/leads?format=csv" style={{ fontFamily: brand.font, fontSize: 12, fontWeight: 700, padding: '9px 20px', borderRadius: 9, textDecoration: 'none', background: brand.gold, color: 'var(--admin-bg)' }}>
+            <a href="/api/admin/shop/leads?format=csv" style={{ fontFamily: brand.font, fontSize: 12, fontWeight: 700, padding: '9px 20px', borderRadius: 9, textDecoration: 'none', background: brand.gold, color: '#fff' }}>
               Export CSV
             </a>
           </div>
