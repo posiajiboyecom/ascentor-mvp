@@ -42,7 +42,10 @@ export const spec: ScreenSpec = {
       confirm: "Refund this payment through Paystack? The member gets an email."
     }
   ],
-  quick: 0
+  quick: 0,
+  buttons: [
+    { id: "subscriptions", label: "Subscriptions", needs: "view", href: "/admin/c/payments/subscriptions" }
+  ]
 };
 
 const TYPE: Record<string, string> = { subscription: 'Subscription', summit: 'Summit ticket', donation: 'Donation', shop: 'Shop order' };

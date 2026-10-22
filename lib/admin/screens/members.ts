@@ -68,6 +68,12 @@ export const spec: ScreenSpec = {
       href: "/admin/c/members/leaders"
     },
     {
+      id: "groups",
+      label: "Groups",
+      needs: "view",
+      href: "/admin/c/members/groups"
+    },
+    {
       id: "export-csv",
       label: "Export CSV",
       needs: "full"

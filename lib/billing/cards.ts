@@ -173,13 +173,14 @@ export async function removeCard(userId: string, cardId: string): Promise<{ ok: 
 export async function startCardVerification(
   userId: string,
   email: string,
+  returnTo: 'settings' | 'checkout' = 'settings',
 ): Promise<{ ok: true; authorizationUrl: string; reference: string } | { ok: false; error: string }> {
   const reference = `cv_${userId.replace(/-/g, '').slice(0, 12)}_${Date.now().toString(36)}`;
   const r = await initializeTransaction({
     email,
     amountKobo: VERIFY_AMOUNT_KOBO,
     reference,
-    callbackUrl: `${siteUrl()}/settings/billing?card=verify`,
+    callbackUrl: `${siteUrl()}${returnTo === 'checkout' ? '/checkout' : '/settings/billing'}?card=verify`,
     purpose: 'card_verify',
     metadata: { user_id: userId },
   });

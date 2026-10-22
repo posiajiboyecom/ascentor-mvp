@@ -14,7 +14,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export type BillingEventType =
   | 'trial_started' | 'first_charge' | 'renewal_succeeded' | 'renewal_failed' | 'grace_started' | 'lapsed' | 'reactivated'
-  | 'group_joined' | 'group_left' | 'group_price_applied' | 'group_price_removed' | 'group_below_min' | 'group_restored' | 'group_warning_sent'
+  | 'group_joined' | 'group_left' | 'group_price_applied' | 'group_price_removed' | 'group_below_min' | 'group_restored' | 'group_warning_sent' | 'group_flagged' | 'group_at_minimum'
   | 'credit_earned' | 'credit_used' | 'credit_expired' | 'credit_cancelled'
   | 'card_added' | 'card_removed' | 'card_default_changed'
   | 'would_charge' | 'charge_retry' | 'charge_skipped_credit' | 'first_charge_extended'
