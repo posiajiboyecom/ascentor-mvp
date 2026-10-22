@@ -109,6 +109,12 @@ function copyFor(event: BillingNotifyEvent, d: NotifyData): Copy {
         label: 'Open Billing', inApp: `${cardWord(d)} is now your default card.` };
     case 'payment_succeeded': {
       const next = fmtDate(d.nextChargeAt);
+      if (d.amountKobo === 0) {
+        return { subject: 'Your credit covered this payment', eyebrow: 'Receipt', title: 'Nothing to pay this time',
+          body: `Your referral credit covered ${plan} for this cycle, so your card was not charged and your plan stays active.`,
+          lines: [`Plan: ${plan}`, ...(next ? [`Next charge: ${next}`] : [])],
+          label: 'Open Billing', inApp: `Your credit covered ${plan} this cycle. Nothing was charged.${next ? ` Next charge ${next}.` : ''}` };
+      }
       return { subject: `We received your payment of ${amount}`, eyebrow: 'Receipt', title: 'Payment received',
         body: `Thank you. We charged ${cardWord(d)} for ${plan}.`,
         lines: [`Amount: ${amount}`, `Plan: ${plan}`, ...(next ? [`Next charge: ${next}`] : [])],

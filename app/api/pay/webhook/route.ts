@@ -26,6 +26,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { settleReference } from '@/lib/paymentSettlement';
 import { handleSubscriptionWebhookEvent } from '@/lib/subscriptionWebhookHandler';
+import { handleBillingV2Event } from '@/lib/billing/webhook';
 
 function verifySignature(rawBody: string, sig: string, secret: string): boolean {
   if (!/^[0-9a-f]{128}$/i.test(sig)) return false; // sha512 hex = 128 chars
@@ -57,6 +58,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const reference: string | undefined = payload?.data?.reference;
+
+    // Billing v2 (signature already verified above). Only events whose metadata.purpose is one of ours are handled here;
+    // every other purpose falls through to the existing handling below, unchanged.
+    const v2 = await handleBillingV2Event(payload);
+    if (v2) return v2;
 
     if (payload?.event === 'charge.success' && reference) {
       const result = await settleReference(reference);

@@ -196,11 +196,11 @@ export async function completeCardVerification(
   reference: string,
 ): Promise<
   | { ok: true; card: SafeCard; added: boolean; refund: 'refunded' | 'already_refunded' | 'failed' }
-  | { ok: false; error: string }
+  | { ok: false; error: string; retryable?: boolean }
 > {
   if (!reference || reference.length > 200) return { ok: false, error: 'Invalid reference.' };
   const v = await verifyTransaction(reference);
-  if (!v.ok) return { ok: false, error: 'We could not confirm the card check yet. Please try again in a moment.' };
+  if (!v.ok) return { ok: false, error: 'We could not confirm the card check yet. Please try again in a moment.', retryable: v.transient };
   const tx = v.data;
   const meta = txMetadata(tx);
   if (meta.purpose !== 'card_verify' || meta.user_id !== userId) return { ok: false, error: 'This is not a card check for your account.' };
