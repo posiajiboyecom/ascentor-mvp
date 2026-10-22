@@ -14,6 +14,7 @@ import { plainToHtml } from '@/lib/rx/richtext';
 import { flagIfRisky } from '@/lib/rx/moderation';
 import { isOwnMediaUrl, parseBody } from '@/lib/rx/media';
 import { cleanClientId, findByClientId, isMissingColumn, isUniqueViolation } from '@/lib/rx/client-id';
+import { featureBlock } from '@/lib/access';
 
 
 /** Agrees to the confidentiality pledge. */
@@ -53,6 +54,9 @@ function checkBody(raw: string): string {
 export async function sendCircleMessage(circleId: string, raw: string, clientId?: string): Promise<ActionResult<{ message: ChatMsg }>> {
   try {
     const { db, userId } = await requireMember();
+    // Billing v2: Circle chat pauses on light access (members without a v2 row are never blocked).
+    const paused = await featureBlock(userId, 'circleChat');
+    if (paused) throw new Error(paused);
     const body = checkBody(raw);
     const cid = cleanClientId(clientId);
     const me = await getMe();
@@ -80,7 +84,8 @@ export async function sendCircleMessage(circleId: string, raw: string, clientId?
 }
 
 export async function pollCircleMessages(circleId: string, afterISO: string | null): Promise<ChatMsg[]> {
-  const { db } = await requireMember();
+  const { db, userId } = await requireMember();
+  if (await featureBlock(userId, 'circleChat')) return [];
   return circleMessages(db, circleId, afterISO);
 }
 

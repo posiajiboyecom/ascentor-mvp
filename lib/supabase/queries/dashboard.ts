@@ -7,7 +7,8 @@
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server';
-import { effectivePlan, TIER_META } from '@/lib/planTier';
+import { TIER_META } from '@/lib/planTier';
+import { effectivePlanForUser } from '@/lib/access';
 import { daysUntilSummit } from '@/lib/elevationSummit';
 import type {
   Profile,
@@ -200,7 +201,7 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     | 'subscription_end'
   > | null;
 
-  const plan = effectivePlan(profile);
+  const plan = await effectivePlanForUser(user.id, profile);
   const tierMeta = TIER_META[plan];
 
   const allCommitments = (commitmentsRes.data ?? []) as UserCommitment[];

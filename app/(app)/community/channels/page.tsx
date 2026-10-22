@@ -26,7 +26,7 @@
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { effectivePlan } from '@/lib/planTier';
+import { effectivePlanForUser } from '@/lib/access';
 import { mondayOf, streakFromWeeks } from '@/lib/week';
 import CommunityClient from './CommunityClient';
 import type { WeekData, CircleSummary, Message } from '@/components/community/types';
@@ -97,7 +97,7 @@ export default async function CommunityPage() {
   }
 
   const channels = channelsRes.data ?? [];
-  const plan = effectivePlan(profileRes.data);
+  const plan = await effectivePlanForUser(user.id, profileRes.data);
   const userName = profileRes.data?.full_name?.trim() || 'Member';
 
   // ── Real moderator check from profiles.role ─────────────────────────────

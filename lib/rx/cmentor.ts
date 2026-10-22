@@ -11,6 +11,7 @@ import { getMe, getMyCircle, namesFor, type MyCircle } from './server';
 import { MENTOR_CALL_MINUTES } from './calls';
 import { circleAudience, rxNotify } from './notifications';
 import { circleTitle } from './circles';
+import { circleQuorum } from './quorum';
 
 export const VOTE_DAYS = 5;
 export const TIE_FALLBACK_DAYS = 2;
@@ -159,8 +160,8 @@ export type MentorshipState =
   | { kind: 'voting'; roundId: string; candidates: CandidateView[]; voted: number; total: number; closesAt: string; isSwap: boolean }
   | { kind: 'tie'; roundId: string; candidates: CandidateView[]; tied: string[]; canBreak: boolean }
   | { kind: 'requested'; cmId: string; mentor: MentorLite }
-  | { kind: 'scheduling'; cmId: string; mentor: MentorLite; slots: SlotView[]; total: number }
-  | { kind: 'active' | 'paused'; cmId: string; mentor: MentorLite; sessions: SessionView[]; next: SessionView | null; agreement: AgreementView; canSwap: boolean; swapUsed: boolean };
+  | { kind: 'scheduling'; cmId: string; mentor: MentorLite; slots: SlotView[]; total: number; needed: number; offerMerge: boolean }
+  | { kind: 'active' | 'paused'; cmId: string; mentor: MentorLite; sessions: SessionView[]; next: SessionView | null; agreement: AgreementView; canSwap: boolean; swapUsed: boolean; needed: number };
 
 export interface Mentorship { circle: MyCircle; isFacilitator: boolean; state: MentorshipState }
 
@@ -180,6 +181,8 @@ export async function getMentorship(circleId?: string | null): Promise<Mentorshi
   const { data: open } = await supabaseAdmin.from('circle_mentor_rounds').select('id').eq('circle_id', cid).in('status', ['open', 'tie']);
   for (const r of (open ?? []) as { id: string }[]) await settleRound(r.id);
 
+  // The handoff quorum: 60% of ACTIVE members (trial, paying, grace), rounded up, minimum 3. Lapsed members drop out of the count.
+  const quo = await circleQuorum(cid);
   const { data: cmRow } = await supabaseAdmin.from('circle_mentors').select('id, mentor_id, status, swap_used, round_id').eq('circle_id', cid).in('status', CURRENT).maybeSingle();
   if (cmRow) {
     const { data: mentor } = await supabaseAdmin.from('human_mentors').select(MENTOR_COLS).eq('id', cmRow.mentor_id).maybeSingle();
@@ -193,10 +196,10 @@ export async function getMentorship(circleId?: string | null): Promise<Mentorshi
         db.from('slot_marks').select('slot_id, user_id').eq('circle_mentor_id', cmRow.id),
       ]);
       const by = new Map<string, number>(); const mine = new Set<string>();
-      for (const k of (marks ?? []) as { slot_id: string; user_id: string }[]) { by.set(k.slot_id, (by.get(k.slot_id) ?? 0) + 1); if (k.user_id === me.userId) mine.add(k.slot_id); }
+      for (const k of (marks ?? []) as { slot_id: string; user_id: string }[]) { if (!quo.ids.has(k.user_id)) continue; by.set(k.slot_id, (by.get(k.slot_id) ?? 0) + 1); if (k.user_id === me.userId) mine.add(k.slot_id); }
       const views = ((slots ?? []) as { id: string; starts_at: string }[]).map((s) => ({ id: s.id, startsAt: s.starts_at, marks: by.get(s.id) ?? 0, mine: mine.has(s.id) }));
-      views.sort((a, b) => Number(b.marks >= MIN_GOING) - Number(a.marks >= MIN_GOING) || b.marks - a.marks || a.startsAt.localeCompare(b.startsAt));
-      return { circle, isFacilitator, state: { kind: 'scheduling', cmId: cmRow.id as string, mentor: m, slots: views, total: circle.memberCount } };
+      views.sort((a, b) => Number(b.marks >= quo.needed) - Number(a.marks >= quo.needed) || b.marks - a.marks || a.startsAt.localeCompare(b.startsAt));
+      return { circle, isFacilitator, state: { kind: 'scheduling', cmId: cmRow.id as string, mentor: m, slots: views, total: quo.active, needed: quo.needed, offerMerge: quo.offerMerge } };
     }
 
     // active or paused
@@ -213,7 +216,7 @@ export async function getMentorship(circleId?: string | null): Promise<Mentorshi
     const sess: SessionView[] = ((sessions ?? []) as { id: string; starts_at: string; duration_min: number; status: string }[]).map((s) => {
       const r = ((rsvps ?? []) as { session_id: string; user_id: string; status: 'going' | 'cannot' }[]).filter((x) => x.session_id === s.id);
       const q = ((qs ?? []) as { session_id: string; user_id: string; text: string }[]).filter((x) => x.session_id === s.id);
-      return { id: s.id, startsAt: s.starts_at, durationMin: s.duration_min, status: s.status, going: r.filter((x) => x.status === 'going').length, myRsvp: r.find((x) => x.user_id === me.userId)?.status ?? null, myQuestion: q.find((x) => x.user_id === me.userId)?.text ?? null, questions: q.map((x) => ({ name: x.user_id === me.userId ? 'You' : names.get(x.user_id)?.name.split(' ')[0] ?? 'Member', text: x.text })) };
+      return { id: s.id, startsAt: s.starts_at, durationMin: s.duration_min, status: s.status, going: r.filter((x) => x.status === 'going' && quo.ids.has(x.user_id)).length, myRsvp: r.find((x) => x.user_id === me.userId)?.status ?? null, myQuestion: q.find((x) => x.user_id === me.userId)?.text ?? null, questions: q.map((x) => ({ name: x.user_id === me.userId ? 'You' : names.get(x.user_id)?.name.split(' ')[0] ?? 'Member', text: x.text })) };
     });
     const nowMs = Date.now();
     const next = sess.find((s) => s.status === 'scheduled' && new Date(s.startsAt).getTime() + s.durationMin * 60000 > nowMs) ?? null;
@@ -225,7 +228,7 @@ export async function getMentorship(circleId?: string | null): Promise<Mentorshi
       goals: ((goals ?? []) as { id: string; text: string }[]).map((g) => ({ id: g.id, text: g.text })),
       tasks: ((tasks ?? []) as { id: string; task: string; owner_id: string; due: string | null; owner_confirmed: boolean; mentor_confirmed: boolean }[]).map((t) => ({ id: t.id, task: t.task, ownerId: t.owner_id, ownerName: t.owner_id === me.userId ? 'You' : names.get(t.owner_id)?.name.split(' ')[0] ?? 'Member', due: t.due, ownerConfirmed: t.owner_confirmed, mentorConfirmed: t.mentor_confirmed })),
     };
-    return { circle, isFacilitator, state: { kind: cmRow.status as 'active' | 'paused', cmId: cmRow.id as string, mentor: m, sessions: sess, next, agreement, canSwap: firstHeld && !swapUsed, swapUsed } };
+    return { circle, isFacilitator, state: { kind: cmRow.status as 'active' | 'paused', cmId: cmRow.id as string, mentor: m, sessions: sess, next, agreement, canSwap: firstHeld && !swapUsed, swapUsed, needed: quo.needed } };
   }
 
   // no current mentor: an open round?
@@ -258,6 +261,8 @@ export interface MentorCircleCard {
   nextSession: { id: string; startsAt: string; durationMin: number; going: number; questions: { name: string; text: string }[] } | null;
   agreement: AgreementView | null;
   slots: SlotView[];
+  /** Confirmations needed for a call to hold (60% of active members, rounded up, minimum 3). */
+  needed: number;
 }
 
 /** Circles assigned to a mentor, with aggregated Circle information only (never individual survey data or chats). */
@@ -270,6 +275,7 @@ export async function mentorCircles(mentorId: string): Promise<MentorCircleCard[
       supabaseAdmin.from('circle_seats').select('user_id').eq('circle_id', cm.circle_id).eq('role', 'member'),
     ]);
     const ids = ((seats ?? []) as { user_id: string }[]).map((s) => s.user_id);
+    const q = await circleQuorum(cm.circle_id);
     const { data: prof } = ids.length ? await supabaseAdmin.from('member_profile').select('stage, timezone, interests').in('user_id', ids) : { data: [] };
     const stages: Record<string, number> = {}; const zones = new Set<string>(); const tags = new Map<string, number>();
     for (const p of (prof ?? []) as { stage: string | null; timezone: string | null; interests: string[] }[]) {
@@ -282,9 +288,9 @@ export async function mentorCircles(mentorId: string): Promise<MentorCircleCard[
       const { data: ss } = await supabaseAdmin.from('circle_mentor_sessions').select('id, starts_at, duration_min').eq('circle_mentor_id', cm.id).eq('status', 'scheduled').order('starts_at');
       const s = ((ss ?? []) as { id: string; starts_at: string; duration_min: number }[]).find((x) => new Date(x.starts_at).getTime() + x.duration_min * 60000 > Date.now());
       if (s) {
-        const [{ data: r }, { data: q }] = await Promise.all([supabaseAdmin.from('session_rsvps').select('status').eq('session_id', s.id), supabaseAdmin.from('mentor_questions').select('user_id, text').eq('session_id', s.id)]);
-        const names = await namesFor(await createClient(), ((q ?? []) as { user_id: string }[]).map((x) => x.user_id));
-        nextSession = { id: s.id, startsAt: s.starts_at, durationMin: s.duration_min, going: ((r ?? []) as { status: string }[]).filter((x) => x.status === 'going').length, questions: ((q ?? []) as { user_id: string; text: string }[]).map((x) => ({ name: names.get(x.user_id)?.name.split(' ')[0] ?? 'Member', text: x.text })) };
+        const [{ data: r }, { data: qs }] = await Promise.all([supabaseAdmin.from('session_rsvps').select('status, user_id').eq('session_id', s.id), supabaseAdmin.from('mentor_questions').select('user_id, text').eq('session_id', s.id)]);
+        const names = await namesFor(await createClient(), ((qs ?? []) as { user_id: string }[]).map((x) => x.user_id));
+        nextSession = { id: s.id, startsAt: s.starts_at, durationMin: s.duration_min, going: ((r ?? []) as { status: string; user_id: string }[]).filter((x) => x.status === 'going' && q.ids.has(x.user_id)).length, questions: ((qs ?? []) as { user_id: string; text: string }[]).map((x) => ({ name: names.get(x.user_id)?.name.split(' ')[0] ?? 'Member', text: x.text })) };
       }
       const [{ data: g }, { data: t }] = await Promise.all([supabaseAdmin.from('agreement_goals').select('id, text').eq('circle_mentor_id', cm.id).order('position'), supabaseAdmin.from('agreement_tasks').select('id, task, owner_id, due, owner_confirmed, mentor_confirmed').eq('circle_mentor_id', cm.id).order('created_at')]);
       const nm = await namesFor(await createClient(), ((t ?? []) as { owner_id: string }[]).map((x) => x.owner_id));
@@ -294,14 +300,14 @@ export async function mentorCircles(mentorId: string): Promise<MentorCircleCard[
     if (cm.status === 'scheduling') {
       const [{ data: sl }, { data: mk }] = await Promise.all([
         supabaseAdmin.from('mentor_slots').select('id, starts_at').eq('mentor_id', mentorId).eq('taken', false).gt('starts_at', new Date(Date.now() + 36 * 3600000).toISOString()).order('starts_at').limit(60),
-        supabaseAdmin.from('slot_marks').select('slot_id').eq('circle_mentor_id', cm.id),
+        supabaseAdmin.from('slot_marks').select('slot_id, user_id').eq('circle_mentor_id', cm.id),
       ]);
       const by = new Map<string, number>();
-      for (const k of (mk ?? []) as { slot_id: string }[]) by.set(k.slot_id, (by.get(k.slot_id) ?? 0) + 1);
+      for (const k of (mk ?? []) as { slot_id: string; user_id: string }[]) { if (q.ids.has(k.user_id)) by.set(k.slot_id, (by.get(k.slot_id) ?? 0) + 1); }
       slotViews = ((sl ?? []) as { id: string; starts_at: string }[]).map((x) => ({ id: x.id, startsAt: x.starts_at, marks: by.get(x.id) ?? 0, mine: false }))
-        .sort((a, b) => Number(b.marks >= MIN_GOING) - Number(a.marks >= MIN_GOING) || b.marks - a.marks || a.startsAt.localeCompare(b.startsAt));
+        .sort((a, b) => Number(b.marks >= q.needed) - Number(a.marks >= q.needed) || b.marks - a.marks || a.startsAt.localeCompare(b.startsAt));
     }
-    out.push({ cmId: cm.id, circleId: cm.circle_id, status: cm.status, circleName: `${circle?.name ?? 'Circle'} · Circle ${circle?.number ?? ''}`, members: ids.length, language: (circle?.language as string | null) ?? null, stages, zones: [...zones], topInterests: [...tags.entries()].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([tag, n]) => ({ tag, n })), nextSession, agreement, slots: slotViews });
+    out.push({ cmId: cm.id, circleId: cm.circle_id, status: cm.status, circleName: `${circle?.name ?? 'Circle'} · Circle ${circle?.number ?? ''}`, members: q.active, needed: q.needed, language: (circle?.language as string | null) ?? null, stages, zones: [...zones], topInterests: [...tags.entries()].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([tag, n]) => ({ tag, n })), nextSession, agreement, slots: slotViews });
   }
   return out;
 }

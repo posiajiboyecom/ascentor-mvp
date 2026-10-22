@@ -11,14 +11,19 @@ import { cleanText } from '@/lib/rx/safety';
 import { zonedTimeToUtc } from '@/lib/rx/dates';
 import { rxNotify, circleAudience as audienceOf } from '@/lib/rx/notifications';
 import { circleTitle } from '@/lib/rx/circles';
-import { MIN_GOING, READY_MEMBERS, MAX_AGREEMENT_GOALS, SESSIONS_PLANNED, SESSION_GAP_DAYS, openRound, settleRound, announceWinner } from '@/lib/rx/cmentor';
+import { READY_MEMBERS, MAX_AGREEMENT_GOALS, SESSIONS_PLANNED, SESSION_GAP_DAYS, openRound, settleRound, announceWinner } from '@/lib/rx/cmentor';
 import { MENTOR_CALL_MINUTES } from '@/lib/rx/calls';
+import { featureBlock } from '@/lib/access';
+import { circleQuorum } from '@/lib/rx/quorum';
 
 const CURRENT = ['requested', 'scheduling', 'active', 'paused'];
 
 /** The caller's seat in one Circle (member or facilitator). Without an id, their home Circle. */
 async function inCircle(circleId?: string | null) {
   const { userId } = await requireMember();
+  // Billing v2: mentor sessions pause on light access (members without a v2 row are never blocked).
+  const paused = await featureBlock(userId, 'mentorSessions');
+  if (paused) throw new Error(paused);
   let c = await getMyCircle('member', circleId);
   let facilitator = false;
   if (!c) { c = await getMyCircle('facilitator', circleId); facilitator = !!c; }
@@ -152,8 +157,13 @@ export async function confirmSlot(cmId: string, slotId: string): Promise<ActionR
     if (cm.status !== 'scheduling') throw new Error('A time has already been confirmed.');
     const { data: slot } = await supabaseAdmin.from('mentor_slots').select('id, mentor_id, taken, starts_at').eq('id', slotId).maybeSingle();
     if (!slot || slot.mentor_id !== cm.mentorId || slot.taken) throw new Error('That time is no longer free.');
-    const { count } = await supabaseAdmin.from('slot_marks').select('user_id', { count: 'exact', head: true }).eq('circle_mentor_id', cmId).eq('slot_id', slotId);
-    if ((count ?? 0) < MIN_GOING) throw new Error(`At least ${MIN_GOING} members need to be able to attend. Ask the Circle to mark this time.`);
+    // Handoff quorum: 60% of the Circle's ACTIVE members, rounded up, minimum 3 (the mentor is always present). Lapsed members do not count.
+    const [{ data: marked }, quo] = await Promise.all([
+      supabaseAdmin.from('slot_marks').select('user_id').eq('circle_mentor_id', cmId).eq('slot_id', slotId),
+      circleQuorum(cm.circleId),
+    ]);
+    const confirmed = ((marked ?? []) as { user_id: string }[]).filter((k) => quo.ids.has(k.user_id)).length;
+    if (confirmed < quo.needed) throw new Error(`At least ${quo.needed} members need to be able to attend. Ask the Circle to mark this time.`);
     const first = new Date(slot.starts_at as string);
     const rows = Array.from({ length: SESSIONS_PLANNED }, (_, i) => ({ circle_mentor_id: cmId, circle_id: cm.circleId, mentor_id: cm.mentorId, starts_at: new Date(first.getTime() + i * SESSION_GAP_DAYS * 86400000).toISOString(), duration_min: MENTOR_CALL_MINUTES }));
     const { error } = await supabaseAdmin.from('circle_mentor_sessions').insert(rows);

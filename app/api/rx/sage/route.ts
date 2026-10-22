@@ -14,6 +14,7 @@ import { coachSessionLimiter, getClientIp } from '@/lib/rate-limit';
 import { CRISIS_PATTERN } from '@/lib/rx/constants';
 import { cleanText } from '@/lib/rx/safety';
 import { localISODate, mondayOfISO } from '@/lib/rx/dates';
+import { featureBlock } from '@/lib/access';
 
 export const runtime = 'nodejs';
 
@@ -89,6 +90,10 @@ export async function POST(req: Request) {
   const db = await createClient();
   const { data: { user } } = await db.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Please sign in again.' }, { status: 401 });
+
+  // Billing v2: Sage is one of the things a lapsed member (light access) loses. Members without a v2 row are never blocked here.
+  const blocked = await featureBlock(user.id, 'sage');
+  if (blocked) return NextResponse.json({ error: blocked, paused: true }, { status: 403 });
 
   let body: { topic?: string; conversationId?: string | null; messages?: { role?: string; text?: string }[] };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }

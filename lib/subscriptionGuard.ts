@@ -12,6 +12,9 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { normalisePlan } from '@/lib/planTier'
+import { getMemberAccess } from '@/lib/access'
+import { planForAccess } from '@/lib/billing/access'
 
 // ── Plan hierarchy ────────────────────────────────────────────
 const PLAN_RANK: Record<string, number> = {
@@ -56,6 +59,9 @@ export async function requireSubscription(minPlan: MinPlan = 'free'): Promise<Gu
     .eq('id', user.id)
     .single()
 
+  // Billing v2 members (a member_subscriptions row) get what their subscription says: trial, active and grace are full access,
+  // lapsed and ended are light access ('free' here). Everyone else keeps the profile rules below, exactly as before.
+  const v2Plan = planForAccess(await getMemberAccess(user.id))
   const plan   = profile?.subscription_plan || 'free'
   const status = profile?.subscription_status || 'free'
 
@@ -66,7 +72,8 @@ export async function requireSubscription(minPlan: MinPlan = 'free'): Promise<Gu
       profile?.subscription_end &&
       new Date(profile.subscription_end) > new Date())
 
-  const effectivePlan = isActive ? plan : 'free'
+  // normalisePlan maps the legacy aliases and Leader ('leader' ranks with the top tier, like lib/planTier.ts), so a Leader is not ranked as free.
+  const effectivePlan: string = v2Plan ?? (isActive ? normalisePlan(plan) : 'free')
   const userRank = PLAN_RANK[effectivePlan] ?? 0
   const minRank  = PLAN_RANK[minPlan] ?? 0
 

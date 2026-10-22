@@ -7,10 +7,11 @@ import { redirect } from 'next/navigation';
 import { Headphones, Users2 } from 'lucide-react';
 import { getMe } from '@/lib/rx/server';
 import { circleTitle, getMyCircles } from '@/lib/rx/circles';
-import { getMentorship, MAX_AGREEMENT_GOALS, MIN_GOING, READY_MEMBERS } from '@/lib/rx/cmentor';
+import { getMentorship, MAX_AGREEMENT_GOALS, READY_MEMBERS } from '@/lib/rx/cmentor';
 import { myMentorProfile } from '@/lib/rx/mentors';
 import { asBool, asInt, getSettings } from '@/lib/admin/settings';
 import { whenLabel } from '@/lib/rx/dates';
+import { featureBlock } from '@/lib/access';
 import '@/styles/rx-circle.css';
 import { Aside, Avatar, Banner, Bar, GoLink, Page, SageLine, Tick, Title } from '@/components/rx/ui';
 import { AgreementWorkspace, PauseButton, QuestionBox, RsvpButtons, ScheduleGrid, StartVoteButton, SwapButton, VoteCards, type SlotGridItem } from '@/components/rx/sessions/SessionsClient';
@@ -21,6 +22,20 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const me = await getMe();
   if (!me) redirect('/login');
+
+  // Billing v2: mentor sessions pause on light access (members without a v2 row are never blocked).
+  const paused = await featureBlock(me.userId, 'mentorSessions');
+  if (paused) {
+    return (
+      <Page><Title>Sessions</Title>
+        <div className="rx-card rx-stack-sm" style={{ maxWidth: 520 }}>
+          <p className="rx-h3">Mentor sessions are paused</p>
+          <p className="rx-p">{paused}</p>
+          <Link href="/settings/billing" className="rx-btn primary">Reactivate</Link>
+        </div>
+      </Page>
+    );
+  }
 
   // Mentorship belongs to a Circle. With several Circles and none chosen, pick one first.
   let circleId = sp.c && /^[0-9a-f-]{36}$/i.test(sp.c) ? sp.c : null;
@@ -71,7 +86,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
       <p className="rx-p">Mentors give their time for free. The agenda is how your Circle respects it.</p>
       <p className="rx-label">How it works</p>
       <p className="rx-p">Your Circle is recommended a few mentors.</p><p className="rx-p">Members vote. The highest vote wins.</p>
-      <p className="rx-p">Your Circle picks a time that works for {MIN_GOING} or more.</p><p className="rx-p">Sessions are 20 minutes, every two weeks, audio by default.</p>
+      <p className="rx-p">Your Circle picks a time that works for 60% of its active members, and at least 3.</p><p className="rx-p">Sessions are 20 minutes, every two weeks, audio by default.</p>
       <GoLink href="/experts">Live expert sessions</GoLink>
       {mine.length > 1 && <GoLink href="/sessions">All my Circles</GoLink>}
       {mentorProfile && <GoLink href="/sessions/mentoring">Mentor view</GoLink>}
@@ -153,8 +168,8 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
         <div className="rx-two">
           <div className="rx-card rx-stack">
             <p className="rx-sm">{state.mentor.name}’s free times · {me.profile?.timezone_label ?? tz}. Each slot shows how many of your Circle can make it.</p>
-            <ScheduleGrid cmId={state.cmId} slots={items} total={state.total} canConfirm={isFacilitator || circle.isFacilitator} isMember={!isFacilitator} min={MIN_GOING} />
-            {(isFacilitator || circle.isFacilitator) ? <p className="rx-sm">As facilitator you confirm a time once {MIN_GOING} or more members can attend. Sessions then repeat every two weeks.</p> : <p className="rx-sm">Your facilitator or the mentor confirms a time once {MIN_GOING} or more of you can attend. Sessions then repeat every two weeks at the same time.</p>}
+            <ScheduleGrid cmId={state.cmId} slots={items} total={state.total} canConfirm={isFacilitator || circle.isFacilitator} isMember={!isFacilitator} min={state.needed} />
+            {(isFacilitator || circle.isFacilitator) ? <p className="rx-sm">As facilitator you confirm a time once {state.needed} or more members can attend. Sessions then repeat every two weeks.</p> : <p className="rx-sm">Your facilitator or the mentor confirms a time once {state.needed} or more of you can attend. Sessions then repeat every two weeks at the same time.</p>}
           </div>
           <Aside>
             <p className="rx-label">Who books</p>
@@ -194,7 +209,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
               {!agendaReady && <Banner><b>No agenda yet.</b> This call can’t start until your Circle’s agenda is ready. {agendaCount} of {AGENDA_MIN_QUESTIONS} member questions so far.</Banner>}
               {agendaReady && <div className="rx-row rx-nw" style={{ gap: 10 }}><Tick /><span style={{ flex: 1 }}>Agenda ready · shared with {first}</span></div>}
               <div className="rx-row"><Link href={`/sessions/agenda?c=${circle.circle.id}`} className={`rx-btn ${agendaReady ? 'secondary' : 'primary'}`}>{agendaReady ? 'View agenda' : 'Prepare the agenda'}</Link></div>
-              {!isFacilitator && <RsvpButtons sessionId={next.id} mine={next.myRsvp} going={next.going} min={MIN_GOING} />}
+              {!isFacilitator && <RsvpButtons sessionId={next.id} mine={next.myRsvp} going={next.going} min={state.needed} />}
             </>) : <p className="rx-p">No session is booked right now.</p>}
           </div>
 

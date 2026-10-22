@@ -19,7 +19,12 @@
 //   cancelCreditForPayment(reference)            -> a refunded / charged-back payment cancels the credit it earned
 //
 // Failure schedule (rules.ts): first failure starts a 7 day grace that KEEPS full access; retries +1, +3, +5 days after the
-// first failure; at the end of grace the member lapses and the Circle seat is released.
+// first failure; at the end of grace the member lapses and (live only) the Circle seat is released (lib/billing/seats.ts);
+// a reactivation re-seats them if the seat is still free, else they wait for a Circle.
+//
+// Also in each cycle (dry logs would_* events, live acts): free Leaders whose 90 day cycle with no Circle ended move to the
+// Builder price (runLeaderCycles), admins are alerted when a group falls to exactly 3 (runGroupAlerts), and members of a group
+// below 3 are warned 7 days before the renewal (sendReminders).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'server-only';
@@ -34,11 +39,14 @@ import {
 import {
   addDays, nextPeriodEnd, chargeReference, graceEndsAt, graceExpired, nextRetryAfterFailure, computeCreditLots, applyCredit,
   expiredLots, creditPerReferralKobo, addMonths, CREDIT_VALID_MONTHS, CREDIT_HOLD_DAYS, groupWarningDue, GRACE_DAYS,
+  leaderCycleEnded, LEADER_CYCLE_DAYS, groupAlertDue, GROUP_MIN, GROUP_REPLACE_DAYS, countActiveMembers, type SubState,
 } from './rules';
+import { releaseSeats, restoreSeats, seatsToRelease } from './seats';
 import { priceFor, getPlan, type Tier, type Cycle, type PriceType } from './catalog';
 import { formatPlanName } from './labels';
 import {
   notifyPaymentSucceeded, notifyPaymentFailed, notifyLapsed, notifyReactivated, notifyTrialEnding, notifyGroupWarning, notifyCreditEarned,
+  notifyLeaderCycleEnded, notifyAdminsGroupAtMinimum,
 } from './notify';
 
 export type ChargingMode = 'off' | 'dry' | 'live';
@@ -62,6 +70,8 @@ export interface CycleSummary {
   cancelledAtPeriodEnd: number;
   reminders: number;
   groupWarnings: number;
+  leaderCycles: number;
+  groupAlerts: number;
   creditEarned: number;
   creditExpired: number;
   errors: number;
@@ -69,7 +79,7 @@ export interface CycleSummary {
 
 const emptySummary = (mode: ChargingMode): CycleSummary => ({
   mode, due: 0, charged: 0, wouldCharge: 0, skippedForCredit: 0, extended: 0, failed: 0, lapsed: 0, cancelledAtPeriodEnd: 0,
-  reminders: 0, groupWarnings: 0, creditEarned: 0, creditExpired: 0, errors: 0,
+  reminders: 0, groupWarnings: 0, leaderCycles: 0, groupAlerts: 0, creditEarned: 0, creditExpired: 0, errors: 0,
 });
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -169,6 +179,11 @@ async function settleSuccess(i: Intent, reference: string, tx: PaystackTx | null
   };
   if (wasLapsedOrEnded) await notifyReactivated(sub.userId, common);
   else await notifyPaymentSucceeded(sub.userId, common);
+  if (wasLapsedOrEnded) {
+    // Access and quorum count return at once (state is 'active' above). Give the Circle seat back if it is still free, else the
+    // member waits for a Circle. A no-op for anyone whose seat was never released.
+    try { await restoreSeats(sub.userId); } catch (e) { console.error('[billing/engine] seat restore failed:', e instanceof Error ? e.message : 'unknown'); }
+  }
   return true;
 }
 
@@ -212,10 +227,14 @@ async function lapse(sub: Subscription, now: Date): Promise<void> {
   if (error) throw new Error(`lapse failed: ${error.message}`);
   if (!data || !data.length) return;
   await logBillingEvent(sub.userId, 'lapsed', { failed_count: sub.failedCount });
-  // TODO(circle seats): the handoff (Proposed) releases the member's Circle seat when grace ends. The repo has no clean
-  // helper for that (the only seat removal is the leaveCircle server action, which needs a signed-in session and keeps the
-  // home Circle). Until one exists, the event below is the work queue for an admin or a follow-up job.
-  await logBillingEvent(sub.userId, 'seat_release_pending', { reason: 'grace_ended' });
+  // The handoff (Proposed) releases the member's Circle seat when grace ends and keeps their record. Live only: lapse() is
+  // never reached in dry mode, and the explicit check keeps it that way. If the release fails, the pending event is the work queue.
+  if (chargingMode() === 'live') {
+    try { await releaseSeats(sub.userId); } catch (e) {
+      console.error('[billing/engine] seat release failed:', e instanceof Error ? e.message : 'unknown');
+      await logBillingEvent(sub.userId, 'seat_release_pending', { reason: 'grace_ended', error: 'release_failed' });
+    }
+  }
   await syncProfile(sub.userId, now);
   await notifyLapsed(sub.userId, {});
 }
@@ -229,7 +248,15 @@ async function processSubscription(sub: Subscription, mode: 'dry' | 'live', now:
   const dueAt = sub.nextChargeAt?.toISOString() ?? now.toISOString();
 
   if (sub.state === 'grace' && graceExpired(sub.graceEndsAt, now)) {
-    if (mode === 'dry') return 'noop';
+    if (mode === 'dry') {
+      // Nothing changes in dry mode: only say what the lapse would do to the Circle seat.
+      const graceIso = sub.graceEndsAt?.toISOString() ?? null;
+      if (!(await eventExists(sub.userId, 'would_release_seat', { grace_ends_at: graceIso }))) {
+        const seats = await seatsToRelease(sub.userId);
+        await logBillingEvent(sub.userId, 'would_release_seat', { grace_ends_at: graceIso, circle_ids: seats.map((x) => x.circle_id) });
+      }
+      return 'noop';
+    }
     await lapse(sub, now);
     return 'lapsed';
   }
@@ -498,12 +525,13 @@ export async function cancelCreditForPayment(reference: string, now = new Date()
 
 // ── Reminders ────────────────────────────────────────────────────────────────
 
-async function sendReminders(now: Date): Promise<{ reminders: number; groupWarnings: number }> {
+async function sendReminders(now: Date, mode: 'dry' | 'live'): Promise<{ reminders: number; groupWarnings: number }> {
   let reminders = 0;
   let groupWarnings = 0;
   const soon = addDays(now, 1).toISOString();
   const { data: trials } = await supabaseAdmin.from('member_subscriptions').select('*').eq('state', 'trial').gt('trial_ends_at', now.toISOString()).lte('trial_ends_at', soon).limit(BATCH);
-  for (const row of (trials ?? []) as Record<string, unknown>[]) {
+  // Trial reminders email the member: live only.
+  for (const row of (mode === 'live' ? (trials ?? []) : []) as Record<string, unknown>[]) {
     const sub = toSubscription(row);
     try {
       if (await eventExists(sub.userId, 'trial_ending_sent', { trial_ends_at: sub.trialEndsAt?.toISOString() })) continue;
@@ -526,13 +554,122 @@ async function sendReminders(now: Date): Promise<{ reminders: number; groupWarni
       if (!sub.nextChargeAt) continue;
       const ctx = await getGroupContext(sub.userId);
       if (!groupWarningDue({ currentPriceType: sub.priceType, activeCount: ctx.activeCount, lockedGroupPriceUntil: sub.lockedGroupPriceUntil, belowSince: ctx.belowSince, nextChargeAt: sub.nextChargeAt, now })) continue;
-      if (await eventExists(sub.userId, 'group_warning_sent', { next_charge_at: sub.nextChargeAt.toISOString() })) continue;
+      if (await eventExists(sub.userId, mode === 'dry' ? 'would_warn_group' : 'group_warning_sent', { next_charge_at: sub.nextChargeAt.toISOString() })) continue;
+      if (mode === 'dry') {
+        // Dry mode never messages a member: it only records that the warning is due.
+        await logBillingEvent(sub.userId, 'would_warn_group', { next_charge_at: sub.nextChargeAt.toISOString(), active_count: ctx.activeCount });
+        groupWarnings++;
+        continue;
+      }
       await logBillingEvent(sub.userId, 'group_warning_sent', { next_charge_at: sub.nextChargeAt.toISOString(), active_count: ctx.activeCount });
       await notifyGroupWarning(sub.userId, { activeCount: ctx.activeCount, renewalDate: sub.nextChargeAt, soloPriceKobo: priceFor(sub.tier, 'solo', sub.cycle) });
       groupWarnings++;
     } catch (e) { console.error('[billing/engine] group warning failed:', e instanceof Error ? e.message : 'unknown'); }
   }
   return { reminders, groupWarnings };
+}
+
+// ── Free Leaders, group alerts ───────────────────────────────────────────────
+
+async function recentEvent(userId: string | null, type: string, days: number, now: Date, contains?: Record<string, unknown>): Promise<boolean> {
+  let q = supabaseAdmin.from('billing_events').select('id').eq('type', type).gte('created_at', addDays(now, -days).toISOString());
+  q = userId ? q.eq('user_id', userId) : q.is('user_id', null);
+  if (contains) q = q.contains('data', contains);
+  const { data } = await q.limit(1);
+  return !!(data && data.length);
+}
+
+/** Facilitator state of a free Leader: are they facilitating a Circle now, and when did they last do so? */
+async function leaderSnapshot(userId: string): Promise<{ facilitatingNow: boolean; lastFacilitatedAt: Date | null }> {
+  const [{ data: byCircle }, { data: seats }, { data: invite }] = await Promise.all([
+    supabaseAdmin.from('circles').select('id, status, cycle_start, created_at').eq('facilitator_id', userId),
+    supabaseAdmin.from('circle_seats').select('circle_id').eq('user_id', userId).eq('role', 'facilitator'),
+    supabaseAdmin.from('leader_invites').select('used_at').eq('used_by', userId).order('used_at', { ascending: false }).limit(1),
+  ]);
+  type C = { id: string; status: string; cycle_start: string | null; created_at: string };
+  const circles = new Map<string, C>(((byCircle ?? []) as C[]).map((c) => [c.id, c]));
+  const seatIds = ((seats ?? []) as { circle_id: string }[]).map((s) => s.circle_id).filter((id) => !circles.has(id));
+  if (seatIds.length) {
+    const { data: more } = await supabaseAdmin.from('circles').select('id, status, cycle_start, created_at').in('id', seatIds);
+    for (const c of (more ?? []) as C[]) circles.set(c.id, c);
+  }
+  let facilitatingNow = false;
+  let last: Date | null = null;
+  const bump = (d: Date | null) => { if (d && !Number.isNaN(d.getTime()) && (!last || d.getTime() > last.getTime())) last = d; };
+  for (const c of circles.values()) {
+    if (c.status !== 'completed') { facilitatingNow = true; continue; }
+    // A Circle runs a 90 day cycle from its start; that is when they last facilitated.
+    bump(c.cycle_start ? addDays(new Date(c.cycle_start), LEADER_CYCLE_DAYS) : new Date(c.created_at));
+  }
+  // They have been a free Leader at least since the invite was accepted: never count a cycle from before that.
+  const usedAt = ((invite ?? [])[0] as { used_at: string | null } | undefined)?.used_at;
+  if (usedAt) bump(new Date(usedAt));
+  return { facilitatingNow, lastFacilitatedAt: last };
+}
+
+/**
+ * A free Leader who has gone a 90 day cycle with no Circle moves to the Builder price. Marks the member with a
+ * 'leader_cycle_ended' event, turns leader_free off and tells them (in-app and email) that they need a card to continue on
+ * Builder. NOTHING is charged and no subscription is created: a card has to be added first. Dry mode only logs
+ * 'would_end_leader_cycle'. Returns how many Leaders were (or would be) moved.
+ */
+export async function runLeaderCycles(now: Date, mode: 'dry' | 'live'): Promise<number> {
+  const { data, error } = await supabaseAdmin.from('profiles').select('id').eq('leader_free', true).limit(BATCH);
+  if (error) { console.error('[billing/engine] leader query failed:', error.message); return 0; }
+  let moved = 0;
+  for (const p of (data ?? []) as { id: string }[]) {
+    try {
+      const snap = await leaderSnapshot(p.id);
+      if (!leaderCycleEnded({ ...snap, now })) continue;
+      const lastIso = snap.lastFacilitatedAt?.toISOString() ?? null;
+      if (mode === 'dry') {
+        if (!(await recentEvent(p.id, 'would_end_leader_cycle', 30, now))) await logBillingEvent(p.id, 'would_end_leader_cycle', { last_facilitated_at: lastIso, next_tier: 'builder' });
+        moved++;
+        continue;
+      }
+      const { data: claimed } = await supabaseAdmin.from('profiles').update({ leader_free: false, updated_at: now.toISOString() }).eq('id', p.id).eq('leader_free', true).select('id');
+      if (!claimed || !claimed.length) continue;
+      await logBillingEvent(p.id, 'leader_cycle_ended', {
+        last_facilitated_at: lastIso, needs_card: true, tier: 'builder',
+        solo_price_kobo: priceFor('builder', 'solo', 'monthly'), group_price_kobo: priceFor('builder', 'group', 'monthly'),
+      });
+      await notifyLeaderCycleEnded(p.id, { soloPriceKobo: priceFor('builder', 'solo', 'monthly'), groupPriceKobo: priceFor('builder', 'group', 'monthly') });
+      moved++;
+    } catch (e) { console.error('[billing/engine] leader cycle failed:', e instanceof Error ? e.message : 'unknown'); }
+  }
+  return moved;
+}
+
+/**
+ * Admin alert (handoff): a group whose active count FALLS to exactly 3 (it has had at least 4 members) gets an in-app notice to
+ * every admin and an email, so replacements can be invited. One alert per group per 14 days. Dry mode logs 'would_alert_group'.
+ */
+export async function runGroupAlerts(now: Date, mode: 'dry' | 'live'): Promise<number> {
+  const { data: groups, error } = await supabaseAdmin.from('billing_groups').select('id, code, status').in('status', ['forming', 'active']).limit(BATCH);
+  if (error) { console.error('[billing/engine] group query failed:', error.message); return 0; }
+  let alerts = 0;
+  for (const g of (groups ?? []) as { id: string; code: string }[]) {
+    try {
+      const { data: members } = await supabaseAdmin.from('billing_group_members').select('user_id, left_at').eq('group_id', g.id);
+      const rows = (members ?? []) as { user_id: string; left_at: string | null }[];
+      const ever = new Set(rows.map((r) => r.user_id)).size;
+      const ids = rows.filter((r) => !r.left_at).map((r) => r.user_id);
+      if (ids.length === 0 || ever < GROUP_MIN + 1) continue; // it must have FALLEN to 3, not formed at 3
+      const [{ data: subs }, { data: profs }] = await Promise.all([
+        supabaseAdmin.from('member_subscriptions').select('user_id, state').in('user_id', ids),
+        supabaseAdmin.from('profiles').select('id, leader_free').in('id', ids),
+      ]);
+      const free = new Set(((profs ?? []) as { id: string; leader_free: boolean }[]).filter((p) => p.leader_free).map((p) => p.id));
+      const active = countActiveMembers(((subs ?? []) as { user_id: string; state: SubState }[]).map((s) => ({ state: s.state, leaderFree: free.has(s.user_id) })));
+      if (!groupAlertDue(active)) continue;
+      const type = mode === 'dry' ? 'would_alert_group' : 'group_admin_alert_sent';
+      if (await recentEvent(null, type, GROUP_REPLACE_DAYS, now, { group_id: g.id })) continue;
+      await logBillingEvent(null, type, { group_id: g.id, code: g.code, active_count: active });
+      if (mode === 'live') await notifyAdminsGroupAtMinimum({ groupCode: g.code, activeCount: active });
+      alerts++;
+    } catch (e) { console.error('[billing/engine] group alert failed:', e instanceof Error ? e.message : 'unknown'); }
+  }
+  return alerts;
 }
 
 // ── The cycle ────────────────────────────────────────────────────────────────
@@ -564,8 +701,12 @@ export async function runBillingCycle(now = new Date()): Promise<CycleSummary> {
     }
   }
 
+  // Both modes: dry only logs would_* events, live acts. Group warnings and trial reminders are inside sendReminders.
+  try { Object.assign(s, await sendReminders(now, mode)); } catch (e) { s.errors++; console.error('[billing/engine] reminders failed:', e instanceof Error ? e.message : 'unknown'); }
+  try { s.leaderCycles = await runLeaderCycles(now, mode); } catch (e) { s.errors++; console.error('[billing/engine] leader step failed:', e instanceof Error ? e.message : 'unknown'); }
+  try { s.groupAlerts = await runGroupAlerts(now, mode); } catch (e) { s.errors++; console.error('[billing/engine] group alert step failed:', e instanceof Error ? e.message : 'unknown'); }
+
   if (mode === 'live') {
-    try { Object.assign(s, await sendReminders(now)); } catch (e) { s.errors++; console.error('[billing/engine] reminders failed:', e instanceof Error ? e.message : 'unknown'); }
     try { s.creditEarned = await earnReferralCredit(now); } catch (e) { s.errors++; console.error('[billing/engine] credit earn step failed:', e instanceof Error ? e.message : 'unknown'); }
     try { s.creditExpired = await expireCredit(now); } catch (e) { s.errors++; console.error('[billing/engine] credit expiry step failed:', e instanceof Error ? e.message : 'unknown'); }
   }

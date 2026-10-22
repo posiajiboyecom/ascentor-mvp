@@ -20,6 +20,8 @@
 // ============================================================
 
 import { createClient } from '@supabase/supabase-js';
+import { getMemberAccess } from '@/lib/access';
+import { planForAccess } from '@/lib/billing/access';
 
 export interface PlanLimits {
   coachingSessions: number;   // per month (-1 = unlimited)
@@ -114,7 +116,8 @@ export async function checkUsage(
     .eq('id', userId)
     .single();
 
-  const plan = getEffectivePlan(profile);
+  // Billing v2 members (a member_subscriptions row) get the plan their subscription says; everyone else is unchanged.
+  const plan = planForAccess(await getMemberAccess(userId)) ?? getEffectivePlan(profile);
   const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
   const limit = limits[feature] as number;
 
