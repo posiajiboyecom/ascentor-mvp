@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     if (planId === 'leader' && !(await canChooseLeader(user.id))) {
       return NextResponse.json(
-        { error: 'The Leader plan is by invitation. Choose Seeker or Builder, or wait for your invite from the Ascentor team.' },
+        { error: 'The Leader plan is not open to your account yet. Choose Seeker or Builder, or wait for an invite from the Ascentor team.' },
         { status: 403 }
       )
     }

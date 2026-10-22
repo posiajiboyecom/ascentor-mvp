@@ -63,6 +63,11 @@ export const spec: ScreenSpec = {
   ],
   buttons: [
     {
+      id: "invite-leader",
+      label: "Invite a Leader",
+      href: "/admin/c/members/leaders"
+    },
+    {
       id: "export-csv",
       label: "Export CSV",
       needs: "full"
