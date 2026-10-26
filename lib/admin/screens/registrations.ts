@@ -3,7 +3,7 @@
 // Prototype KPI tiles to compute for real: Registered (sample "[COUNT]"); Confirmed (sample "[COUNT]"); Physical (sample "[COUNT]"); Virtual (sample "[COUNT]")
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { deliverPaidEmails, deliverCompTicket } from '@/lib/summitEmails';
+import { deliverPaidEmails, deliverCompTicket, resendUnsentBatch, describeEmailFailure } from '@/lib/summitEmails';
 import { count } from '@/lib/admin/revenue-util';
 import type { ScreenModule, ScreenSpec, ActionResult } from '@/lib/admin/types';
 
@@ -32,7 +32,7 @@ export const spec: ScreenSpec = {
     {
       id: "resend-ticket",
       label: "Resend ticket",
-      when: "Confirmed",
+      when: ["Confirmed", "Ticket not sent"],
       done: "Ticket sent again.",
       keep: true
     }
@@ -42,6 +42,10 @@ export const spec: ScreenSpec = {
     {
       id: "email-everyone-not-yet-confirmed",
       label: "Email everyone not yet confirmed"
+    },
+    {
+      id: "resend-all-unsent",
+      label: "Resend all unsent tickets"
     },
     {
       id: "export-list",
@@ -58,7 +62,7 @@ const lagos = (iso: string | null | undefined) => {
 };
 // attendance_type is a single choice (onsite | virtual), so there is no combined ticket.
 const ticketOf = (t: string | null) => (t === 'virtual' ? 'Virtual' : 'Physical only');
-const cellsOf = (r: any) => [r.full_name || '-', r.email || '-', r.organisation || '-', ticketOf(r.attendance_type), lagos(r.created_at), r.payment_status === 'paid' ? 'Confirmed' : 'Not confirmed'];
+const cellsOf = (r: any) => [r.full_name || '-', r.email || '-', r.organisation || '-', ticketOf(r.attendance_type), lagos(r.created_at), r.payment_status !== 'paid' ? 'Not confirmed' : r.confirmation_email_sent_at ? 'Confirmed' : 'Ticket not sent'];
 
 const when = (iso: string | null | undefined) => {
   if (!iso) return '-';
@@ -87,7 +91,7 @@ const detailsOf = (r: any) => [
   {
     heading: 'Event day',
     items: [
-      ['Confirmation email', sent(r.confirmation_email_sent_at)], ['Reminder email', r.reminder_sent_at ? `Sent ${when(r.reminder_sent_at)} (${r.reminder_count ?? 1})` : 'Not sent'],
+      ['Confirmation email', sent(r.confirmation_email_sent_at)], ['Email attempts', `${r.confirmation_email_attempts ?? 0}${r.confirmation_email_error_code ? ` · last error ${r.confirmation_email_error_code}` : ''}`], ['Reminder email', r.reminder_sent_at ? `Sent ${when(r.reminder_sent_at)} (${r.reminder_count ?? 1})` : 'Not sent'],
       ['Event day email', sent(r.event_day_email_sent_at)], ...(r.attendance_type === 'virtual' ? [['Access link sent', sent(r.stream_access_sent_at)] as [string, string]] : []),
       ['Message from registrant', text(r.other_messages)], ['Notes', text(r.notes)],
     ] as [string, string][],
@@ -107,15 +111,25 @@ const screen: ScreenModule = {
     const confirmed = all.filter((r) => r.payment_status === 'paid');
     const physical = all.filter((r) => r.attendance_type !== 'virtual').length;
     return {
-      rows: all.slice(0, 200).map((r) => ({ id: r.id, cells: cellsOf(r), details: detailsOf(r), contact: { name: r.full_name, phone: r.whatsapp, email: r.email } })),
+      rows: all.slice(0, 500).map((r) => ({ id: r.id, cells: cellsOf(r), details: detailsOf(r), contact: { name: r.full_name, phone: r.whatsapp, email: r.email } })),
       kpis: [
         { label: 'Registered', value: count(all.length) },
         { label: 'Confirmed', value: count(confirmed.length) },
         { label: 'Physical', value: count(physical) },
         { label: 'Virtual', value: count(all.length - physical) },
       ],
-      note: all.length > 200 ? 'Showing the 200 newest. The tiles count everyone.' : undefined,
+      note: all.length > 500 ? 'Showing the 500 newest. The tiles count everyone.' : undefined,
     };
+  },
+
+  async button(_ctx, buttonId): Promise<ActionResult> {
+    if (buttonId !== 'resend-all-unsent') return { ok: false, error: 'This button is not connected yet.' };
+    // A small batch per press (4 people, spaced out) keeps each press inside the page time limit and inside the mailbox's
+    // sending limit. Press again to continue; people already sent are never picked up twice.
+    const r = await resendUnsentBatch(4);
+    if (r.stopped) return { ok: false, error: `Stopped after ${r.sent} sent. ${describeEmailFailure(r.stopped.kind, r.stopped.code)} ${r.remaining} still unsent.`, refresh: true };
+    if (r.sent + r.failed === 0) return { ok: true, message: r.remaining === 0 ? 'Everyone has been sent their ticket.' : `Nothing to send right now (${r.remaining} are being sent by someone else). Try again in a minute.`, refresh: true };
+    return { ok: true, message: `Sent ${r.sent}${r.failed ? `, ${r.failed} failed` : ''}. ${r.remaining === 0 ? 'Everyone has now been sent their ticket.' : `${r.remaining} still unsent. Press the button again to send the next batch.`}`, refresh: true };
   },
 
   async act(_ctx, actionId, rowId): Promise<ActionResult> {
@@ -137,15 +151,15 @@ const screen: ScreenModule = {
         .maybeSingle();
       if (error || !updated) return { ok: false, error: 'Could not confirm this registration.' };
       const sent = await deliverCompTicket(updated);
-      if (!sent) return { ok: false, error: 'Confirmed, but the ticket email failed to send. Use Resend ticket.' };
-      return { ok: true, message: `Confirmed. Ticket sent to ${updated.email}.`, cells: cellsOf(updated), refresh: true };
+      if (!sent) return { ok: false, error: 'Confirmed, but the ticket email did not go out (see the failure code on the row). The registrant can open their ticket at joinascentor.com/elevation-summit/ticket, and you can use Resend ticket once email is fixed.', refresh: true };
+      return { ok: true, message: `Confirmed. Ticket sent to ${updated.email}.`, refresh: true };
     }
 
     if (actionId === 'resend-ticket') {
       if (reg.payment_status !== 'paid') return { ok: false, error: 'Only confirmed registrations can be sent a ticket.' };
       const out = await deliverPaidEmails(reg, Number(reg.amount_paid ?? 0), reg.currency ?? 'NGN', reg.payment_reference ?? '', { customer: true });
-      if (!out.customer) return { ok: false, error: 'Email failed to send. Check SMTP settings.' };
-      return { ok: true, message: `Ticket sent to ${reg.email}.` };
+      if (!out.customer) return { ok: false, error: describeEmailFailure(out.customerError?.kind ?? 'unknown', out.customerError?.code) };
+      return { ok: true, message: `Ticket sent to ${reg.email}.`, refresh: true };
     }
     return { ok: false, error: 'Unknown action.' };
   },
