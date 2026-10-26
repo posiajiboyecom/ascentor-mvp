@@ -82,7 +82,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Registration failed. Please try again.' }, { status: 500 });
   }
 
-  // Send confirmation email (non-fatal)
+  // Send confirmation email (non-fatal, but the visitor is told if it did not go out)
+  let emailed = true;
   try {
     const firstName = (full_name as string).trim().split(/\s+/)[0];
     await sendEmail({
@@ -98,9 +99,9 @@ export async function POST(req: Request) {
         recipient:         (email as string).trim().toLowerCase(),
       }),
     });
-  } catch (err: any) { console.warn('[events/register] email non-fatal:', err.message); }
+  } catch (err: any) { emailed = false; console.warn('[events/register] email non-fatal:', err.message); }
 
   await alertEventRegistration({ eventTitle: event.title, name: (full_name as string).trim(), email: (email as string).trim().toLowerCase(), whatsapp: body.whatsapp, country: body.country });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, emailed });
 }
