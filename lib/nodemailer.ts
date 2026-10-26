@@ -89,6 +89,7 @@ export type EmailFailureKind = 'not_configured' | 'auth' | 'sender' | 'connectio
 /** Sorts a mail error into a cause an admin can act on. Looks only at codes and server replies, never credentials. */
 export function classifyEmailError(err: unknown): EmailFailureKind {
   const e = err as { code?: string; responseCode?: number } | null;
+  if (e?.code === 'ENOTCONFIGURED') return 'not_configured';
   if (isAuthFailure(err)) return 'auth';
   if (refusedSender(err)) return 'sender';
   if (['ECONNECTION', 'ETIMEDOUT', 'ESOCKET', 'ECONNREFUSED', 'EDNS', 'ENOTFOUND'].includes(e?.code ?? '')) return 'connection';

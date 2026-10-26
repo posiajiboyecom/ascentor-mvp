@@ -18,7 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { deliverPaidEmails, deliverCompTicket, sendPaymentReminderEmail } from '@/lib/summitEmails';
+import { deliverPaidEmails, deliverCompTicket, sendPaymentReminderEmail, describeEmailFailure } from '@/lib/summitEmails';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
 import { guardApi } from '@/lib/admin/api-guard';
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
       const out = await deliverPaidEmails(
         reg, Number(reg.amount_paid ?? 0), reg.currency ?? 'NGN', reg.payment_reference ?? '', { customer: true },
       );
-      if (!out.customer) return NextResponse.json({ error: 'Email failed to send. Check SMTP settings.' }, { status: 502 });
+      if (!out.customer) return NextResponse.json({ error: describeEmailFailure(out.customerError?.kind ?? 'unknown', out.customerError?.code) }, { status: 502 });
       return NextResponse.json({ ok: true, message: `Ticket sent to ${reg.email}` });
     }
 

@@ -1,4 +1,4 @@
-import { getMailer, sendEmail } from './nodemailer';
+import { getMailer, sendEmail, classifyEmailError, emailErrorCode, type EmailFailureKind } from './nodemailer';
 import { CONTACT_EMAIL, FROM_DEFAULT, SUMMIT_EMAIL } from './contact';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from './emailTemplate';
 import { generateSummitTicket, type TicketData } from './summitTicket';
@@ -41,7 +41,7 @@ type MailOpts = {
  * Uses the dedicated Summit Gmail account, falling back to the shared SMTP one.
  */
 async function sendSummitMail(opts: MailOpts): Promise<void> {
-  if (!getMailer()) throw new Error('No SMTP credentials configured (set SMTP_USER and SMTP_PASS)');
+  if (!getMailer()) throw Object.assign(new Error('No SMTP credentials configured (set SMTP_USER and SMTP_PASS)'), { code: 'ENOTCONFIGURED' });
   // The Summit shares the main mailbox. sendEmail retries as the mailbox itself if the host refuses the From address.
   await sendEmail({ from: process.env.SUMMIT_MAIL_FROM || FROM_DEFAULT, replyTo: SUMMIT_EMAIL, ...opts });
 }
@@ -229,12 +229,42 @@ export async function sendAdminPaymentNotification(i: AdminPaidInfo) {
 
 // ── Paid emails with delivery tracking (used by settlement, retry & resend) ─
 
-/** Best-effort: silently ignored if the tracking columns have not been migrated yet. */
+/** Best-effort: never throws. If a newer tracking column is not migrated yet, the older columns are still written. */
 async function markRegistration(id: string, patch: Record<string, unknown>) {
   try {
-    await supabaseAdmin.from('summit_registrations').update(patch).eq('id', id);
+    const { error } = await supabaseAdmin.from('summit_registrations').update(patch).eq('id', id);
+    if (error) {
+      const legacy = Object.fromEntries(Object.entries(patch).filter(([k]) => ['confirmation_email_sent_at', 'confirmation_email_error', 'admin_notified_paid_at'].includes(k)));
+      if (Object.keys(legacy).length) await supabaseAdmin.from('summit_registrations').update(legacy).eq('id', id);
+    }
   } catch { /* tracking is optional */ }
 }
+
+export type EmailOutcome = { ok: true } | { ok: false; kind: EmailFailureKind; code: string };
+
+/** What an admin should read when a ticket email fails. Plain words; no secrets. */
+export function describeEmailFailure(kind: EmailFailureKind, code?: string): string {
+  const tail = code ? ` (${code})` : '';
+  switch (kind) {
+    case 'auth': return `Not sent: the mail server rejected our mailbox login${tail}. The mailbox password or SMTP_USER in Vercel is wrong or the mailbox is locked. Fix that, redeploy, then try again.`;
+    case 'sender': return `Not sent: the mail server refused the From address${tail}. Set SUMMIT_MAIL_FROM to the mailbox address, or add summit@ as an alias in Hostinger.`;
+    case 'connection': return `Not sent: could not reach the mail server${tail}. Try again in a minute.`;
+    case 'not_configured': return 'Not sent: email is not set up on this server (SMTP_USER / SMTP_PASS missing).';
+    case 'rejected': return `Not sent: the mail server refused this message${tail}.`;
+    default: return `Not sent: unknown mail error${tail}.`;
+  }
+}
+
+/** Records one confirmation-email attempt on the row: status, attempt count, last error CODE (never the message body or a secret). */
+async function recordConfirmationAttempt(reg: Record<string, any>, outcome: EmailOutcome, message?: string) {
+  const now = new Date().toISOString();
+  const attempts = Number(reg.confirmation_email_attempts ?? 0) + 1;
+  await markRegistration(reg.id, outcome.ok
+    ? { confirmation_email_sent_at: now, confirmation_email_error: null, confirmation_email_status: 'sent', confirmation_email_attempts: attempts, confirmation_email_error_code: null, confirmation_email_last_attempt_at: now }
+    : { confirmation_email_error: (message ?? outcome.code).slice(0, 300), confirmation_email_status: 'failed', confirmation_email_attempts: attempts, confirmation_email_error_code: outcome.code, confirmation_email_last_attempt_at: now });
+}
+
+const outcomeOf = (err: unknown): EmailOutcome => ({ ok: false, kind: classifyEmailError(err), code: emailErrorCode(err) });
 
 /**
  * Sends the customer confirmation (+ticket) and the admin alert INDEPENDENTLY
@@ -247,8 +277,8 @@ export async function deliverPaidEmails(
   currency: string,
   reference: string,
   only: { customer?: boolean; admin?: boolean } = { customer: true, admin: true },
-): Promise<{ customer: boolean | null; admin: boolean | null }> {
-  const out: { customer: boolean | null; admin: boolean | null } = { customer: null, admin: null };
+): Promise<{ customer: boolean | null; admin: boolean | null; customerError?: { kind: EmailFailureKind; code: string } }> {
+  const out: { customer: boolean | null; admin: boolean | null; customerError?: { kind: EmailFailureKind; code: string } } = { customer: null, admin: null };
 
   if (only.customer) {
     try {
@@ -264,11 +294,13 @@ export async function deliverPaidEmails(
         reference,
       });
       out.customer = true;
-      await markRegistration(reg.id, { confirmation_email_sent_at: new Date().toISOString(), confirmation_email_error: null });
+      await recordConfirmationAttempt(reg, { ok: true });
     } catch (err) {
       out.customer = false;
-      console.error('[summitEmails] customer confirmation failed:', err);
-      await markRegistration(reg.id, { confirmation_email_error: String((err as Error).message).slice(0, 300) });
+      const o = outcomeOf(err) as Extract<EmailOutcome, { ok: false }>;
+      out.customerError = { kind: o.kind, code: o.code };
+      console.error('[summitEmails] customer confirmation failed:', o.kind, o.code);
+      await recordConfirmationAttempt(reg, o, String((err as Error).message));
     }
   }
 
@@ -356,13 +388,51 @@ export async function deliverCompTicket(reg: Record<string, any>): Promise<boole
       currency:       reg.currency || 'NGN',
       registrationId: String(reg.id),
     });
-    await markRegistration(reg.id, { confirmation_email_sent_at: new Date().toISOString(), confirmation_email_error: null });
+    await recordConfirmationAttempt(reg, { ok: true });
     return true;
   } catch (err) {
-    console.error('[summitEmails] complimentary ticket failed:', err);
-    await markRegistration(reg.id, { confirmation_email_error: String((err as Error).message).slice(0, 300) });
+    const o = outcomeOf(err) as Extract<EmailOutcome, { ok: false }>;
+    console.error('[summitEmails] complimentary ticket failed:', o.kind, o.code);
+    await recordConfirmationAttempt(reg, o, String((err as Error).message));
     return false;
   }
+}
+
+// ── Resend every unsent ticket, slowly, never twice ─────────────────────────
+
+/** Sends a ticket to people whose confirmation email never went out. Safe to run again and again:
+ *  - only rows with no confirmation_email_sent_at are picked up;
+ *  - each row is claimed with a conditional update first, so two clicks (or two admins) cannot both send to the same person;
+ *  - a claim older than 5 minutes is treated as abandoned (a crash), so nobody is stuck;
+ *  - sends are spaced out, and the batch stops at the first login failure instead of trying 40 more times. */
+export async function resendUnsentBatch(limit = 4, gapMs = 1500, onlyIds?: string[]): Promise<{ sent: number; failed: number; remaining: number; stopped?: { kind: EmailFailureKind; code: string } }> {
+  const staleBefore = new Date(Date.now() - 5 * 60_000).toISOString();
+  let pick = supabaseAdmin.from('summit_registrations').select('*');
+  if (onlyIds) pick = pick.in('id', onlyIds); // tests only: never touch anyone else
+  const { data: rows } = await pick
+    .eq('payment_status', 'paid').is('confirmation_email_sent_at', null)
+    .or(`confirmation_email_status.is.null,confirmation_email_status.neq.sending,confirmation_email_last_attempt_at.lt.${staleBefore}`)
+    .order('created_at', { ascending: true }).limit(limit);
+  let sent = 0, failed = 0;
+  let stopped: { kind: EmailFailureKind; code: string } | undefined;
+  for (const row of rows ?? []) {
+    const now = new Date().toISOString();
+    const { data: claimed } = await supabaseAdmin.from('summit_registrations')
+      .update({ confirmation_email_status: 'sending', confirmation_email_last_attempt_at: now })
+      .eq('id', row.id).is('confirmation_email_sent_at', null)
+      .or(`confirmation_email_status.is.null,confirmation_email_status.neq.sending,confirmation_email_last_attempt_at.lt.${staleBefore}`)
+      .select('*').maybeSingle();
+    if (!claimed) continue; // someone else is sending this one
+    const out = await deliverPaidEmails(claimed, Number(claimed.amount_paid ?? 0), claimed.currency ?? 'NGN', claimed.payment_reference ?? '', { customer: true });
+    if (out.customer) sent++; else {
+      failed++;
+      if (out.customerError && (out.customerError.kind === 'auth' || out.customerError.kind === 'not_configured' || out.customerError.kind === 'connection')) { stopped = out.customerError; break; }
+    }
+    await new Promise((r) => setTimeout(r, gapMs));
+  }
+  const { count } = await supabaseAdmin.from('summit_registrations').select('id', { count: 'exact', head: true })
+    .eq('payment_status', 'paid').is('confirmation_email_sent_at', null);
+  return { sent, failed, remaining: count ?? 0, stopped };
 }
 
 // ── Donations (/donate page) ────────────────────────────────────────────────
