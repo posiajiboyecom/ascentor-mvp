@@ -32,7 +32,7 @@ export const spec: ScreenSpec = {
     {
       id: "resend-ticket",
       label: "Resend ticket",
-      when: "Confirmed",
+      when: ["Confirmed", "Ticket not sent"],
       done: "Ticket sent again.",
       keep: true
     }
@@ -62,7 +62,7 @@ const lagos = (iso: string | null | undefined) => {
 };
 // attendance_type is a single choice (onsite | virtual), so there is no combined ticket.
 const ticketOf = (t: string | null) => (t === 'virtual' ? 'Virtual' : 'Physical only');
-const cellsOf = (r: any) => [r.full_name || '-', r.email || '-', r.organisation || '-', ticketOf(r.attendance_type), lagos(r.created_at), r.payment_status === 'paid' ? 'Confirmed' : 'Not confirmed'];
+const cellsOf = (r: any) => [r.full_name || '-', r.email || '-', r.organisation || '-', ticketOf(r.attendance_type), lagos(r.created_at), r.payment_status !== 'paid' ? 'Not confirmed' : r.confirmation_email_sent_at ? 'Confirmed' : 'Ticket not sent'];
 
 const when = (iso: string | null | undefined) => {
   if (!iso) return '-';
@@ -111,14 +111,14 @@ const screen: ScreenModule = {
     const confirmed = all.filter((r) => r.payment_status === 'paid');
     const physical = all.filter((r) => r.attendance_type !== 'virtual').length;
     return {
-      rows: all.slice(0, 200).map((r) => ({ id: r.id, cells: cellsOf(r), details: detailsOf(r), contact: { name: r.full_name, phone: r.whatsapp, email: r.email } })),
+      rows: all.slice(0, 500).map((r) => ({ id: r.id, cells: cellsOf(r), details: detailsOf(r), contact: { name: r.full_name, phone: r.whatsapp, email: r.email } })),
       kpis: [
         { label: 'Registered', value: count(all.length) },
         { label: 'Confirmed', value: count(confirmed.length) },
         { label: 'Physical', value: count(physical) },
         { label: 'Virtual', value: count(all.length - physical) },
       ],
-      note: all.length > 200 ? 'Showing the 200 newest. The tiles count everyone.' : undefined,
+      note: all.length > 500 ? 'Showing the 500 newest. The tiles count everyone.' : undefined,
     };
   },
 
@@ -152,7 +152,7 @@ const screen: ScreenModule = {
       if (error || !updated) return { ok: false, error: 'Could not confirm this registration.' };
       const sent = await deliverCompTicket(updated);
       if (!sent) return { ok: false, error: 'Confirmed, but the ticket email did not go out (see the failure code on the row). The registrant can open their ticket at joinascentor.com/elevation-summit/ticket, and you can use Resend ticket once email is fixed.', refresh: true };
-      return { ok: true, message: `Confirmed. Ticket sent to ${updated.email}.`, cells: cellsOf(updated), refresh: true };
+      return { ok: true, message: `Confirmed. Ticket sent to ${updated.email}.`, refresh: true };
     }
 
     if (actionId === 'resend-ticket') {

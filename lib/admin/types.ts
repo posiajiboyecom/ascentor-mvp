@@ -27,7 +27,7 @@ export interface ActionSpec {
   col?: number;
   to?: string;
   /** Only offered while the row's status column equals this. */
-  when?: string;
+  when?: string | string[];
   /** Needs 'full' (export, delete, refund). Otherwise 'edit'. */
   admin?: boolean;
   danger?: boolean;

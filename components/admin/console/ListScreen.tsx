@@ -66,7 +66,7 @@ export default function ListScreen({ spec, rows: serverRows, kpis, note, level, 
 
   /** An action applies to a row if its "when" matches and it would actually change something. */
   const applies = (r: RowData, a: ActionSpec) => {
-    if (a.when && r.cells[sc] !== a.when) return false;
+    if (a.when && !(Array.isArray(a.when) ? a.when : [a.when]).includes(r.cells[sc])) return false;
     if (a.keep || a.col === undefined) return true;
     return r.cells[a.col] !== a.to;
   };
