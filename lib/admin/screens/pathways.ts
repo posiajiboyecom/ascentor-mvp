@@ -22,6 +22,7 @@ export const spec: ScreenSpec = {
     { id: "unpublish", label: "Unpublish", col: 5, to: "Draft", admin: true }
   ],
   buttons: [
+    { id: "lesson-videos", label: "Lesson videos", href: "/admin/lesson-videos" },
     { id: "new-lesson", label: "New lesson", href: "/admin/courses" },
     { id: "new-pathway", label: "New pathway", href: "/admin/courses" }
   ]

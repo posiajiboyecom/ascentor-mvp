@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
+import { parseYouTubeId } from '@/lib/rx/video';
 import { useSearchParams } from 'next/navigation';
 
 
@@ -74,9 +75,8 @@ const EMOJIS      = ['<svg width="1em" height="1em" viewBox="0 0 24 24" fill="no
 
 function extractYoutubeId(url: string): string {
   if (!url) return '';
-  if (!url.includes('/') && !url.includes('.')) return url;
-  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return match?.[1] || url;
+  // watch, youtu.be, embed, shorts and live links, or the bare id; anything unreadable is kept as typed
+  return parseYouTubeId(url) ?? url;
 }
 
 // ── Shared primitives ────────────────────────────────────────────
