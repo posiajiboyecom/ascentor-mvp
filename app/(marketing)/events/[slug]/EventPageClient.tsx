@@ -62,6 +62,7 @@ export default function EventPageClient({ event }: { event: any }) {
   const init: Form = Object.fromEntries(ALL_FIELDS.map(f => [f, '']));
   const [form, setForm] = useState<Form>(init);
   const [submitted, setSubmitted] = useState(false);
+  const [emailed, setEmailed] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -84,7 +85,11 @@ export default function EventPageClient({ event }: { event: any }) {
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
       setError(d.error || 'Something went wrong. Please try again.');
-    } else { setSubmitted(true); }
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setEmailed(d.emailed !== false);
+      setSubmitted(true);
+    }
   };
 
   const bgColor = event.cover_color || '#0F0F0E';
@@ -145,6 +150,11 @@ export default function EventPageClient({ event }: { event: any }) {
               <p style={{ color: '#9CA3AF', fontSize: '1rem', lineHeight: 1.7, maxWidth: '440px', margin: '0 auto' }}>
                 {event.confirmation_body || "We have your details and will be in touch closer to the event."}
               </p>
+              {!emailed && (
+                <p role="status" style={{ color: '#C8A96E', fontSize: '0.9375rem', lineHeight: 1.6, maxWidth: '440px', margin: '1rem auto 0' }}>
+                  Your place is saved, but we could not send the confirmation email just now. We will follow up by email or WhatsApp.
+                </p>
+              )}
             </div>
           ) : event.registration_open ? (
             <form onSubmit={handleSubmit} style={{ background: '#FAFAF8', borderRadius: '1rem', padding: '2rem', border: '1px solid #E8E6E1' }}>

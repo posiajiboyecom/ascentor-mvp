@@ -72,6 +72,54 @@ export function refusedSender(err: unknown): boolean {
   return (code >= 500 && code < 600) && /(sender|from address|not owned|not allowed|spoof|authenticat|mismatch|553|550 5\.7)/.test(text);
 }
 
+export type EmailFailureKind = 'not_configured' | 'auth' | 'sender' | 'connection' | 'rejected' | 'unknown';
+
+/** Sorts a mail error into a cause an admin can act on. Looks only at codes and server replies, never credentials. */
+export function classifyEmailError(err: unknown): EmailFailureKind {
+  const e = err as { code?: string; responseCode?: number; response?: string; message?: string } | null;
+  const text = `${e?.response ?? ''} ${e?.message ?? ''}`.toLowerCase();
+  if (e?.code === 'EAUTH' || e?.responseCode === 535 || /invalid login|authentication (failed|unsuccessful)/.test(text)) return 'auth';
+  if (refusedSender(err)) return 'sender';
+  if (['ECONNECTION', 'ETIMEDOUT', 'ESOCKET', 'ECONNREFUSED', 'EDNS', 'ENOTFOUND'].includes(e?.code ?? '')) return 'connection';
+  if ((e?.responseCode ?? 0) >= 500) return 'rejected';
+  return 'unknown';
+}
+
+const FIX_HINT: Record<EmailFailureKind, string> = {
+  not_configured: 'Set SMTP_USER and SMTP_PASS in Vercel (Production and Preview) and redeploy.',
+  auth: 'The mail server rejected the mailbox login. Reset the mailbox password, set SMTP_USER to the full sender address, set SMTP_PASS, redeploy.',
+  sender: 'The mail server refused the From address. SMTP_USER must be the mailbox that owns EMAIL_FROM.',
+  connection: 'Could not reach the mail server. Check SMTP_HOST and SMTP_PORT (465 SSL or 587 STARTTLS).',
+  rejected: 'The mail server refused this message. See the response code.',
+  unknown: 'Unknown mail error.',
+};
+
+/** One log line per failed send: the cause, the server's reply and the fix. Never the password, never the message body. */
+export function logEmailFailure(err: unknown, ctx: { to: string; subject: string }) {
+  const e = err as { code?: string; responseCode?: number; response?: string; command?: string; message?: string } | null;
+  const kind = classifyEmailError(err);
+  const s = smtpSettings();
+  console.error('[email] SEND FAILED', JSON.stringify({
+    kind,
+    code: e?.code ?? null,
+    responseCode: e?.responseCode ?? null,
+    command: e?.command ?? null,
+    response: (e?.response ?? e?.message ?? '').toString().slice(0, 200),
+    host: s.host,
+    port: s.port,
+    mailbox: s.user ?? null,
+    toDomain: ctx.to.split('@')[1] ?? null,
+    subject: ctx.subject.slice(0, 80),
+    fix: FIX_HINT[kind],
+  }));
+}
+
+/** Like sendEmail, but never throws: returns whether the message went out. For flows where a failed email must not block the visitor. */
+export async function sendEmailSafe(opts: Parameters<typeof sendEmail>[0]): Promise<boolean> {
+  if (!getMailer()) { console.error('[email] SEND FAILED', JSON.stringify({ kind: 'not_configured', toDomain: opts.to.split('@')[1] ?? null, subject: opts.subject.slice(0, 80), fix: FIX_HINT.not_configured })); return false; }
+  try { await sendEmail(opts); return true; } catch { return false; }
+}
+
 export async function sendEmail(opts: {
   to: string;
   subject: string;
@@ -86,8 +134,8 @@ export async function sendEmail(opts: {
 }): Promise<void> {
   const mailer = getMailer();
   if (!mailer) {
+    console.error('[email] SEND FAILED', JSON.stringify({ kind: 'not_configured', toDomain: opts.to.split('@')[1] ?? null, subject: opts.subject.slice(0, 80), fix: FIX_HINT.not_configured }));
     if (opts.required) throw new Error('SMTP is not configured (SMTP_USER / SMTP_PASS missing)');
-    console.warn('[email] SMTP credentials not configured, skipping send to', opts.to);
     return;
   }
   const from = opts.from || DEFAULT_FROM;
@@ -100,9 +148,15 @@ export async function sendEmail(opts: {
     const mailbox = smtpSettings().user;
     if (mailbox && refusedSender(err) && addressOf(from) !== mailbox.toLowerCase()) {
       console.warn('[email] sender refused, retrying as the mailbox:', addressOf(from), '->', mailbox);
-      await mailer.sendMail({ from: `${nameOf(from)} <${mailbox}>`, to: opts.to, subject: opts.subject, html: opts.html, text: opts.text, replyTo: opts.replyTo || addressOf(from), attachments: opts.attachments });
-      return;
+      try {
+        await mailer.sendMail({ from: `${nameOf(from)} <${mailbox}>`, to: opts.to, subject: opts.subject, html: opts.html, text: opts.text, replyTo: opts.replyTo || addressOf(from), attachments: opts.attachments });
+        return;
+      } catch (retryErr) {
+        logEmailFailure(retryErr, opts);
+        throw retryErr;
+      }
     }
+    logEmailFailure(err, opts);
     throw err;
   }
 }

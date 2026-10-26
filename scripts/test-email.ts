@@ -16,6 +16,8 @@ async function main() {
   console.log(`server  ${info.host}:${info.port}`);
   console.log(`mailbox ${info.user ?? '(not set)'}`);
   console.log(`from    ${info.from}`);
+  const fromAddr = (info.from.match(/<([^>]+)>/)?.[1] ?? info.from).toLowerCase();
+  if (info.user && info.user.toLowerCase() !== fromAddr) console.warn(`WARNING: SMTP_USER (${info.user}) is not the From address (${fromAddr}). Hostinger usually needs the full mailbox address as SMTP_USER, matching From.`);
   if (!info.configured) { console.error('SMTP_USER and SMTP_PASS are not both set in .env.local.'); process.exit(1); }
 
   const arg = process.argv[2];
@@ -35,4 +37,8 @@ async function main() {
   console.log(`OK: sent a test email to ${arg}. Check the inbox and the spam folder.`);
 }
 
-main().catch((e) => { console.error('FAILED:', e instanceof Error ? e.message : e); process.exit(1); });
+main().catch(async (e) => {
+  const { classifyEmailError } = await import('../lib/nodemailer');
+  console.error('FAILED:', classifyEmailError(e), '-', e instanceof Error ? e.message : e);
+  process.exit(1);
+});

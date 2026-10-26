@@ -118,7 +118,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send confirmation email - non-blocking (failure does not break the response)
+    // Send confirmation email - non-blocking (failure does not break the response, but the client is told)
+    let emailed = true;
     try {
       await sendEmail({
         from:    'Ascentor <hello@joinascentor.com>',
@@ -134,6 +135,7 @@ export async function POST(request: NextRequest) {
       });
     } catch (emailError) {
       // User is already saved - log only, do not fail the request
+      emailed = false;
       console.error('[waitlist] Email error:', emailError);
     }
 
@@ -142,6 +144,7 @@ export async function POST(request: NextRequest) {
         message:       'Welcome to the waitlist!',
         position:      data.position,
         referral_code: data.referral_code,
+        emailed,
       },
       { status: 201 }
     );
