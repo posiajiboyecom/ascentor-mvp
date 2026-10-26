@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ONE_LINER } from '@/lib/seo';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Brain, ShieldCheck, Briefcase, HeartHandshake, Users, Landmark, TrendingUp, Mountain, Compass } from 'lucide-react';
@@ -97,9 +98,9 @@ export default function LandingPageClient({ cms }: { cms: PublishedPage | null }
   // a field is missing or misnamed, that one value silently falls
   // back to hardcoded copy rather than rendering blank or crashing.
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
-  const heroEyebrow  = hero?.eyebrow   || 'The Elevation Summit Platform';
+  const heroEyebrow  = hero?.eyebrow   || 'Mentorship and Leadership Development';
   const heroHeadline = 'Ascentor exists because drift is the default';
-  const heroSubhead  = hero?.subhead   || 'Ascentor is the daily platform of The Elevation Summit, a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.';
+  const heroSubhead  = hero?.subhead   || ONE_LINER;
   const heroCtaLabel    = hero?.cta_label    || 'Join the Movement →';
   const heroCtaHref     = hero?.cta_href     || '/signup';
   const heroCta2Label   = hero?.cta2_label   || 'What is The Elevation Summit?';
@@ -586,6 +587,38 @@ display: flex; align-items: center; justify-content: center; }
                 Join {userCount.toLocaleString()}+ people who chose direction over drift.
               </p>
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── What Ascentor is: plain words for first-time visitors and for search and AI answers (SEO kit, section 4) ── */}
+      <section aria-labelledby="what-is-ascentor" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem clamp(3rem, 6vw, 4.5rem)' }}>
+        <h2 id="what-is-ascentor" className="eyebrow rust" style={{ marginBottom: '0.75rem' }}>What is Ascentor?</h2>
+        <p style={{ fontSize: 'clamp(1.0625rem, 2vw, 1.1875rem)', color: '#374151', lineHeight: 1.75, maxWidth: '820px' }}>
+          Ascentor is a mentorship and leadership development platform for ambitious young Africans. Members join a Circle of 8-10 people, work with human mentors, and use Sage, an AI coach, to build across six dimensions of life. Ascentor is also home to The Elevation Summit, its annual gathering, next on 19 November 2026 in Lagos.
+        </p>
+      </section>
+
+      {/* ── How it works ── */}
+      <section aria-labelledby="how-it-works" style={{ background: '#F4F3EF', padding: 'clamp(3.5rem, 7vw, 6rem) 1.5rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <p className="eyebrow rust" style={{ marginBottom: '1rem' }}>How it works</p>
+          <h2 id="how-it-works" className="section-headline" style={{ marginBottom: '2.5rem' }}>Mentorship and leadership development, in five parts.</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+            {[
+              { t: 'Circles', d: 'A small Circle of 8-10 people who hold each other accountable and build together.' },
+              { t: 'Mentors', d: 'Human mentors who work with your Circle, so mentorship is a relationship, not a lecture.' },
+              { t: 'Sage, an AI coach', d: 'Sage is an AI coach that helps you prepare, reflect and keep your commitments between sessions.' },
+              { t: 'The Learn library', d: 'Lessons across six dimensions of a whole life: Mind, Character, Vocation, Relationships, Community and Legacy.' },
+              { t: 'Sessions', d: 'Mentor sessions your Circle books together, where the agenda comes from your own practice.' },
+            ].map((item, i) => (
+              <div key={item.t} className="card">
+                <div className="card-number">{String(i + 1).padStart(2, '0')}</div>
+                <div className="gold-bar" />
+                <h3 style={{ fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)', fontSize: '1.125rem', fontWeight: 700, color: '#0F0F0E', marginBottom: '0.5rem' }}>{item.t}</h3>
+                <p style={{ color: '#6B7280', lineHeight: 1.7, fontSize: '0.9375rem' }}>{item.d}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

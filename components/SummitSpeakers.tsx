@@ -120,7 +120,7 @@ export default function SummitSpeakers() {
               <div className="summit-speaker-photo">
                 <Image
                   src={speaker.photo ?? PLACEHOLDER_PHOTO}
-                  alt={speaker.name}
+                  alt={`${speaker.name}, ${speaker.role}`}
                   fill
                   sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
                   style={{ objectFit: 'cover', objectPosition: 'center top' }}
@@ -263,7 +263,7 @@ export default function SummitSpeakers() {
               <div className="ssp-avatar">
                 <Image
                   src={selected.photo ?? PLACEHOLDER_PHOTO}
-                  alt={selected.name}
+                  alt={`${selected.name}, ${selected.role}`}
                   fill
                   sizes="96px"
                   style={{ objectFit: 'cover', objectPosition: 'center top' }}
