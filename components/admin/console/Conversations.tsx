@@ -127,7 +127,7 @@ export default function Conversations({ initialTab, initialRows, initialNote, lo
           </label>
         </div>
         {note && <p className="sm p">{note}</p>}
-        <div className="g2" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.05fr)', alignItems: 'start' }}>
+        <div className="g2 g2-cv">
           <div className="tblwrap">
             <table className="tbl">
               <thead><tr>{meta.cols.map((c) => <th key={c}>{c}</th>)}<th /></tr></thead>
