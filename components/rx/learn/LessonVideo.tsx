@@ -5,7 +5,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { saveWatchProgress } from '@/app/(app)/learn/lesson/actions';
-import { embedSrc, type VideoSource } from '@/lib/rx/video';
+import type { VideoSource } from '@/lib/rx/video';
+import VideoPlayer from './VideoPlayer';
 
 interface Props {
   lessonId: string;
@@ -23,10 +24,6 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
   const latest = useRef({ pos: startSec, dur: 0, pct: startPercent });
   const lastSent = useRef({ at: 0, pct: startPercent });
   const [pct, setPct] = useState(startPercent);
-  const [origin, setOrigin] = useState('');
-
-  useEffect(() => setOrigin(window.location.origin), []);
-
   const flush = useCallback((force = false) => {
     const { pos, dur, pct: p } = latest.current;
     if (!dur || p <= 0) return;
@@ -86,22 +83,16 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
     <div className="rx-stack-sm">
       {source.provider === 'file' ? (
         <video
-          ref={fileRef} className="rx-video rx-rise" src={source.url} controls preload="metadata" style={{ width: '100%' }}
+          ref={fileRef} className="rx-video rx-rise" src={source.url} title={title} controls preload="metadata" style={{ width: '100%' }}
           onLoadedMetadata={(e) => { if (startSec > 5 && startPercent < 95) e.currentTarget.currentTime = startSec; }}
           onTimeUpdate={(e) => report(e.currentTarget.currentTime, e.currentTarget.duration)}
           onPause={() => flush(true)} onEnded={() => flush(true)}
         />
       ) : (
-        <div className="rx-video rx-rise">
-          {origin && (
-            <iframe
-              ref={frame} title={title} onLoad={onFrameLoad}
-              src={embedSrc(source, startPercent < 95 ? startSec : 0, origin)}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
-              allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowFullScreen
-            />
-          )}
-        </div>
+        <VideoPlayer
+          {...source} title={title} className="rx-rise" frameRef={frame} onFrameLoad={onFrameLoad}
+          startSec={startPercent < 95 ? startSec : 0}
+        />
       )}
       {pct > 0 && (
         <div className="rx-row rx-nw" style={{ gap: 10 }} aria-live="polite">
