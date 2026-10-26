@@ -29,7 +29,7 @@ export default async function ChatViewPage({ searchParams }: { searchParams: Pro
   const qs = (fmt: string) => `/api/admin/chats/export?scope=${scope}&id=${id}&format=${fmt}${from ? `&from=${from}` : ''}${to ? `&to=${to}` : ''}`;
 
   return (
-    <div className="rx rx-admin-desktop" style={{ padding: 4 }}>
+    <div className="rx" style={{ padding: 16 }}>
       <BackLink href={`/admin/chats?tab=${scope}`}>Chats</BackLink>
       <h1 className="rx-title" style={{ marginTop: 8 }}>{transcripts[0]?.title ?? 'Chat'}</h1>
       <span className="rx-rule" />

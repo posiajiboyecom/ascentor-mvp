@@ -556,3 +556,10 @@ html[data-sage-open] .sage-root, .sage-root.sage-hide { display: none; }
 
 /* Keyboard focus inside the shell: a rust ring that reads on the light surfaces (the global gold ring is too faint on light) */
 .sh-root :is(a, button, [role='button'], [tabindex], input, select, textarea, summary):focus-visible { outline: 2px solid #B6502A; outline-offset: 2px; }
+
+/* Phones and tablets: menu rows and sidebar footer buttons meet the 44px tap-target minimum (desktop rows stay 36px). */
+@media (max-width: 1023.98px) {
+  .sh-root:is([data-variant='app'], [data-variant='admin']) .sh-item,
+  .sh-root:is([data-variant='app'], [data-variant='admin']) .sh-group + .sh-group .sh-item,
+  .sh-root:is([data-variant='app'], [data-variant='admin']) .sh-foot-btn { min-height: 44px; }
+}

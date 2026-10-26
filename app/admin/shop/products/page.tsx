@@ -202,6 +202,8 @@ export default function AdminShopProductsPage() {
         .sp-table th { text-align: left; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--admin-text-muted); font-weight: 500; padding: 10px 14px; border-bottom: 1px solid var(--admin-border); white-space: nowrap; }
         .sp-table td { padding: 12px 14px; border-bottom: 1px solid var(--admin-border); font-size: 13px; color: var(--admin-text); vertical-align: middle; }
         .sp-table tr:last-child td { border-bottom: none; }
+        /* the name column keeps a readable width on phones; the table scrolls inside its own box */
+        .sp-table td:first-child, .sp-table th:first-child { min-width: 240px; }
       `}</style>
 
       <div style={{ fontFamily: brand.font }}>

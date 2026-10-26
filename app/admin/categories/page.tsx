@@ -18,7 +18,7 @@ export default async function AdminCategoriesPage() {
   const rows: CategoryRow[] = ((cats ?? []) as { slug: string; name: string; active: boolean }[]).map((c) => ({ slug: c.slug, name: c.name, active: c.active, posts: n.get(c.name) ?? 0 }));
   return (
     <ToastProvider>
-      <div className="rx rx-admin-desktop" style={{ padding: 4 }}>
+      <div className="rx" style={{ padding: 16 }}>
         <p className="rx-sm">Community</p>
         <Title>Categories</Title>
         <div className="rx-two">
