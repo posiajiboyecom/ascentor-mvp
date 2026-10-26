@@ -32,7 +32,7 @@ interface FounderData {
 }
 
 const EMPTY: FounderData = {
-  name: 'Ajiboye Ayomiposi Samuel',
+  name: 'Posi Ajiboye',
   photo_url: '',
   photo_position: 'left',
   photo_focus: 'top',
@@ -309,7 +309,7 @@ export default function AdminAboutPage() {
 
       <label style={label} htmlFor="f-attr">Quote attribution (optional)</label>
       <input id="f-attr" style={input} value={form.quote_attribution}
-        placeholder="Ajiboye Ayomiposi Samuel · Founder, Ascentor"
+        placeholder="Posi Ajiboye · Founder, Ascentor"
         onChange={(e) => setForm((f) => ({ ...f, quote_attribution: e.target.value }))} />
 
       {/* Save */}

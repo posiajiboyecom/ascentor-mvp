@@ -61,6 +61,8 @@ const ERROR = {
 export default function ElevationSummitClient({ cms }: { cms: PublishedPage | null }) {
   // CMS section keys
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
+  // TODO(posi): the page says both "Inaugural" (here and in several places below) and "Summit 2.0" (headline, ticket PDF). The SEO kit
+  // says to pick one but does not say which. Left as is until confirmed.
   const heroEyebrow   = hero?.eyebrow    || 'Inaugural Gathering · 19 November, 2026';
   const heroHeadline  = 'The Elevation Summit 2.0';
   const heroSubhead   = 'One gathering. One decision. The rest of your life. The Elevation Summit is a one-day convening for people ready to stop drifting and start building. It is where the right question, the right conversation, and the right community meet. Be in the room in Lagos or join us from anywhere in the world. Either way, you will leave with a clearer sense of who you are becoming and what you are building.';
@@ -305,7 +307,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
             {[
-              { title: 'Not a Motivational Spectacle', icon: Sparkles, description: 'The Summit does not exist to excite you for 72 hours and send you home unchanged. It exists to send you home more built than you arrived.' },
+              { title: 'Not a Motivational Spectacle', icon: Sparkles, description: 'The Summit does not exist to excite you for a day and send you home unchanged. It exists to send you home more built than you arrived.' },
               { title: 'Not a Networking Event', icon: Network, description: 'You will meet extraordinary people. But the purpose is not connection for career advancement - it is the encounter with others who have chosen the same ascent.' },
               { title: 'Not a Conference', icon: Monitor, description: 'There are no passive attendees. Every person in the room is a participant - challenged, accountable, and choosing, in real time, who they will be.' },
             ].map((item) => {
@@ -527,7 +529,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
 
             <p style={{ gridColumn: '1 / -1', fontSize: '0.8125rem', color: '#9CA3AF', margin: 0 }}>
               {activeTab === 'onsite'
-                ? 'Attending in person, Aderemi Makanjuola Lecture Theatre, Lagos.'
+                ? 'Attending in person, Aderemi Makanjuola Hall, Lagos.'
                 : 'Joining virtually. Your join link arrives by email once your ticket is confirmed.'}
             </p>
 
@@ -670,6 +672,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       {/* Gallery */}
       <section style={{ background: '#F4F3EF', padding: 'clamp(4rem, 8vw, 7rem) 1.5rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', marginBottom: '2.5rem' }}>
+          {/* TODO(posi): "From Past Editions" contradicts "Inaugural". The kit says rename it to something true but gives no wording. */}
           <p className="mkt-eyebrow" style={{ marginBottom: '1rem' }}>From Past Editions</p>
           <h2 className="mkt-section-headline" style={{ color: '#0F0F0E', marginBottom: '1rem' }}>Moments from the journey.</h2>
           <p style={{ color: '#6B7280', fontSize: '1rem', lineHeight: 1.75, maxWidth: '640px' }}>

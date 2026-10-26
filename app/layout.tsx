@@ -17,30 +17,20 @@ import Script from 'next/script';
 // See globals.css for @font-face declarations
 
 // ── Metadata ───────────────────────────────────────────────────────
+// Site-wide defaults only. Do NOT set alternates, openGraph, twitter or description here: Next inherits a layout's
+// canonical into every page that does not set its own, and a page's openGraph replaces the layout's entirely.
+// Every page sets its own through pageMeta() in lib/seo.ts.
 export const metadata: Metadata = {
-  // metadataBase makes all relative OG/twitter image + canonical URLs
-  // resolve against the production domain (incl. the dynamic
-  // app/opengraph-image.tsx). Without it Next falls back to localhost
-  // or the Vercel deployment URL.
+  // metadataBase makes all relative OG/twitter image + canonical URLs resolve against the production domain
+  // (incl. the dynamic app/opengraph-image.tsx). Without it Next falls back to localhost or the Vercel URL.
   metadataBase: new URL('https://joinascentor.com'),
-  alternates: { canonical: '/' },
+  applicationName: 'Ascentor',
+  // Pages that set a plain title get the suffix; the homepage uses title.absolute.
   title: {
-    default: 'Ascentor, Build a life that outlasts you.',
+    default: 'Ascentor | Mentorship & Leadership for Young Africans',
     template: '%s | Ascentor',
   },
-  description:
-    'Ascentor is the platform of The Elevation Summit, a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.',
-  keywords: [
-    'purposeful living',
-    'personal development',
-    'The Elevation Summit',
-    'leadership',
-    'community',
-    'impact',
-    'nation building',
-    'total person',
-  ],
-  authors: [{ name: 'Ajiboye Ayomiposi Samuel' }],
+  authors: [{ name: 'Posi Ajiboye' }],
   creator: 'Ascentor',
   manifest: '/manifest.json',
   appleWebApp: {
@@ -48,20 +38,6 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'Ascentor',
     startupImage: '/icon/icon-512.png',
-  },
-  openGraph: {
-    title: 'Ascentor, The Elevation Summit Platform',
-    description:
-      'Join a global community of purposeful individuals. The official platform of The Elevation Summit movement.',
-    url: 'https://joinascentor.com',
-    siteName: 'Ascentor',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Ascentor, Build a life that outlasts you.',
-    description: 'The platform of The Elevation Summit movement.',
-    creator: '@ascentorhq',
   },
   other: {
     'mobile-web-app-capable': 'yes',
@@ -71,8 +47,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   themeColor: '#FAFAF8',
 };
 

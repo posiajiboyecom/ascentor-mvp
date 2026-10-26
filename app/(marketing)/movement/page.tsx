@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import '@/styles/marketing.css';
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
@@ -6,11 +6,12 @@ import PublicShell from '@/components/layout/PublicShell';
 import GateButton from '@/components/GateButton';
 import { Brain, Shield, Briefcase, Users, Globe, Clock, Landmark, Lightbulb, Star, Building } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'The Movement',
+export const metadata = pageMeta({
+  title: 'The Movement: Building the Total Person',
   description:
-    'A generation is drifting. Ascentor and The Elevation Summit exist to change that. Discover the ideology, the conviction, and the vision behind the movement.',
-};
+    'Why a generation is drifting and how Ascentor builds the total person across six dimensions: Mind, Character, Vocation, Relationships, Community, Legacy.',
+  path: '/movement',
+});
 
 const dimensions = [
   {
@@ -269,7 +270,7 @@ export default async function MovementPage() {
               </div>
               <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #E8E6E1' }}>
                 <p style={{ fontWeight: 700, fontSize: '1rem', color: '#0F0F0E' }}>
-                  Ajiboye Ayomiposi Samuel
+                  Posi Ajiboye
                 </p>
                 <p style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '0.25rem' }}>
                   Founder, Ascentor · The Elevation Summit · Lagos, Nigeria
