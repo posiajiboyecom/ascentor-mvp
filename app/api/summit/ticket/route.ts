@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { generateSummitTicket } from '@/lib/summitTicket';
-import { ticketView, secondFactorMatches } from '@/lib/summitTicketLookup';
+import { ticketView } from '@/lib/summitTicketLookup';
+import { secondFactorMatches } from '@/lib/summitTicketMatch';
 import { RateLimiter, getClientIp } from '@/lib/rate-limit';
 
 // "Find my ticket": the registrant proves they are the registrant with the email AND a second detail only they know (the WhatsApp

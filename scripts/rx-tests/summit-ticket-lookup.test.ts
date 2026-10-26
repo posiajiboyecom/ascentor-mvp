@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { samePhone, secondFactorMatches, referenceOf } from '../../lib/summitTicketLookup';
+import { samePhone, secondFactorMatches, referenceOf } from '../../lib/summitTicketMatch';
 
 const reg = { id: '1a2b3c4d-0000-4000-8000-000000000000', whatsapp: '+234 803 123 4567' };
 
