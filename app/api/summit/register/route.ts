@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { deliverPaidEmails } from '@/lib/summitEmails';
+import { ticketView } from '@/lib/summitTicketLookup';
 import { summitRegisterLimiter, getClientIp } from '@/lib/rate-limit';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
@@ -115,7 +116,12 @@ export async function POST(req: NextRequest) {
   // Ticket PDF + confirmation email, and the admin new-registration alert.
   // Never throws; delivery failures are tracked on the row, not surfaced
   // here - the registration itself has already succeeded.
-  await deliverPaidEmails(registration, 0, 'NGN', '');
+  const out = await deliverPaidEmails(registration, 0, 'NGN', '');
+  const emailSent = out.customer === true;
 
-  return NextResponse.json({ registrationId: registration.id });
+  // The visitor gets their ticket on screen straight away, so a failed email never leaves them without one, and the page can say
+  // honestly whether the email went out.
+  let ticket = null;
+  try { ticket = await ticketView({ ...registration, confirmation_email_sent_at: emailSent ? nowIso : null }); } catch (e) { console.error('[summit/register] ticket view failed:', (e as Error).message); }
+  return NextResponse.json({ registrationId: registration.id, emailSent, ticket });
 }

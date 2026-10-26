@@ -76,9 +76,9 @@ export async function POST(req: NextRequest) {
     read: false,
   });
 
-  await deliverPaidEmails(created, 0, 'NGN', '');
+  const out = await deliverPaidEmails(created, 0, 'NGN', '');
 
-  return NextResponse.json({ ok: true, registrationId: created.id });
+  return NextResponse.json({ ok: true, registrationId: created.id, emailSent: out.customer === true });
 }
 
 export async function DELETE(req: NextRequest) {

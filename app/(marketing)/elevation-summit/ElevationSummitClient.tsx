@@ -13,6 +13,7 @@ import PhoneInput from 'react-phone-number-input';
 import flags from 'react-phone-number-input/flags';
 import { useModal } from '@/components/Modal';
 import FlyerCta, { SUMMIT_NAME_KEY } from './FlyerCta';
+import SummitTicketCard, { TICKET_STORAGE_KEY, type ScreenTicket, type TicketProof } from '@/components/SummitTicketCard';
 import { useRouter } from 'next/navigation';
 import { Compass, Hammer, Crown, Sparkles, Network, Monitor, CalendarDays, MapPin, Clock, TicketCheck, Check, ArrowRight, HeartHandshake } from 'lucide-react';
 import SummitCountdown from '@/components/SummitCountdown';
@@ -151,6 +152,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
   const [venueSlide, setVenueSlide] = useState(0);
   // Non-null while the post-registration success overlay is showing
   const [registrationSuccess, setRegistrationSuccess] = useState<'onsite' | 'virtual' | null>(null);
+  const [ticketInfo, setTicketInfo] = useState<{ ticket: ScreenTicket | null; proof: TicketProof; emailSent: boolean } | null>(null);
   // The pending auto-redirect out of the success overlay, cleared if the
   // visitor clicks a button in it before it fires (Continue or Donate),
   // so it can never fire a second, unwanted navigation afterwards.
@@ -174,7 +176,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
 
       if (res.status === 409) {
         await alert(
-          "This email address is already confirmed for the Elevation Summit. Check your inbox for your confirmation email. If you can't find it, contact us and we'll help you locate it.",
+          "This email address is already confirmed for the Elevation Summit. Check your inbox for your confirmation email. If it has not arrived, open your ticket any time at joinascentor.com/elevation-summit/ticket with your email and WhatsApp number.",
           'Already Registered'
         );
         return;
@@ -184,11 +186,15 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         throw new Error('Registration failed');
       }
 
+      const result = await res.json().catch(() => ({} as { ticket?: ScreenTicket | null; emailSent?: boolean }));
+      const info = { ticket: (result.ticket ?? null) as ScreenTicket | null, proof: { email: String(data.email ?? '').trim(), whatsapp: String(data.whatsapp ?? '').trim() }, emailSent: result.emailSent === true };
       try { sessionStorage.setItem(SUMMIT_NAME_KEY, String(data.full_name ?? '').trim().slice(0, 40)); } catch { /* optional */ }
+      try { sessionStorage.setItem(TICKET_STORAGE_KEY, JSON.stringify(info)); } catch { /* optional */ }
       reset();
-      // Branded success overlay auto-redirects - no click required.
+      setTicketInfo(info);
       setRegistrationSuccess(activeTab);
-      successRedirectTimer.current = setTimeout(() => router.push('/elevation-summit/confirmed'), 8000);
+      // Auto-redirect only when the email went out. If it did not, the visitor stays on their ticket until they choose to leave.
+      if (info.emailSent) successRedirectTimer.current = setTimeout(() => router.push('/elevation-summit/confirmed'), 8000);
     } catch (err) {
       await alert(
         "We couldn't process your registration. Please check your details and try again. If this keeps happening, reach out to us for help.",
@@ -892,7 +898,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
           role="alertdialog"
           aria-label="Registration confirmed"
           style={{
-            position: 'fixed', inset: 0, zIndex: 10000,
+            position: 'fixed', inset: 0, zIndex: 10000, overflowY: 'auto',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'rgba(15, 15, 14, 0.55)', backdropFilter: 'blur(6px)',
             padding: '1.5rem', animation: 'summitOverlayIn 0.25s ease-out',
@@ -900,7 +906,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
         >
           <div style={{
             background: '#FFFFFF', borderRadius: '1.25rem',
-            padding: '3rem 2.5rem 2.5rem', maxWidth: '420px', width: '100%',
+            padding: '3rem 2.5rem 2.5rem', maxWidth: '420px', width: '100%', margin: 'auto',
             textAlign: 'center', boxShadow: '0 24px 80px rgba(0,0,0,0.35)',
             animation: 'summitCardIn 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
           }}>
@@ -920,8 +926,11 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             </h2>
             <p style={{ color: '#6B7280', lineHeight: 1.7, fontSize: '1rem', margin: '0 0 2rem' }}>
               Your {registrationSuccess} spot at the
-              Elevation Summit is secured. A confirmation email is on its way.
+              Elevation Summit is secured. {ticketInfo?.emailSent ? 'A confirmation email is on its way. Check your spam folder if you do not see it.' : 'We could not send your confirmation email just now. Do not worry: your place is saved and your ticket is below. Screenshot it, or open it any time at joinascentor.com/elevation-summit/ticket. We will email it as soon as we can.'}
             </p>
+            {ticketInfo?.ticket && (
+              <div style={{ margin: '0 0 1.5rem' }}><SummitTicketCard ticket={ticketInfo.ticket} proof={ticketInfo.proof} /></div>
+            )}
             {/* Progress bar doubles as the redirect countdown */}
             <div style={{
               height: '3px', borderRadius: '2px', background: '#F0EDE6',

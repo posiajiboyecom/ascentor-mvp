@@ -1,6 +1,7 @@
 import '@/styles/marketing.css';
 import { HeartHandshake } from 'lucide-react';
 import FlyerCta from '../FlyerCta';
+import ConfirmedTicket from './ConfirmedTicket';
 
 export default function SummitConfirmedPage() {
   return (
@@ -13,8 +14,10 @@ export default function SummitConfirmedPage() {
         </h1>
         <p style={{ color: '#6B7280', fontSize: '1.0625rem', lineHeight: 1.8, marginBottom: '2rem' }}>
           Your place at the Elevation Summit, 19 November 2026, Lagos,
-          is confirmed. A confirmation email is on its way to your inbox.
+          is confirmed. We email your ticket to the address you registered with. If it has not arrived, you do not need to wait for it:
+          open your ticket below, or any time at <a href="/elevation-summit/ticket" style={{ color: '#0F0F0E', fontWeight: 600 }}>Find my ticket</a>.
         </p>
+        <ConfirmedTicket />
         <p style={{ color: '#6B7280', fontSize: '1rem', lineHeight: 1.7, marginBottom: '2.5rem' }}>
           We look forward to seeing you there.
         </p>
