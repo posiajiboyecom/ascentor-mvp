@@ -1,28 +1,17 @@
-import type { Metadata } from 'next';
 import { pageMeta, FOUNDER_NAME, FOUNDER_LEGAL_NAME } from '@/lib/seo';
 import Link from 'next/link';
 import { ShieldCheck, Users, Rocket, Crown, MessageSquare, BookOpen, Mountain, Target, Shield, Globe, Clock, AlertTriangle } from 'lucide-react';
 import PublicShell from '@/components/layout/PublicShell';
 import GateButton from '@/components/GateButton';
 
-export async function generateMetadata(): Promise<Metadata> {
-  // Founder photo (when published) becomes the page's share image and
-  // an indexable image signal for Google.
-  let founderPhoto = '';
-  try {
-    const cms = await getPublishedPage('about');
-    const f = cms?.sections.founder?.data as Record<string, string> | undefined;
-    founderPhoto = f?.photo_url || '';
-  } catch { /* metadata must never throw */ }
-
-  return pageMeta({
-    title: 'About Ascentor and Its Founder, Posi Ajiboye',
-    description:
-      'Ascentor is a mentorship and leadership development platform founded in Lagos by Posi Ajiboye, built on the conviction that purpose is built, not found.',
-    path: '/about',
-    ...(founderPhoto ? { image: founderPhoto } : {}),
-  });
-}
+// Static (not async) on purpose: metadata that waits on the CMS is streamed into the body after </head>, where simple parsers
+// and Lighthouse do not see it. The share image is the site default.
+export const metadata = pageMeta({
+  title: 'About Ascentor and Its Founder, Posi Ajiboye',
+  description:
+    'Ascentor is a mentorship and leadership development platform founded in Lagos by Posi Ajiboye, built on the conviction that purpose is built, not found.',
+  path: '/about',
+});
 
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
 

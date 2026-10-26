@@ -117,13 +117,12 @@ function FaqItem({
           }}
         />
       </button>
-      {isOpen && (
-        <div id={id} role="region" className="faq-answer-open">
-          <p style={{ fontSize: '0.875rem', color: '#6B7280', lineHeight: 1.7, paddingBottom: '1.25rem', margin: 0 }}>
-            {faq.answer}
-          </p>
-        </div>
-      )}
+      {/* Always in the markup (hidden until opened) so search engines and AI answers can read every answer. */}
+      <div id={id} role="region" hidden={!isOpen} className={isOpen ? 'faq-answer-open' : undefined}>
+        <p style={{ fontSize: '0.875rem', color: '#6B7280', lineHeight: 1.7, paddingBottom: '1.25rem', margin: 0 }}>
+          {faq.answer}
+        </p>
+      </div>
     </div>
   );
 }

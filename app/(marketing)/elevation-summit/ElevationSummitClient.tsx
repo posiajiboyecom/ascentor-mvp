@@ -115,6 +115,48 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
     '/images/gallery-30.jpg',
   ];
 
+  // One description per photo, from what is visible in it (same order as GALLERY_IMAGES).
+  const GALLERY_ALTS = [
+    'Participants seated in a bright meeting room in front of a projector, in black and white',
+    'A speaker in a dark tunic holding a microphone and addressing the room',
+    'Attendees seated on office chairs taking notes during a session',
+    'Attendees seated on office chairs listening during a session, from a slightly different angle',
+    'A young man in a white T-shirt writing in a notebook during a session',
+    'Attendees facing a projector screen while a speaker stands at the front of the room',
+    'A woman in a grey sweater writing at a table beside an Elevation Summit banner',
+    'A man filming the session on a phone mounted on a tripod, with a projector screen behind him',
+    'A woman in a purple top and a man in a white shirt seated side by side, listening',
+    'An attendee in a red T-shirt with headphones around his neck, holding a notebook and listening',
+    'Attendees seated in the front rows, a young man in a gold-toned shirt in the foreground',
+    'A speaker in dark clothes holding a microphone, with attendees seated behind him',
+    'A speaker in a white shirt and purple tie gesturing as he talks',
+    'Two attendees in office chairs, one in a red T-shirt with headphones around his neck',
+    'A young man in a pink shirt looking down at his notes, with attendees seated behind him',
+    'A speaker standing at the back of the room, seen over an attendee’s shoulder',
+    'Front-row attendees, some with a hand on their face, watching the session closely',
+    'The same front-row attendees a moment later, still watching closely',
+    'A man and a girl seated by a window at the side of the room',
+    'A man in a white shirt and tie standing outdoors among palm trees',
+    'A woman in a patterned top with sunglasses on her head, seated among attendees',
+    'A speaker in a light shirt pointing as he makes a point at the front of the room, in black and white',
+    'Two men posing in front of palm trees, one in a white shirt and tie and one in dark clothes',
+    'Three men posing together outdoors under palm trees',
+    'A group photo of attendees seated and standing in front of the Build Something wall',
+    'A group photo of attendees in front of the Build Something wall, second frame',
+    'A group photo of attendees in front of the Build Something wall, third frame',
+    'A speaker in a white shirt and purple tie standing at the front of the room',
+    'Smiling attendees pointing up at the Build Something sign',
+    'Two men standing together outdoors among palm trees, one holding a microphone',
+  ];
+  const galleryAlt = (src: string) => {
+    const n = Number(src.match(/gallery-(\d+)/)?.[1]);
+    return GALLERY_ALTS[n - 1] ? `The Elevation Summit: ${GALLERY_ALTS[n - 1]}` : 'The Elevation Summit';
+  };
+  // The scrolling loop needs the photos twice, and the second row repeats them reversed. Only the first copy is in the
+  // server-rendered page (with real alt text); the loop copies are added in the browser and hidden from screen readers.
+  const [galleryLoop, setGalleryLoop] = useState(false);
+  useEffect(() => setGalleryLoop(true), []);
+
   // Venue carousel - Aderemi Makanjuola Hall, Lagos State University.
   // Same crossfade pattern as the landing page hero carousel.
   const VENUE_IMAGES = [
@@ -682,29 +724,43 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
 
         <div className="gallery-row" style={{ marginBottom: '1.25rem' }}>
           <div className="gallery-track-left">
-            {[...shuffledTop, ...shuffledTop].map((src, i) => (
+            {shuffledTop.map((src) => (
               <img
-                key={`left-${i}`}
+                key={`left-${src}`}
                 src={src}
-                alt="Elevation Summit moment"
+                alt={galleryAlt(src)}
+                loading="lazy"
+                style={{ height: '180px', width: 'auto', borderRadius: '0.75rem', objectFit: 'cover', flexShrink: 0 }}
+              />
+            ))}
+            {galleryLoop && shuffledTop.map((src) => (
+              <img
+                key={`left-loop-${src}`}
+                src={src}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
                 style={{ height: '180px', width: 'auto', borderRadius: '0.75rem', objectFit: 'cover', flexShrink: 0 }}
               />
             ))}
           </div>
         </div>
 
-        <div className="gallery-row">
-          <div className="gallery-track-right">
-            {[...shuffledBottom, ...shuffledBottom].map((src, i) => (
-              <img
-                key={`right-${i}`}
-                src={src}
-                alt="Elevation Summit moment"
-                style={{ height: '180px', width: 'auto', borderRadius: '0.75rem', objectFit: 'cover', flexShrink: 0 }}
-              />
-            ))}
+        {galleryLoop && (
+          <div className="gallery-row" aria-hidden="true">
+            <div className="gallery-track-right">
+              {[...shuffledBottom, ...shuffledBottom].map((src, i) => (
+                <img
+                  key={`right-${i}`}
+                  src={src}
+                  alt=""
+                  loading="lazy"
+                  style={{ height: '180px', width: 'auto', borderRadius: '0.75rem', objectFit: 'cover', flexShrink: 0 }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <style jsx>{`
           .gallery-row {

@@ -12,22 +12,22 @@ import { SITE_URL } from '@/lib/seo';
 
 export const revalidate = 3600; // regenerate at most hourly
 
+// Public, indexable pages only. Left out on purpose: sign-in and sign-up, the member app, admin and API routes, and URLs that
+// redirect elsewhere (/how-it-works and /who-its-for go to /movement, /mentor-apply to /elevation-summit).
 const STATIC_ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [
   { path: '',                  priority: 1.0, changeFrequency: 'weekly' },
-  { path: '/elevation-summit', priority: 1.0, changeFrequency: 'weekly' },
+  { path: '/elevation-summit', priority: 0.9, changeFrequency: 'weekly' },
   { path: '/about',            priority: 0.8, changeFrequency: 'monthly' },
-  { path: '/how-it-works',     priority: 0.8, changeFrequency: 'monthly' },
-  { path: '/who-its-for',      priority: 0.8, changeFrequency: 'monthly' },
-  { path: '/shop',             priority: 0.8, changeFrequency: 'monthly' },
-  { path: '/blog',             priority: 0.9, changeFrequency: 'daily' },
-  { path: '/movement',         priority: 0.7, changeFrequency: 'monthly' },
-  { path: '/manifesto',        priority: 0.8, changeFrequency: 'monthly' },
-  { path: '/events',           priority: 0.7, changeFrequency: 'weekly' },
-  { path: '/careers',          priority: 0.4, changeFrequency: 'monthly' },
-  { path: '/contact',          priority: 0.5, changeFrequency: 'yearly' },
-  { path: '/mentor-apply',     priority: 0.5, changeFrequency: 'monthly' },
+  { path: '/movement',         priority: 0.8, changeFrequency: 'monthly' },
+  { path: '/faq',              priority: 0.8, changeFrequency: 'monthly' },
+  { path: '/manifesto',        priority: 0.7, changeFrequency: 'monthly' },
+  { path: '/blog',             priority: 0.7, changeFrequency: 'daily' },
+  { path: '/shop',             priority: 0.6, changeFrequency: 'monthly' },
+  { path: '/newsletter',       priority: 0.5, changeFrequency: 'monthly' },
   { path: '/partner',          priority: 0.5, changeFrequency: 'monthly' },
-  { path: '/signup',           priority: 0.6, changeFrequency: 'yearly' },
+  { path: '/contact',          priority: 0.4, changeFrequency: 'yearly' },
+  { path: '/donate',           priority: 0.4, changeFrequency: 'monthly' },
+  { path: '/careers',          priority: 0.4, changeFrequency: 'monthly' },
   { path: '/privacy',          priority: 0.2, changeFrequency: 'yearly' },
   { path: '/terms',            priority: 0.2, changeFrequency: 'yearly' },
 ];
