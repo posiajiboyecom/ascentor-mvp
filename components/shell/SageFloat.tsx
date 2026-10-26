@@ -205,6 +205,15 @@ export default function SageFloat({ userName }: { userName: string }) {
   const mobileAllowed = pathname === '/dashboard' || !!pathname?.startsWith('/learn');
   // Screens with a message box at the bottom: the floating button would sit on the send button.
   const hasComposer = !!pathname && (pathname.startsWith('/circle/chat') || pathname.startsWith('/messages') || pathname.startsWith('/community/groups/') || pathname.startsWith('/call'));
+
+  // Tell the stylesheet when the button is on screen, so the page keeps clear space under its last line (styles/shell.css).
+  const floating = !hasComposer;
+  useEffect(() => {
+    const root = document.documentElement;
+    if (floating) root.setAttribute('data-sage-float', mobileAllowed ? 'all' : 'desktop');
+    else root.removeAttribute('data-sage-float');
+    return () => root.removeAttribute('data-sage-float');
+  }, [floating, mobileAllowed]);
   return (
     <div className={`sage-root${mobileAllowed ? '' : ' sage-mobile-hide'}${hasComposer ? ' sage-hide' : ''}`}>
       {open && (

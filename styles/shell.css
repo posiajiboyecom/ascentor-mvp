@@ -415,7 +415,8 @@ body[data-sh-lock='true'] { overflow: hidden; }
   pointer-events: none;
 }
 .sage-root > * { pointer-events: auto; }
-@media (max-width: 1023.98px) { .sage-root { right: 14px; bottom: 14px; } }
+/* On phones the member tab bar (about 65px, plus the home-indicator inset) is fixed along the bottom: sit above it. */
+@media (max-width: 1023.98px) { .sage-root { right: 14px; bottom: calc(78px + env(safe-area-inset-bottom, 0px)); } }
 
 .sage-orb {
   position: relative; width: 58px; height: 58px; border-radius: 50%; border: 0; cursor: pointer;
@@ -496,7 +497,13 @@ body[data-sh-lock='true'] { overflow: hidden; }
 
 /* The member app has a bottom tab bar on phones: keep content clear of it. */
 @media (max-width: 1023.98px) {
-  .sh-root[data-variant='app'] .sh-main { padding-bottom: 58px; }
+  .sh-root[data-variant='app'] .sh-main { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  /* The floating Sage button (68px) sits above the tab bar: leave room under the last line so it never covers content. */
+  html[data-sage-float='all'] .sh-root[data-variant='app'] .sh-main { padding-bottom: calc(168px + env(safe-area-inset-bottom, 0px)); }
+}
+/* On desktop the button sits in the bottom-right corner: keep the end of the page clear of it. */
+@media (min-width: 1024px) {
+  html[data-sage-float] .sh-root[data-variant='app'] .sh-main { padding-bottom: 104px; }
 }
 
 @media (max-width: 1023.98px) { .sage-mobile-hide { display: none; } }
