@@ -34,7 +34,7 @@ export default async function AdminChatsPage({ searchParams }: { searchParams: P
   const searchable = tab === 'dm' || tab === 'sage' || tab === 'member';
 
   return (
-    <div className="rx rx-admin-desktop" style={{ padding: 4 }}>
+    <div className="rx" style={{ padding: 16 }}>
       <p className="rx-sm">Community</p>
       <Title>Chats</Title>
       <div className="rx-opts" style={{ marginBottom: 20 }} role="tablist" aria-label="Chat type">

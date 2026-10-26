@@ -14,7 +14,7 @@ export default async function AdminHumanMentorsPage() {
 
   return (
     <ToastProvider>
-      <div className="rx rx-admin-desktop" style={{ padding: 4 }}>
+      <div className="rx" style={{ padding: 16 }}>
         <p className="rx-sm">Community</p>
         <Title>Mentors</Title>
         <div className="rx-two">

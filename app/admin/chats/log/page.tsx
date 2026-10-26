@@ -14,7 +14,7 @@ export default async function ChatAccessLogPage() {
   const nm = new Map(((dir ?? []) as { id: string; full_name: string | null }[]).map((d) => [d.id, d.full_name ?? 'Admin']));
 
   return (
-    <div className="rx rx-admin-desktop" style={{ padding: 4 }}>
+    <div className="rx" style={{ padding: 16 }}>
       <BackLink href="/admin/chats">Chats</BackLink>
       <h1 className="rx-title" style={{ marginTop: 8 }}>Access log</h1><span className="rx-rule" />
       <div className="rx-card" style={{ overflowX: 'auto' }}>
