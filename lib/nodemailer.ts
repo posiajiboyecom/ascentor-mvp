@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { FROM_DEFAULT, CONTACT_EMAIL } from './contact';
+import { fallbackEnabled, sendViaFallback } from './emailFallback';
 
 // Inferred from the factory - avoids namespace-reference errors
 // across different TypeScript/module-resolution configurations.
@@ -134,7 +135,7 @@ export function emailErrorCode(err: unknown): string {
 
 /** Like sendEmail, but never throws: returns whether the message went out. For flows where a failed email must not block the visitor. */
 export async function sendEmailSafe(opts: Parameters<typeof sendEmail>[0]): Promise<boolean> {
-  if (!getMailer()) { await sendEmail(opts).catch(() => {}); return false; }
+  if (!getMailer() && !fallbackEnabled()) { await sendEmail(opts).catch(() => {}); return false; }
   try { await sendEmail(opts); return true; } catch { return false; }
 }
 
@@ -166,12 +167,17 @@ export async function sendEmail(opts: {
   required?: boolean;
 }): Promise<void> {
   const mailer = getMailer();
+  const viaFallback = () => sendViaFallback({ from: opts.from || DEFAULT_FROM, to: opts.to, subject: opts.subject, html: opts.html, text: opts.text, replyTo: opts.replyTo || CONTACT_EMAIL, attachments: opts.attachments });
   if (!mailer) {
+    if (fallbackEnabled()) { await viaFallback(); return; }
     console.error('[email] SEND FAILED', JSON.stringify({ kind: 'not_configured', toDomain: opts.to.split('@')[1] ?? null, subject: opts.subject.slice(0, 80), fix: FIX_HINT.not_configured }));
     if (opts.required) throw new Error('SMTP is not configured (SMTP_USER / SMTP_PASS missing)');
     return;
   }
-  if (authBlock && Date.now() < authBlock.until) throw authBlock.err; // cooling down after a login failure: do not try again
+  if (authBlock && Date.now() < authBlock.until) { // cooling down after a login failure: do not try SMTP again
+    if (fallbackEnabled()) { await viaFallback(); return; }
+    throw authBlock.err;
+  }
   authBlock = null;
 
   const from = opts.from || DEFAULT_FROM;
@@ -201,5 +207,12 @@ export async function sendEmail(opts: {
     }
   }
   logEmailFailure(lastErr, opts);
+  // SMTP could not send. If a fallback provider has been switched on, use it rather than lose the message. A refusal of the
+  // message itself (bad recipient, content) is not retried elsewhere.
+  const kind = classifyEmailError(lastErr);
+  if (fallbackEnabled() && kind !== 'rejected') {
+    try { await viaFallback(); console.warn('[email] sent through the fallback provider'); return; }
+    catch (fbErr) { console.error('[email] fallback provider also failed:', (fbErr as Error).message.slice(0, 160)); }
+  }
   throw lastErr;
 }

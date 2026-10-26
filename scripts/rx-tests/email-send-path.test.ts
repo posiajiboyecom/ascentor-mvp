@@ -43,3 +43,23 @@ test('a genuine sender refusal retries once as the mailbox, with reply-to kept, 
   await assert.rejects(sendEmail(opts));
   assert.equal(g.calls.length, 2); // hard cap
 });
+
+test('fallback provider: off by default, used only when switched on and SMTP fails', async () => {
+  const realFetch = globalThis.fetch;
+  const hits: string[] = [];
+  globalThis.fetch = (async (url: string) => { hits.push(String(url)); return new Response('{}', { status: 200 }); }) as typeof fetch;
+  try {
+    delete process.env.EMAIL_FALLBACK_PROVIDER; delete process.env.RESEND_API_KEY;
+    const f = fake([authErr]); setup(f);
+    await assert.rejects(sendEmail(opts));
+    assert.equal(hits.length, 0); // off: behaves as before
+
+    process.env.EMAIL_FALLBACK_PROVIDER = 'resend'; process.env.RESEND_API_KEY = 'test-key';
+    const g = fake([authErr]); setup(g);
+    await sendEmail(opts); // SMTP login fails, fallback takes it
+    assert.equal(hits.length, 1);
+    await sendEmail(opts); // in cooldown: straight to the fallback, SMTP not touched again
+    assert.equal(hits.length, 2);
+    assert.equal(g.calls.length, 1);
+  } finally { globalThis.fetch = realFetch; delete process.env.EMAIL_FALLBACK_PROVIDER; delete process.env.RESEND_API_KEY; }
+});
