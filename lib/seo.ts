@@ -11,35 +11,80 @@
 
 export const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://joinascentor.com';
 export const SITE_NAME = 'Ascentor';
-export const TWITTER_HANDLE = '@ascentorhq';
+// TODO(posi): the SEO kit uses @joinascentor; this file used @ascentorhq before. Confirm the real X handle.
+export const TWITTER_HANDLE = '@joinascentor';
+
+/** Founder display name, used everywhere. The long legal form is only ever an alternateName in schema. */
+export const FOUNDER_NAME = 'Posi Ajiboye';
+export const FOUNDER_LEGAL_NAME = 'Ajiboye Ayomiposi Samuel';
+
+/** The one-line truth from the SEO kit. Use this sentence (or the short form) wherever Ascentor is described. */
+export const ONE_LINER =
+  'Ascentor is a mentorship and leadership development platform for ambitious young Africans: small Circles for accountability, human mentors, and Sage, an AI coach, built around six dimensions of a whole life (Mind, Character, Vocation, Relationships, Community, Legacy). It is also home to The Elevation Summit, its annual gathering.';
+export const ONE_LINER_SHORT = 'Mentorship and leadership development for ambitious young Africans.';
 
 // ── Elevation Summit event constants ─────────────────────────
-// TODO: set exact confirmed date/time once locked with LASU.
-// startDate/endDate must be ISO 8601 with timezone offset.
+// Only facts the SEO kit settles. Date: 19 Nov 2026 (TODO(posi): confirm). endDate is left out until the programme end
+// time is fixed (the kit says to add it then). startDate/endDate must be ISO 8601 with timezone offset.
 export const SUMMIT = {
   name: 'The Elevation Summit 2026',
   description:
-    'One gathering. One decision. The rest of your life. The inaugural Elevation Summit is a movement for purposeful living, leadership, and legacy. Lagos, December 2026, with global virtual access. Registration is free.',
-  startDate: '2026-11-19T10:00:00+01:00', // Date Confirmed
-  endDate: '2026-11-19T15:00:00+01:00',   // Date Confirmed
+    'A one-day summit for people ready to stop drifting and start building. Theme: The Rise We Choose. Attend in Lagos or join virtually from anywhere.',
+  startDate: '2026-11-19T10:00:00+01:00',
   venue: {
-    name: 'Aderemi Makanjuola Lecture Theatre, Lagos State University',
-    street: 'Lagos State University Main Campus, LASU-Isheri Road',
-    locality: 'Ojo',
-    region: 'Lagos',
+    name: 'Aderemi Makanjuola Hall, Lagos State University',
+    locality: 'Lagos',
     country: 'NG',
   },
   url: `${SITE_URL}/elevation-summit`,
-  // Update as ticket tiers go live. Prices in NGN.
-  offers: [
-    { name: 'Early Bird', price: '15000' },
-    { name: 'Virtual Access', price: '5000' },
-  ],
+  image: `${SITE_URL}/images/elevation-summit-flyer-v3.jpg`,
 } as const;
 
 // ── Page metadata helper (kept API-compatible) ────────────────
 import { SUPPORT_EMAIL } from '@/lib/contact';
 import type { Metadata } from 'next';
+
+type PageMetaOpts = {
+  /** Page title without the site suffix. */
+  title: string;
+  description: string;
+  /** '/', '/about', ... */
+  path: string;
+  /** Default: the generated site OG image. */
+  image?: string;
+  /** True for the homepage: the title is used exactly as written, with no suffix. */
+  absoluteTitle?: boolean;
+};
+
+/**
+ * Full metadata for one page: title, description, canonical, openGraph (with image) and twitter.
+ * Next replaces a layout's openGraph and inherits its canonical, so every page sets all of it here and
+ * the root layout sets none of it.
+ */
+export function pageMeta({ title, description, path, image = '/opengraph-image', absoluteTitle }: PageMetaOpts): Metadata {
+  const fullTitle = absoluteTitle ? title : `${title} | ${SITE_NAME}`;
+  return {
+    // The root layout's title template adds the suffix, so a plain title is passed through.
+    title: absoluteTitle ? { absolute: title } : title,
+    description,
+    alternates: { canonical: path },
+    openGraph: {
+      type: 'website',
+      siteName: SITE_NAME,
+      url: path,
+      title: fullTitle,
+      description,
+      images: [{ url: image, width: 1200, height: 630, alt: fullTitle }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      site: TWITTER_HANDLE,
+      title: fullTitle,
+      description,
+      images: [image],
+    },
+  };
+}
 
 export function generatePageMetadata({
   title,
@@ -79,42 +124,40 @@ export function generatePageMetadata({
 
 // ── JSON-LD builders ──────────────────────────────────────────
 
+// Organization + founder Person + WebSite as one linked graph (ids let search engines join them).
 export function getOrganizationSchema() {
   return {
     '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: SITE_NAME,
-    // Connects the former brand to the current identity so search
-    // engines and AI answers merge them instead of describing the
-    // old "career platform" positioning.
-    alternateName: ['AscentorBI', 'Ascentor BI'],
-    url: SITE_URL,
-    logo: `${SITE_URL}/icon/icon-512.png`,
-    description:
-      'Ascentor (formerly AscentorBI) is a purposeful living and leadership development platform: AI coaching with Sage, community in The Circle, expert sessions, courses, and The Elevation Summit, its annual gathering in Lagos.',
-    founder: {
-      '@type': 'Person',
-      name: 'Ajiboye Ayomiposi Samuel',
-      jobTitle: 'Founder',
-    },
-    sameAs: [
-      'https://twitter.com/ascentorhq',
-      // TODO: add Instagram / LinkedIn / YouTube profile URLs when live
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': `${SITE_URL}/#org`,
+        name: SITE_NAME,
+        url: SITE_URL,
+        logo: `${SITE_URL}/icon/icon-512.png`,
+        description:
+          'Ascentor is a mentorship and leadership development platform for ambitious young Africans: small Circles for accountability, human mentors, and Sage, an AI coach.',
+        slogan: 'Build a life that outlasts you.',
+        email: SUPPORT_EMAIL,
+        address: { '@type': 'PostalAddress', addressLocality: 'Lekki, Lagos', addressCountry: 'NG' },
+        founder: { '@id': `${SITE_URL}/about#founder` },
+        sameAs: [
+          'https://x.com/joinascentor',
+          'https://linkedin.com/company/joinascentor',
+          'https://instagram.com/joinascentor',
+        ],
+      },
+      {
+        '@type': 'Person',
+        '@id': `${SITE_URL}/about#founder`,
+        name: FOUNDER_NAME,
+        alternateName: FOUNDER_LEGAL_NAME,
+        jobTitle: 'Founder, Ascentor',
+        worksFor: { '@id': `${SITE_URL}/#org` },
+        sameAs: ['https://www.linkedin.com/in/ayomiposiajiboye/', 'https://www.instagram.com/posi_ajiboye/'],
+      },
+      { '@type': 'WebSite', '@id': `${SITE_URL}/#site`, url: SITE_URL, name: SITE_NAME, publisher: { '@id': `${SITE_URL}/#org` } },
     ],
-    contactPoint: {
-      '@type': 'ContactPoint',
-      email: SUPPORT_EMAIL,
-      contactType: 'customer service',
-    },
-  };
-}
-
-export function getWebSiteSchema() {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: SITE_NAME,
-    url: SITE_URL,
   };
 }
 
@@ -129,7 +172,7 @@ export function getSoftwareAppSchema() {
     applicationCategory: 'LifestyleApplication',
     operatingSystem: 'Web, iOS, Android',
     description:
-      'AI-powered coaching for purposeful living across six dimensions: Mind, Character, Work, Relationships, Community, and Legacy.',
+      'Mentorship and leadership development with Sage, an AI coach, across six dimensions of a whole life: Mind, Character, Vocation, Relationships, Community, and Legacy.',
   };
 }
 
@@ -140,7 +183,6 @@ export function getSummitEventSchema() {
     name: SUMMIT.name,
     description: SUMMIT.description,
     startDate: SUMMIT.startDate,
-    endDate: SUMMIT.endDate,
     eventStatus: 'https://schema.org/EventScheduled',
     // Physical + virtual - this value marks it as a hybrid event.
     eventAttendanceMode: 'https://schema.org/MixedEventAttendanceMode',
@@ -148,26 +190,19 @@ export function getSummitEventSchema() {
       {
         '@type': 'Place',
         name: SUMMIT.venue.name,
-        address: {
-          '@type': 'PostalAddress',
-          streetAddress: SUMMIT.venue.street,
-          addressLocality: SUMMIT.venue.locality,
-          addressRegion: SUMMIT.venue.region,
-          addressCountry: SUMMIT.venue.country,
-        },
+        address: { '@type': 'PostalAddress', addressLocality: SUMMIT.venue.locality, addressCountry: SUMMIT.venue.country },
       },
       { '@type': 'VirtualLocation', url: SUMMIT.url },
     ],
-    image: [`${SITE_URL}/opengraph-image`],
-    offers: SUMMIT.offers.map((o) => ({
+    image: [SUMMIT.image],
+    // Registration is free (the SEO kit and the page both say so).
+    offers: {
       '@type': 'Offer',
-      name: o.name,
-      price: o.price,
+      price: '0',
       priceCurrency: 'NGN',
       availability: 'https://schema.org/InStock',
-      url: SUMMIT.url,
-      validFrom: '2026-08-01T00:00:00+01:00',
-    })),
+      url: `${SUMMIT.url}#register`,
+    },
     organizer: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
   };
 }

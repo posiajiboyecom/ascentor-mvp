@@ -25,6 +25,15 @@
 
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
 import LandingPageClient from './LandingPageClient';
+import { pageMeta } from '@/lib/seo';
+
+export const metadata = pageMeta({
+  absoluteTitle: true,
+  title: 'Ascentor | Mentorship & Leadership for Young Africans',
+  description:
+    'Ascentor is a mentorship and leadership development platform for ambitious young Africans: small Circles, human mentors, and Sage, an AI coach.',
+  path: '/',
+});
 
 export default async function LandingPage() {
   const cms = await getPublishedPage('landing');

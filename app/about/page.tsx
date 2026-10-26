@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta, FOUNDER_NAME, FOUNDER_LEGAL_NAME } from '@/lib/seo';
 import Link from 'next/link';
 import { ShieldCheck, Users, Rocket, Crown, MessageSquare, BookOpen, Mountain, Target, Shield, Globe, Clock, AlertTriangle } from 'lucide-react';
 import PublicShell from '@/components/layout/PublicShell';
@@ -14,22 +15,13 @@ export async function generateMetadata(): Promise<Metadata> {
     founderPhoto = f?.photo_url || '';
   } catch { /* metadata must never throw */ }
 
-  return {
-    title: 'About Ascentor',
+  return pageMeta({
+    title: 'About Ascentor and Its Founder, Posi Ajiboye',
     description:
-      'Ascentor (formerly AscentorBI) is a purposeful living and leadership development platform: AI coaching with Sage, community in The Circle, expert sessions, and The Elevation Summit, its annual gathering in Lagos.',
-    alternates: { canonical: 'https://joinascentor.com/about' },
-    openGraph: {
-      title: 'About Ascentor',
-      description:
-        'A purposeful living and leadership development platform, and the home of The Elevation Summit.',
-      url: 'https://joinascentor.com/about',
-      siteName: 'Ascentor',
-      type: 'website',
-      ...(founderPhoto ? { images: [{ url: founderPhoto }] } : {}),
-    },
-    ...(founderPhoto ? { twitter: { card: 'summary_large_image', images: [founderPhoto] } } : {}),
-  };
+      'Ascentor is a mentorship and leadership development platform founded in Lagos by Posi Ajiboye, built on the conviction that purpose is built, not found.',
+    path: '/about',
+    ...(founderPhoto ? { image: founderPhoto } : {}),
+  });
 }
 
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
@@ -68,13 +60,15 @@ export default async function AboutPage() {
   // quote_attribution }. `bio` is one textarea; blank lines split it
   // into paragraphs. Falls back to the original copy until published.
   const founder = cms?.sections.founder?.data as Record<string, string> | undefined;
-  const founderName  = founder?.name || 'Ajiboye Ayomiposi Samuel';
+  // The stored founder name and bio carry a stray leading apostrophe ("'Posi Ajiboye"). Strip it here; fix the stored text in Admin > About.
+  const clean = (t: string) => t.replace(/^\s*['‘’]+/, '');
+  const founderName  = clean(founder?.name || FOUNDER_NAME);
   const founderPhoto = founder?.photo_url || '';
   const photoRight   = founder?.photo_position === 'right';
   const photoFocus   = (founder?.photo_focus as 'top' | 'center' | 'bottom') || 'top';
   const founderBioParas = (founder?.bio || '')
     .split(/\n\s*\n/)
-    .map((p) => p.trim())
+    .map((p) => clean(p.trim()))
     .filter(Boolean);
   const founderParas = founderBioParas.length > 0 ? founderBioParas : [
     'Ajiboye is a Lagos-based technology and security professional, the founder of Guardsmann Technologies, and the creator of Ascentor, the official platform of The Elevation Summit.',
@@ -97,6 +91,7 @@ export default async function AboutPage() {
       founder: {
         '@type': 'Person',
         name: founderName,
+        alternateName: FOUNDER_LEGAL_NAME,
         jobTitle: 'Founder, Ascentor',
         ...(founderPhoto ? { image: founderPhoto } : {}),
       },
