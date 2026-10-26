@@ -19,7 +19,7 @@ export default function OverviewScreen({ data }: { data: OverviewData }) {
             <div key={k.label} className="card kpi"><span className="k">{k.label}</span><span className="v">{k.value}</span><span className="sm">{k.note}</span></div>
           ))}
         </div>
-        <div className="g2" style={{ gridTemplateColumns: 'minmax(0,1.2fr) minmax(0,1fr)' }}>
+        <div className="g2 g2-ov">
           <div className="card st">
             <div className="sb"><p className="h3">Needs attention</p><span className="sm">Live from the screens</span></div>
             <div>

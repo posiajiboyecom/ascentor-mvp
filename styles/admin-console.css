@@ -33,6 +33,9 @@
 .admc .st8{display:flex;flex-direction:column;gap:8px}
 .admc .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
 .admc .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.admc .g2-ov{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+.admc .g2-ai{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);align-items:start}
+.admc .g2-cv{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);align-items:start}
 .admc .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .admc .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:var(--shadow)}
 .admc .rz{background:var(--raised);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
@@ -97,6 +100,7 @@
 .admc .bar:hover em,.admc .bar:focus-visible em,.admc .bar.last em{opacity:1}
 .admc .xlabels{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px;font-size:11px;color:var(--muted);text-align:center}
 .admc .hbar{display:grid;grid-template-columns:120px minmax(0,1fr) 48px;gap:10px;align-items:center;font-size:13px}
+.admc .hbar-wide{grid-template-columns:200px minmax(0,1fr) 48px}
 .admc .hbar .tr{height:10px;border-radius:999px;background:var(--seg);overflow:hidden}
 .admc .hbar .tr span{display:block;height:100%;background:var(--rust);border-radius:999px}
 .admc .attn{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 12px;border:0;border-bottom:1px solid var(--border);background:none;color:var(--text);cursor:pointer;text-align:left}
@@ -125,3 +129,33 @@
 @media (max-width:1100px){.admc .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.admc .g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:760px){.admc .pg{padding:20px 16px 48px}.admc .pt{font-size:26px}.admc .g2,.admc .g3{grid-template-columns:minmax(0,1fr)}.admc .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.admc .setrow{flex-wrap:wrap;padding:8px 0}.admc .toast{left:16px;right:16px;max-width:none}}
 @media (prefers-reduced-motion:reduce){.admc *{animation:none!important;transition:none!important}}
+
+/* phones and small tablets (below 768px): stack panel pairs, wrap headers, keep tables inside their own box, 44px tap targets.
+   The inline-style grids that used to beat the rules above are classes now (.g2-ov, .g2-ai, .g2-cv, .hbar-wide), so these apply. */
+@media (max-width:767.98px){
+  .admc .pg>*{min-width:0}
+  .admc .g2,.admc .g2-ov,.admc .g2-ai,.admc .g2-cv{grid-template-columns:minmax(0,1fr)}
+  /* anything that sits space-between wraps instead of squeezing one side to a sliver */
+  .admc .sb{flex-wrap:wrap}
+  /* page header: the title block first, the action buttons on their own line under it */
+  .admc .sb:has(>div>.pt){align-items:flex-start!important}
+  .admc .sb:has(>div>.pt)>.row,.admc .sb:has(>div>.pt)>.btn{width:100%}
+  .admc .sb:has(>div>.pt)>.row{gap:8px}
+  .admc .sb:has(>div>.pt)>.row>.btn{flex:1 1 auto}
+  /* tap targets */
+  .admc .btn,.admc .sm-btn,.admc .lk,.admc .opt,.admc .in,.admc .seg3 button{min-height:44px}
+  .admc .opts{gap:8px}
+  .admc .toggle::before{content:"";position:absolute;inset:-8px}
+  /* tables scroll inside their own box instead of squeezing columns */
+  .admc .tblwrap{max-width:100%;-webkit-overflow-scrolling:touch}
+  .admc .tbl{min-width:620px}
+  .admc .search{min-width:0!important;width:100%}
+  /* chart: eight bars stay, the week labels thin to every second one so they cannot overlap */
+  .admc .xlabels span{white-space:nowrap;font-size:10px}
+  .admc .xlabels span:nth-child(even){visibility:hidden}
+  .admc .hbar,.admc .hbar-wide{grid-template-columns:minmax(0,92px) minmax(0,1fr) 40px}
+  .admc .kv{grid-template-columns:96px minmax(0,1fr)}
+  .admc .attn .n{min-width:32px}
+  .admc .card{padding:16px}
+  .admc .drawer{width:100vw}
+}
