@@ -20,6 +20,7 @@
 //   });
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { FROM_DEFAULT } from '@/lib/contact';
 import { createClient } from '@supabase/supabase-js';
 import { sendPushToUser } from '@/lib/push';
 import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
@@ -60,7 +61,7 @@ async function getUserEmail(userId: string): Promise<string | null> {
 // ── Send email via shared SMTP mailer ───────────────────────────────────────
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   try {
-    await sendMail({ from: 'Ascentor <hello@joinascentor.com>', to, subject, html });
+    await sendMail({ from: FROM_DEFAULT, to, subject, html });
     return true;
   } catch (err: any) {
     console.error('[notify] email send error:', err.message);

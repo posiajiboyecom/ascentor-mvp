@@ -38,6 +38,7 @@ export const SUMMIT = {
 } as const;
 
 // ── Page metadata helper (kept API-compatible) ────────────────
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import type { Metadata } from 'next';
 
 export function generatePageMetadata({
@@ -93,7 +94,7 @@ export function getOrganizationSchema() {
     ],
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'contact@joinascentor.com',
+      email: SUPPORT_EMAIL,
       contactType: 'customer service',
     },
   };

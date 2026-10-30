@@ -20,6 +20,7 @@
 // ============================================================
 
 import { useState, useEffect, Suspense } from 'react';
+import { customGoogleUrl } from '@/lib/sso';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -109,6 +110,10 @@ function PartnerSignupForm() {
 
   // ── Handle OAuth signup ───────────────────────────────────
   async function handleOAuth(provider: 'google' | 'linkedin_oidc') {
+    if (provider === 'google') {
+      const own = await customGoogleUrl({ next: redirectTo, partner: subdomain });
+      if (own) { window.location.assign(own); return; }
+    }
     const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
     callbackUrl.searchParams.set('partner_subdomain', subdomain);
     callbackUrl.searchParams.set('next', redirectTo);

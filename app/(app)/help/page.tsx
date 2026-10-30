@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import { redirect } from 'next/navigation';
 import { getMe } from '@/lib/rx/server';
 import { Aside, GoLink, Page, Title } from '@/components/rx/ui';
@@ -16,7 +17,7 @@ export default async function HelpPage() {
         <HelpMain name={me.fullName} email={me.email} />
         <Aside>
           <p className="rx-label">Email</p>
-          <p className="rx-p">contact@joinascentor.com · we reply within 2 to 3 business days.</p>
+          <p className="rx-p">{SUPPORT_EMAIL} · we reply within 2 to 3 business days.</p>
           <p className="rx-label">In danger?</p>
           <p className="rx-p">Call 112, Nigeria’s emergency number.</p>
           <p className="rx-label">Guides</p>

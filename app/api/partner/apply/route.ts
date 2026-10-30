@@ -5,6 +5,7 @@
 // Notifies founder email via Resend
 // ============================================================
 
+import { adminNotifyEmail, fromAs } from '@/lib/contact';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
@@ -18,7 +19,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'contact@joinascentor.com';
+const FOUNDER_EMAIL = adminNotifyEmail(process.env.FOUNDER_EMAIL);
 
 function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
       const adminApproveUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://joinascentor.com'}/admin/partners?action=approve&id=${partner.id}`;
 
       await sendEmail({
-        from:    'Ascentor Partners <hello@joinascentor.com>',
+        from:    fromAs('Ascentor Partners'),
         to:      FOUNDER_EMAIL,
         subject: `New Partner Application: ${platform_name}`,
         html: brandedEmailLayout({

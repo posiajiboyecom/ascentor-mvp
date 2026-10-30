@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { LOGIN_ERRORS, type GoogleLoginError } from '@/lib/auth/google-login-errors';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -46,6 +47,7 @@ export default function LoginPage() {
     const err = searchParams.get('error');
     if (err === 'auth_failed') setError('We couldn’t complete that sign-in. The link may have expired. Please try again.');
     if (err === 'login_blocked') setError('For your security that sign-in was blocked because it looked unusual. Please try again in a few minutes.');
+    if (err && err in LOGIN_ERRORS) setError(LOGIN_ERRORS[err as GoogleLoginError]);
     if (err === 'session_missing') setError('Your session didn’t start. Please sign in again.');
   }, [searchParams]);
 

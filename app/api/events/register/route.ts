@@ -2,6 +2,7 @@
 // Public POST - registers a visitor for any public event.
 // Body: { eventId, full_name, email, whatsapp?, country?, ...optional fields }
 
+import { FROM_DEFAULT } from '@/lib/contact';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from '@/lib/emailTemplate';
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
   try {
     const firstName = (full_name as string).trim().split(/\s+/)[0];
     await sendEmail({
-      from:    'Ascentor <hello@joinascentor.com>',
+      from:    FROM_DEFAULT,
       to:      (email as string).trim().toLowerCase(),
       subject: event.confirmation_subject || `You're registered, ${event.title}`,
       html:    confirmationHtml({

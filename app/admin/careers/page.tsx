@@ -1,5 +1,6 @@
 'use client';
 
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import { useState, useEffect, useCallback } from 'react';
 import { Mail, Phone, ChevronDown, ChevronUp } from 'lucide-react';
 import { confirmAction } from '@/components/Modal';
@@ -311,7 +312,7 @@ function JobForm({ form, setForm, onSave, onCancel, saving, msg }: {
           <input
             value={form.apply_email}
             onChange={e => set('apply_email', e.target.value)}
-            placeholder="contact@joinascentor.com"
+            placeholder={SUPPORT_EMAIL}
             style={INPUT_BASE}
           />
         </div>

@@ -18,6 +18,7 @@
 //             applies to admin-side approvals.
 // ============================================================
 
+import { fromAs } from '@/lib/contact';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
@@ -268,7 +269,7 @@ export async function PATCH(req: NextRequest) {
       const msg = messages[action];
       if (msg) {
         await sendEmail({
-          from:    'Ascentor Partners <hello@joinascentor.com>',
+          from:    fromAs('Ascentor Partners'),
           to:      ownerProfile.email,
           subject: msg.subject,
           html:    msg.body,

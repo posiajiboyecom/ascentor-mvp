@@ -1,13 +1,13 @@
 // lib/adminAlerts.ts
 // Short alert emails to the team: a new member confirmed their account, someone registered for a public event.
 // Always best effort: an alert that cannot be sent (mail not configured, mailbox down) never blocks the visitor.
-// The recipient is ADMIN_ALERT_EMAIL, falling back to the contact mailbox.
+// The recipient is ADMIN_ALERT_EMAIL, falling back to the team mailbox (ADMIN_NOTIFY_EMAIL).
 
 import { sendEmail } from '@/lib/nodemailer';
-import { CONTACT_EMAIL } from '@/lib/contact';
+import { adminNotifyEmail } from '@/lib/contact';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from '@/lib/emailTemplate';
 
-const TO = process.env.ADMIN_ALERT_EMAIL || CONTACT_EMAIL;
+const TO = adminNotifyEmail(process.env.ADMIN_ALERT_EMAIL);
 const BASE = (process.env.NEXT_PUBLIC_APP_URL || 'https://joinascentor.com').replace(/\/+$/, '');
 
 async function send(subject: string, eyebrow: string, heading: string, content: string) {

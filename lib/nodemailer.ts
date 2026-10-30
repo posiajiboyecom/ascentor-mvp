@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { FROM_DEFAULT, CONTACT_EMAIL } from './contact';
+import { FROM_DEFAULT, REPLY_TO, UNPROVEN_ALIASES, adminNotifyEmail } from './contact';
 import { fallbackEnabled, sendViaFallback } from './emailFallback';
 
 // Inferred from the factory - avoids namespace-reference errors
@@ -12,7 +12,8 @@ type Mailer = ReturnType<typeof nodemailer.createTransport>;
 //   SMTP_PORT   465                       (defaults to 465)
 //   SMTP_USER   the mailbox address
 //   SMTP_PASS   the mailbox password
-//   EMAIL_FROM  Ascentor <hello@joinascentor.com>   (defaults to this)
+//   MAIL_FROM   Ascentor <a.samuel@joinascentor.com>   (defaults to this; EMAIL_FROM still works). The From address must be the
+//               SMTP_USER mailbox or a real alias of it. See lib/contact.ts and docs/mail-addresses.md.
 //
 // Summit mail uses the same mailbox and settings, so there is nothing else to keep in step. Hostinger: smtp.hostinger.com,
 // port 465 with SSL (port 587 with STARTTLS also works if a network blocks 465). There is no Gmail fallback.
@@ -53,7 +54,7 @@ export function mailerInfo(): { configured: boolean; host: string; port: number;
   return { configured: !!(s.user && s.pass), host: s.host, port: s.port, user: s.user ?? null, from: DEFAULT_FROM };
 }
 
-export const DEFAULT_FROM = process.env.EMAIL_FROM || FROM_DEFAULT;
+export const DEFAULT_FROM = FROM_DEFAULT;
 
 export function addressOf(from: string): string {
   const m = from.match(/<([^>]+)>/);
@@ -154,6 +155,19 @@ export function __testHooks(h: { mailer?: Mailer | null; retryDelayMs?: number; 
   if (h.reset) authBlock = null;
 }
 
+/**
+ * An alias that is not proven to work answers "550 5.1.1 User doesn't exist". Until MAIL_ALLOW_ALIASES=true, mail addressed to one is
+ * redirected to the team inbox, so nothing is lost and nothing bounces.
+ */
+export function guardRecipient(to: string): string {
+  if (process.env.MAIL_ALLOW_ALIASES === 'true') return to;
+  const bare = addressOf(to);
+  if (!UNPROVEN_ALIASES.includes(bare)) return to;
+  const team = adminNotifyEmail();
+  console.warn('[email] recipient is an unproven alias, redirected to the team inbox:', bare, '->', team);
+  return team;
+}
+
 export async function sendEmail(opts: {
   to: string;
   subject: string;
@@ -166,8 +180,9 @@ export async function sendEmail(opts: {
   /** Codes the member cannot continue without (sign-up, password reset): throw instead of skipping when mail is not configured. */
   required?: boolean;
 }): Promise<void> {
+  opts = { ...opts, to: guardRecipient(opts.to) };
   const mailer = getMailer();
-  const viaFallback = () => sendViaFallback({ from: opts.from || DEFAULT_FROM, to: opts.to, subject: opts.subject, html: opts.html, text: opts.text, replyTo: opts.replyTo || CONTACT_EMAIL, attachments: opts.attachments });
+  const viaFallback = () => sendViaFallback({ from: opts.from || DEFAULT_FROM, to: opts.to, subject: opts.subject, html: opts.html, text: opts.text, replyTo: opts.replyTo || REPLY_TO, attachments: opts.attachments });
   if (!mailer) {
     if (fallbackEnabled()) { await viaFallback(); return; }
     console.error('[email] SEND FAILED', JSON.stringify({ kind: 'not_configured', toDomain: opts.to.split('@')[1] ?? null, subject: opts.subject.slice(0, 80), fix: FIX_HINT.not_configured }));
@@ -183,7 +198,7 @@ export async function sendEmail(opts: {
   const from = opts.from || DEFAULT_FROM;
   const base = { to: opts.to, subject: opts.subject, html: opts.html, text: opts.text, attachments: opts.attachments };
   let attemptFrom = from;
-  let attemptReplyTo = opts.replyTo || CONTACT_EMAIL;
+  let attemptReplyTo = opts.replyTo || REPLY_TO;
   let lastErr: unknown;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {

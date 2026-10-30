@@ -1,5 +1,6 @@
 'use client';
 
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -700,7 +701,7 @@ export default function CareersPage() {
           <p style={{ fontSize: 14, color: '#7A7260', marginBottom: 32, lineHeight: 1.7 }}>
             We're always interested in exceptional people. Send us a note.
           </p>
-          <a href="mailto:contact@joinascentor.com" className="cr-apply-btn">
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="cr-apply-btn">
             Send a speculative application →
           </a>
         </div>

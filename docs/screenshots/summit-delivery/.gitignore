@@ -1,0 +1,3 @@
+# Screenshots of the live admin contain real member names and emails: keep them out of git.
+*
+!.gitignore

@@ -1,5 +1,5 @@
 import { getMailer, sendEmail, classifyEmailError, emailErrorCode, type EmailFailureKind } from './nodemailer';
-import { CONTACT_EMAIL, FROM_DEFAULT, SUMMIT_EMAIL } from './contact';
+import { adminNotifyEmail, FROM_DEFAULT, SUMMIT_EMAIL } from './contact';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from './emailTemplate';
 import { generateSummitTicket, type TicketData } from './summitTicket';
 import { supabaseAdmin } from '@/lib/supabase/admin';
@@ -25,7 +25,7 @@ const flyerBlock = (fullName: string) => `
   </table>`;
 
 /** Where every Summit admin alert goes. Deliberately NOT ADMIN_EMAIL, which may point elsewhere. */
-export const SUMMIT_ADMIN_EMAIL = process.env.SUMMIT_ADMIN_EMAIL || CONTACT_EMAIL;
+export const SUMMIT_ADMIN_EMAIL = adminNotifyEmail(process.env.SUMMIT_ADMIN_EMAIL);
 
 type MailOpts = {
   to: string;
@@ -405,17 +405,20 @@ export async function deliverCompTicket(reg: Record<string, any>): Promise<boole
  *  - each row is claimed with a conditional update first, so two clicks (or two admins) cannot both send to the same person;
  *  - a claim older than 5 minutes is treated as abandoned (a crash), so nobody is stuck;
  *  - sends are spaced out, and the batch stops at the first login failure instead of trying 40 more times. */
-export async function resendUnsentBatch(limit = 4, gapMs = 1500, onlyIds?: string[]): Promise<{ sent: number; failed: number; remaining: number; stopped?: { kind: EmailFailureKind; code: string } }> {
+export async function resendUnsentBatch(limit = 4, gapMs = 1500, onlyIds?: string[], excludeIds: string[] = []): Promise<{ sent: number; failed: number; remaining: number; stopped?: { kind: EmailFailureKind; code: string }; failedIds: string[] }> {
   const staleBefore = new Date(Date.now() - 5 * 60_000).toISOString();
   let pick = supabaseAdmin.from('summit_registrations').select('*');
   if (onlyIds) pick = pick.in('id', onlyIds); // tests only: never touch anyone else
-  const { data: rows } = await pick
+  // excludeIds: people who already failed during this run. Without it a bad address would be picked again on every batch.
+  const { data: candidates } = await pick
     .eq('payment_status', 'paid').is('confirmation_email_sent_at', null)
     .or(`confirmation_email_status.is.null,confirmation_email_status.neq.sending,confirmation_email_last_attempt_at.lt.${staleBefore}`)
-    .order('created_at', { ascending: true }).limit(limit);
+    .order('created_at', { ascending: true }).limit(limit + excludeIds.length);
+  const rows = (candidates ?? []).filter((r) => !excludeIds.includes(r.id)).slice(0, limit);
+  const failedIds: string[] = [];
   let sent = 0, failed = 0;
   let stopped: { kind: EmailFailureKind; code: string } | undefined;
-  for (const row of rows ?? []) {
+  for (const row of rows) {
     const now = new Date().toISOString();
     const { data: claimed } = await supabaseAdmin.from('summit_registrations')
       .update({ confirmation_email_status: 'sending', confirmation_email_last_attempt_at: now })
@@ -425,14 +428,14 @@ export async function resendUnsentBatch(limit = 4, gapMs = 1500, onlyIds?: strin
     if (!claimed) continue; // someone else is sending this one
     const out = await deliverPaidEmails(claimed, Number(claimed.amount_paid ?? 0), claimed.currency ?? 'NGN', claimed.payment_reference ?? '', { customer: true });
     if (out.customer) sent++; else {
-      failed++;
-      if (out.customerError && (out.customerError.kind === 'auth' || out.customerError.kind === 'not_configured' || out.customerError.kind === 'connection')) { stopped = out.customerError; break; }
+      failed++; failedIds.push(row.id);
+      if (out.customerError && ['auth', 'not_configured', 'connection', 'sender'].includes(out.customerError.kind)) { stopped = out.customerError; break; }
     }
     await new Promise((r) => setTimeout(r, gapMs));
   }
-  const { count } = await supabaseAdmin.from('summit_registrations').select('id', { count: 'exact', head: true })
-    .eq('payment_status', 'paid').is('confirmation_email_sent_at', null);
-  return { sent, failed, remaining: count ?? 0, stopped };
+  const { data: left } = await supabaseAdmin.from('summit_registrations').select('id').eq('payment_status', 'paid').is('confirmation_email_sent_at', null);
+  const skip = new Set([...excludeIds, ...failedIds]);
+  return { sent, failed, remaining: (left ?? []).filter((r) => !skip.has(r.id)).length, stopped, failedIds };
 }
 
 // ── Donations (/donate page) ────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 'use client';
 
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -860,10 +861,10 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             The Elevation Summit is built by people who have built something real - and by organisations that serve them. If you have a story worth telling to purposeful people, or you want to bring your organisation into the conversation, we would love to hear from you.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <a className="summit-cta-link" href="mailto:contact@joinascentor.com?subject=Elevation Summit - Speaker Interest">
+            <a className="summit-cta-link" href={`mailto:${SUPPORT_EMAIL}?subject=Elevation Summit - Speaker Interest`}>
               Express speaker interest →
             </a>
-            <a className="summit-cta-link" href="mailto:contact@joinascentor.com?subject=Elevation Summit - Partnership Interest">
+            <a className="summit-cta-link" href={`mailto:${SUPPORT_EMAIL}?subject=Elevation Summit - Partnership Interest`}>
               Explore partnership →
             </a>
           </div>
