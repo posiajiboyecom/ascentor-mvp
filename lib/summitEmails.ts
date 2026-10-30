@@ -1,5 +1,5 @@
 import { getMailer, sendEmail, classifyEmailError, emailErrorCode, type EmailFailureKind } from './nodemailer';
-import { CONTACT_EMAIL, FROM_DEFAULT, SUMMIT_EMAIL } from './contact';
+import { adminNotifyEmail, FROM_DEFAULT, SUMMIT_EMAIL } from './contact';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from './emailTemplate';
 import { generateSummitTicket, type TicketData } from './summitTicket';
 import { supabaseAdmin } from '@/lib/supabase/admin';
@@ -25,7 +25,7 @@ const flyerBlock = (fullName: string) => `
   </table>`;
 
 /** Where every Summit admin alert goes. Deliberately NOT ADMIN_EMAIL, which may point elsewhere. */
-export const SUMMIT_ADMIN_EMAIL = process.env.SUMMIT_ADMIN_EMAIL || CONTACT_EMAIL;
+export const SUMMIT_ADMIN_EMAIL = adminNotifyEmail(process.env.SUMMIT_ADMIN_EMAIL);
 
 type MailOpts = {
   to: string;

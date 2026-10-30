@@ -14,6 +14,7 @@
 // ║  }                                                                ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import { Lock } from 'lucide-react';
 
 export default function DemoGatePage() {
@@ -154,10 +155,10 @@ export default function DemoGatePage() {
           <p style={{ fontSize: 11, fontFamily: "Metropolis, 'Inter', sans-serif", color: '#4A4438', letterSpacing: '0.1em', marginBottom: 10, textTransform: 'uppercase' }}>
             Contact Team Ascentor
           </p>
-          <div className="dg-email">contact@joinascentor.com</div>
+          <div className="dg-email">{SUPPORT_EMAIL}</div>
 
           <a
-            href="mailto:contact@joinascentor.com?subject=Demo Access Request | Ascentor Partner Platform&body=Hi Team Ascentor,%0A%0AI would like to request access to the Ascentor partner demo.%0A%0AOrganisation name:%0AUse case:%0AEstimated member count:%0A%0AThank you."
+            href={`mailto:${SUPPORT_EMAIL}?subject=Demo Access Request | Ascentor Partner Platform&body=Hi Team Ascentor,%0A%0AI would like to request access to the Ascentor partner demo.%0A%0AOrganisation name:%0AUse case:%0AEstimated member count:%0A%0AThank you.`}
             className="dg-cta"
           >
             Email Team Ascentor to request access →

@@ -1,5 +1,6 @@
 // lib/admin/screens/partners.ts
 // Spec copied from the admin prototype (Marketing · Partners). The loader below is a placeholder until it reads real data.
+import { fromAs } from '@/lib/contact';
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { shortDate, count } from '@/lib/admin/revenue-util';
@@ -56,7 +57,7 @@ async function emailOwner(ownerId: string | null, partner: { name: string; subdo
     const name = esc(partner.name);
     const approve = kind === 'approve';
     await sendEmail({
-      from: 'Ascentor Partners <hello@joinascentor.com>',
+      from: fromAs('Ascentor Partners'),
       to: owner.email,
       subject: approve ? `Your partner application is approved, ${partner.name}` : `Your partner account has been suspended, ${partner.name}`,
       html: brandedEmailLayout({

@@ -1,3 +1,4 @@
+import { FROM_DEFAULT } from '@/lib/contact';
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/nodemailer';
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
     // Send confirmation email - non-blocking (failure does not break the response)
     try {
       await sendEmail({
-        from:    'Ascentor <hello@joinascentor.com>',
+        from:    FROM_DEFAULT,
         to:      body.email,
         subject: `You're on the Ascentor waitlist, position #${data.position}`,
         html:    buildConfirmationEmailHtml({

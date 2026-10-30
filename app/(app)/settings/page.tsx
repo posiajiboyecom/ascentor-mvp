@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Globe, Instagram, X } from 'lucide-react';
@@ -144,7 +145,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           <GoLink href="/sage/memory">What Sage knows</GoLink>
           <GoLink href="/sage/reminders">Reminder settings</GoLink>
           <p className="rx-sl">Help</p>
-          <p className="rx-p">Write to contact@joinascentor.com. We reply within 2 to 3 business days.</p>
+          <p className="rx-p">Write to {SUPPORT_EMAIL}. We reply within 2 to 3 business days.</p>
           <div className="rx-row" style={{ gap: 16 }}>
             <Link href="/terms" className="rx-link" style={{ fontSize: 14 }}>Terms</Link>
             <Link href="/privacy" className="rx-link" style={{ fontSize: 14 }}>Privacy policy</Link>

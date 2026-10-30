@@ -23,6 +23,7 @@
 //             (no ilike on joined columns) while fixing correctness.
 // ============================================================
 
+import { fromAs } from '@/lib/contact';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
@@ -264,7 +265,7 @@ export async function POST(req: NextRequest) {
             const inviteUrl = `https://${partner.subdomain}.joinascentor.com/join?token=${encodeURIComponent(token)}`;
 
             await sendEmail({
-              from:    `${partner.name} <hello@joinascentor.com>`,
+              from:    fromAs(partner.name),
               to:      email,
               subject: `You've been invited to ${partner.name}`,
               html: brandedEmailLayout({
@@ -356,7 +357,7 @@ export async function PATCH(req: NextRequest) {
       const inviteUrl = `https://${partner.subdomain}.joinascentor.com/join?token=${encodeURIComponent(token)}`;
       try {
         await sendEmail({
-          from:    `${partner.name} <hello@joinascentor.com>`,
+          from:    fromAs(partner.name),
           to:      member.email,
           subject: `Reminder: Your invite to ${partner.name}`,
           html: brandedEmailLayout({

@@ -5,6 +5,7 @@
 // Submits to POST /api/contact which saves to contact_messages and
 // emails the admin. No auth required.
 
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import PublicHeader from '@/components/layout/PublicHeader';
@@ -433,7 +434,7 @@ export default function ContactPage() {
             <div>
               <p className="info-item-label">Email</p>
               <p className="info-item-value">
-                <a href="mailto:contact@joinascentor.com">contact@joinascentor.com</a>
+                <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
               </p>
             </div>
             <div>

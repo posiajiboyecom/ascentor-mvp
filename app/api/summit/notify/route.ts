@@ -5,6 +5,7 @@
 // Body: { status: string, subject: string, message: string }
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { FROM_DEFAULT } from '@/lib/contact';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
 
     try {
       await sendEmail({
-        from: 'Ascentor <hello@joinascentor.com>',
+        from: FROM_DEFAULT,
         to: r.email,
         subject: (subject as string).trim(),
         html: buildHtml({ firstName, message: personalised, recipient: r.email }),

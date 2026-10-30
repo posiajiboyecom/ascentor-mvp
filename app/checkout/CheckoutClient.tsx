@@ -19,6 +19,7 @@
 //       → pay → GET /api/pay/callback → subscription activated → /dashboard?welcome=1
 // ================================================================
 
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -555,7 +556,7 @@ function TrustBar() {
       </div>
       <p className="co-trust-note">
         Prices in NGN · Questions?{' '}
-        <a href="mailto:contact@joinascentor.com" className="co-trust-link">contact@joinascentor.com</a>
+        <a href={`mailto:${SUPPORT_EMAIL}`} className="co-trust-link">{SUPPORT_EMAIL}</a>
       </p>
     </div>
   )

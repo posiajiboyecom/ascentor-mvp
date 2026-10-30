@@ -2,6 +2,7 @@
 // IMPORTANT: web-push is a Node.js-only package. This file must only
 // be imported from server components, API routes, and trigger tasks.
 // Never import it from client components.
+import { MAILBOX_EMAIL } from '@/lib/contact';
 import webpush from 'web-push';
 
 export interface PushPayload {
@@ -30,7 +31,7 @@ function initVapid(): boolean {
 
   const pub  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const priv = process.env.VAPID_PRIVATE_KEY;
-  const mail = process.env.VAPID_CONTACT_EMAIL || 'hello@joinascentor.com';
+  const mail = process.env.VAPID_CONTACT_EMAIL || MAILBOX_EMAIL;
 
   if (!pub || !priv) {
     console.warn('[push] VAPID keys not set, push notifications disabled');

@@ -29,6 +29,7 @@
 //
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { adminNotifyEmail, fromAs } from '@/lib/contact'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { brandedEmailLayout, esc, p, goldButton, outlineButton, summaryRow, summaryBox, messageBlock } from '@/lib/emailTemplate'
@@ -41,7 +42,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || 'contact@joinascentor.com'
+const FOUNDER_EMAIL = adminNotifyEmail(process.env.FOUNDER_EMAIL)
 
 function acknowledgementEmail(name: string, org: string, recipient: string) {
   const firstName = name.split(' ')[0] || name
@@ -91,7 +92,7 @@ function founderNotificationEmail(name: string, email: string, org: string, mess
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
-  await sendMail({ from: 'Ascentor Partners <hello@joinascentor.com>', to, subject, html })
+  await sendMail({ from: fromAs('Ascentor Partners'), to, subject, html })
 }
 
 export async function POST(req: NextRequest) {

@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import PublicHeader from "@/components/layout/PublicHeader";
@@ -173,7 +174,7 @@ const SECTIONS: Section[] = [
       },
       {
         type: "para",
-        text: "To exercise any right, email contact@joinascentor.com. We respond within 30 days.",
+        text: `To exercise any right, email ${SUPPORT_EMAIL}. We respond within 30 days.`,
       },
     ],
   },
@@ -236,8 +237,8 @@ const SECTIONS: Section[] = [
       {
         type: "contact",
         items: [
-          { label: "General & Data Rights", value: "contact@joinascentor.com" },
-          { label: "Data Protection Officer", value: "contact@joinascentor.com" },
+          { label: "General & Data Rights", value: SUPPORT_EMAIL },
+          { label: "Data Protection Officer", value: SUPPORT_EMAIL },
           { label: "Postal Address", value: "Lekki, Lagos, Nigeria" },
         ],
       },

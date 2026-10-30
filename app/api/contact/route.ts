@@ -24,6 +24,7 @@
 //   CREATE POLICY "service role only" ON contact_messages USING (false);
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { adminNotifyEmail, FROM_DEFAULT } from '@/lib/contact';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { brandedEmailLayout, esc, p, goldButton, outlineButton, summaryRow, summaryBox, messageBlock } from '@/lib/emailTemplate';
@@ -36,8 +37,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-const ADMIN_EMAIL     = process.env.FOUNDER_EMAIL || 'contact@joinascentor.com';
-const FROM_ADDRESS    = 'Ascentor <hello@joinascentor.com>';
+const ADMIN_EMAIL     = adminNotifyEmail(process.env.FOUNDER_EMAIL);
+const FROM_ADDRESS    = FROM_DEFAULT;
 
 const SUBJECT_LABELS: Record<string, string> = {
   general:     'General inquiry',

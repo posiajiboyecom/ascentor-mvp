@@ -2,6 +2,7 @@
 // Admin-only. Sends personalised email to all registrants of a given event
 // with a given status. Body: { eventId, status, subject, message }
 
+import { FROM_DEFAULT } from '@/lib/contact';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
     const personalised = (message as string).replace(/\{name\}/gi, firstName);
     try {
       await sendEmail({
-        from: 'Ascentor <hello@joinascentor.com>',
+        from: FROM_DEFAULT,
         to: r.email,
         subject: subject.trim(),
         html: buildHtml({ firstName, eventTitle: event.title, message: personalised, recipient: r.email }),
