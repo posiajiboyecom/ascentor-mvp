@@ -44,8 +44,9 @@ export const spec: ScreenSpec = {
       label: "Email everyone not yet confirmed"
     },
     {
-      id: "resend-all-unsent",
-      label: "Resend all unsent tickets"
+      id: "delivery",
+      label: "Delivery and resend all",
+      href: "/admin/c/registrations/delivery"
     },
     {
       id: "export-list",
