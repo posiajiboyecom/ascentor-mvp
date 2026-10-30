@@ -16,8 +16,29 @@ interface SSOResult {
   url?: string;
 }
 
+/**
+ * The address of our own Google sign-in, when it is switched on (GOOGLE_AUTH_MODE=custom on the server and both Google credentials
+ * set). Returns null for the normal Supabase flow, and on any error, so a hiccup here can never block signing in.
+ */
+export async function customGoogleUrl(opts: { next?: string; partner?: string } = {}): Promise<string | null> {
+  try {
+    const r = await fetch('/api/auth/google/mode', { cache: 'no-store' });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (j?.custom !== true) return null;
+    const q = new URLSearchParams();
+    if (opts.next) q.set('next', opts.next);
+    if (opts.partner) q.set('partner_subdomain', opts.partner);
+    return `/api/auth/google${q.toString() ? `?${q.toString()}` : ''}`;
+  } catch { return null; }
+}
+
 export async function signInWithSSO(provider: OAuthProvider, redirectTo?: string): Promise<SSOResult> {
   try {
+    if (provider === 'google') {
+      const own = await customGoogleUrl();
+      if (own) { window.location.assign(own); return { success: true, url: own }; }
+    }
     const callbackUrl = redirectTo || `${window.location.origin}/auth/callback`;
 
     const { data, error } = await supabase.auth.signInWithOAuth({
