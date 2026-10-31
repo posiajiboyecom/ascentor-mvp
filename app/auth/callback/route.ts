@@ -17,6 +17,7 @@
 
 import { createClient }        from '@/lib/supabase/server';
 import { NextResponse }        from 'next/server';
+import { cookies }             from 'next/headers';
 import { safeNext }            from '@/lib/auth/safe-next';
 import { completeSignIn }      from '@/lib/auth/complete-signin';
 
@@ -29,8 +30,11 @@ export async function GET(request: Request) {
   const next             = safeNext(rawNext, '/dashboard');
   const partnerSubdomain = searchParams.get('partner_subdomain');
 
+  // The page the person started from (set by the browser just before it left for the provider). Errors return there, so Back never lands on the other auth page.
+  const errorPage = (await cookies()).get('ascentor_auth_from')?.value === 'signup' ? '/signup' : '/login';
+
   if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+    return NextResponse.redirect(`${origin}${errorPage}?error=auth_failed`);
   }
 
   const supabase = await createClient();
@@ -38,8 +42,8 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('[auth/callback] Session exchange failed:', error.message);
-    return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+    return NextResponse.redirect(`${origin}${errorPage}?error=auth_failed`);
   }
 
-  return completeSignIn({ supabase, request, origin, next, partnerSubdomain });
+  return completeSignIn({ supabase, request, origin, next, partnerSubdomain, errorPage });
 }

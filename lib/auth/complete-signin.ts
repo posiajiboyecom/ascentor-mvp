@@ -21,11 +21,14 @@ export async function completeSignIn(opts: {
   origin: string;
   next: string;
   partnerSubdomain?: string | null;
+  /** Where a failure sends the person: the page they started from. Defaults to /login. */
+  errorPage?: '/login' | '/signup';
 }): Promise<NextResponse> {
   const { supabase, request, origin, next, partnerSubdomain } = opts;
+  const errorPage = opts.errorPage ?? '/login';
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+    return NextResponse.redirect(`${origin}${errorPage}?error=auth_failed`);
   }
 
   // Location-risk check for OAuth / link sign-ins (password sign-ins run it in
@@ -33,7 +36,7 @@ export async function completeSignIn(opts: {
   const assessment = await assessLogin(user.id, request);
   if (!assessment.allowed) {
     await supabase.auth.signOut();
-    return NextResponse.redirect(`${origin}/login?error=login_blocked`);
+    return NextResponse.redirect(`${origin}${errorPage}?error=login_blocked`);
   }
 
   // ── PARTNER FLOW ──────────────────────────────────────────

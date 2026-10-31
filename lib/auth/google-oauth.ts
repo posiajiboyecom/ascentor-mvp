@@ -36,18 +36,24 @@ export const sha256Hex = (s: string) => crypto.createHash('sha256').update(s).di
 /** PKCE S256: base64url(sha256(verifier)). */
 export const pkceChallenge = (verifier: string) => b64url(crypto.createHash('sha256').update(verifier).digest());
 
-export interface FlowCookie { state: string; verifier: string; nonce: string; next: string; partner: string | null; at: number }
+export type AuthPage = 'login' | 'signup';
+/** Which sign-in page the person started from. Only these two values are ever accepted, from the browser or from the cookie. */
+export const cleanFrom = (raw: unknown): AuthPage => (raw === 'signup' ? 'signup' : 'login');
+export const authPagePath = (from: AuthPage) => (from === 'signup' ? '/signup' : '/login');
+
+export interface FlowCookie { state: string; verifier: string; nonce: string; next: string; partner: string | null; from: AuthPage; at: number }
 
 /** A partner subdomain is lowercase letters, digits and hyphens only. Anything else is dropped. */
 export const cleanPartner = (raw: string | null | undefined): string | null => (raw && /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(raw) ? raw : null);
 
-export function newFlow(rawNext: string | null | undefined, rawPartner: string | null | undefined, now = Date.now()): FlowCookie {
+export function newFlow(rawNext: string | null | undefined, rawPartner: string | null | undefined, rawFrom?: string | null, now = Date.now()): FlowCookie {
   return {
     state: randomToken(24),
     verifier: randomToken(48), // 64 chars, within PKCE's 43 to 128
     nonce: randomToken(24),
     next: safeNext(rawNext, '/dashboard'), // same-site paths only: no open redirect
     partner: cleanPartner(rawPartner),
+    from: cleanFrom(rawFrom),
     at: now,
   };
 }
@@ -58,7 +64,7 @@ export function decodeFlow(raw: string | null | undefined): FlowCookie | null {
   try {
     const f = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'));
     if (!f || typeof f.state !== 'string' || typeof f.verifier !== 'string' || typeof f.nonce !== 'string' || typeof f.at !== 'number') return null;
-    return { state: f.state, verifier: f.verifier, nonce: f.nonce, next: safeNext(f.next, '/dashboard'), partner: cleanPartner(f.partner), at: f.at };
+    return { state: f.state, verifier: f.verifier, nonce: f.nonce, next: safeNext(f.next, '/dashboard'), partner: cleanPartner(f.partner), from: cleanFrom(f.from), at: f.at };
   } catch { return null; }
 }
 

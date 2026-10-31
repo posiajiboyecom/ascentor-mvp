@@ -16,6 +16,18 @@ interface SSOResult {
   url?: string;
 }
 
+/** Which auth page the person is on. Failures and cancellations return here, so Back never lands on the other page. */
+function currentAuthPage(): 'login' | 'signup' {
+  return typeof window !== 'undefined' && window.location.pathname.startsWith('/signup') ? 'signup' : 'login';
+}
+
+/** Remembers the starting page for the Supabase redirect flow (the custom flow keeps it in its own signed-state cookie). */
+function rememberAuthPage() {
+  try {
+    document.cookie = `ascentor_auth_from=${currentAuthPage()}; Path=/; Max-Age=600; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
+  } catch { /* cookies blocked: errors simply return to /login */ }
+}
+
 /**
  * The address of our own Google sign-in, when it is switched on (GOOGLE_AUTH_MODE=custom on the server and both Google credentials
  * set). Returns null for the normal Supabase flow, and on any error, so a hiccup here can never block signing in.
@@ -27,16 +39,18 @@ export async function customGoogleUrl(opts: { next?: string; partner?: string } 
     const j = await r.json();
     if (j?.custom !== true) return null;
     const q = new URLSearchParams();
+    q.set('from', currentAuthPage());
     if (opts.next) q.set('next', opts.next);
     if (opts.partner) q.set('partner_subdomain', opts.partner);
     return `/api/auth/google${q.toString() ? `?${q.toString()}` : ''}`;
   } catch { return null; }
 }
 
-export async function signInWithSSO(provider: OAuthProvider, redirectTo?: string): Promise<SSOResult> {
+export async function signInWithSSO(provider: OAuthProvider, redirectTo?: string, opts: { next?: string } = {}): Promise<SSOResult> {
   try {
+    rememberAuthPage();
     if (provider === 'google') {
-      const own = await customGoogleUrl();
+      const own = await customGoogleUrl({ next: opts.next });
       if (own) { window.location.assign(own); return { success: true, url: own }; }
     }
     const callbackUrl = redirectTo || `${window.location.origin}/auth/callback`;

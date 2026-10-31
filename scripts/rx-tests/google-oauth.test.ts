@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  COOKIE_MAX_AGE_S, GoogleExchangeError, buildAuthUrl, checkState, cleanPartner, decodeFlow, encodeFlow, exchangeCode, newFlow, pkceChallenge,
+  COOKIE_MAX_AGE_S, GoogleExchangeError, authPagePath, buildAuthUrl, cleanFrom, checkState, cleanPartner, decodeFlow, encodeFlow, exchangeCode, newFlow, pkceChallenge,
   randomToken, redirectUriFor, resolveGoogleMode, sha256Hex,
 } from '../../lib/auth/google-oauth';
 import { LOGIN_ERRORS } from '../../lib/auth/google-login-errors';
@@ -35,7 +35,7 @@ test('the authorisation URL carries the hashed nonce, the S256 challenge, state 
 
 test('state: missing, mismatched or expired is refused; a match inside 10 minutes passes', () => {
   const now = 1_000_000_000_000;
-  const flow = newFlow('/x', null, now);
+  const flow = newFlow('/x', null, null, now);
   assert.deepEqual(checkState(null, flow.state, now), { ok: false, problem: 'missing' });
   assert.deepEqual(checkState(flow, null, now), { ok: false, problem: 'missing' });
   assert.deepEqual(checkState(flow, '', now), { ok: false, problem: 'missing' });
@@ -107,4 +107,18 @@ test('code exchange: sends the verifier and secret to Google, returns only the i
 test('every error the flow can end on has a friendly message for /login', () => {
   for (const k of ['google_cancelled', 'google_state', 'google_failed', 'google_rate'] as const) assert.ok(LOGIN_ERRORS[k].length > 20);
   assert.equal(Object.values(LOGIN_ERRORS).some((m) => /token|secret|code|supabase/i.test(m)), false);
+});
+
+test('the page the person started from is carried in the state cookie, and only login or signup are accepted', () => {
+  assert.equal(newFlow('/dashboard', null, 'signup').from, 'signup');
+  assert.equal(newFlow('/dashboard', null, 'login').from, 'login');
+  for (const bad of [undefined, null, '', 'admin', 'https://evil.com', '/signup', 'SIGNUP']) assert.equal(newFlow('/dashboard', null, bad as string).from, 'login', String(bad));
+  assert.equal(decodeFlow(encodeFlow(newFlow('/dashboard', null, 'signup')))?.from, 'signup');
+  // an older cookie without the field, or a tampered one, falls back to login
+  const old = encodeFlow({ ...newFlow('/dashboard', null), from: undefined as unknown as 'login' });
+  assert.equal(decodeFlow(old)?.from, 'login');
+  assert.equal(decodeFlow(encodeFlow({ ...newFlow('/dashboard', null), from: '//evil.com' as unknown as 'login' }))?.from, 'login');
+  assert.equal(cleanFrom('signup'), 'signup');
+  assert.equal(authPagePath('signup'), '/signup');
+  assert.equal(authPagePath('login'), '/login');
 });
