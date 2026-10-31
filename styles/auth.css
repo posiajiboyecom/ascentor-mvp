@@ -1,7 +1,7 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   ax: the signed-out auth screens (sign in, reset password, check email, link expired).
-   Tokens and layout are the design prototype's: light by default, dark when the
-   visitor's system is dark (the prototype's dark palette).
+   ax: the signed-out auth screens (sign in, sign up, forgot password, check email, link expired, reset).
+   One light theme (the same tokens as onboarding), one centred column. There is no dark palette and no dark
+   split panel: the system's dark mode setting is ignored on purpose.
    ───────────────────────────────────────────────────────────────────────────── */
 
 .ax {
@@ -14,6 +14,7 @@
   --ax-glow: rgba(182, 80, 42, 0.09);
   --ax-input: #FFFFFF;
   --ax-il-f2: #E2DED6; --ax-il-s: #C9C4BA;
+  color-scheme: light;
   min-height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -24,40 +25,22 @@
   font-size: 16px;
   line-height: 1.5;
 }
-@media (prefers-color-scheme: dark) {
-  .ax {
-    --ax-bg: #0A0A0A; --ax-surface: #15181D; --ax-raised: #1C2027;
-    --ax-border: #23272E; --ax-line: #3A3F47;
-    --ax-text: #ECEAE6; --ax-muted: #9CA3AF;
-    --ax-rustt: #D9714A;
-    --ax-err: #F2A0AE; --ax-ok: #7FB08A;
-    --ax-disbg: #1F2228; --ax-dist: #7D828B;
-    --ax-glow: rgba(182, 80, 42, 0.11);
-    --ax-input: #0A0A0A;
-    --ax-il-f2: #23272E; --ax-il-s: #3A3F47;
-  }
-}
 .ax *, .ax *::before, .ax *::after { box-sizing: border-box; }
-@media (min-width: 1024px) { .ax { grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr); } }
 
-/* art panel */
-.ax-art { position: relative; overflow: hidden; background: var(--ax-surface); display: flex; flex-direction: column; justify-content: space-between; gap: 20px; padding: 18px 20px 22px; border-bottom: 1px solid var(--ax-border); }
-@media (min-width: 1024px) { .ax-art { padding: 40px 48px 64px; border-bottom: 0; border-right: 1px solid var(--ax-border); } }
-.ax-art::before { content: ''; position: absolute; inset: 0; background: radial-gradient(60% 50% at 75% 30%, var(--ax-glow), transparent 70%); }
-.ax-art::after { content: ''; position: absolute; inset: 0; background-image: radial-gradient(circle, color-mix(in srgb, var(--ax-text) 12%, transparent) 1px, transparent 1.3px); background-size: 18px 18px; opacity: .6; }
-.ax-art > * { position: relative; z-index: 1; }
-.ax-logo { display: block; height: 24px; width: auto; }
+/* header: logo, then the title and subtitle, in the same centred column as the form (no panel, no split) */
+.ax-art { display: flex; flex-direction: column; gap: 20px; padding: 24px 20px 0; align-items: center; }
+.ax-art > * { width: 100%; max-width: 440px; }
+.ax-logo { display: block; height: 28px; width: auto; }
 .ax-logo.dark { display: none; }
-@media (prefers-color-scheme: dark) { .ax-logo.light { display: none; } .ax-logo.dark { display: block; } }
 .ax-artcopy { display: flex; flex-direction: column; gap: 8px; }
 .ax-rustbar { display: block; width: 48px; height: 4px; background: var(--ax-rust); border-radius: 2px; }
-.ax-hero { margin: 0; font-family: Poppins, Metropolis, sans-serif; font-weight: 800; font-size: 26px; line-height: 1; letter-spacing: -0.03em; text-transform: uppercase; }
-@media (min-width: 1024px) { .ax-hero { font-size: 56px; } }
+.ax-hero { margin: 0; font-family: Poppins, Metropolis, sans-serif; font-weight: 800; font-size: 28px; line-height: 1.05; letter-spacing: -0.03em; text-transform: uppercase; }
+@media (min-width: 1024px) { .ax-hero { font-size: 36px; } .ax-art { padding-top: 40px; } }
 .ax-artsub { margin: 0; color: var(--ax-muted); max-width: 380px; }
 
 /* body */
-.ax-body { display: flex; flex-direction: column; justify-content: center; padding: 24px 20px 32px; }
-@media (min-width: 1024px) { .ax-body { padding: 48px 96px; } }
+.ax-body { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 24px 20px 40px; }
+@media (min-width: 1024px) { .ax-body { padding: 32px 20px 64px; } }
 .ax-st { display: flex; flex-direction: column; gap: 16px; max-width: 440px; width: 100%; animation: ax-rise .35s ease-out both; }
 @keyframes ax-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ax-st { animation: none; } }

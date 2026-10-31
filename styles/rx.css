@@ -397,3 +397,11 @@ a.rx-opt { text-decoration: none; }
 .rx-thumb .rx-thumb-hover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .25s; }
 .rx-thumb:hover .rx-thumb-hover { opacity: 1; }
 @media (hover: none) { .rx-thumb .rx-thumb-hover { display: none; } }
+
+/* Spinner inside a busy button, and a footer that wraps rather than pushing its button off a narrow screen */
+.rx-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; display: inline-block; margin-right: 8px; vertical-align: -3px; animation: rx-spin .7s linear infinite; }
+@keyframes rx-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .rx-spin { animation-duration: 2s; } }
+.rx-ob-foot { flex-wrap: wrap; justify-content: flex-end; }
+.rx-ob-foot-note { flex: 1 1 140px; min-width: 0; }
+.rx-ob-foot .rx-btn { flex: none; }

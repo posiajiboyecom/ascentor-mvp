@@ -1,6 +1,7 @@
 import '@/styles/rx.css';
 import { ToastProvider } from '@/components/rx/Toast';
+import PushBootstrap from '@/components/rx/PushBootstrap';
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
-  return <ToastProvider>{children}</ToastProvider>;
+  return <ToastProvider><PushBootstrap />{children}</ToastProvider>;
 }
