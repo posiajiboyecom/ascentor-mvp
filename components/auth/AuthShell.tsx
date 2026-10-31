@@ -8,10 +8,12 @@ import { forwardRef, useState } from 'react';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 import '@/styles/auth.css';
+import AuthPageGuard from './AuthPageGuard';
 
 export function AuthShell({ title, sub, children }: { title: string; sub: string; children: React.ReactNode }) {
   return (
     <div className="ax">
+      <AuthPageGuard />
       <div className="ax-art">
         <Link href="/" aria-label="Ascentor home" style={{ display: 'inline-block' }}>
           <img className="ax-logo light" src="/ascentor-color-for-light-pages.svg" alt="Ascentor" />

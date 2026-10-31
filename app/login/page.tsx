@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LOGIN_ERRORS, type GoogleLoginError } from '@/lib/auth/google-login-errors';
+import { useAuthUrlError } from '@/components/auth/useAuthUrlError';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -30,7 +30,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const searchParams = useSearchParams();
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useAuthUrlError();
   const [loading, setLoading] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
@@ -44,11 +44,6 @@ export default function LoginPage() {
     if (searchParams.get('reason') === 'session_expired') {
       setSessionExpired(true);
     }
-    const err = searchParams.get('error');
-    if (err === 'auth_failed') setError('We couldn’t complete that sign-in. The link may have expired. Please try again.');
-    if (err === 'login_blocked') setError('For your security that sign-in was blocked because it looked unusual. Please try again in a few minutes.');
-    if (err && err in LOGIN_ERRORS) setError(LOGIN_ERRORS[err as GoogleLoginError]);
-    if (err === 'session_missing') setError('Your session didn’t start. Please sign in again.');
   }, [searchParams]);
 
   useEffect(() => {
@@ -125,7 +120,7 @@ export default function LoginPage() {
   async function oauth(provider: 'google' | 'linkedin_oidc') {
     setOauthBusy(true);
     setError(null);
-    const r = await signInWithSSO(provider);
+    const r = await signInWithSSO(provider, undefined, { next: destination });
     if (!r.success) { setError(r.error || 'Sign-in failed'); setOauthBusy(false); }
   }
 

@@ -240,6 +240,26 @@ export default async function proxy(request: NextRequest) {
     if (homeUser) return NextResponse.redirect(new URL('/auth/continue', request.url));
   }
 
+  // A signed-in person who lands on /login or /signup (Back button, an old bookmark) goes straight on to where their account belongs
+  // (/auth/continue: onboarding if unfinished, otherwise the dashboard or the page they were heading to), so the form never flashes.
+  // Not when the page carries an error or a session-expired notice: those must be shown.
+  if ((pathname === '/login' || pathname === '/signup') && platformOpen()
+      && !request.nextUrl.searchParams.has('error') && !request.nextUrl.searchParams.has('reason')
+      && request.cookies.getAll().some((c) => c.name.startsWith('sb-') && c.name.includes('auth-token'))) {
+    const probe = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      cookies: { getAll: () => request.cookies.getAll(), setAll: () => {} },
+    });
+    const { data: { user: authedUser } } = await probe.auth.getUser();
+    if (authedUser) {
+      const go = new URL('/auth/continue', request.url);
+      const want = request.nextUrl.searchParams.get('redirect') ?? request.nextUrl.searchParams.get('next');
+      if (want && want.startsWith('/') && !want.startsWith('//')) go.searchParams.set('next', want);
+      const res = NextResponse.redirect(go);
+      res.headers.set('Cache-Control', 'no-store');
+      return res;
+    }
+  }
+
   // Always pass through public page routes - still attach nonce for theme scripts
   if (PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) {
     return withNonce(NextResponse.next({ request }), nonce);

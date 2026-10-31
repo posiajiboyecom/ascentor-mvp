@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Gift } from 'lucide-react';
-import PasswordInput from '@/components/PasswordInput';
-import { OAuthButton } from '@/lib/sso';
+import { AuthShell, AuthPassword } from '@/components/auth/AuthShell';
+import { useAuthUrlError } from '@/components/auth/useAuthUrlError';
 import OtpVerify from '@/components/auth/OtpVerify';
 import AuthModal, { type AuthModalAction } from '@/components/auth/AuthModal';
 import { ProviderIcon, PROVIDER_NAME } from '@/components/auth/ProviderIcon';
@@ -43,10 +43,9 @@ function callbackNextFor(isFree: boolean, plan: string | null, billing: string, 
 }
 
 export default function SignupClient({ inviter }: { inviter?: { firstName: string; code: string } | null }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useAuthUrlError();
   const [loading, setLoading] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [pendingPassword, setPendingPassword] = useState('');
@@ -142,296 +141,107 @@ export default function SignupClient({ inviter }: { inviter?: { firstName: strin
     setLoading(false);
   }
 
+  const callbackNext = callbackNextFor(isFree, planParam, billingParam, currencyParam, searchParams.get('redirect'));
+  const [oauthBusy, setOauthBusy] = useState(false);
+
+  async function oauth(provider: 'google' | 'linkedin_oidc') {
+    setOauthBusy(true);
+    setError(null);
+    const r = await signInWithSSO(provider, undefined, { next: callbackNext });
+    if (!r.success) { setError(r.error || 'Sign-in failed'); setOauthBusy(false); }
+  }
+
+  const art = inviter
+    ? { title: 'Stop drifting. Start becoming.', sub: `${inviter.firstName} thinks you’d like it here.` }
+    : { title: 'Join the movement.', sub: 'Your ascent begins here. Free to join.' };
+
+  if (pendingEmail) {
+    return (
+      <AuthShell title={art.title} sub={art.sub}>
+        {modal && <AuthModal open title={modal.title} message={modal.message} actions={modal.actions} onClose={() => setModal(null)} />}
+        <div className="ax-lightcard">
+          <OtpVerify email={pendingEmail} password={pendingPassword} next={callbackNext} captchaToken={captchaToken} onBack={() => { setPendingEmail(null); setPendingPassword(''); }} />
+        </div>
+      </AuthShell>
+    );
+  }
+
   return (
-    <>
-      <style>{`
-        * { box-sizing: border-box; }
-        body { margin: 0; background: #FAFAF8 !important; color: #0F0F0E !important; }
+    <AuthShell title={art.title} sub={art.sub}>
+      {modal && <AuthModal open title={modal.title} message={modal.message} actions={modal.actions} onClose={() => setModal(null)} />}
+      <div className="ax-st">
+        {inviter ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span className="ax-inv-av" aria-hidden="true">{inviter.firstName.charAt(0).toUpperCase()}</span>
+              <div>
+                <p className="ax-sm" style={{ color: 'var(--ax-muted)' }}>Invited by</p>
+                <p className="ax-h3">{inviter.firstName}</p>
+              </div>
+            </div>
+            <h1 className="ax-h2">Join {inviter.firstName} on Ascentor</h1>
+            <p style={{ margin: 0 }}>Small daily practices, a Circle of people who know your goals, and mentors who show up. The daily home of The Elevation Summit.</p>
+            <div className="ax-inv-gift">
+              <Gift aria-hidden="true" />
+              <p style={{ margin: 0 }}><b>7 extra days free</b> for both of you when you subscribe.</p>
+            </div>
+          </>
+        ) : (
+          <h1 className="ax-h2">Create your account</h1>
+        )}
 
-        .auth-split {
-          min-height: 100dvh;
-          display: grid;
-          grid-template-columns: 1fr;
-          background: #FAFAF8;
-        }
-        @media (min-width: 1024px) {
-          .auth-split { grid-template-columns: 1fr 1fr; }
-        }
+        <button type="button" className="ax-sso" onClick={() => void oauth('google')} disabled={oauthBusy}>
+          <ProviderIcon provider="google" size={20} />Continue with Google
+        </button>
+        {!inviter && (
+          <button type="button" className="ax-sso" onClick={() => void oauth('linkedin_oidc')} disabled={oauthBusy}>
+            <ProviderIcon provider="linkedin_oidc" size={20} />Continue with LinkedIn
+          </button>
+        )}
+        {inviter && !showEmail && (
+          <button type="button" className="ax-btn bs bw" onClick={() => setShowEmail(true)}>Sign up with email</button>
+        )}
 
-        .auth-image {
-          display: none;
-          width: 100%;
-          height: 100%;
-          position: relative;
-          overflow: hidden;
-        }
-        .auth-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          position: absolute;
-          inset: 0;
-        }
-        .auth-image::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(180deg, rgba(15, 15, 14, 0.15) 0%, rgba(15, 15, 14, 0.55) 100%);
-          pointer-events: none;
-        }
-        @media (min-width: 1024px) { .auth-image { display: block; } }
+        {showEmail && !inviter && <p className="ax-orline">or with email</p>}
 
-        .auth-form-panel {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 40px 24px;
-          background: #FAFAF8;
-        }
-        .auth-form-inner {
-          width: 100%;
-          max-width: 420px;
-        }
-
-        .auth-input {
-          width: 100%;
-          padding: 0.875rem 1rem;
-          background: #FFFFFF;
-          border: 1.5px solid #E8E6E1;
-          border-radius: 0.625rem;
-          color: #0F0F0E;
-          font-family: Metropolis;
-          font-size: 0.9375rem;
-          outline: none;
-          transition: border-color 0.15s;
-        }
-        .auth-input::placeholder { color: #9CA3AF; }
-        .auth-input:focus { border-color: #C8A96E; }
-        .auth-input.error { border-color: #DC2626; }
-
-        .auth-btn {
-          width: 100%;
-          padding: 0.875rem;
-          border-radius: 0.625rem;
-          border: none;
-          cursor: pointer;
-          background: #0F0F0E;
-          color: #FAFAF8;
-          font-family: Metropolis;
-          font-size: 1rem;
-          font-weight: 700;
-          transition: background 0.15s, opacity 0.15s;
-        }
-        .auth-btn:hover:not(:disabled) { background: #2A2A29; }
-        .auth-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-
-        .auth-divider {
-          display: flex; align-items: center; gap: 16px; margin: 1.5rem 0;
-        }
-        .auth-divider-line { flex: 1; height: 1px; background: #E8E6E1; }
-
-        .field-error {
-          color: #DC2626;
-          font-size: 0.8125rem;
-          margin-top: 0.375rem;
-          line-height: 1.4;
-        }
-
-        .auth-error {
-          padding: 0.75rem 1rem;
-          border-radius: 0.5rem;
-          background: rgba(220,38,38,0.05);
-          border: 1px solid rgba(220,38,38,0.2);
-          color: #DC2626;
-          font-size: 0.875rem;
-          line-height: 1.5;
-          margin-bottom: 0.5rem;
-        }
-      `}</style>
-
-      {modal && (
-        <AuthModal open title={modal.title} message={modal.message} actions={modal.actions} onClose={() => setModal(null)} />
-      )}
-      <div className="auth-split">
-        {/* Left: Image */}
-        <div className="auth-image">
-          <img src="/images/signup-hero.jpg" alt="" />
-        </div>
-
-        {/* Right: Form */}
-        <div className="auth-form-panel">
-          <div className="auth-form-inner">
-            {pendingEmail ? (
-              <OtpVerify
-                email={pendingEmail}
-                password={pendingPassword}
-                next={callbackNextFor(isFree, planParam, billingParam, currencyParam, searchParams.get('redirect'))}
-                captchaToken={captchaToken}
-                onBack={() => { setPendingEmail(null); setPendingPassword(''); }}
-              />
-            ) : (
-            <>
-            {/* Mobile logo */}
-            <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Link href="/" style={{ textDecoration: 'none' }}>
-                <img src="/ascentor-color-for-light-pages.svg" alt="Ascentor" style={{ height: 24, width: 'auto' }} />
-              </Link>
-              <Link href="/login" style={{ fontSize: '0.875rem', color: '#6B7280', textDecoration: 'none' }}>
-                Have an account? <span style={{ color: '#C8A96E', fontWeight: 600 }}>Sign in →</span>
-              </Link>
+        {showEmail && (
+          <form className="ax-st" onSubmit={handleSubmit(onSubmit)} noValidate>
+            <div className="ax-fld">
+              <label htmlFor="suf">Full name</label>
+              <input id="suf" className="ax-in" type="text" autoComplete="name" disabled={loading} aria-invalid={Boolean(errors.fullName)} {...register('fullName')} />
+              {errors.fullName && <p className="ax-ferr">{errors.fullName.message}</p>}
+            </div>
+            <div className="ax-fld">
+              <label htmlFor="sue">Email</label>
+              <input id="sue" className="ax-in" type="email" autoComplete="email" disabled={loading} aria-invalid={Boolean(errors.email)} {...register('email')} />
+              {errors.email && <p className="ax-ferr">{errors.email.message}</p>}
+            </div>
+            <div className="ax-fld">
+              <label htmlFor="sup">Password</label>
+              <AuthPassword id="sup" placeholder={`At least ${PASSWORD_MIN} characters`} autoComplete="new-password" disabled={loading} aria-invalid={Boolean(errors.password)} {...register('password')} />
+              {errors.password && <p className="ax-ferr">{errors.password.message}</p>}
             </div>
 
-            {inviter ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ width: 52, height: 52, borderRadius: '50%', background: '#8D5A3B', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 16, flex: 'none' }}>
-                    {inviter.firstName.charAt(0).toUpperCase()}
-                  </span>
-                  <div>
-                    <p style={{ margin: 0, fontSize: 14, color: '#5F6672' }}>Invited by</p>
-                    <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{inviter.firstName}</p>
-                  </div>
-                </div>
-                <h1 style={{ fontFamily: 'Metropolis', fontWeight: 800, fontSize: 'clamp(1.75rem, 4vw, 2.25rem)', color: '#0F0F0E', margin: 0, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-                  Join {inviter.firstName} on Ascentor
-                </h1>
-                <p style={{ margin: 0, fontSize: 16, lineHeight: 1.55 }}>
-                  Small daily practices, a Circle of people who know your goals, and mentors who show up. The daily home of The Elevation Summit.
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#FFFFFF', border: '1px solid #E6E3DD', borderRadius: 12, padding: '14px 16px' }}>
-                  <Gift aria-hidden style={{ width: 24, height: 24, color: '#8A6D12', flex: 'none' }} />
-                  <p style={{ margin: 0, fontSize: 16, lineHeight: 1.55 }}><b>7 extra days free</b> for both of you when you subscribe.</p>
-                </div>
-              </div>
-            ) : (
-              <>
-            <h1 style={{
-              fontFamily: 'Metropolis',
-              fontWeight: 800,
-              fontSize: 'clamp(1.75rem, 4vw, 2.25rem)',
-              color: '#0F0F0E',
-              margin: '0 0 0.375rem',
-              lineHeight: 1.1,
-              letterSpacing: '-0.02em',
-            }}>
-              Join the movement.
-            </h1>
-            <p style={{ fontSize: '0.9375rem', color: '#6B7280', margin: '0 0 1.75rem', lineHeight: 1.6 }}>
-              Your ascent begins here. Free to join.
-            </p>
+            {referralCode && !inviter && <p className="ax-banner ok" role="status">Referral code applied: <b>{referralCode}</b></p>}
 
-            {/* Gold rule */}
-            <div style={{ height: '2px', background: 'linear-gradient(90deg, #C8A96E 0%, transparent 100%)', borderRadius: '2px', marginBottom: '1.75rem' }} />
-              </>
-            )}
+            <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />
+            {error && <p className="ax-banner err" role="alert">{error}</p>}
 
-            {/* OAuth */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-              <OAuthButton provider="google" onError={setError} />
-              {!inviter && <OAuthButton provider="linkedin_oidc" onError={setError} />}
-              {inviter && !showEmail && (
-                <button type="button" onClick={() => setShowEmail(true)} className="auth-btn" style={{ background: 'transparent', color: '#0F0F0E', border: '1px solid #CFCAC2' }}>Sign up with email</button>
-              )}
-            </div>
+            <button type="submit" disabled={loading} className="ax-btn bp bw">{loading ? 'Creating account...' : 'Join Ascentor'}</button>
+          </form>
+        )}
+        {!showEmail && error && <p className="ax-banner err" role="alert">{error}</p>}
 
-            {/* Divider */}
-            {showEmail && !inviter && (<div className="auth-divider">
-              <div className="auth-divider-line" />
-              <span style={{ fontSize: '0.75rem', color: '#9CA3AF', whiteSpace: 'nowrap', fontWeight: 500 }}>
-                or continue with email
-              </span>
-              <div className="auth-divider-line" />
-            </div>)}
+        {inviter && <p className="ax-sm">Invite code <span className="ax-code">{inviter.code}</span> is applied for you.</p>}
 
-            {/* Form */}
-            {showEmail && (<form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div>
-                <input
-                  type="text"
-                  {...register('fullName')}
-                  placeholder="Full name"
-                  autoComplete="name"
-                  className={`auth-input ${errors.fullName ? 'error' : ''}`}
-                  disabled={loading}
-                />
-                {errors.fullName && <p className="field-error">{errors.fullName.message}</p>}
-              </div>
-              <div>
-                <input
-                  type="email"
-                  {...register('email')}
-                  placeholder="Email address"
-                  className={`auth-input ${errors.email ? 'error' : ''}`}
-                  disabled={loading}
-                />
-                {errors.email && <p className="field-error">{errors.email.message}</p>}
-              </div>
-              <div>
-                <PasswordInput
-                  {...register('password')}
-                  placeholder="Create a password (min 10 chars)"
-                  className={errors.password ? 'error' : ''}
-                  light
-                />
-                {errors.password && <p className="field-error">{errors.password.message}</p>}
-              </div>
-
-              {/* Referral code - shown only if present */}
-              {referralCode && !inviter && (
-                <div style={{
-                  padding: '0.625rem 1rem',
-                  background: 'rgba(200,169,110,0.08)',
-                  border: '1px solid rgba(200,169,110,0.25)',
-                  borderRadius: '0.5rem',
-                  fontSize: '0.8125rem',
-                  color: '#C8A96E',
-                  fontWeight: 600,
-                }}>
-                  Referral code applied: {referralCode}
-                </div>
-              )}
-
-              <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />
-              {error && <div className="auth-error">{error}</div>}
-
-              <button type="submit" disabled={loading} className="auth-btn" style={{ marginTop: '0.25rem' }}>
-                {loading ? 'Creating account...' : 'Join Ascentor'}
-              </button>
-            </form>)}
-
-            {inviter && (
-              <p style={{ fontSize: 14, color: '#5F6672', margin: '1rem 0 0' }}>Invite code <span style={{ display: 'inline-flex', alignItems: 'center', height: 26, padding: '0 12px', borderRadius: 8, border: '1px dashed #CAA228', color: '#8A6D12', fontWeight: 700, letterSpacing: '.06em', fontSize: 12 }}>{inviter.code}</span> is applied for you.</p>
-            )}
-
-            {/* Terms */}
-            <p style={{ fontSize: '0.75rem', color: '#9CA3AF', textAlign: 'center', marginTop: '1rem', lineHeight: 1.6 }}>
-              By joining, you agree to our{' '}
-              <Link href="/terms" style={{ color: '#6B7280', textDecoration: 'underline' }}>Terms</Link>
-              {' '}and{' '}
-              <Link href="/privacy" style={{ color: '#6B7280', textDecoration: 'underline' }}>Privacy Policy</Link>.
-            </p>
-
-            {/* Bottom */}
-            <div style={{
-              marginTop: '1.5rem',
-              paddingTop: '1.5rem',
-              borderTop: '1px solid #E8E6E1',
-              textAlign: 'center',
-            }}>
-              <p style={{ fontSize: '0.875rem', color: '#6B7280', margin: 0 }}>
-                Already part of the movement?{' '}
-                <Link href="/login" style={{ color: '#C8A96E', fontWeight: 700, textDecoration: 'none' }}>
-                  Sign in →
-                </Link>
-              </p>
-            </div>
-
-            </>
-            )}
-          </div>
-        </div>
+        <p className="ax-sm" style={{ color: 'var(--ax-muted)' }}>
+          By joining, you agree to our <Link href="/terms" className="ax-lk sm dim" style={{ textDecoration: 'underline' }}>Terms</Link> and <Link href="/privacy" className="ax-lk sm dim" style={{ textDecoration: 'underline' }}>Privacy Policy</Link>.
+        </p>
+        <p className="ax-sm" style={{ textAlign: 'center' }}>
+          Already part of the movement?{' '}
+          <Link href="/login" className="ax-lk sm rust">Sign in</Link>
+        </p>
       </div>
-    </>
+    </AuthShell>
   );
 }
-
