@@ -3,7 +3,7 @@
 // The 12-step onboarding flow: welcome, reminders, interests, where you are, goal, who it serves, weekly times,
 // time zone, language, baseline survey, your starting point, and your Circle. Each step saves as you go.
 
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useRef, useState, useTransition } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
@@ -55,6 +55,11 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
   const [pending, start] = useTransition();
   const [step, setStep] = useState<Step>(initial.step === 'forming' ? 'stage' : initial.step);
   const [error, setError] = useState('');
+  // The Reminders step: `working` is the permission request in flight (separate from `pending`, which is a server save),
+  // `note` is the short plain message shown when reminders could not be turned on.
+  const [working, setWorking] = useState(false);
+  const [note, setNote] = useState('');
+  const advancing = useRef(false);
 
   const [interests, setInterests] = useState<string[]>(initial.interests);
   const [purpose, setPurpose] = useState<number>(initial.purpose ?? 3);
@@ -115,6 +120,46 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
     });
   }
 
+  // Reminders step. The permission and push steps can hang (no service worker yet, a dialog nobody answers, an in-app browser
+  // that never replies) or throw, so they are raced against a 5 second timer and never decide whether the member moves on:
+  // whatever happens, the step is saved and the flow goes to the next one.
+  function leaveReminders(choice: 'on' | 'off' | 'skipped') {
+    if (advancing.current) return;
+    advancing.current = true;
+    try { window.localStorage.setItem('ascentor.reminders', choice); } catch { /* storage can be blocked */ }
+    setError('');
+    start(async () => {
+      const r = await saveOnboardingStep('notify', {});
+      advancing.current = false;
+      setWorking(false);
+      if (!r.ok) { setError(r.error); return; }
+      setStep('interests');
+    });
+  }
+
+  async function turnOnReminders() {
+    if (working || pending || advancing.current) return;
+    setWorking(true); setNote(''); setError('');
+    let on = false;
+    try {
+      on = await Promise.race([
+        push.subscribe().catch(() => false),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5000)),
+      ]);
+    } catch { on = false; }
+    if (!on) {
+      // Show the message for a moment, then carry on: the member should see why, not feel stuck.
+      setNote('Reminders are off for now. You can turn them on later in Settings.');
+      toast('Reminders are off for now. You can turn them on later in Settings.');
+    }
+    leaveReminders(on ? 'on' : 'off');
+  }
+
+  function skipReminders() {
+    if (working || pending) return;
+    leaveReminders('skipped');
+  }
+
   function back() {
     if (step === 'tzlist') return setStep('timezone');
     if (step === 'survey' && sq > 0) return setSq(sq - 1);
@@ -129,12 +174,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
         start(async () => { const r = await recordChatConsent(); if (!r.ok) { setError(r.error); return; } setStep('notify'); });
         return;
       }
-      case 'notify': {
-        // Asks permission and saves this device's push subscription. Where push is not available (an iPhone that has not
-        // added the app to its Home Screen) it simply moves on, and Settings explains how to turn it on later.
-        void push.subscribe().catch(() => false).finally(() => save('notify', {}, () => setStep('interests')));
-        return;
-      }
+      case 'notify': return turnOnReminders();
       case 'interests': return save('interests', { interests }, () => setStep('timezone'));
       case 'purpose': return save('purpose', { purpose, effort, lead, project }, () => setStep('goal'));
       case 'goal': return save('goal', { goals }, () => setStep('serve'));
@@ -151,12 +191,12 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
     }
   }
 
+  const busy = pending || working;
   const continueLabel = step === 'notify' ? 'Turn on reminders' : step === 'tzlist' ? 'Back' : 'Continue';
   const footNote: Record<string, string> = {
     timezone: `Chosen: ${tz.label}`,
     tzlist: 'Pick a zone to return',
     interests: `${interests.length} chosen`,
-    notify: 'Change this any time',
     survey: `Question ${sq + 1} of ${SURVEY_QUESTIONS.length}`,
   };
 
@@ -324,6 +364,7 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
               <div><h1 className="rx-title">A nudge, not noise</h1><span className="rx-rule" /></div>
               <div className="rx-stack-sm"><p className="rx-p">One or two reminders a day at most.</p><p className="rx-p">None during your quiet hours.</p><p className="rx-p">Only about the practice you chose.</p></div>
               <div className="rx-soft"><p className="rx-sm">Your device will ask for permission next. You can change it later in Settings.</p></div>
+              {note && <p className="rx-sm" role="status" style={{ color: 'var(--rx-muted)' }}>{note}</p>}
             </div>
           )}
 
@@ -488,9 +529,10 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
         </div>
 
         <div className="rx-ob-foot">
-          <span className="rx-sm" style={{ flex: 1 }}>{footNote[step] ?? ''}</span>
-          <button type="button" className="rx-btn primary" disabled={!canContinue || pending} onClick={onContinue}>
-            {pending ? 'Saving…' : continueLabel}
+          <span className="rx-sm rx-ob-foot-note">{footNote[step] ?? ''}</span>
+          {step === 'notify' && <button type="button" className="rx-btn secondary" disabled={busy} onClick={skipReminders}>Not now</button>}
+          <button type="button" className="rx-btn primary" disabled={!canContinue || busy} aria-busy={busy} onClick={onContinue}>
+            {busy && <span className="rx-spin" aria-hidden />}{working ? 'Working…' : pending ? 'Saving…' : continueLabel}
           </button>
         </div>
       </div>

@@ -65,8 +65,12 @@ export function usePush() {
         return false;
       }
 
-      // Step 2: get or create push subscription
-      const reg      = await navigator.serviceWorker.ready;
+      // Step 2: get or create push subscription. `ready` never settles when no service worker has been registered on this
+      // device yet (a new member who is still in onboarding), so register first and do not wait on it for ever.
+      const reg = await Promise.race([
+        navigator.serviceWorker.getRegistration().then((r) => r ?? navigator.serviceWorker.register('/sw.js')).then(() => navigator.serviceWorker.ready),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('service worker not ready')), 4000)),
+      ]);
       const existing = await reg.pushManager.getSubscription();
 
       let sub = existing;

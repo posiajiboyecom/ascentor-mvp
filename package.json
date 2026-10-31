@@ -30,7 +30,8 @@
     "test:rx": "tsx --test scripts/rx-tests/*.test.ts",
     "test:admin": "tsx --test scripts/admin-tests/*.test.ts",
     "test:plans": "tsx --conditions=react-server --test scripts/plans-tests/*.test.ts",
-    "test:billing": "tsx --test scripts/billing-tests/*.test.ts"
+    "test:billing": "tsx --test scripts/billing-tests/*.test.ts",
+    "test:onboarding": "node --test --test-concurrency=1 scripts/onboarding-tests/onboarding.e2e.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
