@@ -31,6 +31,7 @@
     "test:admin": "tsx --test scripts/admin-tests/*.test.ts",
     "test:plans": "tsx --conditions=react-server --test scripts/plans-tests/*.test.ts",
     "test:billing": "tsx --test scripts/billing-tests/*.test.ts",
+    "test:auth-theme": "node --test --test-concurrency=2 scripts/onboarding-tests/auth-pages.e2e.cjs",
     "test:onboarding": "node --test --test-concurrency=1 scripts/onboarding-tests/onboarding.e2e.cjs"
   },
   "dependencies": {

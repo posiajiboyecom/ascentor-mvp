@@ -1,8 +1,8 @@
 'use client';
 
 // components/auth/AuthShell.tsx
-// The signed-out layout from the design prototype: an art panel (logo, rust bar, title, subtitle)
-// beside the form column. Light by default, dark when the system is dark (styles/auth.css).
+// The one signed-out layout for sign in, sign up, forgot password, check email, link expired and reset:
+// logo, title and subtitle above a single centred form column. Always light (styles/auth.css), whatever the system theme.
 
 import { forwardRef, useState } from 'react';
 import Link from 'next/link';
@@ -17,7 +17,6 @@ export function AuthShell({ title, sub, children }: { title: string; sub: string
       <div className="ax-art">
         <Link href="/" aria-label="Ascentor home" style={{ display: 'inline-block' }}>
           <img className="ax-logo light" src="/ascentor-color-for-light-pages.svg" alt="Ascentor" />
-          <img className="ax-logo dark" src="/ascentor-color-for-dark-pages.svg" alt="" aria-hidden="true" />
         </Link>
         <div className="ax-artcopy">
           <span className="ax-rustbar" />
