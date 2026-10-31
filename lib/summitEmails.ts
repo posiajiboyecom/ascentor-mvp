@@ -1,5 +1,5 @@
 import { getMailer, sendEmail, classifyEmailError, emailErrorCode, type EmailFailureKind } from './nodemailer';
-import { adminNotifyEmail, FROM_DEFAULT, SUMMIT_EMAIL } from './contact';
+import { adminNotifyEmail, FROM_DEFAULT, SUMMIT_FROM, SUMMIT_REPLY_TO } from './contact';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from './emailTemplate';
 import { generateSummitTicket, type TicketData } from './summitTicket';
 import { supabaseAdmin } from '@/lib/supabase/admin';
@@ -32,6 +32,8 @@ type MailOpts = {
   subject: string;
   html: string;
   attachments?: { filename: string; content: Buffer; contentType: string }[];
+  /** A team alert, not a registrant email: sent from the normal Ascentor address instead of summit@. */
+  internal?: boolean;
 };
 
 /**
@@ -42,8 +44,10 @@ type MailOpts = {
  */
 async function sendSummitMail(opts: MailOpts): Promise<void> {
   if (!getMailer()) throw Object.assign(new Error('No SMTP credentials configured (set SMTP_USER and SMTP_PASS)'), { code: 'ENOTCONFIGURED' });
-  // The Summit shares the main mailbox. sendEmail retries as the mailbox itself if the host refuses the From address.
-  await sendEmail({ from: process.env.SUMMIT_MAIL_FROM || FROM_DEFAULT, replyTo: SUMMIT_EMAIL, ...opts });
+  // Registrant mail comes from summit@ (SUMMIT_MAIL_FROM). If the mail host refuses that From address as not allowed for this mailbox,
+  // sendEmail retries once as the mailbox itself with Reply-To set to summit@, so the message still goes out and replies still land.
+  const { internal, ...mail } = opts;
+  await sendEmail({ from: internal ? FROM_DEFAULT : SUMMIT_FROM, replyTo: internal ? undefined : SUMMIT_REPLY_TO, ...mail });
 }
 
 const naira = (n: number) => `₦${Number(n).toLocaleString('en-NG')}`;
@@ -205,6 +209,7 @@ export async function sendAdminPaymentNotification(i: AdminPaidInfo) {
   const isFree = !(i.amountPaid > 0);
   await sendSummitMail({
     to: SUMMIT_ADMIN_EMAIL,
+    internal: true,
     subject: `New registration: ${i.fullName} (${i.attendanceType === 'virtual' ? 'Virtual' : 'Physical'})`,
     html: brandedEmailLayout({
       preheader: `${i.fullName} is confirmed.`,
@@ -247,7 +252,7 @@ export function describeEmailFailure(kind: EmailFailureKind, code?: string): str
   const tail = code ? ` (${code})` : '';
   switch (kind) {
     case 'auth': return `Not sent: the mail server rejected our mailbox login${tail}. The mailbox password or SMTP_USER in Vercel is wrong or the mailbox is locked. Fix that, redeploy, then try again.`;
-    case 'sender': return `Not sent: the mail server refused the From address${tail}. Set SUMMIT_MAIL_FROM to the mailbox address, or add summit@ as an alias in Hostinger.`;
+    case 'sender': return `Not sent: the mail server refused the From address${tail}. Make sure summit@joinascentor.com exists in Hostinger and is allowed to send from this mailbox, or set SUMMIT_MAIL_FROM to the mailbox address.`;
     case 'connection': return `Not sent: could not reach the mail server${tail}. Try again in a minute.`;
     case 'not_configured': return 'Not sent: email is not set up on this server (SMTP_USER / SMTP_PASS missing).';
     case 'rejected': return `Not sent: the mail server refused this message${tail}.`;
@@ -485,6 +490,7 @@ export interface AdminDonationInfo {
 export async function sendAdminDonationNotification(i: AdminDonationInfo) {
   await sendSummitMail({
     to: SUMMIT_ADMIN_EMAIL,
+    internal: true,
     subject: `New donation received: ${naira(i.amount)} from ${i.fullName}`,
     html: brandedEmailLayout({
       preheader: `${i.fullName} donated ${naira(i.amount)}.`,

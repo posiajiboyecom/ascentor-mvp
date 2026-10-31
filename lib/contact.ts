@@ -24,6 +24,17 @@ export const FROM_NAME = 'Ascentor';
 export const FROM_DEFAULT = process.env.MAIL_FROM || process.env.EMAIL_FROM || `${FROM_NAME} <${MAILBOX_EMAIL}>`;
 export const REPLY_TO = process.env.MAIL_REPLY_TO || MAILBOX_EMAIL;
 
+/**
+ * Every email to a Summit registrant (confirmation, ticket, resend, reminders, event-day, receipts) is sent from here.
+ * SUMMIT_MAIL_FROM may be a bare address or "Name <address>"; the default is summit@joinascentor.com. The domain must stay
+ * joinascentor.com so SPF, DKIM and DMARC line up. Team alerts and everything that is not for a registrant stay on MAIL_FROM.
+ */
+export const SUMMIT_SENDER_NAME = 'The Elevation Summit';
+const summitFromRaw = (process.env.SUMMIT_MAIL_FROM || '').trim() || 'summit@joinascentor.com';
+export const SUMMIT_FROM = summitFromRaw.includes('<') ? summitFromRaw : `${SUMMIT_SENDER_NAME} <${summitFromRaw}>`;
+/** The bare address inside SUMMIT_FROM. Replies go here, including when the mail was sent through the fallback sender. */
+export const SUMMIT_REPLY_TO = (SUMMIT_FROM.match(/<([^>]+)>/)?.[1] ?? summitFromRaw).trim();
+
 /** Summit mail replies go here. */
 export const SUMMIT_EMAIL = process.env.NEXT_PUBLIC_SUMMIT_EMAIL || REPLY_TO;
 
