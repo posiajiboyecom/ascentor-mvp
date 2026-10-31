@@ -26,21 +26,47 @@ Supabase links identities that share a verified email address, so the person get
 4. **Keep the old Supabase address** in the list for now (it ends in `.supabase.co/auth/v1/callback`). Do not remove it yet. Save.
 5. On the same page, copy the **Client ID** and the **Client secret**. Do not paste them into chat or email.
 
-### 2. The consent screen (the name people see)
-1. **APIs and Services > OAuth consent screen** (in newer consoles: **Google Auth Platform > Branding**).
-2. **App name:** `Ascentor`. This is what Google shows ("to continue to Ascentor"), together with the support email from step 6, not the owner's personal name. Google shows each person's *own* accounts in the "Choose an account" list, which is normal.
-3. **App logo:** upload the Ascentor logo (square, at least 120 x 120 px). Google only shows a logo once the app is verified.
-4. **App domain:** home page `https://joinascentor.com`, privacy `https://joinascentor.com/privacy`, terms `https://joinascentor.com/terms`.
-5. **Authorized domains:** add `joinascentor.com`. Verify the domain in Google Search Console if it asks.
-6. **User support email** and **Developer contact email:** use an Ascentor address. Google only allows an address that the signed-in Google Cloud user owns, **or a Google Group that the user manages**. Easiest: create a Google Group (for example `support@joinascentor.com` or any group address) at https://groups.google.com, make the Cloud user an owner, then choose that group address here. Until that exists, keep the current address.
-7. **Publishing status:** set to **In production** so any Google account can sign in. If Google asks for verification (it does when a logo or sensitive scopes are used), follow its prompts. `openid email profile` are basic scopes and normally need no review.
+### 2. The consent screen: make Google say "Ascentor"
+
+This is controlled in Google Cloud Console, **not in code**. Nothing in the app can change what Google writes on its own screen.
+
+1. Open https://console.cloud.google.com, choose the project, then **Google Auth Platform > Branding** (older consoles: **APIs and Services > OAuth consent screen**).
+2. **App name:** `Ascentor`. This is the name Google shows ("to continue to Ascentor").
+3. **User support email:** an Ascentor address. Google only allows an address the signed-in Google Cloud user owns, **or a Google Group that user manages**. Easiest: create a Google Group (for example `support@joinascentor.com`) at https://groups.google.com, make the Cloud user an owner, then pick that address here. Until that exists, keep the current one.
+4. **App logo:** the Ascentor logo, square, at least 120 x 120 px. Google only shows a logo once the branding is verified.
+5. **Application home page:** `https://joinascentor.com`
+6. **Application privacy policy link:** `https://joinascentor.com/privacy`
+7. **Application terms of service link:** `https://joinascentor.com/terms`
+8. **Authorized domains:** add `joinascentor.com`. If Google asks you to verify the domain, do it in Google Search Console (https://search.google.com/search-console) with the same Google account.
+9. **Developer contact information:** an Ascentor address (a Google Group works here too).
+10. Save. Then open **Audience** and set the publishing status to **In production** so any Google account can sign in.
+
+**Will it say Ascentor straight away? Not necessarily.** For an app that only asks for the basic scopes (`openid`, `email`, `profile`, which is all this app asks for), Google does not review the scopes. But when you add a logo or change the app name, Google can hold the new branding back until it has verified it, and **until then the screen may keep showing the domain (joinascentor.com) or the old name**. To get it shown, open **Google Auth Platform > Verification Center** (or **Branding**) and press **Submit for verification** if the button is offered, then wait for the email. How long that takes is Google's decision; we cannot promise a date or a result.
+
+**What we could not verify from here:** the current branding/verification status of your project, and whether Google will accept the logo and domain. Only someone signed in to the Cloud Console can see this. **How Posi can check:** in **Google Auth Platform > Verification Center** the status reads *Verified*, *Needs verification*, *In review* or *Action required*, with the reason next to it. Then open the sign-in in a private window to see what people see.
+
+Google shows each person's *own* accounts in the "Choose an account" list. That is normal and cannot be changed.
+
+The pages Google links to open without signing in and are public: `/privacy` and `/terms` (checked: both answer 200 for a signed-out visitor).
 
 ### 3. Vercel (Ascentor project, **Production and Preview**)
-Add these two, then redeploy:
+
+**`GOOGLE_OAUTH_CLIENT_SECRET` must be a secret, not plain configuration.** Anyone who has it can pretend to be the app to Google. Treat it like a password: set it as a **Sensitive** environment variable.
+
+1. Vercel > the Ascentor project > **Settings > Environment Variables > Add**.
+2. Name `GOOGLE_OAUTH_CLIENT_SECRET`, paste the value, tick **Production** and **Preview**.
+3. Turn on **Sensitive** (the toggle under the value) before saving. A sensitive variable can never be read again in the dashboard or the CLI, only replaced; that is what you want. If it is already saved without it, delete it and add it again with Sensitive on.
+4. Never put it in chat, email, a screenshot or a file in the repo.
+5. `GOOGLE_OAUTH_CLIENT_ID` is not a secret (it is visible in the Google address anyway), so a normal variable is fine.
+
+What we checked in the code: the secret is read in exactly one place (the server-side callback, `app/api/auth/google/callback/route.ts`) and sent only to Google's token address; it has no `NEXT_PUBLIC_` prefix, so it is never sent to the browser; no log line prints it (the logs print only the kind of failure and the HTTP status); and `.env.example` contains only the variable name with no value.
+
 | Name | Value |
 |---|---|
 | `GOOGLE_OAUTH_CLIENT_ID` | the Client ID from step 1 |
-| `GOOGLE_OAUTH_CLIENT_SECRET` | the Client secret from step 1 |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | the Client secret from step 1, **Sensitive** |
+
+Redeploy afterwards.
 
 ### 4. Supabase (Authentication > Providers > Google)
 - Keep Google **enabled** with the **same Client ID and secret**. `signInWithIdToken` only accepts a token whose audience is a Client ID listed here, so the Client ID in Vercel must match this one (if there are several, list them comma-separated in the Client IDs box).
@@ -55,6 +81,9 @@ Add these two, then redeploy:
 5. Test an existing email/password account whose email matches a Google account: you should enter that **same** account (check the member list in admin shows one person, not two).
 6. Press Cancel on Google's screen: you should return to `/login` with "You cancelled the Google sign-in".
 7. Only when all of that works: go back to Google Cloud and **remove the old Supabase redirect URI**.
+
+### Back button
+Pressing Back after a Google sign-in returns to the page the person started from (`/login` stays `/login`, `/signup` stays `/signup`). The starting page travels in the signed state cookie, so cancel, errors and a state mismatch return there too. A signed-in person who lands on `/login` or `/signup` is sent on to their dashboard (or onboarding) by the server, with no flash of the form. In the Supabase mode the starting page is remembered in a short `ascentor_auth_from` cookie (just the word login or signup).
 
 ### Rollback (30 seconds)
 Set `GOOGLE_AUTH_MODE` back to `supabase` (or delete it) in Vercel and **Redeploy**. The buttons use the old flow again. Because the old redirect URI is still in Google's list until step 7, this always works.
