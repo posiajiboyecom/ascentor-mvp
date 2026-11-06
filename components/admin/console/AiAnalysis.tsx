@@ -65,7 +65,7 @@ export default function AiAnalysis({ configured, canExport, canSeeRecs, initialQ
     <div className="admc"><div className="pg screen">
       <div><p className="eyebrow">Insights</p><h1 className="pt">AI analysis</h1><span className="ul" /></div>
       {!configured && <div className="rz"><p className="sm p">The AI key is not set up on this server (ANTHROPIC_API_KEY), so analyses cannot run yet.</p></div>}
-      <div className="g2" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.25fr)', alignItems: 'start' }}>
+      <div className="g2 g2-ai">
         <div className="card st">
           <div className="fld"><label>What to read</label>
             <div className="opts">{SRC.map(([k, label]) => (
@@ -99,7 +99,7 @@ export default function AiAnalysis({ configured, canExport, canSeeRecs, initialQ
               {result.themes.length > 0 && <p className="sl">Themes, by estimated share of conversations</p>}
               {result.themes.map((h) => (
                 <div className="st8" key={h.label} style={{ paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
-                  <div className="hbar" style={{ gridTemplateColumns: '200px minmax(0,1fr) 48px' }}>
+                  <div className="hbar hbar-wide">
                     <span className="num">{h.label}</span>
                     <span className="tr" role="img" aria-label={`${h.label}: about ${h.share}% of conversations`}><span style={{ width: `${Math.min(100, h.share)}%` }} /></span>
                     <span className="num" style={{ textAlign: 'right' }}>{h.share}%</span>

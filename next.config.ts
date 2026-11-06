@@ -10,13 +10,13 @@ import type { NextConfig } from 'next';
 const CSP = [
   // script-src: nonce is set dynamically in proxy.ts per request
   // This fallback only covers static assets (no inline scripts needed there)
-  `script-src 'self' https://challenges.cloudflare.com https://js.paystack.co https://plausible.io https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com`,
+  `script-src 'self' https://challenges.cloudflare.com https://js.paystack.co https://plausible.io https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com https://c.daily.co https://c.dailywebrtc.com https://*.daily.co`,
   // Styles: self + inline (required by Next.js CSS-in-JS) + Google Fonts
   `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://paystack.com`,
   `font-src 'self' data: https://fonts.gstatic.com`,
   `img-src 'self' data: blob: https://*.supabase.co https://www.gravatar.com https://i.ytimg.com https:`,
   `frame-src https://challenges.cloudflare.com https://js.paystack.co https://checkout.paystack.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://player.vimeo.com`,
-  `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.paystack.co https://checkout.paystack.com https://plausible.io https://api.bufferapp.com https://www.youtube.com`,
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.paystack.co https://checkout.paystack.com https://plausible.io https://api.bufferapp.com https://www.youtube.com https://*.daily.co wss://*.daily.co https://*.dailywebrtc.com wss://*.dailywebrtc.com https://*.ingest.sentry.io https://*.pluot.blue wss://*.pluot.blue`,
   `media-src 'self' blob: https://*.supabase.co`,
   `worker-src 'self' blob:`,
   `default-src 'self'`,
@@ -34,7 +34,7 @@ const securityHeaders = [
   // Controls how much referrer info is sent with requests
   { key: 'Referrer-Policy',              value: 'strict-origin-when-cross-origin' },
   // Disables browser features we don't use
-  { key: 'Permissions-Policy',           value: 'camera=(), microphone=(), geolocation=(), payment=()' },
+  { key: 'Permissions-Policy',           value: 'camera=(self), microphone=(self), geolocation=(), payment=()' },
   // Cross-Origin policies - use same-origin-allow-popups so YouTube's
   // iframe player postMessage API works while retaining Spectre mitigations.
   { key: 'Cross-Origin-Opener-Policy',   value: 'same-origin-allow-popups' },
