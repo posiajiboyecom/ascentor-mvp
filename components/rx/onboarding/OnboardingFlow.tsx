@@ -107,11 +107,15 @@ export default function OnboardingFlow({ initial }: { initial: OnboardingInitial
   function complete(remindLater = false) {
     setError('');
     start(async () => {
-      const s = await saveOnboardingStep('survey', { answers, remindLater });
-      if (!s.ok) { setError(s.error); return; }
-      const r = await finishOnboarding();
-      if (!r.ok) { setError(r.error); return; }
-      setFinish(r.result);
+      // Never leave the member on a spinner: if the server does not answer in 25 seconds, say so and let them try again.
+      const slow = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('slow')), 25000));
+      try {
+        const s = await Promise.race([saveOnboardingStep('survey', { answers, remindLater }), slow]);
+        if (!s.ok) { setError(s.error); return; }
+        const r = await Promise.race([finishOnboarding(), slow]);
+        if (!r.ok) { setError(r.error); return; }
+        setFinish(r.result);
+      } catch { setError('This is taking too long. Check your connection and tap Finish again; your answers are saved.'); return; }
       if (!initial.alreadyCompleted && initial.email) {
         fetch('/api/welcome', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: initial.email, name: initial.firstName, userId: initial.userId }) }).catch(() => {});
       }
