@@ -36,12 +36,13 @@ export const Silhouette = () => (
 
 // ── per-person backdrop (a calm, distinct hue for each member when their camera is off) ──
 const FEEDS = [
-  'radial-gradient(ellipse at 38% 42%, #1E3A5C 0%, #0A1828 55%, #030810 100%)',
-  'radial-gradient(ellipse at 55% 38%, #163D2C 0%, #0A2018 55%, #040E09 100%)',
-  'radial-gradient(ellipse at 46% 44%, #2E1A48 0%, #1A0D2E 55%, #09050F 100%)',
-  'radial-gradient(ellipse at 42% 42%, #4A2A18 0%, #2E1808 55%, #120804 100%)',
-  'radial-gradient(ellipse at 55% 42%, #3D2010 0%, #1E1008 55%, #0A0604 100%)',
-  'radial-gradient(ellipse at 46% 42%, #1A2A4A 0%, #0A1428 55%, #040810 100%)',
+  // Warm browns and rusts from the Ascentor palette, one per member, for when a camera is off.
+  'radial-gradient(ellipse at 38% 42%, #5A2A16 0%, #2E150B 55%, #120804 100%)',  // rust
+  'radial-gradient(ellipse at 55% 38%, #4A3220 0%, #261910 55%, #0F0A06 100%)',  // walnut
+  'radial-gradient(ellipse at 46% 44%, #5C3A1C 0%, #2F1D0D 55%, #120B05 100%)',  // umber
+  'radial-gradient(ellipse at 42% 42%, #4E2219 0%, #2A110C 55%, #110705 100%)',  // mahogany
+  'radial-gradient(ellipse at 55% 42%, #54401E 0%, #2B200E 55%, #110C05 100%)',  // bronze
+  'radial-gradient(ellipse at 46% 42%, #3F2A22 0%, #221510 55%, #0D0806 100%)',  // cocoa
 ];
 export function feedFor(seed: string): string {
   let h = 0;
