@@ -1,4 +1,5 @@
 import { getMailer, sendEmail, classifyEmailError, emailErrorCode, type EmailFailureKind } from './nodemailer';
+import { LASU_OJO_HEADING, LASU_OJO_TEXT, LASU_OJO_WHATSAPP_URL } from '@/lib/summitCommunity';
 import { adminNotifyEmail, FROM_DEFAULT, SUMMIT_FROM, SUMMIT_REPLY_TO } from './contact';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from './emailTemplate';
 import { generateSummitTicket, type TicketData } from './summitTicket';
@@ -83,6 +84,17 @@ export async function sendPaymentReminderEmail(to: string, fullName: string, att
 
 // ── Registrant: payment confirmed + ticket PDF ──────────────────────────────
 
+/** Invitation for LASU Ojo Campus students to join the Summit updates WhatsApp group. */
+function lasuWhatsappBlock(): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;">
+  <tr><td style="background:#FBF5E1;border:1px solid #E7D49A;border-radius:10px;padding:16px 18px;">
+    <p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#0F0F0E;">${LASU_OJO_HEADING}</p>
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#4B5563;">${LASU_OJO_TEXT}</p>
+    <a href="${LASU_OJO_WHATSAPP_URL}" target="_blank" style="display:inline-block;background:#B6502A;color:#FFFFFF;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;">Join the WhatsApp group</a>
+  </td></tr>
+</table>`;
+}
+
 export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
   const { email, fullName, attendanceType } = ticketData;
   const isVirtual = attendanceType === 'virtual';
@@ -116,6 +128,7 @@ export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
         ) +
         attendanceBlock +
         p('Please keep your ticket safe and present it on the day of the event. We look forward to seeing you there.') +
+        lasuWhatsappBlock() +
         flyerBlock(fullName) +
         goldButton('View Event Details →', SUMMIT_URL) +
         p(`Registration is free. If the Summit has been valuable to you, you can <a href="${DONATE_URL}" style="color:#C8A96E;font-weight:600;text-decoration:underline;">support it with a donation</a>.`),
@@ -366,6 +379,7 @@ export async function sendComplimentaryTicketEmail(ticketData: TicketData) {
           ? p('Your Zoom link for the virtual session will be shared with you separately closer to the event date. Keep an eye on your inbox.')
           : p('Venue details will follow closer to the event date.')) +
         p('Please keep your ticket safe and present it on the day of the event. We look forward to seeing you there.') +
+        lasuWhatsappBlock() +
         flyerBlock(fullName) +
         goldButton('View Event Details →', SUMMIT_URL) +
         p(`Registration is free. If the Summit has been valuable to you, you can <a href="${DONATE_URL}" style="color:#C8A96E;font-weight:600;text-decoration:underline;">support it with a donation</a>.`),

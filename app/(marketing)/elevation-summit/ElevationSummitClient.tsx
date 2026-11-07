@@ -14,6 +14,7 @@ import PhoneInput from 'react-phone-number-input';
 import flags from 'react-phone-number-input/flags';
 import { useModal } from '@/components/Modal';
 import FlyerCta, { SUMMIT_NAME_KEY } from './FlyerCta';
+import LasuWhatsappCard from '@/components/LasuWhatsappCard';
 import SummitTicketCard, { TICKET_STORAGE_KEY, type ScreenTicket, type TicketProof } from '@/components/SummitTicketCard';
 import { useRouter } from 'next/navigation';
 import { Compass, Hammer, Crown, Sparkles, Network, Monitor, CalendarDays, MapPin, Clock, TicketCheck, Check, ArrowRight, HeartHandshake } from 'lucide-react';
@@ -932,6 +933,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             {ticketInfo?.ticket && (
               <div style={{ margin: '0 0 1.5rem' }}><SummitTicketCard ticket={ticketInfo.ticket} proof={ticketInfo.proof} /></div>
             )}
+            <LasuWhatsappCard style={{ margin: '0 0 1.5rem' }} />
             {/* Progress bar doubles as the redirect countdown */}
             <div style={{
               height: '3px', borderRadius: '2px', background: '#F0EDE6',

@@ -2,6 +2,7 @@ import '@/styles/marketing.css';
 import { HeartHandshake } from 'lucide-react';
 import FlyerCta from '../FlyerCta';
 import ConfirmedTicket from './ConfirmedTicket';
+import LasuWhatsappCard from '@/components/LasuWhatsappCard';
 
 export default function SummitConfirmedPage() {
   return (
@@ -18,6 +19,7 @@ export default function SummitConfirmedPage() {
           open your ticket below, or any time at <a href="/elevation-summit/ticket" style={{ color: '#0F0F0E', fontWeight: 600 }}>Find my ticket</a>.
         </p>
         <ConfirmedTicket />
+        <LasuWhatsappCard style={{ margin: '0 0 2rem' }} />
         <p style={{ color: '#6B7280', fontSize: '1rem', lineHeight: 1.7, marginBottom: '2.5rem' }}>
           We look forward to seeing you there.
         </p>
