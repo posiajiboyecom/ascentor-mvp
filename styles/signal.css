@@ -20,8 +20,9 @@
   -webkit-font-smoothing: antialiased;
 }
 .sg *, .sg *::before, .sg *::after { box-sizing: border-box; }
+/* Night: follows the device unless the member picks a theme in the call (data-theme on .sg). */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .sg {
+  .sg:not([data-theme='light']) {
     --sg-chrome: #140D09; --sg-roster: #1A110C; --sg-ink: #EFE7DD; --sg-ink2: #AE9F92; --sg-ink3: #5E4D41;
     --sg-border: rgba(239,216,196,0.08); --sg-hover: rgba(239,216,196,0.035); --sg-you: rgba(217,113,74,0.08);
     --sg-ctl: #2A1B13; --sg-ctl-bd: rgba(239,216,196,0.10); --sg-stage: #0C0604;
@@ -32,7 +33,7 @@
     --sg-mute: #F2A0AE; --sg-mute-bg: rgba(242,160,174,0.12); --sg-mute-bd: rgba(242,160,174,0.26);
   }
 }
-:root[data-theme='dark'] .sg {
+.sg[data-theme='dark'] {
   --sg-chrome: #140D09; --sg-roster: #1A110C; --sg-ink: #EFE7DD; --sg-ink2: #AE9F92; --sg-ink3: #5E4D41;
   --sg-border: rgba(239,216,196,0.08); --sg-hover: rgba(239,216,196,0.035); --sg-you: rgba(217,113,74,0.08);
   --sg-ctl: #2A1B13; --sg-ctl-bd: rgba(239,216,196,0.10); --sg-stage: #0C0604;
@@ -66,18 +67,10 @@
 /* ── 2. body ──────────────────────────────────────────────────────────────── */
 .sg-body { flex: 1; min-height: 0; display: flex; }
 .sg-pane { position: relative; flex: 1; min-width: 0; overflow: hidden; background: var(--sg-stage); }
-/* Desktop: a generous video window rather than a full-screen takeover. */
-/* An explicit height is needed: with auto margins a flex item no longer stretches, and every child here is absolutely
-   positioned, so without it the pane collapses to 0px (black stage, no name overlay). */
-@media (min-width: 768px) { .sg-pane { height: 100%; max-height: 80vh; margin: auto 0; } }
 .sg-feed { position: absolute; inset: 0; }
 .sg-feed video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: auto; }
 /* Your own camera is mirrored, as in a mirror; thumbnails just flip. */
 .sg video.mirror { transform: scaleX(-1); }
-/* On the stage a camera is drawn at 85% so the person sits back in the frame instead of filling it.
-   (Not a shared screen: that is shown whole, with object-fit: contain.) */
-.sg-pane > .sg-feed:not(.screen) video { transform: scale(0.85); }
-.sg-pane > .sg-feed:not(.screen) video.mirror { transform: scale(-0.85, 0.85); }
 .sg-feed.screen { background: #000; }
 .sg-feed.screen video { object-fit: contain; }
 .sg-sil { position: absolute; left: 50%; bottom: 0; translate: -50% 0; width: 52%; max-width: 520px; display: block; }
@@ -228,6 +221,7 @@ button.sg-ag-item:hover { background: var(--sg-rust-bg); }
   .sg-tile .sg-sil { width: 60%; }
   .sg-tile-n { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 6px 4px; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); font-size: 9px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sg-tile-n.gold { color: #CAA228; }
+  .sg-tile-wait { width: auto; min-width: 150px; padding: 0 14px; display: flex; align-items: center; justify-content: center; background: var(--sg-ctl); border: 1.5px dashed var(--sg-ctl-bd); font-size: 11px; font-weight: 600; color: var(--sg-ink2); }
   .sg-tile-m { position: absolute; top: 4px; right: 4px; width: 16px; height: 16px; border-radius: 50%; background: #9B1C31; display: flex; align-items: center; justify-content: center; }
   .sg-tile-m svg { width: 8px; height: 8px; stroke: #fff; }
   .sg-tile .sg-pres { top: 4px; left: 4px; bottom: auto; }
@@ -282,3 +276,13 @@ button.sg-ag-item:hover { background: var(--sg-rust-bg); }
   .sg-ctl { min-width: 42px; }
   .sg-ctl .b { width: 42px; height: 42px; }
 }
+
+/* theme switch in the top bar */
+.sg-theme { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--sg-ctl-bd); background: var(--sg-ctl); display: flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
+.sg-theme svg { width: 15px; height: 15px; fill: none; stroke: var(--sg-ink2); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sg-theme:focus-visible { outline: 2px solid var(--sg-rust-ink); outline-offset: 2px; }
+/* people sheet (mobile) reuses the roster rows */
+.sg-people-sheet .sg-list { margin: 4px -18px 0; border-top: 1px solid var(--sg-border); }
+.sg-people-sheet .sg-row { padding-left: 18px; padding-right: 18px; }
+.sg-people-sheet .sg-row.speaking { padding-left: 15.5px; }
+.sg-people-sheet .sg-mod { padding-left: 18px; padding-right: 18px; }

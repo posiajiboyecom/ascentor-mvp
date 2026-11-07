@@ -50,6 +50,7 @@ const scheduled = (startsAt: string, weekly: boolean) => {
 };
 // Inter for the interface, DM Mono for timers. Loaded from Google Fonts (allowed by the CSP) so builds never depend on fetching them.
 const SIGNAL_FONTS = 'https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;500&family=Inter:wght@400;600;700&display=swap';
+const THEME_KEY = 'ascentor:call-theme';
 const IN_APP = /(FBAN|FBAV|Instagram|Line\/|MicroMessenger|; wv\))/i;
 const SHARE_BUSY = 'Someone is already sharing — wait for them to stop.';
 const IOS_NOTE = 'Screen sharing isn’t available on iOS browsers yet. To share your screen, join this call from a laptop or an Android device.';
@@ -85,7 +86,9 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const [sharing, setSharing] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
   const [notice, setNotice] = useState('');
-  const [sheet, setSheet] = useState<null | 'agenda' | 'ios' | 'chat'>(null);
+  const [sheet, setSheet] = useState<null | 'agenda' | 'ios' | 'chat' | 'people'>(null);
+  // Call theme: 'light' or 'dark' once the member picks one (remembered on this device); until then it follows the device.
+  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
   // Desktop side panel: the people on the call (with the agenda), the chat, or hidden.
   const [panel, setPanel] = useState<null | 'people' | 'chat'>('people');
   const [chat, setChat] = useState<ChatMsg[]>([]);
@@ -108,6 +111,16 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   chatOpenRef.current = panel === 'chat' || sheet === 'chat';
 
   useEffect(() => { setIos(isIOS()); }, []);
+  useEffect(() => {
+    try { const t = localStorage.getItem(THEME_KEY); if (t === 'light' || t === 'dark') setTheme(t); } catch { /* storage unavailable */ }
+  }, []);
+  function toggleTheme() {
+    const current = theme ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const next = current === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    try { localStorage.setItem(THEME_KEY, next); } catch { /* storage unavailable */ }
+  }
+  const isDark = theme ? theme === 'dark' : (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches);
 
   const fetchToken = useCallback(async (takeover = false) => {
     try {
@@ -352,6 +365,10 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     c.sendAppMessage(msg satisfies ChatWire, '*');
     setChat((m) => mergeChat(m, [{ id: msg.id, fromId: me?.session_id ?? 'me', name: firstName, text: msg.text, at: msg.at, mine: true }]));
   }
+  function openPeople() {
+    if (window.matchMedia('(max-width: 767px)').matches) setSheet('people');
+    else setPanel((p) => (p === 'people' ? null : 'people'));
+  }
   function openChat() {
     setUnread(0);
     if (window.matchMedia('(max-width: 767px)').matches) setSheet('chat');
@@ -455,11 +472,49 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
         ? <div className="sg-feed" style={{ background: feedFor(stage.user_id || stage.session_id) }}><TrackVideo track={stage.tracks?.video?.persistentTrack} mirror={stage.local} label={`${nameOf(stage)}'s camera`} /></div>
         : <div className="sg-feed" style={{ background: stage ? feedFor(stage.user_id || stage.session_id) : undefined }}><Silhouette /></div>;
 
-    // On mobile the strip holds everyone not on the stage (everyone, while a screen is on the stage).
+    // Mobile: the speaker has the stage and the strip holds everyone else (everyone, while a screen is on the stage).
     const strip = sharer ? roster : roster.filter((p) => p.session_id !== stage?.session_id);
 
+    const peopleList = (
+            <ul className="sg-list">
+              {roster.map((p) => {
+                const talk = isTalking(p);
+                const role = roleText(p);
+                const canMod = isOwner && !p.local;
+                const row = (
+                  <>
+                    {thumb(p, 'sg-thumb')}
+                    <span className="sg-info"><b>{nameOf(p)}</b><span className={role.gold ? 'gold' : ''}>{role.text}</span></span>
+                    <span className="sg-st">
+                      {talk ? <span className="sg-ic talk"><Bars3 /></span>
+                        : !p.audio ? <span className="sg-ic muted"><IcSmallMicOff /></span>
+                        : <span className="sg-ic"><IcSmallMic /></span>}
+                      {handIdx(p) >= 0 && <span className="sg-hand">✋ Hand raised</span>}
+                    </span>
+                  </>
+                );
+                const cls = `sg-row${p.local ? ' me' : ''}${talk ? ' speaking' : ''}`;
+                return (
+                  <li key={p.session_id}>
+                    {canMod
+                      ? <button type="button" className={cls} aria-expanded={modFor === p.session_id} aria-label={`${nameOf(p)}, ${role.text}. Options`} onClick={() => setModFor((m) => (m === p.session_id ? null : p.session_id))}>{row}</button>
+                      : <div className={cls}>{row}</div>}
+                    {canMod && modFor === p.session_id && (
+                      <div className="sg-mod">
+                        <button type="button" onClick={() => { callRef.current?.updateParticipant(p.session_id, { setAudio: false }); setModFor(null); }}>Mute</button>
+                        {cameraOn(p) && <button type="button" onClick={() => { callRef.current?.updateParticipant(p.session_id, { setVideo: false }); setModFor(null); }}>Camera off</button>}
+                        {sharesScreen(p) && <button type="button" onClick={() => { callRef.current?.updateParticipant(p.session_id, { setScreenShare: false }); setModFor(null); }}>Stop share</button>}
+                        <button type="button" className="danger" onClick={() => { if (window.confirm(`Remove ${nameOf(p)} from the call?`)) callRef.current?.updateParticipant(p.session_id, { eject: true }); setModFor(null); }}>Remove</button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+    );
+
     return (
-      <div className="sg" role="main" aria-label={title}>
+      <div className="sg" role="main" aria-label={title} data-theme={theme ?? undefined}>
         <link rel="stylesheet" href={SIGNAL_FONTS} precedence="default" />
         {/* 1. top bar */}
         <header className="sg-top">
@@ -468,6 +523,9 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
             <div className="sg-session"><b>{sessionName}</b><span>{parts.length} on this call · {camsLabel}</span></div>
           </div>
           <div className="sg-top-r">
+            <button type="button" className="sg-theme" onClick={toggleTheme} aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'} title={isDark ? 'Light theme' : 'Dark theme'}>
+              {isDark ? <IcSun /> : <IcMoon />}
+            </button>
             <span className="sg-live" title="This call is not recorded"><i aria-hidden />LIVE</span>
             <div className={`sg-elapsed${left <= 120000 ? ' warn' : ''}`} title={`${clock(left)} left`}>
               <span className="mono">{clock(elapsed)}</span><small>elapsed</small>
@@ -512,41 +570,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
               <ChatPanel messages={chat} onSend={sendChat} autoFocus />
             </>) : (<>
             <div className="sg-rh"><span>On this call</span><span>{parts.length}</span></div>
-            <ul className="sg-list">
-              {roster.map((p) => {
-                const talk = isTalking(p);
-                const role = roleText(p);
-                const canMod = isOwner && !p.local;
-                const row = (
-                  <>
-                    {thumb(p, 'sg-thumb')}
-                    <span className="sg-info"><b>{nameOf(p)}</b><span className={role.gold ? 'gold' : ''}>{role.text}</span></span>
-                    <span className="sg-st">
-                      {talk ? <span className="sg-ic talk"><Bars3 /></span>
-                        : !p.audio ? <span className="sg-ic muted"><IcSmallMicOff /></span>
-                        : <span className="sg-ic"><IcSmallMic /></span>}
-                      {handIdx(p) >= 0 && <span className="sg-hand">✋ Hand raised</span>}
-                    </span>
-                  </>
-                );
-                const cls = `sg-row${p.local ? ' me' : ''}${talk ? ' speaking' : ''}`;
-                return (
-                  <li key={p.session_id}>
-                    {canMod
-                      ? <button type="button" className={cls} aria-expanded={modFor === p.session_id} aria-label={`${nameOf(p)}, ${role.text}. Options`} onClick={() => setModFor((m) => (m === p.session_id ? null : p.session_id))}>{row}</button>
-                      : <div className={cls}>{row}</div>}
-                    {canMod && modFor === p.session_id && (
-                      <div className="sg-mod">
-                        <button type="button" onClick={() => { callRef.current?.updateParticipant(p.session_id, { setAudio: false }); setModFor(null); }}>Mute</button>
-                        {cameraOn(p) && <button type="button" onClick={() => { callRef.current?.updateParticipant(p.session_id, { setVideo: false }); setModFor(null); }}>Camera off</button>}
-                        {sharesScreen(p) && <button type="button" onClick={() => { callRef.current?.updateParticipant(p.session_id, { setScreenShare: false }); setModFor(null); }}>Stop share</button>}
-                        <button type="button" className="danger" onClick={() => { if (window.confirm(`Remove ${nameOf(p)} from the call?`)) callRef.current?.updateParticipant(p.session_id, { eject: true }); setModFor(null); }}>Remove</button>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+            {peopleList}
             {agendaBlock}
             {isOwner && <div className="sg-roster-foot"><button type="button" className="sg-endall" onClick={() => void endForAll()}>End call for everyone</button></div>}
             </>)}
@@ -565,6 +589,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
                   </li>
                 );
               })}
+              {strip.length === 0 && <li className="sg-tile sg-tile-wait"><span>Waiting for others to join</span></li>}
             </ul>
           </div>
           {kind === 'circle' && (
@@ -593,13 +618,13 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
             aria-label={ios ? 'Screen sharing isn’t available on iOS' : sharing ? 'Stop sharing your screen' : 'Share your screen'} onClick={toggleShare}>
             <span className="b"><IcScreen /></span><span>{sharing ? 'Stop' : 'Screen'}</span>
           </button>
-          <button type="button" className="sg-ctl" aria-pressed={sheet === 'agenda'} aria-label="Agenda" onClick={() => setSheet('agenda')}>
+          <button type="button" className={`sg-ctl${kind === 'circle' ? ' desk' : ''}`} aria-pressed={sheet === 'agenda'} aria-label="Agenda" onClick={() => setSheet('agenda')}>
             <span className="b"><IcAgenda /></span><span>Agenda</span>
           </button>
           <button type="button" className="sg-ctl" aria-pressed={panel === 'chat' || sheet === 'chat'} aria-label={unread ? `Chat, ${unread} unread` : 'Chat'} onClick={openChat}>
             <span className="b"><IcChat />{unread > 0 && <span className="sg-unread" aria-hidden>{unread > 9 ? '9+' : unread}</span>}</span><span>Chat</span>
           </button>
-          <button type="button" className="sg-ctl desk" aria-expanded={panel === 'people'} aria-label={panel === 'people' ? 'Hide people' : 'Show people'} onClick={() => setPanel((p) => (p === 'people' ? null : 'people'))}>
+          <button type="button" className="sg-ctl" aria-expanded={panel === 'people' || sheet === 'people'} aria-label={`People on this call, ${parts.length}`} onClick={openPeople}>
             <span className="b"><IcPeople /></span><span>People</span>
           </button>
           <button type="button" className="sg-ctl" aria-pressed={handUp} aria-label={handUp ? 'Lower hand' : 'Raise hand'} onClick={toggleHand}>
@@ -621,6 +646,14 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
               <button type="button" className="sg-btn primary" onClick={() => void copyLink()}>Copy call link</button>
               <button type="button" className="sg-btn" onClick={() => setSheet(null)}>Close</button>
             </div>
+          </div>
+        )}
+        {sheet === 'people' && (
+          <div className="sg-sheet sg-people-sheet" role="dialog" aria-modal="true" aria-labelledby="sg-people-h">
+            <div className="grab" aria-hidden />
+            <div className="sg-sheet-head"><h2 id="sg-people-h">On this call · {parts.length}</h2><button type="button" className="sg-btn" onClick={() => setSheet(null)}>Close</button></div>
+            {peopleList}
+            {isOwner && <div className="sg-sheet-acts"><button type="button" className="sg-btn" style={{ color: 'var(--sg-wine-t)' }} onClick={() => { setSheet(null); void endForAll(); }}>End call for everyone</button></div>}
           </div>
         )}
         {sheet === 'chat' && (
@@ -728,5 +761,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   );
 }
 
+const IcSun = () => <svg viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>;
+const IcMoon = () => <svg viewBox="0 0 24 24" aria-hidden><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>;
 const IcChat = () => <svg viewBox="0 0 24 24" aria-hidden><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z" /></svg>;
 const IcScreenSmall = () => <svg viewBox="0 0 24 24" aria-hidden width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>;
