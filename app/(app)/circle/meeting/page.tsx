@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Headphones } from 'lucide-react';
 import { getMe, getMyCircle } from '@/lib/rx/server';
+import { createClient } from '@/lib/supabase/server';
+import { loadAgenda } from '@/lib/rx/agenda';
 import { CIRCLE_FOCUS, MEETING_AGENDA } from '@/lib/rx/constants';
 import { nextWeekdayAt, whenLabel } from '@/lib/rx/dates';
 import { Aside, BackLink, Page, Title } from '@/components/rx/ui';
@@ -18,6 +20,9 @@ export default async function MeetingPage({ searchParams }: { searchParams: Prom
   const next = nextWeekdayAt(circle.circle.meeting_dow, circle.circle.meeting_time.slice(0, 5), circle.circle.timezone);
   const started = circle.memberCount >= 4 && !!circle.circle.cycle_start;
   const focus = CIRCLE_FOCUS[(circle.week ?? 1) - 1];
+  // The agenda the Circle prepared; the suggested 15-minute format until someone adds one.
+  const prepared = (await loadAgenda(await createClient(), circle.circle.id)).items.filter((i) => i.title.trim());
+  const agendaRows: [string, string][] = prepared.length ? prepared.map((i) => [i.title, i.duration_minutes ? `${i.duration_minutes} min` : '']) : MEETING_AGENDA.map(([a, b]) => [a, b] as [string, string]);
 
   return (
     <Page>
@@ -39,11 +44,12 @@ export default async function MeetingPage({ searchParams }: { searchParams: Prom
           <p className="rx-sm">Fifteen minutes is short, so reports are shared in the chat beforehand. The call is for one shared obstacle and each member’s commitment.</p>
         </div>
         <Aside>
-          <p className="rx-label">Agenda · 15 minutes</p>
-          {MEETING_AGENDA.map(([item, min]) => (
+          <p className="rx-label">{prepared.length ? 'Agenda · prepared by your Circle' : 'Agenda · 15 minutes'}</p>
+          {agendaRows.map(([item, min]) => (
             <div key={item} className="rx-between" style={{ minHeight: 40, borderBottom: '1px solid var(--rx-border)' }}><span>{item}</span><span className="rx-sm" style={{ whiteSpace: 'nowrap' }}>{min}</span></div>
           ))}
           <p className="rx-sm">{circle.facilitatorName ?? 'Your facilitator'} keeps time. Reports are shared before the meeting. <Link href={`/circle/reports?c=${circle.circle.id}`} className="rx-link" style={{ minHeight: 0 }}>Share yours</Link></p>
+          <Link href={`/circle?c=${circle.circle.id}`} className="rx-link">{prepared.length ? 'Edit the agenda' : 'Prepare the agenda'}</Link>
         </Aside>
       </div>
     </Page>

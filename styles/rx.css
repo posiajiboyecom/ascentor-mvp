@@ -405,3 +405,20 @@ a.rx-opt { text-decoration: none; }
 .rx-ob-foot { flex-wrap: wrap; justify-content: flex-end; }
 .rx-ob-foot-note { flex: 1 1 140px; min-width: 0; }
 .rx-ob-foot .rx-btn { flex: none; }
+
+/* ── Circle agenda (prepared before the call) ─────────────────────────────── */
+.rx-agenda-preview { list-style: decimal; margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+.rx-agenda-preview li { padding-left: 4px; }
+.rx-agenda-preview li > span:first-child { margin-right: 8px; }
+.rx-agenda-edit { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.rx-agenda-edit li { display: grid; grid-template-columns: 22px minmax(0, 1fr) 72px; gap: 8px; align-items: center; }
+.rx-agenda-edit .n { font-weight: 700; font-size: 13px; color: var(--rx-muted); text-align: center; }
+.rx-agenda-edit .rx-in.min { padding: 0 10px; text-align: center; }
+.rx-agenda-edit .acts { grid-column: 2 / -1; display: flex; gap: 2px; justify-content: flex-end; margin-top: -4px; }
+.rx-agenda-edit .acts .rx-ib { width: 36px; height: 36px; }
+.rx-agenda-edit .acts .rx-ib svg { width: 18px; height: 18px; }
+.rx-agenda-edit .acts .rx-ib:disabled { opacity: .35; cursor: default; }
+@media (min-width: 768px) {
+  .rx-agenda-edit li { grid-template-columns: 22px minmax(0, 1fr) 72px auto; }
+  .rx-agenda-edit .acts { grid-column: auto; margin-top: 0; }
+}

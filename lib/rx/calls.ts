@@ -2,8 +2,8 @@ import 'server-only';
 // lib/rx/calls.ts
 // Calls on Daily. One CallProvider module (createRoom, createToken, deleteRoom) so the provider can change
 // without touching Circle logic. Audio is the default. A member can turn their camera on, and it stays off until they do.
-// Screen sharing is blocked at the room and on every
-// token. Nothing is recorded. Only attendance minutes are stored (never content).
+// Screen sharing is allowed (one person at a time, enforced in the call screen). Nothing is recorded. Only attendance
+// minutes are stored (never content).
 //
 // Needs DAILY_API_KEY. Without it every call shows the "call unavailable" state and members continue in the chat.
 
@@ -17,6 +17,8 @@ export const MENTOR_CALL_MINUTES = 20;
 export const OPENS_EARLY_MINUTES = 5;
 export const MAX_PARTICIPANTS = 12;
 export const MONTHLY_FREE_MINUTES = 10000;
+/** What a member may send: their microphone, their camera, and a shared screen (with its audio). */
+export const CAN_SEND = ['audio', 'video', 'screenVideo', 'screenAudio'];
 
 export const callsConfigured = () => !!process.env.DAILY_API_KEY;
 
@@ -30,22 +32,23 @@ export interface RoomInfo { name: string; url: string }
 export async function ensureRoom(name: string): Promise<RoomInfo> {
   const got = await daily(`/rooms/${encodeURIComponent(name)}`);
   if (got.ok) {
-    const j = (await got.json()) as RoomInfo & { config?: { permissions?: { canSend?: unknown } } };
-    // Rooms made before cameras were allowed are audio-only. Open them up so a member's camera can be seen.
+    const j = (await got.json()) as RoomInfo & { config?: { enable_screenshare?: boolean; permissions?: { canSend?: unknown } } };
+    // Rooms made earlier were audio-only or blocked screen sharing. Open them up so cameras and a shared screen work.
     const send = j.config?.permissions?.canSend;
-    if (Array.isArray(send) && send.length === 1 && send[0] === 'audio') {
-      await daily(`/rooms/${encodeURIComponent(name)}`, { method: 'POST', body: JSON.stringify({ properties: { permissions: { canSend: ['audio', 'video'] } } }) }).catch(() => undefined);
+    const sendOk = send === true || send === undefined || (Array.isArray(send) && CAN_SEND.every((k) => send.includes(k)));
+    if (!sendOk || j.config?.enable_screenshare === false) {
+      await daily(`/rooms/${encodeURIComponent(name)}`, { method: 'POST', body: JSON.stringify({ properties: { enable_screenshare: true, permissions: { canSend: CAN_SEND } } }) }).catch(() => undefined);
     }
     return { name: j.name, url: j.url };
   }
 
   const base = { name, privacy: 'private' as const };
-  const strict = { ...base, properties: { max_participants: MAX_PARTICIPANTS, enable_screenshare: false, start_video_off: true, enable_chat: false, enable_prejoin_ui: false, permissions: { canSend: ['audio', 'video'] } } };
+  const strict = { ...base, properties: { max_participants: MAX_PARTICIPANTS, enable_screenshare: true, start_video_off: true, enable_chat: false, enable_prejoin_ui: false, permissions: { canSend: CAN_SEND } } };
   let res = await daily('/rooms', { method: 'POST', body: JSON.stringify(strict) });
   if (!res.ok) {
     // If the account rejects the room-level permission block, fall back to the safe subset. The token still sets what a member can send.
     console.warn('[calls] strict room create failed, retrying without permissions:', res.status);
-    const lean = { ...base, properties: { max_participants: MAX_PARTICIPANTS, enable_screenshare: false, start_video_off: true, enable_chat: false, enable_prejoin_ui: false } };
+    const lean = { ...base, properties: { max_participants: MAX_PARTICIPANTS, enable_screenshare: true, start_video_off: true, enable_chat: false, enable_prejoin_ui: false } };
     res = await daily('/rooms', { method: 'POST', body: JSON.stringify(lean) });
   }
   if (!res.ok) throw new Error(`Daily room create failed (${res.status})`);
@@ -64,8 +67,8 @@ export async function createToken(o: TokenOpts): Promise<string> {
     properties: {
       room_name: o.room, user_id: o.userId, user_name: o.userName, is_owner: o.isOwner,
       nbf: Math.floor(o.notBefore.getTime() / 1000), exp: Math.floor(o.expires.getTime() / 1000), eject_at_token_exp: true,
-      enable_screenshare: false, start_video_off: true, start_audio_off: false,
-      permissions: { canSend: ['audio', 'video'] },
+      enable_screenshare: true, start_video_off: true, start_audio_off: false,
+      permissions: { canSend: CAN_SEND },
     },
   };
   let res = await daily('/meeting-tokens', { method: 'POST', body: JSON.stringify(body) });

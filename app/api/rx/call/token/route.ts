@@ -70,7 +70,7 @@ export async function POST(req: Request) {
     isOwner = isMentor;
   }
 
-  const common = { title: win.title, startsAt: win.startsAt.toISOString(), opensAt: win.opensAt.toISOString(), endsAt: win.endsAt.toISOString() };
+  const common = { title: win.title, circleName: circle.name as string, circleNumber: circle.number as number, startsAt: win.startsAt.toISOString(), opensAt: win.opensAt.toISOString(), endsAt: win.endsAt.toISOString() };
   if (win.state === 'waiting') return NextResponse.json({ state: 'waiting', ...common });
   if (win.state === 'ended') return NextResponse.json({ state: 'ended', ...common });
 
