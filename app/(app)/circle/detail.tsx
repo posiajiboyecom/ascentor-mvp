@@ -12,6 +12,7 @@ import { nextWeekdayAt, whenLabel } from '@/lib/rx/dates';
 import { Aside, Avatar, Bar, BackLink, Page, Title, Tag } from '@/components/rx/ui';
 import { circleTitle, getMyCircles } from '@/lib/rx/circles';
 import { PledgeButtons } from '@/components/rx/circle/CircleClient';
+import { AgendaDrawer } from '@/components/rx/circle/AgendaDrawer';
 
 export async function CircleDetail({ circleId }: { circleId: string }) {
   const me = await getMe();
@@ -107,6 +108,8 @@ export async function CircleDetail({ circleId }: { circleId: string }) {
               </div>
             </div>
           )}
+
+          <AgendaDrawer circleId={circle.circle.id} meId={me.userId} />
 
           <div className="rx-card rx-stack-sm">
             <div className="rx-between"><p className="rx-label">Welcome thread</p><span className="rx-sm">Pinned</span></div>
