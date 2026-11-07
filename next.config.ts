@@ -34,7 +34,7 @@ const securityHeaders = [
   // Controls how much referrer info is sent with requests
   { key: 'Referrer-Policy',              value: 'strict-origin-when-cross-origin' },
   // Disables browser features we don't use
-  { key: 'Permissions-Policy',           value: 'camera=(self), microphone=(self), geolocation=(), payment=()' },
+  { key: 'Permissions-Policy',           value: 'camera=(self), microphone=(self), display-capture=(self), geolocation=(), payment=()' },
   // Cross-Origin policies - use same-origin-allow-popups so YouTube's
   // iframe player postMessage API works while retaining Spectre mitigations.
   { key: 'Cross-Origin-Opener-Policy',   value: 'same-origin-allow-popups' },
