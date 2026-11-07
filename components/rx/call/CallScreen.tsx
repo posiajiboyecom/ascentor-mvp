@@ -22,6 +22,7 @@ import {
   AgendaList, Bars, Bars3, IcAgenda, IcCam, IcCamOff, IcClock, IcLeave, IcMic, IcMicOff, IcPeople, IcScreen,
   IcSmallMic, IcSmallMicOff, RemoteAudio, Silhouette, TrackVideo, cameraOn, feedFor, itemLeft, sharesScreen, type LiveAgenda,
 } from './signal-parts';
+import { CHAT_MAX, ChatPanel, cleanText, historyBatches, mergeChat, type ChatMsg, type ChatWire } from './call-chat';
 
 type Phase = 'loading' | 'waiting' | 'notstarted' | 'unavailable' | 'inapp' | 'elsewhere' | 'prejoin' | 'joining' | 'incall' | 'moved' | 'ended' | 'error';
 
@@ -84,8 +85,13 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const [sharing, setSharing] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
   const [notice, setNotice] = useState('');
-  const [sheet, setSheet] = useState<null | 'agenda' | 'ios'>(null);
-  const [rosterOpen, setRosterOpen] = useState(true);
+  const [sheet, setSheet] = useState<null | 'agenda' | 'ios' | 'chat'>(null);
+  // Desktop side panel: the people on the call (with the agenda), the chat, or hidden.
+  const [panel, setPanel] = useState<null | 'people' | 'chat'>('people');
+  const [chat, setChat] = useState<ChatMsg[]>([]);
+  const [unread, setUnread] = useState(0);
+  const chatRef = useRef<ChatMsg[]>([]);
+  const chatOpenRef = useRef(false);
   const [modFor, setModFor] = useState<string | null>(null);
   const [agenda, setAgenda] = useState<LiveAgenda | null>(null);
   const [agendaLoaded, setAgendaLoaded] = useState(false);
@@ -98,6 +104,8 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const agendaRef = useRef<LiveAgenda | null>(null);
   agendaRef.current = agenda;
+  chatRef.current = chat;
+  chatOpenRef.current = panel === 'chat' || sheet === 'chat';
 
   useEffect(() => { setIos(isIOS()); }, []);
 
@@ -239,10 +247,36 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
         }).catch((e) => console.warn('[call] send settings not applied', e));
         try { const r = await fetch('/api/rx/call/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'join', circleId, kind }) }); const j = await r.json(); attendanceRef.current = j.id ?? null; } catch { /* usage only */ }
       });
-      call.on('participant-joined', refreshParts).on('participant-updated', refreshParts).on('participant-left', (e) => { refreshParts(); setHands((h) => h.filter((x) => x !== e?.participant?.session_id)); });
+      call.on('participant-joined', (e) => {
+        refreshParts();
+        // Whoever has been in the call longest hands the chat so far to the newcomer.
+        const newId = e?.participant?.session_id;
+        const all = Object.values(call.participants());
+        const others = all.filter((p) => p.session_id !== newId);
+        const host = others.sort((a, b) => joinedMs(a) - joinedMs(b))[0];
+        if (newId && host?.local && chatRef.current.length) {
+          for (const batch of historyBatches(chatRef.current)) call.sendAppMessage(batch, newId);
+        }
+      });
+      call.on('participant-updated', refreshParts).on('participant-left', (e) => { refreshParts(); setHands((h) => h.filter((x) => x !== e?.participant?.session_id)); });
       call.on('active-speaker-change', (e) => { const id = e?.activeSpeaker?.peerId; if (id) setSpeaker(id); });
       call.on('app-message', (e) => {
         const d = e?.data as { type?: string; up?: boolean; index?: number; startedAt?: string } | undefined;
+        if ((d?.type === 'chat' || d?.type === 'chat-history') && e?.fromId) {
+          const w = e.data as ChatWire;
+          const from = callRef.current?.participants()?.[e.fromId];
+          const incoming: ChatMsg[] = w.type === 'chat'
+            ? (() => { const text = cleanText(w.text); return text && typeof w.id === 'string' ? [{ id: w.id.slice(0, 64), fromId: e.fromId, name: from?.user_name || 'Member', text, at: Number(w.at) || Date.now(), mine: false }] : []; })()
+            : (Array.isArray(w.items) ? w.items : []).flatMap((it) => {
+                const text = cleanText(it?.text);
+                return text && typeof it?.id === 'string' ? [{ id: it.id.slice(0, 64), fromId: `h:${String(it.name ?? '')}`, name: String(it.name || 'Member').slice(0, 40), text, at: Number(it.at) || 0, mine: false }] : [];
+              });
+          if (incoming.length) {
+            setChat((c) => mergeChat(c, incoming));
+            if (w.type === 'chat' && !chatOpenRef.current) setUnread((n) => n + 1);
+          }
+          return;
+        }
         if (d?.type === 'hand' && e?.fromId) setHands((h) => (d.up ? (h.includes(e.fromId) ? h : [...h, e.fromId]) : h.filter((x) => x !== e.fromId)));
         if (d?.type === 'agenda' && e?.fromId && typeof d.index === 'number' && typeof d.startedAt === 'string') {
           // Only the facilitator moves the agenda.
@@ -312,6 +346,18 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     } catch { toast('We couldn’t turn on your camera. Check that your browser can use it.'); setCamOn(false); }
     finally { setCamBusy(false); }
   }
+  function sendChat(text: string) {
+    const c = callRef.current; if (!c) return;
+    const msg = { type: 'chat' as const, id: crypto.randomUUID(), text: text.slice(0, CHAT_MAX), at: Date.now() };
+    c.sendAppMessage(msg satisfies ChatWire, '*');
+    setChat((m) => mergeChat(m, [{ id: msg.id, fromId: me?.session_id ?? 'me', name: firstName, text: msg.text, at: msg.at, mine: true }]));
+  }
+  function openChat() {
+    setUnread(0);
+    if (window.matchMedia('(max-width: 767px)').matches) setSheet('chat');
+    else setPanel((p) => (p === 'chat' ? 'people' : 'chat'));
+  }
+
   function toggleHand() { const c = callRef.current; if (!c) return; const up = !handUp; setHandUp(up); c.sendAppMessage({ type: 'hand', up }, '*'); }
 
   // ── screen sharing ────────────────────────────────────────────────────────
@@ -457,7 +503,14 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
             </div>
           </section>
 
-          <aside className="sg-roster" hidden={!rosterOpen} aria-label="On this call">
+          {/* Everyone's voice (and screen sound) plays from here, whichever panel is showing. */}
+          <div hidden>{parts.filter((p) => !p.local).map((p) => <RemoteAudio key={p.session_id} p={p} />)}</div>
+
+          <aside className="sg-roster" hidden={panel === null} aria-label={panel === 'chat' ? 'Chat' : 'On this call'}>
+            {panel === 'chat' ? (<>
+              <div className="sg-rh"><span>Chat</span><button type="button" className="sg-rh-link" onClick={() => setPanel('people')}>People · {parts.length}</button></div>
+              <ChatPanel messages={chat} onSend={sendChat} autoFocus />
+            </>) : (<>
             <div className="sg-rh"><span>On this call</span><span>{parts.length}</span></div>
             <ul className="sg-list">
               {roster.map((p) => {
@@ -490,16 +543,16 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
                         <button type="button" className="danger" onClick={() => { if (window.confirm(`Remove ${nameOf(p)} from the call?`)) callRef.current?.updateParticipant(p.session_id, { eject: true }); setModFor(null); }}>Remove</button>
                       </div>
                     )}
-                    {!p.local && <RemoteAudio p={p} />}
                   </li>
                 );
               })}
             </ul>
             {agendaBlock}
             {isOwner && <div className="sg-roster-foot"><button type="button" className="sg-endall" onClick={() => void endForAll()}>End call for everyone</button></div>}
+            </>)}
           </aside>
 
-          {/* mobile: participant strip and agenda bar (the roster's audio elements still play; it is only hidden) */}
+          {/* mobile: participant strip and agenda bar */}
           <div className="sg-strip-w">
             <ul className="sg-strip" aria-label="On this call">
               {strip.map((p) => {
@@ -543,7 +596,10 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
           <button type="button" className="sg-ctl" aria-pressed={sheet === 'agenda'} aria-label="Agenda" onClick={() => setSheet('agenda')}>
             <span className="b"><IcAgenda /></span><span>Agenda</span>
           </button>
-          <button type="button" className="sg-ctl desk" aria-expanded={rosterOpen} aria-label={rosterOpen ? 'Hide people' : 'Show people'} onClick={() => setRosterOpen((o) => !o)}>
+          <button type="button" className="sg-ctl" aria-pressed={panel === 'chat' || sheet === 'chat'} aria-label={unread ? `Chat, ${unread} unread` : 'Chat'} onClick={openChat}>
+            <span className="b"><IcChat />{unread > 0 && <span className="sg-unread" aria-hidden>{unread > 9 ? '9+' : unread}</span>}</span><span>Chat</span>
+          </button>
+          <button type="button" className="sg-ctl desk" aria-expanded={panel === 'people'} aria-label={panel === 'people' ? 'Hide people' : 'Show people'} onClick={() => setPanel((p) => (p === 'people' ? null : 'people'))}>
             <span className="b"><IcPeople /></span><span>People</span>
           </button>
           <button type="button" className="sg-ctl" aria-pressed={handUp} aria-label={handUp ? 'Lower hand' : 'Raise hand'} onClick={toggleHand}>
@@ -565,6 +621,13 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
               <button type="button" className="sg-btn primary" onClick={() => void copyLink()}>Copy call link</button>
               <button type="button" className="sg-btn" onClick={() => setSheet(null)}>Close</button>
             </div>
+          </div>
+        )}
+        {sheet === 'chat' && (
+          <div className="sg-sheet sg-chat-sheet" role="dialog" aria-modal="true" aria-labelledby="sg-chat-h">
+            <div className="grab" aria-hidden />
+            <div className="sg-sheet-head"><h2 id="sg-chat-h">Chat</h2><button type="button" className="sg-btn" onClick={() => setSheet(null)}>Close</button></div>
+            <ChatPanel messages={chat} onSend={sendChat} autoFocus />
           </div>
         )}
         {sheet === 'agenda' && (
@@ -665,4 +728,5 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   );
 }
 
+const IcChat = () => <svg viewBox="0 0 24 24" aria-hidden><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z" /></svg>;
 const IcScreenSmall = () => <svg viewBox="0 0 24 24" aria-hidden width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>;
