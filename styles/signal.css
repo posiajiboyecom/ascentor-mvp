@@ -20,17 +20,6 @@
   -webkit-font-smoothing: antialiased;
 }
 .sg *, .sg *::before, .sg *::after { box-sizing: border-box; }
-/* Night: only when the member picks it in the call (data-theme on .sg). Light is the default. */
-.sg[data-theme='dark'] {
-  --sg-chrome: #140D09; --sg-roster: #1A110C; --sg-ink: #EFE7DD; --sg-ink2: #AE9F92; --sg-ink3: #5E4D41;
-  --sg-border: rgba(239,216,196,0.08); --sg-hover: rgba(239,216,196,0.035); --sg-you: rgba(217,113,74,0.08);
-  --sg-ctl: #2A1B13; --sg-ctl-bd: rgba(239,216,196,0.10); --sg-stage: #0C0604;
-  --sg-rust: #B6502A; --sg-rust-ink: #D9714A; --sg-rust-bg: rgba(217,113,74,0.12); --sg-rust-bd: rgba(217,113,74,0.32);
-  --sg-gold: #CAA228; --sg-gold-mark: #CAA228; --sg-gold-bg: rgba(202,162,40,0.10); --sg-gold-bd: rgba(202,162,40,0.26);
-  --sg-on: #B6502A; --sg-on-ink: #FFFFFF; --sg-live: #D9714A;
-  --sg-leave: #9B1C31; --sg-wine-t: #F2A0AE;
-  --sg-mute: #F2A0AE; --sg-mute-bg: rgba(242,160,174,0.12); --sg-mute-bd: rgba(242,160,174,0.26);
-}
 
 .sg button { font-family: inherit; color: inherit; }
 .sg .mono { font-family: 'DM Mono', ui-monospace, monospace; }
@@ -55,8 +44,6 @@
 /* ── 2. body ──────────────────────────────────────────────────────────────── */
 .sg-body { flex: 1; min-height: 0; display: flex; }
 .sg-pane { position: relative; flex: 1; min-width: 0; overflow: hidden; background: var(--sg-stage); }
-/* Desktop: the stage stops short of the side panel instead of running edge to edge. */
-@media (min-width: 768px) { .sg-pane { margin-right: min(10.5%, 220px); } }
 .sg-feed { position: absolute; inset: 0; }
 .sg-feed video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: auto; }
 /* Your own camera is mirrored, as in a mirror; thumbnails just flip. */
@@ -85,6 +72,8 @@
 
 /* roster */
 .sg-roster { width: 224px; flex: none; background: var(--sg-roster); border-left: 1px solid var(--sg-border); display: flex; flex-direction: column; min-height: 0; transition: background-color .3s ease; }
+/* Desktop: a narrower stage, with the side panel (On this call, agenda, chat) taking the extra width. */
+@media (min-width: 768px) { .sg-roster { width: calc(224px + min(10.5%, 220px)); } }
 .sg-roster[hidden] { display: none; }
 .sg-rh { flex: none; padding: 13px 14px 10px; border-bottom: 1px solid var(--sg-border); display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; }
 .sg-rh span:first-child { text-transform: uppercase; letter-spacing: .1em; color: var(--sg-ink3); }
@@ -267,10 +256,6 @@ button.sg-ag-item:hover { background: var(--sg-rust-bg); }
   .sg-ctl .b { width: 42px; height: 42px; }
 }
 
-/* theme switch in the top bar */
-.sg-theme { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--sg-ctl-bd); background: var(--sg-ctl); display: flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
-.sg-theme svg { width: 15px; height: 15px; fill: none; stroke: var(--sg-ink2); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.sg-theme:focus-visible { outline: 2px solid var(--sg-rust-ink); outline-offset: 2px; }
 /* people sheet (mobile) reuses the roster rows */
 .sg-people-sheet .sg-list { margin: 4px -18px 0; border-top: 1px solid var(--sg-border); }
 .sg-people-sheet .sg-row { padding-left: 18px; padding-right: 18px; }

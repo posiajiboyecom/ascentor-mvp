@@ -50,7 +50,6 @@ const scheduled = (startsAt: string, weekly: boolean) => {
 };
 // Inter for the interface, DM Mono for timers. Loaded from Google Fonts (allowed by the CSP) so builds never depend on fetching them.
 const SIGNAL_FONTS = 'https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;500&family=Inter:wght@400;600;700&display=swap';
-const THEME_KEY = 'ascentor:call-theme';
 const BLUR_KEY = 'ascentor:call-blur';
 const CAM_SETTINGS = { width: { ideal: 1280 }, height: { ideal: 720 }, aspectRatio: { ideal: 16 / 9 }, frameRate: { ideal: 30, max: 30 } };
 const IN_APP = /(FBAN|FBAV|Instagram|Line\/|MicroMessenger|; wv\))/i;
@@ -93,8 +92,6 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const [shareBusy, setShareBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [sheet, setSheet] = useState<null | 'agenda' | 'ios' | 'chat' | 'people'>(null);
-  // Call theme: light by default; dark only when the member picks it (remembered on this device).
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
   // Desktop side panel: the people on the call (with the agenda), the chat, or hidden.
   const [panel, setPanel] = useState<null | 'people' | 'chat'>('people');
   const [chat, setChat] = useState<ChatMsg[]>([]);
@@ -121,16 +118,6 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     try { setCanBlur(!!Daily.supportedBrowser().supportsVideoProcessing && !isIOS() && !window.matchMedia('(pointer: coarse)').matches); } catch { setCanBlur(false); }
     try { setBlurOn(localStorage.getItem(BLUR_KEY) === 'on'); } catch { /* storage unavailable */ }
   }, []);
-  useEffect(() => {
-    try { const t = localStorage.getItem(THEME_KEY); if (t === 'light' || t === 'dark') setTheme(t); } catch { /* storage unavailable */ }
-  }, []);
-  function toggleTheme() {
-    const current = theme ?? 'light';
-    const next = current === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    try { localStorage.setItem(THEME_KEY, next); } catch { /* storage unavailable */ }
-  }
-  const isDark = theme === 'dark';
 
   const fetchToken = useCallback(async (takeover = false) => {
     try {
@@ -573,7 +560,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     );
 
     return (
-      <div className="sg" role="main" aria-label={title} data-theme={theme ?? undefined}>
+      <div className="sg" role="main" aria-label={title}>
         <link rel="stylesheet" href={SIGNAL_FONTS} precedence="default" />
         {/* 1. top bar */}
         <header className="sg-top">
@@ -582,9 +569,6 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
             <div className="sg-session"><b>{sessionName}</b><span>{parts.length} on this call · {camsLabel}</span></div>
           </div>
           <div className="sg-top-r">
-            <button type="button" className="sg-theme" onClick={toggleTheme} aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'} title={isDark ? 'Light theme' : 'Dark theme'}>
-              {isDark ? <IcSun /> : <IcMoon />}
-            </button>
             <span className="sg-live" title="This call is not recorded"><i aria-hidden />LIVE</span>
             <div className={`sg-elapsed${left <= 120000 ? ' warn' : ''}`} title={`${clock(left)} left`}>
               <span className="mono">{clock(elapsed)}</span><small>elapsed</small>
@@ -826,7 +810,5 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
 }
 
 const IcBlur = () => <svg viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="9" r="3.2" /><path d="M6 20a6 6 0 0 1 12 0" /><path d="M3 4.5h.01M3 9h.01M3 13.5h.01M21 4.5h.01M21 9h.01M21 13.5h.01M5.5 2.5h.01M18.5 2.5h.01" strokeWidth="2.6" /></svg>;
-const IcSun = () => <svg viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>;
-const IcMoon = () => <svg viewBox="0 0 24 24" aria-hidden><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>;
 const IcChat = () => <svg viewBox="0 0 24 24" aria-hidden><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z" /></svg>;
 const IcScreenSmall = () => <svg viewBox="0 0 24 24" aria-hidden width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>;
