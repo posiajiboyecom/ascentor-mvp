@@ -1,5 +1,6 @@
 // app/api/rx/call/token/route.ts
-// POST { circleId, kind: 'circle' | 'mentor', sessionId? } -> { state, ... }
+// POST { circleId, kind: 'circle' | 'mentor', sessionId?, takeover? } -> { state, ... }
+// state 'elsewhere': this account is already in the call on another device (send takeover: true to move it here).
 // Checks that the caller belongs to this Circle (or is its mentor), that the call window is open, then returns a Daily
 // meeting token that ends exactly when the call is scheduled to end. Members cannot get a token for another Circle.
 
@@ -7,7 +8,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { featureBlock } from '@/lib/access';
-import { callsConfigured, circleWindow, createToken, ensureRoom, mentorWindow, type CallWindow } from '@/lib/rx/calls';
+import { callsConfigured, circleWindow, createToken, ejectUser, ensureRoom, inRoomElsewhere, mentorWindow, type CallWindow } from '@/lib/rx/calls';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
   const { data: { user } } = await db.auth.getUser();
   if (!user) return NextResponse.json({ state: 'error', error: 'Please sign in again.' }, { status: 401 });
 
-  let body: { circleId?: string; kind?: string; sessionId?: string };
+  let body: { circleId?: string; kind?: string; sessionId?: string; takeover?: boolean };
   try { body = await req.json(); } catch { return NextResponse.json({ state: 'error', error: 'Bad request.' }, { status: 400 }); }
   const circleId = body.circleId ?? '';
   const kind = body.kind === 'mentor' ? 'mentor' : 'circle';
@@ -77,6 +78,12 @@ export async function POST(req: Request) {
   try {
     const { data: prof } = await supabaseAdmin.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
     const room = await ensureRoom(roomName);
+    // One device per account in a call. If this account is already in the room, ask first; when the member chooses
+    // to move the call here, the other device is removed before this one joins.
+    if (await inRoomElsewhere(room.name, user.id)) {
+      if (!body.takeover) return NextResponse.json({ state: 'elsewhere', ...common });
+      await ejectUser(room.name, user.id);
+    }
     const token = await createToken({ room: room.name, userId: user.id, userName: ((prof?.full_name as string | undefined) ?? 'Member').split(/\s+/)[0], isOwner, notBefore: win.opensAt, expires: new Date(win.endsAt.getTime() + 60000) });
     return NextResponse.json({ state: 'open', url: room.url, token, isOwner, roomName, ...common });
   } catch (e) {

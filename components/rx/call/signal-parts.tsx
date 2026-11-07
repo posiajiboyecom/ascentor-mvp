@@ -64,7 +64,8 @@ export function TrackVideo({ track, mirror, label }: { track: MediaStreamTrack |
     void el.play().catch(() => undefined);
     return () => { el.srcObject = null; };
   }, [track]);
-  return <video ref={ref} autoPlay playsInline muted aria-label={label} style={mirror ? { transform: 'scaleX(-1)' } : undefined} />;
+  // Mirroring is a class (not an inline transform) so the stage can combine it with its own scale in CSS.
+  return <video ref={ref} className={mirror ? 'mirror' : undefined} autoPlay playsInline muted aria-label={label} />;
 }
 
 /** A remote member's voice, plus the sound of their shared screen if any. */

@@ -23,11 +23,12 @@ import {
   IcSmallMic, IcSmallMicOff, RemoteAudio, Silhouette, TrackVideo, cameraOn, feedFor, itemLeft, sharesScreen, type LiveAgenda,
 } from './signal-parts';
 
-type Phase = 'loading' | 'waiting' | 'notstarted' | 'unavailable' | 'inapp' | 'prejoin' | 'joining' | 'incall' | 'ended' | 'error';
+type Phase = 'loading' | 'waiting' | 'notstarted' | 'unavailable' | 'inapp' | 'elsewhere' | 'prejoin' | 'joining' | 'incall' | 'moved' | 'ended' | 'error';
 
 interface TokenOpen { state: 'open'; url: string; token: string; isOwner: boolean; title: string; circleName?: string; circleNumber?: number; endsAt: string; startsAt: string; opensAt: string }
 interface TokenWait { state: 'waiting' | 'ended'; title: string; circleName?: string; circleNumber?: number; endsAt: string; startsAt: string; opensAt: string }
-type TokenResponse = TokenOpen | TokenWait | { state: 'unavailable' | 'notstarted' } | { state: 'error'; error: string };
+interface TokenElsewhere { state: 'elsewhere'; title: string; circleName?: string; circleNumber?: number; endsAt: string; startsAt: string; opensAt: string }
+type TokenResponse = TokenOpen | TokenWait | TokenElsewhere | { state: 'unavailable' | 'notstarted' } | { state: 'error'; error: string };
 type AgendaMsg = { type: 'agenda'; index: number; startedAt: string };
 
 /** "2 days", "3 hours", "12 minutes": the way a person says how long is left, rounded to the unit that matters. */
@@ -51,6 +52,9 @@ const SIGNAL_FONTS = 'https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;
 const IN_APP = /(FBAN|FBAV|Instagram|Line\/|MicroMessenger|; wv\))/i;
 const SHARE_BUSY = 'Someone is already sharing — wait for them to stop.';
 const IOS_NOTE = 'Screen sharing isn’t available on iOS browsers yet. To share your screen, join this call from a laptop or an Android device.';
+
+/** When a participant joined, in ms (Daily gives a Date; 0 if unknown). */
+const joinedMs = (p: DailyParticipant) => { const d = p.joined_at as unknown; return d ? new Date(d as string | number | Date).getTime() || 0 : 0; };
 
 /** Every browser on iPhone and iPad runs on WebKit, which has no getDisplayMedia(). iPadOS reports itself as a Mac with touch. */
 function isIOS(): boolean {
@@ -97,12 +101,13 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
 
   useEffect(() => { setIos(isIOS()); }, []);
 
-  const fetchToken = useCallback(async () => {
+  const fetchToken = useCallback(async (takeover = false) => {
     try {
-      const res = await fetch('/api/rx/call/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ circleId, kind, sessionId }) });
+      const res = await fetch('/api/rx/call/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ circleId, kind, sessionId, takeover }) });
       const j = (await res.json()) as TokenResponse;
       if (j.state === 'open') { setInfo(j); setPhase((p) => (p === 'incall' || p === 'joining' ? p : 'prejoin')); }
       else if (j.state === 'waiting' || j.state === 'ended') { setInfo(j); setPhase(j.state === 'waiting' ? 'waiting' : 'ended'); }
+      else if (j.state === 'elsewhere') setPhase('elsewhere');
       else if (j.state === 'notstarted') setPhase('notstarted');
       else if (j.state === 'unavailable') setPhase('unavailable');
       else if (j.state === 'error') { setError(j.error); setPhase('error'); }
@@ -155,6 +160,22 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
 
   const refreshParts = useCallback(() => { const c = callRef.current; if (c) setParts(Object.values(c.participants())); }, []);
 
+  // One device per account in a call: if this account joins again somewhere else, the newer device keeps the call
+  // and this one leaves. (The server also removes the older device when the member chooses to move the call.)
+  useEffect(() => {
+    if (phase !== 'incall') return;
+    const mine = parts.find((p) => p.local);
+    if (!mine?.user_id) return;
+    const newer = parts.find((p) => !p.local && p.user_id === mine.user_id && joinedMs(p) > joinedMs(mine));
+    if (!newer) return;
+    void (async () => {
+      try { if (sharing) callRef.current?.stopScreenShare(); await callRef.current?.leave(); } catch { /* already gone */ }
+      camTrack.current?.stop(); camTrack.current = null; setCamOn(false); setSharing(false);
+      endAttendance(); setPhase('moved');
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parts, phase]);
+
   // ── agenda ────────────────────────────────────────────────────────────────
   const sb = useMemo(() => createClient(), []);
   const reloadAgenda = useCallback(async () => {
@@ -205,6 +226,17 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       call.on('joined-meeting', async () => {
         refreshParts(); setPhase('incall');
         void reloadAgenda();
+        // Higher camera quality. Three simulcast layers, so members on a weak connection still receive the low one.
+        call.updateSendSettings({
+          video: {
+            maxQuality: 'high',
+            encodings: {
+              low: { maxBitrate: 150000, maxFramerate: 15, scaleResolutionDownBy: 4 },
+              medium: { maxBitrate: 450000, maxFramerate: 30, scaleResolutionDownBy: 2 },
+              high: { maxBitrate: 1200000, maxFramerate: 30, scaleResolutionDownBy: 1 },
+            },
+          },
+        }).catch((e) => console.warn('[call] send settings not applied', e));
         try { const r = await fetch('/api/rx/call/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'join', circleId, kind }) }); const j = await r.json(); attendanceRef.current = j.id ?? null; } catch { /* usage only */ }
       });
       call.on('participant-joined', refreshParts).on('participant-updated', refreshParts).on('participant-left', (e) => { refreshParts(); setHands((h) => h.filter((x) => x !== e?.participant?.session_id)); });
@@ -227,7 +259,12 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       call.on('nonfatal-error', (e) => {
         if (String(e?.type ?? '').includes('screen-share')) { setSharing(false); setShareBusy(false); toast('Your screen couldn’t be shared. Check that your browser can share your screen.'); }
       });
-      call.on('error', (e) => { console.error('[call] daily error', e?.errorMsg ?? e); setError('The call dropped. You can rejoin while it is still open.'); setPhase('error'); });
+      call.on('error', (e) => {
+        console.error('[call] daily error', e?.errorMsg ?? e);
+        // Removed from the room: the member moved the call to another device, or the facilitator removed them.
+        if (e?.error?.type === 'ejected' || /eject/i.test(String(e?.errorMsg ?? ''))) { endAttendance(); setPhase('moved'); return; }
+        setError('The call dropped. You can rejoin while it is still open.'); setPhase('error');
+      });
       await call.join({ url: info.url, token: info.token, startVideoOff: true });
     } catch (e) {
       console.error('[call] join failed', e);
@@ -264,7 +301,8 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
         setCamOn(false);
       } else {
         // The camera is only opened now, when the member asks for it, so joining never prompts for it.
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 480 } } });
+        // 720p, 16:9, 30fps: the old 480×480 capture was upscaled across the whole stage, which made it grainy and very zoomed in.
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 }, aspectRatio: { ideal: 16 / 9 }, frameRate: { ideal: 30, max: 30 } } });
         const track = stream.getVideoTracks()[0];
         camTrack.current = track;
         await c.setInputDevicesAsync({ videoSource: track });
@@ -319,7 +357,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     const nameOf = (p: DailyParticipant) => (p.local ? firstName : p.user_name || 'Member');
     const ownerLabel = kind === 'circle' ? 'Facilitator' : 'Mentor';
     // You first, then the facilitator or mentor, then everyone else in the order they arrived.
-    const roster = [...parts].sort((a, b) => Number(b.local) - Number(a.local) || Number(b.owner) - Number(a.owner) || String(a.joined_at ?? '').localeCompare(String(b.joined_at ?? '')));
+    const roster = [...parts].sort((a, b) => Number(b.local) - Number(a.local) || Number(b.owner) - Number(a.owner) || joinedMs(a) - joinedMs(b));
     const known = speaker && parts.some((p) => p.session_id === speaker) ? speaker : null;
     const stage = sharer ?? parts.find((p) => p.session_id === known) ?? parts.find((p) => !p.local) ?? me;
     const isTalking = (p: DailyParticipant) => known === p.session_id && !!p.audio;
@@ -595,6 +633,21 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
             {micOk === 'granted' && (<div className="rx-stack-sm"><p className="rx-sm">Say something. The bar moves when your microphone hears you.</p><div className="rx-bar" role="img" aria-label="Microphone level"><span style={{ width: `${Math.round(level * 100)}%`, transition: 'width .08s linear' }} /></div></div>)}
             {micOk === 'blocked' && <div className="rx-banner" role="alert"><TriangleAlert aria-hidden style={{ width: 20, height: 20, flex: 'none' }} /><div><b>The microphone is blocked.</b> Open your browser’s site settings, allow the microphone for this site, then reload this page. You can still listen without it.</div></div>}
             <div className="rx-row"><button type="button" className="rx-btn primary" onClick={() => void join()}>Join now</button><Link href={backHref} className="rx-link muted">Not now</Link></div>
+          </div>
+        )}
+
+        {phase === 'elsewhere' && (
+          <div className="rx-stack">
+            <div className="rx-banner" role="note"><TriangleAlert aria-hidden style={{ width: 20, height: 20, flex: 'none' }} /><div><b>You’re already in this call on another device.</b> An account can be in a call on one device at a time.</div></div>
+            <div className="rx-row"><button type="button" className="rx-btn primary" onClick={() => { setPhase('loading'); void fetchToken(true); }}>Move the call to this device</button><Link href={backHref} className="rx-link muted">Not now</Link></div>
+          </div>
+        )}
+
+        {phase === 'moved' && (
+          <div className="rx-stack">
+            <p className="rx-big">You’ve left the call on this device.</p>
+            <p className="rx-p">The call continues on your other device. An account can be in a call on one device at a time. If you didn’t join from another device, the facilitator may have removed you, or someone else may be using your account: change your password in Settings.</p>
+            <div className="rx-row"><button type="button" className="rx-btn secondary" onClick={() => { setPhase('loading'); void fetchToken(true); }}>Move the call back here</button><Link href={backHref} className="rx-link muted">Back</Link></div>
           </div>
         )}
 

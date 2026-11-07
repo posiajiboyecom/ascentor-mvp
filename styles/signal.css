@@ -54,8 +54,16 @@
 /* ── 2. body ──────────────────────────────────────────────────────────────── */
 .sg-body { flex: 1; min-height: 0; display: flex; }
 .sg-pane { position: relative; flex: 1; min-width: 0; overflow: hidden; background: #06070C; }
+/* Desktop: a generous video window rather than a full-screen takeover. */
+@media (min-width: 768px) { .sg-pane { max-height: 80vh; margin: auto 0; } }
 .sg-feed { position: absolute; inset: 0; }
-.sg-feed video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.sg-feed video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: auto; }
+/* Your own camera is mirrored, as in a mirror; thumbnails just flip. */
+.sg video.mirror { transform: scaleX(-1); }
+/* On the stage a camera is drawn at 85% so the person sits back in the frame instead of filling it.
+   (Not a shared screen: that is shown whole, with object-fit: contain.) */
+.sg-pane > .sg-feed:not(.screen) video { transform: scale(0.85); }
+.sg-pane > .sg-feed:not(.screen) video.mirror { transform: scale(-0.85, 0.85); }
 .sg-feed.screen { background: #000; }
 .sg-feed.screen video { object-fit: contain; }
 .sg-sil { position: absolute; left: 50%; bottom: 0; translate: -50% 0; width: 52%; max-width: 520px; display: block; }

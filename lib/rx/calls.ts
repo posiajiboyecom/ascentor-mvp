@@ -56,6 +56,21 @@ export async function ensureRoom(name: string): Promise<RoomInfo> {
   return { name: j.name, url: j.url };
 }
 
+/** True when this account is already in the room from another device or tab (Daily presence, keyed by the token's user_id). */
+export async function inRoomElsewhere(room: string, userId: string): Promise<boolean> {
+  try {
+    const r = await daily(`/rooms/${encodeURIComponent(room)}/presence?userId=${encodeURIComponent(userId)}`);
+    if (!r.ok) return false;
+    const j = (await r.json()) as { data?: { userId?: string }[] };
+    return (j.data ?? []).some((p) => p.userId === userId);
+  } catch { return false; }
+}
+
+/** Removes every session of this account from the room (used when the member moves the call to a new device). */
+export async function ejectUser(room: string, userId: string): Promise<void> {
+  await daily(`/rooms/${encodeURIComponent(room)}/eject`, { method: 'POST', body: JSON.stringify({ user_ids: [userId] }) }).catch(() => undefined);
+}
+
 export async function deleteRoom(name: string): Promise<void> {
   await daily(`/rooms/${encodeURIComponent(name)}`, { method: 'DELETE' }).catch(() => undefined);
 }
