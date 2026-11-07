@@ -206,7 +206,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
               <div className="rx-row" style={{ marginTop: 6 }}>
                 {joinOpen && agendaReady ? <Link href={`/call/${circle.circle.id}/mentor`} className="rx-btn primary"><Headphones aria-hidden style={{ width: 18, height: 18 }} />Join</Link> : <span className="rx-btn secondary" aria-disabled="true">{joinOpen ? 'Join call' : 'Opens 5 minutes before'}</span>}
               </div>
-              {!agendaReady && <Banner><b>No agenda yet.</b> This call can’t start until your Circle’s agenda is ready. {agendaCount} of {AGENDA_MIN_QUESTIONS} member questions so far.</Banner>}
+              {!agendaReady && <Banner><b>No agenda yet.</b> The agenda goes to your mentor 48 hours before the call. If it isn’t ready by then, this session is skipped. {agendaCount} of {AGENDA_MIN_QUESTIONS} member questions so far.</Banner>}
               {agendaReady && <div className="rx-row rx-nw" style={{ gap: 10 }}><Tick /><span style={{ flex: 1 }}>Agenda ready · shared with {first}</span></div>}
               <div className="rx-row"><Link href={`/sessions/agenda?c=${circle.circle.id}`} className={`rx-btn ${agendaReady ? 'secondary' : 'primary'}`}>{agendaReady ? 'View agenda' : 'Prepare the agenda'}</Link></div>
               {!isFacilitator && <RsvpButtons sessionId={next.id} mine={next.myRsvp} going={next.going} min={state.needed} />}

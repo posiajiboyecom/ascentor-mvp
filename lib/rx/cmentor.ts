@@ -19,7 +19,11 @@ export const MIN_GOING = 6;
 export const SESSION_GAP_DAYS = 14;
 export const SESSIONS_PLANNED = 6;
 export const MAX_AGREEMENT_GOALS = 3;
-export const READY_MEMBERS = 6;
+/** A Circle can choose a mentor once it has started, which happens at 4 members. */
+export const READY_MEMBERS = 4;
+/** The agenda reaches the mentor this long before each session; times closer than BOOK_AHEAD_HOURS can't be booked. */
+export const AGENDA_LEAD_HOURS = 48;
+export const BOOK_AHEAD_HOURS = 72;
 
 export interface MentorLite { id: string; user_id: string | null; name: string; headline: string | null; bio: string | null; tags: string[]; langs: string[]; formats: string[]; avatar_url: string | null; capacity: number; accepting: boolean }
 export const MENTOR_COLS = 'id, user_id, name, headline, bio, tags, langs, formats, avatar_url, capacity, accepting';
@@ -192,7 +196,7 @@ export async function getMentorship(circleId?: string | null): Promise<Mentorshi
 
     if (cmRow.status === 'scheduling') {
       const [{ data: slots }, { data: marks }] = await Promise.all([
-        supabaseAdmin.from('mentor_slots').select('id, starts_at').eq('mentor_id', m.id).eq('taken', false).gt('starts_at', new Date(Date.now() + 36 * 3600000).toISOString()).order('starts_at').limit(60),
+        supabaseAdmin.from('mentor_slots').select('id, starts_at').eq('mentor_id', m.id).eq('taken', false).gt('starts_at', new Date(Date.now() + BOOK_AHEAD_HOURS * 3600000).toISOString()).order('starts_at').limit(60),
         db.from('slot_marks').select('slot_id, user_id').eq('circle_mentor_id', cmRow.id),
       ]);
       const by = new Map<string, number>(); const mine = new Set<string>();
@@ -299,7 +303,7 @@ export async function mentorCircles(mentorId: string): Promise<MentorCircleCard[
     let slotViews: SlotView[] = [];
     if (cm.status === 'scheduling') {
       const [{ data: sl }, { data: mk }] = await Promise.all([
-        supabaseAdmin.from('mentor_slots').select('id, starts_at').eq('mentor_id', mentorId).eq('taken', false).gt('starts_at', new Date(Date.now() + 36 * 3600000).toISOString()).order('starts_at').limit(60),
+        supabaseAdmin.from('mentor_slots').select('id, starts_at').eq('mentor_id', mentorId).eq('taken', false).gt('starts_at', new Date(Date.now() + BOOK_AHEAD_HOURS * 3600000).toISOString()).order('starts_at').limit(60),
         supabaseAdmin.from('slot_marks').select('slot_id, user_id').eq('circle_mentor_id', cm.id),
       ]);
       const by = new Map<string, number>();

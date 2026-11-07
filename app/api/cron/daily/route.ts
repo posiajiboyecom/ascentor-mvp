@@ -18,6 +18,7 @@ import { reconcilePayments } from '@/lib/paymentReconciliation';
 import { sendEventDayEmails } from '@/lib/summitEventDay';
 import { sendCommitmentReminders, sendUpcomingSessionReminders } from '@/lib/reminders';
 import { dispatch as dispatchEmail } from '@/lib/email/system';
+import { formCircles, sendMentorAgendas } from '@/lib/rx/formation';
 import { enforceMentorSessionRules, flagSmallCircles, notifyFacilitatorsOfQuietMembers, sendCallReminders, sendLessonReminders, syncAnnouncementStatus } from '@/lib/rx/cron';
 
 export const dynamic = 'force-dynamic';
@@ -62,6 +63,9 @@ export async function GET(req: NextRequest) {
     await step('small-circles', () => flagSmallCircles()),
     await step('call-reminders', sendCallReminders),
     await step('lesson-reminders', sendLessonReminders),
+    // Also hourly; here once a day as a safety net, and the one place admins hear about Circles that can't be settled.
+    await step('circle-formation', () => formCircles({ reportWaiting: true })),
+    await step('mentor-agendas', () => sendMentorAgendas()),
     // Last, with the time that's left: a safety net in case the Trigger.dev dispatcher isn't deployed.
     await step('email-dispatch', async () => {
       const left = 52_000 - (Date.now() - t0);

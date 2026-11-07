@@ -11,7 +11,7 @@ import { cleanText } from '@/lib/rx/safety';
 import { zonedTimeToUtc } from '@/lib/rx/dates';
 import { rxNotify, circleAudience as audienceOf } from '@/lib/rx/notifications';
 import { circleTitle } from '@/lib/rx/circles';
-import { READY_MEMBERS, MAX_AGREEMENT_GOALS, SESSIONS_PLANNED, SESSION_GAP_DAYS, openRound, settleRound, announceWinner } from '@/lib/rx/cmentor';
+import { AGENDA_LEAD_HOURS, BOOK_AHEAD_HOURS, READY_MEMBERS, MAX_AGREEMENT_GOALS, SESSIONS_PLANNED, SESSION_GAP_DAYS, openRound, settleRound, announceWinner } from '@/lib/rx/cmentor';
 import { MENTOR_CALL_MINUTES } from '@/lib/rx/calls';
 import { featureBlock } from '@/lib/access';
 import { circleQuorum } from '@/lib/rx/quorum';
@@ -157,6 +157,8 @@ export async function confirmSlot(cmId: string, slotId: string): Promise<ActionR
     if (cm.status !== 'scheduling') throw new Error('A time has already been confirmed.');
     const { data: slot } = await supabaseAdmin.from('mentor_slots').select('id, mentor_id, taken, starts_at').eq('id', slotId).maybeSingle();
     if (!slot || slot.mentor_id !== cm.mentorId || slot.taken) throw new Error('That time is no longer free.');
+    // The agenda goes to the mentor 48 hours ahead, so the first session needs a day before that for questions.
+    if (new Date(slot.starts_at as string).getTime() < Date.now() + BOOK_AHEAD_HOURS * 3600000) throw new Error(`Pick a time at least ${BOOK_AHEAD_HOURS / 24} days away, so your Circle has time to prepare the agenda.`);
     // Handoff quorum: 60% of the Circle's ACTIVE members, rounded up, minimum 3 (the mentor is always present). Lapsed members do not count.
     const [{ data: marked }, quo] = await Promise.all([
       supabaseAdmin.from('slot_marks').select('user_id').eq('circle_mentor_id', cmId).eq('slot_id', slotId),
@@ -198,13 +200,13 @@ export async function setRsvp(sessionId: string, status: 'going' | 'cannot'): Pr
   } catch (e) { return fail(e); }
 }
 
-/** One question per member per session, until 24 hours before it starts. */
+/** One question per member per session, until the agenda goes to the mentor 48 hours before it starts. */
 export async function askQuestion(sessionId: string, text: string): Promise<ActionResult> {
   try {
     const { userId, circle, member } = await inCircle(await circleOfSession(sessionId));
     if (!member) throw new Error('Members ask the questions.');
     const s = await sessionOf(sessionId, circle.circle.id);
-    if (new Date(s.starts_at).getTime() - Date.now() < 24 * 3600000) throw new Error('Questions close 24 hours before the session.');
+    if (new Date(s.starts_at).getTime() - Date.now() < AGENDA_LEAD_HOURS * 3600000) throw new Error(`Questions close ${AGENDA_LEAD_HOURS} hours before the session, when the agenda goes to your mentor.`);
     const t = cleanText(text, 280);
     if (t.length < 5) throw new Error('Write your question first (at least a few words).');
     const { error } = await supabaseAdmin.from('mentor_questions').upsert({ session_id: sessionId, circle_id: circle.circle.id, user_id: userId, text: t }, { onConflict: 'session_id,user_id' });

@@ -4,12 +4,17 @@
 //   1. the practice nudge, in each member's morning (and evening for those who chose two reminders a day)
 //   2. the Monday weekly summary, at 8 in the morning where each member is
 //   3. any admin broadcast that ran out of time, so a long send finishes
+//   4. Circle formation: Circles still forming after 48 hours are merged or started (lib/rx/formation.ts)
+//   5. mentor agendas: reminded 72 hours before a session, sent to the mentor (or the session skipped) at 48 hours
+// Vercel's plan runs this once a day; Trigger.dev (src/trigger/hourly-cron.ts) calls it every hour.
 // Authenticates with the CRON_SECRET bearer token, like the daily job. Safe to repeat: each step checks it has not already sent.
 
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { sendPracticeReminders, sendWeeklyDigests } from '@/lib/rx/cron';
 import { continueSending } from '@/lib/rx/broadcasts';
+
+import { formCircles, sendMentorAgendas } from '@/lib/rx/formation';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -41,6 +46,8 @@ export async function GET(req: NextRequest) {
     await step('practice-reminders', () => sendPracticeReminders()),
     await step('weekly-digests', () => sendWeeklyDigests()),
     await step('broadcasts', () => continueSending()),
+    await step('circle-formation', () => formCircles()),
+    await step('mentor-agendas', () => sendMentorAgendas()),
   ];
   return NextResponse.json({ ok: results.every((r) => r.ok), results });
 }

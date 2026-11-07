@@ -5,6 +5,7 @@
 export type NotifKind =
   | 'circle_joined' | 'circle_new_member' | 'vote_opened' | 'vote_cast' | 'vote_won' | 'mentor_chosen'
   | 'mentor_accepted' | 'mentor_declined' | 'sessions_booked' | 'call_tomorrow' | 'session_moved'
+  | 'agenda_due' | 'agenda_sent' | 'circle_started' | 'circle_moved'
   | 'post_comment' | 'comment_reply' | 'post_reaction' | 'post_share'
   | 'practice_reminder' | 'weekly_digest' | 'lesson_reminder';
 
@@ -42,6 +43,10 @@ export const KINDS: Record<NotifKind, KindSpec> = {
   sessions_booked:   { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'info',    coalesce: false },
   call_tomorrow:     { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'info',    coalesce: false },
   session_moved:     { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'info',    coalesce: false },
+  agenda_due:        { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'info',    coalesce: true },
+  agenda_sent:       { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'success', coalesce: false },
+  circle_started:    { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'success', coalesce: false },
+  circle_moved:      { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'info',    coalesce: false },
   post_comment:      { pref: PREF.community, emailPref: PREF.emailCommunity, legacyType: 'community', coalesce: true },
   comment_reply:     { pref: PREF.community, emailPref: PREF.emailCommunity, legacyType: 'community', coalesce: true },
   post_reaction:     { pref: PREF.reactions, emailPref: null,                legacyType: 'community', coalesce: true },

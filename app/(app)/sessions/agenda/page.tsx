@@ -33,7 +33,8 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
   const AGENDA_MIN_QUESTIONS = asInt(await getSetting('mentor.agenda_questions'), 3, 1, 50);
   const ready = questions.length >= AGENDA_MIN_QUESTIONS;
   const startMs = next ? new Date(next.startsAt).getTime() : 0;
-  const locked = !next || (startMs - Date.now() < 24 * 3600000 && !next.myQuestion);
+  // Questions close when the agenda goes to the mentor, 48 hours before the session.
+  const locked = !next || startMs - Date.now() < 48 * 3600000;
 
   return (
     <Page>
@@ -66,7 +67,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
             {ORDER.map(([item, min]) => <div key={item} className="rx-between" style={{ minHeight: 40, borderBottom: '1px solid var(--rx-border)' }}><span>{item}</span><span className="rx-sm">{min}</span></div>)}
           </div>
           <div className="rx-row"><SageSuggest /></div>
-          <p className="rx-sm">{ready ? `${first} can see it now. You can still add notes.` : `Needs at least ${AGENDA_MIN_QUESTIONS} questions. ${questions.length} of ${AGENDA_MIN_QUESTIONS} so far.`}</p>
+          <p className="rx-sm">{ready ? `Ready. It goes to ${first} 48 hours before the session.` : `Needs at least ${AGENDA_MIN_QUESTIONS} questions, 48 hours before the session, when it goes to ${first}. ${questions.length} of ${AGENDA_MIN_QUESTIONS} so far. Without it, the session is skipped.`}</p>
         </div>
         <Aside>
           <p className="rx-label">Why an agenda</p>
