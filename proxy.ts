@@ -113,6 +113,8 @@ const PUBLIC_API_ROUTES = [
   '/api/health',
   '/api/waitlist',
   '/api/newsletter',
+  // Email system: open/click tracking and one-click unsubscribe from inside sent emails (token-addressed, no session)
+  '/api/email',
   // Free-resource capture on public landing pages (no account exists yet)
   '/api/lead-magnet',
   // Shop: guests can buy and download. Each route validates its own input, signs its own links
@@ -170,6 +172,8 @@ const PUBLIC_ROUTES = [
   '/', '/about', '/blog', '/pricing', '/privacy', '/terms',
   '/how-it-works', '/who-its-for', '/waitlist', '/newsletter',
   '/mentor-apply', '/offline', '/payment', '/leader-invite', '/facilitator', '/join',
+  // Unsubscribe page linked from every bulk email
+  '/unsubscribe',
   // Dedicated staff sign-in. /login and /signup are closed to the public
   // (community gate), so admins need their own entry point. Same accounts,
   // same Supabase auth; the page verifies the admin/moderator role itself.

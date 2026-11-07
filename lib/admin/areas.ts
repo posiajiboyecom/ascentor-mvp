@@ -23,7 +23,7 @@ export const NAV: [string, NavItem[]][] = [
   ['Learn', [['pathways', 'Pathways and lessons'], ['knowledge', 'Sage knowledge base']]],
   ['Revenue', [['payments', 'Payments', 1], ['plans', 'Plans and pricing', 1], ['promos', 'Promo codes', 1], ['referrals', 'Referrals', 1], ['products', 'Shop products', 1], ['orders', 'Shop orders', 1]]],
   ['Elevation Summit', [['registrations', 'Registrations', 1], ['donations', 'Donations', 1], ['livestream', 'Livestream', 1]]],
-  ['Marketing', [['blog', 'Blog'], ['pages', 'Landing pages', 1], ['newsletter', 'Newsletter'], ['billboards', 'Billboards', 1], ['partners', 'Partners', 1], ['careers', 'Careers', 1], ['events', 'Public events', 1]]],
+  ['Marketing', [['blog', 'Blog'], ['pages', 'Landing pages', 1], ['newsletter', 'Email'], ['billboards', 'Billboards', 1], ['partners', 'Partners', 1], ['careers', 'Careers', 1], ['events', 'Public events', 1]]],
   ['Insights', [['analysis', 'AI analysis', 1], ['intel', 'Platform intel'], ['reports', 'Reports'], ['surveys', 'Surveys'], ['audit', 'Audit log', 1]]],
   ['Settings', [['platform', 'Platform settings', 1]]],
 ];

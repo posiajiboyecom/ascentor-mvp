@@ -34,6 +34,8 @@ export function brandedEmailLayout(opts: {
   heading: string;
   content: string;
   recipient: string;
+  /** Extra footer HTML under the recipient line (bulk mail: why they got it and how to unsubscribe). */
+  footer?: string;
 }): string {
   const socialIcons = SOCIALS.map(
     (s) => `<a href="${s.url}" target="_blank" style="display:inline-block;margin:0 8px;text-decoration:none;">
@@ -116,6 +118,7 @@ export function brandedEmailLayout(opts: {
               <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#9CA3AF;">
                 This email was sent to <a href="mailto:${esc(opts.recipient)}" style="color:#C8A96E;text-decoration:none;">${esc(opts.recipient)}</a>
               </p>
+              ${opts.footer ?? ''}
             </td>
           </tr>
 

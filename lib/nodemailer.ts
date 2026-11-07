@@ -179,6 +179,8 @@ export async function sendEmail(opts: {
   attachments?: { filename: string; content: Buffer; contentType: string }[];
   /** Codes the member cannot continue without (sign-up, password reset): throw instead of skipping when mail is not configured. */
   required?: boolean;
+  /** Extra headers, e.g. List-Unsubscribe for bulk mail. */
+  headers?: Record<string, string>;
 }): Promise<void> {
   opts = { ...opts, to: guardRecipient(opts.to) };
   const mailer = getMailer();
@@ -196,7 +198,7 @@ export async function sendEmail(opts: {
   authBlock = null;
 
   const from = opts.from || DEFAULT_FROM;
-  const base = { to: opts.to, subject: opts.subject, html: opts.html, text: opts.text, attachments: opts.attachments };
+  const base = { to: opts.to, subject: opts.subject, html: opts.html, text: opts.text, attachments: opts.attachments, ...(opts.headers ? { headers: opts.headers } : {}) };
   let attemptFrom = from;
   let attemptReplyTo = opts.replyTo || REPLY_TO;
   let lastErr: unknown;
