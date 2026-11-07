@@ -4,19 +4,18 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { ArrowRight, CalendarDays, KeyRound, LogOut, Mail, Trash2, UserRound } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { confirmAction } from '@/components/Modal';
 import { useToast } from '@/components/rx/Toast';
 import { LanguageSelect, TimezoneSelect } from '@/components/rx/settings/SettingsClient';
+import { signOutAndLeave } from '@/lib/auth/sign-out';
 
 const PROVIDER: Record<string, string> = { google: 'Google', linkedin_oidc: 'LinkedIn', linkedin: 'LinkedIn', email: 'Email and password' };
 
 export default function AccountTab({ name, email, memberSince, methods, hasPassword, language, timezoneLabel }: {
   name: string; email: string; memberSince: string; methods: string[]; hasPassword: boolean; language: string; timezoneLabel: string;
 }) {
-  const router = useRouter();
   const toast = useToast();
   const [light, setLight] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
@@ -30,8 +29,7 @@ export default function AccountTab({ name, email, memberSince, methods, hasPassw
   const signOut = async () => {
     if (!(await confirmAction('Sign out of Ascentor on this device?', { title: 'Sign out?', confirmLabel: 'Sign out' }))) return;
     setSigningOut(true);
-    await createClient().auth.signOut();
-    router.push('/');
+    await signOutAndLeave('/');
   };
 
   const deleteAccount = async () => {

@@ -5,14 +5,12 @@
 // announcements, messages, notifications, and Sage, the floating AI coach.
 // Light theme only.
 
-import { clearUserCache } from '@/lib/sw-cache';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import { useCart } from '@/lib/shop-cart';
 import {
   Bell, Brain, CalendarClock, CircleHelp, Compass, Gift, LayoutDashboard, Mail, Megaphone, MapPin, Package, Settings, ShieldCheck, ShoppingBag, TrendingUp, UserRound,
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { AnnouncementsBell, MessagesLink, NotificationsBell, type BellItem } from '@/components/rx/HeaderActions';
 import { ToastProvider } from '@/components/rx/Toast';
 import SummitModal from './SummitModal';
@@ -29,6 +27,7 @@ import type { NoticeData } from '@/lib/rx/notice-types';
 import SagePanel from '@/components/rx/sage/SagePanel';
 import { MobileTabBar } from '@/components/nav/MobileTabBar';
 import type { ShellNavGroup } from './types';
+import { signOutAndLeave } from '@/lib/auth/sign-out';
 
 export interface ShellCountsProp {
   unreadAnnouncements: number;
@@ -57,11 +56,9 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
   const showShop = features?.shop !== false;
   const showCities = features?.cities !== false;
   const showRefer = features?.refer !== false;
-  const router = useRouter();
   const pathname = usePathname();
   // On Today the announcement already sits at the top of the page, so the sidebar does not repeat it.
   const sidebarNotice = counts?.notice && !(pathname === '/dashboard' && counts.notice.source === 'announcement') ? counts.notice : null;
-  const supabase = useMemo(() => createClient(), []);
   const isStaff = role === 'admin' || role === 'moderator';
   const unread = counts?.unreadAnnouncements ?? 0;
   const unreadMessages = counts?.unreadMessages ?? 0;
@@ -107,10 +104,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
   // The shell has already asked "Sign out?" by the time this runs.
   const handleSignOut = async () => {
     clearSageGreeting(); // so the next login is greeted again
-    void clearUserCache(); // saved pages belong to this account
-    await supabase.auth.signOut();
-    router.push('/');
-    router.refresh();
+    await signOutAndLeave('/');
   };
 
   return (

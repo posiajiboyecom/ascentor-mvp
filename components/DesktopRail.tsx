@@ -21,13 +21,12 @@
 // moving to the compact icon rail - it's all in the avatar dropdown now.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { clearUserCache } from '@/lib/sw-cache';
 import Link from 'next/link';
 import { confirmAction } from '@/components/Modal';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { NotificationBell } from '@/components/Notifications';
+import { signOutAndLeave } from '@/lib/auth/sign-out';
 
 const GOLD     = '#C8A96E';
 const GOLD_BG  = 'rgba(200,169,110,0.10)';
@@ -92,8 +91,6 @@ interface DesktopRailProps {
 
 export default function DesktopRail({ initials, fullName, isAdmin }: DesktopRailProps) {
   const pathname = usePathname();
-  const router    = useRouter();
-  const supabase  = createClient();
 
   const [showMenu, setShowMenu] = useState(false);
   const [days, setDays]         = useState<number | null>(null);
@@ -102,10 +99,7 @@ export default function DesktopRail({ initials, fullName, isAdmin }: DesktopRail
 
   const handleSignOut = async () => {
     if (!(await confirmAction('Sign out of Ascentor on this device?', { title: 'Sign out?', confirmLabel: 'Sign out' }))) return;
-    void clearUserCache(); // saved pages belong to this account
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    await signOutAndLeave('/login');
   };
 
   return (

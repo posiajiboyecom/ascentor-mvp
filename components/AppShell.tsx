@@ -1,15 +1,14 @@
 'use client';
 
-import { clearUserCache } from '@/lib/sw-cache';
 import BottomNav from './BottomNav';
 import { confirmAction } from '@/components/Modal';
 import DesktopRail from './DesktopRail';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { NotificationBell } from '@/components/Notifications';
 import { usePlanSync } from '@/hooks/usePlanSync';
+import { signOutAndLeave } from '@/lib/auth/sign-out';
 
 // ─────────────────────────────────────────────────────────────────
 // ASCENTOR · AppShell · Brand Book v1.0 · 2026
@@ -32,8 +31,6 @@ function Shell({
   chatLayout?: boolean;
   userId?: string;
 }) {
-  const supabase        = createClient();
-  const router          = useRouter();
   const pathname        = usePathname();
   const [showMenu, setShowMenu] = useState(false);
 
@@ -50,10 +47,7 @@ function Shell({
 
   const handleSignOut = async () => {
     if (!(await confirmAction('Sign out of Ascentor on this device?', { title: 'Sign out?', confirmLabel: 'Sign out' }))) return;
-    void clearUserCache(); // saved pages belong to this account
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    await signOutAndLeave('/login');
   };
 
   const logoSrc = '/ascentor-color-for-light-pages.svg';

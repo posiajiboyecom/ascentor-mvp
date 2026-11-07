@@ -1,6 +1,5 @@
 'use client';
 
-import { clearUserCache } from '@/lib/sw-cache';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useTransition } from 'react';
 import {
@@ -8,11 +7,11 @@ import {
   Handshake, HeartHandshake, Hourglass, Inbox, Layers, LayoutDashboard, LayoutTemplate, LineChart, Mail, MapPin, Megaphone, MessagesSquare, Newspaper,
   Package, PenLine, Percent, Presentation, Radar, Radio, ScrollText, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Ticket, UserRound, Users, UsersRound, Workflow, Wrench,
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import ShellLayout from '@/components/shell/ShellLayout';
 import type { ShellNavGroup } from '@/components/shell/types';
 import { NAV, areaHref, legacyAreaFor } from '@/lib/admin/areas';
 import { setViewAs } from '@/app/admin/c/actions';
+import { signOutAndLeave } from '@/lib/auth/sign-out';
 
 // ─────────────────────────────────────────────────────────────────────────
 // ASCENTOR · AdminShell, built to the admin prototype.
@@ -69,7 +68,6 @@ export default function AdminShell({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = useMemo(() => createClient(), []);
   // An older admin page whose area this role cannot open: show a plain notice instead of the page.
   const legacyArea = legacyAreaFor(pathname);
   const blocked = !!legacyArea && !visibleAreas.includes(legacyArea);
@@ -87,10 +85,7 @@ export default function AdminShell({
   }, [visibleAreas, badges, isAdmin]);
 
   const handleSignOut = async () => {
-    void clearUserCache(); // saved pages belong to this account
-    await supabase.auth.signOut();
-    router.push('/admin-login');
-    router.refresh();
+    await signOutAndLeave('/admin-login');
   };
 
   const onViewAs = (id: string) => {

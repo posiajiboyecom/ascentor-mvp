@@ -19,14 +19,12 @@
 
 'use client';
 
-import { clearUserCache } from '@/lib/sw-cache';
 import type { Partner } from '@/types/partner';
 import { confirmAction } from '@/components/Modal';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { signOutAndLeave } from '@/lib/auth/sign-out';
 
 interface NavItem {
   label: string;
@@ -66,8 +64,6 @@ export default function PartnerMemberShell({
   };
 }) {
   const pathname  = usePathname();
-  const supabase  = createClient();
-  const router    = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const sub      = partner.subdomain;
@@ -89,9 +85,7 @@ export default function PartnerMemberShell({
 
   async function handleSignOut() {
     if (!(await confirmAction('Sign out of Ascentor on this device?', { title: 'Sign out?', confirmLabel: 'Sign out' }))) return;
-    void clearUserCache(); // saved pages belong to this account
-    await supabase.auth.signOut();
-    router.push('/login');
+    await signOutAndLeave('/login');
   }
 
   return (

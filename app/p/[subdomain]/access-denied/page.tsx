@@ -13,9 +13,8 @@
 import { Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 import { MailQuestion, PauseCircle, Ban, UserX, type LucideIcon } from 'lucide-react';
+import { signOutAndLeave } from '@/lib/auth/sign-out';
 
 const REASONS: Record<string, { Icon: LucideIcon; title: string; desc: string }> = {
   not_invited: {
@@ -43,16 +42,13 @@ const REASONS: Record<string, { Icon: LucideIcon; title: string; desc: string }>
 function AccessDeniedContent() {
   const params       = useParams();
   const searchParams = useSearchParams();
-  const router       = useRouter();
-  const supabase     = createClient();
 
   const subdomain = params.subdomain as string;
   const reason    = searchParams.get('reason') || 'not_invited';
   const config    = REASONS[reason] || REASONS.not_invited;
 
   async function handleSignOut() {
-    await supabase.auth.signOut();
-    router.push('/login');
+    await signOutAndLeave('/login');
   }
 
   return (

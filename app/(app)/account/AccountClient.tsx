@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { Check, CalendarDays, Mail, UserRound, LogOut, Trash2, Monitor } from 'lucide-react';
 import { ProviderIcon, PROVIDER_NAME } from '@/components/auth/ProviderIcon';
 import AuthModal from '@/components/auth/AuthModal';
+import { signOutAndLeave } from '@/lib/auth/sign-out';
 
 const industries = [
   'Technology', 'Finance & Banking', 'Consulting', 'Healthcare',
@@ -194,15 +195,13 @@ export default function AccountClient({ profile, email, authProvider, providers,
   const handleSignOutAll = async () => {
     if (!(await confirmAction('Sign out of every device, including this one?', { title: 'Sign out everywhere?', confirmLabel: 'Sign out everywhere' }))) return;
     setSigningOutAll(true);
-    await supabase.auth.signOut({ scope: 'global' });
-    router.push('/login');
+    await signOutAndLeave('/login', 'global');
   };
 
   const handleSignOut = async () => {
     if (!(await confirmAction('Sign out of Ascentor on this device?', { title: 'Sign out?', confirmLabel: 'Sign out' }))) return;
     setSigningOut(true);
-    await supabase.auth.signOut();
-    router.push('/');
+    await signOutAndLeave('/');
   };
 
   const handleNotifSave = async () => {
