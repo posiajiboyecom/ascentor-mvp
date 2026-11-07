@@ -36,6 +36,8 @@ export function brandedEmailLayout(opts: {
   recipient: string;
   /** Extra footer HTML under the recipient line (bulk mail: why they got it and how to unsubscribe). */
   footer?: string;
+  /** Leave out the "This email was sent to …" line (campaign emails). */
+  hideRecipient?: boolean;
 }): string {
   const socialIcons = SOCIALS.map(
     (s) => `<a href="${s.url}" target="_blank" style="display:inline-block;margin:0 8px;text-decoration:none;">
@@ -115,9 +117,9 @@ export function brandedEmailLayout(opts: {
           <!-- Recipient line -->
           <tr>
             <td align="center" style="padding:0 40px 28px;">
-              <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#9CA3AF;">
+              ${opts.hideRecipient ? '' : `<p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#9CA3AF;">
                 This email was sent to <a href="mailto:${esc(opts.recipient)}" style="color:#C8A96E;text-decoration:none;">${esc(opts.recipient)}</a>
-              </p>
+              </p>`}
               ${opts.footer ?? ''}
             </td>
           </tr>

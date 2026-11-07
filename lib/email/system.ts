@@ -131,6 +131,7 @@ export function renderEmail(c: Pick<Campaign, 'subject' | 'preheader' | 'heading
     content: body,
     recipient: r.email,
     footer,
+    hideRecipient: true,
   });
   const mailbox = (s.reply_to || REPLY_TO).replace(/^.*<([^>]+)>.*$/, '$1');
   const headers: Record<string, string> = token
@@ -280,7 +281,8 @@ export async function dispatch(opts: { budgetMs: number; owner: string }): Promi
 /** Sends one copy to `to` exactly as recipients see it (no tracking; subject marked as a test). */
 export async function sendTest(c: Pick<Campaign, 'subject' | 'preheader' | 'heading' | 'body_html'>, to: string, name: string | null): Promise<void> {
   const s = await getSettings();
-  const m = renderEmail(c, { email: to, name, token: null, reason: 'This is a test send from the Ascentor email console.' }, s);
+  // Identical to what recipients get; the only marker is [Test] in the subject.
+  const m = renderEmail(c, { email: to, name, token: null }, s);
   await sendEmail({ to, subject: `[Test] ${m.subject}`, html: m.html, text: m.text, from: fromWithName(s.from_name), replyTo: s.reply_to || undefined, required: true });
 }
 

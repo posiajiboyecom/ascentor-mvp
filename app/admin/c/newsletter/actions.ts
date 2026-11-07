@@ -279,7 +279,7 @@ export async function previewCampaign(d: Draft): Promise<R<{ html: string; subje
   try {
     const staff = await staffAt('view');
     const s = await getSettings();
-    const m = renderEmail(cleanDraft(d), { email: staff.email ?? 'you@example.com', name: staff.name, token: null, reason: 'This is a preview from the Ascentor email console.' }, s);
+    const m = renderEmail(cleanDraft(d), { email: staff.email ?? 'you@example.com', name: staff.name, token: null, reason: 'You are receiving this because you subscribed to our newsletter.' }, s);
     return { ok: true, html: m.html, subject: m.subject };
   } catch (e) { return fail(e, 'We couldn’t build the preview.'); }
 }
