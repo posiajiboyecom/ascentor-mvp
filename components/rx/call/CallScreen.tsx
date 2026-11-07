@@ -51,6 +51,8 @@ const scheduled = (startsAt: string, weekly: boolean) => {
 // Inter for the interface, DM Mono for timers. Loaded from Google Fonts (allowed by the CSP) so builds never depend on fetching them.
 const SIGNAL_FONTS = 'https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;500&family=Inter:wght@400;600;700&display=swap';
 const THEME_KEY = 'ascentor:call-theme';
+const BLUR_KEY = 'ascentor:call-blur';
+const CAM_SETTINGS = { width: { ideal: 1280 }, height: { ideal: 720 }, aspectRatio: { ideal: 16 / 9 }, frameRate: { ideal: 30, max: 30 } };
 const IN_APP = /(FBAN|FBAV|Instagram|Line\/|MicroMessenger|; wv\))/i;
 const SHARE_BUSY = 'Someone is already sharing — wait for them to stop.';
 const IOS_NOTE = 'Screen sharing isn’t available on iOS browsers yet. To share your screen, join this call from a laptop or an Android device.';
@@ -79,6 +81,10 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const [muted, setMuted] = useState(false);
   const [camOn, setCamOn] = useState(false);
   const [camBusy, setCamBusy] = useState(false);
+  // Background blur (desktop browsers only, done by Daily). Remembered on this device; applied whenever the camera is on.
+  const [blurOn, setBlurOn] = useState(false);
+  const [canBlur, setCanBlur] = useState(false);
+  const camMode = useRef<'own' | 'daily' | null>(null);
   const [hands, setHands] = useState<string[]>([]);
   const [handUp, setHandUp] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
@@ -87,7 +93,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const [shareBusy, setShareBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [sheet, setSheet] = useState<null | 'agenda' | 'ios' | 'chat' | 'people'>(null);
-  // Call theme: 'light' or 'dark' once the member picks one (remembered on this device); until then it follows the device.
+  // Call theme: light by default; dark only when the member picks it (remembered on this device).
   const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
   // Desktop side panel: the people on the call (with the agenda), the chat, or hidden.
   const [panel, setPanel] = useState<null | 'people' | 'chat'>('people');
@@ -112,15 +118,19 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
 
   useEffect(() => { setIos(isIOS()); }, []);
   useEffect(() => {
+    try { setCanBlur(!!Daily.supportedBrowser().supportsVideoProcessing && !isIOS() && !window.matchMedia('(pointer: coarse)').matches); } catch { setCanBlur(false); }
+    try { setBlurOn(localStorage.getItem(BLUR_KEY) === 'on'); } catch { /* storage unavailable */ }
+  }, []);
+  useEffect(() => {
     try { const t = localStorage.getItem(THEME_KEY); if (t === 'light' || t === 'dark') setTheme(t); } catch { /* storage unavailable */ }
   }, []);
   function toggleTheme() {
-    const current = theme ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const current = theme ?? 'light';
     const next = current === 'dark' ? 'light' : 'dark';
     setTheme(next);
     try { localStorage.setItem(THEME_KEY, next); } catch { /* storage unavailable */ }
   }
-  const isDark = theme ? theme === 'dark' : (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches);
+  const isDark = theme === 'dark';
 
   const fetchToken = useCallback(async (takeover = false) => {
     try {
@@ -191,7 +201,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     if (!newer) return;
     void (async () => {
       try { if (sharing) callRef.current?.stopScreenShare(); await callRef.current?.leave(); } catch { /* already gone */ }
-      camTrack.current?.stop(); camTrack.current = null; setCamOn(false); setSharing(false);
+      camTrack.current?.stop(); camTrack.current = null; camMode.current = null; setCamOn(false); setSharing(false);
       endAttendance(); setPhase('moved');
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -331,32 +341,81 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   async function leave(auto = false) {
     try { if (sharing) callRef.current?.stopScreenShare(); } catch { /* already stopped */ }
     try { await callRef.current?.leave(); } catch { /* already gone */ }
-    camTrack.current?.stop(); camTrack.current = null; setCamOn(false); setSharing(false);
+    camTrack.current?.stop(); camTrack.current = null; camMode.current = null; setCamOn(false); setSharing(false);
     endAttendance(); setPhase('ended');
     if (auto) toast('The call has ended.');
   }
 
   function toggleMute() { const c = callRef.current; if (!c) return; const next = !muted; c.setLocalAudio(!next); setMuted(next); }
+  /** Turns the camera off and releases it, whichever way it was opened. */
+  async function stopCamera(c: DailyCall) {
+    c.setLocalVideo(false);
+    if (camMode.current === 'daily') {
+      await c.updateInputSettings({ video: { processor: { type: 'none' } } }).catch(() => undefined);
+      await c.setInputDevicesAsync({ videoDeviceId: false }).catch(() => undefined);
+    } else {
+      await c.setInputDevicesAsync({ videoSource: false }).catch(() => undefined);
+    }
+    camTrack.current?.stop(); camTrack.current = null; camMode.current = null;
+  }
+
+  /**
+   * Opens the camera only now, when the member asks, so joining never prompts for it. 720p, 16:9, 30fps.
+   * Without blur we hand Daily our own track (the path proven on every browser). With blur, Daily has to own the camera
+   * to run its background processor, so we pass it the device instead; if that fails we fall back to our own track.
+   */
+  async function startCamera(c: DailyCall, blur: boolean): Promise<boolean> {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', ...CAM_SETTINGS } });
+    const track = stream.getVideoTracks()[0];
+    if (blur && canBlur) {
+      const deviceId = track.getSettings().deviceId;
+      track.stop();
+      try {
+        await c.setInputDevicesAsync({ videoDeviceId: deviceId ?? null });
+        await c.updateInputSettings({ video: { settings: { facingMode: 'user', ...CAM_SETTINGS }, processor: { type: 'background-blur', config: { strength: 0.6 } } } });
+        c.setLocalVideo(true);
+        camMode.current = 'daily';
+        return true;
+      } catch (e) {
+        console.warn('[call] background blur failed, using the plain camera', e);
+        await c.setInputDevicesAsync({ videoDeviceId: false }).catch(() => undefined);
+        toast('Background blur isn’t working in this browser, so your camera is on without it.');
+        return startCamera(c, false);
+      }
+    }
+    camTrack.current = track;
+    await c.setInputDevicesAsync({ videoSource: track });
+    c.setLocalVideo(true);
+    camMode.current = 'own';
+    return true;
+  }
+
   async function toggleCamera() {
     const c = callRef.current; if (!c || camBusy) return;
     setCamBusy(true);
     try {
-      if (camOn) {
-        c.setLocalVideo(false);
-        await c.setInputDevicesAsync({ videoSource: false });
-        camTrack.current?.stop(); camTrack.current = null;
-        setCamOn(false);
-      } else {
-        // The camera is only opened now, when the member asks for it, so joining never prompts for it.
-        // 720p, 16:9, 30fps: the old 480×480 capture was upscaled across the whole stage, which made it grainy and very zoomed in.
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 }, aspectRatio: { ideal: 16 / 9 }, frameRate: { ideal: 30, max: 30 } } });
-        const track = stream.getVideoTracks()[0];
-        camTrack.current = track;
-        await c.setInputDevicesAsync({ videoSource: track });
-        c.setLocalVideo(true);
-        setCamOn(true);
-      }
+      if (camOn) { await stopCamera(c); setCamOn(false); }
+      else { await startCamera(c, blurOn); setCamOn(true); }
     } catch { toast('We couldn’t turn on your camera. Check that your browser can use it.'); setCamOn(false); }
+    finally { setCamBusy(false); }
+  }
+
+  async function toggleBlur() {
+    const c = callRef.current; if (!c || camBusy || !canBlur) return;
+    const next = !blurOn;
+    setBlurOn(next);
+    try { localStorage.setItem(BLUR_KEY, next ? 'on' : 'off'); } catch { /* storage unavailable */ }
+    if (!camOn) { toast(next ? 'Background blur is on. It applies when you turn your camera on.' : 'Background blur is off.'); return; }
+    setCamBusy(true);
+    try {
+      if (camMode.current === 'daily' && !next) {
+        // Already Daily's camera: just drop the processor.
+        await c.updateInputSettings({ video: { processor: { type: 'none' } } });
+      } else {
+        await stopCamera(c);
+        await startCamera(c, next);
+      }
+    } catch { toast('We couldn’t change the background. Try turning your camera off and on.'); }
     finally { setCamBusy(false); }
   }
   function sendChat(text: string) {
@@ -614,6 +673,11 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
           <button type="button" className="sg-ctl" aria-pressed={camOn} aria-label={camOn ? 'Turn camera off' : 'Turn camera on'} disabled={camBusy} onClick={() => void toggleCamera()}>
             <span className="b">{camOn ? <IcCam /> : <IcCamOff />}</span><span>Camera</span>
           </button>
+          {canBlur && (
+            <button type="button" className="sg-ctl" aria-pressed={blurOn} aria-label={blurOn ? 'Turn background blur off' : 'Blur my background'} disabled={camBusy} onClick={() => void toggleBlur()}>
+              <span className="b"><IcBlur /></span><span>{blurOn ? 'Blur on' : 'Blur'}</span>
+            </button>
+          )}
           <button type="button" className="sg-ctl" aria-pressed={sharing} aria-disabled={ios || undefined}
             aria-label={ios ? 'Screen sharing isn’t available on iOS' : sharing ? 'Stop sharing your screen' : 'Share your screen'} onClick={toggleShare}>
             <span className="b"><IcScreen /></span><span>{sharing ? 'Stop' : 'Screen'}</span>
@@ -761,6 +825,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   );
 }
 
+const IcBlur = () => <svg viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="9" r="3.2" /><path d="M6 20a6 6 0 0 1 12 0" /><path d="M3 4.5h.01M3 9h.01M3 13.5h.01M21 4.5h.01M21 9h.01M21 13.5h.01M5.5 2.5h.01M18.5 2.5h.01" strokeWidth="2.6" /></svg>;
 const IcSun = () => <svg viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>;
 const IcMoon = () => <svg viewBox="0 0 24 24" aria-hidden><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>;
 const IcChat = () => <svg viewBox="0 0 24 24" aria-hidden><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z" /></svg>;
