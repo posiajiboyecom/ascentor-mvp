@@ -142,7 +142,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     meterStop.current();
     setPhase('joining'); setError('');
     try {
-      const call = Daily.createCallObject({ audioSource: true, videoSource: false, subscribeToTracksAutomatically: true });
+      const call = Daily.createCallObject({ audioSource: true, videoSource: false, subscribeToTracksAutomatically: true, dailyConfig: { avoidEval: true } });
       callRef.current = call;
       call.on('joined-meeting', async () => {
         refreshParts(); setPhase('incall');
@@ -154,9 +154,10 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       call.on('network-connection', (e) => setReconnecting(e?.event === 'interrupted'));
       call.on('network-quality-change', (e) => setPoor(e?.threshold === 'low' || e?.threshold === 'very-low'));
       call.on('left-meeting', () => { setPhase('ended'); void endAttendance(); });
-      call.on('error', () => { setError('The call dropped. You can rejoin while it is still open.'); setPhase('error'); });
+      call.on('error', (e) => { console.error('[call] daily error', e?.errorMsg ?? e); setError('The call dropped. You can rejoin while it is still open.'); setPhase('error'); });
       await call.join({ url: info.url, token: info.token, startVideoOff: true });
-    } catch {
+    } catch (e) {
+      console.error('[call] join failed', e);
       setError('We could not connect to the call.'); setPhase('error');
     }
   }
