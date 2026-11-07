@@ -1,0 +1,49 @@
+# Deploys the Trigger.dev background tasks (src/trigger/*: email dispatcher, reminders, agents) to Production.
+# Runs on every push to main that touches task code or what it imports, and on demand from the Actions tab
+# ("Deploy Trigger.dev tasks" → Run workflow).
+#
+# One-time setup: GitHub repo → Settings → Secrets and variables → Actions → New repository secret
+#   Name:  TRIGGER_ACCESS_TOKEN
+#   Value: a Personal Access Token from cloud.trigger.dev → Account (top left) → Personal Access Tokens
+name: Deploy Trigger.dev tasks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/trigger/**'
+      - 'lib/**'
+      - 'trigger.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/trigger-deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: trigger-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Check the access token is set
+        env:
+          TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$TRIGGER_ACCESS_TOKEN" ]; then
+            echo "::error::Add the TRIGGER_ACCESS_TOKEN repository secret (see the top of this file)."
+            exit 1
+          fi
+      - run: npm ci --no-audit --no-fund
+      - name: Deploy to Trigger.dev (prod)
+        env:
+          TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+        # CLI pinned to the same version as @trigger.dev/sdk in package.json
+        run: npx --yes trigger.dev@4.4.4 deploy --env prod
