@@ -44,6 +44,11 @@ export const spec: ScreenSpec = {
       label: "Email everyone not yet confirmed"
     },
     {
+      id: "referrals",
+      label: "Referrals",
+      href: "/admin/c/registrations/referrals"
+    },
+    {
       id: "delivery",
       label: "Delivery and resend all",
       href: "/admin/c/registrations/delivery"

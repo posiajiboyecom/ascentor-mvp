@@ -15,6 +15,7 @@ import flags from 'react-phone-number-input/flags';
 import { useModal } from '@/components/Modal';
 import FlyerCta, { SUMMIT_NAME_KEY } from './FlyerCta';
 import LasuWhatsappCard from '@/components/LasuWhatsappCard';
+import SummitReferralCard from '@/components/SummitReferralCard';
 import SummitTicketCard, { TICKET_STORAGE_KEY, type ScreenTicket, type TicketProof } from '@/components/SummitTicketCard';
 import { useRouter } from 'next/navigation';
 import { Compass, Hammer, Crown, Sparkles, Network, Monitor, CalendarDays, MapPin, Clock, TicketCheck, Check, ArrowRight, HeartHandshake } from 'lucide-react';
@@ -61,7 +62,29 @@ const ERROR = {
 };
 
 
+// Referral link: ?ref=CODE is kept for 30 days (first-party, this browser only) and sent with the form. The device id is a random
+// per-browser value used only to stop someone referring themselves.
+const REF_KEY = 'summit_ref';
+const DEV_KEY = 'summit_device';
+function storedRef(): string | undefined {
+  try { const v = JSON.parse(localStorage.getItem(REF_KEY) || 'null'); return v && v.exp > Date.now() ? String(v.code) : undefined; } catch { return undefined; }
+}
+function deviceId(): string | undefined {
+  try {
+    let d = localStorage.getItem(DEV_KEY);
+    if (!d) { d = crypto.randomUUID(); localStorage.setItem(DEV_KEY, d); }
+    return d;
+  } catch { return undefined; }
+}
+
 export default function ElevationSummitClient({ cms }: { cms: PublishedPage | null }) {
+  // Remember the referral code from the link this visitor arrived on.
+  useEffect(() => {
+    try {
+      const code = new URLSearchParams(window.location.search).get('ref')?.trim().toUpperCase();
+      if (code && /^[A-Z0-9]{8}$/.test(code)) localStorage.setItem(REF_KEY, JSON.stringify({ code, exp: Date.now() + 30 * 86400_000 }));
+    } catch { /* storage can be blocked */ }
+  }, []);
   // CMS section keys
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
   const heroEyebrow   = hero?.eyebrow    || 'Inaugural Gathering · 19 November, 2026';
@@ -154,7 +177,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
   const [venueSlide, setVenueSlide] = useState(0);
   // Non-null while the post-registration success overlay is showing
   const [registrationSuccess, setRegistrationSuccess] = useState<'onsite' | 'virtual' | null>(null);
-  const [ticketInfo, setTicketInfo] = useState<{ ticket: ScreenTicket | null; proof: TicketProof; emailSent: boolean } | null>(null);
+  const [ticketInfo, setTicketInfo] = useState<{ ticket: ScreenTicket | null; proof: TicketProof; emailSent: boolean; referralLink?: string | null } | null>(null);
   // The pending auto-redirect out of the success overlay, cleared if the
   // visitor clicks a button in it before it fires (Continue or Donate),
   // so it can never fire a second, unwanted navigation afterwards.
@@ -173,7 +196,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       const res = await fetch('/api/summit/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, ref: storedRef(), device: deviceId() }),
       });
 
       if (res.status === 409) {
@@ -189,7 +212,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
       }
 
       const result = await res.json().catch(() => ({} as { ticket?: ScreenTicket | null; emailSent?: boolean }));
-      const info = { ticket: (result.ticket ?? null) as ScreenTicket | null, proof: { email: String(data.email ?? '').trim(), whatsapp: String(data.whatsapp ?? '').trim() }, emailSent: result.emailSent === true };
+      const info = { ticket: (result.ticket ?? null) as ScreenTicket | null, proof: { email: String(data.email ?? '').trim(), whatsapp: String(data.whatsapp ?? '').trim() }, emailSent: result.emailSent === true, referralLink: (result as { referralLink?: string | null }).referralLink ?? null };
       try { sessionStorage.setItem(SUMMIT_NAME_KEY, String(data.full_name ?? '').trim().slice(0, 40)); } catch { /* optional */ }
       try { sessionStorage.setItem(TICKET_STORAGE_KEY, JSON.stringify(info)); } catch { /* optional */ }
       reset();
@@ -933,6 +956,7 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             {ticketInfo?.ticket && (
               <div style={{ margin: '0 0 1.5rem' }}><SummitTicketCard ticket={ticketInfo.ticket} proof={ticketInfo.proof} /></div>
             )}
+            {ticketInfo?.referralLink && <SummitReferralCard link={ticketInfo.referralLink} style={{ margin: '0 0 1.5rem' }} />}
             <LasuWhatsappCard style={{ margin: '0 0 1.5rem' }} />
             {/* Progress bar doubles as the redirect countdown */}
             <div style={{

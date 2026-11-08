@@ -1,4 +1,5 @@
 import { getMailer, sendEmail, classifyEmailError, emailErrorCode, type EmailFailureKind } from './nodemailer';
+import { referralLink, verifyLink } from '@/lib/summitReferral';
 import { LASU_OJO_HEADING, LASU_OJO_TEXT, LASU_OJO_WHATSAPP_URL } from '@/lib/summitCommunity';
 import { adminNotifyEmail, FROM_DEFAULT, SUMMIT_FROM, SUMMIT_REPLY_TO } from './contact';
 import { brandedEmailLayout, esc, p, goldButton, summaryRow, summaryBox } from './emailTemplate';
@@ -95,6 +96,40 @@ function lasuWhatsappBlock(): string {
 </table>`;
 }
 
+/** Confirm-your-email button (it is what makes a referral count) and the person's own referral link. */
+async function referralBlocks(registrationId: string): Promise<string> {
+  try {
+    const { data } = await supabaseAdmin.from('summit_registrations').select('referral_code, email_verified_at').eq('id', registrationId).maybeSingle();
+    if (!data?.referral_code) return '';
+    const confirm = data.email_verified_at ? '' : p('Please confirm this is your email address. It takes one tap.') + goldButton('Confirm my email →', verifyLink(registrationId));
+    const link = referralLink(data.referral_code as string);
+    const share = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;"><tr><td style="background:#F7F5F0;border:1px solid #E8E6E1;border-radius:10px;padding:16px 18px;">
+      <p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#0F0F0E;">Bring people with you</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#4B5563;">Share your personal link. Every friend who registers with it and confirms their email counts for you, and we email you when it happens. Rewards are given during the event and top referrers are announced by name.</p>
+      <p style="margin:0;font-size:14px;word-break:break-all;"><a href="${link}" style="color:#B6502A;font-weight:700;">${link}</a></p></td></tr></table>`;
+    return confirm + share;
+  } catch { return ''; }
+}
+
+/** To the referrer: someone registered with their link and confirmed their email. First name only, to protect the friend's privacy. */
+export async function sendReferralCreditedEmail(i: { to: string; referrerName: string; friendFirstName: string; count: number; link: string }) {
+  await sendSummitMail({
+    to: i.to,
+    subject: `${i.friendFirstName} just registered with your link`,
+    html: brandedEmailLayout({
+      preheader: `You now have ${i.count} confirmed referral${i.count === 1 ? '' : 's'}.`,
+      eyebrow: 'Elevation Summit · 19 November 2026',
+      heading: 'Your referral counted.',
+      recipient: i.to,
+      content:
+        p(`Hi ${esc(i.referrerName.trim().split(/\s+/)[0] || 'there')},`) +
+        p(`<strong>${esc(i.friendFirstName)}</strong> registered for the Elevation Summit with your link and confirmed their email. You now have <strong>${i.count}</strong> confirmed referral${i.count === 1 ? '' : 's'}.`) +
+        p('Rewards are given during the event, and the top referrers are announced by name. Keep sharing:') +
+        (i.link ? goldButton('Share my link →', i.link) : ''),
+    }),
+  });
+}
+
 export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
   const { email, fullName, attendanceType } = ticketData;
   const isVirtual = attendanceType === 'virtual';
@@ -129,6 +164,7 @@ export async function sendPaymentConfirmedEmail(ticketData: TicketData) {
         attendanceBlock +
         p('Please keep your ticket safe and present it on the day of the event. We look forward to seeing you there.') +
         lasuWhatsappBlock() +
+        (await referralBlocks(ticketData.registrationId)) +
         flyerBlock(fullName) +
         goldButton('View Event Details →', SUMMIT_URL) +
         p(`Registration is free. If the Summit has been valuable to you, you can <a href="${DONATE_URL}" style="color:#C8A96E;font-weight:600;text-decoration:underline;">support it with a donation</a>.`),
@@ -380,6 +416,7 @@ export async function sendComplimentaryTicketEmail(ticketData: TicketData) {
           : p('Venue details will follow closer to the event date.')) +
         p('Please keep your ticket safe and present it on the day of the event. We look forward to seeing you there.') +
         lasuWhatsappBlock() +
+        (await referralBlocks(ticketData.registrationId)) +
         flyerBlock(fullName) +
         goldButton('View Event Details →', SUMMIT_URL) +
         p(`Registration is free. If the Summit has been valuable to you, you can <a href="${DONATE_URL}" style="color:#C8A96E;font-weight:600;text-decoration:underline;">support it with a donation</a>.`),

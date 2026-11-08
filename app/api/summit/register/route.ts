@@ -3,6 +3,7 @@ import { isValidPhoneNumber } from 'libphonenumber-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { deliverPaidEmails } from '@/lib/summitEmails';
 import { ticketView } from '@/lib/summitTicketLookup';
+import { attributeReferral, deviceHash, generateCode, ipHash, networkBusy, normaliseEmail, normalisePhone, referralLink } from '@/lib/summitReferral';
 import { summitRegisterLimiter, getClientIp } from '@/lib/rate-limit';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
@@ -30,6 +31,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'A valid WhatsApp number is required.' }, { status: 400 });
   }
 
+  // A durable limit on top of the in-memory one above: it survives restarts and is shared by every server instance.
+  const ipH = ipHash(req);
+  if (await networkBusy(ipH)) {
+    return NextResponse.json({ error: 'Too many registrations from this network. Please wait a while and try again.' }, { status: 429, headers: { 'Retry-After': '600' } });
+  }
+  const devH = deviceHash(data.device);
+  const antiAbuse = { email_normalised: normaliseEmail(data.email), whatsapp_normalised: normalisePhone(data.whatsapp), signup_ip_hash: ipH, signup_device_hash: devH };
+
   const attendanceType = data.attendance_type === 'virtual' ? 'virtual' : 'onsite';
   const email = data.email.trim().toLowerCase();
   const fullName = data.full_name.trim();
@@ -37,7 +46,7 @@ export async function POST(req: NextRequest) {
 
   const { data: existing } = await supabaseAdmin
     .from('summit_registrations')
-    .select('id, payment_status')
+    .select('id, payment_status, referral_code')
     .eq('email', email)
     .maybeSingle();
 
@@ -62,6 +71,8 @@ export async function POST(req: NextRequest) {
         other_messages: data.other_messages?.trim() || null,
         consent: true,
         attendance_type: attendanceType,
+        ...antiAbuse,
+        referral_code: existing.referral_code ?? generateCode(),
         payment_status: 'paid',
         status: 'confirmed',
         amount_paid: 0,
@@ -92,6 +103,8 @@ export async function POST(req: NextRequest) {
         other_messages: data.other_messages?.trim() || null,
         consent: data.consent === true,
         attendance_type: attendanceType,
+        ...antiAbuse,
+        referral_code: generateCode(),
         status: 'confirmed',
         payment_status: 'paid',
         amount_paid: 0,
@@ -113,6 +126,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Registration failed.' }, { status: 500 });
   }
 
+  // Record who referred this person (never throws, never blocks the registration). It counts only once they confirm their email.
+  await attributeReferral({ id: registration.id, email, whatsapp: data.whatsapp, signup_ip_hash: ipH, signup_device_hash: devH }, data.ref);
+
   // Ticket PDF + confirmation email, and the admin new-registration alert.
   // Never throws; delivery failures are tracked on the row, not surfaced
   // here - the registration itself has already succeeded.
@@ -123,5 +139,5 @@ export async function POST(req: NextRequest) {
   // honestly whether the email went out.
   let ticket = null;
   try { ticket = await ticketView({ ...registration, confirmation_email_sent_at: emailSent ? nowIso : null }); } catch (e) { console.error('[summit/register] ticket view failed:', (e as Error).message); }
-  return NextResponse.json({ registrationId: registration.id, emailSent, ticket });
+  return NextResponse.json({ registrationId: registration.id, emailSent, ticket, referralLink: registration.referral_code ? referralLink(registration.referral_code) : null });
 }
