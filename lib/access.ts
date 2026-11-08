@@ -66,6 +66,9 @@ const MESSAGES: Partial<Record<keyof Features, string>> = {
 
 /** null = allowed. Legacy members (no v2 row) are never blocked here. */
 export async function featureBlock(userId: string, feature: keyof Features): Promise<string | null> {
+  // Staff are super users: plan limits never apply to them.
+  const { data: p } = await supabaseAdmin.from('profiles').select('role').eq('id', userId).maybeSingle();
+  if (p?.role === 'admin' || p?.role === 'moderator') return null;
   const a = await getMemberAccess(userId);
   if (!a.v2) return null;
   if (a.features[feature]) return null;

@@ -88,13 +88,13 @@ export default async function TodayPage() {
               <div><Link href="/onboarding?redo=1" className="rx-btn primary">Continue setup</Link></div>
             </div>
           )}
-          {bill.state === 'trialEnding' && (bill.daysLeft ?? 99) <= 3 && (
+          {!me.isStaff && bill.state === 'trialEnding' && (bill.daysLeft ?? 99) <= 3 && (
             <Banner><b>Your first period ends in {bill.daysLeft} {bill.daysLeft === 1 ? 'day' : 'days'}.</b> Renew before then to keep full access.<div><Link href="/settings?tab=plan" className="rx-link" style={{ color: 'inherit', minHeight: 36, fontSize: 14 }}>Manage plan<ArrowRight aria-hidden /></Link></div></Banner>
           )}
-          {bill.state === 'failed' && (
+          {!me.isStaff && bill.state === 'failed' && (
             <Banner error><b>We couldn’t take your payment.</b> Update your card within 7 days to keep full access.<div><Link href="/settings?tab=plan" className="rx-link" style={{ color: 'inherit', minHeight: 36, fontSize: 14 }}>Update card<ArrowRight aria-hidden /></Link></div></Banner>
           )}
-          {bill.state === 'lapsed' && (
+          {!me.isStaff && bill.state === 'lapsed' && (
             <div className="rx-card rx-stack-sm rx-rise">
               <div className="rx-row rx-nw" style={{ gap: 10 }}><Lock aria-hidden style={{ width: 20, height: 20, color: 'var(--rx-gold)' }} /><p className="rx-h3">You’re on light access</p></div>
               <p className="rx-p">Today, your Circle chat and Sage still work. Learn pathways, mentor sessions and joining new groups are paused.</p>

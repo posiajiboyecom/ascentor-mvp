@@ -312,7 +312,9 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       await call.join({ url: info.url, token: info.token, startVideoOff: true });
     } catch (e) {
       console.error('[call] join failed', e);
-      setError('We could not connect to the call.'); setPhase('error');
+      // Show the reason in small print so a screenshot from a phone says what went wrong.
+      const why = String((e as { errorMsg?: string; message?: string })?.errorMsg ?? (e as Error)?.message ?? '').replace(/\s+/g, ' ').slice(0, 140);
+      setError(`We could not connect to the call.${why ? ` (${why})` : ''}`); setPhase('error');
     }
   }
 
