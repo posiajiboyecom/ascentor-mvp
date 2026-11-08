@@ -4,7 +4,7 @@
 // Drafts open straight in the composer. While a campaign is sending and this screen is open, it keeps sending from here
 // too (useful when the background dispatcher isn't deployed yet).
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
-import { duplicateCampaign, getCampaign, previewCampaign, sendNextBatch, setCampaignState, type CampaignDetail, type Draft } from '@/app/admin/c/newsletter/actions';
+import { duplicateCampaign, getCampaign, previewCampaign, resendToUnopened, sendNextBatch, setCampaignState, type CampaignDetail, type Draft } from '@/app/admin/c/newsletter/actions';
 import { describeAudience } from '@/lib/email/describe';
 import { STATUS, fmt, pct, when, type Ctx } from './EmailConsole';
 
@@ -75,6 +75,12 @@ export default function CampaignView({ ctx, id, onBack, onEdit, onOpen }: { ctx:
         <div className="row">
           {canEdit && c.status === 'scheduled' && <button type="button" className="btn bs" onClick={() => onEdit({ id: c.id, name: c.name, subject: c.subject, preheader: c.preheader, heading: c.heading, body_html: c.body_html, audience: c.audience })}>Edit</button>}
           {canEdit && <button type="button" className="btn bs" disabled={busy} onClick={() => start(async () => { const r = await duplicateCampaign(c.id); if (r.ok) onOpen(r.id); else flash(r.error, true); })}>Duplicate</button>}
+          {canEdit && c.status === 'sent' && s.sent - s.opened > 0 && (
+            <button type="button" className="btn bs" disabled={busy} title="Makes a draft for the people who have not opened it. Some mail apps hide opens, so a few of them will have read it." onClick={() => start(async () => {
+              const r = await resendToUnopened(c.id);
+              if (r.ok) { flash(`Draft ready for ${fmt(r.count)} ${r.count === 1 ? 'person' : 'people'} who have not opened it. Check it, then send.`); onOpen(r.id); } else flash(r.error, true);
+            })}>Resend to unopened</button>
+          )}
           {canSend && c.status === 'sending' && <button type="button" className="btn bs" disabled={busy} onClick={() => act('pause')}>Pause</button>}
           {canSend && c.status === 'paused' && <button type="button" className="btn bp" disabled={busy} onClick={() => act('resume')}>Resume</button>}
           {canSend && c.status === 'scheduled' && <button type="button" className="btn bs" disabled={busy} onClick={() => act('unschedule')}>Unschedule</button>}

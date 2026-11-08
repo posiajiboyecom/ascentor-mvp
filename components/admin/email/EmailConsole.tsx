@@ -80,6 +80,13 @@ export default function EmailConsole({ initial, loadError, canEdit, canSend, me,
           </div>
         </div>
 
+        {!triggerReady && queued > 0 && (
+          <div className="card" role="status" style={{ marginTop: 18, borderColor: 'var(--warn, #C8A96E)' }}>
+            <p className="h3" style={{ margin: 0 }}>{fmt(queued)} {queued === 1 ? 'email is' : 'emails are'} waiting to go out</p>
+            <p className="sm" style={{ margin: '4px 0 0' }}>The background sender is not switched on, so they only go out while you have the campaign open here (with “Keep sending from this screen” on), and once a day. Open the campaign and leave it open, or ask your developer to run <span className="em-mono">npm run trigger:deploy</span>.</p>
+          </div>
+        )}
+
         <div className="kpis" style={{ marginTop: 18 }}>
           <div className="card kpi"><span className="k">Contacts</span><span className="v">{fmt(overview.contacts)}</span><span className="sm">from {overview.sources.filter((x) => x.total).length} sources</span></div>
           <div className="card kpi"><span className="k">Reachable</span><span className="v">{fmt(overview.reachable)}</span><span className="sm">not unsubscribed or bounced</span></div>
