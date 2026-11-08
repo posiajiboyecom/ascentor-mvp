@@ -26,6 +26,7 @@ function GroupCard({ g }: { g: GroupView }) {
       </div>
       {g.joined
         ? <Link href={`/community/groups/${g.slug}`} className="rx-btn secondary">Open</Link>
+        : g.locked ? <span className="rx-sm" style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{g.locked}</span>
         : <button type="button" className="rx-btn secondary" disabled={pending} onClick={() => start(async () => {
             const r = await joinGroup(g.id);
             toast(r.ok ? `You joined ${g.name}.` : r.error);

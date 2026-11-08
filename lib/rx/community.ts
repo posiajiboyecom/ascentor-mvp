@@ -11,6 +11,8 @@ import type { ChatMsg } from './chat-types';
 export interface GroupView {
   id: string; slug: string; name: string; description: string; dimension: string | null; count: number; isNew: boolean;
   joined: boolean; reason: string; score: number; isGeneral: boolean; isCity: boolean; isFacilitators: boolean; prompt: string | null;
+  /** Why a member can't join from the app: 'Invite only' or 'Full' (set in Admin → Groups), else null. */
+  locked: string | null;
 }
 
 const lowerFirst = (x: string) => (x === 'AI engineering' ? x : x.charAt(0).toLowerCase() + x.slice(1));
@@ -19,11 +21,14 @@ export async function getGroups(): Promise<GroupView[]> {
   const me = await getMe();
   if (!me) return [];
   const db = await createClient();
-  const [{ data: groups }, { data: stats }, { data: mine }] = await Promise.all([
+  const [{ data: groups }, { data: stats }, { data: mine }, access] = await Promise.all([
     db.from('rx_groups').select('id, slug, name, description, dimension, fit, is_new, is_general, is_city, is_facilitators, prompt').eq('status', 'active').order('created_at'),
     db.from('rx_group_stats').select('group_id, member_count'),
     db.from('rx_group_members').select('group_id').eq('user_id', me.userId),
+    // join_mode / max_members arrive with the 20261111 migration; before it, every group is open.
+    db.from('rx_groups').select('id, join_mode, max_members').eq('status', 'active'),
   ]);
+  const accessOf = new Map((access.error ? [] : ((access.data ?? []) as { id: string; join_mode: string; max_members: number | null }[])).map((a) => [a.id, a]));
   const count = new Map(((stats ?? []) as { group_id: string; member_count: number }[]).map((s) => [s.group_id, s.member_count]));
   const joined = new Set(((mine ?? []) as { group_id: string }[]).map((m) => m.group_id));
   const interests = new Set(me.profile?.interests ?? []);
@@ -35,6 +40,12 @@ export async function getGroups(): Promise<GroupView[]> {
       joined: joined.has(g.id), score: matched.length + (g.is_new && matched.length ? 0.5 : 0),
       reason: matched.length ? `Because you chose ${matched.slice(0, 2).map(lowerFirst).join(' and ')}.` : '',
       isGeneral: g.is_general, isCity: g.is_city, isFacilitators: g.is_facilitators, prompt: g.prompt,
+      locked: (() => {
+        const a = accessOf.get(g.id);
+        if (!a) return null;
+        if (a.join_mode === 'closed') return 'Invite only';
+        return a.max_members && (count.get(g.id) ?? 0) >= a.max_members ? 'Full' : null;
+      })(),
     };
   });
 }

@@ -235,6 +235,18 @@ export async function reportContent(kind: 'post' | 'comment', refId: string, rea
 export async function joinGroup(groupId: string): Promise<ActionResult> {
   try {
     const { db, userId } = await requireMember();
+    const { data: mine } = await db.from('rx_group_members').select('group_id').eq('group_id', groupId).eq('user_id', userId).maybeSingle();
+    if (mine) return { ok: true };
+    // Closed groups and full groups (set in Admin → Groups) can't be joined from here; the database checks this too.
+    const { data: access, error: accessErr } = await supabaseAdmin.from('rx_groups').select('status, join_mode, max_members').eq('id', groupId).maybeSingle();
+    if (!accessErr && access) {
+      if (access.status !== 'active') throw new Error('This group has been archived.');
+      if (access.join_mode === 'closed') throw new Error('This group is invite-only. The Ascentor team adds its members.');
+      if (access.max_members) {
+        const { count } = await supabaseAdmin.from('rx_group_members').select('user_id', { count: 'exact', head: true }).eq('group_id', groupId);
+        if ((count ?? 0) >= (access.max_members as number)) throw new Error('This group is full.');
+      }
+    }
     const { error } = await db.from('rx_group_members').upsert({ group_id: groupId, user_id: userId }, { onConflict: 'group_id,user_id', ignoreDuplicates: true });
     if (error) throw error;
     const { data: g } = await db.from('rx_groups').select('is_general').eq('id', groupId).maybeSingle();

@@ -5,7 +5,7 @@
 export type NotifKind =
   | 'circle_joined' | 'circle_new_member' | 'vote_opened' | 'vote_cast' | 'vote_won' | 'mentor_chosen'
   | 'mentor_accepted' | 'mentor_declined' | 'sessions_booked' | 'call_tomorrow' | 'session_moved'
-  | 'agenda_due' | 'agenda_sent' | 'circle_started' | 'circle_moved'
+  | 'agenda_due' | 'agenda_sent' | 'circle_started' | 'circle_moved' | 'circle_notice' | 'group_notice'
   | 'post_comment' | 'comment_reply' | 'post_reaction' | 'post_share'
   | 'practice_reminder' | 'weekly_digest' | 'lesson_reminder';
 
@@ -47,6 +47,9 @@ export const KINDS: Record<NotifKind, KindSpec> = {
   agenda_sent:       { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'success', coalesce: false },
   circle_started:    { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'success', coalesce: false },
   circle_moved:      { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'info',    coalesce: false },
+  // a message from the Ascentor team to one Circle or one group (Admin → Circles / Groups)
+  circle_notice:     { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'info',    coalesce: false },
+  group_notice:      { pref: PREF.community, emailPref: PREF.emailCommunity, legacyType: 'community', coalesce: false },
   post_comment:      { pref: PREF.community, emailPref: PREF.emailCommunity, legacyType: 'community', coalesce: true },
   comment_reply:     { pref: PREF.community, emailPref: PREF.emailCommunity, legacyType: 'community', coalesce: true },
   post_reaction:     { pref: PREF.reactions, emailPref: null,                legacyType: 'community', coalesce: true },
