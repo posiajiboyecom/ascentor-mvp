@@ -579,8 +579,8 @@ export default function ElevationSummitClient({ cms }: { cms: PublishedPage | nu
             </div>
 
             <div>
-              <label style={LABEL}>Current Company *</label>
-              <input style={INPUT} type="text" {...register('organisation')} placeholder="Company or institution" />
+              <label style={LABEL}>Company / University *</label>
+              <input style={INPUT} type="text" {...register('organisation')} placeholder="Company / University" />
               {errors.organisation && <p style={ERROR}>{errors.organisation.message}</p>}
             </div>
 

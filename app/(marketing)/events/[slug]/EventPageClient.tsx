@@ -210,7 +210,7 @@ export default function EventPageClient({ event }: { event: any }) {
                 {has('organisation') && (
                   <div>
                     <label style={S.label}>Organisation <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
-                    <input style={S.input} type="text" value={form.organisation} onChange={set('organisation')} placeholder="Company or institution" />
+                    <input style={S.input} type="text" value={form.organisation} onChange={set('organisation')} placeholder="Company / University" />
                   </div>
                 )}
                 {has('industry') && (
