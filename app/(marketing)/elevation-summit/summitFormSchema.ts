@@ -17,6 +17,9 @@ export const summitFormSchema = z.object({
     .transform(sanitizeText)
     .optional()
     .or(z.literal('')),
+  // Referral link code and a random per-browser id, both filled in by the page. Optional: a form without them still works.
+  ref: z.string().trim().max(16).optional(),
+  device: z.string().trim().max(64).optional(),
   consent: z.boolean().refine((val) => val === true, {
     message: 'You must accept the privacy policy to register',
   }),
