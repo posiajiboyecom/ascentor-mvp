@@ -1,0 +1,78 @@
+TODO (not started)
+==================
+
+1. ELEVATION SUMMIT REFERRALS
+-----------------------------
+Goal: every registrant gets a personal referral link in their confirmation email. Each valid signup through that link counts for
+them and they get an email when it happens. Rewards are given DURING THE EVENT and the winners' names are announced.
+
+Today: /api/summit/register inserts the row, emails the ticket, rate-limits per IP in memory only (per serverless instance, resets
+on restart, easy to get around). summit_registrations has no referral fields.
+
+1.1 Data (one migration)
+  - summit_registrations: add
+      referral_code        text unique        -- 8 random chars, not guessable, never derived from email or name
+      referred_by          uuid references summit_registrations(id)
+      email_normalised     text               -- lowercase, gmail dots and +tags stripped
+      whatsapp_normalised  text               -- E.164
+      signup_ip_hash       text               -- salted SHA-256 of the IP, never the raw IP
+      signup_device_hash   text               -- salted hash of a first-party device id cookie
+      email_verified_at    timestamptz
+      referral_status      text               -- none | pending | verified | flagged | rejected
+  - summit_referrals (one row per credited signup, the audit trail)
+      id, referrer_id, referred_id unique, status (pending | verified | attended | flagged | reversed),
+      reason, created_at, verified_at, attended_at, reviewed_by
+  - Backfill referral_code for the existing registrants.
+
+1.2 Link and attribution
+  - Link: https://joinascentor.com/elevation-summit?ref=CODE
+  - The page keeps the code in a first-party cookie for 30 days and sends it with the form.
+  - The server looks the code up. An unknown code is ignored and the signup still succeeds.
+
+1.3 When a referral counts (anti-abuse)
+  - Email is the identity: normalise it, block disposable-email domains, one registration per normalised email.
+  - No self-referral: reject when the normalised email or WhatsApp matches the referrer, or the IP or device hash matches.
+  - Verified before credit: the referral counts only after the new person clicks a confirmation link sent to their email.
+  - IP: store a salted hash only. Cap credited referrals per IP hash per referrer (about 2). Do not hard block (campus and
+    office networks share IPs): flag them for admin review instead.
+  - Rate limits in a shared store (Supabase table or Redis), not in memory. Keep Turnstile on the form.
+  - Prize ranking uses people who actually checked in at the event (existing attendance records), so fake signups cannot win.
+  - Admin Referrals tab: counts per person, flagged rows, approve and reverse buttons, a leaderboard export.
+
+1.4 Emails
+  - Confirmation email: add a "Share your link" block (link, copy button, WhatsApp share).
+  - Referrer email: "Someone just registered with your link". First name only, running count. Batch them so they cannot be
+    used to spam anyone.
+  - Winner email before the event.
+
+1.5 Reward and announcement
+  - Decide the tiers (top N, or a threshold such as 10 verified referrals).
+  - Close the count at a cutoff time, admin approves, winners' names go on the event-day screen.
+
+Open questions: what is the reward and the tiers; is a referral counted at email verification or only after check-in (recommended:
+verification for the "you got a signup" email, check-in for the prize).
+
+
+2. CENTRAL EMAIL SYSTEM (from Posi)
+-----------------------------------
+Turn the admin Newsletter and Registrations pages into one email system: compose, audience, test send, send in batches, history.
+The Newsletter page still says "Sending an issue is done in the Newsletter editor; it is not connected here yet."
+Done so far: Summit "Email registrants" page (/admin/c/registrations/email).
+
+
+3. INSTALL PROMPT
+-----------------------------------
+The web app does not prompt people to install the app. Removed for now until the native app is ready. Turn it back on then.
+
+
+4. ADMIN ON MOBILE
+-----------------------------------
+Phone layout is in. The 390px sweep covered 7 pages and stalled; run the rest (scripts/visual/admin_sweep.cjs). Members table
+scrolls sideways inside its box (Email column cut off): consider cards on phones. Legacy Payments has a few wide inner blocks.
+
+
+5. OPEN ISSUES TO CHECK
+-----------------------------------
+  - iPhone: "We could not connect to the call" still happens when pressing Join now (desktop works). The error now shows the
+    reason in brackets; get a screenshot from the phone and fix from that.
+  - Onboarding "Saving..." on the last question: only a 25 second guard was added, the slow step is not found.

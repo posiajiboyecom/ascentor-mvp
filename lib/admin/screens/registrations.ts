@@ -15,7 +15,7 @@ export const spec: ScreenSpec = {
   cols: [
     "Person",
     "Email",
-    "Company / institution",
+    "Company / University",
     "Ticket",
     "Registered",
     "Status"
@@ -42,6 +42,11 @@ export const spec: ScreenSpec = {
     {
       id: "email-everyone-not-yet-confirmed",
       label: "Email everyone not yet confirmed"
+    },
+    {
+      id: "email-registrants",
+      label: "Email registrants",
+      href: "/admin/c/registrations/email"
     },
     {
       id: "delivery",
@@ -80,7 +85,7 @@ const sent = (iso: string | null | undefined) => (iso ? `Sent ${when(iso)}` : 'N
 
 const detailsOf = (r: any) => [
   { heading: 'Person', items: [['Full name', text(r.full_name)], ['Email', text(r.email)], ['Phone / WhatsApp', text(r.whatsapp)], ['City / country', text(r.location)]] as [string, string][] },
-  { heading: 'Organisation', items: [['Company / institution', text(r.organisation)], ['Job title / role', text(r.current_role)]] as [string, string][] },
+  { heading: 'Organisation', items: [['Company / University', text(r.organisation)], ['Job title / role', text(r.current_role)]] as [string, string][] },
   {
     heading: 'Ticket and payment',
     items: [
@@ -124,7 +129,7 @@ const screen: ScreenModule = {
   },
 
   async button(_ctx, buttonId): Promise<ActionResult> {
-    if (buttonId !== 'resend-all-unsent') return { ok: false, error: 'This button is not connected yet.' };
+    if (buttonId !== 'resend-all-unsent' && buttonId !== 'email-everyone-not-yet-confirmed') return { ok: false, error: 'This button is not connected yet.' };
     // A small batch per press (4 people, spaced out) keeps each press inside the page time limit and inside the mailbox's
     // sending limit. Press again to continue; people already sent are never picked up twice.
     const r = await resendUnsentBatch(4);
