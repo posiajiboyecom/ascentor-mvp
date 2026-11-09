@@ -148,6 +148,8 @@ const CSS = `
   background: ${B.surface}; border: 1px solid ${B.border};
   border-radius: 10px; width: 100%; max-width: 640px;
   box-shadow: 0 20px 60px rgba(20,16,10,.18);
+  color-scheme: light;
+  color: ${B.fg};
   flex-shrink: 0;
 }
 .asl-modal-head {
@@ -161,20 +163,23 @@ const CSS = `
   display: flex; justify-content: flex-end; gap: 8px;
 }
 .asl-field { display: flex; flex-direction: column; gap: 5px; }
-.asl-label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: ${B.muted}; }
+.asl-label { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: ${B.fg}; }
 .asl-input, .asl-select, .asl-textarea {
   width: 100%; padding: 9px 12px; border-radius: ${B.radius};
   border: 1px solid ${B.border}; background: ${B.bg2};
   color: ${B.fg}; font: 14px/1.5 ${B.font};
+  color-scheme: light;
   transition: border-color .15s;
 }
+.asl-input::placeholder, .asl-textarea::placeholder { color: ${B.muted}; opacity: 1; }
+.asl-select option { background: ${B.surface}; color: ${B.fg}; }
 .asl-input:focus, .asl-select:focus, .asl-textarea:focus {
   outline: none; border-color: ${B.gold};
 }
 .asl-textarea { min-height: 100px; resize: vertical; }
 .asl-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .asl-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-.asl-hint { font-size: 11px; color: ${B.muted}; }
+.asl-hint { font-size: 11px; color: ${B.muted}; opacity: 1; }
 .asl-toggle-row { display: flex; align-items: center; gap: 10px; }
 .asl-toggle {
   position: relative; width: 40px; height: 22px; flex-shrink: 0;
