@@ -1,7 +1,9 @@
 'use client';
 
 // The lesson video player. Plays Vimeo, YouTube or a direct file, reports how far the member got (so they can resume
-// and be reminded to finish), and never needs a player library: Vimeo and YouTube are driven over postMessage.
+// and be reminded to finish). Vimeo is driven over postMessage. YouTube is driven through Google's own IFrame Player
+// API (not hand-rolled postMessage) — a raw postMessage "pauseVideo"/"playVideo" pair can leave the embed stuck
+// paused with no way to resume except reloading the page; the official player object does not have that problem.
 // YouTube embeds use controls=0 so we render our own overlay: play/pause centre, gold progress bar bottom, fullscreen
 // button bottom-right. Vimeo uses its own native controls.
 
@@ -20,10 +22,39 @@ interface Props {
 }
 
 const SAVE_EVERY_MS = 15_000;
+const PROGRESS_POLL_MS = 1000;
 
-function postToYT(w: Window | null | undefined, event: string, data?: Record<string, unknown>) {
-  if (!w) return;
-  w.postMessage(JSON.stringify({ event, id: 1, channel: 'widget', ...data }), 'https://www.youtube-nocookie.com');
+// ── YouTube IFrame Player API (loaded once per page, shared by every lesson video on it) ──────────────────────────
+interface YTPlayer {
+  playVideo(): void;
+  pauseVideo(): void;
+  getCurrentTime(): number;
+  getDuration(): number;
+}
+interface YTPlayerState { PLAYING: number; PAUSED: number; ENDED: number }
+interface YTNamespace {
+  Player: new (el: HTMLElement, opts: { events?: { onStateChange?: (e: { data: number }) => void } }) => YTPlayer;
+  PlayerState: YTPlayerState;
+}
+declare global {
+  interface Window { YT?: YTNamespace; onYouTubeIframeAPIReady?: () => void }
+}
+
+let ytApiPromise: Promise<YTNamespace> | null = null;
+function loadYouTubeApi(): Promise<YTNamespace> {
+  if (typeof window === 'undefined') return new Promise(() => undefined); // never resolves on the server; fine, this only runs client-side
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+  if (ytApiPromise) return ytApiPromise;
+  ytApiPromise = new Promise((resolve) => {
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { prev?.(); resolve(window.YT!); };
+    if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+      const s = document.createElement('script');
+      s.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(s);
+    }
+  });
+  return ytApiPromise;
 }
 
 export default function LessonVideo({ lessonId, title, source, startSec, startPercent, thumbnailUrl }: Props) {
@@ -38,6 +69,8 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
   const [started, setStarted] = useState(false); // has the user ever pressed play?
   const [showControls, setShowControls] = useState(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ytPlayer = useRef<YTPlayer | null>(null);
+  const ytPoll = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => setOrigin(window.location.origin), []);
 
@@ -82,25 +115,19 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
   }, [playing]);
 
-  // Vimeo and YouTube talk to us through postMessage.
+  // Vimeo talks to us through postMessage. (YouTube uses the official Player API instead — see onFrameLoad.)
   useEffect(() => {
-    if (source.provider === 'file') return;
+    if (source.provider !== 'vimeo') return;
     const onMsg = (e: MessageEvent) => {
       if (e.source !== frame.current?.contentWindow) return;
       let d: unknown = e.data;
       if (typeof d === 'string') { try { d = JSON.parse(d); } catch { return; } }
       if (!d || typeof d !== 'object') return;
-      const m = d as { event?: string; data?: { seconds?: number; duration?: number }; info?: { currentTime?: number; duration?: number; playerState?: number } };
-      if (source.provider === 'vimeo') {
-        if (m.event === 'timeupdate' && m.data) report(m.data.seconds ?? 0, m.data.duration ?? 0);
-        else if (m.event === 'pause') { flush(true); setPlaying(false); }
-        else if (m.event === 'play') { setPlaying(true); setStarted(true); }
-        else if (m.event === 'ended') { flush(true); setPlaying(false); }
-      } else if (m.event === 'infoDelivery' && m.info) {
-        if (typeof m.info.currentTime === 'number' && typeof m.info.duration === 'number') report(m.info.currentTime, m.info.duration);
-        if (m.info.playerState === 1) { setPlaying(true); setStarted(true); } // playing
-        if (m.info.playerState === 2 || m.info.playerState === 0) { flush(true); setPlaying(false); } // paused or ended
-      }
+      const m = d as { event?: string; data?: { seconds?: number; duration?: number } };
+      if (m.event === 'timeupdate' && m.data) report(m.data.seconds ?? 0, m.data.duration ?? 0);
+      else if (m.event === 'pause') { flush(true); setPlaying(false); }
+      else if (m.event === 'play') { setPlaying(true); setStarted(true); }
+      else if (m.event === 'ended') { flush(true); setPlaying(false); }
     };
     window.addEventListener('message', onMsg);
     return () => window.removeEventListener('message', onMsg);
@@ -113,24 +140,51 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
     return () => { document.removeEventListener('visibilitychange', hide); flush(true); };
   }, [flush]);
 
+  // Stop polling for progress, whatever took the video out of 'playing'.
+  const stopYtPoll = useCallback(() => { if (ytPoll.current) { clearInterval(ytPoll.current); ytPoll.current = null; } }, []);
+  useEffect(() => () => stopYtPoll(), [stopYtPoll]);
+
   const onFrameLoad = () => {
     const w = frame.current?.contentWindow;
-    if (!w) return;
     if (source.provider === 'vimeo') {
+      if (!w) return;
       for (const ev of ['timeupdate', 'pause', 'play', 'ended']) w.postMessage(JSON.stringify({ method: 'addEventListener', value: ev }), 'https://player.vimeo.com');
     } else if (source.provider === 'youtube') {
-      postToYT(w, 'listening');
+      // Hand control of the existing iframe to Google's own player object. Hand-rolled postMessage
+      // play/pause commands could leave the embed stuck paused with no way to resume but a reload; the
+      // official API doesn't have that failure mode.
+      void loadYouTubeApi().then((YT) => {
+        const el = frame.current;
+        if (!el) return;
+        ytPlayer.current = new YT.Player(el, {
+          events: {
+            onStateChange: (e) => {
+              if (e.data === YT.PlayerState.PLAYING) {
+                setPlaying(true); setStarted(true);
+                stopYtPoll();
+                ytPoll.current = setInterval(() => {
+                  const p = ytPlayer.current;
+                  if (!p) return;
+                  report(p.getCurrentTime(), p.getDuration());
+                }, PROGRESS_POLL_MS);
+              } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
+                flush(true); setPlaying(false); stopYtPoll();
+              }
+            },
+          },
+        });
+      });
     }
   };
 
   const togglePlay = () => {
-    const w = frame.current?.contentWindow;
-    if (!w) return;
     if (source.provider === 'youtube') {
-      // YT player command via postMessage
-      const command = playing ? 'pauseVideo' : 'playVideo';
-      w.postMessage(JSON.stringify({ event: 'command', func: command, args: [] }), 'https://www.youtube-nocookie.com');
+      const p = ytPlayer.current;
+      if (!p) return;
+      if (playing) p.pauseVideo(); else p.playVideo();
     } else if (source.provider === 'vimeo') {
+      const w = frame.current?.contentWindow;
+      if (!w) return;
       const method = playing ? 'pause' : 'play';
       w.postMessage(JSON.stringify({ method }), 'https://player.vimeo.com');
     }
