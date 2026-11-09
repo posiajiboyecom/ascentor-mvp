@@ -127,6 +127,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `(function(){try{
   var p=window.location.pathname;
