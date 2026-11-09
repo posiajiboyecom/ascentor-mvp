@@ -3,7 +3,7 @@
 // Prototype KPI tiles to compute for real: Registered (sample "[COUNT]"); Confirmed (sample "[COUNT]"); Physical (sample "[COUNT]"); Virtual (sample "[COUNT]")
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { deliverPaidEmails, deliverCompTicket, resendUnsentBatch, describeEmailFailure } from '@/lib/summitEmails';
+import { deliverPaidEmails, deliverCompTicket, resendUnsentBatch, describeEmailFailure, sendReferralInviteEmail } from '@/lib/summitEmails';
 import { count } from '@/lib/admin/revenue-util';
 import type { ScreenModule, ScreenSpec, ActionResult } from '@/lib/admin/types';
 
@@ -52,6 +52,11 @@ export const spec: ScreenSpec = {
       id: "delivery",
       label: "Delivery and resend all",
       href: "/admin/c/registrations/delivery"
+    },
+    {
+      id: "send-referral-invite",
+      label: "Send referral invite email",
+      confirm: "Send the referral program email to all confirmed registrants who haven't received it yet?"
     },
     {
       id: "export-list",
@@ -129,13 +134,81 @@ const screen: ScreenModule = {
   },
 
   async button(_ctx, buttonId): Promise<ActionResult> {
-    if (buttonId !== 'resend-all-unsent') return { ok: false, error: 'This button is not connected yet.' };
-    // A small batch per press (4 people, spaced out) keeps each press inside the page time limit and inside the mailbox's
-    // sending limit. Press again to continue; people already sent are never picked up twice.
-    const r = await resendUnsentBatch(4);
-    if (r.stopped) return { ok: false, error: `Stopped after ${r.sent} sent. ${describeEmailFailure(r.stopped.kind, r.stopped.code)} ${r.remaining} still unsent.`, refresh: true };
-    if (r.sent + r.failed === 0) return { ok: true, message: r.remaining === 0 ? 'Everyone has been sent their ticket.' : `Nothing to send right now (${r.remaining} are being sent by someone else). Try again in a minute.`, refresh: true };
-    return { ok: true, message: `Sent ${r.sent}${r.failed ? `, ${r.failed} failed` : ''}. ${r.remaining === 0 ? 'Everyone has now been sent their ticket.' : `${r.remaining} still unsent. Press the button again to send the next batch.`}`, refresh: true };
+    if (buttonId === 'resend-all-unsent') {
+      // A small batch per press (4 people, spaced out) keeps each press inside the page time limit and inside the mailbox's
+      // sending limit. Press again to continue; people already sent are never picked up twice.
+      const r = await resendUnsentBatch(4);
+      if (r.stopped) return { ok: false, error: `Stopped after ${r.sent} sent. ${describeEmailFailure(r.stopped.kind, r.stopped.code)} ${r.remaining} still unsent.`, refresh: true };
+      if (r.sent + r.failed === 0) return { ok: true, message: r.remaining === 0 ? 'Everyone has been sent their ticket.' : `Nothing to send right now (${r.remaining} are being sent by someone else). Try again in a minute.`, refresh: true };
+      return { ok: true, message: `Sent ${r.sent}${r.failed ? `, ${r.failed} failed` : ''}. ${r.remaining === 0 ? 'Everyone has now been sent their ticket.' : `${r.remaining} still unsent. Press the button again to send the next batch.`}`, refresh: true };
+    }
+
+    if (buttonId === 'send-referral-invite') {
+      // Send the referral program email to confirmed registrants who haven't received it yet.
+      // Sends in batches of 10 per press to stay within page timeout and mailbox rate limits.
+      const BATCH = 10;
+      const { data: rows, error } = await supabaseAdmin
+        .from('summit_registrations')
+        .select('id, email, full_name, referral_code, attendance_type')
+        .eq('payment_status', 'paid')
+        .is('referral_invite_sent_at', null)
+        .not('referral_code', 'is', null)
+        .limit(BATCH);
+
+      if (error) return { ok: false, error: `Could not load registrants: ${error.message}` };
+
+      // Count how many remain after this batch
+      const { count: totalRemaining } = await supabaseAdmin
+        .from('summit_registrations')
+        .select('id', { count: 'exact', head: true })
+        .eq('payment_status', 'paid')
+        .is('referral_invite_sent_at', null)
+        .not('referral_code', 'is', null);
+
+      if (!rows || rows.length === 0) {
+        return { ok: true, message: 'Everyone has already received the referral invite email.', refresh: true };
+      }
+
+      let sent = 0;
+      let failed = 0;
+      for (const row of rows) {
+        try {
+          // Claim the row to prevent double-send
+          const { data: claimed } = await supabaseAdmin
+            .from('summit_registrations')
+            .update({ referral_invite_sent_at: new Date().toISOString() })
+            .eq('id', row.id)
+            .is('referral_invite_sent_at', null)
+            .select('id')
+            .maybeSingle();
+
+          if (!claimed) continue; // another run already claimed it
+
+          await sendReferralInviteEmail({
+            to: row.email as string,
+            fullName: (row.full_name as string) ?? 'there',
+            referralCode: row.referral_code as string,
+            attendanceType: (row.attendance_type as string) === 'virtual' ? 'virtual' : 'physical',
+          });
+          sent++;
+        } catch (err) {
+          console.error('[referral-invite-admin] send failed for', row.id, (err as Error).message);
+          failed++;
+          // Roll back so it can be retried
+          try {
+            await supabaseAdmin.from('summit_registrations').update({ referral_invite_sent_at: null }).eq('id', row.id);
+          } catch { /* best-effort */ }
+        }
+      }
+
+      const remaining = Math.max(0, (totalRemaining ?? 0) - sent);
+      if (sent + failed === 0) return { ok: true, message: 'Nothing to send right now. Try again in a moment.', refresh: true };
+      const summary = `Sent ${sent}${failed ? `, ${failed} failed` : ''}.`;
+      const next = remaining > 0 ? ` ${remaining} still pending — press again to send the next batch.` : ' Everyone has now been sent the referral invite.';
+      return { ok: sent > 0, message: summary + next, refresh: true };
+    }
+
+    return { ok: false, error: 'This button is not connected yet.' };
   },
 
   async act(_ctx, actionId, rowId): Promise<ActionResult> {

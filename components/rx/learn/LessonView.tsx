@@ -17,6 +17,7 @@ export interface LessonViewProps {
   id: string; title: string; format: 'Video' | 'Reading'; videoUrl: string | null; body: string; minutes: number;
   watchPercent: number; watchPosition: number;
   reflection: string; practiceSet: boolean; startRead: boolean; draft: PlanData | null;
+  thumbnailUrl?: string | null;
 }
 
 export default function LessonView(p: LessonViewProps) {
@@ -61,7 +62,7 @@ export default function LessonView(p: LessonViewProps) {
 
         {!read && p.format === 'Video' && (
           video ? (
-            <LessonVideo key={p.id} lessonId={p.id} title={p.title} source={video} startSec={p.watchPosition} startPercent={p.watchPercent} />
+            <LessonVideo key={p.id} lessonId={p.id} title={p.title} source={video} startSec={p.watchPosition} startPercent={p.watchPercent} thumbnailUrl={p.thumbnailUrl} />
           ) : (
             <div className="rx-video rx-rise"><div className="rx-stack-sm" style={{ alignItems: 'center', position: 'relative', padding: 16, textAlign: 'center' }}>
               <Play aria-hidden style={{ width: 36, height: 36 }} /><p className="rx-p rx-strong" style={{ color: '#fff' }}>The video for this lesson is coming soon.</p>

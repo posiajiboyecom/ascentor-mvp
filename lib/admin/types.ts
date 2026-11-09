@@ -46,6 +46,8 @@ export interface ButtonSpec {
   needs?: Level;
   /** Navigates instead of running a handler (for example to an existing editor). */
   href?: string;
+  /** Confirmation message shown before the button's action runs. */
+  confirm?: string;
 }
 
 export interface ScreenSpec {

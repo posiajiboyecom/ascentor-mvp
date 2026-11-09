@@ -9,6 +9,7 @@ import { INTEREST_GROUPS, DIMENSIONS } from '@/lib/rx/constants';
 
 export interface LessonCard {
   slug: string; title: string; dimension: string; sub: string | null; minutes: number; format: 'Video' | 'Reading'; done: boolean; forYou: boolean;
+  thumbnailUrl?: string | null;
 }
 
 const SUBS: Record<string, string[]> = {
@@ -75,7 +76,11 @@ export default function LessonBrowser({ lessons }: { lessons: LessonCard[] }) {
           <div className="rx-grid3">
             {list.map((l) => (
               <Link key={l.slug} href={`/learn/lesson/${l.slug}`} className="rx-lcard">
-                <div className="rx-thumb">{l.format === 'Video' ? <Play aria-hidden /> : <BookOpen aria-hidden />}</div>
+                <div className="rx-thumb">
+                  {l.thumbnailUrl
+                    ? <img src={l.thumbnailUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />
+                    : l.format === 'Video' ? <Play aria-hidden /> : <BookOpen aria-hidden />}
+                </div>
                 <div className="rx-stack-sm" style={{ gap: 4, minWidth: 0 }}>
                   <span className="rx-sm">{l.dimension}{l.sub ? ` · ${l.sub}` : ''}</span>
                   <span className="rx-h3" style={{ fontSize: 16 }}>{l.title}</span>

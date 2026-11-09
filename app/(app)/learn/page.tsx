@@ -35,6 +35,7 @@ export default async function LearnPage() {
     slug: l.slug, title: l.title, dimension: l.dimension, sub: l.sub, minutes: l.minutes, format: l.format,
     done: !!progress.get(l.id)?.practice_id,
     forYou: (!!l.sub && interests.has(l.sub)) || dims.has(l.dimension),
+    thumbnailUrl: l.thumbnail_url ?? null,
   }));
   const lessonDone = !!(lesson && progress.get(lesson.id)?.practice_id);
 

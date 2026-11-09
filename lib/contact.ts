@@ -25,6 +25,23 @@ export const FROM_DEFAULT = process.env.MAIL_FROM || process.env.EMAIL_FROM || `
 export const REPLY_TO = process.env.MAIL_REPLY_TO || MAILBOX_EMAIL;
 
 /**
+ * Marketing, promotions, billing alerts, and general outreach. Greg is the face of Ascentor's mass communications.
+ * MARKETING_MAIL_FROM may be a bare address or "Name <address>"; the default is greg@joinascentor.com.
+ */
+export const MARKETING_SENDER_NAME = 'Greg from Ascentor';
+const marketingFromRaw = (process.env.MARKETING_MAIL_FROM || '').trim() || 'greg@joinascentor.com';
+export const MARKETING_FROM = marketingFromRaw.includes('<') ? marketingFromRaw : `${MARKETING_SENDER_NAME} <${marketingFromRaw}>`;
+
+/**
+ * Personal, high-touch emails from Posi Ajiboye (a.samuel@joinascentor.com). Used for direct outreach to speakers,
+ * partners, and VIP contacts. NEVER use religious language (e.g. "alhamdulillah", "inshallah") in emails from this sender.
+ * PERSONAL_MAIL_FROM defaults to the real mailbox address.
+ */
+export const PERSONAL_SENDER_NAME = 'Posi Ajiboye';
+const personalFromRaw = (process.env.PERSONAL_MAIL_FROM || '').trim() || MAILBOX_EMAIL;
+export const PERSONAL_FROM = personalFromRaw.includes('<') ? personalFromRaw : `${PERSONAL_SENDER_NAME} <${personalFromRaw}>`;
+
+/**
  * Every email to a Summit registrant (confirmation, ticket, resend, reminders, event-day, receipts) is sent from here.
  * SUMMIT_MAIL_FROM may be a bare address or "Name <address>"; the default is summit@joinascentor.com. The domain must stay
  * joinascentor.com so SPF, DKIM and DMARC line up. Team alerts and everything that is not for a registrant stay on MAIL_FROM.

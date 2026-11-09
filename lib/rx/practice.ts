@@ -31,13 +31,14 @@ export interface Lesson {
   body: string | null;
   week_no: number | null;
   sort: number;
+  thumbnail_url: string | null;
 }
 
 export interface LessonProgress { lesson_id: string; practice_id: string | null; reflection: string | null; completed_at: string | null; watch_percent?: number | null; last_position_sec?: number | null }
 
 export const getLessons = cache(async (): Promise<Lesson[]> => {
   const db = await createClient();
-  const { data } = await db.from('rx_lessons').select('id, slug, title, dimension, sub, minutes, format, video_url, body, week_no, sort').eq('published', true).order('sort');
+  const { data } = await db.from('rx_lessons').select('id, slug, title, dimension, sub, minutes, format, video_url, body, week_no, sort, thumbnail_url').eq('published', true).order('sort');
   return (data ?? []) as Lesson[];
 });
 

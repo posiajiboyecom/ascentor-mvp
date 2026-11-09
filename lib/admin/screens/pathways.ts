@@ -1,7 +1,7 @@
 // lib/admin/screens/pathways.ts
 // Spec copied from the admin prototype (Learn · Pathways and lessons). Pathways are rows of `courses`; standalone lessons are `rx_lessons`.
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import type { ScreenModule, ScreenSpec } from '@/lib/admin/types';
+import type { ScreenModule, ScreenSpec, RowData } from '@/lib/admin/types';
 
 export const spec: ScreenSpec = {
   area: "pathways",
@@ -34,7 +34,7 @@ async function load() {
   const db = supabaseAdmin;
   const [courses, lessons, courseLessons, prog, rxProg] = await Promise.all([
     db.from('courses').select('id, title, lessons_count, is_published, sort_order').order('sort_order').limit(200),
-    db.from('rx_lessons').select('id, title, dimension, published, sort').order('sort').limit(200),
+    db.from('rx_lessons').select('id, title, dimension, published, sort, thumbnail_url, video_url').order('sort').limit(200),
     db.from('lessons').select('id, course_id').limit(5000),
     db.from('user_progress').select('user_id, course_id, completed').limit(20000),
     db.from('rx_lesson_progress').select('user_id, lesson_id, completed_at').limit(20000),
@@ -53,7 +53,7 @@ async function load() {
       done.set(p.course_id, m);
     }
   }
-  const rows: { id: string; cells: string[] }[] = [];
+  const rows: RowData[] = [];
   for (const c of courses.data ?? []) {
     const n = Math.max(perCourse.get(c.id) ?? 0, c.lessons_count ?? 0);
     const enr = enrolled.get(c.id)?.size ?? 0;
@@ -69,9 +69,17 @@ async function load() {
   }
   for (const l of lessons.data ?? []) {
     const enr = rxEnr.get(l.id) ?? 0;
-    rows.push({ id: `l:${l.id}`, cells: [l.title ?? '-', l.dimension ?? '-', '1', num(enr), enr > 0 ? pct(rxDone.get(l.id) ?? 0, enr) : '-', l.published ? 'Published' : 'Draft'] });
+    const thumbnailNote = l.thumbnail_url ? l.thumbnail_url : 'Not set — paste a URL in Supabase or upload to Storage and paste the public URL here';
+    rows.push({
+      id: `l:${l.id}`,
+      cells: [l.title ?? '-', l.dimension ?? '-', '1', num(enr), enr > 0 ? pct(rxDone.get(l.id) ?? 0, enr) : '-', l.published ? 'Published' : 'Draft'],
+      details: [
+        { heading: 'Lesson', items: [['Title', l.title ?? '-'], ['Dimension', l.dimension ?? '-'], ['Video URL', l.video_url ?? 'None']] as [string, string][] },
+        { heading: 'Thumbnail', items: [['Thumbnail URL', thumbnailNote], ['Dimensions', '1280 × 720 px · 16:9 · JPG or PNG · max 500 KB']] as [string, string][] },
+      ],
+    });
   }
-  return { rows, note: 'Pathways first, then standalone lessons. Pathways are not tied to one dimension, so theirs shows a dash.' };
+  return { rows, note: 'Pathways first, then standalone lessons. To set a lesson thumbnail: upload a 1280×720px image to Supabase Storage → copy the public URL → update thumbnail_url on that rx_lessons row.' };
 }
 
 const screen: ScreenModule = {
