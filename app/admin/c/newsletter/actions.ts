@@ -419,20 +419,20 @@ export async function sendNextBatch(): Promise<R<{ result: DispatchResult }>> {
 }
 
 // ── templates ───────────────────────────────────────────────────────────────
-export interface Template { id: string; name: string; subject: string; preheader: string; body_html: string; updated_at: string }
+export interface Template { id: string; name: string; subject: string; preheader: string; body_html: string; sender: SenderKey; updated_at: string }
 
 export async function listTemplates(): Promise<R<{ templates: Template[] }>> {
   try {
     await staffAt('view');
-    const { data } = await db().from('email_templates').select('id, name, subject, preheader, body_html, updated_at').order('updated_at', { ascending: false });
-    return { ok: true, templates: (data ?? []) as Template[] };
+    const { data } = await db().from('email_templates').select('id, name, subject, preheader, body_html, sender, updated_at').order('updated_at', { ascending: false });
+    return { ok: true, templates: ((data ?? []) as Template[]).map((t) => ({ ...t, sender: parseSender(t.sender) })) };
   } catch (e) { return fail(e, 'We couldn’t load templates.'); }
 }
 
-export async function saveTemplate(t: { id?: string; name: string; subject: string; preheader: string; body_html: string }): Promise<R<{ id: string }>> {
+export async function saveTemplate(t: { id?: string; name: string; subject: string; preheader: string; body_html: string; sender?: SenderKey }): Promise<R<{ id: string }>> {
   try {
     const staff = await staffAt('edit');
-    const row = { name: (t.name ?? '').trim().slice(0, 120) || 'Untitled template', subject: (t.subject ?? '').slice(0, 200), preheader: (t.preheader ?? '').slice(0, 200), body_html: (t.body_html ?? '').slice(0, 300_000), updated_at: now() };
+    const row = { name: (t.name ?? '').trim().slice(0, 120) || 'Untitled template', subject: (t.subject ?? '').slice(0, 200), preheader: (t.preheader ?? '').slice(0, 200), body_html: (t.body_html ?? '').slice(0, 300_000), sender: parseSender(t.sender), updated_at: now() };
     if (t.id) {
       const { error } = await db().from('email_templates').update(row).eq('id', t.id);
       if (error) throw new Error('We couldn’t save the template.');

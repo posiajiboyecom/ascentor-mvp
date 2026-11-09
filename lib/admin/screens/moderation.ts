@@ -49,8 +49,8 @@ export const spec: ScreenSpec = {
 };
 
 const TZ = 'Africa/Lagos';
-const TYPE_LABEL: Record<string, string> = { post: 'Post', comment: 'Comment', dm: 'Direct message', circle: 'Circle message', group: 'Group message' };
-const TABLE: Record<string, string> = { post: 'feed_posts', comment: 'feed_replies', dm: 'dm_messages', circle: 'circle_messages', group: 'rx_group_messages' };
+const TYPE_LABEL: Record<string, string> = { post: 'Post', comment: 'Comment', dm: 'Direct message', circle: 'Circle message', group: 'Group message', meetup: 'Meetup' };
+const TABLE: Record<string, string> = { post: 'feed_posts', comment: 'feed_replies', dm: 'dm_messages', circle: 'circle_messages', group: 'rx_group_messages', meetup: 'rx_meetups' };
 
 interface Raw { source: ModSource; id: string; kind: string; ref_id: string | null; user_id: string | null; reporter_id: string | null; reason: string | null; status: string; created_at: string }
 
@@ -112,15 +112,15 @@ const screen: ScreenModule = {
     const authors = new Map<string, string>();
     const hidden = new Set<string>();
     await Promise.all([...byKind.entries()].map(async ([kind, ids]) => {
-      const sel = kind === 'post' ? 'id, body, user_id, deleted' : kind === 'dm' ? 'id, body, sender_id' : 'id, body, user_id';
+      const sel = kind === 'post' ? 'id, body, user_id, deleted' : kind === 'dm' ? 'id, body, sender_id' : kind === 'meetup' ? 'id, title, area, host_id, status' : 'id, body, user_id';
       const { data } = await supabaseAdmin.from(TABLE[kind]).select(sel).in('id', ids);
       const found = new Set<string>();
       for (const d of (data ?? []) as unknown as Record<string, unknown>[]) {
         found.add(d.id as string);
-        bodies.set(d.id as string, (d.body as string) ?? '');
-        const a = (d.user_id ?? d.sender_id) as string | undefined;
+        bodies.set(d.id as string, kind === 'meetup' ? `${d.title as string} (${d.area as string})` : (d.body as string) ?? '');
+        const a = (d.user_id ?? d.sender_id ?? d.host_id) as string | undefined;
         if (a) authors.set(d.id as string, a);
-        if (d.deleted) hidden.add(d.id as string);
+        if (d.deleted || d.status === 'cancelled') hidden.add(d.id as string);
       }
       if (kind === 'comment') for (const id of ids) if (!found.has(id)) hidden.add(id);
     }));
@@ -141,7 +141,7 @@ const screen: ScreenModule = {
       let st = 'Open';
       if (r.status === 'dismissed') st = 'Resolved';
       else if (r.status !== 'open') {
-        if ((r.kind === 'post' || r.kind === 'comment') && r.ref_id && hidden.has(r.ref_id)) st = 'Removed by admin';
+        if ((r.kind === 'post' || r.kind === 'comment' || r.kind === 'meetup') && r.ref_id && hidden.has(r.ref_id)) st = 'Removed by admin';
         else if (author && blocked.has(author)) st = 'Messaging blocked';
         else st = 'Resolved';
       }

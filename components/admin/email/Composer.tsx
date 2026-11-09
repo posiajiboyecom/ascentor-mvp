@@ -57,7 +57,7 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
 
   async function persist(): Promise<string | null> {
     if (templateMode) {
-      const r = await saveTemplate({ id: templateId, name: d.name, subject: d.subject, preheader: d.preheader, body_html: d.body_html });
+      const r = await saveTemplate({ id: templateId, name: d.name, subject: d.subject, preheader: d.preheader, body_html: d.body_html, sender: d.sender });
       if (!r.ok) { flash(r.error, true); return null; }
       setDirty(false); return r.id;
     }
@@ -107,7 +107,7 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
         <button type="button" className="lk" onClick={back}>← {templateMode ? 'Templates' : 'Campaigns'}</button>
         <div className="row">
           {canEdit && <button type="button" className="btn bs" disabled={busy} onClick={save}>{busy ? 'Saving…' : templateMode ? 'Save template' : 'Save draft'}</button>}
-          {canEdit && !templateMode && <button type="button" className="btn bs" disabled={busy} onClick={() => start(async () => { const r = await saveTemplate({ name: d.name || d.subject, subject: d.subject, preheader: d.preheader, body_html: d.body_html }); flash(r.ok ? 'Saved as a template.' : r.error, !r.ok); })}>Save as template</button>}
+          {canEdit && !templateMode && <button type="button" className="btn bs" disabled={busy} onClick={() => start(async () => { const r = await saveTemplate({ name: d.name || d.subject, subject: d.subject, preheader: d.preheader, body_html: d.body_html, sender: d.sender }); flash(r.ok ? 'Saved as a template.' : r.error, !r.ok); })}>Save as template</button>}
         </div>
       </div>
 
@@ -117,7 +117,7 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
             <div className="fld"><label htmlFor="em-name">{templateMode ? 'Template name' : 'Campaign name'} <span className="sm">(only you see this)</span></label><input id="em-name" className="in" value={d.name} disabled={ro} onChange={(e) => set('name', e.target.value)} placeholder={templateMode ? 'e.g. Event invitation' : 'e.g. Summit reminder, 18 Nov'} /></div>
             <div className="fld"><label htmlFor="em-subject">Subject</label><input id="em-subject" className="in" value={d.subject} disabled={ro} maxLength={200} onChange={(e) => set('subject', e.target.value)} placeholder="What people see in their inbox" /></div>
             <div className="fld"><label htmlFor="em-pre">Preview text <span className="sm">(shown after the subject in most inboxes)</span></label><input id="em-pre" className="in" value={d.preheader} disabled={ro} maxLength={200} onChange={(e) => set('preheader', e.target.value)} placeholder="A line that makes people open it" /></div>
-            {!templateMode && (
+            {(
               <div className="fld">
                 <label htmlFor="em-sender">From</label>
                 <select id="em-sender" className="in" value={parseSender(d.sender)} disabled={ro} onChange={(e) => set('sender', parseSender(e.target.value))}>

@@ -3,11 +3,9 @@ import 'server-only';
 // Privacy: the public page shows a first name and last initial only. No email, phone, code or full surname ever leaves here.
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
-export const REFERRAL_GOAL = 10;
+import { REFERRAL_GOAL, type PublicBoard, type PublicLeader } from './summitReferralPublicTypes';
+export { REFERRAL_GOAL, type PublicBoard, type PublicLeader };
 const TOP = 20;
-
-export interface PublicLeader { rank: number; name: string; confirmed: number; reached: boolean }
-export interface PublicBoard { leaders: PublicLeader[]; reachedCount: number; totalConfirmed: number; referrers: number }
 
 const cap = (w: string) => w.charAt(0).toLocaleUpperCase('en-GB') + w.slice(1).toLocaleLowerCase('en-GB');
 

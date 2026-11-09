@@ -14,12 +14,11 @@ export const SITE_NAME = 'Ascentor';
 export const TWITTER_HANDLE = '@ascentorhq';
 
 // ── Elevation Summit event constants ─────────────────────────
-// TODO: set exact confirmed date/time once locked with LASU.
 // startDate/endDate must be ISO 8601 with timezone offset.
 export const SUMMIT = {
   name: 'The Elevation Summit 2026',
   description:
-    'One gathering. One decision. The rest of your life. The inaugural Elevation Summit, a movement for purposeful living, leadership, and legacy. Lagos, December 2026, with global virtual access.',
+    'One gathering. One decision. The rest of your life. The inaugural Elevation Summit, a movement for purposeful living, leadership, and legacy. 19 November 2026 at Lagos State University, Ojo, with global virtual access.',
   startDate: '2026-11-19T10:00:00+01:00', // Date Confirmed
   endDate: '2026-11-19T15:00:00+01:00',   // Date Confirmed
   venue: {
@@ -30,11 +29,8 @@ export const SUMMIT = {
     country: 'NG',
   },
   url: `${SITE_URL}/elevation-summit`,
-  // Update as ticket tiers go live. Prices in NGN.
-  offers: [
-    { name: 'Early Bird', price: '15000' },
-    { name: 'Virtual Access', price: '5000' },
-  ],
+  // Registration is free (one free ticket for in-person or virtual).
+  offers: [{ name: 'Free registration', price: '0' }],
 } as const;
 
 // ── Page metadata helper (kept API-compatible) ────────────────
@@ -90,7 +86,7 @@ export function getOrganizationSchema() {
       'Ascentor is a purposeful living and leadership development platform, AI coaching with Sage, community in The Circle, expert sessions, and The Elevation Summit.',
     sameAs: [
       'https://twitter.com/ascentorhq',
-      // TODO: add Instagram / LinkedIn / YouTube profile URLs when live
+      'https://www.linkedin.com/company/joinascentor',
     ],
     contactPoint: {
       '@type': 'ContactPoint',
@@ -133,6 +129,8 @@ export function getSummitEventSchema() {
     startDate: SUMMIT.startDate,
     endDate: SUMMIT.endDate,
     eventStatus: 'https://schema.org/EventScheduled',
+    isAccessibleForFree: true,
+    sameAs: ['https://x.com/elevatnsummit', 'https://www.instagram.com/theelevationsummit'],
     // Physical + virtual - this value marks it as a hybrid event.
     eventAttendanceMode: 'https://schema.org/MixedEventAttendanceMode',
     location: [

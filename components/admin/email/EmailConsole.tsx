@@ -66,7 +66,7 @@ export default function EmailConsole({ initial, loadError, canEdit, canSend, me,
   const queued = overview.campaigns.reduce((n, c) => n + (c.status === 'sending' || c.status === 'paused' ? c.stats.queued : 0), 0);
   const capLeft = Math.max(0, s.daily_limit - overview.sent24);
 
-  const openTemplateAsCampaign = (t: Template) => { setTab('campaigns'); setView({ kind: 'compose', draft: { ...BLANK, name: t.name, subject: t.subject, preheader: t.preheader, body_html: t.body_html } }); };
+  const openTemplateAsCampaign = (t: Template) => { setTab('campaigns'); setView({ kind: 'compose', draft: { ...BLANK, name: t.name, subject: t.subject, preheader: t.preheader, body_html: t.body_html, sender: t.sender } }); };
 
   return (
     <div className="admc">
@@ -150,7 +150,7 @@ export default function EmailConsole({ initial, loadError, canEdit, canSend, me,
         {view.kind === 'list' && tab === 'contacts' && <ContactsTab ctx={ctx} />}
         {view.kind === 'list' && tab === 'templates' && (
           <TemplatesTab ctx={ctx} onUse={openTemplateAsCampaign}
-            onEdit={(t: Template | null) => { setTab('templates'); setView({ kind: 'compose', template: true, templateId: t?.id, draft: { ...BLANK, name: t?.name ?? '', subject: t?.subject ?? '', preheader: t?.preheader ?? '', body_html: t?.body_html ?? '' } }); }} />
+            onEdit={(t: Template | null) => { setTab('templates'); setView({ kind: 'compose', template: true, templateId: t?.id, draft: { ...BLANK, name: t?.name ?? '', subject: t?.subject ?? '', preheader: t?.preheader ?? '', body_html: t?.body_html ?? '', sender: t?.sender ?? 'default' } }); }} />
         )}
         {view.kind === 'list' && tab === 'settings' && <SettingsTab ctx={ctx} />}
       </div>

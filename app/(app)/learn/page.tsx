@@ -66,7 +66,13 @@ export default async function LearnPage() {
 
           {lesson ? (
             <div className="rx-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div className="rx-thumb" style={{ borderRadius: 0, aspectRatio: '21/8', alignItems: 'center', justifyContent: 'center' }}><Play aria-hidden style={{ width: 44, height: 44 }} /></div>
+              <div className="rx-thumb" style={{ borderRadius: 0, aspectRatio: '21/8', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                {lesson.thumbnail_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={lesson.thumbnail_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                )}
+                <Play aria-hidden style={{ width: 44, height: 44, position: 'relative', ...(lesson.thumbnail_url ? { color: '#fff', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,.45))' } : {}) }} />
+              </div>
               <div className="rx-stack-sm" style={{ padding: '18px 20px 20px' }}>
                 <div className="rx-row" style={{ gap: 8 }}><span className="rx-tag gold">{lesson.dimension}</span><span className="rx-sm">{lesson.minutes} min</span></div>
                 <p className="rx-h2">{lesson.title}</p>

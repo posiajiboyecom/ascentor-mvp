@@ -2,3 +2,7 @@
 -- Addresses live in lib/contact.ts (MARKETING_FROM, PERSONAL_FROM, SUMMIT_FROM).
 ALTER TABLE public.email_campaigns ADD COLUMN IF NOT EXISTS sender text NOT NULL DEFAULT 'default'
   CHECK (sender IN ('default', 'greg', 'posi', 'summit'));
+
+-- Templates remember their sender too, so a campaign started from one keeps it.
+ALTER TABLE public.email_templates ADD COLUMN IF NOT EXISTS sender text NOT NULL DEFAULT 'default'
+  CHECK (sender IN ('default', 'greg', 'posi', 'summit'));

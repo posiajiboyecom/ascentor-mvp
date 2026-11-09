@@ -27,7 +27,12 @@ export async function removeModContent(kind: string, refId: string): Promise<voi
   } else if (kind === 'comment') {
     const { error } = await supabaseAdmin.from('feed_replies').delete().eq('id', refId);
     if (error) throw new Error(error.message);
-  } else throw new Error('Only posts and comments can be removed here.');
+  } else if (kind === 'meetup') {
+    // A meetup is cancelled for everyone (kept for the record).
+    const { error } = await supabaseAdmin.from('rx_meetups').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', refId);
+    if (error) throw new Error(error.message);
+    revalidatePath('/community/meetups');
+  } else throw new Error('Only posts, comments and meetups can be removed here.');
   revalidatePath('/community');
 }
 
@@ -43,6 +48,10 @@ export async function modAuthorOf(source: ModSource, row: { kind: string; ref_id
   if (row.kind === 'post' || row.kind === 'comment') {
     const { data } = await supabaseAdmin.from(row.kind === 'post' ? 'feed_posts' : 'feed_replies').select('user_id').eq('id', row.ref_id).maybeSingle();
     return (data?.user_id as string | null | undefined) ?? null;
+  }
+  if (row.kind === 'meetup') {
+    const { data } = await supabaseAdmin.from('rx_meetups').select('host_id').eq('id', row.ref_id).maybeSingle();
+    return (data?.host_id as string | null | undefined) ?? null;
   }
   if (row.kind === 'dm') {
     const { data: t } = await supabaseAdmin.from('dm_threads').select('user_a, user_b').eq('id', row.ref_id).maybeSingle();

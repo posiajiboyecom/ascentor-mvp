@@ -73,6 +73,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
         items: [
           { href: '/community',         label: 'Community',  icon: <Compass /> },
           ...(showCities ? [{ href: '/community/cities', label: 'City groups', icon: <MapPin />, badge: counts?.cityName ?? undefined }] : []),
+          ...(showCities ? [{ href: '/community/meetups', label: 'Meetups', icon: <CalendarClock /> }] : []),
           ...(showShop ? [{ href: '/store',             label: 'Store',      icon: <ShoppingBag />, badge: cartCount > 0 ? cartCount : undefined }] : []),
         ],
       },

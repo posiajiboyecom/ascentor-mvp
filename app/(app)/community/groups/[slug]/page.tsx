@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, Lock, MessageSquare, Pin } from 'lucide-react';
+import { ArrowLeft, Calendar, Lock, MessageSquare, Pin } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getMe } from '@/lib/rx/server';
 import { groupMembers, groupMessages } from '@/lib/rx/community';
+import { upcomingMeetups, whenLabel } from '@/lib/rx/meetups';
 import { Avatar } from '@/components/rx/ui';
 import { GroupRoomChat, LeaveGroupButton } from '@/components/rx/community/CommunityClient';
 
@@ -38,6 +39,7 @@ export default async function GroupRoomPage({ params }: { params: Promise<{ slug
   ]);
   const count = (stat?.member_count as number | undefined) ?? 0;
   const joined = !!mine;
+  const nextMeetup = g.is_city && joined ? (await upcomingMeetups(me.userId, g.id, 1))[0] ?? null : null;
 
   return (
     <div className="rx rx-room">
@@ -54,6 +56,19 @@ export default async function GroupRoomPage({ params }: { params: Promise<{ slug
         {g.prompt && (
           <div style={{ padding: '12px 16px 0' }}>
             <div className="rx-soft rx-row rx-nw" style={{ gap: 10 }}><Pin aria-hidden style={{ width: 16, height: 16, color: 'var(--rx-muted)', flex: 'none' }} /><div style={{ minWidth: 0 }}><p className="rx-sm">Pinned prompt</p><p className="rx-p">{g.prompt}</p></div></div>
+          </div>
+        )}
+        {g.is_city && joined && (
+          <div style={{ padding: '12px 16px 0' }}>
+            <div className="rx-soft rx-row rx-nw" style={{ gap: 10 }}>
+              <Calendar aria-hidden style={{ width: 16, height: 16, color: 'var(--rx-muted)', flex: 'none' }} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                {nextMeetup
+                  ? <Link href={`/community/meetups/${nextMeetup.id}`} className="rx-p" style={{ color: 'inherit' }}><b>Next meetup:</b> {nextMeetup.title} · {whenLabel(nextMeetup.startsAt, nextMeetup.endsAt, me.tz).split(' · ')[0]} · {nextMeetup.going} going</Link>
+                  : <p className="rx-p">No meetup planned in {g.name} yet.</p>}
+              </div>
+              <Link href={`/community/meetups/new?group=${g.slug}`} className="rx-link" style={{ minHeight: 32, fontSize: 14, flex: 'none' }}>Plan one</Link>
+            </div>
           </div>
         )}
         <div style={{ flex: 1, minHeight: 0 }}>

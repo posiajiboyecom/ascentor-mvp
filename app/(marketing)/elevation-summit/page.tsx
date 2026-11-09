@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'The Elevation Summit 2026, Lagos',
     description:
-      'A movement for purposeful living, leadership, and legacy. December 2026, Lagos, attend in person or join virtually from anywhere in the world.',
+      'A movement for purposeful living, leadership, and legacy. 19 November 2026, Lagos State University, Ojo. Attend in person or join virtually from anywhere in the world.',
     url: `${SITE_URL}/elevation-summit`,
     siteName: 'Ascentor',
     type: 'website',
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'The Elevation Summit 2026, Lagos',
     description:
-      'One gathering. One decision. The rest of your life. December 2026 · Lagos · Physical & Virtual.',
+      'One gathering. One decision. The rest of your life. 19 November 2026 · LASU, Ojo · Free · Physical & Virtual.',
   },
   keywords: [
     'The Elevation Summit',
