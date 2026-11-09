@@ -24,7 +24,7 @@ import {
 } from './signal-parts';
 import { CHAT_MAX, ChatPanel, cleanText, historyBatches, mergeChat, type ChatMsg, type ChatWire } from './call-chat';
 
-type Phase = 'loading' | 'waiting' | 'notstarted' | 'unavailable' | 'inapp' | 'elsewhere' | 'prejoin' | 'joining' | 'incall' | 'moved' | 'ended' | 'error';
+type Phase = 'loading' | 'waiting' | 'notstarted' | 'unavailable' | 'inapp' | 'elsewhere' | 'prejoin' | 'joining' | 'incall' | 'moved' | 'error';
 
 interface TokenOpen { state: 'open'; url: string; token: string; isOwner: boolean; title: string; circleName?: string; circleNumber?: number; endsAt: string; startsAt: string; opensAt: string }
 interface TokenWait { state: 'waiting' | 'ended'; title: string; circleName?: string; circleNumber?: number; endsAt: string; startsAt: string; opensAt: string }
@@ -127,14 +127,16 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       const res = await fetch('/api/rx/call/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ circleId, kind, sessionId, takeover }) });
       const j = (await res.json()) as TokenResponse;
       if (j.state === 'open') { setInfo(j); setPhase((p) => (p === 'incall' || p === 'joining' ? p : 'prejoin')); }
-      else if (j.state === 'waiting' || j.state === 'ended') { setInfo(j); setPhase(j.state === 'waiting' ? 'waiting' : 'ended'); }
+      else if (j.state === 'waiting') { setInfo(j); setPhase('waiting'); }
+      // The call window has already closed. No "call ended" page to sit on — go straight back.
+      else if (j.state === 'ended') { router.replace(backHref); }
       else if (j.state === 'elsewhere') setPhase('elsewhere');
       else if (j.state === 'notstarted') setPhase('notstarted');
       else if (j.state === 'unavailable') setPhase('unavailable');
       else if (j.state === 'error') { setError(j.error); setPhase('error'); }
       else setPhase('unavailable');
     } catch { setPhase('unavailable'); }
-  }, [circleId, kind, sessionId]);
+  }, [circleId, kind, sessionId, router, backHref]);
 
   useEffect(() => {
     if (typeof navigator !== 'undefined' && IN_APP.test(navigator.userAgent)) { setPhase('inapp'); return; }
@@ -309,7 +311,8 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       call.on('local-screen-share-canceled', () => { setSharing(false); setShareBusy(false); });
       call.on('network-connection', (e) => setReconnecting(e?.event === 'interrupted'));
       call.on('network-quality-change', (e) => setPoor(e?.threshold === 'low' || e?.threshold === 'very-low'));
-      call.on('left-meeting', () => { setPhase('ended'); void endAttendance(); });
+      // No "call ended" page to land on — once we've left, go straight back to the Circle (or Sessions).
+      call.on('left-meeting', () => { endAttendance(); router.replace(backHref); });
       call.on('nonfatal-error', (e) => {
         if (String(e?.type ?? '').includes('screen-share')) { setSharing(false); setShareBusy(false); toast('Your screen couldn’t be shared. Check that your browser can share your screen.'); }
       });
@@ -336,11 +339,12 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   useEffect(() => { const onUnload = () => endAttendance(); window.addEventListener('pagehide', onUnload); return () => { window.removeEventListener('pagehide', onUnload); callRef.current?.destroy(); }; }, []);
 
   async function leave(auto = false) {
+    if (auto) toast('The call has ended.');
     try { if (sharing) callRef.current?.stopScreenShare(); } catch { /* already stopped */ }
     try { await callRef.current?.leave(); } catch { /* already gone */ }
     camTrack.current?.stop(); camTrack.current = null; camMode.current = null; setCamOn(false); setSharing(false);
-    endAttendance(); setPhase('ended');
-    if (auto) toast('The call has ended.');
+    // 'left-meeting' (above) usually fires and does this too — harmless if it beats us here.
+    endAttendance(); router.replace(backHref);
   }
 
   function toggleMute() { const c = callRef.current; if (!c) return; const next = !muted; c.setLocalAudio(!next); setMuted(next); }
@@ -806,14 +810,6 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
         )}
 
         {phase === 'joining' && <p className="rx-sm">Joining…</p>}
-
-        {phase === 'ended' && (
-          <div className="rx-stack">
-            <p className="rx-big">Call ended.</p>
-            <p className="rx-p">{kind === 'circle' ? 'Post your commitment in the Circle chat.' : 'Check the agreement for your next tasks.'}</p>
-            <div className="rx-row"><Link href={kind === 'circle' ? '/circle/chat' : '/sessions'} className="rx-btn primary">{kind === 'circle' ? 'Open the Circle chat' : 'Back to Sessions'}</Link><button type="button" className="rx-link muted" onClick={() => router.push(backHref)}>Back</button></div>
-          </div>
-        )}
       </div>
     </div>
   );
