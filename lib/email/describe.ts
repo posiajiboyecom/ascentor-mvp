@@ -25,6 +25,21 @@ export const SOURCE_LABEL: Record<string, string> = Object.fromEntries(SOURCES.m
 export const sourceLabel = (k: string) => SOURCE_LABEL[k] ?? k;
 export const tagLabel = (t: string) => (t.startsWith('event:') ? t.slice(6) : t);
 
+// ── senders ─────────────────────────────────────────────────────────────────
+/** Who a campaign comes from. Addresses are resolved on the server from lib/contact.ts. */
+export type SenderKey = 'default' | 'greg' | 'posi' | 'summit';
+export const SENDERS: { key: SenderKey; label: string; help: string }[] = [
+  { key: 'default', label: 'Ascentor (default)', help: 'The name in Settings, from the main mailbox' },
+  { key: 'greg', label: 'Greg from Ascentor', help: 'Marketing and newsletters · greg@joinascentor.com' },
+  { key: 'posi', label: 'Posi Ajiboye', help: 'Personal notes from Posi · a.samuel@joinascentor.com' },
+  { key: 'summit', label: 'The Elevation Summit', help: 'Summit updates · summit@joinascentor.com' },
+];
+export const parseSender = (x: unknown): SenderKey => (SENDERS.some((s) => s.key === x) ? (x as SenderKey) : 'default');
+
+/** Personal fields a campaign can use. {{referral_link}} is the recipient's own Summit referral link (the Summit page if they have none). */
+export const MERGE_FIELDS = [['{{first_name}}', 'First name'], ['{{name}}', 'Full name'], ['{{email}}', 'Email'], ['{{referral_link}}', 'Summit referral link']] as const;
+export const MERGE_KEYS = MERGE_FIELDS.map(([v]) => v.slice(2, -2));
+
 export interface Audience { all: boolean; sources: string[]; tags: string[]; exclude: string[]; emails: string[] }
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;

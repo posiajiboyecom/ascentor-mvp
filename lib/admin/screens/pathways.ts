@@ -69,17 +69,22 @@ async function load() {
   }
   for (const l of lessons.data ?? []) {
     const enr = rxEnr.get(l.id) ?? 0;
-    const thumbnailNote = l.thumbnail_url ? l.thumbnail_url : 'Not set — paste a URL in Supabase or upload to Storage and paste the public URL here';
     rows.push({
       id: `l:${l.id}`,
       cells: [l.title ?? '-', l.dimension ?? '-', '1', num(enr), enr > 0 ? pct(rxDone.get(l.id) ?? 0, enr) : '-', l.published ? 'Published' : 'Draft'],
       details: [
         { heading: 'Lesson', items: [['Title', l.title ?? '-'], ['Dimension', l.dimension ?? '-'], ['Video URL', l.video_url ?? 'None']] as [string, string][] },
-        { heading: 'Thumbnail', items: [['Thumbnail URL', thumbnailNote], ['Dimensions', '1280 × 720 px · 16:9 · JPG or PNG · max 500 KB']] as [string, string][] },
       ],
+      upload: {
+        label: 'Thumbnail',
+        endpoint: '/api/admin/lesson-thumbnail',
+        accept: 'image/png,image/jpeg,image/webp',
+        hint: '1280 × 720 px (16:9) · PNG preferred · max 2 MB. Shows on the lesson card and before the video plays.',
+        current: l.thumbnail_url ?? null,
+      },
     });
   }
-  return { rows, note: 'Pathways first, then standalone lessons. To set a lesson thumbnail: upload a 1280×720px image to Supabase Storage → copy the public URL → update thumbnail_url on that rx_lessons row.' };
+  return { rows, note: 'Pathways first, then standalone lessons. Open a lesson to upload its thumbnail.' };
 }
 
 const screen: ScreenModule = {

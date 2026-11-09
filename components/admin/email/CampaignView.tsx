@@ -21,7 +21,7 @@ export default function CampaignView({ ctx, id, onBack, onEdit, onOpen }: { ctx:
     const r = await getCampaign(id);
     if (!r.ok) { flash(r.error, true); return; }
     const c = r.detail.campaign;
-    if (c.status === 'draft' && canEdit) { onEdit({ id: c.id, name: c.name, subject: c.subject, preheader: c.preheader, heading: c.heading, body_html: c.body_html, audience: c.audience }); return; }
+    if (c.status === 'draft' && canEdit) { onEdit({ id: c.id, name: c.name, subject: c.subject, preheader: c.preheader, heading: c.heading, body_html: c.body_html, audience: c.audience, sender: c.sender }); return; }
     setD(r.detail);
     if (!html) { const p = await previewCampaign({ ...c }); if (p.ok) setHtml(p.html); }
   }, [id, canEdit, onEdit, flash, html]);
@@ -73,7 +73,7 @@ export default function CampaignView({ ctx, id, onBack, onEdit, onOpen }: { ctx:
       <div className="sb" style={{ flexWrap: 'wrap' }}>
         <button type="button" className="lk" onClick={onBack}>← Campaigns</button>
         <div className="row">
-          {canEdit && c.status === 'scheduled' && <button type="button" className="btn bs" onClick={() => onEdit({ id: c.id, name: c.name, subject: c.subject, preheader: c.preheader, heading: c.heading, body_html: c.body_html, audience: c.audience })}>Edit</button>}
+          {canEdit && c.status === 'scheduled' && <button type="button" className="btn bs" onClick={() => onEdit({ id: c.id, name: c.name, subject: c.subject, preheader: c.preheader, heading: c.heading, body_html: c.body_html, audience: c.audience, sender: c.sender })}>Edit</button>}
           {canEdit && <button type="button" className="btn bs" disabled={busy} onClick={() => start(async () => { const r = await duplicateCampaign(c.id); if (r.ok) onOpen(r.id); else flash(r.error, true); })}>Duplicate</button>}
           {canEdit && c.status === 'sent' && s.sent - s.opened > 0 && (
             <button type="button" className="btn bs" disabled={busy} title="Makes a draft for the people who have not opened it. Some mail apps hide opens, so a few of them will have read it." onClick={() => start(async () => {

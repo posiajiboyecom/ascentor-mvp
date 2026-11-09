@@ -106,6 +106,21 @@ export default function ListScreen({ spec, rows: serverRows, kpis, note, level, 
     });
   };
 
+  const [uploading, setUploading] = useState(false);
+  const uploadFile = async (rowId: string, endpoint: string, file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData(); fd.append('file', file); fd.append('rowId', rowId);
+      const res = await fetch(endpoint, { method: 'POST', body: fd });
+      const j = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+      if (!res.ok || !j.url) { flash(j.error || 'The upload did not work.'); return; }
+      setRows((prev) => prev.map((x) => (x.id === rowId && x.upload ? { ...x, upload: { ...x.upload, current: j.url } } : x)));
+      flash('Image uploaded and saved.');
+      router.refresh();
+    } catch { flash('The upload did not work. Check your connection.'); }
+    finally { setUploading(false); }
+  };
+
   const pick = (a: ActionSpec, r: RowData) => {
     if (!can(needOf(a))) { flash('Only an admin can do this.'); return; }
     if (a.confirm) setConfirm({ a, row: r }); else doAction(a, r);
@@ -265,6 +280,22 @@ export default function ListScreen({ spec, rows: serverRows, kpis, note, level, 
                   </dl>
                 </div>
               ))}
+              {selected.upload && (
+                <div className="st8">
+                  <p className="sl">{selected.upload.label}</p>
+                  {selected.upload.current
+                    ? <img src={selected.upload.current} alt="" style={{ width: '100%', maxWidth: 360, aspectRatio: '16/9', objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
+                    : <p className="sm">None uploaded yet.</p>}
+                  {can('edit') ? (
+                    <label className="btn bs" style={{ cursor: uploading ? 'wait' : 'pointer', alignSelf: 'flex-start' }}>
+                      {uploading ? 'Uploading…' : selected.upload.current ? 'Replace image' : 'Upload image'}
+                      <input type="file" accept={selected.upload.accept} disabled={uploading} style={{ display: 'none' }}
+                        onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f && selected.upload) void uploadFile(selected.id, selected.upload.endpoint, f); }} />
+                    </label>
+                  ) : <p className="sm">View only.</p>}
+                  {selected.upload.hint && <p className="sm">{selected.upload.hint}</p>}
+                </div>
+              )}
               <div className="st8">
                 <p className="sl">Actions</p>
                 {(() => {

@@ -11,7 +11,7 @@ import crypto from 'crypto';
 import sanitizeHtml from 'sanitize-html';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { sendEmail, classifyEmailError, emailErrorCode } from '@/lib/nodemailer';
-import { FROM_DEFAULT, REPLY_TO } from '@/lib/contact';
+import { FROM_DEFAULT, REPLY_TO, MARKETING_FROM, PERSONAL_FROM, SUMMIT_FROM } from '@/lib/contact';
 import { brandedEmailLayout, esc } from '@/lib/emailTemplate';
 
 // Server code only (admin console, cron, Trigger.dev). It builds its own service-role client rather than importing
@@ -24,15 +24,15 @@ function db(): SupabaseClient {
 }
 export const emailDb = db;
 
-import { SOURCES, SOURCE_LABEL, sourceLabel, tagLabel, isEmail, parseAudience, audienceIsEmpty, describeAudience, type Audience } from './describe';
-export { SOURCES, SOURCE_LABEL, sourceLabel, tagLabel, isEmail, parseAudience, audienceIsEmpty, describeAudience, type Audience };
+import { SOURCES, SOURCE_LABEL, sourceLabel, tagLabel, isEmail, parseAudience, audienceIsEmpty, describeAudience, parseSender, type Audience, type SenderKey } from './describe';
+export { SOURCES, SOURCE_LABEL, sourceLabel, tagLabel, isEmail, parseAudience, audienceIsEmpty, describeAudience, parseSender, type Audience, type SenderKey };
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://joinascentor.com').replace(/\/$/, '');
 
 // ── types ───────────────────────────────────────────────────────────────────
 export interface Settings { from_name: string; reply_to: string | null; daily_limit: number; per_minute: number; footer_text: string }
 export interface Campaign {
-  id: string; name: string; subject: string; preheader: string; heading: string; body_html: string; audience: Audience;
+  id: string; name: string; subject: string; preheader: string; heading: string; body_html: string; audience: Audience; sender?: SenderKey;
   status: 'draft' | 'scheduled' | 'sending' | 'paused' | 'sent' | 'cancelled';
   scheduled_at: string | null; started_at: string | null; finished_at: string | null; total: number; created_at: string; updated_at: string;
 }
@@ -84,13 +84,30 @@ export function verifyLink(token: string, url: string, sig: string): boolean {
 
 const firstName = (name: string | null | undefined) => (name ?? '').trim().split(/\s+/)[0] || '';
 
-/** {{first_name}}, {{name}}, {{email}}: escaped for HTML, with "there" when a first name is unknown. */
-function merge(text: string, r: { email: string; name: string | null }, html: boolean): string {
+/** The Summit page, and a registrant's own referral link on it (same format as lib/summitReferral referralLink). */
+export const SUMMIT_PAGE_URL = `${SITE_URL}/elevation-summit`;
+export const summitReferralUrl = (code: string | null | undefined) => (code ? `${SUMMIT_PAGE_URL}?ref=${encodeURIComponent(code)}` : SUMMIT_PAGE_URL);
+export const usesReferralLink = (c: Pick<Campaign, 'subject' | 'preheader' | 'heading' | 'body_html'>) => /\{\{\s*referral_link\s*\}\}/i.test(`${c.subject} ${c.preheader} ${c.heading} ${c.body_html}`);
+
+/** Referral codes for these addresses (latest registration wins). Addresses with no registration are left out. */
+export async function referralCodesFor(emails: string[]): Promise<Map<string, string>> {
+  const m = new Map<string, string>();
+  const list = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
+  for (let i = 0; i < list.length; i += 200) {
+    const { data } = await db().from('summit_registrations').select('email, referral_code, created_at').in('email', list.slice(i, i + 200)).not('referral_code', 'is', null).order('created_at', { ascending: true });
+    for (const r of (data ?? []) as { email: string; referral_code: string }[]) m.set(r.email.toLowerCase(), r.referral_code);
+  }
+  return m;
+}
+
+/** {{first_name}}, {{name}}, {{email}}, {{referral_link}}: escaped for HTML, with "there" when a first name is unknown. */
+function merge(text: string, r: { email: string; name: string | null; referralCode?: string | null }, html: boolean): string {
   const v = (s: string) => (html ? esc(s) : s);
   return text
     .replace(/\{\{\s*first_name\s*\}\}/gi, v(firstName(r.name) || 'there'))
     .replace(/\{\{\s*name\s*\}\}/gi, v((r.name ?? '').trim() || 'there'))
-    .replace(/\{\{\s*email\s*\}\}/gi, v(r.email));
+    .replace(/\{\{\s*email\s*\}\}/gi, v(r.email))
+    .replace(/\{\{\s*referral_link\s*\}\}/gi, v(summitReferralUrl(r.referralCode)));
 }
 
 function htmlToText(html: string): string {
@@ -108,9 +125,12 @@ export interface Rendered { subject: string; html: string; text: string; headers
  * The finished email for one recipient. With a token, links are tracked, an open pixel is added and the unsubscribe
  * link works; without one (previews and tests) links go straight to their targets and the unsubscribe link is inert.
  */
-export function renderEmail(c: Pick<Campaign, 'subject' | 'preheader' | 'heading' | 'body_html'>, r: { email: string; name: string | null; token?: string | null; reason?: string }, s: Settings): Rendered {
+export function renderEmail(c: Pick<Campaign, 'subject' | 'preheader' | 'heading' | 'body_html'> & { sender?: SenderKey }, r: { email: string; name: string | null; token?: string | null; reason?: string; referralCode?: string | null }, s: Settings): Rendered {
   const token = r.token ?? null;
-  let body = merge(cleanBody(c.body_html), r, true);
+  // {{referral_link}} goes in before cleaning so it also works as a link target (href="{{referral_link}}"), which the cleaner
+  // would otherwise drop as an unknown scheme. The value is always our own https URL.
+  const withRef = (c.body_html ?? '').replace(/\{\{\s*referral_link\s*\}\}/gi, esc(summitReferralUrl(r.referralCode)));
+  let body = merge(cleanBody(withRef), r, true);
   if (token) {
     body = body.replace(/href="(https?:\/\/[^"]+)"/gi, (_m, raw: string) => {
       const url = raw.replace(/&amp;/g, '&');
@@ -126,7 +146,7 @@ export function renderEmail(c: Pick<Campaign, 'subject' | 'preheader' | 'heading
   const subject = merge(c.subject, r, false).slice(0, 200);
   const html = brandedEmailLayout({
     preheader: merge(c.preheader || '', r, false),
-    eyebrow: s.from_name || 'Ascentor',
+    eyebrow: senderFor(c.sender, s).name,
     heading: merge(c.heading || '', r, false),
     content: body,
     recipient: r.email,
@@ -150,6 +170,21 @@ export function fromWithName(name: string): string {
   const addr = m ? m[1] : FROM_DEFAULT;
   const safe = (name || 'Ascentor').replace(/["<>\r\n]/g, '').trim() || 'Ascentor';
   return `${safe} <${addr}>`;
+}
+
+/** The From and Reply-To for a campaign's chosen sender. 'default' keeps the Settings name on the main mailbox. */
+export function senderFor(key: SenderKey | null | undefined, s: Settings): { from: string; replyTo: string | undefined; name: string } {
+  const pick = (from: string) => {
+    const addr = (from.match(/<([^>]+)>/)?.[1] ?? from).trim();
+    const name = (from.match(/^\s*"?([^"<]+?)"?\s*</)?.[1] ?? 'Ascentor').trim();
+    return { from, replyTo: addr, name };
+  };
+  switch (parseSender(key)) {
+    case 'greg': return pick(MARKETING_FROM);
+    case 'posi': return pick(PERSONAL_FROM);
+    case 'summit': return pick(SUMMIT_FROM);
+    default: return { from: fromWithName(s.from_name), replyTo: s.reply_to || undefined, name: s.from_name || 'Ascentor' };
+  }
 }
 
 /** One line on why this person is getting the email, from their categories. */
@@ -210,7 +245,6 @@ export async function dispatch(opts: { budgetMs: number; owner: string }): Promi
     const gap = Math.ceil(60_000 / Math.max(1, s.per_minute));
     let capLeft = Math.max(0, s.daily_limit - (await sentLast24h()));
     const campaigns = new Map<string, Campaign | null>();
-    const from = fromWithName(s.from_name);
 
     while (capLeft > 0 && Date.now() + gap + 15_000 < deadline) {
       const want = Math.min(capLeft, Math.max(1, Math.floor((deadline - Date.now() - 15_000) / gap)), 25);
@@ -221,6 +255,15 @@ export async function dispatch(opts: { budgetMs: number; owner: string }): Promi
       // Contacts can unsubscribe or bounce after the queue was filled: check them all at once.
       const { data: contacts } = await db().from('email_contacts').select('email, name, sources, unsubscribed_at, bounced_at').in('email', batch.map((b) => b.email));
       const byEmail = new Map(((contacts ?? []) as { email: string; name: string | null; sources: string[]; unsubscribed_at: string | null; bounced_at: string | null }[]).map((c) => [c.email, c]));
+      // {{referral_link}}: look up codes for this batch only when a campaign in it uses the field.
+      for (const id of new Set(batch.map((b) => b.campaign_id))) {
+        if (!campaigns.has(id)) {
+          const { data } = await db().from('email_campaigns').select('*').eq('id', id).maybeSingle();
+          campaigns.set(id, (data as Campaign | null) ?? null);
+        }
+      }
+      const needCodes = batch.some((b) => { const c = campaigns.get(b.campaign_id); return !!c && usesReferralLink(c); });
+      const codes = needCodes ? await referralCodesFor(batch.map((b) => b.email)) : new Map<string, string>();
 
       for (const row of batch) {
         if (Date.now() + 10_000 > deadline || capLeft <= 0) {
@@ -240,8 +283,9 @@ export async function dispatch(opts: { budgetMs: number; owner: string }): Promi
         }
         const started = Date.now();
         try {
-          const m = renderEmail(c, { email: row.email, name: contact?.name ?? row.name, token: row.token, reason: reasonFor(contact?.sources) }, s);
-          await sendEmail({ to: row.email, subject: m.subject, html: m.html, text: m.text, from, replyTo: s.reply_to || undefined, headers: m.headers, required: true });
+          const m = renderEmail(c, { email: row.email, name: contact?.name ?? row.name, token: row.token, reason: reasonFor(contact?.sources), referralCode: codes.get(row.email.toLowerCase()) ?? null }, s);
+          const who = senderFor(c.sender, s);
+          await sendEmail({ to: row.email, subject: m.subject, html: m.html, text: m.text, from: who.from, replyTo: who.replyTo, headers: m.headers, required: true });
           await db().from('email_sends').update({ status: 'sent', sent_at: new Date().toISOString(), error: null }).eq('id', row.id);
           out.sent++; capLeft--;
         } catch (e) {
@@ -279,11 +323,13 @@ export async function dispatch(opts: { budgetMs: number; owner: string }): Promi
 }
 
 /** Sends one copy to `to` exactly as recipients see it (no tracking; subject marked as a test). */
-export async function sendTest(c: Pick<Campaign, 'subject' | 'preheader' | 'heading' | 'body_html'>, to: string, name: string | null): Promise<void> {
+export async function sendTest(c: Pick<Campaign, 'subject' | 'preheader' | 'heading' | 'body_html'> & { sender?: SenderKey }, to: string, name: string | null): Promise<void> {
   const s = await getSettings();
-  // Identical to what recipients get; the only marker is [Test] in the subject.
-  const m = renderEmail(c, { email: to, name, token: null }, s);
-  await sendEmail({ to, subject: `[Test] ${m.subject}`, html: m.html, text: m.text, from: fromWithName(s.from_name), replyTo: s.reply_to || undefined, required: true });
+  // Identical to what recipients get; the only marker is [Test] in the subject. {{referral_link}} uses the tester's own code if they registered.
+  const code = usesReferralLink(c) ? (await referralCodesFor([to])).get(to.toLowerCase()) ?? null : null;
+  const m = renderEmail(c, { email: to, name, token: null, referralCode: code }, s);
+  const who = senderFor(c.sender, s);
+  await sendEmail({ to, subject: `[Test] ${m.subject}`, html: m.html, text: m.text, from: who.from, replyTo: who.replyTo, required: true });
 }
 
 /** Asks the Trigger.dev dispatcher to start now (it also runs every 5 minutes). Never throws. */

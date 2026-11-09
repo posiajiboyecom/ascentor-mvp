@@ -9,7 +9,7 @@ import { auditAdmin } from '@/lib/admin/audit';
 import { can, type Level } from '@/lib/admin/areas';
 import {
   EMPTY_STATS, SOURCES, audienceIsEmpty, describeAudience, dispatch, emailDb, getSettings, isEmail, kickDispatcher,
-  parseAudience, renderEmail, sendTest, sentLast24h, type Audience, type Campaign, type DispatchResult, type Settings, type Stats,
+  parseAudience, parseSender, referralCodesFor, renderEmail, sendTest, sentLast24h, usesReferralLink, type Audience, type SenderKey, type Campaign, type DispatchResult, type Settings, type Stats,
 } from '@/lib/email/system';
 
 const AREA = 'newsletter';
@@ -220,7 +220,7 @@ export async function exportContacts(f: ContactQuery): Promise<R<{ csv: string; 
 }
 
 // ── campaigns ───────────────────────────────────────────────────────────────
-export interface Draft { id?: string; name: string; subject: string; preheader: string; heading: string; body_html: string; audience: Audience }
+export interface Draft { id?: string; name: string; subject: string; preheader: string; heading: string; body_html: string; audience: Audience; sender?: SenderKey }
 export interface CampaignDetail { campaign: Campaign; stats: Stats; failures: { email: string; error: string | null }[]; capLeft: number; perDay: number }
 
 export async function audienceCount(aud: unknown): Promise<R<{ count: number }>> {
@@ -241,6 +241,7 @@ function cleanDraft(d: Draft) {
     heading: (d.heading ?? '').trim().slice(0, 200),
     body_html: (d.body_html ?? '').slice(0, 300_000),
     audience: parseAudience(d.audience),
+    sender: parseSender(d.sender),
   };
 }
 
@@ -279,7 +280,10 @@ export async function previewCampaign(d: Draft): Promise<R<{ html: string; subje
   try {
     const staff = await staffAt('view');
     const s = await getSettings();
-    const m = renderEmail(cleanDraft(d), { email: staff.email ?? 'you@example.com', name: staff.name, token: null, reason: 'You are receiving this because you subscribed to our newsletter.' }, s);
+    const c = cleanDraft(d);
+    const me = staff.email ?? 'you@example.com';
+    const code = usesReferralLink(c) ? (await referralCodesFor([me])).get(me.toLowerCase()) ?? 'PREVIEW1' : null;
+    const m = renderEmail(c, { email: me, name: staff.name, token: null, reason: 'You are receiving this because you subscribed to our newsletter.', referralCode: code }, s);
     return { ok: true, html: m.html, subject: m.subject };
   } catch (e) { return fail(e, 'We couldn’t build the preview.'); }
 }
@@ -361,7 +365,7 @@ export async function setCampaignState(id: string, action: 'pause' | 'resume' | 
 export async function duplicateCampaign(id: string): Promise<R<{ id: string }>> {
   try {
     const staff = await staffAt('edit');
-    const { data: c } = await db().from('email_campaigns').select('name, subject, preheader, heading, body_html, audience').eq('id', id).maybeSingle();
+    const { data: c } = await db().from('email_campaigns').select('name, subject, preheader, heading, body_html, audience, sender').eq('id', id).maybeSingle();
     if (!c) throw new Error('That campaign no longer exists.');
     const { data, error } = await db().from('email_campaigns').insert({ ...c, name: `${c.name} (copy)`.slice(0, 120), created_by: staff.userId }).select('id').single();
     if (error || !data) throw new Error('We couldn’t duplicate it.');
@@ -376,7 +380,7 @@ export async function duplicateCampaign(id: string): Promise<R<{ id: string }>> 
 export async function resendToUnopened(id: string): Promise<R<{ id: string; count: number }>> {
   try {
     const staff = await staffAt('edit');
-    const { data: c } = await db().from('email_campaigns').select('name, subject, preheader, heading, body_html, status').eq('id', id).maybeSingle();
+    const { data: c } = await db().from('email_campaigns').select('name, subject, preheader, heading, body_html, status, sender').eq('id', id).maybeSingle();
     if (!c) throw new Error('That campaign no longer exists.');
     const { data: rows } = await db().from('email_sends').select('email').eq('campaign_id', id).eq('status', 'sent').is('opened_at', null).is('unsubscribed_at', null).limit(2001);
     const emails = [...new Set(((rows ?? []) as { email: string }[]).map((r) => r.email.toLowerCase()).filter(isEmail))];
@@ -384,7 +388,7 @@ export async function resendToUnopened(id: string): Promise<R<{ id: string; coun
     if (emails.length > 2000) throw new Error('More than 2,000 people have not opened it. Create the follow-up from the audience instead.');
     const subject = /^(reminder|re):/i.test(c.subject as string) ? (c.subject as string) : `Reminder: ${c.subject}`;
     const { data, error } = await db().from('email_campaigns').insert({
-      name: `${c.name} (not opened)`.slice(0, 120), subject: subject.slice(0, 200), preheader: c.preheader, heading: c.heading, body_html: c.body_html,
+      name: `${c.name} (not opened)`.slice(0, 120), subject: subject.slice(0, 200), preheader: c.preheader, heading: c.heading, body_html: c.body_html, sender: parseSender(c.sender),
       audience: { all: false, sources: [], tags: [], exclude: [], emails }, created_by: staff.userId,
     }).select('id').single();
     if (error || !data) throw new Error('We couldn’t create the follow-up.');

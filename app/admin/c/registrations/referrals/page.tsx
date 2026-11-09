@@ -8,6 +8,20 @@ export const metadata = { title: 'Summit referrals' };
 
 const cell = { padding: '8px 10px', borderBottom: '1px solid #e8e6e1', textAlign: 'left' as const, whiteSpace: 'nowrap' as const };
 
+/** The referral prize target: 10 confirmed referrals. */
+const GOAL = 10;
+
+function Milestone({ n }: { n: number }) {
+  if (n >= GOAL) return <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, background: '#E7F3EA', color: '#1E6B34', fontSize: 12, fontWeight: 700 }}>Reached ✓</span>;
+  const pct = Math.round((n / GOAL) * 100);
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+      <span aria-hidden style={{ width: 60, height: 6, borderRadius: 3, background: '#E8E6E1', overflow: 'hidden', display: 'inline-block' }}><span style={{ display: 'block', width: `${pct}%`, height: '100%', background: '#C8A84B' }} /></span>
+      <span style={{ fontSize: 12, opacity: 0.8 }}>{n}/{GOAL} · {GOAL - n} to go</span>
+    </span>
+  );
+}
+
 export default async function Page() {
   const staff = await requireArea('registrations', 'view');
   const level = staff.uiLevel('registrations');
@@ -21,11 +35,12 @@ export default async function Page() {
       <p style={{ opacity: 0.75, margin: '0 0 20px' }}>A referral counts once the friend confirms their email. Ranked by referrals who attended, then by confirmed referrals.</p>
       {!data ? <p role="alert">We could not load referrals. Has the referrals migration been applied?</p> : (<>
         <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>Leaderboard</h2>
+        <p style={{ fontSize: 14, opacity: 0.75, margin: '0 0 8px' }}>{data.leaders.filter((l) => l.verified >= GOAL).length} {data.leaders.filter((l) => l.verified >= GOAL).length === 1 ? 'person has' : 'people have'} reached {GOAL} confirmed referrals.</p>
         <div style={{ overflowX: 'auto', marginBottom: 32 }}>
           <table style={{ borderCollapse: 'collapse', width: '100%', display: 'table' }}>
-            <thead><tr>{['#', 'Name', 'Email', 'Confirmed', 'Attended', 'Pending', 'Flagged'].map((h) => <th key={h} style={{ ...cell, fontSize: 12, textTransform: 'uppercase', opacity: 0.7 }}>{h}</th>)}</tr></thead>
-            <tbody>{data.leaders.length === 0 ? <tr><td style={cell} colSpan={7}>No referrals yet.</td></tr> : data.leaders.map((l, i) => (
-              <tr key={l.id}><td style={cell}>{i + 1}</td><td style={{ ...cell, fontWeight: 600 }}>{l.name}</td><td style={cell}>{l.email}</td><td style={cell}>{l.verified}</td><td style={cell}>{l.attended}</td><td style={cell}>{l.pending}</td><td style={cell}>{l.flagged}</td></tr>
+            <thead><tr>{['#', 'Name', 'Email', 'Confirmed', 'Attended', 'Pending', 'Flagged', `Goal (${GOAL})`].map((h) => <th key={h} style={{ ...cell, fontSize: 12, textTransform: 'uppercase', opacity: 0.7 }}>{h}</th>)}</tr></thead>
+            <tbody>{data.leaders.length === 0 ? <tr><td style={cell} colSpan={8}>No referrals yet.</td></tr> : data.leaders.map((l, i) => (
+              <tr key={l.id}><td style={cell}>{i + 1}</td><td style={{ ...cell, fontWeight: 600 }}>{l.name}</td><td style={cell}>{l.email}</td><td style={cell}>{l.verified}</td><td style={cell}>{l.attended}</td><td style={cell}>{l.pending}</td><td style={cell}>{l.flagged}</td><td style={cell}><Milestone n={l.verified} /></td></tr>
             ))}</tbody>
           </table>
         </div>

@@ -6,11 +6,11 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import {
   audienceCount, previewCampaign, saveCampaign, saveTemplate, scheduleCampaign, sendTestEmail, startCampaign, type Draft,
 } from '@/app/admin/c/newsletter/actions';
-import type { Audience } from '@/lib/email/describe';
+import { MERGE_FIELDS, MERGE_KEYS, SENDERS, parseSender, type Audience } from '@/lib/email/describe';
 import { fmt, type Ctx } from './EmailConsole';
 
 const tagLabel = (t: string) => (t.startsWith('event:') ? t.slice(6) : t);
-const MERGE = [['{{first_name}}', 'First name'], ['{{name}}', 'Full name'], ['{{email}}', 'Email']] as const;
+const MERGE = MERGE_FIELDS;
 
 export default function Composer({ ctx, initial, templateMode, templateId, onClose }: {
   ctx: Ctx; initial: Draft; templateMode?: boolean; templateId?: string; onClose: (openCampaignId?: string) => void;
@@ -52,7 +52,7 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
   const exec = (cmd: string, val?: string) => { if (ro) return; editor.current?.focus(); document.execCommand(cmd, false, val); syncFromEditor(); };
   const insertHtml = (html: string) => exec('insertHTML', html);
   const syncFromEditor = () => { if (editor.current) set('body_html', editor.current.innerHTML); };
-  const askUrl = (label: string, initialValue = 'https://') => { const u = window.prompt(label, initialValue)?.trim(); return u && /^(https?:\/\/|mailto:)/i.test(u) ? u : null; };
+  const askUrl = (label: string, initialValue = 'https://') => { const u = window.prompt(label, initialValue)?.trim(); return u && (/^(https?:\/\/|mailto:)/i.test(u) || /^\{\{\s*referral_link\s*\}\}$/i.test(u)) ? u : null; };
   const escAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
   async function persist(): Promise<string | null> {
@@ -92,7 +92,7 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
   const toggle = (list: string[], k: string) => (list.includes(k) ? list.filter((x) => x !== k) : [...list, k]);
   const days = count ? Math.ceil(count / Math.max(1, overview.settings.daily_limit)) : 0;
   // Gentle pre-flight notes. They never block sending: they are the things that most often go wrong.
-  const unknownFields = [...new Set([...(d.body_html + ' ' + d.subject + ' ' + d.heading).matchAll(/\{\{\s*([a-z_]+)\s*\}\}/gi)].map((m) => m[1].toLowerCase()))].filter((f) => !['first_name', 'name', 'email'].includes(f));
+  const unknownFields = [...new Set([...(d.body_html + ' ' + d.subject + ' ' + d.heading).matchAll(/\{\{\s*([a-z_]+)\s*\}\}/gi)].map((m) => m[1].toLowerCase()))].filter((f) => !MERGE_KEYS.includes(f));
   const notes = [
     d.subject.length > 60 ? `The subject is ${d.subject.length} characters. Most inboxes cut it off after about 60.` : '',
     !d.preheader.trim() ? 'No preview text. Inboxes will show the first words of the email instead.' : '',
@@ -117,6 +117,15 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
             <div className="fld"><label htmlFor="em-name">{templateMode ? 'Template name' : 'Campaign name'} <span className="sm">(only you see this)</span></label><input id="em-name" className="in" value={d.name} disabled={ro} onChange={(e) => set('name', e.target.value)} placeholder={templateMode ? 'e.g. Event invitation' : 'e.g. Summit reminder, 18 Nov'} /></div>
             <div className="fld"><label htmlFor="em-subject">Subject</label><input id="em-subject" className="in" value={d.subject} disabled={ro} maxLength={200} onChange={(e) => set('subject', e.target.value)} placeholder="What people see in their inbox" /></div>
             <div className="fld"><label htmlFor="em-pre">Preview text <span className="sm">(shown after the subject in most inboxes)</span></label><input id="em-pre" className="in" value={d.preheader} disabled={ro} maxLength={200} onChange={(e) => set('preheader', e.target.value)} placeholder="A line that makes people open it" /></div>
+            {!templateMode && (
+              <div className="fld">
+                <label htmlFor="em-sender">From</label>
+                <select id="em-sender" className="in" value={parseSender(d.sender)} disabled={ro} onChange={(e) => set('sender', parseSender(e.target.value))}>
+                  {SENDERS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                </select>
+                <span className="sm">{SENDERS.find((s) => s.key === parseSender(d.sender))?.help}. Replies go to this address.</span>
+              </div>
+            )}
             {!templateMode && <div className="fld"><label htmlFor="em-head">Heading <span className="sm">(big title at the top of the email; optional)</span></label><input id="em-head" className="in" value={d.heading} disabled={ro} maxLength={200} onChange={(e) => set('heading', e.target.value)} placeholder="e.g. See you on Thursday, {{first_name}}" /></div>}
           </div>
 
@@ -139,22 +148,22 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
                 <button type="button" title="Button" onMouseDown={(e) => {
                   e.preventDefault();
                   const label = window.prompt('Button text', 'Register now')?.trim(); if (!label) return;
-                  const u = askUrl('Button link (https://…)'); if (!u) return;
+                  const u = askUrl('Button link (https://… or {{referral_link}})'); if (!u) return;
                   insertHtml(`<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 18px;"><tr><td style="background:#B6502A;border-radius:8px;"><a href="${escAttr(u)}" style="display:inline-block;padding:12px 22px;color:#ffffff;font-weight:bold;text-decoration:none;font-family:Arial,Helvetica,sans-serif;">${escAttr(label)}</a></td></tr></table><p></p>`);
                 }}>Button</button>
                 <button type="button" title="Image" onMouseDown={(e) => { e.preventDefault(); const u = window.prompt('Image address (must start with https://)', 'https://')?.trim(); if (u && /^https:\/\//i.test(u)) insertHtml(`<img src="${escAttr(u)}" alt="" style="max-width:100%;height:auto;border-radius:8px;" /><p></p>`); }}>Image</button>
                 <button type="button" title="Divider" onMouseDown={(e) => { e.preventDefault(); insertHtml('<hr style="border:0;border-top:1px solid #E8E6E1;margin:20px 0;" /><p></p>'); }}>—</button>
                 <span className="sep" />
                 <select aria-label="Insert a personal field" value="" onChange={(e) => { if (e.target.value) exec('insertText', e.target.value); }}>
-                  <option value="">Insert name…</option>
+                  <option value="">Insert field…</option>
                   {MERGE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </>)}
             </div>
             {mode === 'visual'
-              ? <div ref={editor} className="em-editor" contentEditable={!ro} suppressContentEditableWarning role="textbox" aria-multiline="true" aria-label="Email body" data-placeholder="Write your message. Use “Insert name…” to greet each person by name." onInput={syncFromEditor} onBlur={syncFromEditor} />
+              ? <div ref={editor} className="em-editor" contentEditable={!ro} suppressContentEditableWarning role="textbox" aria-multiline="true" aria-label="Email body" data-placeholder="Write your message. Use “Insert field…” to greet each person by name." onInput={syncFromEditor} onBlur={syncFromEditor} />
               : <textarea className="in em-html" value={d.body_html} disabled={ro} onChange={(e) => set('body_html', e.target.value)} aria-label="Email body HTML" spellCheck={false} />}
-            <p className="sm" style={{ marginTop: 6 }}>Personal fields: {MERGE.map(([v]) => <span key={v} className="em-mono" style={{ marginRight: 8 }}>{v}</span>)}· unknown first names become “there”. Scripts and unsafe links are removed when sending.</p>
+            <p className="sm" style={{ marginTop: 6 }}>Personal fields: {MERGE.map(([v]) => <span key={v} className="em-mono" style={{ marginRight: 8 }}>{v}</span>)}· unknown first names become “there”; {'{{referral_link}}'} becomes each Summit registrant’s own link (the Summit page for everyone else). Scripts and unsafe links are removed when sending.</p>
           </div>
 
           {!templateMode && (

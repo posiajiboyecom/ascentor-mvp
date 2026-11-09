@@ -70,7 +70,9 @@ export interface ScreenSpec {
 /** Extra grouped facts shown in a row's detail drawer, under small headings. Optional: screens without it are unaffected. */
 export interface DetailGroup { heading: string; items: [string, string][] }
 export interface RowContact { name?: string | null; phone?: string | null; email?: string | null }
-export interface RowData { id: string; cells: string[]; details?: DetailGroup[]; contact?: RowContact }
+/** An image upload shown in the row's drawer. The file is POSTed as multipart { file, rowId } to `endpoint`, which returns { url } or { error }. */
+export interface RowUpload { label: string; endpoint: string; accept: string; hint?: string; current?: string | null }
+export interface RowData { id: string; cells: string[]; details?: DetailGroup[]; contact?: RowContact; upload?: RowUpload }
 
 export interface ScreenData {
   rows: RowData[];
