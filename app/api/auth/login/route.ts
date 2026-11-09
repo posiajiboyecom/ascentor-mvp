@@ -19,6 +19,7 @@ import { findAccountByEmail, oauthOnlyProvider, PROVIDER_LABEL } from '@/lib/aut
 import { issueSignupOtp } from '@/lib/auth/signup-otp';
 import { parseJson } from '@/lib/validation/http';
 import * as authSchemas from '@/lib/validation/schemas/auth';
+import { isOwnerEmail } from '@/lib/admin/owner';
 
 const STAFF_ROLES = ['admin', 'moderator'];
 const GENERIC_FAIL = 'Incorrect email or password.';
@@ -87,8 +88,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Please confirm your email address first.', code: 'email_not_confirmed' }, { status: 403 });
   }
 
-  // Staff sign-in: the session is only kept for admins / moderators.
-  if (mode === 'staff') {
+  // Staff sign-in: the session is only kept for admins / moderators - or the Owner (lib/admin/owner.ts),
+  // whose profiles.role deliberately stays 'member' so this account never shows up as staff anywhere else.
+  if (mode === 'staff' && !isOwnerEmail(data.user.email)) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle();
     if (!profile || !STAFF_ROLES.includes(profile.role)) {
       await supabase.auth.signOut();

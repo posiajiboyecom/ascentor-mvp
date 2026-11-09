@@ -34,6 +34,8 @@ function validatePermissions(perms: unknown): Permission[] {
 export async function POST(req: NextRequest) {
   const _g = await guardApi('team', 'full', req);
   if ('error' in _g) return _g.res;
+  // Granting or changing staff access is limited to the Owner account (lib/admin/owner.ts).
+  if (!_g.staff.isOwner) return NextResponse.json({ error: 'Only the Owner account can change staff access.' }, { status: 403 });
   try {
     const authHeader = req.headers.get('authorization');
     const anonClient = createClient(

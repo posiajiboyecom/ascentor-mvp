@@ -16,6 +16,8 @@ export interface StaffCtx {
   level: (area: string) => Level;
   /** Throws a friendly Error if the level is below `need`. Call at the top of every action. */
   require: (area: string, need: Level) => void;
+  /** The one Owner account (lib/admin/owner.ts). Only this can grant or change another teammate's role. */
+  isOwner: boolean;
 }
 
 export interface Kpi { label: string; value: string; note?: string }

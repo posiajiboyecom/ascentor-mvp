@@ -31,7 +31,7 @@ export default function TeamScreen({ team, roles: initialRoles, canEdit, isAdmin
 
   const nAreas = AREAS.length;
   const areasFor = (rid: string) => {
-    if (rid === 'admin') return `All ${nAreas} areas`;
+    if (rid === 'admin' || rid === 'owner') return `All ${nAreas} areas`;
     const lv = roles.find((r) => r.id === rid)?.levels ?? {};
     return `${Object.keys(lv).filter((k) => lv[k] !== 'none').length} of ${nAreas} areas`;
   };
@@ -115,14 +115,14 @@ export default function TeamScreen({ team, roles: initialRoles, canEdit, isAdmin
           {LEVEL_GUIDE.map(([name, what]) => <div key={name} className="card kpi"><span className="k">{name}</span><span className="p" style={{ fontSize: 14 }}>{what}</span></div>)}
         </div>
 
-        {!canEdit && <div className="rz"><p className="sm" style={{ color: 'var(--text)' }}>View only. Your role can look at this area but not change it.</p></div>}
+        {!canEdit && <div className="rz"><p className="sm" style={{ color: 'var(--text)' }}>View only. Granting or changing staff access is limited to one account.</p></div>}
 
         <div className="tblwrap">
           <table className="tbl">
             <thead><tr><th>Teammate</th><th>Email</th><th>Role</th><th>Can open</th><th>Last active</th><th /></tr></thead>
             <tbody>
               {rows.map((m) => {
-                const locked = !canEdit || m.isSelf || (m.roleId === 'admin' && !isAdmin);
+                const locked = !canEdit || m.isSelf || m.roleId === 'owner' || (m.roleId === 'admin' && !isAdmin);
                 return (
                   <tr key={m.id}>
                     <td><span className="num">{m.name}</span></td>

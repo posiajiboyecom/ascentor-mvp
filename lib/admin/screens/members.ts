@@ -2,6 +2,7 @@
 // People · Members, backed by profiles, member_profile (stage, city, messaging block, facilitator) and circle_seats.
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { isOwnerUserId } from '@/lib/admin/api-guard';
 import { deriveBilling } from '@/lib/billing-state';
 import { planDisplayName } from '@/lib/plans-display';
 import type { ScreenModule, ScreenSpec } from '@/lib/admin/types';
@@ -152,6 +153,7 @@ const screen: ScreenModule = {
   async act(ctx, actionId, rowId) {
     const { data: p } = await supabaseAdmin.from('profiles').select('id, full_name, role, subscription_status, subscription_end').eq('id', rowId).maybeSingle();
     if (!p) return { ok: false, error: 'We could not find that member.' };
+    if (!ctx.isOwner && (await isOwnerUserId(rowId))) return { ok: false, error: 'This account cannot be changed.' };
     const now = new Date().toISOString();
     const saveFail = { ok: false, error: 'We could not save that. Please try again.' };
 

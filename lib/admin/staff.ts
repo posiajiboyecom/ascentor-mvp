@@ -10,6 +10,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { AREA_KEYS, type Level } from '@/lib/admin/areas';
 import { loadRoles } from '@/lib/admin/access';
 import type { StaffCtx } from '@/lib/admin/types';
+import { isOwnerEmail } from '@/lib/admin/owner';
 
 export interface StaffRow {
   id: string;
@@ -52,28 +53,30 @@ export async function listStaff(selfId: string): Promise<StaffRow[]> {
   } catch { /* last-active is a nicety */ }
 
   return rows.map((r) => {
-    const roleId = r.role === 'admin' ? 'admin' : (r.admin_role && byId.has(r.admin_role) ? r.admin_role : 'moderator');
+    const owner = isOwnerEmail(r.email);
+    const roleId = owner ? 'owner' : r.role === 'admin' ? 'admin' : (r.admin_role && byId.has(r.admin_role) ? r.admin_role : 'moderator');
     return {
       id: r.id,
       name: r.full_name?.trim() || r.email || 'Teammate',
       email: r.email ?? '',
       roleId,
-      roleName: byId.get(roleId)?.name ?? roleId,
+      roleName: owner ? 'Owner' : byId.get(roleId)?.name ?? roleId,
       lastActive: r.id === selfId ? 'Now' : lastLabel(last.get(r.id)),
       isSelf: r.id === selfId,
     };
   });
 }
 
-/** Change one teammate's role. Returns an error message, or null on success. */
+const OWNER_ONLY = 'Only the Owner account can change staff access.';
+
+/** Change one teammate's role. Returns an error message, or null on success. Only the Owner (lib/admin/owner.ts) may do this. */
 export async function setStaffRole(actor: StaffCtx, userId: string, roleId: string): Promise<string | null> {
+  if (!actor.isOwner) return OWNER_ONLY;
   const roles = await loadRoles();
   if (!roles.some((r) => r.id === roleId)) return 'That role does not exist.';
   if (userId === actor.userId) return 'You cannot change your own role.';
   const target = await supabaseAdmin.from('profiles').select('id, role').eq('id', userId).maybeSingle();
   if (!target.data) return 'We could not find that teammate.';
-  const actorIsAdmin = actor.roleId === 'admin';
-  if ((roleId === 'admin' || target.data.role === 'admin') && !actorIsAdmin) return 'Only an Admin can make someone an Admin or change an Admin.';
 
   // profiles.role gates the admin area itself; admin_role picks the role's levels within it.
   const patch = roleId === 'admin' ? { role: 'admin', admin_role: 'admin' } : { role: 'moderator', admin_role: roleId };
@@ -81,18 +84,19 @@ export async function setStaffRole(actor: StaffCtx, userId: string, roleId: stri
   return error ? 'We could not save that. Please try again.' : null;
 }
 
-/** Remove someone's admin access (back to a normal member). */
+/** Remove someone's admin access (back to a normal member). Only the Owner may do this. */
 export async function removeStaff(actor: StaffCtx, userId: string): Promise<string | null> {
+  if (!actor.isOwner) return OWNER_ONLY;
   if (userId === actor.userId) return 'You cannot remove your own access.';
   const target = await supabaseAdmin.from('profiles').select('id, role').eq('id', userId).maybeSingle();
   if (!target.data) return 'We could not find that teammate.';
-  if (target.data.role === 'admin' && actor.roleId !== 'admin') return 'Only an Admin can remove an Admin.';
   const { error } = await supabaseAdmin.from('profiles').update({ role: 'member', admin_role: null }).eq('id', userId);
   return error ? 'We could not save that. Please try again.' : null;
 }
 
-/** Set one area's level on a role ('none' removes it). The Admin role is locked. */
-export async function setRoleLevel(roleId: string, area: string, level: Level): Promise<string | null> {
+/** Set one area's level on a role ('none' removes it). The Admin role is locked. Only the Owner may do this. */
+export async function setRoleLevel(actor: StaffCtx, roleId: string, area: string, level: Level): Promise<string | null> {
+  if (!actor.isOwner) return OWNER_ONLY;
   if (roleId === 'admin') return 'Admins have full access to everything. This cannot be changed.';
   if (!AREA_KEYS.includes(area)) return 'Unknown area.';
   const role = (await loadRoles()).find((r) => r.id === roleId);
@@ -103,8 +107,9 @@ export async function setRoleLevel(roleId: string, area: string, level: Level): 
   return error ? 'We could not save that. Please try again.' : null;
 }
 
-/** Create a role with no access yet. Returns the new id or an error. */
-export async function createRole(name: string): Promise<{ id?: string; error?: string }> {
+/** Create a role with no access yet. Returns the new id or an error. Only the Owner may do this. */
+export async function createRole(actor: StaffCtx, name: string): Promise<{ id?: string; error?: string }> {
+  if (!actor.isOwner) return { error: OWNER_ONLY };
   const clean = name.trim().slice(0, 40);
   if (clean.length < 2) return { error: 'Give the role a name.' };
   const id = clean.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'role';

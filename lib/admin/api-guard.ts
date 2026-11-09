@@ -15,28 +15,33 @@ import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { loadRoles } from '@/lib/admin/access';
 import { DEFAULT_ROLES, can, levelOf, type Level } from '@/lib/admin/areas';
+import { isOwnerEmail } from '@/lib/admin/owner';
 
-export interface ApiStaff { userId: string; roleId: string; isAdmin: boolean; level: (area: string) => Level }
+export interface ApiStaff { userId: string; roleId: string; isAdmin: boolean; isOwner: boolean; level: (area: string) => Level }
 export type GuardResult = { staff: ApiStaff } | { error: string; res: NextResponse };
 
 const deny = (status: number, error: string): GuardResult => ({ error, res: NextResponse.json({ error }, { status }) });
 
-async function callerId(req?: Request): Promise<string | null> {
+async function caller(req?: Request): Promise<{ id: string; email: string | null } | null> {
   const header = req?.headers.get('authorization');
   if (header && /^bearer\s+\S+/i.test(header)) {
     const anon = createSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { global: { headers: { Authorization: header } } });
     const { data: { user } } = await anon.auth.getUser();
-    if (user) return user.id;
+    if (user) return { id: user.id, email: user.email ?? null };
   }
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  return user?.id ?? null;
+  return user ? { id: user.id, email: user.email ?? null } : null;
 }
 
 export async function guardApi(area: string, need: Level, req?: Request): Promise<GuardResult> {
-  let uid: string | null = null;
-  try { uid = await callerId(req); } catch { uid = null; }
-  if (!uid) return deny(401, 'Unauthorized');
+  let who: { id: string; email: string | null } | null = null;
+  try { who = await caller(req); } catch { who = null; }
+  if (!who) return deny(401, 'Unauthorized');
+  const uid = who.id;
+
+  // The Owner (lib/admin/owner.ts) gets full access here too, whatever profiles.role says.
+  if (isOwnerEmail(who.email)) return { staff: { userId: uid, roleId: 'owner', isAdmin: true, isOwner: true, level: () => 'full' } };
 
   let row: { role: string | null; admin_role?: string | null } | null = null;
   const full = await supabaseAdmin.from('profiles').select('role, admin_role').eq('id', uid).maybeSingle();
@@ -52,5 +57,12 @@ export async function guardApi(area: string, need: Level, req?: Request): Promis
   const role = byId.get(roleId) ?? DEFAULT_ROLES.find((r) => r.id === roleId) ?? DEFAULT_ROLES[1];
   const level = (a: string): Level => levelOf(role, a);
   if (!can(level(area), need)) return deny(403, need === 'full' ? 'Your role needs Full access to this area.' : 'Your role does not have access to this area.');
-  return { staff: { userId: uid, roleId, isAdmin: roleId === 'admin', level } };
+  return { staff: { userId: uid, roleId, isAdmin: roleId === 'admin', isOwner: false, level } };
+}
+
+/** True when this user id is the Owner account (lib/admin/owner.ts). Used to stop anyone else changing, banning or deleting it. */
+export async function isOwnerUserId(userId: string): Promise<boolean> {
+  if (!process.env.OWNER_EMAIL) return false;
+  const { data } = await supabaseAdmin.auth.admin.getUserById(userId);
+  return isOwnerEmail(data?.user?.email ?? null);
 }

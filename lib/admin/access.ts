@@ -17,6 +17,7 @@ import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { AREA_KEYS, DEFAULT_ROLES, RANK, can, levelOf, type Level, type RoleDef } from '@/lib/admin/areas';
 import type { StaffCtx } from '@/lib/admin/types';
+import { isOwnerEmail } from '@/lib/admin/owner';
 
 export const VIEW_AS_COOKIE = 'adm_view_as';
 
@@ -62,6 +63,7 @@ export const getStaff = cache(async (): Promise<Staff | null> => {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
+  const isOwner = isOwnerEmail(user.email);
 
   let row: { full_name: string | null; role: string | null; admin_role?: string | null; avatar_url?: string | null } | null = null;
   const full = await supabase.from('profiles').select('full_name, role, admin_role, avatar_url').eq('id', user.id).maybeSingle();
@@ -70,11 +72,30 @@ export const getStaff = cache(async (): Promise<Staff | null> => {
     const core = await supabase.from('profiles').select('full_name, role').eq('id', user.id).maybeSingle();
     row = core.data ?? null;
   } else row = full.data;
-  if (!row || (row.role !== 'admin' && row.role !== 'moderator')) return null;
+  if (!isOwner && (!row || (row.role !== 'admin' && row.role !== 'moderator'))) return null;
+
+  // The Owner (lib/admin/owner.ts) gets full access everywhere, and is the only account that can change staff access.
+  if (isOwner) {
+    return {
+      userId: user.id,
+      name: row?.full_name?.trim() || user.email?.split('@')[0] || 'Owner',
+      email: user.email ?? null,
+      roleId: 'owner',
+      roleName: 'Owner',
+      level: () => 'full',
+      require: () => undefined,
+      uiRole: { id: 'owner', name: 'Owner', levels: {} },
+      uiLevel: () => 'full',
+      viewingAs: null,
+      isAdmin: true,
+      isOwner: true,
+      avatarUrl: (row?.avatar_url as string | null | undefined) ?? null,
+    };
+  }
 
   const roles = await loadRoles();
   const byId = new Map(roles.map((r) => [r.id, r]));
-  const roleId = row.role === 'admin' ? 'admin' : (row.admin_role && byId.has(row.admin_role) ? row.admin_role : 'moderator');
+  const roleId = row!.role === 'admin' ? 'admin' : (row!.admin_role && byId.has(row!.admin_role) ? row!.admin_role : 'moderator');
   const role = byId.get(roleId) ?? DEFAULT_ROLES.find((r) => r.id === roleId) ?? DEFAULT_ROLES[1];
   const isAdmin = roleId === 'admin';
 
@@ -100,7 +121,7 @@ export const getStaff = cache(async (): Promise<Staff | null> => {
 
   return {
     userId: user.id,
-    name: row.full_name?.trim() || user.email?.split('@')[0] || 'Admin',
+    name: row!.full_name?.trim() || user.email?.split('@')[0] || 'Admin',
     email: user.email ?? null,
     roleId,
     roleName: role.name,
@@ -110,7 +131,8 @@ export const getStaff = cache(async (): Promise<Staff | null> => {
     uiLevel: (area: string) => levelOf(uiRole, area),
     viewingAs,
     isAdmin,
-    avatarUrl: (row.avatar_url as string | null | undefined) ?? null,
+    isOwner: false,
+    avatarUrl: (row!.avatar_url as string | null | undefined) ?? null,
   };
 });
 

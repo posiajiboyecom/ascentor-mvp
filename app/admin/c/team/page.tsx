@@ -12,7 +12,7 @@ export default async function TeamPage() {
     <TeamScreen
       team={team}
       roles={roles}
-      canEdit={staff.uiLevel('team') === 'edit' || staff.uiLevel('team') === 'full'}
+      canEdit={staff.isOwner && (staff.uiLevel('team') === 'edit' || staff.uiLevel('team') === 'full')}
       isAdmin={staff.isAdmin}
     />
   );

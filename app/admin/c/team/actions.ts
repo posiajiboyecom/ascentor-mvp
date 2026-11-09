@@ -41,7 +41,7 @@ export async function setLevelForRole(roleId: string, area: string, level: strin
     if (!lv) return { ok: false, error: 'Unknown level.' };
     const info = areaOf(area);
     if (!info) return { ok: false, error: 'Unknown area.' };
-    const err = await setRoleLevel(roleId, area, level as Level);
+    const err = await setRoleLevel(staff, roleId, area, level as Level);
     if (err) return { ok: false, error: err };
     const rn = await roleName(roleId);
     await auditAdmin(staff, `${rn}: ${info.label} set to ${lv[1]}`, rn, AREA);
@@ -54,7 +54,7 @@ export async function createTeamRole(name: string): Promise<TeamResult> {
   try {
     const staff = await staffForAction();
     staff.require('team', 'edit');
-    const res = await createRole(String(name ?? ''));
+    const res = await createRole(staff, String(name ?? ''));
     if (res.error || !res.id) return { ok: false, error: res.error ?? 'We could not create that role.' };
     const rn = await roleName(res.id);
     await auditAdmin(staff, 'Created role', rn, AREA);

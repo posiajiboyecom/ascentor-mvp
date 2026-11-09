@@ -17,7 +17,7 @@ import { createClient } from '@supabase/supabase-js';
 import { userHasPermission, type Permission, type UserRole } from '@/lib/permissions';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
-import { guardApi } from '@/lib/admin/api-guard';
+import { guardApi, isOwnerUserId } from '@/lib/admin/api-guard';
 import { can } from '@/lib/admin/areas';
 
 const supabase = createClient(
@@ -121,6 +121,10 @@ export async function PATCH(req: NextRequest) {
     if (!parsed.ok) return parsed.response;
     const { targetUserId, action } = parsed.data;
     const value: string = 'value' in parsed.data ? (parsed.data.value ?? '') : '';
+
+    // Only the Owner (lib/admin/owner.ts) can change roles, and nobody else can touch the Owner's own account.
+    if (action === 'change_role' && !_g.staff.isOwner) return NextResponse.json({ error: 'Only the Owner account can change staff access.' }, { status: 403 });
+    if (!_g.staff.isOwner && (await isOwnerUserId(targetUserId))) return NextResponse.json({ error: 'This account cannot be changed.' }, { status: 403 });
 
     // Area levels: deleting an account needs Full on Members; changing a role is a Team and access change.
     if (action === 'delete' && !can(_g.staff.level('members'), 'full')) return NextResponse.json({ error: 'Your role needs Full access to Members to delete an account.' }, { status: 403 });
