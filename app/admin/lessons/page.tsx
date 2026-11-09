@@ -18,23 +18,25 @@ export const dynamic = 'force-dynamic';
 
 // ── Design tokens (matching the Ledger system used across admin) ────────────
 const B = {
-  bg:         'var(--ledger-bg,       #0C0B08)',
-  bg2:        'var(--ledger-bg-deep,  #111009)',
-  surface:    'var(--ledger-surface,  #1A1915)',
-  border:     'var(--ledger-border,   rgba(255,255,255,0.08))',
-  fg:         'var(--ledger-fg,       #F0EDE7)',
-  muted:      'var(--ledger-muted,    #8A8070)',
-  gold:       'var(--ledger-gold,     #C8A96E)',
-  goldBg:     'var(--ledger-gold-bg,  rgba(200,169,110,0.12))',
-  goldBorder: 'var(--ledger-gold-border, rgba(200,169,110,0.28))',
-  good:       'var(--ledger-good,     #4F8F4F)',
-  goodBg:     'var(--ledger-good-bg,  rgba(79,143,79,0.12))',
-  bad:        'var(--ledger-bad,      #C84A38)',
-  badBg:      'var(--ledger-bad-bg,   rgba(200,74,56,0.12))',
-  warn:       'var(--ledger-warn,     #C28A1A)',
-  warnBg:     'var(--ledger-warn-bg,  rgba(194,138,26,0.12))',
+  bg:         'var(--ledger-bg)',
+  bg2:        'var(--ledger-bg-input)',
+  surface:    'var(--ledger-bg-card)',
+  border:     'var(--ledger-line)',
+  fg:         'var(--ledger-ink)',
+  muted:      'var(--ledger-ink-soft)',
+  gold:       'var(--ledger-gold)',
+  goldBg:     'var(--ledger-gold-bg)',
+  goldBorder: 'var(--ledger-gold-border)',
+  good:       'var(--ledger-good)',
+  goodBg:     'var(--ledger-good-bg)',
+  bad:        'var(--ledger-bad)',
+  badBg:      'var(--ledger-bad-bg)',
+  warn:       'var(--ledger-warn)',
+  warnBg:     'var(--ledger-warn-bg)',
+  info:       'var(--ledger-info)',
+  infoBg:     'var(--ledger-info-bg)',
   radius:     '6px',
-  font:       'var(--ledger-font-ui, Metropolis, system-ui, sans-serif)',
+  font:       'var(--ledger-font-ui)',
 };
 
 const DIMENSIONS = ['Mind', 'Character', 'Vocation', 'Relationships', 'Community', 'Legacy'] as const;
@@ -119,7 +121,7 @@ const CSS = `
 }
 .asl-table td { padding: 11px 14px; border-bottom: 1px solid ${B.border}; vertical-align: middle; color: ${B.fg}; }
 .asl-table tr:last-child td { border-bottom: 0; }
-.asl-table tr:hover td { background: rgba(255,255,255,0.025); }
+.asl-table tr:hover td { background: var(--ledger-bg-card-hover, rgba(0,0,0,0.025)); }
 .asl-drag-handle { cursor: grab; color: ${B.muted}; padding: 0 4px; }
 .asl-drag-handle:active { cursor: grabbing; }
 .asl-lesson-title { font-weight: 600; color: ${B.fg}; }
@@ -131,21 +133,21 @@ const CSS = `
 .asl-tag-dim { background: ${B.goldBg}; color: ${B.gold}; border: 1px solid ${B.goldBorder}; }
 .asl-tag-pub { background: ${B.goodBg}; color: ${B.good}; }
 .asl-tag-draft { background: ${B.warnBg}; color: ${B.warn}; }
-.asl-tag-week { background: rgba(77,124,199,0.12); color: #6E9EE8; font-size: 10px; }
+.asl-tag-week { background: ${B.infoBg}; color: ${B.info}; font-size: 10px; }
 .asl-row-actions { display: flex; gap: 4px; align-items: center; }
 .asl-drag-row { opacity: .4; }
 
 /* Modal / form */
 .asl-backdrop {
   position: fixed; inset: 0; z-index: 200;
-  background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
+  background: rgba(20,16,10,0.45); backdrop-filter: blur(4px);
   display: flex; align-items: flex-start; justify-content: center;
   padding: 32px 16px 60px; overflow-y: auto;
 }
 .asl-modal {
   background: ${B.surface}; border: 1px solid ${B.border};
   border-radius: 10px; width: 100%; max-width: 640px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  box-shadow: 0 20px 60px rgba(20,16,10,.18);
   flex-shrink: 0;
 }
 .asl-modal-head {
@@ -216,7 +218,7 @@ export default function AdminLessonsPage() {
   return (
     <>
       <style>{CSS}</style>
-      <Suspense fallback={<div className="asl-page" style={{ color: 'var(--ledger-muted,#8A8070)' }}><Loader2 style={{ width: 18, height: 18 }} className="animate-spin" /> Loading…</div>}>
+      <Suspense fallback={<div className="asl-page" style={{ color: 'var(--ledger-ink-soft)' }}><Loader2 style={{ width: 18, height: 18 }} className="animate-spin" /> Loading…</div>}>
         <AdminLessonsInner />
       </Suspense>
     </>
