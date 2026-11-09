@@ -58,7 +58,7 @@ function buildPlans(pricing: PlanPricing[]): Plan[] {
     yearlyPrice:   P('explorer').yearlyPrice,
     yearlyMonthly: P('explorer').yearlyPerMonth,
     features: [
-      'Sage AI, 10 sessions/month',
+      'Sage, your AI assistant, 10 sessions/month',
       '1 mentorship circle',
       'Mentor session recordings',
       'Playbooks & frameworks library',
@@ -76,7 +76,7 @@ function buildPlans(pricing: PlanPricing[]): Plan[] {
     yearlyPrice:   P('builder').yearlyPrice,
     yearlyMonthly: P('builder').yearlyPerMonth,
     features: [
-      'Sage AI, unlimited sessions',
+      'Sage, your AI assistant, unlimited sessions',
       'Up to 3 mentorship circles',
       'Live mentor sessions (monthly)',
       'Human mentor matching',
@@ -503,7 +503,7 @@ export default function CheckoutClient({ embedded = false, pricing }: { embedded
               Free Plan Includes
             </p>
             <p style={{ fontSize: 13, color: 'var(--text-mid)' }}>
-              Sage AI (3 sessions) · 1 mentorship circle · Goal tracking
+              Sage, your AI assistant (3 sessions) · 1 mentorship circle · Goal tracking
             </p>
             <button
               onClick={handleContinueFree}

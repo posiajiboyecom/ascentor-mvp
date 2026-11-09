@@ -33,7 +33,7 @@ function buildConfirmationEmailHtml({
   const unsubUrl    = `${process.env.NEXT_PUBLIC_APP_URL}/waitlist/unsubscribe?token=${token}`;
 
   const perks = [
-    'Meet Sage, your 24/7 AI mentor, trained on African career context',
+    'Meet Sage, your 24/7 AI assistant, trained on African career context',
     "Live sessions with Africa's top professionals",
     'Peer mentorship circles matched to your life stage',
     'Career tools from student to executive level',

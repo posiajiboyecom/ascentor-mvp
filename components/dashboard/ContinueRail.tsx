@@ -23,7 +23,7 @@ export async function ContinueRail() {
     {
       icon: MessageCircle,
       title: lastCoach ? 'Continue with Sage' : 'Start with Sage',
-      sub: lastCoach ? `${lastCoach.preview || 'Your last conversation'} · ${timeAgo(lastCoach.createdAt)}` : 'Your AI coach is ready when you are.',
+      sub: lastCoach ? `${lastCoach.preview || 'Your last conversation'} · ${timeAgo(lastCoach.createdAt)}` : 'Sage, your AI assistant, is ready when you are.',
       href: '/coach',
     },
     {

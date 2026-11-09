@@ -26,7 +26,7 @@ const STORE = 'asc_checkout_v2';
 const TIER_INFO: Record<Tier, { blurb: string; bullets: string[] }> = {
   explorer: {
     blurb: 'For people finding their direction.',
-    bullets: ['Today tab and daily practices', 'Sage, your AI coach, with a daily message limit', 'Core Learn tracks', 'Join one Circle with mentor sessions', 'Open house community group', 'Direct messages'],
+    bullets: ['Today tab and daily practices', 'Sage, your AI assistant, with a daily message limit', 'Core Learn tracks', 'Join one Circle with mentor sessions', 'Open house community group', 'Direct messages'],
   },
   builder: {
     blurb: 'For people building a career or a business.',

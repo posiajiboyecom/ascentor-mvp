@@ -420,7 +420,7 @@ export function welcomeEmail(name: string) {
             </td>
             <td valign="top">
               <p style="margin:0;font-size:15px;color:#A09888;line-height:1.6">
-                <strong style="color:${B.cream}">Talk to Sage, your AI coach.</strong>
+                <strong style="color:${B.cream}">Talk to Sage, your AI assistant.</strong>
                 Ask about your biggest challenge right now, career move, visibility, next promotion. Sage is ready.
               </p>
             </td>

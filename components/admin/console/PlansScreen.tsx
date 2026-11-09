@@ -9,7 +9,7 @@ interface PlanCard { key: 'seeker' | 'builder' | 'leader'; name: string; members
 type Light = PlansInput['light'];
 
 const LIGHT_ROWS: [keyof Light, string][] = [
-  ['today', 'Today and check-ins'], ['chat', 'Circle chat'], ['sage', 'Sage · AI coach'],
+  ['today', 'Today and check-ins'], ['chat', 'Circle chat'], ['sage', 'Sage · AI assistant'],
   ['learn', 'Learn pathways'], ['mentor', 'Mentor sessions'], ['groups', 'Joining new groups'],
 ];
 

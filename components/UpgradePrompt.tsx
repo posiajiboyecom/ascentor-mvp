@@ -17,7 +17,7 @@ const FEATURE_MESSAGES: Record<string, { title: string; desc: string; icon: stri
   },
   coaching: {
     title: "You've Used All Your Coaching Sessions This Month",
-    desc: "Free accounts get 5 AI coaching sessions per month. Upgrade to Explorer for 30, or Builder for unlimited.",
+    desc: "Free accounts get 5 Sage sessions per month. Upgrade to Explorer for 30, or Builder for unlimited.",
     icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg>',
   },
   community: {

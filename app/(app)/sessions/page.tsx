@@ -130,7 +130,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
     const tie = state.kind === 'tie';
     return (
       <Page><p className="rx-sm">{circleTitle(circle.circle)}</p><Title>{state.kind === 'voting' && state.isSwap ? 'Choose a different mentor' : 'Choose a mentor'}</Title>
-        <SageLine label="Sage · AI coach">Three mentors who fit your Circle’s goals.</SageLine>
+        <SageLine label="Sage · AI assistant">Three mentors who fit your Circle’s goals.</SageLine>
         <div className="rx-two">
           <div className="rx-stack">
             {state.kind === 'voting' && (
