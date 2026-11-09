@@ -5,12 +5,12 @@
 // API (not hand-rolled postMessage) — a raw postMessage "pauseVideo"/"playVideo" pair can leave the embed stuck
 // paused with no way to resume except reloading the page; the official player object does not have that problem.
 // YouTube embeds use controls=0 so we render our own overlay: play/pause centre, gold progress bar bottom, fullscreen
-// button bottom-right. Vimeo uses its own native controls.
+// small full-screen button top-right. Vimeo uses its own native controls.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { saveWatchProgress } from '@/app/(app)/learn/lesson/actions';
 import { embedSrc, type VideoSource } from '@/lib/rx/video';
-import { Play, Pause, Maximize } from 'lucide-react';
+import { Play, Pause, Maximize, Minimize } from 'lucide-react';
 
 interface Props {
   lessonId: string;
@@ -68,6 +68,8 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
   const [playing, setPlaying] = useState(false);
   const [started, setStarted] = useState(false); // has the user ever pressed play?
   const [showControls, setShowControls] = useState(true);
+  const [fs, setFs] = useState(false); // full screen (the browser's own, or the page-filling fallback below)
+  const [fsFallback, setFsFallback] = useState(false); // true when the browser has no fullscreen API (iPhone)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ytPlayer = useRef<YTPlayer | null>(null);
   const ytPoll = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -191,16 +193,53 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
     nudgeControls();
   };
 
+  // iPhone browsers have no fullscreen API for ordinary elements (only for a bare <video>), so there we fill the whole
+  // screen ourselves with a fixed-position player and a close button. Everywhere else we use the real fullscreen.
+  type FsEl = HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void };
+  type FsDoc = Document & { webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => Promise<void> | void };
   const handleFullscreen = () => {
-    const el = wrapRef.current;
+    const el = wrapRef.current as FsEl | null;
+    const doc = document as FsDoc;
     if (!el) return;
-    if (!document.fullscreenElement) {
-      el.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
+    if (fs) {
+      if (fsFallback) { setFsFallback(false); setFs(false); }
+      else if (doc.fullscreenElement) void doc.exitFullscreen().catch(() => {});
+      else if (doc.webkitFullscreenElement) void doc.webkitExitFullscreen?.();
+      nudgeControls();
+      return;
     }
+    const fillScreen = () => { setFsFallback(true); setFs(true); };
+    try {
+      if (el.requestFullscreen) el.requestFullscreen().catch(fillScreen);
+      else if (el.webkitRequestFullscreen) void el.webkitRequestFullscreen();
+      else fillScreen();
+    } catch { fillScreen(); }
     nudgeControls();
   };
+
+  const fsFallbackRef = useRef(false);
+  useEffect(() => { fsFallbackRef.current = fsFallback; }, [fsFallback]);
+
+  // Keep our state in step with the browser's own fullscreen (including its Esc / swipe-down exit).
+  useEffect(() => {
+    const sync = () => {
+      const doc = document as FsDoc;
+      if (!fsFallbackRef.current) setFs(!!(doc.fullscreenElement || doc.webkitFullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
+    return () => { document.removeEventListener('fullscreenchange', sync); document.removeEventListener('webkitfullscreenchange', sync); };
+  }, []);
+
+  // While the page-filling fallback is open: stop the page scrolling behind it, and let Esc close it.
+  useEffect(() => {
+    if (!fs || !fsFallback) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setFsFallback(false); setFs(false); } };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [fs, fsFallback]);
 
   const isYouTube = source.provider === 'youtube';
 
@@ -219,7 +258,9 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
         <div
           ref={wrapRef}
           className="rx-video rx-rise"
-          style={{ cursor: isYouTube ? 'pointer' : undefined, position: 'relative' }}
+          style={fs && fsFallback
+            ? { position: 'fixed', inset: 0, zIndex: 9999, width: '100vw', height: '100dvh', aspectRatio: 'auto', borderRadius: 0, animation: 'none', cursor: isYouTube ? 'pointer' : undefined }
+            : { cursor: isYouTube ? 'pointer' : undefined, position: 'relative' }}
           onMouseMove={isYouTube ? nudgeControls : undefined}
           onTouchStart={isYouTube ? nudgeControls : undefined}
         >
@@ -304,20 +345,25 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
                 >
                   <div style={{ width: `${pct}%`, height: '100%', background: 'var(--rx-gold, #C8A84B)', borderRadius: 2, transition: 'width 1s linear' }} />
                 </div>
-
-                {/* Fullscreen button */}
-                <button
-                  onClick={handleFullscreen}
-                  aria-label="Fullscreen"
-                  style={{
-                    background: 'none', border: 'none', padding: 2, cursor: 'pointer',
-                    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  }}
-                >
-                  <Maximize size={18} />
-                </button>
               </div>
             </div>
+          )}
+
+          {/* Small full-screen button, top-right, for YouTube and Vimeo alike */}
+          {origin && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); handleFullscreen(); }}
+              aria-label={fs ? 'Exit full screen' : 'Full screen'}
+              style={{
+                position: 'absolute', top: 8, right: 8, zIndex: 3, width: 30, height: 30, padding: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer',
+                opacity: showControls || !playing ? 0.9 : 0.35, transition: 'opacity 0.3s',
+              }}
+            >
+              {fs ? <Minimize size={16} /> : <Maximize size={16} />}
+            </button>
           )}
 
           {/* For Vimeo: show progress bar below as before */}
