@@ -645,6 +645,7 @@ export async function sendReferralInviteEmail(i: ReferralInvitePayload): Promise
         p(`Hi ${esc(i.fullName)},`) +
         p('You are confirmed for the Elevation Summit. Now here is a challenge for you: <strong>bring 10 people along and win a prize</strong> that will be awarded live at the event.') +
         p('Every person who signs up using your personal link counts toward your total. The more people you bring, the better your chances.') +
+        p('<strong>Bonus:</strong> If 10 or more of the people you invite are LASU-Ojo students, you earn an even bigger reward on the day. The event is at their campus — help us fill the hall with the home crowd.') +
         attendeeNote +
         `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;background-color:#FAFAF8;border:1px solid #F0EDE6;border-radius:10px;">
