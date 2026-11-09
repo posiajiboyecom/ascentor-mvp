@@ -28,6 +28,7 @@ import SagePanel from '@/components/rx/sage/SagePanel';
 import { MobileTabBar } from '@/components/nav/MobileTabBar';
 import type { ShellNavGroup } from './types';
 import { signOutAndLeave } from '@/lib/auth/sign-out';
+import SplashGate from '@/components/SplashGate';
 
 export interface ShellCountsProp {
   unreadAnnouncements: number;
@@ -109,6 +110,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
 
   return (
     <ToastProvider>
+      <SplashGate />
       <PresenceProvider userId={userId}>
       {features?.offline !== false && <NetworkPill />}
       <NoticeProvider value={sidebarNotice}>

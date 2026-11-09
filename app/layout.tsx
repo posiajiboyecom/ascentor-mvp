@@ -6,7 +6,6 @@ import CommunityGateModal from '@/components/CommunityGateModal';
 import { ModalProvider } from '@/components/Modal';
 import { NotificationProvider } from '@/components/Notifications';
 import { MobileInit } from '@/components/MobileInit';
-import SplashGate from '@/components/SplashGate';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import AuthRedirectError from '@/components/AuthRedirectError';
 import StructuredData from '@/components/StructuredData';
@@ -108,7 +107,38 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body suppressHydrationWarning>
         <AuthErrorHandler />
         <AuthRedirectError />
-        <SplashGate />
+        {/*
+          Pre-paint splash cover — only activates on app paths (/(app)/*).
+          The inline script fires synchronously before first paint:
+          - On non-app paths: hides the cover immediately (no white flash on website).
+          - On app paths where splash was already seen (cookie set): hides immediately.
+          - On app paths where splash hasn't been seen: cover stays visible until
+            SplashGate (rendered inside UserShell) finishes the animation.
+        */}
+        <div
+          id="ascentor-splash-cover"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: '#FAFAF8',
+            pointerEvents: 'none',
+          }}
+        />
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{
+  var p=window.location.pathname;
+  // App paths start with these segments — everything else is the public website
+  var isApp=/^\/(dashboard|coach|circle|sessions|learn|account|announcements|community|experts|growth|help|messages|notifications|profile|referral|sage|search|settings|store|admin|onboarding)/.test(p);
+  if(!isApp||document.cookie.indexOf('as_splash=')>-1){
+    var el=document.getElementById('ascentor-splash-cover');
+    if(el)el.style.display='none';
+  }
+}catch(e){}})();`,
+          }}
+        />
         <ModalProvider>
           <NotificationProvider>
             <MobileInit />
