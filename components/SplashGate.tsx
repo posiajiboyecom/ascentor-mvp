@@ -17,20 +17,34 @@ import type { SplashTrigger } from './AscentorSplash';
 const AscentorSplash = dynamic(() => import('./AscentorSplash'), { ssr: false });
 
 const TRIGGER: SplashTrigger = 'signin';
-const KEY = `splash_${TRIGGER}`;
+const COOKIE = 'as_splash'; // 24h cookie — survives new tabs unlike sessionStorage
+
+/** Read a client-side cookie by name */
+function getCookie(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  return document.cookie.split('; ').find(r => r.startsWith(name + '='))?.split('=')[1];
+}
+
+/** Set a cookie that expires in `hours` hours */
+function setCookie(name: string, value: string, hours: number) {
+  const exp = new Date(Date.now() + hours * 3600 * 1000).toUTCString();
+  document.cookie = `${name}=${value}; expires=${exp}; path=/; SameSite=Lax`;
+}
 
 export default function SplashGate({ children }: { children?: React.ReactNode }) {
   const [showing, setShowing] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Check after hydration — sessionStorage is only available client-side
-    try {
-      const seen = !!sessionStorage.getItem(KEY);
-      setShowing(!seen);
-    } catch {
-      setShowing(false); // fail-safe
-    }
+    // Cookie check after hydration (document only available client-side)
+    const seen = !!getCookie(COOKIE);
+    setShowing(!seen);
   }, []);
+
+  function handleDone() {
+    // Mark as seen for 24 hours — works across all tabs in the same browser
+    setCookie(COOKIE, '1', 24);
+    setShowing(false);
+  }
 
   return (
     <>
@@ -42,7 +56,6 @@ export default function SplashGate({ children }: { children?: React.ReactNode })
           inset: 0,
           zIndex: 9999,
           background: '#FAFAF8',
-          // Start visible; inline script below hides it immediately if already seen
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -50,11 +63,11 @@ export default function SplashGate({ children }: { children?: React.ReactNode })
         }}
       />
 
-      {/* Inline script: synchronously hides the cover before first paint if splash already played */}
+      {/* Inline script: synchronously checks the cookie before first paint */}
       {/* eslint-disable-next-line @next/next/no-sync-scripts */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `(function(){try{if(sessionStorage.getItem(${JSON.stringify(KEY)})){var el=document.getElementById('ascentor-splash-cover');if(el)el.style.display='none';}}catch(e){}})();`,
+          __html: `(function(){try{if(document.cookie.indexOf(${JSON.stringify(COOKIE + '=')})>-1){var el=document.getElementById('ascentor-splash-cover');if(el)el.style.display='none';}}catch(e){}})();`,
         }}
       />
 
@@ -62,7 +75,7 @@ export default function SplashGate({ children }: { children?: React.ReactNode })
       {showing === true && (
         <AscentorSplash
           trigger={TRIGGER}
-          onDone={() => setShowing(false)}
+          onDone={handleDone}
         />
       )}
 

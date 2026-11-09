@@ -16,6 +16,7 @@ import { Check, CalendarDays, Mail, UserRound, LogOut, Trash2, Monitor } from 'l
 import { ProviderIcon, PROVIDER_NAME } from '@/components/auth/ProviderIcon';
 import AuthModal from '@/components/auth/AuthModal';
 import { signOutAndLeave } from '@/lib/auth/sign-out';
+import { bustShellCache } from './actions';
 
 const industries = [
   'Technology', 'Finance & Banking', 'Consulting', 'Healthcare',
@@ -133,6 +134,7 @@ export default function AccountClient({ profile, email, authProvider, providers,
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
     const urlWithCache = `${publicUrl}?t=${Date.now()}`;
     await supabase.from('profiles').update({ avatar_url: urlWithCache }).eq('id', userId);
+    await bustShellCache(); // refresh cached shell avatar
     setForm({ ...form, avatar_url: urlWithCache });
     setAvatarUploading(false);
     e.target.value = '';

@@ -8,6 +8,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { NAV_ITEMS } from '@/lib/nav-items';
+import { setLastNavTab } from '@/lib/cookies';
 
 export function MobileTabBar() {
   const pathname = usePathname();
@@ -25,6 +26,7 @@ export function MobileTabBar() {
             key={href}
             href={href}
             aria-current={active ? 'page' : undefined}
+            onClick={() => setLastNavTab(href)}
             className="flex flex-1 flex-col items-center justify-center gap-[3px] min-h-[52px] rounded-[10px] transition-colors"
           >
             <Icon className={`w-[22px] h-[22px] ${active ? 'text-[#B6502A]' : 'text-[#5F6672]'}`} strokeWidth={1.6} aria-hidden="true" />

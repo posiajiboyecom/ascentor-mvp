@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { revalidateShell } from '@/lib/shell-data';
 import { requireMember, fail } from '@/lib/rx/server';
 import type { ActionResult } from '@/lib/rx/types';
 import { DM_POLICIES, LANGUAGES, NOTIF_TYPES } from '@/lib/rx/constants';
@@ -68,6 +69,7 @@ export async function saveProfile(input: { name: string; headline: string; city:
     if (error) throw error;
     revalidatePath('/settings');
     revalidatePath('/profile');
+    await revalidateShell(userId); // bust cached shell name/avatar
   } catch (e) { return fail(e); }
   return patch({ city: city || null });
 }

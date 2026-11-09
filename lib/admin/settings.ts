@@ -6,8 +6,10 @@
 
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { unstable_cache } from 'next/cache';
 
 const PREFIX = 'admin.';
+const SETTINGS_CACHE_TAG = 'platform-settings';
 
 /** Defaults for every setting the console exposes. Add a key here before using it. */
 export const SETTING_DEFAULTS = {
@@ -30,18 +32,22 @@ export const SETTING_DEFAULTS = {
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;
 
-/** All settings as strings, defaults filled in. One query. */
-export async function getSettings(): Promise<Record<SettingKey, string>> {
-  const out = { ...SETTING_DEFAULTS } as Record<SettingKey, string>;
-  try {
-    const { data } = await supabaseAdmin.from('platform_settings').select('key, value').like('key', `${PREFIX}%`);
-    for (const r of data ?? []) {
-      const k = String(r.key).slice(PREFIX.length) as SettingKey;
-      if (k in SETTING_DEFAULTS && typeof r.value === 'string') out[k] = r.value;
-    }
-  } catch { /* defaults */ }
-  return out;
-}
+/** All settings as strings, defaults filled in. Cached 300 s — busted when any setting is saved. */
+export const getSettings = unstable_cache(
+  async (): Promise<Record<SettingKey, string>> => {
+    const out = { ...SETTING_DEFAULTS } as Record<SettingKey, string>;
+    try {
+      const { data } = await supabaseAdmin.from('platform_settings').select('key, value').like('key', `${PREFIX}%`);
+      for (const r of data ?? []) {
+        const k = String(r.key).slice(PREFIX.length) as SettingKey;
+        if (k in SETTING_DEFAULTS && typeof r.value === 'string') out[k] = r.value;
+      }
+    } catch { /* defaults */ }
+    return out;
+  },
+  ['platform-settings'],
+  { revalidate: 300, tags: [SETTINGS_CACHE_TAG] }
+);
 
 export async function getSetting(key: SettingKey): Promise<string> {
   return (await getSettings())[key];
@@ -57,5 +63,6 @@ export const asInt = (v: string, fallback: number, min = 0, max = 1_000_000) => 
 export async function setSetting(key: SettingKey, value: string): Promise<string | null> {
   if (!(key in SETTING_DEFAULTS)) return 'Unknown setting.';
   const { error } = await supabaseAdmin.from('platform_settings').upsert({ key: PREFIX + key, value: String(value), updated_at: new Date().toISOString() }, { onConflict: 'key' });
+  if (!error) { const { revalidateTag } = await import('next/cache'); revalidateTag(SETTINGS_CACHE_TAG, 'default'); }
   return error ? 'We could not save that. Please try again.' : null;
 }
