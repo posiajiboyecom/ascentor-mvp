@@ -11,6 +11,8 @@ import AuthRedirectError from '@/components/AuthRedirectError';
 import StructuredData from '@/components/StructuredData';
 import { headers } from 'next/headers';
 import Script from 'next/script';
+import SplashGate from '@/components/SplashGate';
+import { SPLASH_COVER_ID, splashPrePaintScript } from '@/lib/splash';
 
 // ── Fonts ──────────────────────────────────────────────────────────
 // Metropolis is loaded locally from public/fonts/metropolis/
@@ -108,15 +110,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <AuthErrorHandler />
         <AuthRedirectError />
         {/*
-          Pre-paint splash cover — only activates on app paths (/(app)/*).
-          The inline script fires synchronously before first paint:
-          - On non-app paths: hides the cover immediately (no white flash on website).
-          - On app paths where splash was already seen (cookie set): hides immediately.
-          - On app paths where splash hasn't been seen: cover stays visible until
-            SplashGate (rendered inside UserShell) finishes the animation.
+          Pre-paint splash cover. The inline script decides before first paint
+          whether the splash plays (rules in lib/splash.ts: installed PWA on open
+          or after 5+ min away, and once after sign-up / sign-in; never on the
+          website). If it will not play, the cover is hidden at once; if it will,
+          the cover stays until SplashGate finishes (hard cap 8 s either way).
         */}
         <div
-          id="ascentor-splash-cover"
+          id={SPLASH_COVER_ID}
           style={{
             position: 'fixed',
             inset: 0,
@@ -126,20 +127,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }}
         />
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-        <script
-          nonce={nonce}
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{
-  var p=window.location.pathname;
-  // App paths start with these segments — everything else is the public website
-  var isApp=/^\\/(dashboard|coach|circle|sessions|learn|account|announcements|community|experts|growth|help|messages|notifications|profile|referral|sage|search|settings|store|admin|onboarding)/.test(p);
-  if(!isApp||document.cookie.indexOf('as_splash=')>-1){
-    var el=document.getElementById('ascentor-splash-cover');
-    if(el)el.style.display='none';
-  }
-}catch(e){}})();`,
-          }}
-        />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: splashPrePaintScript() }} />
+        <SplashGate />
         <ModalProvider>
           <NotificationProvider>
             <MobileInit />

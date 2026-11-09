@@ -1,62 +1,88 @@
 'use client';
-// SplashGate — instant splash on app open.
-//
-// Only runs on authenticated app pages (/(app)/*). Never fires on the public
-// website (marketing pages, /login, /elevation-summit, etc.).
-//
-// Strategy:
-//   • Root layout injects a small inline script + white cover div that fires
-//     synchronously before first paint — but only when the URL is an app path.
-//     This prevents any flash of the dashboard behind the splash.
-//   • This component (rendered inside UserShell / (app) layout) handles the
-//     actual animation after hydration, using the same 24h cookie.
+// SplashGate — plays the Ascentor splash. Rendered once, in the root layout,
+// so it covers every app page including /onboarding. The rules live in
+// lib/splash.ts; in short: installed PWA on open and on return after 5+ min,
+// and once after sign-up / sign-in in any browser. Never on the website.
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SplashTrigger } from './AscentorSplash';
+import {
+  SPLASH_AWAY_KEY, SPLASH_COVER_ID, SPLASH_COVER_MAX_MS, SPLASH_RETURN_MS,
+  clearPendingSplash, hasPendingSplash, isAppPath, isStandalone,
+} from '@/lib/splash';
 
 const AscentorSplash = dynamic(() => import('./AscentorSplash'), { ssr: false });
 
-const TRIGGER: SplashTrigger = 'signin';
-export const SPLASH_COOKIE = 'as_splash'; // exported so root layout script can reference the same name
-
-/** Read a client-side cookie by name */
-function getCookie(name: string): string | undefined {
-  if (typeof document === 'undefined') return undefined;
-  return document.cookie.split('; ').find(r => r.startsWith(name + '='))?.split('=')[1];
+declare global {
+  interface Window { __asSplash?: string }
 }
 
-/** Set a cookie that expires in `hours` hours */
-function setCookie(name: string, value: string, hours: number) {
-  const exp = new Date(Date.now() + hours * 3600 * 1000).toUTCString();
-  document.cookie = `${name}=${value}; expires=${exp}; path=/; SameSite=Lax`;
+function setCover(visible: boolean) {
+  const cover = document.getElementById(SPLASH_COVER_ID);
+  if (cover) cover.style.display = visible ? '' : 'none';
 }
 
 export default function SplashGate() {
-  const [showing, setShowing] = useState<boolean | null>(null);
+  const pathname = usePathname();
+  const [trigger, setTrigger] = useState<SplashTrigger | null>(null);
+  const [run, setRun] = useState(0);
+  const playingRef = useRef(false);
+  const safetyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    const seen = !!getCookie(SPLASH_COOKIE);
-    setShowing(!seen);
+  const done = useCallback(() => {
+    if (safetyRef.current) clearTimeout(safetyRef.current);
+    playingRef.current = false;
+    setTrigger(null);
+    setCover(false);
   }, []);
 
-  function handleDone() {
-    setCookie(SPLASH_COOKIE, '1', 24);
-    setShowing(false);
-    // Remove the pre-paint cover injected by root layout
-    const cover = document.getElementById('ascentor-splash-cover');
-    if (cover) cover.style.display = 'none';
-  }
+  const start = useCallback((kind: SplashTrigger) => {
+    if (playingRef.current) return;
+    playingRef.current = true;
+    clearPendingSplash(); // a refresh mid-animation must not replay it
+    setCover(true);
+    setTrigger(kind);
+    setRun((n) => n + 1);
+    // Never let the cover outlive a splash that failed to load (e.g. offline).
+    safetyRef.current = setTimeout(done, SPLASH_COVER_MAX_MS);
+  }, [done]);
 
-  // Once we know the state, always remove the pre-paint cover
+  // First load: follow the decision the pre-paint script already made.
   useEffect(() => {
-    if (showing === false) {
-      const cover = document.getElementById('ascentor-splash-cover');
-      if (cover) cover.style.display = 'none';
+    const decided = window.__asSplash;
+    if (decided === 'signin' || decided === 'appopen') start(decided);
+    else setCover(false);
+    // The app is in the foreground now, so any earlier "went away" mark is stale.
+    try { localStorage.removeItem(SPLASH_AWAY_KEY); } catch {}
+  }, [start]);
+
+  // Client-side navigation into the app straight after signing in.
+  useEffect(() => {
+    if (pathname && isAppPath(pathname) && hasPendingSplash()) start('signin');
+  }, [pathname, start]);
+
+  // Installed app: replay when it returns to the foreground after 5+ minutes.
+  useEffect(() => {
+    function onVisibility() {
+      if (document.visibilityState === 'hidden') {
+        try { localStorage.setItem(SPLASH_AWAY_KEY, String(Date.now())); } catch {}
+        return;
+      }
+      let away = 0;
+      try {
+        away = Number(localStorage.getItem(SPLASH_AWAY_KEY)) || 0;
+        localStorage.removeItem(SPLASH_AWAY_KEY);
+      } catch {}
+      if (away && Date.now() - away >= SPLASH_RETURN_MS && isStandalone() && isAppPath(window.location.pathname)) {
+        start('appopen');
+      }
     }
-  }, [showing]);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [start]);
 
-  if (showing !== true) return null;
-
-  return <AscentorSplash trigger={TRIGGER} onDone={handleDone} />;
+  if (!trigger) return null;
+  return <AscentorSplash key={run} trigger={trigger} onDone={done} />;
 }

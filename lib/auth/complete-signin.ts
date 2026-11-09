@@ -8,6 +8,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { assessLogin } from '@/lib/auth/login-security';
 import { resolvePostLoginPath, syncMailerLite } from '@/lib/auth/post-login';
+import { markSplashPending } from '@/lib/splash';
 
 const supabaseService = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,7 +56,8 @@ export async function completeSignIn(opts: {
   await syncMailerLite(user, profile);
 
   const destination = await resolvePostLoginPath(supabase, user, next);
-  return NextResponse.redirect(`${origin}${destination}`);
+  // Plays the splash once on the first app page after this sign-in.
+  return markSplashPending(NextResponse.redirect(`${origin}${destination}`));
 }
 
 // ── Partner callback handler ──────────────────────────────
