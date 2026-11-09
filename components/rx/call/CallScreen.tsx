@@ -66,6 +66,38 @@ function isIOS(): boolean {
   return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
+// ── small call sound effects (synthesised, no audio files to ship or fetch) ────────────────────────────────────────
+let soundCtx: AudioContext | null = null;
+function soundContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctx) return null;
+  if (!soundCtx) soundCtx = new Ctx();
+  if (soundCtx.state === 'suspended') void soundCtx.resume();
+  return soundCtx;
+}
+/** Plays a short, quiet chime: each note is [frequency Hz, start offset s, duration s]. */
+function playChime(notes: Array<[number, number, number]>) {
+  const ctx = soundContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  for (const [freq, at, dur] of notes) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, now + at);
+    gain.gain.linearRampToValueAtTime(0.1, now + at + 0.015);
+    gain.gain.linearRampToValueAtTime(0, now + at + dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now + at); osc.stop(now + at + dur + 0.02);
+  }
+}
+/** A soft two-note descending chime, like a call hanging up. */
+const playCallEndSound = () => playChime([[660, 0, 0.16], [440, 0.14, 0.22]]);
+/** A soft two-note rising chime, like a camera switching on. */
+const playCameraOnSound = () => playChime([[520, 0, 0.09], [780, 0.08, 0.14]]);
+
 export default function CallScreen({ circleId, kind, sessionId, backHref, firstName }: { circleId: string; kind: 'circle' | 'mentor'; sessionId?: string; backHref: string; firstName: string }) {
   const router = useRouter();
   const toast = useToast();
@@ -111,6 +143,10 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const micTrack = useRef<MediaStreamTrack | null>(null);
   const camTrack = useRef<MediaStreamTrack | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Whose camera is on, as of the last check — lets us tell "just switched on" from "was already on" so the camera
+  // chime plays once per switch-on, for whoever did it, and never for people already on camera when we join.
+  const camOnIds = useRef<Set<string> | null>(null);
+  const endSoundPlayed = useRef(false);
   const agendaRef = useRef<LiveAgenda | null>(null);
   agendaRef.current = agenda;
   chatRef.current = chat;
@@ -120,6 +156,21 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   useEffect(() => {
     try { setCanBlur(!!Daily.supportedBrowser().supportsVideoProcessing && !isIOS() && !window.matchMedia('(pointer: coarse)').matches); } catch { setCanBlur(false); }
     try { setBlurOn(localStorage.getItem(BLUR_KEY) === 'on'); } catch { /* storage unavailable */ }
+  }, []);
+
+  // If the browser already has standing microphone permission for this site, skip straight past the "Allow
+  // microphone" button — there is nothing left to ask for. (Not supported in every browser; where it isn't, the
+  // member still sees the button, same as before.)
+  useEffect(() => {
+    const perms = (navigator as Navigator & { permissions?: { query: (o: { name: 'microphone' }) => Promise<{ state: string }> } }).permissions;
+    if (!perms?.query) return;
+    let cancelled = false;
+    perms.query({ name: 'microphone' }).then((status) => {
+      if (cancelled) return;
+      if (status.state === 'granted') void checkMic();
+      else if (status.state === 'denied') setMicOk('blocked');
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
   }, []);
 
   const fetchToken = useCallback(async (takeover = false) => {
@@ -185,7 +236,17 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   // If the member checked the microphone but never joined, release it when they navigate away.
   useEffect(() => () => { meterStop.current(); micTrack.current?.stop(); micTrack.current = null; }, []);
 
-  const refreshParts = useCallback(() => { const c = callRef.current; if (c) setParts(Object.values(c.participants())); }, []);
+  const refreshParts = useCallback(() => {
+    const c = callRef.current; if (!c) return;
+    const list = Object.values(c.participants());
+    const onNow = new Set(list.filter(cameraOn).map((p) => p.session_id));
+    // Skip the very first reading (joining a call already in progress) — only a fresh switch-on plays the chime.
+    if (camOnIds.current) {
+      for (const id of onNow) { if (!camOnIds.current.has(id)) { playCameraOnSound(); break; } }
+    }
+    camOnIds.current = onNow;
+    setParts(list);
+  }, []);
 
   // One device per account in a call: if this account joins again somewhere else, the newer device keeps the call
   // and this one leaves. (The server also removes the older device when the member chooses to move the call.)
@@ -247,6 +308,7 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     if (!info || info.state !== 'open') return;
     meterStop.current();
     setPhase('joining'); setError('');
+    camOnIds.current = null; endSoundPlayed.current = false;
     try {
       // Hand Daily the already-granted microphone track when we have one, so it never has to request its own and
       // trigger a second browser permission prompt.
@@ -312,14 +374,14 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       call.on('network-connection', (e) => setReconnecting(e?.event === 'interrupted'));
       call.on('network-quality-change', (e) => setPoor(e?.threshold === 'low' || e?.threshold === 'very-low'));
       // No "call ended" page to land on — once we've left, go straight back to the Circle (or Sessions).
-      call.on('left-meeting', () => { endAttendance(); router.replace(backHref); });
+      call.on('left-meeting', () => { playEndSoundOnce(); endAttendance(); router.replace(backHref); });
       call.on('nonfatal-error', (e) => {
         if (String(e?.type ?? '').includes('screen-share')) { setSharing(false); setShareBusy(false); toast('Your screen couldn’t be shared. Check that your browser can share your screen.'); }
       });
       call.on('error', (e) => {
         console.error('[call] daily error', e?.errorMsg ?? e);
         // Removed from the room: the member moved the call to another device, or the facilitator removed them.
-        if (e?.error?.type === 'ejected' || /eject/i.test(String(e?.errorMsg ?? ''))) { endAttendance(); setPhase('moved'); return; }
+        if (e?.error?.type === 'ejected' || /eject/i.test(String(e?.errorMsg ?? ''))) { playEndSoundOnce(); endAttendance(); setPhase('moved'); return; }
         setError('The call dropped. You can rejoin while it is still open.'); setPhase('error');
       });
       await call.join({ url: info.url, token: info.token, startVideoOff: true });
@@ -327,6 +389,13 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
       console.error('[call] join failed', e);
       setError('We could not connect to the call.'); setPhase('error');
     }
+  }
+
+  /** The hang-up chime, once per call — manual leave and the 'left-meeting' event it triggers both reach for this. */
+  function playEndSoundOnce() {
+    if (endSoundPlayed.current) return;
+    endSoundPlayed.current = true;
+    playCallEndSound();
   }
 
   function endAttendance() {
@@ -340,10 +409,12 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
 
   async function leave(auto = false) {
     if (auto) toast('The call has ended.');
+    playEndSoundOnce();
     try { if (sharing) callRef.current?.stopScreenShare(); } catch { /* already stopped */ }
     try { await callRef.current?.leave(); } catch { /* already gone */ }
     camTrack.current?.stop(); camTrack.current = null; camMode.current = null; setCamOn(false); setSharing(false);
-    // 'left-meeting' (above) usually fires and does this too — harmless if it beats us here.
+    // 'left-meeting' (above) usually fires too and would try this again — playEndSoundOnce and endAttendance both
+    // no-op the second time, so this is harmless whichever gets there first.
     endAttendance(); router.replace(backHref);
   }
 
