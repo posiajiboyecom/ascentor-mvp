@@ -17,7 +17,7 @@ interface Msg { role: Role; text: string }
 interface PlanDraft { cue: string; action: string; trigger: string; fallback: string }
 interface ReportDraft { kept: string; obstacle: string; next: string; summary: string }
 
-const OPENERS: Record<SageTopic, Msg[]> = {
+const OPENERS: Record<Exclude<SageTopic, 'open'>, Msg[]> = {
   plan: [{ role: 'sage', text: 'Let’s plan your week. What matters most to you this week?' }],
   lesson: [{ role: 'sage', text: 'Tell me what stood out from the lesson, and I’ll suggest one small practice you can repeat.' }],
   missed: [{ role: 'sage', text: 'You didn’t check in yesterday. A missed day doesn’t reset anything.' }, { role: 'sage', text: 'What got in the way?' }],
@@ -27,9 +27,34 @@ const OPENERS: Record<SageTopic, Msg[]> = {
   crisis: [{ role: 'sage', text: 'Thank you for telling me. I’m an AI, and you deserve a real person right now.' }, { role: 'sage', text: 'You don’t have to explain everything. Please reach out below.' }],
 };
 
+const INTRODUCED_KEY = 'sage:introduced';
+
+/** How Sage greets someone who opens it with no set topic. The full introduction the first time on this device, a short hello after. */
+function introFor(firstName: string, firstTime: boolean): Msg[] {
+  const name = firstName ? `, ${firstName}` : '';
+  if (firstTime) {
+    return [
+      { role: 'sage', text: `Hi${name}. I’m Sage, your AI assistant on Ascentor.` },
+      { role: 'sage', text: 'I help you turn big goals into small steps you can keep. We can plan your week, think through a decision, prepare for a tough conversation, or look back on how things are going.' },
+      { role: 'sage', text: 'Pick a topic above, or just tell me what’s on your mind.' },
+    ];
+  }
+  const h = new Date().getHours();
+  const part = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  return [{ role: 'sage', text: `${part}${name}. What’s on your mind today? Pick a topic above, or just start typing.` }];
+}
+
+function openersFor(t: SageTopic, firstName: string): Msg[] {
+  if (t !== 'open') return OPENERS[t];
+  let firstTime = true;
+  try { firstTime = localStorage.getItem(INTRODUCED_KEY) !== '1'; localStorage.setItem(INTRODUCED_KEY, '1'); } catch { /* storage unavailable: introduce fully */ }
+  return introFor(firstName, firstTime);
+}
+
 type SpeechRec = { start: () => void; stop: () => void; lang: string; interimResults: boolean; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null; onerror: (() => void) | null };
 
-export default function SagePanel() {
+export default function SagePanel({ userName = '' }: { userName?: string }) {
+  const firstName = userName.trim().split(/\s+/)[0] ?? '';
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -39,8 +64,8 @@ export default function SagePanel() {
     document.documentElement.toggleAttribute('data-sage-open', open);
     return () => document.documentElement.removeAttribute('data-sage-open');
   }, [open]);
-  const [topic, setTopic] = useState<SageTopic>('plan');
-  const [msgs, setMsgs] = useState<Msg[]>(OPENERS.plan);
+  const [topic, setTopic] = useState<SageTopic>('open');
+  const [msgs, setMsgs] = useState<Msg[]>([]);
   const [draft, setDraft] = useState<PlanDraft | null>(null);
   const [report, setReport] = useState<ReportDraft | null>(null);
   const [crisis, setCrisis] = useState(false);
@@ -56,15 +81,15 @@ export default function SagePanel() {
   const recRef = useRef<SpeechRec | null>(null);
 
   const begin = useCallback((t: SageTopic) => {
-    setTopic(t); setMsgs(OPENERS[t]); setDraft(null); setReport(null); setError(''); setCrisis(t === 'crisis'); setConvId(null);
+    setTopic(t); setMsgs(openersFor(t, firstName)); setDraft(null); setReport(null); setError(''); setCrisis(t === 'crisis'); setConvId(null);
     if (t === 'report') start(async () => { const r = await buildReportDraft(); if (r.ok) setReport(r.draft); });
-  }, []);
+  }, [firstName]);
 
   useEffect(() => {
     const onOpen = (e: Event) => {
       const d = ((e as CustomEvent<SageOpenDetail>).detail ?? {}) as SageOpenDetail;
       setOpen(true);
-      begin(d.topic ?? 'plan');
+      begin(d.topic ?? 'open');
     };
     window.addEventListener('rx:sage', onOpen);
     return () => window.removeEventListener('rx:sage', onOpen);

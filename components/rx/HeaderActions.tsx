@@ -81,7 +81,7 @@ export function MessagesLink({ requests, unread = 0 }: { requests: number; unrea
 export function SageHeaderButton() {
   return (
     <div className="rx rx-dsk" style={{ alignItems: 'center' }}>
-      <button type="button" className="rx-btn secondary" style={{ minHeight: 40, padding: '0 14px', gap: 8 }} onClick={() => openSage({ topic: 'plan' })}>
+      <button type="button" className="rx-btn secondary" style={{ minHeight: 40, padding: '0 14px', gap: 8 }} onClick={() => openSage({ topic: 'open' })}>
         <SageMark size={20} still />Sage
       </button>
     </div>

@@ -18,7 +18,7 @@ import { PresenceProvider } from '@/components/rx/messages/Presence';
 import MessagingDock from '@/components/rx/messages/MessagingDock';
 import { NAV_ITEMS } from '@/lib/nav-items';
 import ShellLayout from './ShellLayout';
-import SageFloat, { clearSageGreeting } from './SageFloat';
+import SageFloat from './SageFloat';
 import PushBootstrap from '@/components/rx/PushBootstrap';
 import NetworkPill from '@/components/rx/NetworkPill';
 import NoticeCard from '@/components/rx/NoticeCard';
@@ -103,7 +103,6 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
 
   // The shell has already asked "Sign out?" by the time this runs.
   const handleSignOut = async () => {
-    clearSageGreeting(); // so the next login is greeted again
     await signOutAndLeave('/');
   };
 
@@ -146,8 +145,8 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
       </NoticeProvider>
 
       <PushBootstrap />
-      <SageFloat userName={userName} />
-      <SagePanel />
+      <SageFloat />
+      <SagePanel userName={userName} />
       <MobileTabBar />
       <SummitModal registered={summitRegistered} userId={userId} />
       {features?.dock !== false && <MessagingDock meId={userId} meName={userName} meAvatarUrl={avatarUrl ?? null} initialUnread={unreadMessages} />}

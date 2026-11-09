@@ -1,5 +1,6 @@
 // Lets any screen open the Sage panel on a topic without importing the panel itself.
-export type SageTopic = 'plan' | 'lesson' | 'missed' | 'reframe' | 'report' | 'silent' | 'crisis';
+/** 'open' = Sage opened with no set topic (the floating tab, the top-bar button): Sage introduces itself. */
+export type SageTopic = 'open' | 'plan' | 'lesson' | 'missed' | 'reframe' | 'report' | 'silent' | 'crisis';
 export interface SageOpenDetail { topic?: SageTopic; draft?: Record<string, string> }
 
 export function openSage(detail: SageOpenDetail = {}) {

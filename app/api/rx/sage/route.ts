@@ -19,7 +19,7 @@ import { featureBlock } from '@/lib/access';
 export const runtime = 'nodejs';
 
 const MODEL = 'claude-sonnet-4-6';
-const TOPICS = new Set(['plan', 'lesson', 'missed', 'reframe', 'report', 'silent', 'crisis']);
+const TOPICS = new Set(['open', 'plan', 'lesson', 'missed', 'reframe', 'report', 'silent', 'crisis']);
 
 const CRISIS_REPLY = {
   reply: 'Thank you for telling me. I’m an AI, and you deserve a real person right now. You don’t have to explain everything. Please reach out below.',
@@ -56,6 +56,7 @@ async function saveExchange(userId: string, topic: string, conversationId: strin
 }
 
 const TOPIC_GUIDE: Record<string, string> = {
+  open: 'The member opened Sage without picking a topic, and you have just introduced yourself. Find out what they need, then help with it: planning their week, a decision, preparing for a conversation, a lesson, or reflecting on their progress. If it turns into planning a practice, you may propose a draft if-then plan in the "draft" field.',
   plan: 'The member wants to plan their week. Ask one short question at a time: what matters most this week, what usually gets in the way. After you know both, propose a draft if-then plan in the "draft" field. Keep the plan small enough to do on a bad day.',
   lesson: 'The member just finished a lesson and wants a practice from it. Suggest one small action they can repeat in under 30 minutes, tied to something they already do. Put it in the "draft" field.',
   missed: 'The member missed a day. Be kind and matter-of-fact: a missed day resets nothing. Ask what got in the way, then offer to make today’s practice smaller. If you propose a smaller practice, put it in "draft".',
