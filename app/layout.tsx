@@ -6,6 +6,7 @@ import CommunityGateModal from '@/components/CommunityGateModal';
 import { ModalProvider } from '@/components/Modal';
 import { NotificationProvider } from '@/components/Notifications';
 import { MobileInit } from '@/components/MobileInit';
+import SplashGate from '@/components/SplashGate';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import AuthRedirectError from '@/components/AuthRedirectError';
 import StructuredData from '@/components/StructuredData';
@@ -107,6 +108,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body suppressHydrationWarning>
         <AuthErrorHandler />
         <AuthRedirectError />
+        <SplashGate />
         <ModalProvider>
           <NotificationProvider>
             <MobileInit />
