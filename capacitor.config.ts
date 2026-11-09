@@ -15,8 +15,11 @@ const config: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
     SplashScreen: {
-      launchShowDuration: 2000,
-      backgroundColor: '#0C0B08',
+      // Keep native splash brief — our JS splash (AscentorSplash) plays immediately
+      // after WebView is ready and covers the full 3-second animation.
+      launchShowDuration: 500,
+      launchAutoHide: true,
+      backgroundColor: '#FAFAF8',
       showSpinner: false,
     },
     StatusBar: {
