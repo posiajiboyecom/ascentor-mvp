@@ -8,7 +8,7 @@
 //   • Profile + role: cached 60 s, tagged `shell-{userId}` — revalidated on profile update
 //   • Summit registration: cached 120 s, tagged `summit-reg-{userId}` — revalidated on registration
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server'; // used for auth.getUser() only — never inside unstable_cache
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { unstable_cache } from 'next/cache';
 
@@ -21,24 +21,18 @@ export interface ShellData {
   summitRegistered: boolean;
 }
 
-/** Cached profile fetch — 60 s, per user */
+/** Cached profile fetch — 60 s, per user.
+ *  Uses supabaseAdmin (service role) so it never calls cookies() inside the cache,
+ *  which would throw in Next.js 15/16 (dynamic APIs are forbidden inside unstable_cache). */
 const getCachedProfile = (userId: string) =>
   unstable_cache(
     async () => {
-      const supabase = await createClient();
-      const full = await supabase
+      const { data } = await supabaseAdmin
         .from('profiles')
         .select('full_name, role, avatar_url')
         .eq('id', userId)
-        .single();
-      if (full.data) return full.data;
-      // Fallback to basic columns if optional columns are missing
-      const basic = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', userId)
-        .single();
-      return basic.data ?? null;
+        .maybeSingle();
+      return data ?? null;
     },
     [`shell-profile-${userId}`],
     { revalidate: 60, tags: [`shell-${userId}`] }
