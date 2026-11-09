@@ -143,7 +143,13 @@ export default async function TodayPage() {
         <Aside>
           {lesson && (
             <div className="rx-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div className="rx-thumb" style={{ borderRadius: 0, aspectRatio: '16/8', alignItems: 'center', justifyContent: 'center' }}><Play aria-hidden style={{ width: 40, height: 40 }} /></div>
+              <div className="rx-thumb" style={{ borderRadius: 0, aspectRatio: '16/8', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                {lesson.thumbnail_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={lesson.thumbnail_url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                )}
+                <Play aria-hidden style={{ width: 40, height: 40, position: 'relative', ...(lesson.thumbnail_url ? { color: '#fff', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,.45))' } : {}) }} />
+              </div>
               <div className="rx-stack-sm" style={{ padding: '16px 18px 18px' }}>
                 <p className="rx-sm">This week’s lesson · {lesson.minutes} min</p>
                 <p className="rx-h3">{lesson.title}</p>
