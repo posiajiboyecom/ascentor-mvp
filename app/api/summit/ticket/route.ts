@@ -5,6 +5,7 @@ import { generateSummitTicket } from '@/lib/summitTicket';
 import { ticketView } from '@/lib/summitTicketLookup';
 import { secondFactorMatches } from '@/lib/summitTicketMatch';
 import { RateLimiter, getClientIp } from '@/lib/rate-limit';
+import { referralLink } from '@/lib/summitReferral';
 
 // "Find my ticket": the registrant proves they are the registrant with the email AND a second detail only they know (the WhatsApp
 // number they registered with, or the ES- reference shown on their confirmation screen). Anything else gets the same answer, so
@@ -46,5 +47,5 @@ export async function POST(req: NextRequest) {
     });
     return new NextResponse(new Uint8Array(pdf), { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="Elevation-Summit-2026-Ticket.pdf"', 'Cache-Control': 'no-store' } });
   }
-  return NextResponse.json({ ticket: await ticketView(reg) }, { headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json({ ticket: await ticketView(reg), referralLink: reg.referral_code ? referralLink(reg.referral_code as string) : null }, { headers: { 'Cache-Control': 'no-store' } });
 }

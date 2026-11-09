@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import '@/styles/marketing.css';
 import SummitTicketCard, { type ScreenTicket, type TicketProof } from '@/components/SummitTicketCard';
+import SummitReferralCard from '@/components/SummitReferralCard';
 
 const field: React.CSSProperties = { width: '100%', padding: '0.85rem 1rem', border: '1.5px solid #E8E6E1', borderRadius: '0.625rem', fontSize: '1rem', fontFamily: 'inherit', background: '#fff', boxSizing: 'border-box' };
 
@@ -11,7 +12,7 @@ export default function TicketClient() {
   const [second, setSecond] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [found, setFound] = useState<{ ticket: ScreenTicket; proof: TicketProof } | null>(null);
+  const [found, setFound] = useState<{ ticket: ScreenTicket; proof: TicketProof; referralLink: string | null } | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +23,7 @@ export default function TicketClient() {
       const res = await fetch('/api/summit/ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(proof) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) setError(data?.error || 'Something went wrong. Please try again.');
-      else setFound({ ticket: data.ticket, proof });
+      else setFound({ ticket: data.ticket, proof, referralLink: typeof data.referralLink === 'string' ? data.referralLink : null });
     } catch { setError('We could not reach the server. Check your connection and try again.'); }
     setBusy(false);
   };
@@ -36,7 +37,10 @@ export default function TicketClient() {
           No email needed. Enter the email you registered with and the WhatsApp number you gave, and your ticket opens here.
         </p>
         {found ? (
-          <SummitTicketCard ticket={found.ticket} proof={found.proof} />
+          <>
+            <SummitTicketCard ticket={found.ticket} proof={found.proof} />
+            {found.referralLink && <SummitReferralCard link={found.referralLink} style={{ marginTop: '1.5rem' }} />}
+          </>
         ) : (
           <form onSubmit={submit} style={{ display: 'grid', gap: '0.9rem', textAlign: 'left' }}>
             <label style={{ fontWeight: 600, color: '#0F0F0E' }}>Email

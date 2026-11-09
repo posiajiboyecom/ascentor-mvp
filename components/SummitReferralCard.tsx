@@ -22,6 +22,7 @@ export default function SummitReferralCard({ link, style }: { link: string; styl
         <a href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer"
           style={{ display: 'inline-flex', alignItems: 'center', padding: '0.75rem 1.25rem', borderRadius: '0.625rem', border: '1.5px solid #E8E6E1', color: '#0F0F0E', fontWeight: 600, textDecoration: 'none' }}>Share on WhatsApp</a>
       </div>
+      <p style={{ margin: '0.875rem 0 0', fontSize: '0.875rem' }}><a href="/elevation-summit/referrals" style={{ color: '#B6502A', fontWeight: 600 }}>See the referral leaderboard →</a></p>
     </div>
   );
 }
