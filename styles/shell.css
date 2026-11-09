@@ -415,8 +415,10 @@ body[data-sh-lock='true'] { overflow: hidden; }
   pointer-events: none;
 }
 .sage-root > * { pointer-events: auto; }
-.sage-edge-right { right: 0; }
-.sage-edge-left { left: 0; }
+/* Safe-area-aware edge positioning: on devices with home indicator or rounded corners,
+   env(safe-area-inset-*) keeps the pill flush with the actual screen edge. */
+.sage-edge-right { right: env(safe-area-inset-right, 0px); }
+.sage-edge-left  { left:  env(safe-area-inset-left,  0px); }
 
 /* ── Sage tab: cream pill ──────────────────────────────────────────────────────
    A cream/white capsule docked to the screen edge (48 × 72). Inside from top:

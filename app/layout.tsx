@@ -76,6 +76,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: '#FAFAF8',
+  viewportFit: 'cover',
 };
 
 // ── Root Layout ────────────────────────────────────────────────────
