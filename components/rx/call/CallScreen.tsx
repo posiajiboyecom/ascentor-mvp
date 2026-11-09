@@ -106,6 +106,9 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
   const attendanceRef = useRef<string | null>(null);
   const warnedRef = useRef(false);
   const meterStop = useRef<() => void>(() => undefined);
+  // The microphone track the "Allow microphone" check already has permission for. We hand this straight to Daily when
+  // joining instead of asking the browser for a second, separate microphone grant.
+  const micTrack = useRef<MediaStreamTrack | null>(null);
   const camTrack = useRef<MediaStreamTrack | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const agendaRef = useRef<LiveAgenda | null>(null);
@@ -166,15 +169,19 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setMicOk('granted');
+      micTrack.current = stream.getAudioTracks()[0] ?? null;
       const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const ctx = new Ctx(); const src = ctx.createMediaStreamSource(stream); const an = ctx.createAnalyser(); an.fftSize = 256; src.connect(an);
       const buf = new Uint8Array(an.frequencyBinCount); let raf = 0;
       const tick = () => { an.getByteTimeDomainData(buf); let peak = 0; for (const v of buf) peak = Math.max(peak, Math.abs(v - 128)); setLevel(Math.min(1, peak / 60)); raf = requestAnimationFrame(tick); };
       tick();
-      meterStop.current = () => { cancelAnimationFrame(raf); stream.getTracks().forEach((t) => t.stop()); void ctx.close(); };
+      // Only stop the level-meter's audio graph here, not the microphone track — the track itself carries over to
+      // Daily when the member joins, so the browser only has to grant the microphone once per visit, not twice.
+      meterStop.current = () => { cancelAnimationFrame(raf); void ctx.close(); };
     } catch { setMicOk('blocked'); }
   }
-  useEffect(() => () => meterStop.current(), []);
+  // If the member checked the microphone but never joined, release it when they navigate away.
+  useEffect(() => () => { meterStop.current(); micTrack.current?.stop(); micTrack.current = null; }, []);
 
   const refreshParts = useCallback(() => { const c = callRef.current; if (c) setParts(Object.values(c.participants())); }, []);
 
@@ -239,7 +246,10 @@ export default function CallScreen({ circleId, kind, sessionId, backHref, firstN
     meterStop.current();
     setPhase('joining'); setError('');
     try {
-      const call = Daily.createCallObject({ audioSource: true, videoSource: false, subscribeToTracksAutomatically: true, dailyConfig: { avoidEval: true } });
+      // Hand Daily the already-granted microphone track when we have one, so it never has to request its own and
+      // trigger a second browser permission prompt.
+      const call = Daily.createCallObject({ audioSource: micTrack.current ?? true, videoSource: false, subscribeToTracksAutomatically: true, dailyConfig: { avoidEval: true } });
+      micTrack.current = null; // Daily owns it now
       callRef.current = call;
       call.on('joined-meeting', async () => {
         refreshParts(); setPhase('incall');
