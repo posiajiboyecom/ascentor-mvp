@@ -36,7 +36,7 @@ const ICON: Record<string, React.ReactNode> = {
 
 const MORE_TOOLS: { href: string; label: string; icon: React.ReactNode }[] = [
   { href: '/admin/shop/leads', label: 'Shop leads', icon: <Inbox /> },
-  { href: '/admin/courses', label: 'Courses', icon: <GraduationCap /> },
+  { href: '/admin/lessons', label: 'Lessons', icon: <GraduationCap /> },
   { href: '/admin/inbox', label: 'Inbox', icon: <Inbox /> },
   { href: '/admin/coaching', label: 'Chat data', icon: <MessagesSquare /> },
   { href: '/admin/community-intel', label: 'Community intel', icon: <MessagesSquare /> },

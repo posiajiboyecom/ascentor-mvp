@@ -71,7 +71,7 @@ const LEGACY: [string, string][] = [
   ['/admin/users', 'members'], ['/admin/permissions', 'team'], ['/admin/mentors', 'mentors'], ['/admin/human-mentors', 'mentors'],
   ['/admin/circles', 'circles'], ['/admin/groups', 'groups'], ['/admin/categories', 'categories'], ['/admin/announcements', 'announcements'],
   ['/admin/broadcasts', 'broadcasts'], ['/admin/moderation', 'moderation'], ['/admin/chats', 'chats'], ['/admin/coaching', 'chats'],
-  ['/admin/community-intel', 'chats'], ['/admin/community-events', 'meetups'], ['/admin/courses', 'pathways'], ['/admin/content', 'pathways'],
+  ['/admin/community-intel', 'chats'], ['/admin/community-events', 'meetups'], ['/admin/courses', 'pathways'], ['/admin/lessons', 'pathways'], ['/admin/content', 'pathways'],
   ['/admin/knowledge', 'knowledge'], ['/admin/payments', 'payments'], ['/admin/promo-codes', 'promos'], ['/admin/products', 'products'],
   ['/admin/shop/products', 'products'], ['/admin/shop/orders', 'orders'], ['/admin/shop/leads', 'orders'], ['/admin/elevation-summit', 'registrations'],
   ['/admin/summit-donations', 'donations'], ['/admin/summit-payments', 'donations'], ['/admin/summit-stream', 'livestream'], ['/admin/summit', 'livestream'],
