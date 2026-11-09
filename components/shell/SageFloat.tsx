@@ -2,7 +2,7 @@
 
 // Sage: the floating AI coach, docked to the edge of the screen.
 //
-// A slim half-circle tab on the right edge (the left edge is also allowed on phones), in the upper-middle of the screen. It can be
+// An ink capsule tab with the gold Sage mark, on the right edge (the left edge is also allowed on phones), in the upper-middle of the screen. It can be
 // dragged up and down, and on phones snaps to the nearest edge. It is clamped so it can never sit on the top bar, the mobile menu
 // button or the bottom tab bar, it hides while a menu, sheet or modal is open and while the on-screen keyboard is up, and its
 // position is remembered per device. Arrow keys move it for people who cannot drag. Hold it down, or use the small x, to hide it
@@ -31,7 +31,7 @@ const GREETED_KEY = 'sage:greeted';
 const MUTED_KEY = 'sage:muted';
 const POS_KEY = 'sage:tab:v1';
 const HIDDEN_KEY = 'sage:tab-hidden';
-const TAB_H = 60;
+const TAB_H = 64;
 const GAP = 12;
 
 type Side = 'left' | 'right';
@@ -330,7 +330,7 @@ export default function SageFloat({ userName }: { userName: string }) {
   const hasComposer = !!pathname && (pathname.startsWith('/circle/chat') || pathname.startsWith('/messages') || pathname.startsWith('/community/groups/') || pathname.startsWith('/call'));
   return (
     <div
-      className={`sage-root sage-edge-${side}${mobileAllowed ? '' : ' sage-mobile-hide'}${hasComposer ? ' sage-hide' : ''}${ratio > 0.5 ? ' sage-low' : ''}${dragging ? ' sage-dragging' : ''}`}
+      className={`sage-root sage-edge-${side}${mobileAllowed ? '' : ' sage-mobile-hide'}${hasComposer ? ' sage-hide' : ''}${ratio > 0.5 ? ' sage-low' : ''}${dragging ? ' sage-dragging' : ''}${open ? ' sage-open' : ''}`}
       style={top === null ? { visibility: 'hidden' } : { top }}
     >
       {open && (
@@ -397,8 +397,13 @@ export default function SageFloat({ userName }: { userName: string }) {
         aria-label={open ? 'Close Sage' : 'Open Sage. Drag, or use the up and down arrow keys, to move this tab.'}
         aria-expanded={open}
       >
-        <span className="sage-orb-s" aria-hidden="true">S</span>
-        <span className="sage-status" aria-hidden="true" />
+        <span className="sage-tab-orb" aria-hidden="true">
+          <span className="sage-tab-ring" />
+          <span className="sage-tab-core"><b>S</b></span>
+          <svg className="sage-tab-spark" viewBox="0 0 24 24"><path d="M12 1.5c.7 5.6 4.9 9.8 10.5 10.5-5.6.7-9.8 4.9-10.5 10.5C11.3 16.9 7.1 12.7 1.5 12 7.1 11.3 11.3 7.1 12 1.5Z" /></svg>
+        </span>
+        <span className="sage-tab-label" aria-hidden="true">Ask Sage</span>
+        <span className="sage-tab-live" aria-hidden="true" />
       </button>
       <button type="button" className="sage-tab-x" onClick={hideForSession} aria-label="Hide the Sage tab for this session">
         <X aria-hidden="true" />
