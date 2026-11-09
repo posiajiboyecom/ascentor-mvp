@@ -369,6 +369,30 @@ export async function duplicateCampaign(id: string): Promise<R<{ id: string }>> 
   } catch (e) { return fail(e, 'We couldn’t duplicate it.'); }
 }
 
+/**
+ * A follow-up draft for the people a finished campaign reached but who have not opened it. Nothing is sent: it opens as a draft
+ * so the subject can be changed first. Opens are an estimate (some mail apps hide them), so the draft says so.
+ */
+export async function resendToUnopened(id: string): Promise<R<{ id: string; count: number }>> {
+  try {
+    const staff = await staffAt('edit');
+    const { data: c } = await db().from('email_campaigns').select('name, subject, preheader, heading, body_html, status').eq('id', id).maybeSingle();
+    if (!c) throw new Error('That campaign no longer exists.');
+    const { data: rows } = await db().from('email_sends').select('email').eq('campaign_id', id).eq('status', 'sent').is('opened_at', null).is('unsubscribed_at', null).limit(2001);
+    const emails = [...new Set(((rows ?? []) as { email: string }[]).map((r) => r.email.toLowerCase()).filter(isEmail))];
+    if (!emails.length) throw new Error('Everyone who received it has opened it.');
+    if (emails.length > 2000) throw new Error('More than 2,000 people have not opened it. Create the follow-up from the audience instead.');
+    const subject = /^(reminder|re):/i.test(c.subject as string) ? (c.subject as string) : `Reminder: ${c.subject}`;
+    const { data, error } = await db().from('email_campaigns').insert({
+      name: `${c.name} (not opened)`.slice(0, 120), subject: subject.slice(0, 200), preheader: c.preheader, heading: c.heading, body_html: c.body_html,
+      audience: { all: false, sources: [], tags: [], exclude: [], emails }, created_by: staff.userId,
+    }).select('id').single();
+    if (error || !data) throw new Error('We couldn’t create the follow-up.');
+    await auditAdmin(staff, 'Drafted a follow-up to people who had not opened', `${c.name} → ${emails.length} people`, AREA);
+    return { ok: true, id: data.id as string, count: emails.length };
+  } catch (e) { return fail(e, 'We couldn’t create the follow-up.'); }
+}
+
 export async function deleteCampaign(id: string): Promise<R> {
   try {
     const staff = await staffAt('edit');

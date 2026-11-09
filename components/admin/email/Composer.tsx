@@ -26,6 +26,7 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
   const [emailsText, setEmailsText] = useState(initial.audience.emails.join('\n'));
   const [busy, start] = useTransition();
   const [dirty, setDirty] = useState(false);
+  const [tested, setTested] = useState(false);
   const editor = useRef<HTMLDivElement>(null);
   const ro = !canEdit;
 
@@ -66,7 +67,7 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
   }
 
   const save = () => start(async () => { const sid = await persist(); if (sid) flash(templateMode ? 'Template saved.' : 'Draft saved.'); });
-  const test = () => start(async () => { const r = await sendTestEmail(d, testTo); flash(r.ok ? `Test sent to ${r.to}.` : r.error, !r.ok); });
+  const test = () => start(async () => { const r = await sendTestEmail(d, testTo); if (r.ok) setTested(true); flash(r.ok ? `Test sent to ${r.to}.` : r.error, !r.ok); });
   const send = () => start(async () => {
     if (!count) { flash('Nobody in this audience can be emailed yet.', true); return; }
     const days = Math.ceil(count / Math.max(1, overview.settings.daily_limit));
@@ -90,6 +91,15 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
   const srcs = overview.sources.filter((s) => s.total > 0 || d.audience.sources.includes(s.key));
   const toggle = (list: string[], k: string) => (list.includes(k) ? list.filter((x) => x !== k) : [...list, k]);
   const days = count ? Math.ceil(count / Math.max(1, overview.settings.daily_limit)) : 0;
+  // Gentle pre-flight notes. They never block sending: they are the things that most often go wrong.
+  const unknownFields = [...new Set([...(d.body_html + ' ' + d.subject + ' ' + d.heading).matchAll(/\{\{\s*([a-z_]+)\s*\}\}/gi)].map((m) => m[1].toLowerCase()))].filter((f) => !['first_name', 'name', 'email'].includes(f));
+  const notes = [
+    d.subject.length > 60 ? `The subject is ${d.subject.length} characters. Most inboxes cut it off after about 60.` : '',
+    !d.preheader.trim() ? 'No preview text. Inboxes will show the first words of the email instead.' : '',
+    unknownFields.length ? `${unknownFields.map((f) => `{{${f}}}`).join(', ')} is not a personal field and will be sent as typed.` : '',
+    !/href=/i.test(d.body_html) ? 'There is no link in the email.' : '',
+    !tested ? 'You have not sent yourself a test yet.' : '',
+  ].filter(Boolean);
 
   return (
     <div className="st">
@@ -216,6 +226,11 @@ export default function Composer({ ctx, initial, templateMode, templateId, onClo
                 <p className="sm">
                   {count ? <>Goes to <b>{fmt(count)}</b> {count === 1 ? 'person' : 'people'} at about {overview.settings.per_minute} a minute, up to {fmt(overview.settings.daily_limit)} in any 24 hours{days > 1 ? <>, so it finishes in about <b>{days} days</b></> : null}.</> : 'Choose who gets it to see how long it takes.'}
                 </p>
+                {notes.length > 0 && (
+                  <ul className="sm" aria-label="Before you send" style={{ margin: '0 0 10px', paddingLeft: 18 }}>
+                    {notes.map((n) => <li key={n}>{n}</li>)}
+                  </ul>
+                )}
                 <button type="button" className="btn bp" disabled={busy || !count || !d.subject} onClick={send}>{busy ? 'Working…' : 'Send now'}</button>
                 <div className="fld">
                   <label htmlFor="em-when">Or schedule for later</label>
