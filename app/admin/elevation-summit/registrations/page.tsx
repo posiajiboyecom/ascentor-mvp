@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   RefreshCw, Trash2, Mail, Phone, MessageCircle,
-  FileDown, ChevronLeft, ChevronRight, BellRing, TicketCheck,
+  FileDown, ChevronLeft, ChevronRight, BellRing, TicketCheck, Share2, Copy, Check,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { usePageSearch } from '@/components/shell/PageSearch';
@@ -44,6 +44,8 @@ interface Reg {
   confirmation_email_error?: string | null;
   reminder_sent_at?: string | null;
   reminder_count?: number | null;
+  referral_invite_sent_at?: string | null;
+  referral_code?: string | null;
   created_at: string;
   source: string | null;
 }
@@ -91,6 +93,8 @@ export default function ElevationSummitRegistrationsPage() {
   const [busy, setBusy] = useState(false);
   const [panelMsg, setPanelMsg] = useState<string | null>(null);
   const [reminding, setReminding] = useState(false);
+  const [sendingReferrals, setSendingReferrals] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Bulk email (subject + message to everyone confirmed, or everyone pending)
   const [emailTargetStatus, setEmailTargetStatus] = useState<'confirmed' | 'pending'>('confirmed');
@@ -222,7 +226,7 @@ export default function ElevationSummitRegistrationsPage() {
     setExporting(false);
   };
 
-  const act = async (action: 'resend' | 'remind' | 'comp') => {
+  const act = async (action: 'resend' | 'remind' | 'comp' | 'referral_invite') => {
     if (!open) return;
     setBusy(true); setPanelMsg(null);
     const res = await authed('/api/admin/summit-registrations', { method: 'POST', body: JSON.stringify({ id: open.id, action }) });
@@ -266,6 +270,20 @@ export default function ElevationSummitRegistrationsPage() {
     const b = await res.json().catch(() => ({}));
     setNote(b.message || b.error || (res.ok ? 'Done.' : 'Reminders failed.'));
     setReminding(false);
+    await load();
+  };
+
+  const sendReferralInviteAll = async () => {
+    const yes = await confirmAction(
+      `Send the referral invite email to all confirmed registrants who have not received it yet? Each person gets their own unique referral link.`,
+      { title: 'Send Referral Invites', confirmLabel: 'Send invites' },
+    );
+    if (!yes) return;
+    setSendingReferrals(true); setNote(null);
+    const res = await authed('/api/admin/summit-registrations', { method: 'POST', body: JSON.stringify({ action: 'referral_invite_all' }) });
+    const b = await res.json().catch(() => ({}));
+    setNote(b.message || b.error || (res.ok ? 'Done.' : 'Sending failed.'));
+    setSendingReferrals(false);
     await load();
   };
 
@@ -344,6 +362,12 @@ export default function ElevationSummitRegistrationsPage() {
             <button type="button" className="ledger-btn ledger-btn-ghost" onClick={remindAll} disabled={reminding}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Email everyone who is not yet confirmed">
               <BellRing size={14} /> {reminding ? 'Sending…' : `Remind all not yet confirmed (${stats.notConfirmed})`}
+            </button>
+          )}
+          {stats.confirmed > 0 && (
+            <button type="button" className="ledger-btn ledger-btn-ghost" onClick={sendReferralInviteAll} disabled={sendingReferrals}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Send the referral invite email to confirmed registrants who have not received it yet">
+              <Share2 size={14} /> {sendingReferrals ? 'Sending…' : 'Send referral invites'}
             </button>
           )}
           <button type="button" className="ledger-btn ledger-btn-ghost" onClick={downloadPdf} disabled={exporting}
@@ -516,6 +540,17 @@ export default function ElevationSummitRegistrationsPage() {
                 </button>
               </>
             )}
+            {open.confirmed && (
+              <button type="button" disabled={busy} onClick={async () => {
+                const yes = await confirmAction(
+                  `Send ${open.full_name} their unique referral invite email with their personal referral link?`,
+                  { title: 'Send Referral Invite', confirmLabel: 'Send invite' },
+                );
+                if (yes) await act('referral_invite');
+              }} className="ledger-btn ledger-btn-ghost" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+                <Share2 size={14} /> {busy ? 'Sending…' : 'Send referral invite'}
+              </button>
+            )}
             <button type="button" disabled={busy} onClick={() => remove(open)} className="ledger-btn ledger-btn-ghost"
               style={{ color: 'var(--ledger-bad)', display: 'inline-flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
               <Trash2 size={14} /> Delete record
@@ -556,6 +591,30 @@ export default function ElevationSummitRegistrationsPage() {
                         : open.confirmation_email_error ? `FAILED: ${open.confirmation_email_error}`
                         : 'No delivery record. Resend it if the customer did not get it.'}
                     </p>
+                  </div>
+                  <div>
+                    <p style={lab}>Referral invite</p>
+                    <p style={val}>
+                      {open.referral_invite_sent_at ? `Sent ${when(open.referral_invite_sent_at)}` : 'Not yet sent'}
+                    </p>
+                    {open.referral_code && (
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6, flexWrap: 'wrap' }}>
+                        <code style={{ fontSize: 11.5, background: 'var(--ledger-bg-input)', border: '1px solid var(--ledger-line-strong)', borderRadius: 6, padding: '4px 8px', wordBreak: 'break-all', flex: 1, minWidth: 0 }}>
+                          {`https://joinascentor.com/elevation-summit?ref=${open.referral_code}`}
+                        </code>
+                        <button type="button" className="ledger-btn ledger-btn-ghost"
+                          style={{ display: 'inline-flex', gap: 5, alignItems: 'center', padding: '4px 9px', flexShrink: 0 }}
+                          onClick={() => {
+                            navigator.clipboard.writeText(`https://joinascentor.com/elevation-summit?ref=${open.referral_code}`).then(() => {
+                              setCopied(true);
+                              setTimeout(() => setCopied(false), 2000);
+                            });
+                          }}>
+                          {copied ? <Check size={13} /> : <Copy size={13} />}
+                          {copied ? 'Copied' : 'Copy'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (

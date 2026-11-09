@@ -126,8 +126,8 @@ export const findUser = z.strictObject({ email });
 
 // ── Summit ────────────────────────────────────────────────────────────────────
 export const summitRegistrationAction = z.union([
-  z.strictObject({ action: z.literal('remind_all') }),
-  z.strictObject({ action: z.enum(['resend', 'remind', 'comp']), id: uuid }),
+  z.strictObject({ action: z.enum(['remind_all', 'referral_invite_all']) }),
+  z.strictObject({ action: z.enum(['resend', 'remind', 'comp', 'referral_invite']), id: uuid }),
 ]);
 export const summitRegistrationPatch = z.strictObject({
   id: uuid,

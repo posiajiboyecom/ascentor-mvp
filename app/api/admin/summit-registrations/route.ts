@@ -18,7 +18,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { deliverPaidEmails, deliverCompTicket, sendPaymentReminderEmail, describeEmailFailure } from '@/lib/summitEmails';
+import { deliverPaidEmails, deliverCompTicket, sendPaymentReminderEmail, describeEmailFailure, sendReferralInviteEmail } from '@/lib/summitEmails';
+import { referralLink } from '@/lib/summitReferral';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
 import { guardApi } from '@/lib/admin/api-guard';
@@ -109,9 +110,11 @@ export async function POST(req: NextRequest) {
     const parsedAction = await parseJson(req, adminSchemas.summitRegistrationAction);
     if (!parsedAction.ok) return parsedAction.response;
 
-    if (parsedAction.data.action === 'remind_all') return await remindAll();
-    const id = parsedAction.data.id;
-    const action = parsedAction.data.action;
+    const actionData = parsedAction.data;
+    if (actionData.action === 'remind_all') return await remindAll();
+    if (actionData.action === 'referral_invite_all') return await referralInviteAll();
+    const id = (actionData as { action: string; id: string }).id;
+    const action = actionData.action;
 
     const { data: reg } = await supabaseAdmin.from('summit_registrations').select('*').eq('id', id).maybeSingle();
     if (!reg) return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
@@ -178,6 +181,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, message: `Reminder sent to ${reg.email}` });
     }
 
+    if (action === 'referral_invite') {
+      if (!reg.referral_code) {
+        return NextResponse.json({ error: 'This registrant has no referral code. They may need to re-confirm.' }, { status: 409 });
+      }
+      try {
+        await sendReferralInviteEmail({
+          to: reg.email,
+          fullName: reg.full_name ?? 'there',
+          referralCode: reg.referral_code as string,
+          attendanceType: reg.attendance_type === 'virtual' ? 'virtual' : 'physical',
+        });
+        await supabaseAdmin.from('summit_registrations')
+          .update({ referral_invite_sent_at: new Date().toISOString() })
+          .eq('id', id);
+      } catch (err) {
+        console.error('[admin/summit-registrations] referral invite failed:', err);
+        return NextResponse.json({ error: 'Referral invite email failed to send. Check SMTP settings.' }, { status: 502 });
+      }
+      const link = referralLink(reg.referral_code as string);
+      return NextResponse.json({ ok: true, message: `Referral invite sent to ${reg.email}. Their link: ${link}` });
+    }
+
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   } catch (err) {
     console.error('[admin/summit-registrations] POST error:', err);
@@ -222,6 +247,62 @@ async function markReminded(ids: string[]) {
         .eq('id', id);
     }
   } catch { /* tracking is optional */ }
+}
+
+/** Sends the referral invite to all confirmed registrants who have not received it yet. */
+async function referralInviteAll() {
+  const { data, error } = await supabaseAdmin
+    .from('summit_registrations')
+    .select('id, email, full_name, referral_code, attendance_type')
+    .eq('payment_status', 'paid')
+    .is('referral_invite_sent_at', null)
+    .not('referral_code', 'is', null)
+    .order('created_at', { ascending: true })
+    .limit(100);
+  if (error) return NextResponse.json({ error: 'Could not load registrations' }, { status: 500 });
+
+  const targets = (data ?? []).filter(r => r.email && r.referral_code);
+  const CAP = 50;
+  const batch = targets.slice(0, CAP);
+  let sent = 0;
+  let failed = 0;
+
+  for (const r of batch) {
+    try {
+      // Claim with optimistic lock to prevent double-send
+      const { data: claimed } = await supabaseAdmin
+        .from('summit_registrations')
+        .update({ referral_invite_sent_at: new Date().toISOString() })
+        .eq('id', r.id)
+        .is('referral_invite_sent_at', null)
+        .select('id')
+        .maybeSingle();
+      if (!claimed) continue; // another run already claimed it
+
+      await sendReferralInviteEmail({
+        to: r.email as string,
+        fullName: (r.full_name as string) ?? 'there',
+        referralCode: r.referral_code as string,
+        attendanceType: r.attendance_type === 'virtual' ? 'virtual' : 'physical',
+      });
+      sent++;
+    } catch (err) {
+      failed++;
+      console.error('[admin/summit-registrations] referral invite batch failed for', r.id, (err as Error).message);
+      // Roll back so a retry can try again
+      try {
+        await supabaseAdmin.from('summit_registrations').update({ referral_invite_sent_at: null }).eq('id', r.id);
+      } catch { /* best-effort rollback */ }
+    }
+  }
+
+  const left = targets.length - batch.length;
+  return NextResponse.json({
+    ok: true, sent, failed,
+    message: `Referral invite sent to ${sent} ${sent === 1 ? 'person' : 'people'}` +
+      (failed ? `, ${failed} failed` : '') +
+      (left > 0 ? `. ${left} more waiting — run it again to continue.` : '. All done.'),
+  });
 }
 
 /** Reminds everyone not yet confirmed, skipping anyone reminded in the last 24 hours. */
