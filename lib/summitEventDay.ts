@@ -19,6 +19,8 @@ export interface EventDaySummary {
   sentVirtual: number;
   sentPhysical: number;
   failed: number;
+  /** People still waiting for their email when this run stopped (0 = everyone has it). */
+  remaining: number;
 }
 
 /** Today's calendar date in WAT (UTC+1, no DST), as YYYY-MM-DD. */
@@ -30,10 +32,18 @@ export function isSummitDayInWat(): boolean {
   return todayInWat() === SUMMIT_DATE.toISOString().slice(0, 10);
 }
 
-export async function sendEventDayEmails(opts: { force?: boolean } = {}): Promise<EventDaySummary> {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Sends to everyone who hasn't had it yet, for up to `budgetMs` (so a 60-second server function never gets cut off mid-send),
+ * at a steady pace (`gapMs` between messages) so the mailbox isn't flooded. Call it again until `remaining` is 0.
+ */
+export async function sendEventDayEmails(opts: { force?: boolean; budgetMs?: number; gapMs?: number } = {}): Promise<EventDaySummary> {
+  const deadline = Date.now() + (opts.budgetMs ?? 45_000);
+  const gap = opts.gapMs ?? 2_500;
   const isEventDay = isSummitDayInWat();
   if (!isEventDay && !opts.force) {
-    return { isEventDay, ran: false, checked: 0, sentVirtual: 0, sentPhysical: 0, failed: 0 };
+    return { isEventDay, ran: false, checked: 0, sentVirtual: 0, sentPhysical: 0, failed: 0, remaining: 0 };
   }
 
   const { data: targets, error } = await supabaseAdmin
@@ -44,9 +54,13 @@ export async function sendEventDayEmails(opts: { force?: boolean } = {}): Promis
     .limit(2000);
   if (error) throw new Error(`could not load paid registrations: ${error.message}`);
 
-  const summary: EventDaySummary = { isEventDay, ran: true, checked: targets?.length ?? 0, sentVirtual: 0, sentPhysical: 0, failed: 0 };
+  const summary: EventDaySummary = { isEventDay, ran: true, checked: targets?.length ?? 0, sentVirtual: 0, sentPhysical: 0, failed: 0, remaining: 0 };
 
-  for (const r of targets ?? []) {
+  const list = targets ?? [];
+  for (let i = 0; i < list.length; i++) {
+    const r = list[i];
+    if (Date.now() + gap + 8_000 > deadline) { summary.remaining = list.length - i; break; }
+    const started = Date.now();
     try {
       if (r.attendance_type === 'virtual') {
         await sendEventDayVirtualEmail(r.email, r.full_name);
@@ -62,6 +76,8 @@ export async function sendEventDayEmails(opts: { force?: boolean } = {}): Promis
       summary.failed++;
       console.error('[summitEventDay] send failed for', r.email, (err as Error).message);
     }
+    const wait = gap - (Date.now() - started);
+    if (wait > 0 && i < list.length - 1) await sleep(wait);
   }
 
   return summary;

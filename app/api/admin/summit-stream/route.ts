@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
       }
       return NextResponse.json({
         ok: true, ...summary,
-        message: `Sent to ${summary.sentVirtual} virtual and ${summary.sentPhysical} physical attendee${summary.sentVirtual + summary.sentPhysical === 1 ? '' : 's'}${summary.failed ? `, ${summary.failed} failed` : ''}.`,
+        message: `Sent to ${summary.sentVirtual} virtual and ${summary.sentPhysical} physical attendee${summary.sentVirtual + summary.sentPhysical === 1 ? '' : 's'}${summary.failed ? `, ${summary.failed} failed` : ''}.${summary.remaining ? ` ${summary.remaining} still waiting: press again to continue (it also continues automatically).` : ''}`,
       });
     } catch (err) {
       console.error('[admin/summit-stream] send_event_day failed:', err);

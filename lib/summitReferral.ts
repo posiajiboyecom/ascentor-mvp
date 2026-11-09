@@ -70,7 +70,8 @@ export async function attributeReferral(reg: { id: string; email: string; whatsa
     if (!referrer || referrer.id === reg.id) return;
 
     const emailN = normaliseEmail(reg.email);
-    let status: 'pending' | 'flagged' | 'rejected' = 'pending'; let reason: string | null = null;
+    // A clean signup counts straight away. Only suspicious ones are held for an admin (flagged) or refused (rejected).
+    let status: 'verified' | 'flagged' | 'rejected' = 'verified'; let reason: string | null = null;
     const hold = (s: 'flagged' | 'rejected', why: string) => { if (status !== 'rejected') { status = s; reason = reason ? `${reason}; ${why}` : why; } };
 
     if (referrer.email_normalised && referrer.email_normalised === emailN) hold('rejected', 'same email as the referrer');
@@ -85,7 +86,11 @@ export async function attributeReferral(reg: { id: string; email: string; whatsa
       const same = (siblings ?? []).filter((s) => ((s as unknown as { summit_registrations: { signup_ip_hash: string | null } | null }).summit_registrations?.signup_ip_hash) === reg.signup_ip_hash).length;
       if (same >= MAX_PER_NETWORK) hold('flagged', `more than ${MAX_PER_NETWORK} signups from one network`);
     }
-    await supabaseAdmin.from('summit_referrals').insert({ referrer_id: referrer.id, referred_id: reg.id, status, reason });
+    const now = new Date().toISOString();
+    const { data: row } = await supabaseAdmin.from('summit_referrals')
+      .insert({ referrer_id: referrer.id, referred_id: reg.id, status, reason, ...(status === 'verified' ? { verified_at: now } : {}) })
+      .select('id').maybeSingle();
+    if (row && status === 'verified') await notifyReferrer(referrer.id as string, reg.id);
   } catch (e) { console.error('[summitReferral] attribute failed:', (e as Error).message); }
 }
 
@@ -94,7 +99,20 @@ export async function verifiedCount(referrerId: string): Promise<number> {
   return count ?? 0;
 }
 
-/** A new person confirmed their email: stamp it, and if they came through a link, count it and tell the referrer. */
+/** Email the referrer that a friend just counted for them, with their new total. Never throws. */
+export async function notifyReferrer(referrerId: string, friendRegistrationId: string): Promise<void> {
+  try {
+    const { sendReferralCreditedEmail } = await import('@/lib/summitEmails');
+    const [{ data: referrer }, { data: friend }] = await Promise.all([
+      supabaseAdmin.from('summit_registrations').select('email, full_name, referral_code').eq('id', referrerId).maybeSingle(),
+      supabaseAdmin.from('summit_registrations').select('full_name').eq('id', friendRegistrationId).maybeSingle(),
+    ]);
+    if (!referrer) return;
+    await sendReferralCreditedEmail({ to: referrer.email as string, referrerName: referrer.full_name as string, friendFirstName: String(friend?.full_name ?? '').trim().split(/\s+/)[0] || 'Someone', count: await verifiedCount(referrerId), link: referralLink(String(referrer.referral_code ?? '')) });
+  } catch (e) { console.error('[summitReferral] referrer email failed:', (e as Error).message); }
+}
+
+/** Older links: a person confirmed their email. Stamps it, and counts any referral still waiting from before instant counting. */
 export async function confirmEmail(registrationId: string): Promise<{ ok: boolean; counted: boolean }> {
   const now = new Date().toISOString();
   const { data: reg } = await supabaseAdmin.from('summit_registrations').update({ email_verified_at: now }).eq('id', registrationId).is('email_verified_at', null).select('id, full_name').maybeSingle();
@@ -104,10 +122,6 @@ export async function confirmEmail(registrationId: string): Promise<{ ok: boolea
   if (!reg) return { ok: true, counted: false };
   const { data: done } = await supabaseAdmin.from('summit_referrals').update({ status: 'verified', verified_at: now }).eq('id', ref.id).eq('status', 'pending').select('id').maybeSingle();
   if (!done) return { ok: true, counted: false };
-  try {
-    const { sendReferralCreditedEmail } = await import('@/lib/summitEmails');
-    const { data: referrer } = await supabaseAdmin.from('summit_registrations').select('email, full_name, referral_code').eq('id', ref.referrer_id).maybeSingle();
-    if (referrer) await sendReferralCreditedEmail({ to: referrer.email as string, referrerName: referrer.full_name as string, friendFirstName: String(reg.full_name ?? '').trim().split(/\s+/)[0] || 'Someone', count: await verifiedCount(ref.referrer_id as string), link: referralLink(String(referrer.referral_code ?? '')) });
-  } catch (e) { console.error('[summitReferral] referrer email failed:', (e as Error).message); }
+  await notifyReferrer(ref.referrer_id as string, registrationId);
   return { ok: true, counted: true };
 }

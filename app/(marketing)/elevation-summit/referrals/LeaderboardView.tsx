@@ -1,5 +1,6 @@
 // The leaderboard's look, separate from the data so it can be previewed with sample data.
 import { REFERRAL_GOAL, type PublicBoard, type PublicLeader } from '@/lib/summitReferralPublicTypes';
+import JoinButtons from './JoinModal';
 
 const initials = (name: string) => name.replace(/\./g, '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
 const tone = ['', 'b', 'g'];
@@ -38,7 +39,8 @@ export default function LeaderboardView({ board, days }: { board: PublicBoard | 
           </p>
           <h1 className="slb-h1">Who’s bringing<br /><em>the most people?</em></h1>
           <span className="slb-bar" aria-hidden />
-          <p className="slb-lede">Bring <b>{REFERRAL_GOAL} friends</b> to the Summit and win a prize. Every friend who registers with your link and confirms their email moves you up.</p>
+          <p className="slb-lede">Bring <b>{REFERRAL_GOAL} friends</b> to the Summit and win a prize. Every friend who registers with your link moves you up instantly.</p>
+          <div className="slb-hero-cta"><JoinButtons variant="hero" /></div>
           {board && (
             <div className="slb-stats">
               <div className="slb-stat rust"><b>{board.totalConfirmed}</b><span>friends brought</span></div>
@@ -100,17 +102,14 @@ export default function LeaderboardView({ board, days }: { board: PublicBoard | 
           <div className="slb-how">
             <div className="slb-step"><b>1</b><p><strong>Register free</strong>You get your own referral link straight away.</p></div>
             <div className="slb-step"><b>2</b><p><strong>Share it</strong>Send it to friends on WhatsApp, in class, anywhere.</p></div>
-            <div className="slb-step"><b>3</b><p><strong>They confirm</strong>Each friend counts once they confirm their email.</p></div>
+            <div className="slb-step"><b>3</b><p><strong>Watch it climb</strong>Each friend counts the moment they register.</p></div>
           </div>
         </section>
 
         <section className="slb-cta">
           <h3>Get on the board</h3>
           <p>Thursday 19 November · Lagos State University, Ojo · Free</p>
-          <div className="slb-btns">
-            <a href="/elevation-summit#register" className="slb-btn rust">Register and get my link</a>
-            <a href="/elevation-summit/ticket" className="slb-btn line">Already registered? Find my link</a>
-          </div>
+          <JoinButtons />
         </section>
 
         <p className="slb-fine">Names show as first name and last initial. The board updates every few minutes. Signups that look duplicated are checked before they count.</p>

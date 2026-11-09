@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
   const results = [
     await step('keepalive', pingDatabase),
     await step('reconcile-payments', reconcilePayments),
-    await step('summit-event-day', () => sendEventDayEmails()),
+    await step('summit-event-day', () => sendEventDayEmails({ budgetMs: 15_000 })),
     await step('commitment-reminders', sendCommitmentReminders),
     await step('session-reminders', sendUpcomingSessionReminders),
     await step('announcement-status', syncAnnouncementStatus),

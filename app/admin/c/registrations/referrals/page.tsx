@@ -32,7 +32,7 @@ export default async function Page() {
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px 64px' }}>
       <Link href="/admin/c/registrations" style={{ fontSize: 14 }}>← Registrations</Link>
       <h1 style={{ fontSize: 26, fontWeight: 800, margin: '12px 0 4px' }}>Summit referrals</h1>
-      <p style={{ opacity: 0.75, margin: '0 0 20px' }}>A referral counts once the friend confirms their email. Ranked by referrals who attended, then by confirmed referrals.</p>
+      <p style={{ opacity: 0.75, margin: '0 0 20px' }}>A referral counts as soon as the friend registers. Suspicious signups are held below for review. Ranked by referrals who attended, then by confirmed referrals.</p>
       {!data ? <p role="alert">We could not load referrals. Has the referrals migration been applied?</p> : (<>
         <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>Leaderboard</h2>
         <p style={{ fontSize: 14, opacity: 0.75, margin: '0 0 8px' }}>{data.leaders.filter((l) => l.verified >= GOAL).length} {data.leaders.filter((l) => l.verified >= GOAL).length === 1 ? 'person has' : 'people have'} reached {GOAL} confirmed referrals.</p>

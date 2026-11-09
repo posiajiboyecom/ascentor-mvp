@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Registration failed.' }, { status: 500 });
   }
 
-  // Record who referred this person (never throws, never blocks the registration). It counts only once they confirm their email.
+  // Record who referred this person (never throws, never blocks the registration). It counts straight away unless the fraud checks hold it for review.
   await attributeReferral({ id: registration.id, email, whatsapp: data.whatsapp, signup_ip_hash: ipH, signup_device_hash: devH }, data.ref);
 
   // Ticket PDF + confirmation email, and the admin new-registration alert.
