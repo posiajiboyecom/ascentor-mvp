@@ -31,7 +31,7 @@ const GREETED_KEY = 'sage:greeted';
 const MUTED_KEY = 'sage:muted';
 const POS_KEY = 'sage:tab:v1';
 const HIDDEN_KEY = 'sage:tab-hidden';
-const TAB_H = 64;
+const TAB_H = 116; // keep in step with .sage-tab height in styles/shell.css
 const GAP = 12;
 
 type Side = 'left' | 'right';

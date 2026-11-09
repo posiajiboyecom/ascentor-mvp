@@ -420,15 +420,16 @@ body[data-sh-lock='true'] { overflow: hidden; }
 .sage-edge-right { right: env(safe-area-inset-right, 0px); }
 .sage-edge-left  { left:  env(safe-area-inset-left,  0px); }
 
-/* ── Sage tab: cream pill ──────────────────────────────────────────────────────
-   A cream/white capsule docked to the screen edge (48 × 72). Inside from top:
-   rust "S" monogram circle, vertical "Ask Sage" text, green live dot.
-   On desktop (hover/focus ≥ 1024 px) the capsule slides open to 128 px
+/* ── Sage tab: cream rectangle ────────────────────────────────────────────────
+   A cream/white rectangle docked to the screen edge (44 × 116), tall enough to
+   hold everything inside without clipping: rust "S" monogram circle, vertical
+   "Ask Sage" text, green live dot. Keep TAB_H in SageFloat.tsx in step.
+   On desktop (hover/focus ≥ 1024 px) it slides open to 128 px
    and the label rotates to horizontal.
    ─────────────────────────────────────────────────────────────────────────── */
 .sage-tab {
-  position: absolute; top: 0; width: 48px; height: 72px; border: 0; padding: 0; cursor: grab; touch-action: none;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  position: absolute; top: 0; width: 44px; height: 116px; border: 0; padding: 10px 0; box-sizing: border-box; cursor: grab; touch-action: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
   overflow: hidden; white-space: nowrap;
   background: #FAFAF8;
   border: 1.5px solid #DDD5C8;
@@ -439,8 +440,8 @@ body[data-sh-lock='true'] { overflow: hidden; }
   transition: width 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.sage-edge-right .sage-tab { right: 0; border-radius: 32px 0 0 32px; border-right: 0; }
-.sage-edge-left .sage-tab  { left: 0;  border-radius: 0 32px 32px 0; border-left: 0; }
+.sage-edge-right .sage-tab { right: 0; border-radius: 10px 0 0 10px; border-right: 0; }
+.sage-edge-left .sage-tab  { left: 0;  border-radius: 0 10px 10px 0; border-left: 0; }
 .sage-tab:active { transform: scale(0.97); }
 .sage-tab:focus-visible { outline: 3px solid #B6502A; outline-offset: 2px; }
 .sage-dragging .sage-tab {

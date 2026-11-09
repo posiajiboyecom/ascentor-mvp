@@ -30,6 +30,15 @@ interface CircleDb {
   merged_into: string | null; created_at: string;
 }
 const COLS = 'id, name, number, status, interest, is_demo, facilitator_id, timezone, language, stage, slot, cycle_start, meeting_dow, meeting_time, meeting_url, focus, health_override, merged_into, created_at';
+const COLS_NO_MERGE = COLS.replace(', merged_into', '');
+
+/** Select from circles with COLS. If the database hasn't had the 20261110_circle_formation migration yet (no merged_into
+ *  column, Postgres error 42703), retry without it so the admin screens still open; merged_into then reads as null. */
+async function selectCircles<T>(build: (cols: string) => PromiseLike<{ data: T | null; error: { code?: string } | null }>): Promise<{ data: T | null; error: unknown }> {
+  const first = await build(COLS);
+  if (first.error?.code !== '42703') return first;
+  return build(COLS_NO_MERGE);
+}
 
 // ── list ────────────────────────────────────────────────────────────────────
 export interface CircleRow {
@@ -54,12 +63,12 @@ export async function loadCircles(): Promise<R<{ overview: CirclesOverview }>> {
   try {
     await at('view');
     const [{ data: cs, error }, { data: seats }, waiting] = await Promise.all([
-      supabaseAdmin.from('circles').select(COLS).order('number', { ascending: false }).limit(2000),
+      selectCircles((cols) => supabaseAdmin.from('circles').select(cols).order('number', { ascending: false }).limit(2000)),
       supabaseAdmin.from('circle_seats').select('circle_id, user_id, role').limit(100000),
       waitingIds(),
     ]);
     if (error) throw error;
-    const circles = (cs ?? []) as CircleDb[];
+    const circles = (cs ?? []) as unknown as CircleDb[];
     const count = new Map<string, number>();
     const seatedUsers = new Set<string>();
     for (const s of (seats ?? []) as { circle_id: string; user_id: string; role: string }[]) {
@@ -80,7 +89,7 @@ export async function loadCircles(): Promise<R<{ overview: CirclesOverview }>> {
           language: c.language, stage: c.stage, timezone: c.timezone, meeting_dow: c.meeting_dow, meeting_time: c.meeting_time,
           members: count.get(c.id) ?? 0, facilitator: c.facilitator_id ? names.get(c.facilitator_id)?.name ?? 'Member' : null,
           week: c.status === 'active' ? cycleWeek(c.cycle_start, t) : null, cycle_start: c.cycle_start, created_at: c.created_at,
-          merged_into: c.merged_into, ageHours: Math.floor((Date.now() - new Date(c.created_at).getTime()) / 3600000),
+          merged_into: c.merged_into ?? null, ageHours: Math.floor((Date.now() - new Date(c.created_at).getTime()) / 3600000),
         })),
       },
     };
@@ -104,10 +113,10 @@ export async function loadCircle(id: string): Promise<R<{ detail: CircleDetail }
   try {
     await at('view');
     needId(id, 'Circle');
-    const { data: c, error } = await supabaseAdmin.from('circles').select(COLS).eq('id', id).maybeSingle();
+    const { data: c, error } = await selectCircles((cols) => supabaseAdmin.from('circles').select(cols).eq('id', id).maybeSingle());
     if (error) throw error;
     if (!c) throw new Error('That Circle wasn’t found. It may have been deleted.');
-    const circle = c as CircleDb;
+    const circle = { merged_into: null, ...(c as object) } as CircleDb;
     const [{ data: seats }, { data: msgs }, { data: sess }, { data: cm }, { data: from }] = await Promise.all([
       supabaseAdmin.from('circle_seats').select('user_id, role, joined_at').eq('circle_id', id).order('joined_at'),
       supabaseAdmin.from('circle_messages').select('id, user_id, kind, body, pinned, is_win, created_at').eq('circle_id', id).order('created_at', { ascending: false }).limit(80),
@@ -215,9 +224,9 @@ export async function updateCircle(id: string, input: CircleInput): Promise<R> {
 
 async function getCircle(id: string): Promise<CircleDb> {
   needId(id, 'Circle');
-  const { data } = await supabaseAdmin.from('circles').select(COLS).eq('id', id).maybeSingle();
+  const { data } = await selectCircles((cols) => supabaseAdmin.from('circles').select(cols).eq('id', id).maybeSingle());
   if (!data) throw new Error('That Circle wasn’t found.');
-  return data as CircleDb;
+  return { merged_into: null, ...(data as object) } as CircleDb;
 }
 
 // ── lifecycle ───────────────────────────────────────────────────────────────
