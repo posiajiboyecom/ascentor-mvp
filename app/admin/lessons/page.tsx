@@ -61,6 +61,7 @@ type Lesson = {
   minutes: number;
   format: 'Video' | 'Reading';
   video_url: string | null;
+  thumbnail_url: string | null;
   body: string | null;
   week_no: number | null;
   sort: number;
@@ -76,7 +77,7 @@ function slugify(text: string): string {
 
 const emptyForm = (): FormState => ({
   slug: '', title: '', dimension: 'Mind', sub: null,
-  minutes: 10, format: 'Video', video_url: null, body: null,
+  minutes: 10, format: 'Video', video_url: null, thumbnail_url: null, body: null,
   week_no: null, sort: 0, published: true,
 });
 
@@ -232,6 +233,8 @@ export default function AdminLessonsPage() {
 
 function AdminLessonsInner() {
   const supabase = createClient();
+  const [uploading, setUploading] = useState(false);
+  const [picError, setPicError] = useState('');
   const searchParams = useSearchParams();
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -275,13 +278,32 @@ function AdminLessonsInner() {
       slug: lesson.slug, title: lesson.title,
       dimension: lesson.dimension, sub: lesson.sub ?? null,
       minutes: lesson.minutes, format: lesson.format,
-      video_url: lesson.video_url ?? null, body: lesson.body ?? null,
+      video_url: lesson.video_url ?? null, thumbnail_url: lesson.thumbnail_url ?? null, body: lesson.body ?? null,
       week_no: lesson.week_no ?? null, sort: lesson.sort, published: lesson.published,
     });
     setShowForm(true);
   }
 
   function closeForm() { setShowForm(false); setEditing(null); setForm(emptyForm()); }
+
+  // The picture is uploaded on its own (to Supabase Storage) and the URL it returns is saved with the rest of the form,
+  // so a picture can be chosen before a brand-new lesson has been created.
+  async function uploadPicture(file: File) {
+    setPicError(''); setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      if (editing) fd.append('rowId', `l:${editing.id}`);
+      const res = await fetch('/api/admin/lesson-thumbnail', { method: 'POST', body: fd });
+      const j = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+      if (!res.ok || !j.url) { setPicError(j.error || 'The upload did not work. Try again.'); return; }
+      setForm(f => ({ ...f, thumbnail_url: j.url! }));
+    } catch {
+      setPicError('The upload did not work. Check your connection.');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function saveLesson() {
     if (!form.title.trim() || !form.slug.trim()) return;
@@ -294,6 +316,7 @@ function AdminLessonsInner() {
       minutes: form.minutes,
       format: form.format,
       video_url: form.video_url?.trim() || null,
+      thumbnail_url: form.thumbnail_url?.trim() || null,
       body: form.body?.trim() || null,
       week_no: form.week_no || null,
       sort: form.sort,
@@ -375,6 +398,7 @@ function AdminLessonsInner() {
             <thead>
               <tr>
                 <th style={{ width: 32 }}></th>
+                <th style={{ width: 76 }}>Picture</th>
                 <th>Title</th>
                 <th>Dimension</th>
                 <th>Format</th>
@@ -398,6 +422,14 @@ function AdminLessonsInner() {
                 >
                   <td>
                     <span className="asl-drag-handle"><GripVertical style={{ width: 15, height: 15 }} /></span>
+                  </td>
+                  <td>
+                    <div style={{ width: 64, aspectRatio: '16/9', borderRadius: 5, overflow: 'hidden', background: '#F3F1EC', border: `1px solid ${B.border}`, display: 'grid', placeItems: 'center' }}>
+                      {lesson.thumbnail_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={lesson.thumbnail_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span style={{ fontSize: 9, color: B.muted, letterSpacing: '.04em' }}>NONE</span>}
+                    </div>
                   </td>
                   <td>
                     <div className="asl-lesson-title">{lesson.title}</div>
@@ -529,6 +561,34 @@ function AdminLessonsInner() {
                   />
                 </Field>
               </div>
+
+              {/* Lesson picture (shows on the lesson cards in Learn, and behind the video before it plays) */}
+              <Field label="Lesson picture" hint="Shows on the lesson card in Learn, and over the video until it plays. 1280 × 720 px (16:9) · PNG, JPG or WebP · max 2 MB.">
+                <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  <div style={{ width: 200, aspectRatio: '16/9', borderRadius: 8, overflow: 'hidden', background: '#F3F1EC', border: `1px solid ${B.border}`, display: 'grid', placeItems: 'center', flex: 'none' }}>
+                    {form.thumbnail_url
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={form.thumbnail_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <span className="asl-hint">No picture yet</span>}
+                  </div>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <label className="asl-btn-ghost" style={{ cursor: uploading ? 'wait' : 'pointer', justifyContent: 'center' }}>
+                      {uploading ? 'Uploading…' : form.thumbnail_url ? 'Replace picture' : 'Upload picture'}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        disabled={uploading}
+                        style={{ display: 'none' }}
+                        onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) void uploadPicture(file); }}
+                      />
+                    </label>
+                    {form.thumbnail_url && (
+                      <button type="button" className="asl-btn-ghost" onClick={() => setForm(f => ({ ...f, thumbnail_url: null }))}>Remove picture</button>
+                    )}
+                    {picError && <span className="asl-hint" style={{ color: '#B42318' }}>{picError}</span>}
+                  </div>
+                </div>
+              </Field>
 
               {/* Video URL */}
               {form.format === 'Video' && (

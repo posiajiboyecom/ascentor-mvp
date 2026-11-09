@@ -165,12 +165,23 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
         <div
           ref={wrapRef}
           className="rx-video rx-rise"
-          style={{ cursor: isYouTube ? 'none' : undefined, position: 'relative' }}
+          style={{ cursor: isYouTube ? 'pointer' : undefined, position: 'relative' }}
           onMouseMove={isYouTube ? nudgeControls : undefined}
           onTouchStart={isYouTube ? nudgeControls : undefined}
         >
-          {/* Show thumbnail until video starts */}
-          {thumbnailUrl && !started && (
+          {/* YouTube shows its own title bar, channel buttons and a "More videos" grid whenever the player is paused or
+              finished, and we cannot turn those off. So while the video is not playing we cover the whole player with the
+              lesson's own picture (or a plain dark panel), which leaves only our controls on screen. */}
+          {isYouTube && !playing && (
+            <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 1, background: '#14110E', pointerEvents: 'none', overflow: 'hidden' }}>
+              {thumbnailUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={thumbnailUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: started ? 0.8 : 1 }} />
+              )}
+            </div>
+          )}
+          {!isYouTube && thumbnailUrl && !started && (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={thumbnailUrl}
               alt={title}

@@ -24,7 +24,7 @@ export function parseVideo(url: string | null | undefined): VideoSource | null {
 export function embedSrc(v: Exclude<VideoSource, { provider: 'file' }>, startSec: number, origin: string): string {
   const t = Math.max(0, Math.floor(startSec));
   if (v.provider === 'youtube') {
-    return `https://www.youtube-nocookie.com/embed/${v.id}?enablejsapi=1&rel=0&modestbranding=1&playsinline=1&controls=0&start=${t}&origin=${encodeURIComponent(origin)}`;
+    return `https://www.youtube-nocookie.com/embed/${v.id}?enablejsapi=1&rel=0&modestbranding=1&playsinline=1&controls=0&cc_load_policy=0&iv_load_policy=3&disablekb=1&start=${t}&origin=${encodeURIComponent(origin)}`;
   }
   const h = v.hash ? `&h=${v.hash}` : '';
   return `https://player.vimeo.com/video/${v.id}?dnt=1&title=0&byline=0&portrait=0&playsinline=1${h}${t > 0 ? `#t=${t}s` : ''}`;
