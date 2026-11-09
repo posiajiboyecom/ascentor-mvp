@@ -1,0 +1,66 @@
+/* Admin → Circles, Groups and Posts. Extends the console design system (.admc tokens: --rust, --surface, --border, --muted…). */
+.admc .cm-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: 6px 0 18px; overflow-x: auto; }
+.admc .cm-tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; font-weight: 600; font-size: 14px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.admc .cm-tabs button.on { color: var(--text); border-bottom-color: var(--rust); }
+.admc .cm-tabs button .n { margin-left: 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+
+.admc .cm-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+.admc .cm-bar .in { width: auto; min-width: 150px; }
+.admc .cm-bar .cm-grow { flex: 1 1 220px; }
+.admc .cm-stack { display: flex; flex-direction: column; gap: 12px; }
+.admc .cm-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.admc .cm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 14px; }
+.admc .cm-grid .full { grid-column: 1 / -1; }
+.admc .cm-ta { min-height: 92px; padding: 10px 12px; line-height: 1.5; resize: vertical; font-family: inherit; }
+.admc .cm-two { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 1100px) { .admc .cm-two { grid-template-columns: minmax(0, 1fr); } }
+.admc .cm-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.admc .cm-card > h3 { font-family: Poppins, sans-serif; font-size: 15px; margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.admc .cm-card > h3 small { font-family: inherit; font-weight: 600; font-size: 12px; color: var(--muted); }
+.admc .cm-danger { border-color: color-mix(in srgb, var(--err) 35%, var(--border)); }
+.admc .cm-back { background: none; border: 0; color: var(--muted); font-weight: 600; font-size: 13px; cursor: pointer; padding: 0; margin-bottom: 6px; }
+.admc .cm-back:hover { color: var(--text); }
+
+.admc .cm-av { border-radius: 50%; object-fit: cover; flex: none; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--rust) 16%, var(--raised)); color: var(--rustt, var(--text)); font-weight: 700; }
+.admc .cm-person { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.admc .cm-person span { display: flex; flex-direction: column; min-width: 0; }
+.admc .cm-person b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admc .cm-person small { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admc .cm-list { display: flex; flex-direction: column; }
+.admc .cm-li { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.admc .cm-li:last-child { border-bottom: 0; }
+.admc .cm-li .cm-acts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.admc .cm-li select.in { min-height: 32px; width: auto; font-size: 12.5px; padding: 0 8px; }
+
+.admc .cm-picker { position: relative; }
+.admc .cm-hits { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 20; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.14); max-height: 300px; overflow-y: auto; padding: 4px; }
+.admc .cm-hits button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; border: 0; border-radius: 8px; padding: 7px 8px; cursor: pointer; color: var(--text); }
+.admc .cm-hits button:hover { background: var(--raised); }
+.admc .cm-hits span { display: flex; flex-direction: column; min-width: 0; }
+.admc .cm-hits b { font-size: 13.5px; }
+.admc .cm-hits small { color: var(--muted); font-size: 12px; }
+
+.admc .cm-chat { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow-y: auto; padding-right: 4px; }
+.admc .cm-msg { border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; background: var(--raised); font-size: 14px; line-height: 1.5; }
+.admc .cm-msg.pin { border-color: color-mix(in srgb, var(--gold) 60%, var(--border)); background: color-mix(in srgb, var(--gold) 8%, var(--surface)); }
+.admc .cm-msg header { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+.admc .cm-msg header b { color: var(--text); font-size: 12.5px; }
+.admc .cm-msg p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.admc .cm-msg .cm-acts { display: flex; gap: 10px; }
+.admc .cm-post { font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.admc .cm-post img, .admc .cm-post video { max-width: 100%; height: auto; border-radius: 8px; }
+.admc .cm-post p { margin: 0 0 10px; }
+.admc .cm-clip { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 460px; }
+.admc .cm-note { padding: 12px 14px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--border)); background: color-mix(in srgb, var(--gold) 9%, var(--surface)); font-size: 13px; line-height: 1.55; }
+.admc .cm-note.bad { border-color: color-mix(in srgb, var(--err) 45%, var(--border)); background: color-mix(in srgb, var(--err) 7%, var(--surface)); }
+.admc .cm-mono { font-family: 'DM Mono', ui-monospace, monospace; font-size: 12.5px; }
+.admc .cm-meter { display: inline-flex; align-items: center; gap: 8px; }
+.admc .cm-meter span { display: inline-block; width: 60px; height: 6px; border-radius: 4px; background: var(--raised); border: 1px solid var(--border); overflow: hidden; }
+.admc .cm-meter span i { display: block; height: 100%; background: var(--rust); }
+.admc .lk.bad { color: var(--err); }
+.admc .btn.danger { background: var(--err); border-color: var(--err); color: #fff; }
+.admc .btn:disabled { opacity: .5; cursor: not-allowed; filter: none; }
+@media (max-width: 640px) {
+  .admc .cm-bar .in { min-width: 0; flex: 1 1 140px; }
+  .admc .cm-li { align-items: flex-start; }
+}
