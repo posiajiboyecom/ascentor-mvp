@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
 import { DIMENSIONS } from '@/lib/rx/constants';
 import type { Suggestion, AdminGroupRow } from '@/lib/rx/admin';
-import { archiveGroup, createGroup, dismissSuggestion, mergeGroup } from '@/app/admin/groups/actions';
+import { archiveGroup, createGroup, dismissSuggestion, mergeGroup, editGroup, reactivateGroup, addGroupMember, removeGroupMember, getGroupMembers } from '@/app/admin/groups/actions';
 import { useToast } from '@/components/rx/Toast';
 
 const errp = (m: string) => <p className="rx-sm" role="alert" style={{ color: 'var(--rx-danger)' }}>{m}</p>;
@@ -75,40 +75,126 @@ export function SuggestionCards({ items }: { items: Suggestion[] }) {
   );
 }
 
-export function GroupsTable({ rows }: { rows: AdminGroupRow[] }) {
+function GroupRow({ g, active, allRows }: { g: AdminGroupRow; active: AdminGroupRow[]; allRows: AdminGroupRow[] }) {
   const router = useRouter();
   const toast = useToast();
-  const [merging, setMerging] = useState<string | null>(null);
-  const [target, setTarget] = useState('');
   const [pending, start] = useTransition();
-  const active = rows.filter((r) => r.status === 'active' && !r.isFacilitators);
+  const [merging, setMerging] = useState(false);
+  const [target, setTarget] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(g.name);
+  const [editDesc, setEditDesc] = useState('');
+  const [showMembers, setShowMembers] = useState(false);
+  const [members, setMembers] = useState<{ id: string; name: string; email: string }[] | null>(null);
+  const [addEmail, setAddEmail] = useState('');
 
+  const loadMembers = () => {
+    if (members !== null) { setShowMembers((v) => !v); return; }
+    start(async () => {
+      const r = await getGroupMembers(g.id);
+      if (!r.ok) { toast(r.error); return; }
+      setMembers(r.members);
+      setShowMembers(true);
+    });
+  };
+
+  const statusLabel = g.status === 'archived' ? 'Archived' : g.isNew ? 'New' : g.quiet ? 'Quiet' : 'Active';
+  const statusColor = g.status === 'archived' || g.quiet ? 'var(--rx-muted)' : undefined;
+
+  return (
+    <>
+      <tr>
+        <td>
+          {editing ? (
+            <input className="rx-in" style={{ minWidth: 160 }} value={editName} onChange={(e) => setEditName(e.target.value)} aria-label="Group name" />
+          ) : (
+            <span className="rx-strong">{g.name}</span>
+          )}
+          {g.isNew && !editing && <span className="rx-tag" style={{ marginLeft: 6 }}>New</span>}
+        </td>
+        <td>
+          <button type="button" className="rx-link" style={{ fontSize: 13 }} onClick={loadMembers}>
+            {showMembers ? '▲' : g.members}
+          </button>
+        </td>
+        <td>{g.posts7d}</td>
+        <td style={{ whiteSpace: 'nowrap' }}>{g.last ? new Date(g.last).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Never'}</td>
+        <td><span style={{ color: statusColor }}>{statusLabel}</span></td>
+        <td style={{ whiteSpace: 'nowrap' }}>
+          <div className="rx-row rx-nw" style={{ gap: 6, flexWrap: 'wrap' }}>
+            {editing ? (
+              <>
+                <button type="button" className="rx-btn primary" style={{ minHeight: 32, padding: '0 10px', fontSize: 13 }} disabled={pending}
+                  onClick={() => start(async () => { const r = await editGroup(g.id, { name: editName, description: editDesc }); if (r.ok) { toast('Saved.'); setEditing(false); router.refresh(); } else toast(r.error); })}>Save</button>
+                <button type="button" className="rx-link muted" style={{ fontSize: 13 }} onClick={() => { setEditing(false); setEditName(g.name); }}>Cancel</button>
+              </>
+            ) : (
+              <button type="button" className="rx-link" style={{ fontSize: 13 }} onClick={() => setEditing(true)}>Edit</button>
+            )}
+            {g.status === 'archived' && !g.isFacilitators && (
+              <button type="button" className="rx-link" style={{ fontSize: 13 }} disabled={pending}
+                onClick={() => start(async () => { const r = await reactivateGroup(g.id); toast(r.ok ? 'Reactivated.' : r.error); router.refresh(); })}>Reactivate</button>
+            )}
+            {g.quiet && !g.isCity && !merging && (
+              <>
+                <button type="button" className="rx-link" style={{ fontSize: 13 }} onClick={() => { setMerging(true); setTarget(''); }}>Merge</button>
+                <button type="button" className="rx-link" style={{ fontSize: 13 }} disabled={pending}
+                  onClick={() => { if (!window.confirm(`Archive ${g.name}? Members keep their messages and are told where to go.`)) return; start(async () => { const r = await archiveGroup(g.id); toast(r.ok ? `${g.name} archived.` : r.error); router.refresh(); }); }}>Archive</button>
+              </>
+            )}
+            {merging && (
+              <span className="rx-row rx-nw" style={{ gap: 6 }}>
+                <select className="rx-in" style={{ minHeight: 32, width: 'auto', fontSize: 13 }} aria-label="Merge into" value={target} onChange={(e) => setTarget(e.target.value)}>
+                  <option value="">Merge into…</option>{active.filter((a) => a.id !== g.id && !a.isCity).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+                <button type="button" className="rx-btn primary" style={{ minHeight: 32, padding: '0 10px', fontSize: 13 }} disabled={!target || pending}
+                  onClick={() => start(async () => { const r = await mergeGroup(g.id, target); toast(r.ok ? 'Merged. Members were told.' : r.error); setMerging(false); router.refresh(); })}>Merge</button>
+                <button type="button" className="rx-link muted" style={{ fontSize: 13 }} onClick={() => setMerging(false)}>Cancel</button>
+              </span>
+            )}
+          </div>
+        </td>
+      </tr>
+      {editing && (
+        <tr>
+          <td colSpan={6} style={{ paddingBottom: 8 }}>
+            <input className="rx-in" placeholder="Short description (optional)" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} aria-label="Group description" />
+          </td>
+        </tr>
+      )}
+      {showMembers && members !== null && (
+        <tr>
+          <td colSpan={6} style={{ background: 'var(--rx-surface)', paddingBottom: 12 }}>
+            <div className="rx-stack" style={{ padding: '8px 0', gap: 6 }}>
+              {members.length === 0 && <p className="rx-sm" style={{ marginLeft: 4 }}>No members yet.</p>}
+              {members.map((m) => (
+                <div key={m.id} className="rx-between" style={{ padding: '0 4px' }}>
+                  <span className="rx-sm"><strong>{m.name}</strong> · {m.email}</span>
+                  <button type="button" className="rx-link muted" style={{ fontSize: 13 }} disabled={pending}
+                    onClick={() => start(async () => { const r = await removeGroupMember(g.id, m.id); if (!r.ok) { toast(r.error); return; } setMembers((prev) => prev ? prev.filter((x) => x.id !== m.id) : prev); toast('Removed.'); router.refresh(); })}>Remove</button>
+                </div>
+              ))}
+              <div className="rx-row rx-nw" style={{ gap: 8, marginTop: 4, padding: '0 4px' }}>
+                <input className="rx-in" type="email" placeholder="Add member by email" aria-label="Member email" value={addEmail} onChange={(e) => setAddEmail(e.target.value)} />
+                <button type="button" className="rx-btn secondary" style={{ minHeight: 36, padding: '0 12px' }} disabled={pending || !addEmail}
+                  onClick={() => start(async () => { const r = await addGroupMember(g.id, addEmail); if (!r.ok) { toast(r.error); return; } setAddEmail(''); setMembers(null); toast('Added.'); router.refresh(); })}>Add</button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+export function GroupsTable({ rows }: { rows: AdminGroupRow[] }) {
+  const active = rows.filter((r) => r.status === 'active' && !r.isFacilitators);
   return (
     <div className="rx-card" style={{ overflowX: 'auto' }}>
       <table className="rx-tbl">
         <thead><tr><th>Group</th><th>Members</th><th>Posts, 7 days</th><th>Last active</th><th>Status</th><th /></tr></thead>
         <tbody>
-          {rows.map((g) => (
-            <tr key={g.id}>
-              <td><span className="rx-strong">{g.name}</span>{g.isNew && <span className="rx-tag" style={{ marginLeft: 6 }}>New</span>}</td>
-              <td>{g.members}</td><td>{g.posts7d}</td>
-              <td style={{ whiteSpace: 'nowrap' }}>{g.last ? new Date(g.last).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Never'}</td>
-              <td><span style={{ color: g.status === 'archived' || g.quiet ? 'var(--rx-muted)' : undefined }}>{g.status === 'archived' ? 'Archived' : g.isNew ? 'New' : g.quiet ? 'Quiet' : 'Active'}</span></td>
-              <td style={{ whiteSpace: 'nowrap' }}>
-                {g.quiet && !g.isCity && merging !== g.id && (<>
-                  <button type="button" className="rx-link" style={{ minHeight: 32, fontSize: 14 }} onClick={() => { setMerging(g.id); setTarget(''); }}>Merge</button> · <button type="button" className="rx-link" style={{ minHeight: 32, fontSize: 14 }} disabled={pending}
-                    onClick={() => { if (!window.confirm(`Archive ${g.name}? Members keep their messages and are told where to go.`)) return; start(async () => { const r = await archiveGroup(g.id); toast(r.ok ? `${g.name} archived.` : r.error); router.refresh(); }); }}>Archive</button>
-                </>)}
-                {merging === g.id && (
-                  <span className="rx-row rx-nw" style={{ gap: 6 }}>
-                    <select className="rx-in" style={{ minHeight: 36, width: 'auto' }} aria-label="Merge into" value={target} onChange={(e) => setTarget(e.target.value)}><option value="">Merge into…</option>{active.filter((a) => a.id !== g.id && !a.isCity).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
-                    <button type="button" className="rx-btn primary" style={{ minHeight: 36, padding: '0 12px' }} disabled={!target || pending} onClick={() => start(async () => { const r = await mergeGroup(g.id, target); toast(r.ok ? 'Merged. Members were told.' : r.error); setMerging(null); router.refresh(); })}>Merge</button>
-                    <button type="button" className="rx-link muted" style={{ minHeight: 32 }} onClick={() => setMerging(null)}>Cancel</button>
-                  </span>
-                )}
-              </td>
-            </tr>
-          ))}
+          {rows.map((g) => <GroupRow key={g.id} g={g} active={active} allRows={rows} />)}
         </tbody>
       </table>
     </div>

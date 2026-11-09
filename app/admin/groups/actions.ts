@@ -63,6 +63,66 @@ export async function archiveGroup(groupId: string): Promise<ActionResult> {
   } catch (e) { return fail(e); }
 }
 
+export async function editGroup(groupId: string, input: { name: string; description: string }): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const name = cleanText(input.name, 60);
+    if (!name) throw new Error('Give the group a name.');
+    const { error } = await supabaseAdmin.from('rx_groups').update({ name, description: cleanText(input.description, 160) || null }).eq('id', groupId);
+    if (error) throw error;
+    revalidatePath('/admin/groups');
+    return { ok: true };
+  } catch (e) { return fail(e); }
+}
+
+export async function reactivateGroup(groupId: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const { data: g } = await supabaseAdmin.from('rx_groups').select('id, status').eq('id', groupId).maybeSingle();
+    if (!g) throw new Error('Group not found.');
+    if (g.status !== 'archived') throw new Error('Group is not archived.');
+    const { error } = await supabaseAdmin.from('rx_groups').update({ status: 'active', is_new: false }).eq('id', groupId);
+    if (error) throw error;
+    revalidatePath('/admin/groups');
+    return { ok: true };
+  } catch (e) { return fail(e); }
+}
+
+export async function addGroupMember(groupId: string, email: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const e = cleanText(email, 200).toLowerCase();
+    if (!e) throw new Error("Enter the member's email.");
+    const { data: profile } = await supabaseAdmin.from('profiles').select('id').ilike('email', e).maybeSingle();
+    if (!profile) throw new Error('No member has that email.');
+    const { error } = await supabaseAdmin.from('rx_group_members').upsert({ group_id: groupId, user_id: (profile as { id: string }).id }, { onConflict: 'group_id,user_id', ignoreDuplicates: true });
+    if (error) throw error;
+    revalidatePath('/admin/groups');
+    return { ok: true };
+  } catch (e) { return fail(e); }
+}
+
+export async function removeGroupMember(groupId: string, userId: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const { error } = await supabaseAdmin.from('rx_group_members').delete().eq('group_id', groupId).eq('user_id', userId);
+    if (error) throw error;
+    revalidatePath('/admin/groups');
+    return { ok: true };
+  } catch (e) { return fail(e); }
+}
+
+export async function getGroupMembers(groupId: string): Promise<{ ok: true; members: { id: string; name: string; email: string }[] } | { ok: false; error: string }> {
+  try {
+    await requireAdmin();
+    const { data: seats } = await supabaseAdmin.from('rx_group_members').select('user_id').eq('group_id', groupId);
+    if (!seats || seats.length === 0) return { ok: true, members: [] };
+    const ids = (seats as { user_id: string }[]).map((s) => s.user_id);
+    const { data: profiles } = await supabaseAdmin.from('profiles').select('id, full_name, email').in('id', ids);
+    return { ok: true, members: ((profiles ?? []) as { id: string; full_name: string | null; email: string | null }[]).map((p) => ({ id: p.id, name: p.full_name?.trim() || 'Member', email: p.email ?? '' })) };
+  } catch (e) { return fail(e) as { ok: false; error: string }; }
+}
+
 /** Moves a quiet group's members into a close group, then archives it. Members are told. */
 export async function mergeGroup(fromId: string, intoId: string): Promise<ActionResult> {
   try {
