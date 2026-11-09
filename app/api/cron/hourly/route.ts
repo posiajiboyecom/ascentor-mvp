@@ -6,7 +6,7 @@
 //   3. any admin broadcast that ran out of time, so a long send finishes
 //   4. Circle formation: Circles still forming after 48 hours are merged or started (lib/rx/formation.ts)
 //   5. mentor agendas: reminded 72 hours before a session, sent to the mentor (or the session skipped) at 48 hours
-//   6. referral-invite: 2h post-registration referral challenge email (calls /api/cron/referral-invite internally)
+// Note: referral invite emails are sent manually from the admin registrations page, not via cron.
 // Vercel's plan runs this once a day; Trigger.dev (src/trigger/hourly-cron.ts) calls it every hour.
 // Authenticates with the CRON_SECRET bearer token, like the daily job. Safe to repeat: each step checks it has not already sent.
 
@@ -15,7 +15,6 @@ import crypto from 'crypto';
 import { sendPracticeReminders, sendWeeklyDigests } from '@/lib/rx/cron';
 import { continueSending } from '@/lib/rx/broadcasts';
 import { formCircles, sendMentorAgendas } from '@/lib/rx/formation';
-import { sendReferralInviteBatch } from '@/lib/summitReferralInvite';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -49,7 +48,6 @@ export async function GET(req: NextRequest) {
     await step('broadcasts', () => continueSending()),
     await step('circle-formation', () => formCircles()),
     await step('mentor-agendas', () => sendMentorAgendas()),
-    await step('referral-invite', () => sendReferralInviteBatch()),
   ];
   return NextResponse.json({ ok: results.every((r) => r.ok), results });
 }
