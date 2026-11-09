@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/hourly",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/referral-invite",
+      "schedule": "*/15 * * * *"
     }
   ],
   "redirects": [

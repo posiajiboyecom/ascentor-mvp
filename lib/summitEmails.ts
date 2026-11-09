@@ -613,3 +613,53 @@ export async function deliverDonationEmails(
 
   return out;
 }
+
+// ── 2-hour post-registration referral invite ──────────────────────────────────
+// Sent once per registrant, ~2 hours after confirmed_at.
+// Virtual attendees can refer virtual OR physical; physical can only refer physical.
+
+export interface ReferralInvitePayload {
+  to: string;
+  fullName: string;
+  referralCode: string;
+  attendanceType: 'virtual' | 'physical';
+}
+
+export async function sendReferralInviteEmail(i: ReferralInvitePayload): Promise<void> {
+  const link = referralLink(i.referralCode);
+  const isVirtual = i.attendanceType === 'virtual';
+
+  const attendeeNote = isVirtual
+    ? p('Your referral link works for <strong>both virtual and physical attendees</strong>, so you can invite anyone regardless of how they plan to join.')
+    : p('Your link registers people for <strong>in-person (physical) attendance</strong>. Anyone who signs up through your link will be added to your tally.');
+
+  await sendSummitMail({
+    to: i.to,
+    subject: 'Bring 10 friends — win a prize at the Elevation Summit',
+    html: brandedEmailLayout({
+      preheader: 'Share your personal link and win if 10 friends register.',
+      eyebrow: 'Elevation Summit · Referral Challenge',
+      heading: 'Bring 10 people, win a prize.',
+      recipient: i.to,
+      content:
+        p(`Hi ${esc(i.fullName)},`) +
+        p('You are confirmed for the Elevation Summit. Now here is a challenge for you: <strong>bring 10 people along and win a prize</strong> that will be awarded live at the event.') +
+        p('Every person who signs up using your personal link counts toward your total. The more people you bring, the better your chances.') +
+        attendeeNote +
+        `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;background-color:#FAFAF8;border:1px solid #F0EDE6;border-radius:10px;">
+    <tr><td style="padding:18px 20px;">
+      <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#9CA3AF;">Your referral link</p>
+      <p style="margin:0 0 14px;font-family:'Courier New',monospace;font-size:14px;color:#0F0F0E;word-break:break-all;">${esc(link)}</p>
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+        <td style="background-color:#C8A96E;border-radius:8px;">
+          <a href="${esc(link)}" target="_blank" style="display:inline-block;padding:12px 28px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#0F0F0E;text-decoration:none;">Share my link →</a>
+        </td>
+      </tr></table>
+    </td></tr>
+  </table>` +
+        p('Share it on WhatsApp, Instagram, LinkedIn — anywhere your network is. Registrations are free, so the only barrier is letting people know.') +
+        p('<span style="color:#9CA3AF;font-size:13px;">Prizes are awarded on the day. The count is based on verified registrations through your link before the event begins.</span>'),
+    }),
+  });
+}
