@@ -132,7 +132,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             __html: `(function(){try{
   var p=window.location.pathname;
   // App paths start with these segments — everything else is the public website
-  var isApp=/^\/(dashboard|coach|circle|sessions|learn|account|announcements|community|experts|growth|help|messages|notifications|profile|referral|sage|search|settings|store|admin|onboarding)/.test(p);
+  var isApp=/^\\/(dashboard|coach|circle|sessions|learn|account|announcements|community|experts|growth|help|messages|notifications|profile|referral|sage|search|settings|store|admin|onboarding)/.test(p);
   if(!isApp||document.cookie.indexOf('as_splash=')>-1){
     var el=document.getElementById('ascentor-splash-cover');
     if(el)el.style.display='none';
