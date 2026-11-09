@@ -318,10 +318,18 @@ export default function SageFloat({ userName }: { userName: string }) {
   const open = phase !== 'closed';
   const text = phase === 'static' ? STATIC_MESSAGE : message.slice(0, shown);
 
+  const orbRef = useRef<HTMLSpanElement>(null);
+
   const onTabClick = () => {
     if (suppressClick.current || longPressed.current) { longPressed.current = false; return; }
     if (open) { close(); return; }
-    openSage({ topic: 'plan' });
+    // Ripple the monogram then open the panel after the animation peaks (~220 ms)
+    if (orbRef.current) {
+      orbRef.current.classList.remove('sage-tapped');
+      void orbRef.current.offsetWidth; // force reflow so re-adding the class restarts the animation
+      orbRef.current.classList.add('sage-tapped');
+    }
+    setTimeout(() => openSage({ topic: 'plan' }), 220);
   };
 
   // On phones the tab lives on Today and Learn only; on desktop Sage is also in the top bar.
@@ -344,9 +352,15 @@ export default function SageFloat({ userName }: { userName: string }) {
           onBlur={() => { hovering.current = false; if (phase === 'done') armDismiss(); }}
         >
           <div className="sage-head">
-            <span className="sage-head-dot" aria-hidden="true" />
-            Sage
-            <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 2 }}>
+            <span className="sage-head-monogram" aria-hidden="true">S</span>
+            <span className="sage-head-info">
+              <span className="sage-head-name">Sage</span>
+              <span className="sage-head-status">
+                <span className="sage-head-dot" aria-hidden="true" />
+                Online
+              </span>
+            </span>
+            <span style={{ display: 'inline-flex', gap: 2 }}>
               <button type="button" className="sage-icon-btn" onClick={hideForSession} aria-label="Hide the Sage tab for this session">
                 <EyeOff />
               </button>
@@ -397,10 +411,12 @@ export default function SageFloat({ userName }: { userName: string }) {
         aria-label={open ? 'Close Sage' : 'Open Sage. Drag, or use the up and down arrow keys, to move this tab.'}
         aria-expanded={open}
       >
-        <span className="sage-tab-orb" aria-hidden="true">
-          <span className="sage-tab-ring" />
-          <span className="sage-tab-core"><b>S</b></span>
-          <svg className="sage-tab-spark" viewBox="0 0 24 24"><path d="M12 1.5c.7 5.6 4.9 9.8 10.5 10.5-5.6.7-9.8 4.9-10.5 10.5C11.3 16.9 7.1 12.7 1.5 12 7.1 11.3 11.3 7.1 12 1.5Z" /></svg>
+        {/* Cream pill: rust monogram — vertical label — green dot */}
+        <span className="sage-tab-orb" ref={orbRef} aria-hidden="true">
+          <span className="sage-tab-core">S</span>
+          {/* keep these hidden spans so CSS selectors that reference them don't error */}
+          <span className="sage-tab-ring" aria-hidden="true" />
+          <svg className="sage-tab-spark" aria-hidden="true" viewBox="0 0 1 1" />
         </span>
         <span className="sage-tab-label" aria-hidden="true">Ask Sage</span>
         <span className="sage-tab-live" aria-hidden="true" />
