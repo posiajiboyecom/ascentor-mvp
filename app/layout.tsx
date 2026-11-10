@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { ModalProvider } from '@/components/Modal';
@@ -12,27 +11,18 @@ import { headers } from 'next/headers';
 import Script from 'next/script';
 
 // ── Fonts ──────────────────────────────────────────────────────────
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-display',
-  display: 'swap',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-body',
-  display: 'swap',
-});
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['700'],
-  style: ['normal', 'italic'],
-  variable: '--font-accent',
-  display: 'swap',
-});
+// Plus Jakarta Sans, Inter and Playfair Display are self-hosted from
+// app/fonts (latin subset, variable weight; @fontsource-variable 5.3.0,
+// SIL OFL 1.1) and declared with @font-face at the top of globals.css.
+// The --font-display / --font-body / --font-accent variables in
+// globals.css point at those family names.
+//
+// They used to come from next/font/google, which downloads them from
+// Google at build time. Google started serving Plus Jakarta Sans from
+// fonts.gstatic.com/l/font?kit=…&skey=… URLs, which Next 16's Turbopack
+// font loader can't parse ("next/font/google queries have exactly one
+// entry"), so every Vercel build failed. Self-hosting removes that
+// build-time dependency and serves the fonts from our own domain.
 
 // ── Metadata ───────────────────────────────────────────────────────
 export const metadata: Metadata = {
@@ -105,7 +95,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     // This is intentional and safe — it only suppresses the warning on <html>.
     <html
       lang="en"
-      className={`${plusJakarta.variable} ${inter.variable} ${playfair.variable}`}
       suppressHydrationWarning
     >
       <head>

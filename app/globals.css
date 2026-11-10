@@ -1,5 +1,38 @@
 @import "tailwindcss";
 
+/* Self-hosted brand fonts under their real family names, for CSS that
+   names them directly ('Plus Jakarta Sans', 'Inter', 'Playfair Display')
+   instead of using the --font-* variables. Same files as the localFont
+   declarations in app/layout.tsx, so the browser downloads each once. */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('./fonts/PlusJakartaSans-latin-variable.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('./fonts/Inter-latin-variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('./fonts/PlayfairDisplay-latin-variable.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('./fonts/PlayfairDisplay-latin-variable-italic.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   --color-summit-white:     #FAFAF8;
   --color-summit-black:     #0F0F0E;
