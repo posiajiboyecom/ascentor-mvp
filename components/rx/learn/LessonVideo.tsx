@@ -70,6 +70,7 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
   const [showControls, setShowControls] = useState(true);
   const [fs, setFs] = useState(false); // full screen (the browser's own, or the page-filling fallback below)
   const [fsFallback, setFsFallback] = useState(false); // true when the browser has no fullscreen API (iPhone)
+  const [portrait, setPortrait] = useState(false); // is the phone held upright? (the fallback then turns the video sideways)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ytPlayer = useRef<YTPlayer | null>(null);
   const ytPoll = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -208,10 +209,15 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
       nudgeControls();
       return;
     }
-    const fillScreen = () => { setFsFallback(true); setFs(true); };
+    const fillScreen = () => { setPortrait(window.innerHeight > window.innerWidth); setFsFallback(true); setFs(true); };
+    // Android and desktop Chrome can turn the screen to landscape once in full screen, like YouTube's own player.
+    const lockLandscape = () => {
+      const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+      void o?.lock?.('landscape').catch(() => {});
+    };
     try {
-      if (el.requestFullscreen) el.requestFullscreen().catch(fillScreen);
-      else if (el.webkitRequestFullscreen) void el.webkitRequestFullscreen();
+      if (el.requestFullscreen) el.requestFullscreen().then(lockLandscape).catch(fillScreen);
+      else if (el.webkitRequestFullscreen) { void el.webkitRequestFullscreen(); lockLandscape(); }
       else fillScreen();
     } catch { fillScreen(); }
     nudgeControls();
@@ -224,7 +230,10 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
   useEffect(() => {
     const sync = () => {
       const doc = document as FsDoc;
-      if (!fsFallbackRef.current) setFs(!!(doc.fullscreenElement || doc.webkitFullscreenElement));
+      if (fsFallbackRef.current) return;
+      const on = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
+      setFs(on);
+      if (!on) { try { screen.orientation?.unlock?.(); } catch { /* not supported */ } }
     };
     document.addEventListener('fullscreenchange', sync);
     document.addEventListener('webkitfullscreenchange', sync);
@@ -234,11 +243,14 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
   // While the page-filling fallback is open: stop the page scrolling behind it, and let Esc close it.
   useEffect(() => {
     if (!fs || !fsFallback) return;
+    const onTurn = () => setPortrait(window.innerHeight > window.innerWidth);
+    window.addEventListener('resize', onTurn);
+    window.addEventListener('orientationchange', onTurn);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setFsFallback(false); setFs(false); } };
     window.addEventListener('keydown', onKey);
-    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); window.removeEventListener('resize', onTurn); window.removeEventListener('orientationchange', onTurn); };
   }, [fs, fsFallback]);
 
   const isYouTube = source.provider === 'youtube';
@@ -259,7 +271,12 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
           ref={wrapRef}
           className="rx-video rx-rise"
           style={fs && fsFallback
-            ? { position: 'fixed', inset: 0, zIndex: 9999, width: '100vw', height: '100dvh', aspectRatio: 'auto', borderRadius: 0, animation: 'none', cursor: isYouTube ? 'pointer' : undefined }
+            ? (portrait
+              // Phone held upright: no browser on iPhone lets a page rotate the screen, so we turn the player itself
+              // sideways to fill the screen in landscape, the way YouTube's full screen looks. Turning the phone
+              // sideways then makes it read the right way up. If the phone is already sideways, just fill the screen.
+              ? { position: 'fixed', top: '50%', left: '50%', zIndex: 9999, width: '100dvh', height: '100vw', aspectRatio: 'auto', borderRadius: 0, animation: 'none', transform: 'translate(-50%, -50%) rotate(90deg)', cursor: isYouTube ? 'pointer' : undefined }
+              : { position: 'fixed', inset: 0, zIndex: 9999, width: '100vw', height: '100dvh', aspectRatio: 'auto', borderRadius: 0, animation: 'none', cursor: isYouTube ? 'pointer' : undefined })
             : { cursor: isYouTube ? 'pointer' : undefined, position: 'relative' }}
           onMouseMove={isYouTube ? nudgeControls : undefined}
           onTouchStart={isYouTube ? nudgeControls : undefined}
