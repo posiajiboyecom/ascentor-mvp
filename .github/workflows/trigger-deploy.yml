@@ -1,0 +1,56 @@
+# Deploys the Trigger.dev background tasks (src/trigger/**) to production.
+#
+# Runs automatically when task code or trigger.config.ts changes on main
+# or rebrand/ascentor-v2, and can be started by hand from the Actions tab
+# ("Deploy Trigger.dev tasks" → Run workflow).
+#
+# Requires one repository secret: TRIGGER_ACCESS_TOKEN
+# (Trigger.dev dashboard → your avatar → Personal Access Tokens).
+
+name: Deploy Trigger.dev tasks
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, rebrand/ascentor-v2]
+    paths:
+      - 'src/trigger/**'
+      - 'trigger.config.ts'
+      - 'lib/r2.ts'
+      - 'lib/video/**'
+      - 'lib/rag.ts'
+      - 'package.json'
+      - 'package-lock.json'
+
+concurrency:
+  group: trigger-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Check token is configured
+        env:
+          TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$TRIGGER_ACCESS_TOKEN" ]; then
+            echo "::error::Add the TRIGGER_ACCESS_TOKEN repository secret (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
+      - name: Deploy to Trigger.dev (prod)
+        env:
+          TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+        run: npx trigger.dev@4.4.4 deploy --env prod
