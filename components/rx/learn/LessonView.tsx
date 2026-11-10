@@ -18,6 +18,8 @@ export interface LessonViewProps {
   watchPercent: number; watchPosition: number;
   reflection: string; practiceSet: boolean; startRead: boolean; draft: PlanData | null;
   thumbnailUrl?: string | null;
+  /** master.m3u8 of a self-hosted video; takes priority over videoUrl. */
+  hostedVideoUrl?: string | null;
 }
 
 export default function LessonView(p: LessonViewProps) {
@@ -29,7 +31,7 @@ export default function LessonView(p: LessonViewProps) {
   const [done, setDone] = useState(p.practiceSet);
   const [error, setError] = useState('');
   const [pending, start] = useTransition();
-  const video = parseVideo(p.videoUrl);
+  const video = p.hostedVideoUrl ? ({ provider: 'hls', url: p.hostedVideoUrl } as const) : parseVideo(p.videoUrl);
 
   // Sage can hand a drafted practice to this lesson.
   useEffect(() => {

@@ -1,6 +1,7 @@
 'use client';
 
-// The lesson video player. Plays Vimeo, YouTube or a direct file, reports how far the member got (so they can resume
+// The lesson video player. Plays self-hosted HLS (Ascentor's own player, see components/video/VideoPlayer), Vimeo,
+// YouTube or a direct file, reports how far the member got (so they can resume
 // and be reminded to finish). Vimeo is driven over postMessage. YouTube is driven through Google's own IFrame Player
 // API (not hand-rolled postMessage) — a raw postMessage "pauseVideo"/"playVideo" pair can leave the embed stuck
 // paused with no way to resume except reloading the page; the official player object does not have that problem.
@@ -11,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { saveWatchProgress } from '@/app/(app)/learn/lesson/actions';
 import { embedSrc, type VideoSource } from '@/lib/rx/video';
 import { Play, Pause, Maximize, Minimize } from 'lucide-react';
+import { VideoPlayer } from '@/components/video/VideoPlayer';
 
 interface Props {
   lessonId: string;
@@ -254,6 +256,34 @@ export default function LessonVideo({ lessonId, title, source, startSec, startPe
   }, [fs, fsFallback]);
 
   const isYouTube = source.provider === 'youtube';
+
+  if (source.provider === 'hls') {
+    // Self-hosted on R2: our own player draws every control (play, seek, speed, quality, full screen), so nothing
+    // here needs to cover third-party branding. Progress is reported the same way as the other providers.
+    return (
+      <div className="rx-stack-sm">
+        <div className="rx-video rx-rise">
+          <VideoPlayer
+            src={source.url}
+            poster={thumbnailUrl}
+            title={title}
+            startAt={startPercent < 95 ? startSec : 0}
+            onProgress={(pos, dur) => { report(pos, dur); flush(true); }}
+            onEnded={() => flush(true)}
+            className="absolute inset-0"
+          />
+        </div>
+        {pct > 0 && (
+          <div className="rx-row rx-nw" style={{ gap: 10 }} aria-live="polite">
+            <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'var(--rx-border)', overflow: 'hidden' }} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Video progress">
+              <div style={{ width: `${pct}%`, height: '100%', background: 'var(--rx-gold)' }} />
+            </div>
+            <span className="rx-sm">{pct >= 95 ? 'Watched' : `${pct}% watched`}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="rx-stack-sm">

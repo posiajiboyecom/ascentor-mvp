@@ -5,7 +5,8 @@
 export type VideoSource =
   | { provider: 'youtube'; id: string }
   | { provider: 'vimeo'; id: string; hash: string | null }
-  | { provider: 'file'; url: string };
+  | { provider: 'file'; url: string }
+  | { provider: 'hls'; url: string }; // self-hosted on Cloudflare R2, played in Ascentor's own player
 
 export function parseVideo(url: string | null | undefined): VideoSource | null {
   if (!url) return null;
@@ -17,11 +18,12 @@ export function parseVideo(url: string | null | undefined): VideoSource | null {
     const h = vm[2] ?? url.match(/[?&]h=([0-9a-f]{6,})/i)?.[1] ?? null;
     return { provider: 'vimeo', id: vm[1], hash: h };
   }
+  if (/\.m3u8(\?|$)/i.test(url)) return { provider: 'hls', url };
   if (/\.(mp4|webm)(\?|$)/i.test(url)) return { provider: 'file', url };
   return null;
 }
 
-export function embedSrc(v: Exclude<VideoSource, { provider: 'file' }>, startSec: number, origin: string): string {
+export function embedSrc(v: Extract<VideoSource, { provider: 'youtube' | 'vimeo' }>, startSec: number, origin: string): string {
   const t = Math.max(0, Math.floor(startSec));
   if (v.provider === 'youtube') {
     return `https://www.youtube-nocookie.com/embed/${v.id}?enablejsapi=1&rel=0&modestbranding=1&playsinline=1&controls=0&cc_load_policy=0&iv_load_policy=3&disablekb=1&start=${t}&origin=${encodeURIComponent(origin)}`;

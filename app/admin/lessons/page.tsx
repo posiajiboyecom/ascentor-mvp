@@ -10,6 +10,7 @@
 //   format (Video | Reading), video_url, body, week_no, sort, published
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
+import { VideoUploadField } from '@/components/admin/VideoUploadField';
 import { Loader2, GripVertical, Pencil, Trash2, Eye, EyeOff, Plus, BookOpen, Video, FileText } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
@@ -61,6 +62,7 @@ type Lesson = {
   minutes: number;
   format: 'Video' | 'Reading';
   video_url: string | null;
+  video_id: string | null;
   thumbnail_url: string | null;
   body: string | null;
   week_no: number | null;
@@ -77,7 +79,7 @@ function slugify(text: string): string {
 
 const emptyForm = (): FormState => ({
   slug: '', title: '', dimension: 'Mind', sub: null,
-  minutes: 10, format: 'Video', video_url: null, thumbnail_url: null, body: null,
+  minutes: 10, format: 'Video', video_url: null, video_id: null, thumbnail_url: null, body: null,
   week_no: null, sort: 0, published: true,
 });
 
@@ -278,7 +280,7 @@ function AdminLessonsInner() {
       slug: lesson.slug, title: lesson.title,
       dimension: lesson.dimension, sub: lesson.sub ?? null,
       minutes: lesson.minutes, format: lesson.format,
-      video_url: lesson.video_url ?? null, thumbnail_url: lesson.thumbnail_url ?? null, body: lesson.body ?? null,
+      video_url: lesson.video_url ?? null, video_id: lesson.video_id ?? null, thumbnail_url: lesson.thumbnail_url ?? null, body: lesson.body ?? null,
       week_no: lesson.week_no ?? null, sort: lesson.sort, published: lesson.published,
     });
     setShowForm(true);
@@ -316,6 +318,7 @@ function AdminLessonsInner() {
       minutes: form.minutes,
       format: form.format,
       video_url: form.video_url?.trim() || null,
+      video_id: form.video_id || null,
       thumbnail_url: form.thumbnail_url?.trim() || null,
       body: form.body?.trim() || null,
       week_no: form.week_no || null,
@@ -592,12 +595,22 @@ function AdminLessonsInner() {
 
               {/* Video URL */}
               {form.format === 'Video' && (
-                <Field label="Video URL" hint="YouTube or direct video link">
+                <Field label="Video" hint="Upload to Ascentor's own player: no YouTube logo, no pauses we can't control">
+                  <VideoUploadField
+                    value={form.video_id}
+                    onChange={video_id => setForm(f => ({ ...f, video_id }))}
+                    defaultTitle={form.title}
+                  />
+                </Field>
+              )}
+
+              {form.format === 'Video' && !form.video_id && (
+                <Field label="Or a video link" hint="Vimeo, YouTube or a direct file. Used only when no video is uploaded above.">
                   <input
                     className="asl-input"
                     value={form.video_url ?? ''}
                     onChange={e => setForm(f => ({ ...f, video_url: e.target.value || null }))}
-                    placeholder="https://youtube.com/watch?v=…"
+                    placeholder="https://vimeo.com/… or https://youtube.com/watch?v=…"
                   />
                 </Field>
               )}

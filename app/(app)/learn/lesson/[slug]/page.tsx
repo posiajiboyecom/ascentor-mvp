@@ -42,7 +42,8 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
         practiceSet={!!pr?.practice_id}
         startRead={sp.mode === 'read'}
         draft={draft}
-        thumbnailUrl={lesson.thumbnail_url}
+        thumbnailUrl={lesson.thumbnail_url ?? lesson.video?.thumbnail_url ?? null}
+        hostedVideoUrl={lesson.video?.hls_url ?? null}
       />
     </Page>
   );

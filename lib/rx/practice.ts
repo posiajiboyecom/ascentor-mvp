@@ -32,14 +32,16 @@ export interface Lesson {
   week_no: number | null;
   sort: number;
   thumbnail_url: string | null;
+  /** Self-hosted R2/HLS video. Null when none is attached or it is still processing (RLS hides non-ready rows). */
+  video: { id: string; hls_url: string; thumbnail_url: string | null } | null;
 }
 
 export interface LessonProgress { lesson_id: string; practice_id: string | null; reflection: string | null; completed_at: string | null; watch_percent?: number | null; last_position_sec?: number | null }
 
 export const getLessons = cache(async (): Promise<Lesson[]> => {
   const db = await createClient();
-  const { data } = await db.from('rx_lessons').select('id, slug, title, dimension, sub, minutes, format, video_url, body, week_no, sort, thumbnail_url').eq('published', true).order('sort');
-  return (data ?? []) as Lesson[];
+  const { data } = await db.from('rx_lessons').select('id, slug, title, dimension, sub, minutes, format, video_url, body, week_no, sort, thumbnail_url, video:ascentor_videos!rx_lessons_video_id_fkey(id, hls_url, thumbnail_url)').eq('published', true).order('sort');
+  return (data ?? []) as unknown as Lesson[];
 });
 
 export const getLessonProgress = cache(async (): Promise<Map<string, LessonProgress>> => {
