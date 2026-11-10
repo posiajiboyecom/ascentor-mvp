@@ -24,6 +24,10 @@ import { CourseDetailClient } from './CourseDetailClient';
 
 export const dynamic = 'force-dynamic';
 
+// Self-hosted video columns. RLS only returns rows with status='ready'
+// to members, so a still-processing video comes back as null here.
+const VIDEO_FIELDS = 'id, hls_url, thumbnail_url, duration_seconds';
+
 export default async function CourseDetailPage({
   params,
 }: {
@@ -38,11 +42,15 @@ export default async function CourseDetailPage({
   if (!user) redirect('/login');
 
   const [courseRes, lessonsRes, profileRes] = await Promise.all([
-    supabase.from('courses').select('*').eq('id', courseId).single(),
+    supabase
+      .from('courses')
+      .select(`*, video:ascentor_videos!courses_video_id_fkey(${VIDEO_FIELDS})`)
+      .eq('id', courseId)
+      .single(),
 
     supabase
       .from('lessons')
-      .select('*')
+      .select(`*, video:ascentor_videos!lessons_video_id_fkey(${VIDEO_FIELDS})`)
       .eq('course_id', courseId)
       .order('order_index', { ascending: true }),
 
@@ -77,6 +85,28 @@ export default async function CourseDetailPage({
           .in('lesson_id', lessonIds)
       : { data: [] };
 
+  // Resume positions for every self-hosted video on this page
+  const videoIds = [
+    courseRes.data.video?.id,
+    ...lessonRows.map((l) => l.video?.id),
+  ].filter(Boolean) as string[];
+
+  const { data: videoProgressRows } =
+    videoIds.length > 0
+      ? await supabase
+          .from('video_progress')
+          .select('video_id, position_seconds, percent, completed')
+          .eq('user_id', user.id)
+          .in('video_id', videoIds)
+      : { data: [] };
+
+  const videoProgress = Object.fromEntries(
+    (videoProgressRows ?? []).map((v) => [
+      v.video_id,
+      { position: v.position_seconds ?? 0, percent: v.percent ?? 0, completed: !!v.completed },
+    ]),
+  );
+
   const progressByLesson = new Map(
     (progressRows ?? []).map((p) => [p.lesson_id, p])
   );
@@ -106,6 +136,7 @@ export default async function CourseDetailPage({
     <CourseDetailClient
       course={courseRes.data}
       lessons={lessons}
+      videoProgress={videoProgress}
       userId={user.id}
       nextCourse={nextCourseRows?.[0] ?? null}
     />
