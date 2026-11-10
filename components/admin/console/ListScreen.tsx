@@ -302,6 +302,11 @@ export default function ListScreen({ spec, rows: serverRows, kpis, note, level, 
                   </dl>
                 </div>
               ))}
+              {selected.editHref && can('edit') && (
+                <div className="st8">
+                  <a className="btn bs" href={selected.editHref} style={{ alignSelf: 'flex-start' }}>Edit lesson</a>
+                </div>
+              )}
               {selected.video && (
                 <div className="st8">
                   <p className="sl">Video</p>

@@ -27,7 +27,7 @@ export async function runSearch(raw: string, perSection = 20): Promise<SearchSec
   if (!user) return [];
 
   const [courses, sessions, groups, people, posts] = await Promise.all([
-    db.from('courses').select('id, title, category').eq('is_published', true).ilike('title', like).limit(perSection),
+    db.from('rx_lessons').select('slug, title, dimension').eq('published', true).ilike('title', like).limit(perSection),
     db.from('expert_sessions').select('id, title, expert_name, scheduled_at').eq('status', 'scheduled').or(`title.ilike.${like},expert_name.ilike.${like}`).order('scheduled_at', { ascending: true }).limit(perSection),
     db.from('rx_groups').select('slug, name, description, is_city, is_facilitators').eq('status', 'active').eq('is_facilitators', false).or(`name.ilike.${like},description.ilike.${like}`).limit(perSection),
     db.from('member_directory').select('id, full_name').ilike('full_name', like).neq('id', user.id).limit(perSection),
@@ -35,8 +35,8 @@ export async function runSearch(raw: string, perSection = 20): Promise<SearchSec
   ]);
 
   const out: SearchSection[] = [];
-  const lessons: SearchItem[] = ((courses.data ?? []) as { id: string; title: string; category: string | null }[])
-    .map((c) => ({ title: c.title, meta: `Lesson${c.category ? ` · ${c.category}` : ''}`, mark: 'L', href: `/learn/${c.id}` }));
+  const lessons: SearchItem[] = ((courses.data ?? []) as { slug: string; title: string; dimension: string | null }[])
+    .map((c) => ({ title: c.title, meta: `Lesson${c.dimension ? ` · ${c.dimension}` : ''}`, mark: 'L', href: `/learn/lesson/${c.slug}` }));
   if (lessons.length) out.push({ key: 'lessons', label: 'Lessons', items: lessons });
 
   const grp: SearchItem[] = ((groups.data ?? []) as { slug: string; name: string; description: string | null; is_city: boolean }[])

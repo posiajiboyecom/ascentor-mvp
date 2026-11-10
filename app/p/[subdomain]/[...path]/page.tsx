@@ -55,8 +55,8 @@ export default async function TenantSubPage({
     return <AccountPage />;
   }
   if (route === 'learn') {
-    const { default: LearnPage } = await import('@/app/(app)/learn/courses/page');
-    return <LearnPage />;
+    // The old course catalogue is retired; partner members use the main Learn pathway.
+    redirect('/learn');
   }
   if (route === 'community') {
     const { default: CommunityPage } = await import('@/app/(app)/community/channels/page');

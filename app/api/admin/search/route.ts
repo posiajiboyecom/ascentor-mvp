@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       ? supabaseAdmin.from('summit_registrations').select('id, full_name, email, payment_status')
           .or(`full_name.ilike.${like},email.ilike.${like}`).limit(LIMIT)
       : Promise.resolve({ data: null }),
-    ok('pathways') ? supabaseAdmin.from('courses').select('id, title, category').ilike('title', like).limit(LIMIT) : Promise.resolve({ data: null }),
+    ok('pathways') ? supabaseAdmin.from('rx_lessons').select('id, title, dimension').ilike('title', like).limit(LIMIT) : Promise.resolve({ data: null }),
     ok('blog') ? supabaseAdmin.from('blog_posts').select('id, title, status').ilike('title', like).limit(LIMIT) : Promise.resolve({ data: null }),
     ok('pathways') ? supabaseAdmin.from('expert_sessions').select('id, title, expert_name').ilike('title', like).limit(LIMIT) : Promise.resolve({ data: null }),
   ]);
@@ -76,8 +76,8 @@ export async function GET(req: NextRequest) {
     title: r.full_name, subtitle: `${r.email} · ${r.payment_status === 'paid' ? 'confirmed' : 'not confirmed'}`,
     href: `/admin/elevation-summit/registrations?q=${encodeURIComponent(r.email)}`,
   })));
-  push('Courses', (courses.data ?? []).map((c: any) => ({
-    title: c.title, subtitle: c.category ?? undefined, href: '/admin/courses',
+  push('Lessons', (courses.data ?? []).map((c: any) => ({
+    title: c.title, subtitle: c.dimension ?? undefined, href: `/admin/lessons?edit=${c.id}`,
   })));
   push('Blog posts', (posts.data ?? []).map((b: any) => ({
     title: b.title, subtitle: b.status ?? undefined, href: '/admin/blog',

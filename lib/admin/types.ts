@@ -76,7 +76,7 @@ export interface RowContact { name?: string | null; phone?: string | null; email
 export interface RowUpload { label: string; endpoint: string; accept: string; hint?: string; current?: string | null }
 /** A self-hosted video (Cloudflare R2) attached to the row, shown in the drawer with an uploader. Saved via /api/admin/videos/attach. */
 export interface RowVideo { kind: 'rx_lesson'; targetId: string; current: string | null }
-export interface RowData { id: string; cells: string[]; details?: DetailGroup[]; contact?: RowContact; upload?: RowUpload; video?: RowVideo }
+export interface RowData { id: string; cells: string[]; details?: DetailGroup[]; contact?: RowContact; upload?: RowUpload; video?: RowVideo; /** Link to a full editor for this row, shown as a button in the drawer. */ editHref?: string }
 
 export interface ScreenData {
   rows: RowData[];

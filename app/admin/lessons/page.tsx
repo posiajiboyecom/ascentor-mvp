@@ -1,9 +1,11 @@
 'use client';
 
 // app/admin/lessons/page.tsx
-// Manage rx_lessons — the lessons that feed the main /learn page and
-// the 12-week pathway. Replaces the old /admin/courses page which
-// managed a separate `courses` table disconnected from the member app.
+// The lesson editor (create / edit / delete one rx_lesson). The lesson LIST lives in the admin console at
+// Learn → Pathways and lessons (/admin/c/pathways); this page is only opened from there:
+//   /admin/lessons?action=create   new lesson
+//   /admin/lessons?edit=<id>       edit that lesson
+// Visiting it without either goes straight back to the console. Closing or saving also returns there.
 //
 // Fields managed here map 1-to-1 with the rx_lessons table:
 //   title, slug (auto-derived, editable), dimension, sub, minutes,
@@ -11,9 +13,11 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { VideoUploadField } from '@/components/admin/VideoUploadField';
-import { Loader2, GripVertical, Pencil, Trash2, Eye, EyeOff, Plus, BookOpen, Video, FileText } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+const CONSOLE = '/admin/c/pathways';
 
 export const dynamic = 'force-dynamic';
 
@@ -238,15 +242,17 @@ function AdminLessonsInner() {
   const [uploading, setUploading] = useState(false);
   const [picError, setPicError] = useState('');
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const editId = searchParams.get('edit');
+  const creating = searchParams.get('action') === 'create';
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(searchParams.get('action') === 'create');
+  const [showForm, setShowForm] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   const [editing, setEditing] = useState<Lesson | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dragOver, setDragOver] = useState<number | null>(null);
 
   const loadLessons = useCallback(async () => {
     setLoading(true);
@@ -255,7 +261,24 @@ function AdminLessonsInner() {
     setLoading(false);
   }, [supabase]);
 
-  useEffect(() => { void loadLessons(); }, [loadLessons]);
+  useEffect(() => {
+    if (!editId && !creating) { router.replace(CONSOLE); return; }
+    void loadLessons();
+  }, [loadLessons, editId, creating, router]);
+
+  // Open the form once the lessons are in (the list is needed for the next sort number, or to find the one being edited).
+  const [opened, setOpened] = useState(false);
+  useEffect(() => {
+    if (loading || opened) return;
+    setOpened(true);
+    if (editId) {
+      const l = lessons.find(x => x.id === editId);
+      if (l) openEdit(l); else setNotFound(true);
+    } else if (creating) {
+      openCreate();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, opened, editId, creating, lessons]);
 
   // Auto-derive slug from title (only when creating new, and slug hasn't been manually edited)
   const slugDerived = !editing && form.slug === slugify(form.title);
@@ -286,7 +309,7 @@ function AdminLessonsInner() {
     setShowForm(true);
   }
 
-  function closeForm() { setShowForm(false); setEditing(null); setForm(emptyForm()); }
+  function closeForm() { setShowForm(false); setEditing(null); setForm(emptyForm()); router.push(CONSOLE); router.refresh(); }
 
   // The picture is uploaded on its own (to Supabase Storage) and the URL it returns is saved with the rest of the form,
   // so a picture can be chosen before a brand-new lesson has been created.
@@ -332,150 +355,28 @@ function AdminLessonsInner() {
     }
     setSaving(false);
     closeForm();
-    void loadLessons();
   }
 
-  async function togglePublish(lesson: Lesson) {
-    await supabase.from('rx_lessons').update({ published: !lesson.published }).eq('id', lesson.id);
-    void loadLessons();
-  }
-
-  async function deleteLesson(lesson: Lesson) {
-    const ok = window.confirm(`Delete "${lesson.title}"? This cannot be undone.`);
+  async function deleteLesson() {
+    if (!editing) return;
+    const ok = window.confirm(`Delete "${editing.title}"? Members lose it from Learn and their progress on it. This cannot be undone.`);
     if (!ok) return;
-    await supabase.from('rx_lessons').delete().eq('id', lesson.id);
-    void loadLessons();
+    setSaving(true);
+    await supabase.from('rx_lessons').delete().eq('id', editing.id);
+    setSaving(false);
+    closeForm();
   }
-
-  // ── drag-to-reorder ───────────────────────────────────────────────────────
-  function handleDragStart(idx: number) { setDragIndex(idx); }
-  function handleDragOver(e: React.DragEvent, idx: number) { e.preventDefault(); setDragOver(idx); }
-  function handleDragEnd() { setDragIndex(null); setDragOver(null); }
-
-  async function handleDrop(dropIdx: number) {
-    if (dragIndex === null || dragIndex === dropIdx) { handleDragEnd(); return; }
-    const reordered = [...lessons];
-    const [moved] = reordered.splice(dragIndex, 1);
-    reordered.splice(dropIdx, 0, moved);
-    const updated = reordered.map((l, i) => ({ ...l, sort: i + 1 }));
-    setLessons(updated);
-    handleDragEnd();
-    await Promise.all(updated.map(l => supabase.from('rx_lessons').update({ sort: l.sort }).eq('id', l.id)));
-  }
-
-  const published = lessons.filter(l => l.published).length;
-  const drafts = lessons.length - published;
 
   return (
     <div className="asl-page">
-      {/* Header */}
-      <div className="asl-header">
-        <div className="asl-title">Manage Lessons</div>
-        <div className="asl-stats">
-          <span className="asl-stat"><b>{published}</b> published</span>
-          <span className="asl-stat">·</span>
-          <span className="asl-stat"><b>{drafts}</b> drafts</span>
-          <span className="asl-stat">·</span>
-          <span className="asl-stat"><b>{lessons.length}</b> total</span>
-        </div>
-        <button className="asl-btn-primary" onClick={openCreate}>
-          <Plus style={{ width: 15, height: 15 }} /> Add Lesson
-        </button>
-      </div>
-
-      <p className="asl-hint" style={{ marginBottom: 16 }}>
-        These lessons power the member <strong>/learn</strong> page and the 12-week pathway. Drag rows to reorder. Changes auto-save.
-      </p>
-
-      {loading ? (
+      {loading || (!showForm && !notFound) ? (
         <div className="asl-empty"><Loader2 style={{ width: 20, height: 20 }} className="animate-spin" /></div>
-      ) : lessons.length === 0 ? (
+      ) : notFound ? (
         <div className="asl-empty">
-          <BookOpen style={{ width: 32, height: 32, opacity: .3, marginBottom: 12 }} />
-          <p>No lessons yet. Add your first lesson to get started.</p>
-          <button className="asl-btn-primary" style={{ marginTop: 16 }} onClick={openCreate}><Plus style={{ width: 15, height: 15 }} /> Add Lesson</button>
+          <p>That lesson no longer exists.</p>
+          <button className="asl-btn-primary" style={{ marginTop: 16 }} onClick={() => router.push(CONSOLE)}>Back to Pathways and lessons</button>
         </div>
-      ) : (
-        <div className="asl-table-wrap">
-          <table className="asl-table">
-            <thead>
-              <tr>
-                <th style={{ width: 32 }}></th>
-                <th style={{ width: 76 }}>Picture</th>
-                <th>Title</th>
-                <th>Dimension</th>
-                <th>Format</th>
-                <th>Week</th>
-                <th>Mins</th>
-                <th>Status</th>
-                <th style={{ width: 120 }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {lessons.map((lesson, idx) => (
-                <tr
-                  key={lesson.id}
-                  className={dragIndex === idx ? 'asl-drag-row' : ''}
-                  draggable
-                  onDragStart={() => handleDragStart(idx)}
-                  onDragOver={e => handleDragOver(e, idx)}
-                  onDragEnd={handleDragEnd}
-                  onDrop={() => handleDrop(idx)}
-                  style={dragOver === idx && dragIndex !== idx ? { outline: `2px solid ${B.gold}`, outlineOffset: -2 } : undefined}
-                >
-                  <td>
-                    <span className="asl-drag-handle"><GripVertical style={{ width: 15, height: 15 }} /></span>
-                  </td>
-                  <td>
-                    <div style={{ width: 64, aspectRatio: '16/9', borderRadius: 5, overflow: 'hidden', background: '#F3F1EC', border: `1px solid ${B.border}`, display: 'grid', placeItems: 'center' }}>
-                      {lesson.thumbnail_url
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={lesson.thumbnail_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <span style={{ fontSize: 9, color: B.muted, letterSpacing: '.04em' }}>NONE</span>}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="asl-lesson-title">{lesson.title}</div>
-                    <div className="asl-lesson-slug">{lesson.slug}</div>
-                  </td>
-                  <td>
-                    <span className="asl-tag asl-tag-dim">{lesson.dimension}</span>
-                    {lesson.sub && <div style={{ fontSize: 11, color: B.muted, marginTop: 3 }}>{lesson.sub}</div>}
-                  </td>
-                  <td>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: B.muted, fontSize: 12 }}>
-                      {lesson.format === 'Video' ? <Video style={{ width: 13, height: 13 }} /> : <FileText style={{ width: 13, height: 13 }} />}
-                      {lesson.format}
-                    </span>
-                  </td>
-                  <td>
-                    {lesson.week_no ? <span className="asl-tag asl-tag-week">Wk {lesson.week_no}</span> : <span style={{ color: B.muted, fontSize: 12 }}>—</span>}
-                  </td>
-                  <td style={{ color: B.muted, fontSize: 12 }}>{lesson.minutes}m</td>
-                  <td>
-                    <span className={`asl-tag ${lesson.published ? 'asl-tag-pub' : 'asl-tag-draft'}`}>
-                      {lesson.published ? 'Published' : 'Draft'}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="asl-row-actions">
-                      <button className="asl-btn-ghost" title="Edit" onClick={() => openEdit(lesson)}>
-                        <Pencil style={{ width: 13, height: 13 }} />
-                      </button>
-                      <button className="asl-btn-ghost" title={lesson.published ? 'Unpublish' : 'Publish'} onClick={() => togglePublish(lesson)}>
-                        {lesson.published ? <EyeOff style={{ width: 13, height: 13 }} /> : <Eye style={{ width: 13, height: 13 }} />}
-                      </button>
-                      <button className="asl-btn-danger" title="Delete" onClick={() => deleteLesson(lesson)}>
-                        <Trash2 style={{ width: 13, height: 13 }} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      ) : null}
 
       {/* Add / Edit modal */}
       {showForm && (
@@ -655,6 +556,11 @@ function AdminLessonsInner() {
             </div>
 
             <div className="asl-modal-foot">
+              {editing && (
+                <button className="asl-btn-danger" style={{ marginRight: 'auto' }} onClick={deleteLesson} disabled={saving}>
+                  <Trash2 style={{ width: 13, height: 13 }} /> Delete lesson
+                </button>
+              )}
               <button className="asl-btn-ghost" onClick={closeForm}>Cancel</button>
               <button
                 className="asl-btn-primary"

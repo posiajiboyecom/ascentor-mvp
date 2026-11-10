@@ -1,6 +1,5 @@
 // app/(app)/learn/page.tsx
 // Learn: this week's lesson, the 12-week pathway, and lessons to explore by dimension.
-// The earlier course catalogue still lives at /learn/courses.
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -88,7 +87,6 @@ export default async function LearnPage() {
           )}
 
           <LessonBrowser lessons={cards} />
-          <p className="rx-sm"><Link href="/learn/courses" className="rx-link">Browse the full course catalogue</Link></p>
         </div>
 
         <Aside>
