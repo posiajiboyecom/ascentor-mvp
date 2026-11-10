@@ -16,6 +16,7 @@ on:
     paths:
       - 'src/trigger/**'
       - 'trigger.config.ts'
+      - '.github/workflows/trigger-deploy.yml'
       - 'lib/r2.ts'
       - 'lib/video/**'
       - 'lib/rag.ts'
