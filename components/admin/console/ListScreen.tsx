@@ -13,6 +13,7 @@ import { RANK, toneOf, type Level } from '@/lib/admin/areas';
 import type { ActionSpec, Kpi, RowData, ScreenSpec } from '@/lib/admin/types';
 import type { AuditRow } from '@/lib/admin/audit';
 import { loadHistory, runButton, runRowAction } from '@/app/admin/c/actions';
+import { VideoUploadField } from '@/components/admin/VideoUploadField';
 import '@/styles/admin-console.css';
 
 interface Props {
@@ -119,6 +120,27 @@ export default function ListScreen({ spec, rows: serverRows, kpis, note, level, 
       router.refresh();
     } catch { flash('The upload did not work. Check your connection.'); }
     finally { setUploading(false); }
+  };
+
+  // Attach (or detach) an uploaded video to the row's record as soon as it is chosen, so there is no separate Save.
+  const attachVideo = async (r: RowData, videoId: string | null) => {
+    if (!r.video) return;
+    const prev = r.video.current;
+    setRows((rs) => rs.map((x) => (x.id === r.id && x.video ? { ...x, video: { ...x.video, current: videoId } } : x)));
+    try {
+      const res = await fetch('/api/admin/videos/attach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: r.video.kind, targetId: r.video.targetId, videoId }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(j.error || 'Could not save the video to this lesson.');
+      flash(videoId ? 'Video saved to this lesson.' : 'Video removed from this lesson.');
+      router.refresh();
+    } catch (e) {
+      setRows((rs) => rs.map((x) => (x.id === r.id && x.video ? { ...x, video: { ...x.video, current: prev } } : x)));
+      flash(e instanceof Error ? e.message : 'Could not save the video to this lesson.');
+    }
   };
 
   const pick = (a: ActionSpec, r: RowData) => {
@@ -280,6 +302,18 @@ export default function ListScreen({ spec, rows: serverRows, kpis, note, level, 
                   </dl>
                 </div>
               ))}
+              {selected.video && (
+                <div className="st8">
+                  <p className="sl">Video</p>
+                  {can('edit') ? (
+                    <VideoUploadField
+                      value={selected.video.current}
+                      onChange={(id) => void attachVideo(selected, id)}
+                      defaultTitle={selected.cells[0]}
+                    />
+                  ) : <p className="sm">{selected.video.current ? 'Uploaded.' : 'None uploaded yet.'} View only.</p>}
+                </div>
+              )}
               {selected.upload && (
                 <div className="st8">
                   <p className="sl">{selected.upload.label}</p>

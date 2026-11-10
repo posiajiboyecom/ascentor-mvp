@@ -159,14 +159,14 @@ export function VideoUploadField({
       />
 
       {video || progress !== null ? (
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', padding: 12, border: `1px solid ${T.line}`, borderRadius: 10, background: T.card }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', padding: 12, border: `1px solid ${T.line}`, borderRadius: 10, background: T.card }}>
           <div style={{ width: 128, aspectRatio: '16 / 9', borderRadius: 6, overflow: 'hidden', background: '#0F0F0E', flexShrink: 0 }}>
             {video?.thumbnail_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={video.thumbnail_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             )}
           </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ minWidth: 160, flex: 1 }}>
             <div style={{ color: T.ink, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {video?.title ?? 'Uploading…'}
             </div>
@@ -230,7 +230,7 @@ export function VideoUploadField({
       )}
 
       <div style={{ marginTop: 6, fontSize: 11, color: T.faint }}>
-        MP4, MOV or WebM, up to 5 GB. Converted to 360p, 540p and 720p for smooth playback on any connection.
+        Best as a 720p MP4, up to about 20 minutes (under 500 MB). Converted to 360p, 540p and 720p for smooth playback on any connection.
       </div>
     </div>
   );

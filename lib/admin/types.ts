@@ -74,7 +74,9 @@ export interface DetailGroup { heading: string; items: [string, string][] }
 export interface RowContact { name?: string | null; phone?: string | null; email?: string | null }
 /** An image upload shown in the row's drawer. The file is POSTed as multipart { file, rowId } to `endpoint`, which returns { url } or { error }. */
 export interface RowUpload { label: string; endpoint: string; accept: string; hint?: string; current?: string | null }
-export interface RowData { id: string; cells: string[]; details?: DetailGroup[]; contact?: RowContact; upload?: RowUpload }
+/** A self-hosted video (Cloudflare R2) attached to the row, shown in the drawer with an uploader. Saved via /api/admin/videos/attach. */
+export interface RowVideo { kind: 'rx_lesson'; targetId: string; current: string | null }
+export interface RowData { id: string; cells: string[]; details?: DetailGroup[]; contact?: RowContact; upload?: RowUpload; video?: RowVideo }
 
 export interface ScreenData {
   rows: RowData[];
