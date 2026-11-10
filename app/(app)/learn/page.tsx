@@ -29,7 +29,7 @@ export default async function LearnPage() {
 
   if (!user) redirect('/login');
 
-  const [coursesRes, progressRes, profileRes, lessonsCountRes] = await Promise.all([
+  const [coursesRes, progressRes, profileRes, lessonsCountRes, videoProgressRes] = await Promise.all([
     supabase
       .from('courses')
       .select('*')
@@ -50,6 +50,13 @@ export default async function LearnPage() {
     // lessons has no aggregate count on `courses` itself — pull
     // course_id for every lesson and tally client-side below.
     supabase.from('lessons').select('course_id'),
+
+    // Resume position for self-hosted videos (single-video courses have
+    // no lesson rows, so their progress lives only here).
+    supabase
+      .from('video_progress')
+      .select('video_id, percent, completed, updated_at')
+      .eq('user_id', user.id),
   ]);
 
   if (coursesRes.error) {
@@ -93,14 +100,23 @@ export default async function LearnPage() {
     lessonCounts.set(row.course_id, (lessonCounts.get(row.course_id) ?? 0) + 1);
   }
 
+  const videoProgress = new Map(
+    (videoProgressRes.data ?? []).map((v) => [v.video_id, v]),
+  );
+
   const courses = (coursesRes.data ?? []).map((course) => {
-    const progress = progressByCourse.get(course.id);
+    let progress = progressByCourse.get(course.id);
+    const lessonCount = lessonCounts.get(course.id) ?? 0;
+    const vp = lessonCount === 0 && course.video_id ? videoProgress.get(course.video_id) : undefined;
+    if (!progress && vp) {
+      progress = { progress: vp.percent, completed: vp.completed, updatedAt: vp.updated_at };
+    }
     return {
       ...course,
       progress: progress?.progress ?? 0,
       completed: progress?.completed ?? false,
       updatedAt: progress?.updatedAt ?? null,
-      lessonCount: lessonCounts.get(course.id) ?? 0,
+      lessonCount,
     };
   });
 

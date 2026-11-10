@@ -47,7 +47,10 @@ function buildNoncedCSP(nonce: string): string {
     `font-src 'self' data: https://fonts.gstatic.com`,
     `img-src 'self' data: blob: https://*.supabase.co https://www.gravatar.com https://i.ytimg.com https:`,
     `frame-src https://js.paystack.co https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com`,
-    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.paystack.co https://plausible.io https://api.bufferapp.com https://www.youtube.com`,
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.paystack.co https://plausible.io https://api.bufferapp.com https://www.youtube.com https://*.r2.dev https://*.r2.cloudflarestorage.com`,
+    // Self-hosted video: hls.js plays via blob: MediaSource; Safari/iOS stream
+    // the R2 URL directly. Add the custom video domain here if R2 moves to one.
+    `media-src 'self' blob: https://*.r2.dev`,
     `worker-src 'self' blob:`,
     `default-src 'self'`,
     `object-src 'none'`,

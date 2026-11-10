@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
+import { VideoUploadField } from '@/components/admin/VideoUploadField';
 
 
 // Renders SVG icon strings safely  
@@ -322,6 +323,7 @@ function AdminCoursesInner() {
     title: '', description: '', category: 'General', difficulty: 'beginner' as string,
     lessons: 1, duration: '', emoji: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', youtube_id: '', is_published: true,
     plan_tier: 'free' as string,
+    video_id: null as string | null,
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -329,7 +331,7 @@ function AdminCoursesInner() {
 
   async function loadCourses() {
     setLoading(true);
-    const { data } = await supabase.from('courses').select('*').order('sort_order');
+    const { data } = await supabase.from('courses').select('*, video:ascentor_videos!courses_video_id_fkey(thumbnail_url, status)').order('sort_order');
     const coursesData = data || [];
     setCourses(coursesData);
     // Derive categories from existing courses + defaults, preserving order
@@ -390,6 +392,7 @@ function AdminCoursesInner() {
       youtube_id:   course.youtube_id   || '',
       is_published: course.is_published ?? true,
       plan_tier:    course.plan_tier    || 'free',
+      video_id:     course.video_id     ?? null,
     });
     setEditing(course);
     setShowForm(true);
@@ -407,9 +410,12 @@ function AdminCoursesInner() {
     if (!form.title.trim()) return;
     setSaving(true);
 
+    // A hosted video replaces YouTube entirely: clear the legacy ID so
+    // the Learn page never falls back to an embed for this course.
     const payload = {
       ...form,
-      youtube_id: extractYoutubeId(form.youtube_id),
+      youtube_id: form.video_id ? '' : extractYoutubeId(form.youtube_id),
+      video_type: form.video_id ? 'hosted' : (form.youtube_id ? 'youtube' : null),
       updated_at: new Date().toISOString(),
     };
 
@@ -646,42 +652,18 @@ function AdminCoursesInner() {
               </div>
             </div>
 
-            {/* YouTube */}
+            {/* Video (self-hosted on R2) */}
             <div>
-              <FieldLabel>YouTube URL or Video ID</FieldLabel>
-              <input
-                className="asc-field"
-                value={form.youtube_id}
-                onChange={e => setForm({ ...form, youtube_id: e.target.value })}
-                placeholder="https://youtube.com/watch?v=… or just the video ID"
+              <FieldLabel>Video</FieldLabel>
+              <VideoUploadField
+                value={form.video_id}
+                onChange={video_id => setForm(f => ({ ...f, video_id }))}
+                defaultTitle={form.title}
               />
-              {ytId && (
-                <div style={{
-                  marginTop:    '10px',
-                  borderRadius: '10px',
-                  overflow:     'hidden',
-                  border:       `1px solid ${B.border}`,
-                  width:        'fit-content',
-                  position:     'relative',
-                }}>
-                  <img
-                    src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
-                    alt="Thumbnail preview"
-                    style={{ width: '200px', height: 'auto', display: 'block' }}
-                  />
-                  {/* Gold overlay badge */}
-                  <div style={{
-                    position:   'absolute',
-                    bottom:     '6px',
-                    left:       '6px',
-                    padding:    '2px 8px',
-                    borderRadius:'999px',
-                    background: B.dark,
-                    border:     `1px solid ${B.goldBorder}`,
-                  }}>
-                    <MonoLabel color={B.gold}>Preview</MonoLabel>
-                  </div>
-                </div>
+              {!form.video_id && ytId && (
+                <p style={{ marginTop: '8px', fontSize: '12px', color: B.dark400 }}>
+                  This course still plays from YouTube ({ytId}). Upload a video to replace it.
+                </p>
               )}
             </div>
 
@@ -788,9 +770,9 @@ function AdminCoursesInner() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {courses.map((c, idx) => {
             const diffCfg = DIFF_CFG[c.difficulty] ?? { color: B.dark400, label: c.difficulty };
-            const ytThumb = c.youtube_id
-              ? `https://img.youtube.com/vi/${c.youtube_id}/mqdefault.jpg`
-              : null;
+            const ytThumb = c.video?.thumbnail_url
+              ?? c.thumbnail_url
+              ?? (c.youtube_id ? `https://img.youtube.com/vi/${c.youtube_id}/mqdefault.jpg` : null);
 
             return (
               <div

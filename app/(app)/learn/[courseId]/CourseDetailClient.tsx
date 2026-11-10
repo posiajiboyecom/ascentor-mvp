@@ -18,8 +18,23 @@ import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, Play, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { VideoPlayer } from '@/components/video/VideoPlayer';
 
 // ── Types — match the real schema ────────────────────────────────────
+
+/** Self-hosted (R2/HLS) video; null when none is attached or still processing. */
+export interface HostedVideo {
+  id: string;
+  hls_url: string;
+  thumbnail_url: string | null;
+  duration_seconds: number | null;
+}
+
+export interface VideoProgressEntry {
+  position: number;
+  percent: number;
+  completed: boolean;
+}
 
 export interface CourseRow {
   id: string;
@@ -31,6 +46,7 @@ export interface CourseRow {
   duration: string | null;
   plan_tier: string | null;
   total_duration_seconds: number | null;
+  video: HostedVideo | null;
 }
 
 export interface LessonRow {
@@ -46,6 +62,7 @@ export interface LessonRow {
   progress_percent: number;
   last_position: number;
   completed: boolean;
+  video: HostedVideo | null;
 }
 
 export interface NextCourseRow {
@@ -57,6 +74,7 @@ export interface NextCourseRow {
 export interface CourseDetailClientProps {
   course: CourseRow;
   lessons: LessonRow[];
+  videoProgress: Record<string, VideoProgressEntry>;
   userId: string;
   nextCourse: NextCourseRow | null;
 }
@@ -185,7 +203,7 @@ function LessonItem({
 
 type Tab = 'overview' | 'notes' | 'discussion';
 
-export function CourseDetailClient({ course, lessons, userId, nextCourse }: CourseDetailClientProps) {
+export function CourseDetailClient({ course, lessons, videoProgress, userId, nextCourse }: CourseDetailClientProps) {
   const supabase = useRef(createClient()).current;
   const [allLessons, setAllLessons] = useState(lessons);
   const [tab, setTab] = useState<Tab>('overview');
@@ -306,10 +324,49 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
   // individual lesson rows). This is the primary reason videos don't play —
   // most courses have no lesson rows, so activeLesson is null and only
   // course.youtube_id is populated.
-  const videoId =
-    (activeLesson ? extractYouTubeId(activeLesson.video_url) : null) ??
-    extractYouTubeId(course.youtube_id) ??
-    null;
+  //
+  // A self-hosted video (R2/HLS, our own player) always wins. YouTube is
+  // only a legacy fallback for courses that haven't had a video uploaded
+  // yet; once an admin uploads one, youtube_id is cleared on save.
+  const hostedVideo: HostedVideo | null = activeLesson?.video ?? course.video ?? null;
+
+  const videoId = hostedVideo
+    ? null
+    : (activeLesson ? extractYouTubeId(activeLesson.video_url) : null) ??
+      extractYouTubeId(course.youtube_id) ??
+      null;
+
+  // Resume positions, updated locally as the member watches so switching
+  // lessons and coming back resumes from the latest spot.
+  const resumeRef = useRef<Record<string, VideoProgressEntry>>({ ...videoProgress });
+
+  async function saveVideoProgress(video: HostedVideo, position: number, duration: number) {
+    const percent = Math.min(100, Math.round((position / duration) * 100));
+    const prev = resumeRef.current[video.id];
+    const completed = (prev?.completed ?? false) || percent >= 95;
+    // Store 0 once finished so the next visit starts from the beginning
+    const stored = percent >= 98 ? 0 : position;
+    resumeRef.current[video.id] = { position: stored, percent: Math.max(prev?.percent ?? 0, percent), completed };
+
+    const { error } = await supabase.from('video_progress').upsert(
+      {
+        user_id: userId,
+        video_id: video.id,
+        position_seconds: stored,
+        duration_seconds: duration,
+        percent: Math.max(prev?.percent ?? 0, percent),
+        completed,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,video_id' },
+    );
+    if (error) console.error('[CourseDetailClient] video progress save failed:', error.message);
+  }
+
+  function handleVideoEnded() {
+    // Finishing a lesson's video marks the lesson complete
+    if (activeLesson && !activeLesson.completed) markComplete();
+  }
 
   const completedCount = allLessons.filter((l) => l.completed).length;
   const overallProgress =
@@ -373,7 +430,18 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
         {/* Video player */}
         <div className="px-4 lg:px-9 pt-3 lg:pt-4">
           <div className="relative w-full aspect-video rounded-2xl bg-[#0F0F0E] overflow-hidden flex items-center justify-center">
-            {videoId ? (
+            {hostedVideo ? (
+              <VideoPlayer
+                key={hostedVideo.id}
+                src={hostedVideo.hls_url}
+                poster={hostedVideo.thumbnail_url}
+                title={activeLesson?.title ?? course.title}
+                startAt={resumeRef.current[hostedVideo.id]?.position ?? 0}
+                onProgress={(pos, dur) => saveVideoProgress(hostedVideo, pos, dur)}
+                onEnded={handleVideoEnded}
+                className="absolute inset-0"
+              />
+            ) : videoId ? (
               <iframe
                 key={videoId}
                 src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`}
@@ -391,7 +459,8 @@ export function CourseDetailClient({ course, lessons, userId, nextCourse }: Cour
                 <p className="text-xs">Video unavailable</p>
               </div>
             )}
-            {activeLesson && (
+            {/* Our player has its own control bar; these badges would cover it */}
+            {activeLesson && !hostedVideo && (
               <>
                 <span className="absolute bottom-3 lg:bottom-4 left-3 lg:left-4 z-10 rounded-lg bg-black/40 backdrop-blur-sm px-3 py-1.5 text-[11px] font-bold text-white">
                   Lesson {activeIndex + 1} of {allLessons.length}
