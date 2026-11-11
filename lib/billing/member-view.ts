@@ -18,7 +18,6 @@ export interface HistoryRow { id: string; dateIso: string; desc: string; amountL
 
 export interface BillingViewData {
   leaderFree: boolean;
-  /** Set when the member still pays through the old flow (no v2 subscription): their plan is managed in the old Plan tab. */
   referralCode: string | null;
   sub: null | {
     state: SubState; tier: Tier; cycle: Cycle; priceType: PriceType; planName: string;

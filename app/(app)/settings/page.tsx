@@ -10,12 +10,13 @@ import DeviceCard from '@/components/rx/settings/DeviceCard';
 import AccountTab from '@/components/rx/settings/AccountTab';
 import ProfileTab from '@/components/rx/settings/ProfileTab';
 import SecurityTab from '@/components/rx/settings/SecurityTab';
+import SettingsTabs from '@/components/billing/SettingsTabs';
 import '@/styles/rx-settings.css';
 
 export const dynamic = 'force-dynamic';
 
-const TABS = [['account', 'Account'], ['profile', 'Profile'], ['security', 'Security'], ['plan', 'Plan'], ['alerts', 'Alerts']] as const;
-type Tab = (typeof TABS)[number][0];
+const TABS = ['account', 'profile', 'security', 'alerts'] as const;
+type Tab = (typeof TABS)[number];
 
 const dateLong = (d: string | Date, tz: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: tz });
 
@@ -23,7 +24,9 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const me = await getMe();
   if (!me) redirect('/login');
   const { tab: rawTab } = await searchParams;
-  const tab: Tab = (TABS.find(([k]) => k === rawTab)?.[0]) ?? 'account';
+  // Billing has its own URL; old links to ?tab=plan or ?tab=billing land there.
+  if (rawTab === 'plan' || rawTab === 'billing') redirect('/settings/billing');
+  const tab: Tab = TABS.find((k) => k === rawTab) ?? 'account';
 
   const db = await createClient();
   const { data: { user } } = await db.auth.getUser();
@@ -63,9 +66,6 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     const blockedNames = blockedIds.length ? await namesFor(db, blockedIds) : new Map();
     const blocked = blockedIds.map((id) => ({ id, name: (blockedNames.get(id) as { name: string } | undefined)?.name ?? 'Member' }));
     body = <SecurityTab email={email} methods={methods} hasPassword={hasPassword} dmPolicy={p?.dm_policy ?? 'circle_and_requests'} research={p?.research_opt_in ?? false} blocked={blocked} />;
-  } else if (tab === 'plan') {
-    // Plans (Seeker and Builder), cards, groups, credit and billing history all live on the Billing screen.
-    redirect('/settings/billing');
   } else {
     const zone = new Intl.DateTimeFormat('en-NG', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date()).find((x) => x.type === 'timeZoneName')?.value ?? 'your time zone';
     body = (
@@ -80,11 +80,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   return (
     <Page>
       <Title>Settings</Title>
-      <div className="rx-opts rx-tabs" role="tablist" aria-label="Settings">
-        {TABS.map(([k, label]) => (
-          <Link key={k} href={`/settings?tab=${k}`} scroll={false} replace role="tab" aria-selected={tab === k} className={`rx-opt${tab === k ? ' on' : ''}`}>{label}</Link>
-        ))}
-      </div>
+      <SettingsTabs active={tab} />
       <div className="rx-two">
         <div className="rx-stack-lg">{body}</div>
         <Aside>
