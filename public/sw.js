@@ -186,10 +186,13 @@ self.addEventListener('notificationclick', (e) => {
 });
 
 // ── Push subscription change — browser rotated keys ──────────
+// Re-subscribe with the same app key (subscribing without it always fails). The app also re-syncs on every open.
 self.addEventListener('pushsubscriptionchange', (e) => {
+  const key = e.oldSubscription && e.oldSubscription.options && e.oldSubscription.options.applicationServerKey;
+  if (!key) return;
   e.waitUntil(
     self.registration.pushManager
-      .subscribe({ userVisibleOnly: true })
+      .subscribe({ userVisibleOnly: true, applicationServerKey: key })
       .then((sub) =>
         fetch('/api/push/subscribe', {
           method:      'POST',

@@ -31,6 +31,20 @@ export default function DeviceCard() {
   }, [toast]);
 
   const on = state === 'granted';
+  const [testing, setTesting] = useState(false);
+  const [testMsg, setTestMsg] = useState('');
+
+  async function sendTest() {
+    setTesting(true); setTestMsg('');
+    try {
+      // Make sure this device is registered to you first (permission is already granted, so no prompt).
+      if (!on || !(await subscribe())) { setTestMsg('Turn notifications on first.'); return; }
+      const r = await fetch('/api/push/test', { method: 'POST', credentials: 'include' });
+      const j = (await r.json().catch(() => ({}))) as { message?: string; error?: string };
+      setTestMsg(j.message ?? j.error ?? 'Something went wrong.');
+    } catch { setTestMsg('We couldn’t reach the server.'); }
+    finally { setTesting(false); }
+  }
   const needsHomeScreen = ios && !installed;
 
   async function toggle() {
@@ -66,6 +80,12 @@ export default function DeviceCard() {
         <div><p className="rx-p">Push notifications</p><p className="rx-sm">{state === 'unsupported' ? 'Not available on this browser.' : state === 'denied' ? 'Blocked in your browser settings.' : on ? 'On for this device.' : 'Off for this device.'}</p></div>
         <button type="button" className="rx-toggle" aria-label="Push notifications on this device" aria-pressed={on} disabled={busy || state === 'unsupported' || needsHomeScreen} onClick={() => void toggle()} />
       </div>
+      {on && (
+        <div className="rx-row" style={{ alignItems: 'center', gap: 12 }}>
+          <button type="button" className="rx-btn secondary" disabled={testing} onClick={() => void sendTest()}>{testing ? 'Sending…' : 'Send a test'}</button>
+          {testMsg && <p className="rx-sm" role="status" style={{ margin: 0 }}>{testMsg}</p>}
+        </div>
+      )}
       <p className="rx-sm">You choose which events notify you in Notifications above. Email is separate.</p>
     </div>
   );

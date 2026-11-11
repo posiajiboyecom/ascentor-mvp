@@ -106,7 +106,7 @@ async function deliverOne(bc: Pick<BroadcastRow, 'id' | 'title' | 'body' | 'link
     if (error) out.error = `in-app: ${error.message}`.slice(0, 200); else out.in_app = true;
   }
   if (plan.push) {
-    try { await sendPushToUser(supabaseAdmin, userId, { title, body: bc.body.slice(0, 140), url: bc.link_url ?? '/dashboard', tag: `broadcast-${bc.id}` }); out.pushed = true; } catch { /* push is best effort */ }
+    try { const r = await sendPushToUser(supabaseAdmin, userId, { title, body: bc.body.slice(0, 140), url: bc.link_url ?? '/dashboard', tag: `broadcast-${bc.id}` }); out.pushed = r.sent > 0; } catch { /* push is best effort */ }
   }
   if (plan.email) {
     try {

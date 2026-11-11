@@ -1,5 +1,6 @@
 'use server';
 
+import { pushDm } from '@/lib/rx/chat-push';
 import { revalidatePath } from 'next/cache';
 import { requireMember, getMe, getMyCircle, fail } from '@/lib/rx/server';
 import type { ActionResult } from '@/lib/rx/types';
@@ -128,6 +129,8 @@ export async function sendDm(threadId: string, raw: string, clientId?: string): 
     const data = res.data;
     await supabaseAdmin.from('dm_threads').update({ last_message_at: data.created_at }).eq('id', threadId);
     void flagIfRisky('dm', data.id as string, userId, body);
+    // A first message on a request is held until accepted: no push for it.
+    if (t.status === 'accepted') pushDm(threadId, userId, me?.fullName, body);
     revalidatePath('/messages');
     return { ok: true, message: asMsg(data.id as string, data.created_at as string) };
   } catch (e) { return fail(e, 'We couldn’t send that. Please try again.'); }

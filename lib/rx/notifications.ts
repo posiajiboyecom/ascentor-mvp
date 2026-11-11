@@ -12,6 +12,7 @@ import 'server-only';
 
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendPushToUser } from '@/lib/push';
+import { after } from 'next/server';
 import { sendEmail } from '@/lib/nodemailer';
 import { brandedEmailLayout, esc, p, goldButton } from '@/lib/emailTemplate';
 import { decide, emailAllowed, KINDS, type NotifKind, type Prefs } from './notify-rules';
@@ -101,7 +102,16 @@ async function deliver(userId: string, n: RxNotice, prefs: Prefs): Promise<void>
   } catch (e) { console.error('[rxNotify] email failed', e instanceof Error ? e.message : e); }
 }
 
-export async function rxNotify(to: string | string[], n: RxNotice): Promise<void> {
+export function rxNotify(to: string | string[], n: RxNotice): Promise<void> {
+  const work = rxNotifyNow(to, n);
+  // Most callers fire and forget (`void rxNotify(...)`) from a server action. On Vercel the function stops once the
+  // response is sent, which cut off pushes (and sometimes the in-app row). after() keeps it running until done.
+  // Outside a request (cron jobs that await, scripts) after() throws, and awaiting the promise is enough.
+  try { after(work); } catch { /* not in a request scope */ }
+  return work;
+}
+
+async function rxNotifyNow(to: string | string[], n: RxNotice): Promise<void> {
   try {
     const ids = [...new Set(Array.isArray(to) ? to : [to])].filter((id) => id && id !== n.actorId);
     if (!ids.length) return;

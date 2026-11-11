@@ -1,5 +1,6 @@
 'use server';
 
+import { pushCircleChat } from '@/lib/rx/chat-push';
 import { revalidatePath } from 'next/cache';
 import { requireMember, getMe, getMyCircle, assignCircle, fail } from '@/lib/rx/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
@@ -79,6 +80,7 @@ export async function sendCircleMessage(circleId: string, raw: string, clientId?
     if (res.error) throw res.error;
     const data = res.data;
     void flagIfRisky('circle', data.id as string, userId, body);
+    pushCircleChat(circleId, userId, me?.fullName, body);
     return { ok: true, message: asMsg(data.id as string, data.created_at as string) };
   } catch (e) { return fail(e, 'We couldn’t send that. Please try again.'); }
 }

@@ -2,6 +2,7 @@
 // Saves a user's push subscription to the DB.
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as memberSchemas from '@/lib/validation/schemas/member';
 
@@ -15,8 +16,9 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Upsert by endpoint so re-subscribing the same device doesn't duplicate
-    const { error } = await supabase
+    // Upsert by endpoint so re-subscribing the same device doesn't duplicate. Service client after the auth check:
+    // when a phone switches accounts, the device row moves to the member now signed in (RLS blocked that before).
+    const { error } = await supabaseAdmin
       .from('push_subscriptions')
       .upsert(
         { user_id: user.id, endpoint: subscription.endpoint, subscription },

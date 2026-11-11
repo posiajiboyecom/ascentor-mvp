@@ -1,5 +1,6 @@
 'use server';
 
+import { pushGroupChat } from '@/lib/rx/chat-push';
 import { revalidatePath } from 'next/cache';
 import { requireMember, getMe, namesFor, fail } from '@/lib/rx/server';
 import type { ActionResult } from '@/lib/rx/types';
@@ -298,6 +299,7 @@ export async function sendGroupMessage(groupId: string, raw: string): Promise<Ac
     if (error) throw error;
     void flagIfRisky('group', data.id as string, userId, body);
     const me = await getMe();
+    pushGroupChat(groupId, userId, me?.fullName, body);
     return { ok: true, message: { id: data.id as string, userId, name: me?.fullName ?? 'You', avatarUrl: me?.avatarUrl ?? null, body, createdAt: data.created_at as string } };
   } catch (e) { return fail(e, 'We couldn’t send that. Join the group to post.'); }
 }

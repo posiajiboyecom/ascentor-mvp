@@ -3,7 +3,7 @@
 // other API routes when an event occurs (upvote, reply, follow, etc.)
 // Body: { userId, title, body, url?, tag?, icon? }
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendPushToUser } from '@/lib/push';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as memberSchemas from '@/lib/validation/schemas/member';
@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
     if (!parsed.ok) return parsed.response;
     const { userId, title, body, url, tag, icon } = parsed.data;
 
-    const supabase = await createClient();
-    await sendPushToUser(supabase, userId, { title, body, url, tag, icon });
+    // Service client: the caller is a server, not a signed-in member, so RLS would hide every subscription.
+    await sendPushToUser(supabaseAdmin, userId, { title, body, url, tag, icon });
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
