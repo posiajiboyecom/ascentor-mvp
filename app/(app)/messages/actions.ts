@@ -1,5 +1,6 @@
 'use server';
 
+import { nudgeChat, nudgeInbox } from '@/lib/rx/live';
 import { pushDm } from '@/lib/rx/chat-push';
 import { revalidatePath } from 'next/cache';
 import { requireMember, getMe, getMyCircle, fail } from '@/lib/rx/server';
@@ -130,6 +131,8 @@ export async function sendDm(threadId: string, raw: string, clientId?: string): 
     await supabaseAdmin.from('dm_threads').update({ last_message_at: data.created_at }).eq('id', threadId);
     void flagIfRisky('dm', data.id as string, userId, body);
     // A first message on a request is held until accepted: no push for it.
+    nudgeChat('dm_messages', threadId);
+    { const other = (await supabaseAdmin.from('dm_threads').select('user_a, user_b').eq('id', threadId).maybeSingle()).data; if (other) nudgeInbox([other.user_a as string, other.user_b as string].filter((id) => id !== userId)); }
     if (t.status === 'accepted') pushDm(threadId, userId, me?.fullName, body);
     revalidatePath('/messages');
     return { ok: true, message: asMsg(data.id as string, data.created_at as string) };

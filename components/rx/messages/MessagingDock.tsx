@@ -4,6 +4,7 @@
 // can be minimised or expanded to the full Messaging page. Desktop only (CSS hides it below 1024px),
 // hidden on /messages itself, and its open/minimised state is remembered for the browser tab.
 
+import { useLiveNudge } from '@/lib/rx/live-client';
 import Link from 'next/link';
 import '@/styles/rx-messaging.css'; // the dock is also mounted outside the (app) layout (for example /checkout)
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -27,7 +28,7 @@ function load(): DockState {
   return { open: false, chat: null, min: false };
 }
 
-export default function MessagingDock({ meId, meName, meAvatarUrl, initialUnread }: { meId: string; meName: string; meAvatarUrl: string | null; initialUnread: number }) {
+export default function MessagingDock({ meId, inboxTopic, meName, meAvatarUrl, initialUnread }: { meId: string; inboxTopic?: string; meName: string; meAvatarUrl: string | null; initialUnread: number }) {
   const pathname = usePathname();
   const online = useOnline();
   const [st, setSt] = useState<DockState>({ open: false, chat: null, min: false });
@@ -50,6 +51,8 @@ export default function MessagingDock({ meId, meName, meAvatarUrl, initialUnread
 
   // The list is loaded when the panel is open, and refreshed on new messages and every half minute.
   const refreshList = useCallback(async () => { try { setThreads(await dockThreads()); } catch { /* keep the old list */ } }, []);
+  // Server nudge on this member's private inbox topic when a direct message reaches them (lib/rx/live.ts).
+  useLiveNudge(hidden || !ready || !st.open ? null : inboxTopic, () => { void refreshList(); });
   useEffect(() => {
     if (hidden || !ready || !st.open) return;
     void refreshList();

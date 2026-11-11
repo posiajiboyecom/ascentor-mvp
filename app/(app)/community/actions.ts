@@ -1,5 +1,6 @@
 'use server';
 
+import { nudgeChat } from '@/lib/rx/live';
 import { pushGroupChat } from '@/lib/rx/chat-push';
 import { revalidatePath } from 'next/cache';
 import { requireMember, getMe, namesFor, fail } from '@/lib/rx/server';
@@ -202,6 +203,7 @@ export async function sharePost(postId: string, target: 'link' | 'circle' | 'per
       if (!seat) throw new Error('You can only share into your own Circles.');
       const { error } = await db.from('circle_messages').insert({ circle_id: targetId, user_id: userId, body: text, kind: 'text' });
       if (error) throw error;
+      nudgeChat('circle_messages', targetId);
     } else if (target === 'person') {
       if (!targetId) throw new Error('Choose a person.');
       const { data: t } = await db.from('dm_threads').select('id, status').eq('id', targetId).maybeSingle();
@@ -209,6 +211,7 @@ export async function sharePost(postId: string, target: 'link' | 'circle' | 'per
       const { data: m, error } = await db.from('dm_messages').insert({ thread_id: targetId, sender_id: userId, body: text, flagged: false }).select('created_at').single();
       if (error) throw error;
       await supabaseAdmin.from('dm_threads').update({ last_message_at: m.created_at }).eq('id', targetId);
+      nudgeChat('dm_messages', targetId);
     } else if (target !== 'link') throw new Error('Choose where to share.');
 
     await db.from('feed_shares').insert({ post_id: postId, user_id: userId, target, target_id: target === 'link' ? null : targetId ?? null });
@@ -299,6 +302,7 @@ export async function sendGroupMessage(groupId: string, raw: string): Promise<Ac
     if (error) throw error;
     void flagIfRisky('group', data.id as string, userId, body);
     const me = await getMe();
+    nudgeChat('rx_group_messages', groupId);
     pushGroupChat(groupId, userId, me?.fullName, body);
     return { ok: true, message: { id: data.id as string, userId, name: me?.fullName ?? 'You', avatarUrl: me?.avatarUrl ?? null, body, createdAt: data.created_at as string } };
   } catch (e) { return fail(e, 'We couldn’t send that. Join the group to post.'); }

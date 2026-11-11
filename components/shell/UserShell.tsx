@@ -45,6 +45,8 @@ interface UserShellProps {
   avatarUrl?: string | null;
   role?: string | null;
   userId: string;
+  /** This member's private live-update topic (lib/rx/live.ts inboxTopic). */
+  inboxTopic?: string;
   summitRegistered: boolean;
   counts?: ShellCountsProp;
   /** Platform feature switches (Admin > Platform settings). Anything missing is on. */
@@ -52,7 +54,7 @@ interface UserShellProps {
   children: React.ReactNode;
 }
 
-export default function UserShell({ userId, userName, email, avatarUrl, role, summitRegistered, counts, features, children }: UserShellProps) {
+export default function UserShell({ userId, inboxTopic, userName, email, avatarUrl, role, summitRegistered, counts, features, children }: UserShellProps) {
   const showShop = features?.shop !== false;
   const showCities = features?.cities !== false;
   const showRefer = features?.refer !== false;
@@ -150,7 +152,7 @@ export default function UserShell({ userId, userName, email, avatarUrl, role, su
       <SagePanel userName={userName} />
       <MobileTabBar />
       <SummitModal registered={summitRegistered} userId={userId} />
-      {features?.dock !== false && <MessagingDock meId={userId} meName={userName} meAvatarUrl={avatarUrl ?? null} initialUnread={unreadMessages} />}
+      {features?.dock !== false && <MessagingDock meId={userId} inboxTopic={inboxTopic} meName={userName} meAvatarUrl={avatarUrl ?? null} initialUnread={unreadMessages} />}
       </PresenceProvider>
     </ToastProvider>
   );

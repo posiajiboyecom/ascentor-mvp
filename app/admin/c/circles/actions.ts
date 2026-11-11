@@ -3,6 +3,7 @@
 // messages from the team, plus members waiting for a Circle and the 48-hour formation run.
 // Levels on the 'circles' area:  view = read · edit = change settings, members, chat, sessions, send notices
 //                                full = merge or delete a Circle
+import { nudgeChat } from '@/lib/rx/live';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { auditAdmin } from '@/lib/admin/audit';
@@ -435,6 +436,7 @@ export async function postCircleMessage(circleId: string, body: string): Promise
     if (!text) throw new Error('Write a message first.');
     const { error } = await supabaseAdmin.from('circle_messages').insert({ circle_id: circleId, user_id: null, kind: 'text', body: text });
     if (error) throw error;
+    nudgeChat('circle_messages', circleId);
     await auditAdmin(staff, 'Posted in a Circle chat as the team', circleTitle(c), AREA);
     return { ok: true };
   } catch (e) { return fail(e, 'We couldn’t post that.'); }

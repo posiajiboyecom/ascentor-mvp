@@ -90,25 +90,108 @@ export default function ChatThread({ initial, meId, send, outbox, poll, realtime
   // down the live connection (and reset the poll timer), which used to drop a reply that arrived in that gap.
   const pollRef = useRef(poll);
   pollRef.current = poll;
-  const refresh = useCallback(async () => {
-    try { merge(await pollRef.current(lastRef.current)); } catch { /* the next poll will retry */ }
-  }, [merge]);
   const rtTable = realtime?.table, rtColumn = realtime?.column, rtValue = realtime?.value;
+  const pollKind = rtTable === 'circle_messages' ? 'circle' : rtTable === 'dm_messages' ? 'dm' : rtTable === 'rx_group_messages' ? 'group' : null;
 
-  // Realtime nudges a refresh; polling is the safety net if realtime is unavailable.
+  // Fetch anything newer than the last message. Uses the /api/rx/chat/poll route when it can: unlike a server action it
+  // still works on a page left open across a deploy. One fetch at a time; a nudge during a fetch runs one more after it.
+  const busyRef = useRef(false);
+  const againRef = useRef(false);
+  const refresh = useCallback(async () => {
+    if (busyRef.current) { againRef.current = true; return; }
+    busyRef.current = true;
+    try {
+      do {
+        againRef.current = false;
+        try {
+          if (pollKind && rtValue) {
+            const qs = new URLSearchParams({ kind: pollKind, id: rtValue });
+            if (lastRef.current) qs.set('after', lastRef.current);
+            const r = await fetch(`/api/rx/chat/poll?${qs}`, { cache: 'no-store', credentials: 'include' });
+            if (r.ok) merge(((await r.json()) as { messages: ChatMsg[] }).messages ?? []);
+            else merge(await pollRef.current(lastRef.current));
+          } else merge(await pollRef.current(lastRef.current));
+        } catch { /* the next nudge or poll will retry */ }
+      } while (againRef.current);
+    } finally { busyRef.current = false; }
+  }, [merge, pollKind, rtValue]);
+
+  // Live updates, in three layers so a message shows without a refresh:
+  //  1. A broadcast nudge from the server the moment a message is saved (lib/rx/live.ts), on topic rx:<table>:<id>.
+  //  2. The database change feed (postgres_changes) as a second signal.
+  //  3. Polling: every 3 seconds while the live connection is down, every 15 while it is up, and right away when the
+  //     app comes back to the foreground or back online.
+  // The browser's session is attached to the socket before joining, and a dropped channel reconnects with backoff
+  // (phones drop sockets whenever the app goes to the background).
   useEffect(() => {
-    const timer = setInterval(refresh, 20000);
-    let cleanup = () => {};
-    if (rtTable && rtColumn && rtValue) {
-      const sb = createClient();
-      const ch = sb.channel(`rx:${rtTable}:${rtValue}`)
+    let stopped = false;
+    let live = false;
+    let attempt = 0;
+    let gen = 0;
+    let pollTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    const sb = createClient();
+    let chans: ReturnType<typeof sb.channel>[] = [];
+
+    const schedulePoll = () => {
+      clearTimeout(pollTimer);
+      if (stopped) return;
+      const visible = document.visibilityState === 'visible';
+      pollTimer = setTimeout(async () => { if (document.visibilityState === 'visible') await refresh(); schedulePoll(); }, !visible ? 60_000 : live ? 15_000 : 3_000);
+    };
+
+    const drop = () => { const old = chans; chans = []; for (const c of old) void sb.removeChannel(c); };
+
+    const connect = async () => {
+      if (stopped || !rtTable || !rtColumn || !rtValue) return;
+      const mine = ++gen;
+      drop();
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session?.access_token) await sb.realtime.setAuth(session.access_token);
+      } catch { /* join anyway: the broadcast nudge does not need the session */ }
+      if (stopped || mine !== gen) return;
+
+      const reconnect = () => {
+        if (stopped || mine !== gen) return;
+        live = false; schedulePoll();
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => { void connect(); }, Math.min(30_000, 1_000 * 2 ** attempt++));
+      };
+      const nudge = sb.channel(`rx:${rtTable}:${rtValue}`, { config: { broadcast: { self: false } } })
+        .on('broadcast', { event: 'new' }, () => { void refresh(); })
+        .subscribe((status) => {
+          if (mine !== gen) return;
+          if (status === 'SUBSCRIBED') { live = true; attempt = 0; schedulePoll(); void refresh(); }
+          else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') reconnect();
+        });
+      // Second signal; its own channel so a problem with the change feed can't take the broadcast down with it.
+      const feed = sb.channel(`rxpg:${rtTable}:${rtValue}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: rtTable, filter: `${rtColumn}=eq.${rtValue}` }, () => { void refresh(); })
-        .subscribe((status) => { if (status === 'SUBSCRIBED') void refresh(); }); // catches anything sent while connecting
-      cleanup = () => { void sb.removeChannel(ch); };
-    }
-    const onVis = () => { if (document.visibilityState === 'visible') void refresh(); };
-    document.addEventListener('visibilitychange', onVis);
-    return () => { clearInterval(timer); cleanup(); document.removeEventListener('visibilitychange', onVis); };
+        .subscribe();
+      chans = [nudge, feed];
+    };
+
+    const wake = () => {
+      if (document.visibilityState !== 'visible') { schedulePoll(); return; }
+      void refresh();
+      if (!live) { attempt = 0; clearTimeout(retryTimer); void connect(); }
+      schedulePoll();
+    };
+
+    void connect();
+    schedulePoll();
+    document.addEventListener('visibilitychange', wake);
+    window.addEventListener('online', wake);
+    window.addEventListener('focus', wake);
+    return () => {
+      stopped = true; gen++;
+      clearTimeout(pollTimer); clearTimeout(retryTimer);
+      drop();
+      document.removeEventListener('visibilitychange', wake);
+      window.removeEventListener('online', wake);
+      window.removeEventListener('focus', wake);
+    };
   }, [rtTable, rtColumn, rtValue, refresh]);
 
   useEffect(() => { bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight }); }, [msgs.length, pending.length]);

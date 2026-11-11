@@ -1,5 +1,6 @@
 'use server';
 
+import { nudgeChat, nudgeInbox } from '@/lib/rx/live';
 import { pushCircleChat } from '@/lib/rx/chat-push';
 import { revalidatePath } from 'next/cache';
 import { requireMember, getMe, getMyCircle, assignCircle, fail } from '@/lib/rx/server';
@@ -80,6 +81,8 @@ export async function sendCircleMessage(circleId: string, raw: string, clientId?
     if (res.error) throw res.error;
     const data = res.data;
     void flagIfRisky('circle', data.id as string, userId, body);
+    nudgeChat('circle_messages', circleId);
+    { const { data: seats } = await supabaseAdmin.from('circle_seats').select('user_id').eq('circle_id', circleId); nudgeInbox(((seats ?? []) as { user_id: string }[]).map((x) => x.user_id).filter((id) => id !== userId)); }
     pushCircleChat(circleId, userId, me?.fullName, body);
     return { ok: true, message: asMsg(data.id as string, data.created_at as string) };
   } catch (e) { return fail(e, 'We couldn’t send that. Please try again.'); }

@@ -6,6 +6,7 @@ import type { Metadata, Viewport } from 'next';
 // components/shell/UserShell. Auth + subscription gating happens in proxy.ts;
 // this layout also enforces the onboarding gate.
 
+import { inboxTopic } from '@/lib/rx/live';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getShellData } from '@/lib/shell-data';
@@ -70,6 +71,7 @@ export default async function AppLayout({
   return (
     <UserShell
       userId={shell.userId}
+      inboxTopic={inboxTopic(shell.userId)}
       userName={shell.userName}
       email={shell.email}
       avatarUrl={shell.avatarUrl}

@@ -2,6 +2,7 @@
 // Messages: inbox, message requests, a conversation, and the other member's profile card.
 // Three panes on desktop; one pane at a time on mobile, chosen by the URL.
 
+import { inboxTopic } from '@/lib/rx/live';
 import { members } from '@/lib/rx/plural';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -98,7 +99,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="rx rx-panes" data-pane={pane}>
-      <InboxLive />
+      <InboxLive topic={inboxTopic(me.userId)} />
       {/* ── list pane ── */}
       <div className="rx-pane rx-pane-list">
         <InboxPane threads={threads} selected={selected} tab={tab} requestCount={requests.length} requests={requestsNode} />

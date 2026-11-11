@@ -3,6 +3,7 @@
 // members, chat, notices, archive, merge and delete, plus members' group requests.
 // Levels on the 'groups' area:  view = read · edit = create, edit, members, chat, notices, archive, requests
 //                               full = merge or delete a group
+import { nudgeChat } from '@/lib/rx/live';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { auditAdmin } from '@/lib/admin/audit';
@@ -325,6 +326,7 @@ export async function postGroupMessage(groupId: string, body: string): Promise<R
     if (!text) throw new Error('Write a message first.');
     const { error } = await supabaseAdmin.from('rx_group_messages').insert({ group_id: groupId, user_id: null, body: text });
     if (error) throw error;
+    nudgeChat('rx_group_messages', groupId);
     await auditAdmin(staff, 'Posted in a group as the team', g.name, AREA);
     return { ok: true };
   } catch (e) { return fail(e, 'We couldn’t post that.'); }
