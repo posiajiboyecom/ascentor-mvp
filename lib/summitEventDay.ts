@@ -11,6 +11,7 @@ import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendEventDayVirtualEmail, sendEventDayPhysicalEmail } from '@/lib/summitEmails';
 import { SUMMIT_DATE } from '@/lib/elevationSummit';
+import { maskEmail } from '@/lib/log-safe';
 
 export interface EventDaySummary {
   isEventDay: boolean;
@@ -74,7 +75,7 @@ export async function sendEventDayEmails(opts: { force?: boolean; budgetMs?: num
         .eq('id', r.id);
     } catch (err) {
       summary.failed++;
-      console.error('[summitEventDay] send failed for', r.email, (err as Error).message);
+      console.error('[summitEventDay] send failed for', maskEmail(r.email), (err as Error).message);
     }
     const wait = gap - (Date.now() - started);
     if (wait > 0 && i < list.length - 1) await sleep(wait);

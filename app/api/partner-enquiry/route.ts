@@ -36,6 +36,7 @@ import { brandedEmailLayout, esc, p, goldButton, outlineButton, summaryRow, summ
 import { sendEmail as sendMail } from '@/lib/nodemailer'
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
+import { limitPublic } from '@/lib/security';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -96,6 +97,8 @@ async function sendEmail(to: string, subject: string, html: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = await limitPublic(req, 'partner-enquiry', 5, 600);
+  if (limited) return limited;
   try {
     const parsed = await parseJson(req, publicSchemas.partnerEnquiry);
     if (!parsed.ok) return parsed.response;

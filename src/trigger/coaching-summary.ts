@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { sendPushToUser } from "@/lib/push";
 import Anthropic from "@anthropic-ai/sdk";
 import { coachingSummaryEmail } from "./emails/email-templates";
+import { maskEmail } from "@/lib/log-safe";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -113,7 +114,7 @@ Respond in this exact JSON format:
       html: template.html,
     });
 
-    console.log(`Summary sent to ${profile.email} for session ${sessionId}`);
+    console.log(`Summary sent to ${maskEmail(profile.email)} for session ${sessionId}`);
 
     // Push notification - lands on phone immediately
     try {

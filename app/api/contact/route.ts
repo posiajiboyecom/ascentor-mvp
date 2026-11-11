@@ -31,6 +31,7 @@ import { brandedEmailLayout, esc, p, goldButton, outlineButton, summaryRow, summ
 import { sendEmail as sendMail } from '@/lib/nodemailer';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
+import { limitPublic } from '@/lib/security';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -96,6 +97,8 @@ function ackEmailHtml(firstName: string, subjectLabel: string, recipient: string
 // ── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const limited = await limitPublic(req, 'contact', 5, 600);
+  if (limited) return limited;
   const parsed = await parseJson(req, publicSchemas.contact);
   if (!parsed.ok) return parsed.response;
   const { name, email, subject, message } = parsed.data;

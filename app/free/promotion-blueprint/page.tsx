@@ -1,9 +1,11 @@
 import LeadMagnetPage from '@/components/LeadMagnetPage';
+import { generatePageMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: "Why Talented People Don't Get Promoted, Free Guide | Ascentor",
+export const metadata = generatePageMetadata({
+  title: 'Why Talented People Don\'t Get Promoted, Free Guide',
   description: 'The 3 real reasons promotions go to less talented people, and the 5 specific moves that change the outcome. Free PDF guide.',
-};
+  path: '/free/promotion-blueprint',
+});
 
 export default function PromotionBlueprintPage() {
   return (

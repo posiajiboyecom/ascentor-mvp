@@ -1,4 +1,7 @@
 # --- Environment variables (NEVER commit these) ---
+# Catch-all: any .env variant (e.g. .env.staging, .env.backup) stays out of Git; only the template is tracked.
+.env*
+!.env.example
 .env
 .env.local
 .env.development
@@ -38,3 +41,12 @@ supabase/.temp/
 /generated/prisma
 
 .vercel
+
+# --- Secrets & local-only config ---
+*.pem
+*.key
+*.p12
+*.keystore
+!android/**/debug.keystore
+service-account*.json
+.claude/settings.local.json

@@ -13,6 +13,12 @@ export const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://joinascentor
 export const SITE_NAME = 'Ascentor';
 export const TWITTER_HANDLE = '@ascentorhq';
 
+// Default social card: the dynamic app/opengraph-image.tsx (1200x630). Next stops inheriting the
+// root OG image as soon as a page defines its own openGraph block, so pages pass this explicitly.
+// Summit pages share the official flyer.
+export const SUMMIT_OG_IMAGE = { url: `${SITE_URL}/images/elevation-summit-flyer-v3.jpg`, width: 1200, height: 1600, alt: 'The Elevation Summit, 19 November 2026, Lagos State University' };
+export const DEFAULT_OG_IMAGE = { url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: 'Ascentor, the platform of The Elevation Summit' };
+
 // ── Elevation Summit event constants ─────────────────────────
 // startDate/endDate must be ISO 8601 with timezone offset.
 export const SUMMIT = {
@@ -60,14 +66,15 @@ export function generatePageMetadata({
       description,
       url,
       siteName: SITE_NAME,
-      ...(image ? { images: [{ url: image, width: 1200, height: 630 }] } : {}),
+      type: 'website',
+      images: [image ? { url: image, width: 1200, height: 630 } : DEFAULT_OG_IMAGE],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
       creator: TWITTER_HANDLE,
-      ...(image ? { images: [image] } : {}),
+      images: [image ?? DEFAULT_OG_IMAGE.url],
     },
     ...(noIndex ? { robots: { index: false, follow: false } } : {}),
   };
@@ -208,5 +215,44 @@ export function getBreadcrumbSchema(items: { name: string; url: string }[]) {
       name: item.name,
       item: item.url,
     })),
+  };
+}
+
+/**
+ * Serialises JSON-LD for a <script type="application/ld+json"> tag. JSON.stringify alone leaves "<" as-is,
+ * so a title containing "</script>" (CMS or DB text) could close the tag and inject markup. Escaping
+ * < > & and the JS line separators keeps the JSON identical for parsers and inert for the HTML parser.
+ */
+export function jsonLdString(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+/** schema.org Event for a CMS event page (public_events row). Only emitted when the event has a date. */
+export function getPublicEventSchema(e: {
+  slug: string; title: string; tagline?: string | null; description?: string | null;
+  event_date_iso?: string | null; location?: string | null; registration_open?: boolean | null;
+}) {
+  if (!e.event_date_iso) return null;
+  const url = `${SITE_URL}/events/${e.slug}`;
+  const online = !e.location || /online|virtual|zoom|livestream/i.test(e.location);
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: e.title,
+    description: e.tagline || e.description?.slice(0, 300) || undefined,
+    startDate: e.event_date_iso,
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: online ? 'https://schema.org/OnlineEventAttendanceMode' : 'https://schema.org/OfflineEventAttendanceMode',
+    location: online
+      ? { '@type': 'VirtualLocation', url }
+      : { '@type': 'Place', name: e.location, address: e.location },
+    organizer: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+    url,
+    ...(e.registration_open ? { offers: { '@type': 'Offer', url, price: '0', priceCurrency: 'NGN', availability: 'https://schema.org/InStock' } } : {}),
   };
 }

@@ -523,7 +523,11 @@ display: flex; align-items: center; justify-content: center; }
                 <img
                   key={src}
                   src={src}
-                  alt=""
+                  alt={i === 0 ? 'Ascentor members gathered at The Elevation Summit' : ''}
+                  // First slide is the LCP element: fetch it first. Later slides wait until needed.
+                  fetchPriority={i === 0 ? 'high' : 'low'}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
                   style={{
                     position: 'absolute',
                     inset: 0,

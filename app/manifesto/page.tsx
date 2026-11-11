@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicShell from '@/components/layout/PublicShell';
 import GateButton from '@/components/GateButton';
+import { jsonLdString, DEFAULT_OG_IMAGE } from '@/lib/seo';
 
 export const metadata: Metadata = {
   title: 'The Ascentor Manifesto',
@@ -20,6 +21,7 @@ export const metadata: Metadata = {
     url: 'https://joinascentor.com/manifesto',
     siteName: 'Ascentor',
     type: 'article',
+    images: [DEFAULT_OG_IMAGE],
   },
 };
 
@@ -52,7 +54,7 @@ export default function ManifestoPage() {
     <PublicShell>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
       />
       <style>{`
         body { background: #0F0F0E !important; color: #FAFAF8 !important; }

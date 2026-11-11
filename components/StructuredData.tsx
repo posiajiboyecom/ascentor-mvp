@@ -8,8 +8,7 @@
 import {
   getOrganizationSchema,
   getWebSiteSchema,
-  getSoftwareAppSchema,
-} from '@/lib/seo';
+  getSoftwareAppSchema, jsonLdString } from '@/lib/seo';
 
 export default function StructuredData() {
   const schemas = [getOrganizationSchema(), getWebSiteSchema(), getSoftwareAppSchema()];
@@ -20,7 +19,7 @@ export default function StructuredData() {
         <script
           key={i}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdString(schema) }}
         />
       ))}
     </>

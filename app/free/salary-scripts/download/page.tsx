@@ -1,7 +1,8 @@
 import DownloadPage from '@/components/DownloadPage';
 
 export const metadata = {
-  title: 'Download Your Salary Scripts | Ascentor',
+  title: 'Download Your Salary Scripts',
+  robots: { index: false, follow: true },
 };
 
 export default function SalaryDownloadPage() {

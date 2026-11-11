@@ -29,7 +29,7 @@ export async function initMobilePush() {
 
   // Handle foreground notifications
   PushNotifications.addListener('pushNotificationReceived', (notification) => {
-    console.log('Foreground notification:', notification);
+    // (payload not logged: it can carry message text)
   });
 
   // Handle notification tap (app was in background)

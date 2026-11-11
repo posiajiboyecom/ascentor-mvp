@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { SITE_URL, getArticleSchema, getBreadcrumbSchema } from '@/lib/seo';
+import { SITE_URL, getArticleSchema, getBreadcrumbSchema, jsonLdString } from '@/lib/seo';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -102,19 +102,51 @@ export default async function BlogPostPage({ params }: Props) {
             </ol>
           );
         }
-        // Handle links [text](url)
-        const linkified = block.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" style="color:#E8A020;text-decoration:underline">$1</a>');
-        const parts = block.split(/\*\*(.*?)\*\*/g);
+        // Paragraph with **bold** and [text](url) links, rendered as React elements (never raw HTML),
+        // so post text can't inject markup and link targets are limited to http(s), mailto and site paths.
         return (
           <p key={i} className="text-sm my-3" style={{ color: '#374151', lineHeight: 1.8 }}>
-            {linkified.includes('<a') ? (
-              <span dangerouslySetInnerHTML={{ __html: linkified.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
-            ) : (
-              parts.map((p, k) => k % 2 === 1 ? <strong key={k}>{p}</strong> : p)
-            )}
+            {inline(block)}
           </p>
         );
       });
+  }
+
+  function safeHref(raw: string): string | null {
+    const href = raw.trim();
+    // A site path: "/x" but never "//host" or "/\\host" (browsers treat both as another site).
+    if (/^\/(?![\/\\])/.test(href)) return href;
+    if (href.startsWith('#')) return href;
+    try {
+      const u = new URL(href);
+      return ['http:', 'https:', 'mailto:'].includes(u.protocol) ? u.toString() : null;
+    } catch { return null; }
+  }
+
+  function sameSite(href: string): boolean {
+    try { return new URL(href, SITE_URL).origin === new URL(SITE_URL).origin; } catch { return false; }
+  }
+
+  function inline(text: string) {
+    const out: React.ReactNode[] = [];
+    const re = /\[([^\]]+)\]\(([^)\s]+)\)|\*\*(.+?)\*\*/g;
+    let last = 0; let m: RegExpExecArray | null; let k = 0;
+    while ((m = re.exec(text))) {
+      if (m.index > last) out.push(text.slice(last, m.index));
+      if (m[3] !== undefined) {
+        out.push(<strong key={k++}>{m[3]}</strong>);
+      } else {
+        const href = safeHref(m[2]);
+        const internal = !!href && (href.startsWith('/') || href.startsWith('#') || sameSite(href));
+        out.push(href
+          ? <a key={k++} href={href} style={{ color: '#E8A020', textDecoration: 'underline' }}
+               {...(internal ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>{m[1]}</a>
+          : m[1]);
+      }
+      last = re.lastIndex;
+    }
+    if (last < text.length) out.push(text.slice(last));
+    return out;
   }
 
   const jsonLd = [
@@ -130,7 +162,7 @@ export default async function BlogPostPage({ params }: Props) {
     <div className="min-h-screen" style={{ background: '#FAFAF9', fontFamily: "'Metropolis', system-ui, sans-serif" }}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
       />
 
       <nav className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(250,250,249,0.88)', borderBottom: '1px solid #E5E5E4' }}>

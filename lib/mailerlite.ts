@@ -1,3 +1,4 @@
+import { maskEmail } from './log-safe';
 // ═══════════════════════════════════════════════════════════
 // lib/mailerlite.ts  -  Ascentor × MailerLite integration
 // ═══════════════════════════════════════════════════════════
@@ -89,7 +90,7 @@ export async function addOrUpdateSubscriber(params: {
   }
 
   const data = await mlFetch('/subscribers', { method: 'POST', body });
-  console.log(`[MailerLite] Subscriber upserted: ${email}`);
+  console.info(`[MailerLite] Subscriber upserted: ${maskEmail(email)}`);
   return data?.data;
 }
 
@@ -124,7 +125,7 @@ export async function triggerAutomation(email: string, automationId: string) {
     body: { email: email.trim().toLowerCase() },
   });
 
-  console.log(`[MailerLite] Automation triggered for: ${email}`);
+  console.info(`[MailerLite] Automation triggered for: ${maskEmail(email)}`);
   return data;
 }
 

@@ -6,6 +6,7 @@ import type { ActionResult } from '@/lib/rx/types';
 import { requireAdmin } from '@/lib/rx/admin';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { cleanText } from '@/lib/rx/safety';
+import { pgTerm } from '@/lib/security';
 
 const slugify = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/[\s_]+/g, '-').slice(0, 40);
 
@@ -16,7 +17,7 @@ export async function addCategory(rawName: string): Promise<ActionResult> {
     if (name.length < 2) throw new Error('Give the category a name of at least two letters.');
     const slug = slugify(name);
     if (!slug) throw new Error('Use letters or numbers in the name.');
-    const { data: clash } = await supabaseAdmin.from('feed_categories').select('slug').or(`slug.eq.${slug},name.ilike.${name.replace(/[,()]/g, ' ')}`).maybeSingle();
+    const { data: clash } = await supabaseAdmin.from('feed_categories').select('slug').or(`slug.eq.${slug},name.ilike.${pgTerm(name, 40)}`).maybeSingle();
     if (clash) throw new Error('A category with that name already exists.');
     const { data: last } = await supabaseAdmin.from('feed_categories').select('position').order('position', { ascending: false }).limit(1).maybeSingle();
     const { error } = await supabaseAdmin.from('feed_categories').insert({ slug, name, position: ((last?.position as number | undefined) ?? 0) + 1 });

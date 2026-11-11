@@ -26,6 +26,7 @@ import { sendEmail } from '@/lib/nodemailer';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as adminSchemas from '@/lib/validation/schemas/admin';
 import { guardApi } from '@/lib/admin/api-guard';
+import { pgTerm } from '@/lib/security';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -73,8 +74,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get('status') || '';
   const search = searchParams.get('search') || '';
-  const page   = parseInt(searchParams.get('page') || '0');
-  const limit  = parseInt(searchParams.get('limit') || '20');
+  const page   = Math.max(0, parseInt(searchParams.get('page') || '0') || 0);
+  const limit  = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20') || 20));
 
   let query = supabase
     .from('partners')
@@ -91,7 +92,8 @@ export async function GET(req: NextRequest) {
     .range(page * limit, (page + 1) * limit - 1);
 
   if (status) query = query.eq('status', status);
-  if (search) query = query.or(`name.ilike.%${search}%,subdomain.ilike.%${search}%`);
+  const term = pgTerm(search, 60);
+  if (term) query = query.or(`name.ilike.%${term}%,subdomain.ilike.%${term}%`);
 
   const { data: partners, count, error } = await query;
   if (error) {

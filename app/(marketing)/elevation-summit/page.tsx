@@ -9,7 +9,7 @@
 // the exact date/venue/prices there, not here.
 import type { Metadata } from 'next';
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
-import { SITE_URL, SUMMIT, getSummitEventSchema, getBreadcrumbSchema } from '@/lib/seo';
+import { SITE_URL, SUMMIT, getSummitEventSchema, getBreadcrumbSchema, jsonLdString, SUMMIT_OG_IMAGE } from '@/lib/seo';
 import ElevationSummitClient from './ElevationSummitClient';
 import PublicShell from '@/components/layout/PublicShell';
 
@@ -25,6 +25,7 @@ export const metadata: Metadata = {
     url: `${SITE_URL}/elevation-summit`,
     siteName: 'Ascentor',
     type: 'website',
+    images: [SUMMIT_OG_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',
@@ -56,7 +57,7 @@ export default async function ElevationSummitPage() {
     <PublicShell>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
       />
       <ElevationSummitClient cms={cms} />
     </PublicShell>

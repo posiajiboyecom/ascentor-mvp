@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { FROM_DEFAULT, REPLY_TO, UNPROVEN_ALIASES, adminNotifyEmail } from './contact';
 import { fallbackEnabled, sendViaFallback } from './emailFallback';
+import { maskEmail } from '@/lib/log-safe';
 
 // Inferred from the factory - avoids namespace-reference errors
 // across different TypeScript/module-resolution configurations.
@@ -164,7 +165,7 @@ export function guardRecipient(to: string): string {
   const bare = addressOf(to);
   if (!UNPROVEN_ALIASES.includes(bare)) return to;
   const team = adminNotifyEmail();
-  console.warn('[email] recipient is an unproven alias, redirected to the team inbox:', bare, '->', team);
+  console.warn('[email] recipient is an unproven alias, redirected to the team inbox:', maskEmail(bare));
   return team;
 }
 

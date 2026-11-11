@@ -1,7 +1,8 @@
 import DownloadPage from '@/components/DownloadPage';
 
 export const metadata = {
-  title: 'Download Your Promotion Blueprint | Ascentor',
+  title: 'Download Your Promotion Blueprint',
+  robots: { index: false, follow: true },
 };
 
 export default function PromotionDownloadPage() {

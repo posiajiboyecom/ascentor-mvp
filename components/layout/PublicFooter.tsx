@@ -97,8 +97,9 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
 
             {/* The Movement */}
             <div>
-              <h4
+              <h2
                 style={{
+                  marginTop: 0,
                   fontFamily: 'Metropolis',
                   fontWeight: 700,
                   fontSize: '0.875rem',
@@ -107,7 +108,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                 }}
               >
                 The Movement
-              </h4>
+              </h2>
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 <Link href="/movement" className="pf-link">
                   Our Ideology
@@ -123,8 +124,9 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
 
             {/* Community */}
             <div>
-              <h4
+              <h2
                 style={{
+                  marginTop: 0,
                   fontFamily: 'Metropolis',
                   fontWeight: 700,
                   fontSize: '0.875rem',
@@ -133,7 +135,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                 }}
               >
                 Community
-              </h4>
+              </h2>
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 <button className="pf-link" style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, textAlign: 'left' }} onClick={() => openGateOrSignup()}>
                   Join Free
@@ -160,8 +162,9 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
 
             {/* Contact */}
             <div>
-              <h4
+              <h2
                 style={{
+                  marginTop: 0,
                   fontFamily: 'Metropolis',
                   fontWeight: 700,
                   fontSize: '0.875rem',
@@ -170,7 +173,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                 }}
               >
                 Contact
-              </h4>
+              </h2>
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <a href={`mailto:${SUPPORT_EMAIL}`} className="pf-link">
                   <svg className="pf-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13 2 4"/></svg>
@@ -189,8 +192,9 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
 
             {/* The Elevation Summit CTA */}
             <div>
-              <h4
+              <h2
                 style={{
+                  marginTop: 0,
                   fontFamily: 'Metropolis',
                   fontWeight: 700,
                   fontSize: '0.875rem',
@@ -199,7 +203,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                 }}
               >
                 The Elevation Summit
-              </h4>
+              </h2>
               <p style={{ fontSize: '0.875rem', color: '#6B7280', lineHeight: 1.6, marginBottom: '1rem' }}>
                 A global gathering for purposeful individuals building lives of meaning, leadership, and lasting impact.
               </p>

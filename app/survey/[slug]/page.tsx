@@ -48,8 +48,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const survey = await fetchSurvey(slug);
 
   return {
-    title:       survey ? `${survey.title} | Ascentor` : 'Survey | Ascentor',
+    title:       survey ? survey.title : 'Survey',
     description: survey?.description ?? 'Share your feedback and help us build what you actually need.',
+    // Surveys are one-off forms shared by link, not search landing pages.
+    robots:      { index: false, follow: true },
   };
 }
 

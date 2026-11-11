@@ -10,6 +10,7 @@ import { accountAgeDays, accountGate, flagIfRisky } from '@/lib/rx/moderation';
 import { isOwnMediaUrl, parseBody } from '@/lib/rx/media';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { cleanClientId, findByClientId, isMissingColumn, isUniqueViolation } from '@/lib/rx/client-id';
+import { isUuid } from '@/lib/security';
 
 function checkBody(raw: string): string {
   const body = cleanText(raw, 2000);
@@ -27,6 +28,7 @@ function checkBody(raw: string): string {
 export async function openThread(otherId: string): Promise<ActionResult<{ threadId: string }>> {
   try {
     const { db, userId } = await requireMember();
+    if (!isUuid(otherId)) throw new Error('That member isn’t available.');
     if (otherId === userId) throw new Error('That’s you.');
 
     const { data: existing } = await db.from('dm_threads').select('id, status').or(`and(user_a.eq.${userId},user_b.eq.${otherId}),and(user_a.eq.${otherId},user_b.eq.${userId})`).maybeSingle();

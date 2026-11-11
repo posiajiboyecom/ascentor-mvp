@@ -10,10 +10,13 @@ import { brandedEmailLayout, esc, goldButton, p } from '@/lib/emailTemplate';
 import { parseJson } from '@/lib/validation/http';
 import * as commerceSchemas from '@/lib/validation/schemas/commerce';
 import { freeDownloadUrl } from '@/lib/shop';
+import { limitPublic } from '@/lib/security';
 
 const APP_URL = process.env.NEXT_PUBLIC_URL || 'https://joinascentor.com';
 
 export async function POST(req: NextRequest) {
+  const limited = await limitPublic(req, 'shop-free', 10, 600);
+  if (limited) return limited;
   const parsed = await parseJson(req, commerceSchemas.shopFree);
   if (!parsed.ok) return parsed.response;
   const { productId, fullName, email } = parsed.data;

@@ -19,6 +19,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { sniffFile, sniffMatches } from '@/lib/security';
 
 const VOICE_BUCKET = 'community-voice';
 
@@ -52,9 +53,13 @@ export async function POST(req: Request) {
     'audio/mp4':  'mp4',
     'audio/mpeg': 'mp3',
   };
-  const ext = ALLOWED_AUDIO[file.type];
+  const ext = ALLOWED_AUDIO[file.type.split(';')[0].trim()]; // Chrome/Firefox send audio/webm;codecs=opus
   if (!ext) {
     return NextResponse.json({ error: 'Invalid audio format. Supported: webm, ogg, mp4, mpeg.' }, { status: 400 });
+  }
+  // The declared type is client-controlled: check the bytes really are that kind of audio.
+  if (!sniffMatches(sniffFile(new Uint8Array(await file.slice(0, 64).arrayBuffer())), file.type)) {
+    return NextResponse.json({ error: 'That file isn’t a valid audio recording.' }, { status: 400 });
   }
 
   // ── H-02: Validate channel exists and user has access (user-scoped client respects RLS) ──

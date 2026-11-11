@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const summary = await sendEventDayEmails({ budgetMs: 48_000 });
-    console.log('[cron/summit-event-day]', JSON.stringify(summary));
+    console.info('[cron/summit-event-day]', JSON.stringify(summary));
     return NextResponse.json({ ok: true, ...summary });
   } catch (err) {
     console.error('[cron/summit-event-day] failed:', err);

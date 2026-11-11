@@ -13,21 +13,18 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: '/',
         disallow: [
-          '/admin',
-          '/api/',
-          '/auth/',
-          '/dashboard',
-          '/coach',
-          '/community',
-          '/experts',
-          '/learn',
-          '/account',
-          '/referral',
-          '/onboarding',
-          '/checkout',
-          '/login',
-          '/forgot-password',
-          '/reset-password',
+          // Staff, partner portal and APIs
+          '/admin', '/admin-login', '/partner$', '/partner/', '/api/',
+          // Auth flows and personal links
+          '/auth/', '/login', '/signup', '/forgot-password', '/reset-password',
+          '/leader-invite/', '/facilitator/', '/join/', '/unsubscribe/', '/survey/',
+          // Signed-in member app (app/(app)/*)
+          '/dashboard', '/coach', '/community', '/experts', '/learn', '/courses', '/account',
+          '/referral', '/onboarding', '/circle', '/sessions', '/messages', '/growth', '/profile',
+          '/settings', '/announcements', '/sage', '/call', '/store', '/notifications', '/search', '/help',
+          // Transactional pages
+          '/checkout', '/shop/cart$', '/shop/thanks$', '/donate/confirmed', '/elevation-summit/confirmed',
+          '/elevation-summit/ticket', '/elevation-summit/watch', '/free/*/download',
           '/offline',
         ],
       },

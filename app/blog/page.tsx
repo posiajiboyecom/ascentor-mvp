@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
+import { DEFAULT_OG_IMAGE } from '@/lib/seo';
 
 export const metadata = {
   title: 'Blog',
@@ -13,6 +14,7 @@ export const metadata = {
     url: 'https://joinascentor.com/blog',
     siteName: 'Ascentor',
     type: 'website',
+    images: [DEFAULT_OG_IMAGE],
   },
 };
 
@@ -73,7 +75,11 @@ export default async function BlogPage() {
       <footer className="py-8 px-6 text-center text-xs" style={{ background: '#FFF7ED', color: '#9CA3AF' }}>
         <Link href="/" className="hover:text-amber-600">Home</Link>
         <span className="mx-2">·</span>
-        <Link href="/pricing" className="hover:text-amber-600">Pricing</Link>
+        <Link href="/elevation-summit" className="hover:text-amber-600">The Elevation Summit</Link>
+        <span className="mx-2">·</span>
+        <Link href="/movement" className="hover:text-amber-600">The Movement</Link>
+        <span className="mx-2">·</span>
+        <Link href="/shop" className="hover:text-amber-600">Shop</Link>
         <span className="mx-2">·</span>
         <Link href="/terms" className="hover:text-amber-600">Terms</Link>
         <p className="mt-3">© {new Date().getFullYear()} Ascentor. All rights reserved.</p>

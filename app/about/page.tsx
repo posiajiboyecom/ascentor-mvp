@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch { /* metadata must never throw */ }
 
   return {
-    title: 'About Ascentor',
+    title: 'About',
     description:
       'Ascentor (formerly AscentorBI) is a purposeful living and leadership development platform: AI coaching with Sage, community in The Circle, expert sessions, and The Elevation Summit, its annual gathering in Lagos.',
     alternates: { canonical: 'https://joinascentor.com/about' },
@@ -26,13 +26,14 @@ export async function generateMetadata(): Promise<Metadata> {
       url: 'https://joinascentor.com/about',
       siteName: 'Ascentor',
       type: 'website',
-      ...(founderPhoto ? { images: [{ url: founderPhoto }] } : {}),
+      images: [founderPhoto ? { url: founderPhoto } : DEFAULT_OG_IMAGE],
     },
     ...(founderPhoto ? { twitter: { card: 'summary_large_image', images: [founderPhoto] } } : {}),
   };
 }
 
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
+import { jsonLdString, DEFAULT_OG_IMAGE } from '@/lib/seo';
 
 export default async function AboutPage() {
   const cms = await getPublishedPage('about');
@@ -107,7 +108,7 @@ export default async function AboutPage() {
     <PublicShell>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(aboutJsonLd) }}
       />
       <style>{`
         body { background: #FAFAF8 !important; color: #0F0F0E !important; }

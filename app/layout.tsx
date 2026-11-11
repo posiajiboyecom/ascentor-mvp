@@ -25,7 +25,9 @@ export const metadata: Metadata = {
   // app/opengraph-image.tsx). Without it Next falls back to localhost
   // or the Vercel deployment URL.
   metadataBase: new URL('https://joinascentor.com'),
-  alternates: { canonical: '/' },
+  // No site-wide canonical here: a canonical set in the root layout is inherited by every page that
+  // doesn't override it, which tells Google every page is a duplicate of the home page. Each public
+  // page sets its own (generatePageMetadata in lib/seo.ts); the home page sets '/' in app/page.tsx.
   title: {
     default: 'Ascentor, Build a life that outlasts you.',
     template: '%s | Ascentor',
@@ -65,16 +67,19 @@ export const metadata: Metadata = {
     description: 'The platform of The Elevation Summit movement.',
     creator: '@ascentorhq',
   },
+  // Google Search Console: set GOOGLE_SITE_VERIFICATION to the token from the "HTML tag" method.
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
   other: {
     'mobile-web-app-capable': 'yes',
   },
 };
 
+// Pinch-zoom stays enabled on the public site (WCAG 1.4.4; Lighthouse flags user-scalable=no).
+// The signed-in app shell sets its own app-like viewport in app/(app)/layout.tsx.
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  viewportFit: 'cover',
   themeColor: '#FAFAF8',
 };
 

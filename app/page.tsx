@@ -25,6 +25,15 @@
 
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
 import LandingPageClient from './LandingPageClient';
+import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/seo';
+
+export const metadata: Metadata = {
+  title: { absolute: 'Ascentor, Build a life that outlasts you.' },
+  description:
+    'Ascentor is the platform of The Elevation Summit, a global community of purposeful individuals building lives of meaning, leadership, and lasting impact.',
+  alternates: { canonical: SITE_URL },
+};
 
 export default async function LandingPage() {
   const cms = await getPublishedPage('landing');

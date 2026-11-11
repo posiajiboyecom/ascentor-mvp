@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { MEDIA_BUCKET } from '@/lib/rx/media';
+import { sniffFile, sniffMatches } from '@/lib/security';
 
 export const runtime = 'nodejs';
 
@@ -38,6 +39,10 @@ export async function POST(req: Request) {
   if (!ext) return NextResponse.json({ error: kind === 'voice' ? 'That audio format is not supported.' : 'Use a JPG, PNG, WebP or GIF photo.' }, { status: 400 });
   const limit = kind === 'voice' ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
   if (file.size > limit) return NextResponse.json({ error: `That file is too large (max ${limit / 1024 / 1024} MB).` }, { status: 400 });
+  // Declared type is client-controlled: the bytes must match it.
+  if (!sniffMatches(sniffFile(new Uint8Array(await file.slice(0, 64).arrayBuffer())), base)) {
+    return NextResponse.json({ error: kind === 'voice' ? 'That file isn’t a valid audio recording.' : 'That file isn’t a valid image.' }, { status: 400 });
+  }
 
   try {
     await ensureBucket();

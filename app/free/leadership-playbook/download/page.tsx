@@ -1,7 +1,8 @@
 import DownloadPage from '@/components/DownloadPage';
 
 export const metadata = {
-  title: 'Download Your Leadership Playbook | Ascentor',
+  title: 'Download Your Leadership Playbook',
+  robots: { index: false, follow: true },
 };
 
 export default function PlaybookDownloadPage() {

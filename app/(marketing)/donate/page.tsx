@@ -2,7 +2,7 @@
 // Server component wrapper, same split pattern as the Elevation Summit page:
 // metadata here, form state in the client component.
 import type { Metadata } from 'next';
-import { SITE_URL } from '@/lib/seo';
+import { SITE_URL, DEFAULT_OG_IMAGE } from '@/lib/seo';
 import DonateClient from './DonateClient';
 import { visitorCurrency } from '@/lib/geo';
 import PublicShell from '@/components/layout/PublicShell';
@@ -18,6 +18,7 @@ export const metadata: Metadata = {
     url: `${SITE_URL}/donate`,
     siteName: 'Ascentor',
     type: 'website',
+    images: [DEFAULT_OG_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',

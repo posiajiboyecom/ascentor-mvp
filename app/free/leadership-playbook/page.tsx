@@ -1,9 +1,11 @@
 import LeadMagnetPage from '@/components/LeadMagnetPage';
+import { generatePageMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'The 90-Day Leadership Playbook, Free Download | Ascentor',
+export const metadata = generatePageMetadata({
+  title: 'The 90-Day Leadership Playbook, Free Download',
   description: 'The exact framework Sage uses. Set one goal. Track 13 weekly actions. Make your progress visible to the people who decide your future. Free PDF.',
-};
+  path: '/free/leadership-playbook',
+});
 
 export default function LeadershipPlaybookPage() {
   return (

@@ -10,6 +10,7 @@ import { sendEmail } from '@/lib/nodemailer';
 import { alertEventRegistration } from '@/lib/adminAlerts';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
+import { limitPublic } from '@/lib/security';
 
 function confirmationHtml(opts: {
   firstName: string;
@@ -36,6 +37,8 @@ function confirmationHtml(opts: {
 }
 
 export async function POST(req: Request) {
+  const limited = await limitPublic(req, 'events-register', 60, 600);
+  if (limited) return limited;
   const parsed = await parseJson(req, publicSchemas.eventRegister);
   if (!parsed.ok) return parsed.response;
   const body = parsed.data;

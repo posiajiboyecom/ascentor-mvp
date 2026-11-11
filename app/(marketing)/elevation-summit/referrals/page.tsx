@@ -4,7 +4,7 @@ import '@/styles/summit-leaderboard.css';
 import type { Metadata } from 'next';
 import { REFERRAL_GOAL, loadPublicBoard, type PublicBoard } from '@/lib/summitReferralPublic';
 import LeaderboardView from './LeaderboardView';
-import { SUMMIT } from '@/lib/seo';
+import { SUMMIT, SUMMIT_OG_IMAGE } from '@/lib/seo';
 
 export const revalidate = 300;
 
@@ -16,6 +16,7 @@ export const metadata: Metadata = {
     title: 'Elevation Summit referral leaderboard',
     description: `Bring ${REFERRAL_GOAL} friends to The Elevation Summit and win a prize. See who is leading.`,
     url: '/elevation-summit/referrals',
+    images: [SUMMIT_OG_IMAGE],
   },
 };
 

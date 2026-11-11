@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { addOrUpdateSubscriber, ML_GROUPS } from '@/lib/mailerlite';
 import { parseJson, parseQuery } from '@/lib/validation/http';
 import * as publicSchemas from '@/lib/validation/schemas/public';
+import { limitPublic } from '@/lib/security';
 
 // ─────────────────────────────────────────────────────────────
 // POST /api/checkout-pending
@@ -23,6 +24,8 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
+  const limited = await limitPublic(req, 'checkout-pending', 30, 600);
+  if (limited) return limited;
   try {
     const parsed = await parseJson(req, publicSchemas.checkoutPending);
     if (!parsed.ok) return NextResponse.json({ ok: true }); // silent, non-blocking
