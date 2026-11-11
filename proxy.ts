@@ -43,7 +43,7 @@ import { platformOpen } from '@/lib/launch';
 function buildNoncedCSP(nonce: string): string {
   return [
     // nonce replaces 'unsafe-inline' - only scripts with this nonce attribute run
-    `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com https://js.paystack.co https://plausible.io https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com https://c.daily.co https://c.dailywebrtc.com https://*.daily.co https://*.dailywebrtc.com https://*.dailywebrtc.net 'wasm-unsafe-eval'`,
+    `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com https://js.paystack.co https://applepay.cdn-apple.com https://plausible.io https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com https://c.daily.co https://c.dailywebrtc.com https://*.daily.co https://*.dailywebrtc.com https://*.dailywebrtc.net 'wasm-unsafe-eval'`,
     // style-src keeps unsafe-inline (Next.js CSS-in-JS requirement - low risk)
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://paystack.com`,
     `font-src 'self' data: https://fonts.gstatic.com`,

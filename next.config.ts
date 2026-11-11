@@ -10,7 +10,7 @@ import type { NextConfig } from 'next';
 const CSP = [
   // script-src: nonce is set dynamically in proxy.ts per request
   // This fallback only covers static assets (no inline scripts needed there)
-  `script-src 'self' https://challenges.cloudflare.com https://js.paystack.co https://plausible.io https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com https://c.daily.co https://c.dailywebrtc.com https://*.daily.co https://*.dailywebrtc.com https://*.dailywebrtc.net 'wasm-unsafe-eval'`,
+  `script-src 'self' https://challenges.cloudflare.com https://js.paystack.co https://applepay.cdn-apple.com https://plausible.io https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com https://c.daily.co https://c.dailywebrtc.com https://*.daily.co https://*.dailywebrtc.com https://*.dailywebrtc.net 'wasm-unsafe-eval'`,
   // Styles: self + inline (required by Next.js CSS-in-JS) + Google Fonts
   `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://paystack.com`,
   `font-src 'self' data: https://fonts.gstatic.com`,
@@ -33,8 +33,9 @@ const securityHeaders = [
   { key: 'Strict-Transport-Security',    value: 'max-age=31536000; includeSubDomains; preload' },
   // Controls how much referrer info is sent with requests
   { key: 'Referrer-Policy',              value: 'strict-origin-when-cross-origin' },
-  // Disables browser features we don't use
-  { key: 'Permissions-Policy',           value: 'camera=(self), microphone=(self), display-capture=(self), geolocation=(), payment=()' },
+  // Disables browser features we don't use. payment is allowed for this site and Paystack's checkout
+  // (popup iframe) so Apple Pay and Google Pay can run on the donate page.
+  { key: 'Permissions-Policy',           value: 'camera=(self), microphone=(self), display-capture=(self), geolocation=(), payment=(self "https://checkout.paystack.com" "https://js.paystack.co")' },
   // Cross-Origin policies - use same-origin-allow-popups so YouTube's
   // iframe player postMessage API works while retaining Spectre mitigations.
   { key: 'Cross-Origin-Opener-Policy',   value: 'same-origin-allow-popups' },
@@ -88,6 +89,11 @@ const nextConfig: NextConfig = {
         // Apply security headers to all routes
         source: '/(.*)',
         headers: securityHeaders,
+      },
+      {
+        // Apple Pay domain verification (Paystack): the file has no extension, and Paystack requires this content type.
+        source: '/.well-known/apple-developer-merchantid-domain-association',
+        headers: [{ key: 'Content-Type', value: 'application/text' }],
       },
     ];
   },
