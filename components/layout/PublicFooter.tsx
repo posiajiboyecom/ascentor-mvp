@@ -119,6 +119,12 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
                 <Link href="/about" className="pf-link">
                   About Ascentor
                 </Link>
+                <Link href="/who-its-for" className="pf-link">
+                  Who It&apos;s For
+                </Link>
+                <Link href="/pricing" className="pf-link">
+                  Pricing
+                </Link>
               </nav>
             </div>
 
@@ -138,7 +144,7 @@ export default function PublicFooter({ hasBlogPosts = false }: PublicFooterProps
               </h2>
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                 <button className="pf-link" style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, textAlign: 'left' }} onClick={() => openGateOrSignup()}>
-                  Join Free
+                  Start 7 Days Free
                 </button>
                 <Link href="/community" className="pf-link">
                   The Circle

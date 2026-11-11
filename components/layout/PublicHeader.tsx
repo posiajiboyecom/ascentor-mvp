@@ -58,6 +58,7 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
       <Link href="/movement" className="ph-nav-link">The Movement</Link>
       <Link href="/about" className="ph-nav-link">About</Link>
       <Link href="/elevation-summit" className="ph-nav-link">The Elevation Summit</Link>
+      <Link href="/pricing" className="ph-nav-link">Pricing</Link>
       {hasBlogPosts && <Link href="/blog" className="ph-nav-link">Resources</Link>}
       <Link href="/shop" className="ph-nav-link">Shop{cartBadge}</Link>
       <Link href="/contact" className="ph-nav-link">Contact</Link>
@@ -325,6 +326,9 @@ export default function PublicHeader({ hasBlogPosts = false }: PublicHeaderProps
         </Link>
         <Link href="/elevation-summit" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
           The Elevation Summit
+        </Link>
+        <Link href="/pricing" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+          Pricing
         </Link>
         {hasBlogPosts && (
           <Link href="/blog" className="ph-mobile-link" onClick={() => setMobileMenuOpen(false)}>

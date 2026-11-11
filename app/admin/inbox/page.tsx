@@ -46,6 +46,7 @@ type Msg = {
 const SUBJECT_LABELS: Record<string, string> = {
   general:     'General inquiry',
   partnership: 'Partnership opportunity',
+  teams:       'Teams and organisations (interest)',
   speaking:    'Speaking / Summit',
   media:       'Media / Press',
   support:     'Platform support',

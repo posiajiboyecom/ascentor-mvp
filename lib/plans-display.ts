@@ -25,9 +25,17 @@ export function planDisplayName(raw: string | null | undefined): string {
 export const FEATURED_PLANS = ['explorer', 'builder', 'pinnacle'] as const;
 export type FeaturedPlan = (typeof FEATURED_PLANS)[number];
 
+/** One line on who each plan is for. Shown at checkout, in Billing and on the public pricing section. */
+export const PLAN_BLURBS: Record<FeaturedPlan, string> = {
+  explorer: 'For people finding their direction.',
+  builder: 'For people building a career or a business.',
+  pinnacle: 'For people who want one-to-one guidance.',
+};
+
+/** What each plan includes. The single list used at checkout, in Billing and on the public pricing section. */
 export const PLAN_BULLETS: Record<FeaturedPlan, string[]> = {
-  explorer: ['Your Circle and weekly meetings', 'Learn pathways and Sage · AI coach', 'Circle mentorship on foundations'],
-  builder: ['Everything in Seeker', 'Industry mentorship with a view of the global tech ecosystem', 'Remote internships and work experience', 'Opportunities for business owners'],
+  explorer: ['Your Circle, with a weekly call', 'Circle mentorship', 'Core Learn pathways', 'Sage · AI coach, 25 messages a day', 'One live expert session a month', 'Community and direct messages'],
+  builder: ['Everything in Seeker', 'Advanced Learn pathways', 'Sage · AI coach, 75 messages a day', 'Two live expert sessions a month', 'Industry mentorship', 'Remote internships and work experience', 'Opportunities for business owners'],
   pinnacle: ['Everything in Builder', 'A private 20-minute mentor session every month', 'Unlimited Sage · AI coach', 'Four live expert sessions a month, with seats held for you', 'Priority support'],
 };
 

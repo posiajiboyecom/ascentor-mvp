@@ -7,6 +7,8 @@ import { Brain, ShieldCheck, Briefcase, HeartHandshake, Users, Landmark, Trendin
 import PublicHeader from '@/components/layout/PublicHeader';
 import PublicFooter from '@/components/layout/PublicFooter';
 import type { PublishedPage } from '@/lib/supabase/queries/marketing';
+import PricingSection from '@/components/marketing/PricingSection';
+import type { PublicPricing } from '@/lib/pricing-public';
 
 // Narrow sanitizer for the hero headline specifically - allows ONLY
 // <br> / <br/> tags (needed for the two-line headline layout) and
@@ -64,7 +66,7 @@ const PILLAR_ICONS: Record<string, typeof Brain> = {
   'The Elevation Summit': Mountain,
 };
 
-export default function LandingPageClient({ cms }: { cms: PublishedPage | null }) {
+export default function LandingPageClient({ cms, pricing }: { cms: PublishedPage | null; pricing: PublicPricing }) {
   const supabase = createClient();
 
   const [email, setEmail] = useState('');
@@ -693,6 +695,9 @@ display: flex; align-items: center; justify-content: center; }
           })}
         </div>
       </section>
+
+      {/* ── Pricing (in the visitor's currency, from the server) ── */}
+      <PricingSection pricing={pricing} />
 
       {/* ── Quote Section ── */}
       <section style={{ background: '#F4F3EF', padding: 'clamp(4rem, 8vw, 6rem) 1.5rem' }}>

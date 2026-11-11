@@ -21,6 +21,7 @@ const FAINT  = '#9CA3AF';
 const SUBJECTS = [
   { value: 'general',     label: 'General inquiry'        },
   { value: 'partnership', label: 'Partnership opportunity' },
+  { value: 'teams',       label: 'Ascentor for Teams and organisations' },
   { value: 'speaking',    label: 'Speaking / Summit'       },
   { value: 'media',       label: 'Media / Press'           },
   { value: 'support',     label: 'Platform support'        },
@@ -109,6 +110,12 @@ export default function ContactPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+
+  // /contact?subject=teams (from the pricing section) picks the topic for the visitor.
+  useEffect(() => {
+    const s = new URLSearchParams(window.location.search).get('subject');
+    if (s && SUBJECTS.some((x) => x.value === s)) setForm((f) => ({ ...f, subject: s }));
+  }, []);
 
   function update(field: string, value: string) {
     setForm(f => ({ ...f, [field]: value }));

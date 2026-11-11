@@ -25,6 +25,8 @@
 
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
 import LandingPageClient from './LandingPageClient';
+import { visitorCurrency } from '@/lib/geo';
+import { publicPricing } from '@/lib/pricing-public';
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/seo';
 
@@ -38,5 +40,6 @@ export const metadata: Metadata = {
 export default async function LandingPage() {
   const cms = await getPublishedPage('landing');
 
-  return <LandingPageClient cms={cms} />;
+  const pricing = publicPricing(await visitorCurrency());
+  return <LandingPageClient cms={cms} pricing={pricing} />;
 }

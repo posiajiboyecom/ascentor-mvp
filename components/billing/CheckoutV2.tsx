@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { Check } from 'lucide-react';
 import CardsPanel, { type CardView } from './CardsPanel';
 import { fmtDate } from './format';
+import { PLAN_BLURBS, PLAN_BULLETS } from '@/lib/plans-display';
 import { PAID_TIERS, formatMoney, getPlan, planAmount, planCodeFor, priceFor as catalogPrice, tierLabel, groupDiscountApplies, type Currency, type Cycle, type PriceType, type Tier } from '@/lib/billing/catalog';
 import { checkoutSummary } from '@/lib/billing/preview';
 import { GROUP_MIN, TRIAL_DAYS } from '@/lib/billing/rules';
@@ -24,18 +25,9 @@ interface Choice { tier: Tier; cycle: Cycle; groupMode: GroupMode; code: string 
 const STORE = 'asc_checkout_v2';
 
 const TIER_INFO: Record<Tier, { blurb: string; bullets: string[] }> = {
-  explorer: {
-    blurb: 'For people finding their direction.',
-    bullets: ['Today tab and daily practices', 'Sage · AI coach, 25 messages a day', 'Core Learn tracks', 'Join one Circle with mentor sessions', 'Open house community group', 'Direct messages'],
-  },
-  builder: {
-    blurb: 'For people building a career or a business.',
-    bullets: ['Everything in Seeker', 'Sage · AI coach, 75 messages a day', 'Core and advanced Learn tracks', 'Industry mentorship', 'Remote internships and work experience', 'Business opportunities for members running a business'],
-  },
-  pinnacle: {
-    blurb: 'For people who want one-to-one guidance.',
-    bullets: ['Everything in Builder', 'A private 20-minute mentor session every month', 'Unlimited Sage · AI coach', 'Four live expert sessions a month, with seats held for you', 'Priority support'],
-  },
+  explorer: { blurb: PLAN_BLURBS.explorer, bullets: PLAN_BULLETS.explorer },
+  builder: { blurb: PLAN_BLURBS.builder, bullets: PLAN_BULLETS.builder },
+  pinnacle: { blurb: PLAN_BLURBS.pinnacle, bullets: PLAN_BULLETS.pinnacle },
 };
 
 /** "ASC-7K2Q", or a pasted link like https://joinascentor.com/join/<token>. */

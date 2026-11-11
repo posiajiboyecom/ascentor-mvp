@@ -46,6 +46,7 @@ const FROM_ADDRESS    = FROM_DEFAULT;
 const SUBJECT_LABELS: Record<string, string> = {
   general:     'General inquiry',
   partnership: 'Partnership opportunity',
+  teams:       'Ascentor for Teams and organisations',
   speaking:    'Speaking / Summit',
   media:       'Media / Press',
   support:     'Platform support',

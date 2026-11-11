@@ -1,61 +1,62 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicShell from '@/components/layout/PublicShell';
-import { formatNaira, priceFor, tierLabel, type Tier } from '@/lib/billing/catalog';
+import { formatMoney, priceFor } from '@/lib/billing/catalog';
+import { visitorCurrency } from '@/lib/geo';
 
+// Who it's for: the three stages (Seeking, Building, Leading). The stage is set from a member's onboarding answers and
+// decides which Circle and mentorship focus fits them. It does NOT decide the plan: any member chooses any plan
+// (Seeker, Builder or Pinnacle, see /pricing), and Leaders who facilitate a Circle use Ascentor free.
+// Members must be 18 or older (app/terms). Prices are in the visitor's currency: naira in Nigeria, US dollars elsewhere.
 
-// Renders SVG icon strings safely  
-function SvgIcon({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
-  return <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
-}
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Who It's For | Ascentor",
   description:
-    "Ascentor is built for every stage of the ambitious professional journey, from students figuring out their path to executives scaling their impact.",
+    "Ascentor is for Seekers, Builders and Leaders: from people finding their direction to leaders building something that outlasts them.",
 };
 
 /* ── Data ────────────────────────────────────────────────── */
 const PERSONAS = [
   {
     stage:    'Seeking',
-    age:      '15 – 22',
+    focus:    'Finding your direction',
     emoji:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>',
     color:    '#14B8A6',
     bg:       'rgba(20,184,166,0.06)',
     border:   'rgba(20,184,166,0.18)',
     tagline:  "You're figuring out where to start.",
     who: [
-      'Final-year secondary school students',
-      'University undergraduates & recent graduates',
+      'University students and recent graduates (18+)',
       'Young professionals in their first job',
-      'Anyone unsure which career path to take',
+      'Anyone unsure which path to take next',
+      'Anyone starting again after a change in life or work',
     ],
     problems: [
       "You don't know which career path is right for you",
       "You have no professional network, yet",
-      "You can't afford a career counsellor",
+      "You don't know who to ask for honest advice",
       'Imposter syndrome is real and loud',
     ],
     outcomes: [
-      'Clarity on your career direction within 30 days',
-      'A step-by-step roadmap from student to first job',
-      'Access to global opportunities & scholarships',
-      'Peer circles of driven young professionals like you',
+      'A Circle of peers that meets every week',
+      'Mentorship focused on foundations: knowing yourself and your direction',
+      'Learn pathways across the six dimensions of the total person',
+      'Sage · AI coach, to plan your week and keep your practices',
     ],
-    tier:     'explorer' as Tier,
     href:     '/signup',
   },
   {
     stage:    'Building',
-    age:      '22 – 32',
+    focus:    'Building a career or a business',
     emoji:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
     color:    '#E8A020',
     bg:       'rgba(245,158,11,0.06)',
     border:   'rgba(245,158,11,0.22)',
     tagline:  "You're in the game. Now you want to win.",
     who: [
-      'Early-career professionals (0–7 years experience)',
+      'Early-career professionals',
       'First-time managers stepping into leadership',
       'Entrepreneurs building their first venture',
       'Professionals switching industries or roles',
@@ -64,21 +65,19 @@ const PERSONAS = [
       "You're good at your job but stuck at the same level",
       'You got promoted but nobody taught you how to lead',
       "Your peers are advancing faster and you don't know why",
-      'You lack access to senior mentors who look like you',
+      'You have no senior people in your field to learn from',
     ],
     outcomes: [
-      'Get promoted or land your next role faster',
-      'Build real leadership skills, not just theory',
-      "1-on-1 sessions with mentors who've done it",
-      'A personal board of advisors in your peer circle',
+      'Industry mentorship with a view of the global tech ecosystem',
+      'Remote internships and work experience in your field',
+      'Opportunities and subsidised products for business owners',
+      'A Circle that holds you to the work, week after week',
     ],
-    tier:     'builder' as Tier,
     href:     '/signup',
-    popular:  true,
   },
   {
     stage:    'Leading',
-    age:      '32 – 50',
+    focus:    'Leading others',
     emoji:    '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
     color:    '#8B5CF6',
     bg:       'rgba(139,92,246,0.06)',
@@ -97,64 +96,29 @@ const PERSONAS = [
       'Your network is strong but lacks true peers at your level',
     ],
     outcomes: [
-      'An executive peer cohort of equals who challenge you',
-      'AI-powered strategic thinking partner, 24/7',
-      'Unlimited access to world-class senior mentors',
-      'Legacy planning: building something that outlasts you',
+      'Facilitate a Circle and use Ascentor free',
+      'Facilitator material and support from the Ascentor team',
+      'Develop the next generation as you keep growing yourself',
+      'Legacy: build something that outlasts you',
     ],
-    tier:     'builder' as Tier,
     href:     '/signup',
   },
 ];
 
-const ACROSS_AFRICA = [
-  { country: 'Africa',        desc: 'A strong and growing community across the continent' },
-  { country: 'Ghana',        desc: 'Growing fast in Accra\'s startup and finance scene' },
-  { country: 'Kenya',        desc: 'Nairobi\'s tech ecosystem and beyond' },
-  { country: 'United Kingdom', desc: 'London, Manchester, and the broader diaspora' },
-  { country: 'Diaspora',      desc: 'UK, US, Canada, professionals building global careers' },
-  { country: '15+ Countries', desc: 'And growing across the entire continent' },
+const EVERYWHERE = [
+  { title: 'Wherever you live', desc: 'Ascentor is a global community. Members join from anywhere, online.' },
+  { title: 'Circles that fit you', desc: 'Circles are matched by language and interests, and meet for a short weekly call.' },
+  { title: 'Priced where you are', desc: 'Members in Nigeria pay in naira. Everyone else pays in US dollars.' },
+  { title: 'Calls that work on any connection', desc: 'Circle calls and mentor sessions start audio-only, and you can turn video on.' },
 ];
-
-/* ── Nav (identical to pricing page) ───────────────────── */
-function Nav() {
-  return (
-    <nav className="sticky top-0 z-50 backdrop-blur-md"
-      style={{ background: 'rgba(250,250,249,0.88)', borderBottom: '1px solid #E5E5E4' }}>
-      <div className="max-w-6xl mx-auto px-5 py-3.5 flex justify-between items-center">
-        <Link href="/" className="lp-nav-logo">
-            <img
-              src="/ascentor-color-for-light-pages.svg"
-              alt="Ascentor"
-              style={{ height: '32px', width: 'auto' }}
-            />
-            </Link>
-        <div className="flex items-center gap-5">
-          <Link href="/who-its-for" className="text-sm hidden md:block font-medium"
-            style={{ color: '#E8A020' }}>Who It&apos;s For</Link>
-          <Link href="/how-it-works" className="text-sm hidden md:block"
-            style={{ color: '#6B7280' }}>How It Works</Link>
-          <Link href="/pricing" className="text-sm hidden md:block"
-            style={{ color: '#6B7280' }}>Pricing</Link>
-          <Link href="/?gate=1" className="text-sm hidden md:block"
-            style={{ color: '#6B7280' }}>Log In</Link>
-          <Link href="/?gate=1"
-            className="px-5 py-2 rounded-lg text-sm font-semibold"
-            style={{ background: '#E8A020', color: '#000' }}>
-            Join Ascentor
-          </Link>
-        </div>
-      </div>
-    </nav>
-  );
-}
 
 /* ── Page ────────────────────────────────────────────────── */
 import { getPublishedPage } from '@/lib/supabase/queries/marketing';
 import { Check, Circle, X } from 'lucide-react';
 
 export default async function WhoItsForPage() {
-  const cms = await getPublishedPage('who-its-for');
+  const [cms, currency] = await Promise.all([getPublishedPage('who-its-for'), visitorCurrency()]);
+  const fromPrice = formatMoney(priceFor('explorer', 'solo', 'monthly', currency), currency);
 
   // CMS section keys for /admin/marketing-pages/who-its-for:
   //   hero       → {eyebrow, headline, subhead}
@@ -162,16 +126,16 @@ export default async function WhoItsForPage() {
   // PERSONAS cards are NOT wired - they have emoji, bg, border, color,
   // popular flags that require code changes, not just content editing.
   const hero = cms?.sections.hero?.data as Record<string, string> | undefined;
-  const heroEyebrow  = hero?.eyebrow  || 'BUILT FOR AFRICA';
+  const heroEyebrow  = hero?.eyebrow  || 'Every stage of ascent';
   const heroHeadline = hero?.headline || "Wherever you are on your journey, we're built for you.";
-  const heroSubhead  = hero?.subhead  || 'Ascentor serves every stage of the ambitious professional journey. From the student figuring out what to do with their life, to the executive deciding what kind of legacy to leave.';
+  const heroSubhead  = hero?.subhead  || 'Ascentor is for Seekers, Builders and Leaders. From the graduate working out what to do with their life, to the leader deciding what kind of legacy to leave.';
 
   const cta = cms?.sections.bottom_cta?.data as Record<string, string> | undefined;
-  const ctaEyebrow  = cta?.eyebrow   || 'YOUR MENTOR IS WAITING';
+  const ctaEyebrow  = cta?.eyebrow   || 'Rise by choice';
   const ctaHeadline = cta?.headline  || "Everyone who made it\nhad someone who believed in them.";
-  const ctaBody     = cta?.body      || 'Join 247+ purposeful individuals already on the platform.';
-  const ctaLabel    = cta?.cta_label || 'See How It Works';
-  const ctaHref     = cta?.cta_href  || '/how-it-works';
+  const ctaBody     = cta?.body      || 'Join a Circle, find your mentor and start building. Every plan starts with 7 days free.';
+  const ctaLabel    = cta?.cta_label || 'See pricing';
+  const ctaHref     = cta?.cta_href  || '/pricing';
   return (
     <PublicShell>
     <div
@@ -182,7 +146,7 @@ export default async function WhoItsForPage() {
       <section className="pt-16 pb-10 text-center px-5">
         <div className="inline-block px-3 py-1 rounded-full text-[10px] font-bold mb-5"
           style={{ background: 'rgba(245,158,11,0.08)', color: '#B45309', border: '1px solid rgba(245,158,11,0.2)' }}>
-          BUILT FOR AFRICA
+          {heroEyebrow}
         </div>
         <h1 className="text-4xl md:text-5xl font-semibold mb-4"
           style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08', lineHeight: 1.1 }}>
@@ -197,7 +161,7 @@ export default async function WhoItsForPage() {
             <a key={p.stage} href={`#${p.stage.toLowerCase()}`}
               className="px-5 py-2 rounded-full text-sm font-semibold transition-all hover:scale-105"
               style={{ background: p.bg, border: `1.5px solid ${p.border}`, color: p.color }}>
-              <span dangerouslySetInnerHTML={{ __html: p.emoji }} /> {p.stage} · {p.age}
+              <span dangerouslySetInnerHTML={{ __html: p.emoji }} /> {p.stage} · {p.focus}
             </a>
           ))}
         </div>
@@ -226,14 +190,8 @@ export default async function WhoItsForPage() {
                       style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>
                       {p.stage}
                     </h2>
-                    {p.popular && (
-                      <span className="px-3 py-0.5 rounded-full text-[10px] font-bold"
-                        style={{ background: p.color, color: '#000' }}>
-                        Most Popular
-                      </span>
-                    )}
                   </div>
-                  <p className="text-sm font-medium mt-0.5" style={{ color: p.color }}>{p.age} · {p.tagline}</p>
+                  <p className="text-sm font-medium mt-0.5" style={{ color: p.color }}>{p.focus} · {p.tagline}</p>
                 </div>
               </div>
             </div>
@@ -292,17 +250,19 @@ export default async function WhoItsForPage() {
               style={{ background: '#0C0B08' }}>
               <div>
                 <p className="text-sm font-semibold" style={{ color: '#F3F4F6' }}>
-                  {tierLabel(p.tier)} plan, from <span style={{ color: p.color }}>{formatNaira(priceFor(p.tier, 'group', 'monthly'))}/month</span>
+                  {p.stage === 'Leading'
+                    ? <>Facilitate a Circle and lead <span style={{ color: p.color }}>for free</span>, or choose any plan.</>
+                    : <>Plans from <span style={{ color: p.color }}>{fromPrice} a month</span>. Choose any plan.</>}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
-                  {formatNaira(priceFor(p.tier, 'solo', 'monthly'))} a month on your own, less with 3 friends. 7 days free, cancel any time.
+                <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
+                  Seeker, Builder or Pinnacle. 7 days free, cancel any time.
                 </p>
               </div>
               <div className="flex gap-3">
-                <Link href="/how-it-works"
+                <Link href="/pricing"
                   className="px-5 py-2.5 rounded-xl text-sm font-semibold"
                   style={{ border: '1px solid #374151', color: '#D1D5DB' }}>
-                  See How It Works
+                  See pricing
                 </Link>
                 <Link href={p.href}
                   className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-transform hover:scale-105"
@@ -320,21 +280,21 @@ export default async function WhoItsForPage() {
       <section className="py-16 px-5" style={{ background: '#fff' }}>
         <div className="max-w-5xl mx-auto text-center">
           <p className="text-[10px] font-bold tracking-widest uppercase mb-3" style={{ color: '#9CA3AF' }}>
-            Where We Operate
+            Where We Are
           </p>
           <h2 className="text-3xl font-semibold mb-3"
             style={{ fontFamily: "'Metropolis', sans-serif", color: '#0C0B08' }}>
             Built for purposeful individuals, everywhere.
           </h2>
           <p className="text-sm max-w-xl mx-auto mb-10" style={{ color: '#6B7280', lineHeight: 1.7 }}>
-            Our mentors, peer circles, and AI context are specifically calibrated
-            for real professional experience, not a generic tool adapted here.
+            One community, online, wherever you are. Your stage helps us place you in the right Circle.
+            It doesn&apos;t decide your plan: every member chooses their own.
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {ACROSS_AFRICA.map(c => (
-              <div key={c.country} className="rounded-2xl p-5 text-left"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {EVERYWHERE.map(c => (
+              <div key={c.title} className="rounded-2xl p-5 text-left"
                 style={{ background: '#FAFAF9', border: '1px solid #E5E5E4' }}>
-                                <p className="text-sm font-semibold mb-1" style={{ color: '#0C0B08' }}>{c.country}</p>
+                <p className="text-sm font-semibold mb-1" style={{ color: '#0C0B08' }}>{c.title}</p>
                 <p className="text-xs" style={{ color: '#6B7280', lineHeight: 1.6 }}>{c.desc}</p>
               </div>
             ))}
@@ -357,6 +317,9 @@ export default async function WhoItsForPage() {
             {ctaBody}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/signup" className="btn-rust" style={{ padding: '0.875rem 2rem' }}>
+              Start 7 days free
+            </Link>
             <Link href={ctaHref}
               className="px-8 py-3.5 rounded-xl text-sm font-semibold"
               style={{ border: '1px solid #374151', color: '#F3F4F6' }}>
