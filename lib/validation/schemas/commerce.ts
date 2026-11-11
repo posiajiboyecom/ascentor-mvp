@@ -1,19 +1,8 @@
 // lib/validation/schemas/commerce.ts
-// Request schemas for payments, promo codes and donations.
+// Request schemas for donations and the shop. (Plans are bought through Billing v2: lib/validation/schemas/billing.ts.)
 import { z, uuid, paymentReference, planId, billingCycle, email as emailField, text as textField, optionalText as optionalTextField } from '../common';
 import { SHOP_SHIPPING_KEYS } from '@/lib/shop-shared';
 import { donateFormSchema } from '@/app/(marketing)/donate/donateFormSchema';
-
-export const payStart = z.strictObject({ planId, billing: billingCycle });
-
-export const payPromo = z.strictObject({
-  code: z.string({ error: 'Promo code is required.' }).trim().min(1, 'Promo code is required.').max(40).toUpperCase(),
-});
-
-export const payActivateFree = z.strictObject({
-  planId,
-  promoCode: z.string({ error: 'Promo code is required.' }).trim().min(1, 'Promo code is required.').max(40).toUpperCase(),
-});
 
 export const donateInitiate = donateFormSchema.strict();
 

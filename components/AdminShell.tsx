@@ -5,7 +5,7 @@ import { useMemo, useTransition } from 'react';
 import {
   ArrowLeftRight, BarChart3, Briefcase, CalendarClock, CalendarDays, ClipboardList, CreditCard, Database, Flag, Gift, GraduationCap,
   Handshake, HeartHandshake, Hourglass, Inbox, Layers, LayoutDashboard, LayoutTemplate, LineChart, Mail, MapPin, Megaphone, MessagesSquare, Newspaper,
-  Package, PenLine, Percent, Presentation, Radar, Radio, ScrollText, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Ticket, UserRound, Users, UsersRound, Workflow, Wrench,
+  Package, PenLine, Presentation, Radar, Radio, ScrollText, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Ticket, UserRound, Users, UsersRound, Workflow, Wrench,
 } from 'lucide-react';
 import ShellLayout from '@/components/shell/ShellLayout';
 import type { ShellNavGroup } from '@/components/shell/types';
@@ -28,7 +28,7 @@ const ICON: Record<string, React.ReactNode> = {
   overview: <LayoutDashboard />, recs: <Sparkles />, members: <Users />, team: <ShieldCheck />, mentors: <HeartHandshake />,
   circles: <Workflow />, matching: <Hourglass />, mentorship: <CalendarClock />, groups: <UsersRound />, cities: <MapPin />,
   meetups: <CalendarDays />, categories: <Tag />, announcements: <Megaphone />, broadcasts: <Mail />, moderation: <Flag />, chats: <MessagesSquare />,
-  pathways: <GraduationCap />, knowledge: <Database />, payments: <CreditCard />, plans: <Layers />, promos: <Percent />, referrals: <Gift />,
+  pathways: <GraduationCap />, knowledge: <Database />, payments: <CreditCard />, plans: <Layers />, referrals: <Gift />,
   products: <Package />, orders: <ShoppingBag />, registrations: <Ticket />, donations: <HeartHandshake />, livestream: <Radio />,
   blog: <PenLine />, pages: <LayoutTemplate />, newsletter: <Newspaper />, billboards: <Presentation />, partners: <Handshake />, careers: <Briefcase />,
   events: <CalendarDays />, analysis: <LineChart />, intel: <Radar />, reports: <BarChart3 />, surveys: <ClipboardList />, audit: <ScrollText />, platform: <Settings />,

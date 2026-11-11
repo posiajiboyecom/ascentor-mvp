@@ -1,27 +1,14 @@
 // ============================================================
-// Session Limiting per Subscription Type
-//
-// Plan IDs (canonical - what pay/start, pay/callback, and
-// pay/webhook now write to profiles.subscription_plan):
-//   free     → Free
-//   explorer → Seeker    (price: lib/plans-config.ts)
-//   builder  → Builder   (price: lib/plans-config.ts)
-//   climber  → Climber   (legacy, fixed price in lib/pricing.ts)
-//
-// Legacy DB IDs that may still exist on old subscribers:
-//   builder (old) → was Explorer - aliased to explorer limits
-//   pro           → was Builder  - aliased to builder limits
-//   elite         → was Climber  - aliased to climber limits
-//
-// The canonical IDs are the primary keys below; legacy IDs
-// are explicit aliases at the bottom of PLAN_LIMITS so that
-// getEffectivePlan() works correctly regardless of which value
-// is stored in profiles.subscription_plan.
+// Session limits per plan.
+// Ascentor has two paid plans (Billing v2): Seeker (stored as 'explorer') and Builder. Everything else is free.
+// Plan values are normalised by lib/planTier.ts, so retired values (climber, premium, …) get the free limits and
+// invited Leaders get Builder limits.
 // ============================================================
 
 import { createClient } from '@supabase/supabase-js';
 import { getMemberAccess } from '@/lib/access';
 import { planForAccess } from '@/lib/billing/access';
+import { effectivePlan, normalisePlan, type PlanTier } from '@/lib/planTier';
 
 export interface PlanLimits {
   coachingSessions: number;   // per month (-1 = unlimited)
@@ -61,36 +48,16 @@ const BUILDER_LIMITS: PlanLimits = {
   courseAccess: 'full',
 };
 
-const CLIMBER_LIMITS: PlanLimits = {
-  coachingSessions: -1,
-  sessionLength: -1,
-  expertSessions: -1,         // unlimited
-  communityPosts: -1,
-  communityLimit: -1,
-  courseAccess: 'full',
-};
-
-export const PLAN_LIMITS: Record<string, PlanLimits> = {
-  // ── Canonical IDs (what the current payment system writes) ───────────────
+const LIMITS: Record<PlanTier, PlanLimits> = {
   free:     FREE_LIMITS,
   explorer: EXPLORER_LIMITS,
   builder:  BUILDER_LIMITS,
-  climber:  CLIMBER_LIMITS,
-
-  // ── Legacy aliases - kept for backward-compat with old subscriber rows ────
-  // Old DB value → canonical equivalent
-  // (old) builder = Explorer tier
-  // pro           = Builder tier
-  // elite         = Climber tier
-  basic:      EXPLORER_LIMITS,   // very old alias
-  standard:   BUILDER_LIMITS,    // old legacy key
-  pro:        BUILDER_LIMITS,    // old Builder DB ID
-  elite:      CLIMBER_LIMITS,    // old Climber DB ID
-  premium:    CLIMBER_LIMITS,    // very old alias
-  tester:     BUILDER_LIMITS,    // promo - builder-level
-  pro_legacy: CLIMBER_LIMITS,    // old pro maps to elite-level
-  trialing:   FREE_LIMITS,       // trialing without a plan = free limits
 };
+
+/** Limits for any stored plan value (normalised: retired values are free, Leader is Builder). */
+export const PLAN_LIMITS: Record<string, PlanLimits> = new Proxy(LIMITS as Record<string, PlanLimits>, {
+  get: (target, key) => (typeof key === 'string' ? target[normalisePlan(key)] : undefined),
+});
 
 // --- Usage Checking ---
 
@@ -155,23 +122,9 @@ export async function recordUsage(
 
 // --- Helpers ---
 
+/** The member's current plan from their profile (see lib/planTier.ts effectivePlan). */
 export function getEffectivePlan(profile: any): string {
-  if (!profile) return 'free';
-  const { subscription_plan, subscription_status, subscription_end } = profile;
-  if (subscription_status === 'active' || subscription_status === 'trialing') {
-    if (subscription_end) {
-      return new Date(subscription_end) > new Date()
-        ? (subscription_plan || 'explorer')
-        : 'free';
-    }
-    return subscription_plan || 'explorer';
-  }
-  if (subscription_status === 'cancelled' && subscription_end) {
-    return new Date(subscription_end) > new Date()
-      ? (subscription_plan || 'explorer')
-      : 'free';
-  }
-  return 'free';
+  return effectivePlan(profile);
 }
 
 async function getUsageCount(

@@ -19,7 +19,6 @@ export interface HistoryRow { id: string; dateIso: string; desc: string; amountL
 export interface BillingViewData {
   leaderFree: boolean;
   /** Set when the member still pays through the old flow (no v2 subscription): their plan is managed in the old Plan tab. */
-  legacyPlan: boolean;
   referralCode: string | null;
   sub: null | {
     state: SubState; tier: Tier; cycle: Cycle; priceType: PriceType; planName: string;
@@ -78,7 +77,6 @@ export async function loadBillingView(userId: string, now = new Date()): Promise
 
   return {
     leaderFree: !!p?.leader_free,
-    legacyPlan: !sub && !!p?.subscription_plan && p.subscription_plan !== 'free' && ['active', 'trialing', 'cancelled', 'past_due'].includes(String(p.subscription_status)),
     referralCode: p?.referral_code ?? null, sub: subView, next, creditBalanceKobo: credit,
     cards, group, history, verifyAmountLabel: formatNaira(VERIFY_AMOUNT_KOBO),
   };

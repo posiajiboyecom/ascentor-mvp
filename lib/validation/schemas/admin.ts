@@ -118,7 +118,7 @@ export const userAdminAction = z.discriminatedUnion('action', [
   z.strictObject({ targetUserId: uuid, action: z.literal('change_role'), value: z.enum(['member', 'moderator', 'admin']) }),
   z.strictObject({ targetUserId: uuid, action: z.literal('ban'), value: z.string().trim().max(500).optional() }),
   z.strictObject({ targetUserId: uuid, action: z.literal('unban') }),
-  z.strictObject({ targetUserId: uuid, action: z.literal('change_plan'), value: z.enum(['free', 'explorer', 'builder', 'leader', 'climber']) }),
+  z.strictObject({ targetUserId: uuid, action: z.literal('change_plan'), value: z.enum(['free', 'explorer', 'builder', 'leader']) }),
   z.strictObject({ targetUserId: uuid, action: z.literal('delete') }),
 ]);
 
@@ -171,28 +171,6 @@ export const surveyUpdate = z.strictObject({
   questions: z.array(surveyQuestion).max(200).optional(),
   is_published: z.boolean().optional(),
 });
-
-// ── Promo codes ───────────────────────────────────────────────────────────────
-const promoPlans = z.array(z.enum(['explorer', 'builder', 'climber'])).min(1).max(3);
-export const promoCreate = z.strictObject({
-  code: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{3,40}$/, 'Use 3 to 40 letters, numbers, hyphens or underscores.').optional(),
-  discount: z.coerce.number().min(0).max(1),
-  label: nullableText(120).optional(),
-  applies_to: promoPlans.optional(),
-  max_uses: z.union([z.coerce.number().int().min(1).max(1_000_000), z.null(), z.literal('')]).optional(),
-  expires_at: z.union([z.string().trim().max(40), z.null(), z.literal('')]).optional(),
-  bulk_count: z.union([z.coerce.number().int().min(0).max(1000), z.literal('')]).optional(),
-  bulk_prefix: z.string().trim().max(20).optional(),
-});
-export const promoUpdate = z.strictObject({
-  id: uuid,
-  active: z.boolean().optional(),
-  expires_at: z.union([z.string().trim().max(40), z.null()]).optional(),
-  max_uses: z.union([z.number().int().min(1).max(1_000_000), z.null()]).optional(),
-  label: nullableText(120).optional(),
-  auto_apply: z.boolean().optional(),
-});
-export const promoDelete = z.strictObject({ id: uuid });
 
 export const listQuery = z.object({
   search: z.string().trim().max(120).default(''),

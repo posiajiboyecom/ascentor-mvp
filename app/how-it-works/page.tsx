@@ -87,7 +87,7 @@ const PILLARS = [
     points: [
       'Verified senior professionals, not generic coaches',
       'They\'ve navigated the exact barriers you\'re facing',
-      '1-on-1 booking available on Builder & Climber plans',
+      '1-on-1 booking available on the Builder plan',
       'Monthly group masterclasses open to all plans',
       'Industries: tech, finance, consulting, startups, NGO & more',
     ],

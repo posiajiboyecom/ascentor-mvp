@@ -42,7 +42,7 @@ function parseGroupInput(raw: string): { code?: string; token?: string } {
   return t ? { code: t } : {};
 }
 
-export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabel, existingGroupCode, presetCode, tz }: {
+export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabel, existingGroupCode, presetCode, tz, closedTiers = [] }: {
   defaultTier: Tier;
   initialCards: CardView[];
   verifyAmountLabel: string;
@@ -51,6 +51,8 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
   /** From /checkout?group=ASC-XXXX. */
   presetCode: string | null;
   tz: string;
+  /** Plans an admin has closed for sign-ups (Plans and pricing). */
+  closedTiers?: Tier[];
 }) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -181,8 +183,9 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
             <legend className="rx-sl" style={{ marginBottom: 8 }}>1. Choose your plan</legend>
             <div className="bl-tiers" role="group" aria-label="Plan">
               {(['explorer', 'builder'] as Tier[]).map((t) => (
-                <button key={t} type="button" aria-pressed={choice.tier === t} className="bl-choice" onClick={() => set({ tier: t })}>
-                  <span className="t">{tierLabel(t)}</span>
+                <button key={t} type="button" aria-pressed={choice.tier === t} className="bl-choice" disabled={closedTiers.includes(t)}
+                  style={closedTiers.includes(t) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined} onClick={() => set({ tier: t })}>
+                  <span className="t">{tierLabel(t)}{closedTiers.includes(t) ? ' · not open right now' : ''}</span>
                   <span className="p">{formatNaira(priceFor(t, 'solo', 'monthly'))} a month</span>
                   <span className="d">{TIER_INFO[t].blurb}</span>
                   <ul>{TIER_INFO[t].bullets.map((b) => <li key={b}>{b}</li>)}</ul>

@@ -1,76 +1,45 @@
 // lib/plans-config.ts
-// THE ONE PLACE plan prices are decided. Server only.
-//
-//   PLAN_SEEKER_PRICE_NGN    monthly price of Seeker  (plan id "explorer"), whole naira, default 15000
-//   PLAN_BUILDER_PRICE_NGN   monthly price of Builder (plan id "builder"),  whole naira, default 25000
-//   PLAN_LEADER_PRICE_NGN    monthly price of Leader  (plan id "leader"),   whole naira, default 40000
-//
-// Annual billing is 12 months less 20% (see lib/pricing.ts).
-// Checkout (/api/pay/start), settlement (lib/paymentSettlement.ts), the plan screens, the payment result page and
-// analytics all read from here. Client components never import this file: they receive prices as props from the
-// server, so what is shown and what Paystack charges can never disagree.
-//
-// A bad value (not a positive whole number) throws on first use instead of silently charging the wrong amount.
-// After changing a variable in Vercel, redeploy: environment variables are read when the server starts.
+// Plan prices for screens that show the two plans side by side (admin Plans, analytics, marketing pages).
+// Ascentor sells exactly two plans, Seeker (stored as 'explorer') and Builder, through Billing v2.
+// The prices are NOT decided here: they come from lib/billing/catalog.ts (solo prices), the one place prices live,
+// so nothing can show a price that checkout does not charge.
 
 import 'server-only';
-import { buildPlanPricing, formatNaira, LEGACY_CLIMBER_MONTHLY_NGN, type PlanPricing } from '@/lib/pricing';
+import { priceFor, type Tier } from '@/lib/billing/catalog';
+import { formatNaira, type PlanPricing } from '@/lib/pricing';
 
-export const PLAN_PRICE_DEFAULTS = { seeker: 15000, builder: 25000, leader: 40000 } as const;
-
-/** Parses one price variable. Exported for tests. */
-export function parsePlanPrice(name: string, raw: string | undefined, fallback: number): number {
-  if (raw === undefined || raw.trim() === '') return fallback;
-  const v = raw.trim();
-  if (!/^[1-9]\d*$/.test(v)) {
-    throw new Error(`${name} must be a positive whole number of naira (for example ${fallback}), got "${v}".`);
-  }
-  const n = Number(v);
-  if (!Number.isSafeInteger(n) || n > 100_000_000) throw new Error(`${name} is out of range: "${v}".`);
-  return n;
-}
-
-export function readPlanPrices(env: Record<string, string | undefined> = process.env) {
+function fromCatalog(id: Tier, name: string): PlanPricing {
+  const monthlyPrice = priceFor(id, 'solo', 'monthly') / 100;
+  const yearlyPrice = priceFor(id, 'solo', 'yearly') / 100;
+  const full = monthlyPrice * 12;
   return {
-    seeker:  parsePlanPrice('PLAN_SEEKER_PRICE_NGN',  env.PLAN_SEEKER_PRICE_NGN,  PLAN_PRICE_DEFAULTS.seeker),
-    builder: parsePlanPrice('PLAN_BUILDER_PRICE_NGN', env.PLAN_BUILDER_PRICE_NGN, PLAN_PRICE_DEFAULTS.builder),
-    leader:  parsePlanPrice('PLAN_LEADER_PRICE_NGN',  env.PLAN_LEADER_PRICE_NGN,  PLAN_PRICE_DEFAULTS.leader),
+    id,
+    name,
+    monthlyPrice,
+    yearlyPrice,
+    yearlyPerMonth: Math.round(yearlyPrice / 12),
+    yearlyDiscount: full > 0 ? Math.round(((full - yearlyPrice) / full) * 100) : 0,
+    yearlySavings: Math.max(0, full - yearlyPrice),
   };
 }
 
-let cached: PlanPricing[] | null = null;
-
-/** Seeker, Builder, Leader, then legacy Climber (kept so existing Climber members can still be charged and settled). */
+/** Seeker, then Builder (solo prices; group prices live in the catalog and the checkout). */
 export function getPlanPricing(): PlanPricing[] {
-  if (!cached) {
-    const p = readPlanPrices();
-    cached = [
-      buildPlanPricing('explorer', 'Seeker', p.seeker),
-      buildPlanPricing('builder', 'Builder', p.builder),
-      buildPlanPricing('leader', 'Leader', p.leader),
-      buildPlanPricing('climber', 'Climber', LEGACY_CLIMBER_MONTHLY_NGN),
-    ];
-  }
-  return cached;
+  return [fromCatalog('explorer', 'Seeker'), fromCatalog('builder', 'Builder')];
 }
 
 export function getPlanPricingMap(): Record<string, PlanPricing> {
   return Object.fromEntries(getPlanPricing().map((p) => [p.id, p]));
 }
 
-/** The three plans sold today, for client props. */
-export function getFeaturedPricing(): { explorer: PlanPricing; builder: PlanPricing; leader: PlanPricing } {
+export function getFeaturedPricing(): { explorer: PlanPricing; builder: PlanPricing } {
   const m = getPlanPricingMap();
-  return { explorer: m.explorer, builder: m.builder, leader: m.leader };
+  return { explorer: m.explorer, builder: m.builder };
 }
 
-/**
- * "₦25,000 a month" for a member's plan. `paidNgn` (the last amount they actually paid) wins over the current list
- * price, so legacy members see what they really pay and a price change never rewrites what we tell them.
- */
-export function planPriceLabel(planId: string | null | undefined, billing: string | null | undefined, paidNgn?: number | null): string {
+/** "₦7,000 a month" for a plan, from the catalog's solo price. */
+export function planPriceLabel(planId: string | null | undefined, billing: string | null | undefined): string {
   const yearly = billing === 'annual' || billing === 'yearly';
   const plan = planId ? getPlanPricingMap()[planId] : undefined;
-  const amount = paidNgn && paidNgn > 0 ? paidNgn : plan ? (yearly ? plan.yearlyPrice : plan.monthlyPrice) : null;
-  return amount == null ? '' : `${formatNaira(amount)} a ${yearly ? 'year' : 'month'}`;
+  return plan ? `${formatNaira(yearly ? plan.yearlyPrice : plan.monthlyPrice)} a ${yearly ? 'year' : 'month'}` : '';
 }

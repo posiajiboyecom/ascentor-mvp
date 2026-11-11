@@ -20,7 +20,7 @@ import type { BillingViewData } from '@/lib/billing/member-view';
 
 type Msg = { kind: 'ok' | 'bad'; text: string } | null;
 
-export default function BillingClient({ data, tz }: { data: BillingViewData; tz: string }) {
+export default function BillingClient({ data, tz, checkoutOn = true }: { data: BillingViewData; tz: string; checkoutOn?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const [busy, setBusy] = useState<string | null>(null);
@@ -108,18 +108,18 @@ export default function BillingClient({ data, tz }: { data: BillingViewData; tz:
           </>
         ) : (
           <div className="rx-stack-sm">
-            {data.legacyPlan
-              ? <p className="rx-p">You are on your existing plan. It keeps working as it is, and you manage it on the <Link href="/settings?tab=plan" className="rx-link">Plan tab</Link>. You can start the new plan below at any time.</p>
-              : data.leaderFree
+            {data.leaderFree
               ? <p className="rx-p">You lead for free while you facilitate a Circle. There is nothing to pay and no card is needed.</p>
-              : <p className="rx-p">You do not have a plan yet. Start with 7 days free. You add a card, and you are not charged until day 8. Cancel any time before then and you pay nothing.</p>}
+              : checkoutOn
+              ? <p className="rx-p">You do not have a plan yet. Start with 7 days free. You add a card, and you are not charged until day 8. Cancel any time before then and you pay nothing.</p>
+              : <p className="rx-p">Paid plans aren’t open yet. Everything you have today keeps working, and we’ll let you know when Seeker and Builder open.</p>}
           </div>
         )}
 
         {msg && <div className={`bl-msg ${msg.kind === 'ok' ? 'ok' : 'bad'}`} role={msg.kind === 'bad' ? 'alert' : 'status'} aria-live="polite">{msg.text}</div>}
 
         <div className="rx-row">
-          {!sub && !data.leaderFree && <Link href="/checkout" className="rx-btn primary bl-focus">Start your free trial</Link>}
+          {!sub && !data.leaderFree && checkoutOn && <Link href="/checkout" className="rx-btn primary bl-focus">Start your free trial</Link>}
           {reactivatable && (
             <button type="button" className="rx-btn primary bl-focus" disabled={!!busy || cards.length === 0} onClick={() => run('react', '/api/billing/subscription/reactivate', () => 'Payment taken. Your plan is active again.')}>
               {busy === 'react' ? 'Taking payment...' : 'Pay and reactivate'}

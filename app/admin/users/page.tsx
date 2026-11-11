@@ -1,7 +1,7 @@
 'use client';
 // app/admin/users/page.tsx, THE LEDGER
 // Ascentor platform users only, i.e. people with a profiles row (member/
-// moderator/admin, subscription plan free/explorer/builder/climber). This
+// moderator/admin, subscription plan free/explorer (Seeker)/builder/leader). This
 // is NOT Elevation Summit registrants; Ascentor and the Summit are separate
 // products with separate data. Summit registrations live entirely on
 // /admin/elevation-summit/registrations and never appear here.
@@ -27,7 +27,7 @@ interface User {
 }
 
 const ROLES = ['member', 'moderator', 'admin'];
-const PLANS = ['', 'explorer', 'builder', 'leader', 'climber'];
+const PLANS = ['', 'explorer', 'builder', 'leader'];
 const STATUSES = ['', 'free', 'trialing', 'active', 'cancelled', 'past_due'];
 
 const G = 'var(--ledger-gold)';

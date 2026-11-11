@@ -32,7 +32,6 @@ const loaders: Record<string, () => Promise<{ default: ScreenModule }>> = {
   pathways: () => import('./pathways'),
   payments: () => import('./payments'),
   products: () => import('./products'),
-  promos: () => import('./promos'),
   referrals: () => import('./referrals'),
   registrations: () => import('./registrations'),
   recs: () => import('./recs'),

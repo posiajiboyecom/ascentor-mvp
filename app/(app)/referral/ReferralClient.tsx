@@ -8,22 +8,22 @@ import Link from 'next/link';
 import { ArrowRight, Check, Copy, Linkedin, MoreHorizontal, Share2 } from 'lucide-react';
 import { Aside, Avatar, Empty, Page, Tag, Title } from '@/components/rx/ui';
 import { useToast } from '@/components/rx/Toast';
+import { formatNaira } from '@/lib/billing/catalog';
 
 export type Invite = { id: string; name: string; joined: string; rewarded: boolean };
 
-const REWARD_DAYS = 7;
 
 const when = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
 const stat: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 2, padding: '14px 16px', background: 'var(--rx-card)', border: '1px solid var(--rx-border)', borderRadius: 12 };
 const statN: React.CSSProperties = { fontSize: 28, fontWeight: 800, lineHeight: 1.1 };
 
-export default function ReferralClient({ code, daysEarned, invites }: { code: string; daysEarned: number; invites: Invite[] }) {
+export default function ReferralClient({ code, earnedKobo, balanceKobo, ratePercent, invites }: { code: string; earnedKobo: number; balanceKobo: number; ratePercent: number; invites: Invite[] }) {
   const toast = useToast();
   const [copied, setCopied] = useState(false);
 
   const link = `${typeof window !== 'undefined' ? window.location.origin : 'https://joinascentor.com'}/signup?ref=${code}`;
-  const message = `I'm using Ascentor to build in a small Circle with a coach in my pocket. Join with my link and we both get ${REWARD_DAYS} extra days free: ${link}`;
+  const message = `I'm using Ascentor to build in a small Circle with a coach in my pocket. Join with my link and start with 7 days free: ${link}`;
 
   const copy = async () => {
     try { await navigator.clipboard.writeText(link); setCopied(true); toast('Link copied.'); setTimeout(() => setCopied(false), 2000); }
@@ -50,13 +50,13 @@ export default function ReferralClient({ code, daysEarned, invites }: { code: st
       <div className="rx-two">
         <div className="rx-stack-lg">
           <p style={{ fontSize: 17, maxWidth: 600, margin: 0 }}>
-            Share Ascentor with friends. When they subscribe, you both get <b style={{ color: 'var(--rx-gold)' }}>{REWARD_DAYS} extra days free</b>.
+            Share Ascentor with friends. For each friend who joins a plan, you earn <b style={{ color: 'var(--rx-gold)' }}>credit worth {ratePercent}% of your monthly price</b>, taken off your next payments. Your friend starts with 7 days free.
           </p>
 
           <div className="rx-grid3">
-            <div style={stat}><span style={statN}>{invites.length}</span><span className="rx-sm">Invites</span></div>
-            <div style={stat}><span style={statN}>{invites.length}</span><span className="rx-sm">Joined</span></div>
-            <div style={stat}><span style={{ ...statN, color: 'var(--rx-gold)' }}>{daysEarned}d</span><span className="rx-sm">Days earned</span></div>
+            <div style={stat}><span style={statN}>{invites.length}</span><span className="rx-sm">Joined with your link</span></div>
+            <div style={stat}><span style={statN}>{invites.filter((i) => i.rewarded).length}</span><span className="rx-sm">Earned you credit</span></div>
+            <div style={stat}><span style={{ ...statN, color: 'var(--rx-gold)' }}>{formatNaira(balanceKobo)}</span><span className="rx-sm">Credit to use{earnedKobo > balanceKobo ? ` · ${formatNaira(earnedKobo)} earned` : ''}</span></div>
           </div>
 
           <div className="rx-card rx-stack">
@@ -82,7 +82,7 @@ export default function ReferralClient({ code, daysEarned, invites }: { code: st
             {[
               ['Share your link', 'Send it to friends and colleagues, or post it.'],
               ['They sign up', 'When someone joins with your link, they appear below.'],
-              [`You both get rewarded`, `When they subscribe, you both get ${REWARD_DAYS} extra days. No limit.`],
+              ['You earn credit', `When their first payment clears, you earn credit worth ${ratePercent}% of your monthly price. No limit on friends.`],
             ].map(([t, d], i) => (
               <div key={t} className="rx-row rx-nw" style={{ gap: 14, alignItems: 'flex-start' }}>
                 <span className="rx-pd cur" style={{ width: 28, height: 28, fontSize: 13, fontWeight: 700 }}>{i + 1}</span>
@@ -104,7 +104,7 @@ export default function ReferralClient({ code, daysEarned, invites }: { code: st
                       <span style={{ display: 'block', fontWeight: 600 }}>{r.name}</span>
                       <span className="rx-sm">Joined {when(r.joined)}</span>
                     </span>
-                    {r.rewarded ? <Tag gold>+{REWARD_DAYS} days</Tag> : <Tag>Joined</Tag>}
+                    {r.rewarded ? <Tag gold>Credit earned</Tag> : <Tag>Joined</Tag>}
                   </div>
                 ))}
               </div>
@@ -114,10 +114,10 @@ export default function ReferralClient({ code, daysEarned, invites }: { code: st
 
         <Aside>
           <p className="rx-label">Rewards</p>
-          <p style={{ margin: 0 }}>Extra days are added to your next renewal. You can see them under Plan.</p>
-          <div><Link href="/settings?tab=plan" className="rx-link">See my plan<ArrowRight aria-hidden /></Link></div>
+          <p style={{ margin: 0 }}>Credit is added 14 days after a friend’s first payment, comes off your next charges automatically, and lasts 12 months. It is not cash.</p>
+          <div><Link href="/settings/billing" className="rx-link">See my credit<ArrowRight aria-hidden /></Link></div>
           <p className="rx-label">Fair use</p>
-          <p className="rx-sm">Rewards count when a friend’s first payment goes through. Self-referrals and duplicate accounts don’t count.</p>
+          <p className="rx-sm">Credit counts when a friend’s first payment goes through and isn’t refunded. Self-referrals and duplicate accounts don’t count.</p>
         </Aside>
       </div>
     </Page>

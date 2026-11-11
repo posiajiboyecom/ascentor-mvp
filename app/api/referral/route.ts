@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       referrerName: referrer.full_name?.split(' ')[0] || 'Someone',
-      message: 'Referral applied! You both get 7 extra days free when you subscribe.',
+      message: 'Referral applied. When you join a plan, your friend earns credit.',
     });
 
   } catch (error: any) {

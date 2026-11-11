@@ -1,8 +1,8 @@
 // ================================================================
 // POST /api/pay/webhook  - SHARED PAYSTACK WEBHOOK
 // ================================================================
-// Single Paystack webhook endpoint for subscriptions and the
-// Elevation Summit.
+// Single Paystack webhook endpoint for Billing v2 (Seeker and Builder),
+// Summit donations and the shop.
 //
 // Register this URL in Paystack Dashboard:
 //   Settings -> API Keys & Webhooks -> Webhook URL
@@ -14,7 +14,8 @@
 //   Same code path as /api/summit/pay/verify and /api/pay/callback, so
 //   fulfilment happens exactly once no matter who gets there first.
 //
-// Other events (renewals, cancellations) -> subscription handler.
+// Billing v2 events (card checks, renewals) -> lib/billing/webhook.
+// Anything else is acknowledged and ignored: the old subscription system is retired.
 //
 // Security:
 //   * HMAC-SHA512 signature verified on every request
@@ -25,7 +26,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { settleReference } from '@/lib/paymentSettlement';
-import { handleSubscriptionWebhookEvent } from '@/lib/subscriptionWebhookHandler';
 import { handleBillingV2Event } from '@/lib/billing/webhook';
 
 function verifySignature(rawBody: string, sig: string, secret: string): boolean {
@@ -76,7 +76,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    return await handleSubscriptionWebhookEvent(payload);
+    // Not ours to act on (e.g. events from the retired subscription system): acknowledge so Paystack stops retrying.
+    return NextResponse.json({ received: true });
   } catch (err: any) {
     // Real processing failure (Paystack/DB down, fulfilment error). 5xx makes
     // Paystack retry; settlement is idempotent so retries are safe.

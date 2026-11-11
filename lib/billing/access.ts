@@ -8,7 +8,7 @@
 //   Features, featuresFor(level, tier)           what a member may use
 //   accessFromSubscription(sub, leaderFree, now) -> MemberAccess
 //   LEGACY_ACCESS                                 what a member without a v2 row gets from this module (callers still apply the old rules)
-//   planForAccess(access)                         the plan id the old gating code understands ('free' | 'explorer' | 'builder' | 'climber')
+//   planForAccess(access)                         the plan id the gating code understands ('free' | 'explorer' | 'builder')
 //
 // Handoff tables:
 //   full  (trial, active, grace, cancelled until period end): everything the tier includes
@@ -77,9 +77,9 @@ export function accessFromSubscription(sub: AccessSub | null | undefined, leader
 }
 
 /** The plan id the existing gating code (canAccess, requireSubscription) understands. Light access is 'free'. */
-export function planForAccess(a: MemberAccess): 'free' | 'explorer' | 'builder' | 'climber' | null {
+export function planForAccess(a: MemberAccess): 'free' | 'explorer' | 'builder' | null {
   if (!a.v2) return null;
   if (a.level === 'light') return 'free';
-  if (a.tier === 'leader') return 'climber';
+  if (a.tier === 'leader') return 'builder'; // invited Leaders lead for free with Builder-level access
   return a.tier === 'builder' ? 'builder' : 'explorer';
 }

@@ -92,7 +92,7 @@ export async function getCoachPageData(): Promise<CoachPageData | null> {
       ?.trim()
       .split(/\s+/)[0] ?? 'there';
 
-  const allSessionTypesForLabels = getAvailableSessionTypes('climber');
+  const allSessionTypesForLabels = getAvailableSessionTypes('builder');
   const recentSessions: RecentSessionSummary[] = (sessionsRes.data ?? []).map(
     (
       row: Pick<

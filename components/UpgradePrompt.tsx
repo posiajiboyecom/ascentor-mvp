@@ -17,17 +17,17 @@ const FEATURE_MESSAGES: Record<string, { title: string; desc: string; icon: stri
   },
   coaching: {
     title: "You've Used All Your Coaching Sessions This Month",
-    desc: "Free accounts get 5 Sage sessions per month. Upgrade to Explorer for 30, or Builder for unlimited.",
+    desc: "Free accounts get 5 Sage sessions per month. Seeker gets 30, and Builder is unlimited.",
     icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg>',
   },
   community: {
     title: 'Join More Cohorts',
-    desc: 'Free accounts can join 1 cohort. Upgrade to Explorer for 3, or Builder for unlimited cohorts.',
+    desc: 'Free accounts can join 1 cohort. Seeker can join 3, and Builder is unlimited.',
     icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>',
   },
   experts: {
     title: 'Unlock Expert Sessions',
-    desc: 'Explorer gets 1 expert session/month. Builder gets 2. Climber gets unlimited access to all sessions.',
+    desc: 'Seeker gets 1 expert session a month. Builder gets 2.',
     icon: '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
   },
 };
@@ -123,7 +123,7 @@ export default function UpgradePrompt({ feature, message, compact, onDismiss }: 
           Get started
         </button>
         <p style={{ fontSize: '12px', color: 'var(--text-dim, #6B6A65)' }}>
-          Your first payment includes 7 extra days
+          7 days free on Seeker or Builder. Cancel before day 8 and pay nothing.
         </p>
         {onDismiss && (
           <button

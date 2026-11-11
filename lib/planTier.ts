@@ -2,65 +2,71 @@
 // ============================================================
 // Single source of truth for plan-tier logic across the app.
 //
-// Used by:
-//   - Community page  (cohorts)
-//   - Learn page      (courses)
-//   - Experts page    (expert_sessions)
-//   - Admin forms     (tier selector)
+// Ascentor has exactly two paid plans (Billing v2, lib/billing/catalog.ts):
+//   Seeker  — stored as 'explorer'
+//   Builder — stored as 'builder'
+// Everything else is free. Older plan values (climber, premium, basic, standard, …) belong to the retired
+// billing system and are treated as free. Leader is not a paid plan: invited facilitators get Builder-level
+// access for free, so 'leader' gates as 'builder'.
+//
+// Used by: community (cohorts), experts (expert_sessions), admin tier selectors, access checks.
 // ============================================================
 
-export type PlanTier = 'free' | 'explorer' | 'builder' | 'climber'
+export type PlanTier = 'free' | 'explorer' | 'builder'
 
-export const PLAN_RANK: Record<string, number> = {
+export const PLAN_RANK: Record<PlanTier, number> = {
   free:     0,
-  explorer: 1, basic:    1,   // legacy alias
-  builder:  2, standard: 2,   // legacy alias
-  climber:  3, premium:  3,   // legacy alias
-  leader:   3,                // Leader is a paid plan with full access (same rank as the top tier)
+  explorer: 1,
+  builder:  2,
 }
 
-// Normalise legacy DB values to canonical names
-const PLAN_ALIAS: Record<string, PlanTier> = {
-  basic:    'explorer',
-  standard: 'builder',
-  premium:  'climber',
-  leader:   'climber',        // gating treats Leader as top tier; display keeps the name "Leader" (see lib/plans-display.ts)
-}
-
+/** Maps any stored plan value to a current tier. Unknown and retired values are free. */
 export function normalisePlan(raw: string | null | undefined): PlanTier {
-  if (!raw) return 'free'
-  return PLAN_ALIAS[raw] ?? (raw as PlanTier)
+  switch ((raw ?? '').trim().toLowerCase()) {
+    case 'explorer':
+    case 'seeker':
+      return 'explorer'
+    case 'builder':
+    case 'leader':
+      return 'builder'
+    default:
+      return 'free'
+  }
 }
 
 /**
  * Returns true if the user's effective plan meets or exceeds the required tier.
- * Inclusive upward: a Builder can access explorer + builder + free content.
+ * Inclusive upward: a Builder can access Seeker and free content.
  */
-export function canAccess(userPlan: string | null | undefined, requiredTier: PlanTier): boolean {
-  const userRank = PLAN_RANK[normalisePlan(userPlan)] ?? 0
-  const reqRank  = PLAN_RANK[requiredTier] ?? 0
-  return userRank >= reqRank
+export function canAccess(userPlan: string | null | undefined, requiredTier: string | null | undefined): boolean {
+  // 'paid' (used by expert sessions) means any paid plan, i.e. Seeker or Builder.
+  const required: PlanTier = requiredTier === 'paid' ? 'explorer' : normalisePlan(requiredTier)
+  return PLAN_RANK[normalisePlan(userPlan)] >= PLAN_RANK[required]
 }
+
+/** Paid access ends this long after subscription_end, so a renewal that is a few hours late never locks anyone out. */
+const END_GRACE_MS = 2 * 24 * 60 * 60 * 1000
 
 /**
  * Derives the effective plan for a profile row.
- * Returns 'free' if subscription is expired, cancelled past end, or inactive.
+ * Returns 'free' when the subscription is inactive, or when its end date has passed (active, trialing and
+ * cancelled alike — Billing v2 moves subscription_end forward on every renewal and through the grace period).
  */
 export function effectivePlan(profile: {
   subscription_plan?:   string | null
   subscription_status?: string | null
   subscription_end?:    string | null
-} | null | undefined): PlanTier {
+} | null | undefined, now: Date = new Date()): PlanTier {
   if (!profile) return 'free'
+  const status = profile.subscription_status
+  if (status !== 'active' && status !== 'trialing' && status !== 'cancelled') return 'free'
 
-  const isActive =
-    profile.subscription_status === 'active' ||
-    profile.subscription_status === 'trialing' ||
-    (profile.subscription_status === 'cancelled' &&
-      profile.subscription_end &&
-      new Date(profile.subscription_end) > new Date())
-
-  if (!isActive) return 'free'
+  const end = profile.subscription_end ? new Date(profile.subscription_end).getTime() : null
+  if (status === 'cancelled') {
+    if (end === null || end <= now.getTime()) return 'free'
+  } else if (end !== null && end + END_GRACE_MS <= now.getTime()) {
+    return 'free'
+  }
   return normalisePlan(profile.subscription_plan)
 }
 
@@ -74,15 +80,13 @@ export interface TierMeta {
 }
 
 export const TIER_META: Record<PlanTier, TierMeta> = {
-  free:     { label: 'Free',     color: '#A09880', bg: 'rgba(160,152,128,0.10)', border: 'rgba(160,152,128,0.22)' },
-  explorer: { label: 'Explorer', color: '#14B8A6', bg: 'rgba(20,184,166,0.10)',  border: 'rgba(20,184,166,0.22)'  },
-  builder:  { label: 'Builder',  color: '#E8A020', bg: 'rgba(232,160,32,0.10)',  border: 'rgba(232,160,32,0.22)'  },
-  climber:  { label: 'Climber',  color: '#8B5CF6', bg: 'rgba(139,92,246,0.10)',  border: 'rgba(139,92,246,0.22)'  },
+  free:     { label: 'Free',    color: '#A09880', bg: 'rgba(160,152,128,0.10)', border: 'rgba(160,152,128,0.22)' },
+  explorer: { label: 'Seeker',  color: '#14B8A6', bg: 'rgba(20,184,166,0.10)',  border: 'rgba(20,184,166,0.22)'  },
+  builder:  { label: 'Builder', color: '#E8A020', bg: 'rgba(232,160,32,0.10)',  border: 'rgba(232,160,32,0.22)'  },
 }
 
 export const TIER_OPTIONS: { value: PlanTier; label: string }[] = [
-  { value: 'free',     label: 'Free, accessible to all users'          },
-  { value: 'explorer', label: 'Explorer and above'                       },
-  { value: 'builder',  label: 'Builder and above'                        },
-  { value: 'climber',  label: 'Climber only (highest tier)'              },
+  { value: 'free',     label: 'Free, open to every member' },
+  { value: 'explorer', label: 'Seeker and Builder'         },
+  { value: 'builder',  label: 'Builder only'               },
 ]

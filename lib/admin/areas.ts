@@ -21,7 +21,7 @@ export const NAV: [string, NavItem[]][] = [
   ['Circles', [['circles', 'Circles'], ['matching', 'Waiting for a Circle'], ['mentorship', 'Mentor sessions']]],
   ['Community', [['groups', 'Groups'], ['cities', 'City groups'], ['meetups', 'Meetups'], ['categories', 'Post categories'], ['announcements', 'Announcements'], ['broadcasts', 'Broadcasts'], ['moderation', 'Moderation'], ['chats', 'Conversations', 1]]],
   ['Learn', [['pathways', 'Pathways and lessons'], ['knowledge', 'Sage knowledge base']]],
-  ['Revenue', [['payments', 'Payments', 1], ['plans', 'Plans and pricing', 1], ['promos', 'Promo codes', 1], ['referrals', 'Referrals', 1], ['products', 'Shop products', 1], ['orders', 'Shop orders', 1]]],
+  ['Revenue', [['payments', 'Payments', 1], ['plans', 'Plans and pricing', 1], ['referrals', 'Referrals', 1], ['products', 'Shop products', 1], ['orders', 'Shop orders', 1]]],
   ['Elevation Summit', [['registrations', 'Registrations', 1], ['donations', 'Donations', 1], ['livestream', 'Livestream', 1]]],
   ['Marketing', [['blog', 'Blog'], ['pages', 'Landing pages', 1], ['newsletter', 'Email'], ['billboards', 'Billboards', 1], ['partners', 'Partners', 1], ['careers', 'Careers', 1], ['events', 'Public events', 1]]],
   ['Insights', [['analysis', 'AI analysis', 1], ['intel', 'Platform intel'], ['reports', 'Reports'], ['surveys', 'Surveys'], ['audit', 'Audit log', 1]]],
@@ -46,7 +46,7 @@ export const DEFAULT_ROLES: RoleDef[] = [
   { id: 'admin', name: 'Admin', locked: true, levels: {} },
   { id: 'moderator', name: 'Moderator', levels: { overview: 'view', members: 'view', mentors: 'edit', circles: 'edit', matching: 'edit', mentorship: 'view', groups: 'edit', cities: 'edit', meetups: 'edit', categories: 'edit', announcements: 'edit', moderation: 'full', pathways: 'edit', knowledge: 'edit', blog: 'edit', newsletter: 'edit', intel: 'view', reports: 'view' } },
   { id: 'community', name: 'Community manager', levels: { overview: 'view', recs: 'edit', members: 'view', mentors: 'view', circles: 'edit', matching: 'edit', mentorship: 'edit', groups: 'edit', cities: 'edit', meetups: 'edit', categories: 'edit', announcements: 'edit', broadcasts: 'edit', moderation: 'full', chats: 'view', analysis: 'view' } },
-  { id: 'finance', name: 'Finance', levels: { overview: 'view', members: 'view', payments: 'full', plans: 'edit', promos: 'edit', referrals: 'edit', products: 'view', orders: 'full', registrations: 'view', donations: 'full', reports: 'full' } },
+  { id: 'finance', name: 'Finance', levels: { overview: 'view', members: 'view', payments: 'full', plans: 'edit', referrals: 'edit', products: 'view', orders: 'full', registrations: 'view', donations: 'full', reports: 'full' } },
   { id: 'summit', name: 'Summit team', levels: { overview: 'view', announcements: 'edit', orders: 'view', registrations: 'full', donations: 'view', livestream: 'full', events: 'edit' } },
 ];
 
@@ -72,7 +72,7 @@ const LEGACY: [string, string][] = [
   ['/admin/circles', 'circles'], ['/admin/groups', 'groups'], ['/admin/categories', 'categories'], ['/admin/announcements', 'announcements'],
   ['/admin/broadcasts', 'broadcasts'], ['/admin/moderation', 'moderation'], ['/admin/chats', 'chats'], ['/admin/coaching', 'chats'],
   ['/admin/community-intel', 'chats'], ['/admin/community-events', 'meetups'], ['/admin/courses', 'pathways'], ['/admin/lessons', 'pathways'], ['/admin/content', 'pathways'],
-  ['/admin/knowledge', 'knowledge'], ['/admin/payments', 'payments'], ['/admin/promo-codes', 'promos'], ['/admin/products', 'products'],
+  ['/admin/knowledge', 'knowledge'], ['/admin/payments', 'payments'], ['/admin/products', 'products'],
   ['/admin/shop/products', 'products'], ['/admin/shop/orders', 'orders'], ['/admin/shop/leads', 'orders'], ['/admin/elevation-summit', 'registrations'],
   ['/admin/summit-donations', 'donations'], ['/admin/summit-payments', 'donations'], ['/admin/summit-stream', 'livestream'], ['/admin/summit', 'livestream'],
   ['/admin/blog', 'blog'], ['/admin/marketing-pages', 'pages'], ['/admin/newsletter', 'newsletter'], ['/admin/billboards', 'billboards'],

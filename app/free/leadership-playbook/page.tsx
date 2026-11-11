@@ -12,7 +12,7 @@ export default function LeadershipPlaybookPage() {
       headline="The 90-Day Leadership Playbook"
       subheadline="The exact system Sage uses, now in your hands."
       description="Set one goal. Follow 13 weekly actions. Make your progress visible to the people who decide your future. This is the framework that every Sage coaching session is built on, and it works without the AI too."
-      persona="Builder · Climber"
+      persona="Building · Leading"
       type="Free PDF Guide · 12 pages"
       ctaLabel="Get the Free Playbook →"
       successPath="/free/leadership-playbook/download"

@@ -12,7 +12,7 @@ export default function SalaryScriptsPage() {
       headline="The Salary Negotiation Script Pack"
       subheadline="5 word-for-word scripts. Copy. Adapt. Use."
       description="Every salary conversation you will ever need to have, written out for you. Not templates to memorise. Frameworks to adapt. Each script includes the exact words, the psychology behind why they work, and what to do when the other person pushes back."
-      persona="Explorer · Builder"
+      persona="Seeking · Building"
       type="Free Template Pack · 5 scripts"
       ctaLabel="Get the Free Scripts →"
       successPath="/free/salary-scripts/download"

@@ -7,6 +7,9 @@ import { changePlan } from '@/lib/billing/subscriptions';
 import { parseJson } from '@/lib/validation/http';
 import { billingPlanChange } from '@/lib/validation/schemas/billing';
 
+import { closedPlanIds, CLOSED_PLAN_MESSAGE } from '@/lib/admin/plans-open';
+import type { Tier } from '@/lib/billing/catalog';
+
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
@@ -14,6 +17,10 @@ export async function POST(req: NextRequest) {
   if (!g.ok) return g.response;
   const parsed = await parseJson(req, billingPlanChange);
   if (!parsed.ok) return parsed.response;
+  const tier = (parsed.data as { tier?: string }).tier;
+  if (tier && (await closedPlanIds()).includes(tier as Tier)) {
+    return NextResponse.json({ error: CLOSED_PLAN_MESSAGE }, { status: 400 });
+  }
   const r = await changePlan(g.userId, parsed.data);
   if (!r.ok) return NextResponse.json({ error: r.error }, { status: 400 });
   return NextResponse.json({ effective: r.effective, effectiveAt: r.effectiveAt ? r.effectiveAt.toISOString() : null });

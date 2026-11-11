@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation';
 import QRCode from 'qrcode';
 import { getMe } from '@/lib/rx/server';
 import { Aside, BackLink, Page, Title } from '@/components/rx/ui';
-import { billingV2Enabled } from '@/lib/billing/flags';
 import { getGroupStatus } from '@/lib/billing/groups';
 import { priceFor } from '@/lib/billing/catalog';
 import GroupClient from '@/components/billing/GroupClient';
@@ -15,7 +14,6 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Your group' };
 
 export default async function GroupPage() {
-  if (!billingV2Enabled()) redirect('/settings?tab=plan');
   const me = await getMe();
   if (!me) redirect('/login?redirect=/settings/billing/group');
   const status = await getGroupStatus(me.userId);

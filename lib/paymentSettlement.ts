@@ -4,7 +4,9 @@
 // order. Used by every path that can learn a payment succeeded:
 //
 //   • /api/donate/verify        (browser callback after the popup)
-//   • /api/pay/callback        (Paystack redirect for subscriptions)
+//   • Plans are sold through Billing v2 only (lib/billing). The old one-time
+//     subscription checkout (kind 'subscription') is retired: such attempts are
+//     refused here and never grant a plan.
 //   • /api/pay/webhook         (charge.success)
 //   • lib/paymentReconciliation (scheduled sweep)
 //   • Summit ticket checkout has been retired (registration is free); this
@@ -27,8 +29,6 @@
 
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { getPlanPricingMap } from '@/lib/plans-config';
-import { getSetting, asInt } from '@/lib/admin/settings';
 import { deliverPaidEmails, deliverDonationEmails } from '@/lib/summitEmails';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -76,16 +76,6 @@ export interface PaystackTransaction {
   customer?: { email?: string } | null;
 }
 
-// ── Pricing (server-side, single source: lib/plans-config.ts) ────────────────
-
-export function subscriptionAmountKobo(planId: string, billing: string): number | null {
-  const plan = getPlanPricingMap()[planId];
-  if (!plan) return null;
-  if (billing === 'annual')  return plan.yearlyPrice  * 100;
-  if (billing === 'monthly') return plan.monthlyPrice * 100;
-  return null;
-}
-
 export interface SummitPrices { onsite: number; virtual: number }
 
 /** Reads the per-type ticket prices; returns null (never NaN) when misconfigured. */
@@ -96,10 +86,6 @@ export function getSummitPricesNaira(): SummitPrices | null {
   if (!Number.isFinite(virtual) || virtual <= 0) return null;
   return { onsite, virtual };
 }
-
-const LEGACY_PLAN_MAP: Record<string, string> = { pro: 'builder', elite: 'climber' };
-const normalisePlanId = (raw: string | null | undefined) =>
-  !raw ? 'explorer' : (LEGACY_PLAN_MAP[raw] ?? raw);
 
 // ── Paystack ─────────────────────────────────────────────────────────────────
 
@@ -356,122 +342,7 @@ async function fulfilDonation(attempt: PaymentAttempt, tx: PaystackTransaction):
   return 'fulfilled';
 }
 
-const REFERRAL_BONUS_DAYS = 7;
 
-/**
- * When a referred member's first payment goes through, both people get 7 extra days
- * (shown under Plan, added to the next renewal). The conditional UPDATE claims the reward
- * exactly once even if the callback, webhook and reconciliation all run.
- */
-export async function rewardReferral(referredId: string): Promise<void> {
-  const { data: claimed } = await supabaseAdmin
-    .from('referrals')
-    .update({ status: 'rewarded', rewarded_at: new Date().toISOString(),
-              referrer_reward: `${REFERRAL_BONUS_DAYS} days`, referred_reward: `${REFERRAL_BONUS_DAYS} days` })
-    .eq('referred_id', referredId)
-    .is('rewarded_at', null)
-    .is('flagged_at', null)
-    .select('referrer_id, referred_id');
-  const ref = claimed?.[0];
-  if (!ref || ref.referrer_id === ref.referred_id) return;
-
-  for (const userId of [ref.referrer_id, ref.referred_id]) {
-    const { data: prof } = await supabaseAdmin.from('profiles')
-      .select('referral_bonus_days, subscription_end').eq('id', userId).maybeSingle();
-    if (!prof) continue;
-    const patch: Record<string, unknown> = { referral_bonus_days: (prof.referral_bonus_days ?? 0) + REFERRAL_BONUS_DAYS };
-    if (prof.subscription_end) {
-      const end = new Date(prof.subscription_end);
-      end.setDate(end.getDate() + REFERRAL_BONUS_DAYS);
-      patch.subscription_end = end.toISOString();
-    }
-    await supabaseAdmin.from('profiles').update(patch).eq('id', userId);
-    await supabaseAdmin.from('notifications').insert({
-      user_id: userId, type: 'referral_reward', title: `${REFERRAL_BONUS_DAYS} extra days added`,
-      message: userId === ref.referrer_id ? 'A friend you invited subscribed, so you both got 7 extra days.' : 'Thanks for joining with a friend’s link: you both got 7 extra days.',
-      link: '/referral',
-    }).then(undefined, () => undefined);
-  }
-}
-
-async function fulfilSubscription(attempt: PaymentAttempt, tx: PaystackTransaction): Promise<FulfilOutcome> {
-  if (!attempt.user_id) throw new Error('Subscription attempt has no user_id');
-
-  const planId  = normalisePlanId(attempt.plan_id);
-  const billing = attempt.billing === 'annual' ? 'annual' : 'monthly';
-  const now     = new Date();
-
-  // Pay now, get extra days on top of the paid period (admin setting billing.extra_days, default 7).
-  let extraDays = 7;
-  try { extraDays = asInt(await getSetting('billing.extra_days'), 7, 0, 60); } catch { /* keep 7 */ }
-  const end = new Date(now);
-  end.setDate(end.getDate() + extraDays);
-  if (billing === 'annual') end.setFullYear(end.getFullYear() + 1);
-  else end.setMonth(end.getMonth() + 1);
-
-  const auth = tx.authorization;
-  const cardDetails = auth ? {
-    last4:     auth.last4 || null,
-    card_type: auth.card_type || auth.brand || null,
-    exp_month: auth.exp_month || null,
-    exp_year:  auth.exp_year || null,
-    bank:      auth.bank || null,
-    channel:   auth.channel || tx.channel || 'card',
-    auth_code: auth.authorization_code || null,
-  } : null;
-
-  const profilePatch = {
-    subscription_plan:    planId,
-    subscription_status:  'trialing',
-    subscription_start:   now.toISOString(),
-    subscription_end:     end.toISOString(),
-    payment_method:       tx.channel || 'paystack',
-    ...(cardDetails ? { card_details: cardDetails } : {}),
-    onboarding_completed: true,
-    updated_at:           now.toISOString(),
-  };
-  let { error: profileErr } = await supabaseAdmin
-    .from('profiles').update({ ...profilePatch, billing_cycle: billing }).eq('id', attempt.user_id);
-  // profiles.billing_cycle is missing in databases that never ran database/migrations/20261023_profiles_billing_cycle.sql.
-  // A paid customer must never be left without access because of that: activate without it, and say so loudly.
-  if (profileErr && /billing_cycle/i.test(profileErr.message)) {
-    console.error('[paymentSettlement] profiles.billing_cycle is missing: activating without it. Apply 20261023_profiles_billing_cycle.sql.');
-    ({ error: profileErr } = await supabaseAdmin.from('profiles').update(profilePatch).eq('id', attempt.user_id));
-  }
-  if (profileErr) throw new Error(`profiles update failed: ${profileErr.message}`);
-
-  // payments.provider_reference and payments.amount_cents are NOT NULL in the live schema (amount_cents holds kobo for NGN);
-  // without them every subscription payment would activate the plan and then fail here, leaving Paystack retrying.
-  const { error: payErr } = await supabaseAdmin.from('payments').insert({
-    user_id:   attempt.user_id,
-    reference: attempt.reference,
-    provider_reference: attempt.reference,
-    amount_cents:       tx.amount,
-    plan_id:   planId,
-    billing,
-    amount:    tx.amount / 100,
-    currency:  tx.currency || 'NGN',
-    provider:  'paystack',
-    status:    'success',
-    paid_at:   tx.paid_at || now.toISOString(),
-  });
-  // 23505 = already recorded by an earlier partial run; anything else must retry.
-  if (payErr && payErr.code !== '23505') throw new Error(`payments insert failed: ${payErr.message}`);
-
-  await rewardReferral(attempt.user_id).catch((e) => console.error('[referral] reward failed:', e));
-
-  try {
-    await supabaseAdmin.from('notifications').insert({
-      user_id: attempt.user_id,
-      type:    'payment_success',
-      title:   'Payment received',
-      message: `Your ${planId} plan is now active.`,
-      link:    '/account',
-    });
-  } catch { /* non-critical */ }
-
-  return 'fulfilled';
-}
 
 // ── Public: settle one reference ─────────────────────────────────────────────
 
@@ -492,6 +363,10 @@ export async function settleReference(reference: string): Promise<SettleResult> 
   }
   if (attempt.status === 'success' || attempt.status === 'duplicate') {
     return { state: 'settled', attempt, alreadySettled: true };
+  }
+  // The old subscription checkout is retired; plans are sold only through Billing v2 (Seeker and Builder).
+  if (attempt.kind === 'subscription') {
+    return { state: 'rejected', reason: 'retired_subscription_checkout', attempt };
   }
 
   const lookup = await fetchPaystackTransaction(reference);
@@ -517,11 +392,7 @@ export async function settleReference(reference: string): Promise<SettleResult> 
   }
 
   // ── Paystack says success: validate against what WE recorded ──
-  const expectedKobo =
-    attempt.amount_kobo ??
-    (attempt.kind === 'subscription'
-      ? subscriptionAmountKobo(normalisePlanId(attempt.plan_id), attempt.billing ?? 'monthly')
-      : null);
+  const expectedKobo = attempt.amount_kobo ?? null;
 
   let reject: string | null = null;
   if (expectedKobo == null)                                          reject = 'no_expected_amount';
@@ -561,9 +432,7 @@ export async function settleReference(reference: string): Promise<SettleResult> 
       ? await fulfilSummit(attempt, tx)
       : attempt.kind === 'donation'
       ? await fulfilDonation(attempt, tx)
-      : attempt.kind === 'shop'
-      ? await fulfilShop(attempt)
-      : await fulfilSubscription(attempt, tx);
+      : await fulfilShop(attempt);
 
     if (outcome === 'duplicate') {
       await setAttemptStatus(reference, ['success'], { status: 'duplicate', failure_reason: `${attempt.kind} already paid` });

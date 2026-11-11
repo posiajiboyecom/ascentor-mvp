@@ -20,7 +20,7 @@ interface LeadMagnetPageProps {
   description: string;        // paragraph below
   bullets: Bullet[];          // what's inside
   ctaLabel: string;           // button text
-  persona: string;            // e.g. "For: Builder · Climber stage professionals"
+  persona: string;            // e.g. "Building · Leading"
   type: string;               // e.g. "PDF Guide · 12 pages"
   successPath: string;        // where to redirect after opt-in
   accentColor?: string;
@@ -289,7 +289,7 @@ export default function LeadMagnetPage({
                   fontFamily: "'Metropolis', sans-serif", fontSize: 13, fontWeight: 600,
                   color: gold, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                 }}>
-                  Start with Sage: 7 extra days on your first payment →
+                  Start with Sage: 7 days free on any plan →
                 </button>
               </div>
             </>

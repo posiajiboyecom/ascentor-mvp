@@ -32,7 +32,6 @@ const TIER_OPTIONS = [
   { value: 'free',     label: 'Free, all members' },
   { value: 'explorer', label: 'Explorer and above' },
   { value: 'builder',  label: 'Builder and above' },
-  { value: 'climber',  label: 'Climber only' },
 ];
 
 const EMPTY_FORM = {

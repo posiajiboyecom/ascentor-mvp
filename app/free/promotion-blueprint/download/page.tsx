@@ -12,7 +12,7 @@ export default function PromotionDownloadPage() {
       fileName="Ascentor-Why-Talented-People-Dont-Get-Promoted.pdf"
       nextStep="The guide identifies the moves. Sage helps you execute them, starting with the conversation you need to have with your manager and working through every step of the visibility strategy."
       nextStepLink="/signup"
-      nextStepLabel="Start with Sage: 7 extra days on your first payment →"
+      nextStepLabel="Start with Sage: 7 days free on any plan →"
     />
   );
 }

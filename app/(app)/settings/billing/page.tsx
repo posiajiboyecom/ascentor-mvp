@@ -1,10 +1,10 @@
-// Settings > Billing (billing v2). Only exists while BILLING_V2=on; otherwise it sends the member to today's Plan tab.
+// Settings > Billing: plans (Seeker and Builder), cards, groups, credit and billing history.
 import { SUPPORT_EMAIL } from '@/lib/contact';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getMe } from '@/lib/rx/server';
 import { Aside, Page, Title } from '@/components/rx/ui';
-import { billingV2Enabled } from '@/lib/billing/flags';
+import { isCheckoutOn } from '@/lib/checkout-switch';
 import { loadBillingView } from '@/lib/billing/member-view';
 import BillingClient from '@/components/billing/BillingClient';
 import SettingsTabs from '@/components/billing/SettingsTabs';
@@ -15,10 +15,9 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Billing' };
 
 export default async function BillingPage() {
-  if (!billingV2Enabled()) redirect('/settings?tab=plan');
   const me = await getMe();
   if (!me) redirect('/login?redirect=/settings/billing');
-  const data = await loadBillingView(me.userId);
+  const [data, checkoutOn] = await Promise.all([loadBillingView(me.userId), isCheckoutOn()]);
 
   return (
     <Page>
@@ -26,7 +25,7 @@ export default async function BillingPage() {
       <SettingsTabs active="plan" />
       <div className="rx-two">
         <div className="rx-stack-lg">
-          <BillingClient data={data} tz={me.tz} />
+          <BillingClient data={data} tz={me.tz} checkoutOn={checkoutOn} />
         </div>
         <Aside>
           <p className="rx-sl">Good to know</p>

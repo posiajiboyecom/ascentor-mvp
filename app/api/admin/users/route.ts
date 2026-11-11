@@ -1,6 +1,6 @@
 // FILE: app/api/admin/users/route.ts
 // FIX: change_plan action now:
-//   - Validates against explorer/builder/climber (not basic/standard/premium)
+//   - Validates against free / explorer (Seeker) / builder / leader
 //   - Sets subscription_end 1 year from today (was 30 days - expired too fast)
 //   - Sets billing_cycle = 'manual' to mark admin-granted access
 //   - Handles downgrade to 'free' correctly (nulls subscription_end)
@@ -208,9 +208,9 @@ export async function PATCH(req: NextRequest) {
       }
 
       case 'change_plan': {
-        const validPlans = ['free', 'explorer', 'builder', 'leader', 'climber'];
+        const validPlans = ['free', 'explorer', 'builder', 'leader'];
         if (!validPlans.includes(value)) {
-          return NextResponse.json({ error: 'Invalid plan. Must be: free, explorer, builder, leader, or climber' }, { status: 400 });
+          return NextResponse.json({ error: 'Invalid plan. Must be: free, explorer (Seeker), builder, or leader' }, { status: 400 });
         }
 
         if (value === 'free') {

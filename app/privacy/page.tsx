@@ -57,7 +57,7 @@ const SECTIONS: Section[] = [
         items: [
           "Account registration data - name, email address, password (hashed, never stored in plain text)",
           "Profile information - current role, goal role, industry, career summary, biggest challenge",
-          "Onboarding responses - experience level, life stage (Explorer / Builder / Climber), mentorship goals",
+          "Onboarding responses - experience level, life stage (Seeking / Building / Leading), mentorship goals",
           "Mentor application data - if you apply to become a mentor: LinkedIn URL, professional background, availability",
           "Community content - posts, replies, and upvotes you create in Accountability Circles",
           "Payment information - billing cycle and plan selected; card details are processed by Paystack and never stored on Ascentor servers",

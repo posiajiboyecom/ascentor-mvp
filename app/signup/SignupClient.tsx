@@ -183,7 +183,7 @@ export default function SignupClient({ inviter }: { inviter?: { firstName: strin
             <p style={{ margin: 0 }}>Small daily practices, a Circle of people who know your goals, and mentors who show up. The daily home of The Elevation Summit.</p>
             <div className="ax-inv-gift">
               <Gift aria-hidden="true" />
-              <p style={{ margin: 0 }}><b>7 extra days free</b> for both of you when you subscribe.</p>
+              <p style={{ margin: 0 }}>Start with <b>7 days free</b> on any plan. Cancel before day 8 and you pay nothing.</p>
             </div>
           </>
         ) : (

@@ -12,7 +12,8 @@
 // Members without a row are read from the profile exactly as before.
 
 import type { PlanTier } from '@/lib/planTier';
-import { planDisplayName, planKey } from '@/lib/plans-display';
+import { planDisplayName } from '@/lib/plans-display';
+import { normalisePlan } from '@/lib/planTier';
 
 export type BillState = 'active' | 'trialEnding' | 'failed' | 'cancelled' | 'lapsed' | 'none';
 
@@ -59,7 +60,7 @@ export function deriveBilling(
   priceLabel = '',
   v2?: BillingV2Input | null,
 ): BillingView {
-  const plan = planKey(p?.subscription_plan);
+  const plan = p?.subscription_plan === 'leader' ? 'leader' : normalisePlan(p?.subscription_plan);
   const planName = planDisplayName(p?.subscription_plan);
   const status = p?.subscription_status ?? '';
   const end = v2

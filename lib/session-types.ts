@@ -6,20 +6,20 @@
 //   - app/api/coach/session/route.ts    (prompt selection)
 //
 // tier: which plans unlock this session type
-//   'all'     - free and all paid plans
-//   'paid'    - any paid plan (explorer, builder, climber)
-//   'builder' - builder and climber only
-//   'climber' - climber only
+//   'all'     - free, Seeker and Builder
+//   'paid'    - Seeker and Builder
+//   'builder' - Builder only
 //
-// Canonical plan IDs: free | explorer | builder | climber
-// Legacy aliases handled in the plan sets below.
+// Plans: free | explorer (Seeker) | builder. Stored values are normalised by lib/planTier.ts.
 // ─────────────────────────────────────────────────────────────
+
+import { normalisePlan } from '@/lib/planTier';
 
 export interface SessionType {
   id:          string;
   label:       string;
   description: string;
-  tier:        'all' | 'paid' | 'builder' | 'climber';
+  tier:        'all' | 'paid' | 'builder';
   prompt:      string;
 }
 
@@ -153,39 +153,13 @@ export const SESSION_TYPE_MAP: Record<string, SessionType> = Object.fromEntries(
 // Include both canonical IDs and all legacy aliases so that any value
 // stored in profiles.subscription_plan is handled correctly.
 
-/** Any paid plan - canonical + legacy */
-const PAID_PLANS = new Set([
-  // canonical
-  'explorer', 'builder', 'climber', 'leader',
-  // legacy
-  'pro', 'elite', 'standard', 'tester', 'basic', 'premium', 'pro_legacy',
-  // edge case: trialing users with a plan get paid access
-  'trialing',
-]);
-
-/** Builder-tier and above - canonical + legacy */
-const BUILDER_PLANS = new Set([
-  // canonical
-  'builder', 'climber', 'leader',
-  // legacy: old "Builder" DB ID was 'pro', old "Climber" DB ID was 'elite'
-  'pro', 'elite', 'standard', 'pro_legacy',
-]);
-
-/** Climber-tier only - canonical + legacy */
-const CLIMBER_PLANS = new Set([
-  // canonical
-  'climber', 'leader',
-  // legacy: old Climber DB ID was 'elite'
-  'elite', 'pro_legacy',
-]);
-
 /**
  * Returns the session types available for a given subscription plan.
- * Free users get 'all'-tier types. Paid users get their tier + lower.
+ * Free members get 'all'-tier types; Seeker adds 'paid'; Builder (and invited Leaders) get everything.
  */
 export function getAvailableSessionTypes(plan: string): SessionType[] {
-  if (CLIMBER_PLANS.has(plan))  return SESSION_TYPES;
-  if (BUILDER_PLANS.has(plan))  return SESSION_TYPES.filter((t) => t.tier !== 'climber');
-  if (PAID_PLANS.has(plan))     return SESSION_TYPES.filter((t) => t.tier === 'all' || t.tier === 'paid');
+  const tier = normalisePlan(plan);
+  if (tier === 'builder')  return SESSION_TYPES;
+  if (tier === 'explorer') return SESSION_TYPES.filter((t) => t.tier === 'all' || t.tier === 'paid');
   return SESSION_TYPES.filter((t) => t.tier === 'all');
 }

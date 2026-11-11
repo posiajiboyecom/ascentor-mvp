@@ -16,6 +16,8 @@ import { Check, CalendarDays, Mail, UserRound, LogOut, Trash2, Monitor } from 'l
 import { ProviderIcon, PROVIDER_NAME } from '@/components/auth/ProviderIcon';
 import AuthModal from '@/components/auth/AuthModal';
 import { signOutAndLeave } from '@/lib/auth/sign-out';
+import { effectivePlan } from '@/lib/planTier';
+import { planDisplayName } from '@/lib/plans-display';
 import { bustShellCache } from './actions';
 
 const industries = [
@@ -523,84 +525,17 @@ export default function AccountClient({ profile, email, authProvider, providers,
 }
 
 // ═══ PLAN TAB ═══
-
-const PLAN_META: Record<string, { label: string; color: string; features: string[]; missing: string[] }> = {
-  free:     { label: 'Free', color: '#7A7260', features: ['AI Coach (3 sessions/month)', '1 accountability circle', 'Goal tracking'], missing: ['Expert sessions', 'Courses & resources', 'Unlimited coaching'] },
-  explorer: { label: 'Explorer', color: '#14B8A6', features: ['AI Coach (10 sessions/month)', '1 accountability circle', 'Courses & resources', 'Goal tracking (3 goals)', 'Weekly reflection prompts'], missing: ['Live expert sessions', 'Priority support'] },
-  builder:  { label: 'Builder', color: '#A8894E', features: ['AI Coach (unlimited)', 'Up to 3 accountability circles', 'Live expert sessions', 'Human mentor matching', 'Courses & resources', 'Priority support'], missing: ['1-on-1 quarterly expert session', 'Executive peer circle'] },
-  climber:  { label: 'Climber', color: '#8B5CF6', features: ['AI Coach (unlimited + priority)', 'Unlimited accountability circles', '1-on-1 expert session (quarterly)', 'Executive peer circle', 'Advanced analytics', 'Team dashboard (10 seats)', 'Dedicated account manager'], missing: [] },
-  standard: { label: 'Builder', color: '#A8894E', features: ['AI Coach (unlimited)', 'Up to 3 circles', 'Courses & resources', 'Priority support'], missing: [] },
-  tester:   { label: 'Tester', color: '#A8894E', features: ['Full access (beta tester)', 'All Builder features included'], missing: [] },
-  pro:      { label: 'Pro', color: '#8B5CF6', features: ['Full access', 'All features included'], missing: [] },
-};
+// Ascentor sells two plans, Seeker and Builder, through Billing v2. This tab only says which one the member is on
+// and sends them to Billing, where plans, cards and history are managed.
 
 function PlanTab({ profile }: { profile: any }) {
-  const plan: string = profile?.subscription_plan || 'free';
-  const status: string | undefined = profile?.subscription_status;
-  const isActive = ['active', 'trialing'].includes(status ?? '') && (!profile?.subscription_end || new Date(profile.subscription_end) > new Date());
-  const meta = PLAN_META[plan] || PLAN_META.free;
-  const statusLabel = !isActive ? 'Free tier' : status === 'trialing' ? 'Trial' : 'Active';
-  const statusColor = !isActive ? 'var(--accent-dim)' : 'var(--success)';
-  const statusBg = !isActive ? 'rgba(200,169,110,0.09)' : 'rgba(16,185,129,0.09)';
-
+  const planName = planDisplayName(effectivePlan(profile));
   return (
-    <div className="flex flex-col gap-4">
-      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: `1px solid ${meta.color}40` }}>
-        <div className="flex justify-between items-start mb-3">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>Current plan</span>
-            <h2 className="text-lg font-bold mt-0.5" style={{ fontFamily: 'var(--font-display)', color: meta.color }}>{meta.label}</h2>
-          </div>
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold" style={{ background: statusBg, color: statusColor }}>{statusLabel}</span>
-        </div>
-
-        <div className="flex flex-col gap-1.5 mb-2">
-          {meta.features.map((f) => (
-            <div key={f} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-              <span style={{ color: 'var(--success)' }}><Check size={13} aria-hidden="true" /></span>
-              <span>{f}</span>
-            </div>
-          ))}
-        </div>
-        {meta.missing.length > 0 && (
-          <div className="flex flex-col gap-1.5 mb-4 mt-1">
-            {meta.missing.map((f) => <div key={f} className="text-xs" style={{ color: 'var(--text-dim)', opacity: 0.6 }}>Not included: {f}</div>)}
-          </div>
-        )}
-
-        {(!isActive || ['free', 'explorer', 'builder'].includes(plan)) && plan !== 'climber' && (
-          <a href="/checkout" className="block w-full py-2.5 rounded-lg text-sm font-semibold text-center transition-all mt-4" style={{ background: meta.color, color: '#FFFFFF' }}>
-            {!isActive ? (plan === 'free' ? 'Choose a plan' : 'Reactivate plan') : `Upgrade to ${plan === 'explorer' ? 'Builder' : 'Climber'}`}
-          </a>
-        )}
-      </div>
-
-      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-        <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Billing</h2>
-        <p className="text-xs mb-3" style={{ color: 'var(--text-dim)' }}>
-          {['active', 'trialing'].includes(status ?? '') ? 'Your subscription renews automatically.'
-            : status === 'cancelled' ? 'Subscription cancelled, no future charges.'
-            : 'No active subscription. Upgrade to access all features.'}
-        </p>
-        {['active', 'trialing', 'cancelled'].includes(status ?? '') && (
-          <div className="flex flex-col gap-2">
-            {profile?.subscription_end && (
-              <InfoRow label={status === 'cancelled' ? 'Access until' : 'Next billing date'}
-                value={new Date(profile.subscription_end).toLocaleDateString('en-NG', { month: 'long', day: 'numeric', year: 'numeric' })} />
-            )}
-            {profile?.billing_cycle && <InfoRow label="Billing cycle" value={profile.billing_cycle === 'annual' ? 'Annual' : 'Monthly'} />}
-            {(() => {
-              const card = profile?.card_details;
-              if (card?.last4) {
-                const brand = (card.card_type || card.channel || 'Card').replace(/^\w/, (c: string) => c.toUpperCase());
-                const expiry = card.exp_month && card.exp_year ? ` · ${card.exp_month}/${card.exp_year}` : '';
-                return <InfoRow label="Payment method" value={`${brand} ending ${card.last4}${expiry}`} />;
-              }
-              return profile?.payment_method ? <InfoRow label="Payment method" value={profile.payment_method} /> : null;
-            })()}
-          </div>
-        )}
-      </div>
+    <div className="rounded-xl p-5" style={{ border: '1px solid rgba(22,22,22,0.08)', background: '#FFFFFF' }}>
+      <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#7A7260' }}>Current plan</p>
+      <p className="mt-1 text-2xl font-bold" style={{ color: '#161616' }}>{planName}</p>
+      <p className="mt-2 text-sm" style={{ color: '#4A4537' }}>Ascentor has two plans, Seeker and Builder. Choose or change your plan, manage your card and see your payments in Billing.</p>
+      <a href="/settings/billing" className="mt-4 inline-block rounded-lg px-4 py-2.5 text-sm font-semibold" style={{ background: '#A8894E', color: '#FFFFFF' }}>Open Billing</a>
     </div>
   );
 }

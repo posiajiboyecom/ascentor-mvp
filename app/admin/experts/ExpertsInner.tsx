@@ -199,9 +199,8 @@ onChange={(e) => setForm({ ...form, plan_tier: e.target.value })}
               >
                 <option value="free">Free, all users (including free plan)</option>
                 <option value="paid">Paid only, any active subscription</option>
-                <option value="explorer">Explorer plan and above</option>
-                <option value="builder">Builder plan and above</option>
-                <option value="climber">Climber plan only</option>
+                <option value="explorer">Seeker and Builder</option>
+                <option value="builder">Builder only</option>
               </select>
             </div>
 

@@ -307,7 +307,7 @@ export default function CoachPage() {
                 {SESSION_TYPES.map((t, i) => {
                   const active    = sessionType === t.id;
                   const available = availableTypes.some(a => a.id === t.id);
-                  const tierLabel = t.tier === 'builder' ? 'Builder' : t.tier === 'climber' ? 'Climber' : null;
+                  const tierLabel = t.tier === 'builder' ? 'Builder' : null;
                   return (
                     <button
                       key={t.id}
