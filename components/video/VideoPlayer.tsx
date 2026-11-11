@@ -333,7 +333,7 @@ export function VideoPlayer({ src, poster, title, startAt = 0, onProgress, onEnd
 
       {/* Loading spinner */}
       {waiting && playing && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center lg:[--vp-play:80px]">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <span className="h-12 w-12 rounded-full border-[3px] border-white/20 border-t-[#C8A96E] animate-spin" />
         </div>
       )}
@@ -342,13 +342,13 @@ export function VideoPlayer({ src, poster, title, startAt = 0, onProgress, onEnd
       {!playing && !error && (
         // Centred by a flex layer rather than inset-0 + m-auto on the button itself: iOS Safari stretched the button
         // that way, so the circle came out slightly oval. Fixed square size, no padding, no shrinking.
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center lg:[--vp-play:80px]">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <button
             type="button"
             onClick={toggle}
             aria-label={started ? 'Play' : 'Play video'}
-            className="pointer-events-auto flex shrink-0 grow-0 items-center justify-center rounded-full p-0 shadow-lg transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-            style={{ background: GOLD, width: 'var(--vp-play, 64px)', height: 'var(--vp-play, 64px)', minWidth: 0, minHeight: 0, aspectRatio: '1 / 1', border: 0, lineHeight: 0 }}
+            className="pointer-events-auto flex h-16 w-16 lg:h-20 lg:w-20 shrink-0 grow-0 items-center justify-center rounded-full p-0 shadow-lg transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            style={{ background: GOLD, minWidth: 0, minHeight: 0, aspectRatio: '1 / 1', border: 0, lineHeight: 0 }}
           >
             <svg viewBox="0 0 24 24" className="ml-1 h-7 w-7 lg:h-8 lg:w-8" fill="#0F0F0E" aria-hidden="true"><path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86A1 1 0 0 0 8 5.14z" /></svg>
           </button>
