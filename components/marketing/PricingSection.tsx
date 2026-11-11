@@ -70,6 +70,10 @@ export default function PricingSection({ pricing, id = 'pricing', headingLevel =
           </article>
         </div>
 
+        <div className="pr-foot">
+          {pricing.currency === 'NGN' && <p>Group prices: join or start a group of {pricing.groupMin}. Each person pays for themselves, and the group price applies once {pricing.groupMin} members are active.</p>}
+          <p>Leaders who facilitate a Circle use Ascentor for free.</p>
+        </div>
       </div>
     </section>
   );
@@ -114,4 +118,6 @@ const CSS = `
 .pr-soon { align-self: flex-start; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: rgba(200,169,110,0.16); color: #C8A96E; margin-bottom: 1.25rem; }
 .pr-cta-gold { background: #C8A96E; color: #0F0F0E; }
 .pr-cta-gold:hover { background: #D6BB86; }
+.pr-foot { margin-top: 2rem; max-width: 820px; display: flex; flex-direction: column; gap: 0.5rem; }
+.pr-foot p { margin: 0; color: #5B5B56; font-size: 0.875rem; line-height: 1.65; }
 `;
