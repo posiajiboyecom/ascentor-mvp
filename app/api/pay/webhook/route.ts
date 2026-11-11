@@ -1,7 +1,7 @@
 // ================================================================
 // POST /api/pay/webhook  - SHARED PAYSTACK WEBHOOK
 // ================================================================
-// Single Paystack webhook endpoint for Billing v2 (Seeker and Builder),
+// Single Paystack webhook endpoint for Billing v2 (Seeker, Builder and Pinnacle),
 // Summit donations and the shop.
 //
 // Register this URL in Paystack Dashboard:

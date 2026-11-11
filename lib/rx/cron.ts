@@ -170,6 +170,15 @@ export async function sendCallReminders(): Promise<{ circle: number; mentor: num
     await rxNotify(ids, { kind: 'call_tomorrow', entityId: s.id, url: `/sessions?c=${s.circle_id}`, title: 'Mentor session tomorrow', body: `${whenLabel(s.starts_at, 'Africa/Lagos')} (WAT). ${MENTOR_CALL_MINUTES} minutes, audio by default. Say whether you are going.` });
     mentorN += ids.length;
   }
+
+  // Pinnacle private mentor sessions: the member and the mentor.
+  const { data: privates } = await supabaseAdmin.from('private_mentor_sessions').select('id, member_id, starts_at, duration_min, human_mentors(user_id)').eq('status', 'scheduled').gt('starts_at', now.toISOString()).lte('starts_at', horizon.toISOString());
+  for (const p of (privates ?? []) as unknown as { id: string; member_id: string; starts_at: string; duration_min: number; human_mentors: { user_id: string | null } | null }[]) {
+    const body = `${whenLabel(p.starts_at, 'Africa/Lagos')} (WAT). ${p.duration_min} minutes, one to one, audio by default.`;
+    await rxNotify(p.member_id, { kind: 'call_tomorrow', entityId: p.id, url: '/sessions/private', title: 'Private mentor session tomorrow', body });
+    if (p.human_mentors?.user_id) await rxNotify(p.human_mentors.user_id, { kind: 'call_tomorrow', entityId: p.id, url: '/sessions/mentoring', title: 'Private session tomorrow', body: `${body} The agenda is in your mentor view.` });
+    mentorN += p.human_mentors?.user_id ? 2 : 1;
+  }
   return { circle: circleN, mentor: mentorN };
 }
 

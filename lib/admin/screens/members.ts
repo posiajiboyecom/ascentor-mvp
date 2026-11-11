@@ -142,7 +142,7 @@ const screen: ScreenModule = {
       rows,
       kpis: [
         { label: 'Members', value: num(everyone.length), note: `+${num(joined)} this week` },
-        { label: 'Paying', value: num(paying), note: 'Seeker, Builder and Leader' },
+        { label: 'Paying', value: num(paying), note: 'Seeker, Builder, Pinnacle and Leader' },
         { label: 'First period', value: num(first), note: 'Paid, with 7 extra days' },
         { label: 'Light access', value: num(light), note: 'Payment failed or lapsed' },
       ],

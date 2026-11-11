@@ -498,6 +498,7 @@ export function ExpertsClient({
   const [lockedSession, setLockedSession] = useState<ExpertSession | null>(null);
   const [confirmedSession, setConfirmedSession] = useState<ExpertSession | null>(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [regError, setRegError] = useState('');
 
   async function handleToggleRegister(session: ExpertSession) {
     const isReg = registeredIds.has(session.id);
@@ -529,7 +530,9 @@ export function ExpertsClient({
         body: JSON.stringify({ sessionId: session.id }),
       });
       if (!res.ok) {
-        console.error('[ExpertsClient] register failed:', await res.text());
+        // The server enforces plan, monthly allowance and seats held for Pinnacle; show its reason.
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        setRegError(j.error ?? 'We couldn’t register you. Please try again.');
         setRegisteredIds((prev) => {
           const next = new Set(prev);
           next.delete(session.id); // revert
@@ -599,6 +602,12 @@ export function ExpertsClient({
 
   return (
     <div className="h-full overflow-y-auto lg:overflow-hidden lg:flex">
+      {regError && (
+        <div role="alert" className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 max-w-[min(92vw,480px)] rounded-xl border-[0.5px] border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-sm shadow-lg">
+          <span>{regError}</span>
+          <button type="button" className="ml-3 text-xs font-bold underline" onClick={() => setRegError('')}>OK</button>
+        </div>
+      )}
       {/* ── Desktop filter rail ── */}
       <aside className="hidden lg:block w-[220px] shrink-0 border-r-[0.5px] border-[var(--border)] bg-[var(--bg-card)] px-4 py-6 overflow-y-auto">
         <FilterRail

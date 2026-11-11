@@ -14,6 +14,7 @@ export const metadata = { title: 'Plans and pricing' };
 const WHO: Record<string, string> = {
   explorer: 'For members finding their direction.',
   builder: 'For members building a career or business. Any member can choose it.',
+  pinnacle: 'Everything in Builder, plus a private mentor session each month, unlimited Sage, more expert sessions and priority support.',
 };
 
 export default async function PlansPage() {
@@ -27,11 +28,12 @@ export default async function PlansPage() {
     const { count } = await supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }).eq('subscription_plan', plan);
     return count ?? 0;
   };
-  const [seeker, builder] = await Promise.all([countFor('explorer'), countFor('builder')]);
+  const [seeker, builder, pinnacle] = await Promise.all([countFor('explorer'), countFor('builder'), countFor('pinnacle')]);
 
   const plans = [
     { key: 'seeker' as const, name: 'Seeker', members: seeker, who: WHO.explorer, price: price('explorer') != null ? `${naira(price('explorer'))} in Nigeria · ${formatMoney(priceFor('explorer', 'solo', 'monthly', 'USD'), 'USD')} elsewhere` : '\-', open: asBool(s['plan.seeker.open']) },
     { key: 'builder' as const, name: 'Builder', members: builder, who: WHO.builder, price: price('builder') != null ? `${naira(price('builder'))} in Nigeria · ${formatMoney(priceFor('builder', 'solo', 'monthly', 'USD'), 'USD')} elsewhere` : '\-', open: asBool(s['plan.builder.open']) },
+    { key: 'pinnacle' as const, name: 'Pinnacle', members: pinnacle, who: WHO.pinnacle, price: price('pinnacle') != null ? `${naira(price('pinnacle'))} in Nigeria · ${formatMoney(priceFor('pinnacle', 'solo', 'monthly', 'USD'), 'USD')} elsewhere` : '\-', open: asBool(s['plan.pinnacle.open']) },
   ];
 
   const catalog = PLANS.map((p) => ({

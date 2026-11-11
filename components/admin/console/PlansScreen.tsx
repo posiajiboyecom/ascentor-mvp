@@ -5,7 +5,7 @@ import { Check } from 'lucide-react';
 import { savePlans, type PlansInput } from '@/app/admin/c/plans/actions';
 import '@/styles/admin-console.css';
 
-interface PlanCard { key: 'seeker' | 'builder'; name: string; members: number; who: string; price: string; open: boolean }
+interface PlanCard { key: 'seeker' | 'builder' | 'pinnacle'; name: string; members: number; who: string; price: string; open: boolean }
 function Toggle({ on, locked, label, onClick }: { on: boolean; locked: boolean; label: string; onClick: () => void }) {
   return (
     <button type="button" className={`toggle${on ? ' on' : ''}${locked ? ' lock' : ''}`} aria-pressed={on} aria-label={label} aria-disabled={locked || undefined} onClick={() => { if (!locked) onClick(); }} />
@@ -17,7 +17,7 @@ interface CatalogRow { code: string; tier: string; priceType: string; cycle: str
 export default function PlansScreen({ canEdit, plans, catalog, trialDays, graceDays }: {
   canEdit: boolean; plans: PlanCard[]; catalog: CatalogRow[]; trialDays: number; graceDays: number;
 }) {
-  const [open, setOpen] = useState<PlansInput['open']>({ seeker: plans[0].open, builder: plans[1].open });
+  const [open, setOpen] = useState<PlansInput['open']>({ seeker: plans[0].open, builder: plans[1].open, pinnacle: plans[2]?.open ?? true });
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
   const [pending, start] = useTransition();
@@ -43,7 +43,7 @@ export default function PlansScreen({ canEdit, plans, catalog, trialDays, graceD
           <div><p className="eyebrow">Revenue</p><h1 className="pt">Plans and pricing</h1><span className="ul" /></div>
           <button type="button" className="btn bp" disabled={pending || !canEdit} onClick={save}>Save changes</button>
         </div>
-        <p className="p" style={{ maxWidth: 760 }}>Ascentor’s two plans, Seeker and Builder: who can sign up, every price, and how trials and failed payments work.</p>
+        <p className="p" style={{ maxWidth: 760 }}>Ascentor’s three plans, Seeker, Builder and Pinnacle: who can sign up, every price, and how trials and failed payments work.</p>
 
         {!canEdit && <div className="rz"><p className="sm" style={{ color: 'var(--text)' }}>View only. Your role can look at this area but not change it.</p></div>}
         {error && <div className="rz" role="alert"><p className="sm" style={{ color: 'var(--err)' }}>{error}</p></div>}

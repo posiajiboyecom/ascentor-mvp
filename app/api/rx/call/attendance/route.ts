@@ -16,6 +16,16 @@ export async function POST(req: Request) {
   let b: { event?: string; circleId?: string; kind?: string; id?: string };
   try { b = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }
 
+  if (b.event === 'join' && b.kind === 'private') {
+    // circleId carries the private session id. Only its member or mentor can record minutes.
+    if (!b.circleId || !UUID.test(b.circleId)) return NextResponse.json({ error: 'Unknown session.' }, { status: 400 });
+    const { data: s } = await supabaseAdmin.from('private_mentor_sessions').select('member_id, human_mentors(user_id)').eq('id', b.circleId).maybeSingle();
+    const mentorUser = (s?.human_mentors as unknown as { user_id: string | null } | null)?.user_id ?? null;
+    if (!s || (s.member_id !== user.id && mentorUser !== user.id)) return NextResponse.json({ error: 'Not in this session.' }, { status: 403 });
+    const { data, error } = await supabaseAdmin.from('call_attendance').insert({ private_session_id: b.circleId, kind: 'private', user_id: user.id }).select('id').single();
+    if (error) return NextResponse.json({ error: 'Could not record.' }, { status: 500 });
+    return NextResponse.json({ id: data.id });
+  }
   if (b.event === 'join') {
     if (!b.circleId || !UUID.test(b.circleId)) return NextResponse.json({ error: 'Unknown Circle.' }, { status: 400 });
     const { data: seat } = await supabaseAdmin.from('circle_seats').select('user_id').eq('circle_id', b.circleId).eq('user_id', user.id).maybeSingle();

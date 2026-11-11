@@ -7,12 +7,13 @@ import assert from 'node:assert/strict';
 process.env.NEXT_PUBLIC_SUPABASE_URL ||= 'http://localhost:54321';
 process.env.SUPABASE_SERVICE_ROLE_KEY ||= 'test-service-role';
 
-test('only Seeker and Builder are sold, at the catalog solo prices', async () => {
+test('Seeker, Builder and Pinnacle are sold, at the catalog solo prices', async () => {
   const { getPlanPricing, planPriceLabel } = await import('../../lib/plans-config');
   const plans = getPlanPricing();
   assert.deepEqual(plans.map((p) => [p.id, p.name, p.monthlyPrice, p.yearlyPrice]), [
     ['explorer', 'Seeker', 3000, 30000],
     ['builder', 'Builder', 7000, 70000],
+    ['pinnacle', 'Pinnacle', 12000, 120000],
   ]);
   assert.equal(planPriceLabel('builder', 'monthly'), '₦7,000 a month');
   assert.equal(planPriceLabel('explorer', 'annual'), '₦30,000 a year');
@@ -20,10 +21,11 @@ test('only Seeker and Builder are sold, at the catalog solo prices', async () =>
   assert.equal(planPriceLabel(null, null), '');
 });
 
-test('display names: Seeker, Builder; retired plans show as Free', async () => {
+test('display names: Seeker, Builder, Pinnacle; retired plans show as Free', async () => {
   const { planDisplayName, FEATURED_PLANS } = await import('../../lib/plans-display');
-  assert.deepEqual([...FEATURED_PLANS], ['explorer', 'builder']);
+  assert.deepEqual([...FEATURED_PLANS], ['explorer', 'builder', 'pinnacle']);
   assert.equal(planDisplayName('explorer'), 'Seeker');
+  assert.equal(planDisplayName('pinnacle'), 'Pinnacle');
   assert.equal(planDisplayName('builder'), 'Builder');
   for (const old of ['climber', 'premium', 'basic', 'standard', 'pro', 'elite', 'nope', null]) {
     assert.equal(planDisplayName(old), 'Free', String(old));

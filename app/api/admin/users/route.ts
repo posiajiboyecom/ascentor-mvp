@@ -208,7 +208,7 @@ export async function PATCH(req: NextRequest) {
       }
 
       case 'change_plan': {
-        const validPlans = ['free', 'explorer', 'builder', 'leader'];
+        const validPlans = ['free', 'explorer', 'builder', 'pinnacle', 'leader'];
         if (!validPlans.includes(value)) {
           return NextResponse.json({ error: 'Invalid plan. Must be: free, explorer (Seeker), builder, or leader' }, { status: 400 });
         }

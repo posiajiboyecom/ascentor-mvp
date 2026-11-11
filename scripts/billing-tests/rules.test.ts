@@ -6,8 +6,8 @@ import * as C from '../../lib/billing/catalog';
 const d = (s: string) => new Date(s);
 const T0 = d('2026-11-01T10:00:00Z');
 
-test('catalog: eight plans, prices from the handoff', () => {
-  assert.equal(C.PLANS.length, 8);
+test('catalog: twelve plans (Seeker, Builder, Pinnacle), prices from the handoff', () => {
+  assert.equal(C.PLANS.length, 12);
   assert.equal(C.priceFor('explorer', 'solo', 'monthly'), 300_000);
   assert.equal(C.priceFor('explorer', 'solo', 'yearly'), 3_000_000);
   assert.equal(C.priceFor('explorer', 'group', 'monthly'), 200_000);

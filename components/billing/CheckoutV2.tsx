@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { Check } from 'lucide-react';
 import CardsPanel, { type CardView } from './CardsPanel';
 import { fmtDate } from './format';
-import { formatMoney, getPlan, planAmount, planCodeFor, priceFor as catalogPrice, tierLabel, groupDiscountApplies, type Currency, type Cycle, type PriceType, type Tier } from '@/lib/billing/catalog';
+import { PAID_TIERS, formatMoney, getPlan, planAmount, planCodeFor, priceFor as catalogPrice, tierLabel, groupDiscountApplies, type Currency, type Cycle, type PriceType, type Tier } from '@/lib/billing/catalog';
 import { checkoutSummary } from '@/lib/billing/preview';
 import { GROUP_MIN, TRIAL_DAYS } from '@/lib/billing/rules';
 
@@ -26,11 +26,15 @@ const STORE = 'asc_checkout_v2';
 const TIER_INFO: Record<Tier, { blurb: string; bullets: string[] }> = {
   explorer: {
     blurb: 'For people finding their direction.',
-    bullets: ['Today tab and daily practices', 'Sage, your AI assistant, with a daily message limit', 'Core Learn tracks', 'Join one Circle with mentor sessions', 'Open house community group', 'Direct messages'],
+    bullets: ['Today tab and daily practices', 'Sage · AI coach, 25 messages a day', 'Core Learn tracks', 'Join one Circle with mentor sessions', 'Open house community group', 'Direct messages'],
   },
   builder: {
     blurb: 'For people building a career or a business.',
-    bullets: ['Everything in Seeker', 'A higher daily limit with Sage', 'Core and advanced Learn tracks', 'Industry mentorship', 'Remote internships and work experience', 'Business opportunities for members running a business'],
+    bullets: ['Everything in Seeker', 'Sage · AI coach, 75 messages a day', 'Core and advanced Learn tracks', 'Industry mentorship', 'Remote internships and work experience', 'Business opportunities for members running a business'],
+  },
+  pinnacle: {
+    blurb: 'For people who want one-to-one guidance.',
+    bullets: ['Everything in Builder', 'A private 20-minute mentor session every month', 'Unlimited Sage · AI coach', 'Four live expert sessions a month, with seats held for you', 'Priority support'],
   },
 };
 
@@ -189,8 +193,8 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
         <div className="rx-stack-lg">
           <fieldset className="rx-stack-sm" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
             <legend className="rx-sl" style={{ marginBottom: 8 }}>1. Choose your plan</legend>
-            <div className="bl-tiers" role="group" aria-label="Plan">
-              {(['explorer', 'builder'] as Tier[]).map((t) => (
+            <div className="bl-tiers bl-tiers-3" role="group" aria-label="Plan">
+              {PAID_TIERS.map((t) => (
                 <button key={t} type="button" aria-pressed={choice.tier === t} className="bl-choice" disabled={closedTiers.includes(t)}
                   style={closedTiers.includes(t) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined} onClick={() => set({ tier: t })}>
                   <span className="t">{tierLabel(t)}{closedTiers.includes(t) ? ' · not open right now' : ''}</span>
@@ -200,7 +204,7 @@ export default function CheckoutV2({ defaultTier, initialCards, verifyAmountLabe
                 </button>
               ))}
             </div>
-            <p className="rx-sm">Your stage sets the plan we suggest. Any member can choose Builder.</p>
+            <p className="rx-sm">Your stage sets the plan we suggest. You can choose any plan.</p>
           </fieldset>
 
           <fieldset className="rx-stack-sm" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>

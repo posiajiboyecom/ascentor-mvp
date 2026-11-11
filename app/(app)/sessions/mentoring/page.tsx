@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getMe } from '@/lib/rx/server';
 import { myMentorProfile } from '@/lib/rx/mentors';
 import { mentorCircles, MAX_AGREEMENT_GOALS } from '@/lib/rx/cmentor';
+import { mentorPrivateSessions } from '@/lib/rx/private-mentor';
+import { PrivateCancel } from '@/components/rx/sessions/PrivateSessionClient';
 import { whenLabel } from '@/lib/rx/dates';
 import { Aside, BackLink, GoLink, Page, Tag, Title } from '@/components/rx/ui';
 import { AgreementWorkspace, CapacityStepper, CircleRequestActions, ScheduleGrid, SlotManager, type SlotGridItem } from '@/components/rx/sessions/SessionsClient';
@@ -18,9 +20,10 @@ export default async function MentoringPage() {
   const mentor = await myMentorProfile();
   if (!mentor) redirect('/sessions');
   const db = await createClient();
-  const [circles, { data: slots }] = await Promise.all([
+  const [circles, { data: slots }, privates] = await Promise.all([
     mentorCircles(mentor.id),
     db.from('mentor_slots').select('id, starts_at, taken').eq('mentor_id', mentor.id).gt('starts_at', new Date().toISOString()).order('starts_at'),
+    mentorPrivateSessions(mentor.id),
   ]);
   const requests = circles.filter((c) => c.status === 'requested');
   const scheduling = circles.filter((c) => c.status === 'scheduling');
@@ -48,6 +51,24 @@ export default async function MentoringPage() {
             ))}
           </div>
 
+          {privates.length > 0 && (
+            <div className="rx-card rx-stack">
+              <p className="rx-label">Private sessions · Pinnacle members</p>
+              {privates.map((s) => (
+                <div key={s.id} className="rx-stack-sm" style={{ paddingBottom: 14, borderBottom: '1px solid var(--rx-border)' }}>
+                  <p className="rx-p rx-strong" style={{ margin: 0 }}>{s.memberName} · {whenLabel(s.startsAt, tz)}</p>
+                  <p className="rx-sm">{s.durationMin} minutes, one to one</p>
+                  <p className="rx-sm rx-strong">Their agenda</p>
+                  <p className="rx-p" style={{ whiteSpace: 'pre-wrap', fontSize: 15 }}>{s.agenda}</p>
+                  <div className="rx-row" style={{ gap: 16, alignItems: 'center' }}>
+                    <a href={`/call/private/${s.id}`} className="rx-btn primary">Join the call room</a>
+                    <PrivateCancel sessionId={s.id} role="mentor" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {scheduling.map((c) => (
             <div key={c.cmId} className="rx-card rx-stack">
               <p className="rx-label">Choosing a time · {c.circleName}</p>
@@ -69,12 +90,13 @@ export default async function MentoringPage() {
               {c.agreement && <AgreementWorkspace cmId={c.cmId} agreement={{ goals: c.agreement.goals, tasks: c.agreement.tasks }} role="mentor" members={[]} meId={me.userId} maxGoals={MAX_AGREEMENT_GOALS} />}
             </div>
           ))}
-          {running.length === 0 && scheduling.length === 0 && requests.length === 0 && <div className="rx-card rx-empty"><p className="rx-p">You don’t mentor a Circle yet. Requests appear here when a Circle chooses you.</p></div>}
+          {running.length === 0 && scheduling.length === 0 && requests.length === 0 && privates.length === 0 && <div className="rx-card rx-empty"><p className="rx-p">You don’t mentor a Circle yet. Requests appear here when a Circle chooses you.</p></div>}
         </div>
         <Aside>
           <p className="rx-label">Capacity, in Circles</p>
           <CapacityStepper value={mentor.capacity} />
           <p className="rx-sm">{circles.filter((c) => c.status !== 'requested').length} Circles now. Requests pause when you’re full.</p>
+          <p className="rx-sm">Pinnacle members can also book one of your open times for a private 20-minute session, with their agenda attached.</p>
           <p className="rx-label">Open times</p>
           <SlotManager slots={((slots ?? []) as { id: string; starts_at: string; taken: boolean }[]).map((s) => ({ id: s.id, label: whenLabel(s.starts_at, tz), taken: s.taken }))} />
           <p className="rx-sm">You see your Circle’s agreement, the questions members send and first names. The Circle chat, weekly reports and survey answers stay private.</p>

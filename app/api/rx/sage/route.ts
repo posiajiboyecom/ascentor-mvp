@@ -14,7 +14,8 @@ import { coachSessionLimiter, getClientIp } from '@/lib/rate-limit';
 import { CRISIS_PATTERN } from '@/lib/rx/constants';
 import { cleanText } from '@/lib/rx/safety';
 import { localISODate, mondayOfISO } from '@/lib/rx/dates';
-import { featureBlock } from '@/lib/access';
+import { featureBlock, getMemberAccess } from '@/lib/access';
+import { SAGE_DAILY_MESSAGES } from '@/lib/billing/access';
 
 export const runtime = 'nodejs';
 
@@ -95,6 +96,21 @@ export async function POST(req: Request) {
   // Billing v2: Sage is one of the things a lapsed member (light access) loses. Members without a v2 row are never blocked here.
   const blocked = await featureBlock(user.id, 'sage');
   if (blocked) return NextResponse.json({ error: blocked, paused: true }, { status: 403 });
+
+  // Daily message cap by plan (lib/billing/access.ts SAGE_DAILY_MESSAGES): Seeker 25, Builder 75, Pinnacle none.
+  // Counted over the last 24 hours from stored messages. Members without a v2 subscription row keep no cap.
+  const access = await getMemberAccess(user.id);
+  const cap = access.v2 && access.tier ? SAGE_DAILY_MESSAGES[access.tier] : null;
+  if (cap != null) {
+    const { count } = await supabaseAdmin.from('sage_messages').select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id).eq('role', 'user').gte('created_at', new Date(Date.now() - 86400000).toISOString());
+    if ((count ?? 0) >= cap) {
+      return NextResponse.json({
+        error: `You’ve sent your ${cap} messages to Sage for today. More open up over the next 24 hours. Pinnacle has no daily limit.`,
+        limit: true, upgradeUrl: '/settings/billing',
+      }, { status: 429 });
+    }
+  }
 
   let body: { topic?: string; conversationId?: string | null; messages?: { role?: string; text?: string }[] };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Bad request.' }, { status: 400 }); }

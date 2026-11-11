@@ -11,7 +11,7 @@
 //   canRetryCharge(mode, state)  -> whether 'Retry charge now' may be offered
 //   csvText                      -> CSV with a formula-injection guard
 
-import { getPlan, perMonthKobo, tierLabel, formatMoney, isCurrency, type Currency, type Tier } from '@/lib/billing/catalog';
+import { isPaidTier, getPlan, perMonthKobo, tierLabel, formatMoney, isCurrency, type Currency } from '@/lib/billing/catalog';
 
 export type ChargingModeKey = 'off' | 'dry' | 'live';
 
@@ -48,7 +48,7 @@ export function moneyTotals(t: Record<Currency, number>): string {
 }
 
 export function planLabel(tier: string | null | undefined): string {
-  return tier === 'builder' || tier === 'explorer' ? tierLabel(tier as Tier) : '-';
+  return isPaidTier(tier) ? tierLabel(tier) : '-';
 }
 
 export const priceTypeLabel = (t: string | null | undefined) => (t === 'group' ? 'Group' : t === 'solo' ? 'Solo' : '-');

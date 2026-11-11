@@ -26,6 +26,8 @@
 
 import { adminNotifyEmail, FROM_DEFAULT } from '@/lib/contact';
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient as createServerClient } from '@/lib/supabase/server';
+import { getMemberAccess } from '@/lib/access';
 import { createClient } from '@supabase/supabase-js';
 import { brandedEmailLayout, esc, p, goldButton, outlineButton, summaryRow, summaryBox, messageBlock } from '@/lib/emailTemplate';
 import { sendEmail as sendMail } from '@/lib/nodemailer';
@@ -100,6 +102,18 @@ export async function POST(req: NextRequest) {
   if (!parsed.ok) return parsed.response;
   const { name, email, subject, message } = parsed.data;
 
+  // Signed-in members are linked to their message; Pinnacle members go to the top of the admin inbox (priority support).
+  let userId: string | null = null;
+  let priority = false;
+  try {
+    const sb = await createServerClient();
+    const { data: { user } } = await sb.auth.getUser();
+    if (user) {
+      userId = user.id;
+      priority = (await getMemberAccess(user.id)).features.prioritySupport;
+    }
+  } catch { /* public form: no session is fine */ }
+
   // Save to DB
   const { error: dbError } = await supabaseAdmin
     .from('contact_messages')
@@ -109,6 +123,8 @@ export async function POST(req: NextRequest) {
       subject: subject.trim(),
       message: message.trim(),
       status:  'new',
+      user_id: userId,
+      priority,
     });
 
   if (dbError) {
@@ -122,7 +138,7 @@ export async function POST(req: NextRequest) {
   // Admin notification email (non-fatal)
   sendEmail(
     ADMIN_EMAIL,
-    `[Contact] ${subjectLabel}, from ${name.trim()}`,
+    `${priority ? '[Priority · Pinnacle] ' : '[Contact] '}${subjectLabel}, from ${name.trim()}`,
     adminEmailHtml(name.trim(), email.trim(), subject, message.trim()),
   ).catch(err => console.warn('[contact] Admin email failed (non-fatal):', err?.message));
 

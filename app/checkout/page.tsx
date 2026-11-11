@@ -13,7 +13,7 @@ import UserShell from '@/components/shell/UserShell';
 import { getSubscription } from '@/lib/billing/subscriptions';
 import { listCards, VERIFY_AMOUNT } from '@/lib/billing/cards';
 import { getGroupStatus } from '@/lib/billing/groups';
-import { formatMoney, type Tier } from '@/lib/billing/catalog';
+import { PAID_TIERS, formatMoney, type Tier } from '@/lib/billing/catalog';
 import { visitorCurrency } from '@/lib/geo';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getMe } from '@/lib/rx/server';
@@ -32,7 +32,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
       <div className="rx">
         <div className="rx-card rx-stack-sm" style={{ maxWidth: 560, margin: '32px auto' }}>
           <p className="rx-h3">Paid plans aren’t open yet</p>
-          <p className="rx-p">Everything you have today keeps working. We’ll let you know when Seeker and Builder open.</p>
+          <p className="rx-p">Everything you have today keeps working. We’ll let you know when Seeker, Builder and Pinnacle open.</p>
           <div><a className="rx-btn secondary" href="/dashboard">Back to Today</a></div>
         </div>
       </div>
@@ -56,12 +56,12 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
     const [cards, groupStatus, closed, currency] = await Promise.all([listCards(me.userId), getGroupStatus(me.userId), closedPlanIds(), visitorCurrency()]);
     // Default tier from the onboarding stage: Seeking is Seeker, Building and Leading are Builder. Leaders never pick a Leader plan here.
     const suggested: Tier = me.profile?.stage === 'Building' || me.profile?.stage === 'Leading' ? 'builder' : 'explorer';
-    const defaultTier: Tier = closed.includes(suggested) ? (suggested === 'builder' ? 'explorer' : 'builder') : suggested;
-    const v2 = closed.length >= 2 ? (
+    const defaultTier: Tier = closed.includes(suggested) ? (PAID_TIERS.find((t) => !closed.includes(t)) ?? suggested) : suggested;
+    const v2 = PAID_TIERS.every((t) => closed.includes(t)) ? (
       <div className="rx">
         <div className="rx-card rx-stack-sm" style={{ maxWidth: 560, margin: '32px auto' }}>
           <p className="rx-h3">Plans aren’t open for sign-ups right now</p>
-          <p className="rx-p">Seeker and Builder will open again soon. Nothing has been charged.</p>
+          <p className="rx-p">Seeker, Builder and Pinnacle will open again soon. Nothing has been charged.</p>
           <div><a className="rx-btn secondary" href="/dashboard">Back to Today</a></div>
         </div>
       </div>

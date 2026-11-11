@@ -2,9 +2,10 @@
 // ============================================================
 // Single source of truth for plan-tier logic across the app.
 //
-// Ascentor has exactly two paid plans (Billing v2, lib/billing/catalog.ts):
-//   Seeker  — stored as 'explorer'
-//   Builder — stored as 'builder'
+// Ascentor has exactly three paid plans (Billing v2, lib/billing/catalog.ts):
+//   Seeker   — stored as 'explorer'
+//   Builder  — stored as 'builder'
+//   Pinnacle — stored as 'pinnacle'
 // Everything else is free. Older plan values (climber, premium, basic, standard, …) belong to the retired
 // billing system and are treated as free. Leader is not a paid plan: invited facilitators get Builder-level
 // access for free, so 'leader' gates as 'builder'.
@@ -12,12 +13,13 @@
 // Used by: community (cohorts), experts (expert_sessions), admin tier selectors, access checks.
 // ============================================================
 
-export type PlanTier = 'free' | 'explorer' | 'builder'
+export type PlanTier = 'free' | 'explorer' | 'builder' | 'pinnacle'
 
 export const PLAN_RANK: Record<PlanTier, number> = {
   free:     0,
   explorer: 1,
   builder:  2,
+  pinnacle: 3,
 }
 
 /** Maps any stored plan value to a current tier. Unknown and retired values are free. */
@@ -29,6 +31,8 @@ export function normalisePlan(raw: string | null | undefined): PlanTier {
     case 'builder':
     case 'leader':
       return 'builder'
+    case 'pinnacle':
+      return 'pinnacle'
     default:
       return 'free'
   }
@@ -39,7 +43,7 @@ export function normalisePlan(raw: string | null | undefined): PlanTier {
  * Inclusive upward: a Builder can access Seeker and free content.
  */
 export function canAccess(userPlan: string | null | undefined, requiredTier: string | null | undefined): boolean {
-  // 'paid' (used by expert sessions) means any paid plan, i.e. Seeker or Builder.
+  // 'paid' (used by expert sessions) means any paid plan: Seeker, Builder or Pinnacle.
   const required: PlanTier = requiredTier === 'paid' ? 'explorer' : normalisePlan(requiredTier)
   return PLAN_RANK[normalisePlan(userPlan)] >= PLAN_RANK[required]
 }
@@ -83,10 +87,12 @@ export const TIER_META: Record<PlanTier, TierMeta> = {
   free:     { label: 'Free',    color: '#A09880', bg: 'rgba(160,152,128,0.10)', border: 'rgba(160,152,128,0.22)' },
   explorer: { label: 'Seeker',  color: '#14B8A6', bg: 'rgba(20,184,166,0.10)',  border: 'rgba(20,184,166,0.22)'  },
   builder:  { label: 'Builder', color: '#E8A020', bg: 'rgba(232,160,32,0.10)',  border: 'rgba(232,160,32,0.22)'  },
+  pinnacle: { label: 'Pinnacle', color: '#B4532A', bg: 'rgba(180,83,42,0.10)',  border: 'rgba(180,83,42,0.24)'   },
 }
 
 export const TIER_OPTIONS: { value: PlanTier; label: string }[] = [
   { value: 'free',     label: 'Free, open to every member' },
-  { value: 'explorer', label: 'Seeker and Builder'         },
-  { value: 'builder',  label: 'Builder only'               },
+  { value: 'explorer', label: 'Every paid plan'            },
+  { value: 'builder',  label: 'Builder and Pinnacle'       },
+  { value: 'pinnacle', label: 'Pinnacle only'              },
 ]

@@ -366,7 +366,7 @@ export async function settleReference(reference: string): Promise<SettleResult> 
   if (attempt.status === 'success' || attempt.status === 'duplicate') {
     return { state: 'settled', attempt, alreadySettled: true };
   }
-  // The old subscription checkout is retired; plans are sold only through Billing v2 (Seeker and Builder).
+  // The old subscription checkout is retired; plans are sold only through Billing v2 (Seeker, Builder and Pinnacle).
   if (attempt.kind === 'subscription') {
     return { state: 'rejected', reason: 'retired_subscription_checkout', attempt };
   }

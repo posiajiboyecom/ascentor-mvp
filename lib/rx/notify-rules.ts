@@ -7,7 +7,8 @@ export type NotifKind =
   | 'mentor_accepted' | 'mentor_declined' | 'sessions_booked' | 'call_tomorrow' | 'session_moved'
   | 'agenda_due' | 'agenda_sent' | 'circle_started' | 'circle_moved' | 'circle_notice' | 'group_notice'
   | 'post_comment' | 'comment_reply' | 'post_reaction' | 'post_share'
-  | 'practice_reminder' | 'weekly_digest' | 'lesson_reminder';
+  | 'practice_reminder' | 'weekly_digest' | 'lesson_reminder'
+  | 'private_booked' | 'private_cancelled';
 
 export const PREF = {
   circle: 'Circle updates',
@@ -59,6 +60,9 @@ export const KINDS: Record<NotifKind, KindSpec> = {
   // a started lesson that was not finished: one unread nudge at a time
   lesson_reminder:   { pref: PREF.practice, emailPref: null, legacyType: 'info', coalesce: true },
   weekly_digest:     { pref: PREF.digest, emailPref: PREF.emailDigest, legacyType: 'info', coalesce: false },
+  // Pinnacle private mentor sessions (lib/rx/private-mentor.ts): to the mentor when booked, to the other side when cancelled
+  private_booked:    { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'success', coalesce: false },
+  private_cancelled: { pref: PREF.circle, emailPref: PREF.emailCircle, legacyType: 'info',    coalesce: false },
 };
 
 export const EMAIL_MIN_GAP_MINUTES = 10;

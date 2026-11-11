@@ -155,11 +155,11 @@ export const SESSION_TYPE_MAP: Record<string, SessionType> = Object.fromEntries(
 
 /**
  * Returns the session types available for a given subscription plan.
- * Free members get 'all'-tier types; Seeker adds 'paid'; Builder (and invited Leaders) get everything.
+ * Free members get 'all'-tier types; Seeker adds 'paid'; Builder, Pinnacle (and invited Leaders) get everything.
  */
 export function getAvailableSessionTypes(plan: string): SessionType[] {
   const tier = normalisePlan(plan);
-  if (tier === 'builder')  return SESSION_TYPES;
+  if (tier === 'builder' || tier === 'pinnacle') return SESSION_TYPES;
   if (tier === 'explorer') return SESSION_TYPES.filter((t) => t.tier === 'all' || t.tier === 'paid');
   return SESSION_TYPES.filter((t) => t.tier === 'all');
 }
